@@ -15,7 +15,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -38,7 +37,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -47,7 +45,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -70,7 +67,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -122,7 +118,6 @@
             "name": "friendId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -145,7 +140,6 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -189,7 +183,6 @@
           {
             "name": "friendName",
             "in": "query",
-            "style": "form",
             "schema": {
               "type": "string"
             }
@@ -197,7 +190,6 @@
           {
             "name": "friendDiscriminator",
             "in": "query",
-            "style": "form",
             "schema": {
               "type": "string"
             }
@@ -278,7 +270,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -301,7 +292,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -324,7 +314,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -333,7 +322,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -356,7 +344,6 @@
             "name": "friendId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -437,7 +424,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -458,7 +444,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -500,7 +485,6 @@
             "name": "mode",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -509,7 +493,6 @@
             "name": "targetId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -518,7 +501,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -558,7 +540,6 @@
             "name": "mode",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -567,7 +548,6 @@
             "name": "targetId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -576,7 +556,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -599,7 +578,6 @@
             "name": "mode",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -608,7 +586,6 @@
             "name": "targetId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -617,7 +594,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -659,7 +635,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -757,7 +732,6 @@
           {
             "name": "nick",
             "in": "query",
-            "style": "form",
             "schema": {
               "type": "string"
             }
@@ -835,7 +809,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -844,7 +817,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -867,7 +839,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -876,7 +847,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -899,7 +869,6 @@
             "name": "guildId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -908,7 +877,6 @@
             "name": "channelId",
             "in": "path",
             "required": true,
-            "style": "simple",
             "schema": {
               "type": "string"
             }
@@ -956,7 +924,6 @@
           {
             "name": "guildId",
             "in": "query",
-            "style": "form",
             "schema": {
               "type": "string"
             }

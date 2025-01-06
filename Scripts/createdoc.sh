@@ -21,4 +21,6 @@ redocly build-docs swagger.json
 mv redoc-static.html wwwroot/redocs.html
 echo "Generated redoc!"
 
-sleep infinity
+kill $DOTNET_PID
+exit 1
+
