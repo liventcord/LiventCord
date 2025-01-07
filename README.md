@@ -1,21 +1,15 @@
-# Development Environment Setup
+# Main Environment Setup
 
-This branch sets up the development environment for running the server, specifically for the /app SPA route.
+This branch sets up environment for running the server.
 
 ## Quick Start
 
 1. Clone the repository:
-    ```bash
-    git clone https://github.com/liventcord/Liventcord --depth 1
-    ```
-
-2. Switch to the `dev` branch:
-    ```bash
-    git checkout dev
-    ```
-
-
-### Step 1: Set Environment Variables
+```bash
+git clone https://github.com/liventcord/Liventcord --depth 1
+git checkout dev
+```
+### Set Environment Variables
 
 1. Create the `Properties/appsettings.json` file in your project directory.
 2. Add the following JSON configuration, replacing placeholders with your actual values:
@@ -23,17 +17,18 @@ This branch sets up the development environment for running the server, specific
     ```json
     {
       "ConnectionStrings": {
-        "isPostgres": "true/false",
         "RemoteConnection": "Host=host;Database=database;Username=username;Password=password;Port=port;SSL Mode=sslmode",
         "SqlitePath": "Data Source=Data/<Database-name>.db",
       },
       "AppSettings": {
-        "SecretKey": "Secret-Key"
+        "SecretKey": "Secret-Key",
+        "usePostgres": "true/false",
+        "port" : "port"
       }
     }
     ```
 
-### Step 2: Run the Server
+### Run the Server
 ```bash
 dotnet run
 ```

@@ -12,8 +12,21 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
+
+int port;
+if (int.TryParse(builder.Configuration["AppSettings:port"], out port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+else
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5005");
+}
+
+
+
+
 
 bool usePostgres = bool.TryParse(builder.Configuration["AppSettings:usePostgres"], out var result) && result;
 
@@ -133,7 +146,6 @@ Console.WriteLine("Is running development: " + isDevelopment);
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
 }
 if(isDevelopment) {
     app.Use(async (context, next) =>

@@ -1,38 +1,22 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
-WORKDIR /src
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+ARG TARGETARCH
+WORKDIR /source
 
-COPY ["LiventCord.csproj", "./"]
-COPY ["Properties", "./Properties"]
-RUN dotnet restore "LiventCord.csproj"
+COPY --link *.csproj .
+RUN dotnet restore --runtime linux-musl-x64
 
+COPY --link . .
+COPY --link ./Properties ./Properties 
+RUN dotnet publish -c Release --runtime linux-musl-x64 -o /app --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=true
+
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 WORKDIR /app
-RUN mkdir -p /app/wwwroot \
-    && apk add --no-cache git \
-    && git clone https://github.com/liventcord/LiventCordFrontend.git /app/wwwroot \
-    && ls -l /app/wwwroot  
+COPY --link --from=build /app .
+COPY --link --from=build /source/Properties /app/Properties 
 
-COPY . .
-RUN dotnet build "LiventCord.csproj" -c Release -o /app/build
+USER root
 
-FROM build AS publish
-COPY ["Properties", "./Properties"]
-RUN dotnet publish "LiventCord.csproj" -c Release -o /app/publish \
-  --runtime alpine-x64 \
-  --self-contained true \
-  /p:PublishTrimmed=true \
-  /p:PublishSingleFile=true
-
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine AS final
-
-RUN adduser --disabled-password \
-  --home /app \
-  --gecos '' dotnetuser && chown -R dotnetuser /app
-
-USER dotnetuser
-WORKDIR /app
-
-COPY --from=publish /app/publish .
-COPY --from=publish /src/Properties /app/Properties
+RUN chmod +x ./LiventCord
 
 EXPOSE 80
 EXPOSE 443
