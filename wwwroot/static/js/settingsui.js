@@ -199,7 +199,7 @@ function getAccountSettingsHtml() {
                 <div id="set-info-email">${maskedEmail}</div>
             </div>
             <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" onkeydown="onEditNick()" maxlength="32">
-            <img id="settings-self-profile" src="/profiles/${currentUserId}" onclick="triggerFileInput()" style="user-select: none;">
+            <img id="settings-self-profile" onclick="triggerFileInput()" style="user-select: none;">
             <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
             </form>
@@ -317,6 +317,11 @@ function selectSettingCategory(settingType) {
     currentSettingsType = settingType;
 
     const settingConfig = getSettingsConfig()[settingType] || { title: 'Unknown Setting', html: '<h3>Unknown Setting</h3>' };
+    setTimeout(() => {
+        if(settingType === "MyAccount") {
+            updateSelfProfile(currentUserId,currentUserNick,true);
+        }
+    }, 100);
     settingsContainer.innerHTML = settingConfig.html;
 
 
@@ -348,6 +353,7 @@ function selectSettingCategory(settingType) {
             deleteButton.addEventListener('click', () => createDeleteGuildPrompt(currentGuildId, currentGuildName));
         }
     }
+
 }
 
 
