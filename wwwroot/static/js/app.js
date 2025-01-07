@@ -119,13 +119,20 @@ async function loadInitialData() {
             throw new Error('Failed to load initial data');
         }
         const rawResponse = await response.text(); 
-        const initData = JSON.parse(rawResponse); 
-        initialiseState(initData); 
-        initializeApp();
+
+        try {
+            const initData = JSON.parse(rawResponse);
+            initialiseState(initData); 
+            initializeApp();
+        } catch (e) {
+            alertUser(rawResponse);
+        }
     } catch (error) {
         console.error("Error loading initial data:", error);
     }
 }
+
+
 document.addEventListener("DOMContentLoaded", function () {
     loadInitialData();
     window.onerror = (event, url, line, column, error) => {

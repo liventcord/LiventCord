@@ -38,7 +38,7 @@ namespace LiventCord.Helpers
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    context.Response.Redirect("/login");
+                    await context.Response.WriteAsync("user not found1");
                     return;
                 }
 
@@ -46,9 +46,10 @@ namespace LiventCord.Helpers
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
                 if (user == null)
                 {
-                    context.Response.Redirect("/login");
+                    await context.Response.WriteAsync("User session is no longer valid. Please log in again.");
                     return;
                 }
+
 
                 _logger.LogInformation("Fetching guilds for user...");
                 var guilds = await _membersController.GetUserGuilds(userId);

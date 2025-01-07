@@ -158,6 +158,11 @@ if(isDevelopment) {
     });
 
 }
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.EnsureCreated();
+}
 
 app.UseExceptionHandler("/error");
 
