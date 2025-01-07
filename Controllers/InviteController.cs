@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace LiventCord.Controllers 
+namespace LiventCord.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -16,9 +16,10 @@ namespace LiventCord.Controllers
             _dbContext = dbContext;
         }
 
-        
         [HttpGet("guilds/{guildId}/invites")]
-        public async Task<IActionResult> HandleGetInvites([FromRoute][IdLengthValidation] string guildId)
+        public async Task<IActionResult> HandleGetInvites(
+            [FromRoute] [IdLengthValidation] string guildId
+        )
         {
             if (!await _dbContext.DoesGuildExist(guildId))
             {
@@ -27,7 +28,9 @@ namespace LiventCord.Controllers
 
             if (!await _dbContext.DoesMemberExistInGuild(UserId!, guildId))
             {
-                return NotFound(new { Type = "error", Message = "Member is not part of the guild." });
+                return NotFound(
+                    new { Type = "error", Message = "Member is not part of the guild." }
+                );
             }
 
             string inviteId = await GetGuildIdByInviteAsync(guildId);
@@ -42,11 +45,15 @@ namespace LiventCord.Controllers
         private string CreateRandomInviteId()
         {
             const int length = 8;
-            const string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            const string characters =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             var random = new Random();
-            return new string(Enumerable.Range(0, length)
-                .Select(_ => characters[random.Next(characters.Length)])
-                .ToArray());
+            return new string(
+                Enumerable
+                    .Range(0, length)
+                    .Select(_ => characters[random.Next(characters.Length)])
+                    .ToArray()
+            );
         }
 
         private async Task AddInviteAsync(string guildId)
@@ -57,17 +64,19 @@ namespace LiventCord.Controllers
             {
                 GuildId = guildId,
                 InviteId = inviteId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             _dbContext.GuildInvites.Add(guildInvite);
             await _dbContext.SaveChangesAsync();
         }
+
         [NonAction]
         public async Task<string?> GetGuildIdByInviteAsync(string inviteId)
         {
-            var guildInvite = await _dbContext.GuildInvites
-                .FirstOrDefaultAsync(g => g.InviteId == inviteId);
+            var guildInvite = await _dbContext.GuildInvites.FirstOrDefaultAsync(g =>
+                g.InviteId == inviteId
+            );
 
             return guildInvite?.GuildId;
         }

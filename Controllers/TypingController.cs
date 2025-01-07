@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Threading.Tasks;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
@@ -18,12 +18,16 @@ namespace LiventCord.Controllers
         private readonly MembersController _membersController;
 
         private Dictionary<string, List<string>> writingMembersState = new();
-        
+
         private Dictionary<string, DateTime> typingTimeouts = new();
 
-        private readonly int typingTimeoutSeconds = 5; 
+        private readonly int typingTimeoutSeconds = 5;
 
-        public TypingController(AppDbContext dbContext, SSEManager sseManager, MembersController membersController)
+        public TypingController(
+            AppDbContext dbContext,
+            SSEManager sseManager,
+            MembersController membersController
+        )
         {
             _dbContext = dbContext;
             _sseManager = sseManager;
@@ -32,8 +36,9 @@ namespace LiventCord.Controllers
 
         [HttpPost("start")]
         public async Task<IActionResult> HandleStartWriting(
-            [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId)
+            [FromRoute] [IdLengthValidation] string guildId,
+            [FromRoute] [IdLengthValidation] string channelId
+        )
         {
             if (!writingMembersState.ContainsKey(guildId))
             {
@@ -47,8 +52,16 @@ namespace LiventCord.Controllers
 
             typingTimeouts[UserId!] = DateTime.UtcNow.AddSeconds(typingTimeoutSeconds);
 
-            var messageToEmit = new { UserId, guildId, channelId };
-            await _sseManager.EmitToGuild(_membersController.GetGuildMembersIds(guildId), messageToEmit);
+            var messageToEmit = new
+            {
+                UserId,
+                guildId,
+                channelId,
+            };
+            await _sseManager.EmitToGuild(
+                _membersController.GetGuildMembersIds(guildId),
+                messageToEmit
+            );
 
             _ = CheckTypingTimeoutAsync(guildId, channelId);
 
@@ -57,18 +70,28 @@ namespace LiventCord.Controllers
 
         [HttpPost("stop")]
         public async Task<IActionResult> HandleStopWriting(
-            [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId)
+            [FromRoute] [IdLengthValidation] string guildId,
+            [FromRoute] [IdLengthValidation] string channelId
+        )
         {
             if (writingMembersState.TryGetValue(guildId, out var users) && users.Contains(UserId!))
             {
                 users.Remove(UserId!);
             }
 
-            typingTimeouts.Remove(UserId!); 
+            typingTimeouts.Remove(UserId!);
 
-            var messageToEmit = new { UserId, guildId, channelId, TypingStopped = true };
-            await _sseManager.EmitToGuild(_membersController.GetGuildMembersIds(guildId), messageToEmit);
+            var messageToEmit = new
+            {
+                UserId,
+                guildId,
+                channelId,
+                TypingStopped = true,
+            };
+            await _sseManager.EmitToGuild(
+                _membersController.GetGuildMembersIds(guildId),
+                messageToEmit
+            );
 
             return Accepted();
         }
@@ -76,8 +99,8 @@ namespace LiventCord.Controllers
         [HttpGet]
         public async Task<List<string>?> GetTypingUsers(string guildId, string channelId)
         {
-            var typingUsers = await _dbContext.TypingStatuses
-                .Where(t => t.GuildId == guildId && t.ChannelId == channelId)
+            var typingUsers = await _dbContext
+                .TypingStatuses.Where(t => t.GuildId == guildId && t.ChannelId == channelId)
                 .Select(t => t.UserId)
                 .ToListAsync();
 
@@ -87,7 +110,10 @@ namespace LiventCord.Controllers
         private async Task CheckTypingTimeoutAsync(string guildId, string channelId)
         {
             await Task.Delay(typingTimeoutSeconds * 1000);
-            if (typingTimeouts.TryGetValue(UserId!, out var timeoutTime) && timeoutTime <= DateTime.UtcNow)
+            if (
+                typingTimeouts.TryGetValue(UserId!, out var timeoutTime)
+                && timeoutTime <= DateTime.UtcNow
+            )
             {
                 HandleTimeoutStopTyping(guildId, channelId);
             }
@@ -97,11 +123,20 @@ namespace LiventCord.Controllers
         {
             if (writingMembersState.TryGetValue(guildId, out var users) && users.Contains(UserId!))
             {
-                users.Remove(UserId!); 
+                users.Remove(UserId!);
             }
 
-            var messageToEmit = new { UserId, guildId, channelId, TypingStopped = true };
-            await _sseManager.EmitToGuild(_membersController.GetGuildMembersIds(guildId), messageToEmit);
+            var messageToEmit = new
+            {
+                UserId,
+                guildId,
+                channelId,
+                TypingStopped = true,
+            };
+            await _sseManager.EmitToGuild(
+                _membersController.GetGuildMembersIds(guildId),
+                messageToEmit
+            );
         }
     }
 }

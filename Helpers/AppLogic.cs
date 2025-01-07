@@ -1,34 +1,44 @@
-using Microsoft.EntityFrameworkCore;
-using LiventCord.Helpers;
 using System.Security.Claims;
 using System.Text.Json;
 using LiventCord.Controllers;
+using LiventCord.Helpers;
 using LiventCord.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Helpers
 {
-    public class AppLogic
+    public class AppLogicService
     {
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
         private readonly FriendController _friendController;
         private readonly TypingController _typingController;
-        private readonly ILogger<AppLogic> _logger;
+        private readonly LoginController _loginController;
+        private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
 
-        public AppLogic(AppDbContext dbContext, FriendController friendController, GuildController guildController, 
-            MembersController membersController, TypingController typingController, ILogger<AppLogic> logger, 
-            PermissionsController permissionsController)
+        public AppLogicService(
+            AppDbContext dbContext,
+            FriendController friendController,
+            GuildController guildController,
+            MembersController membersController,
+            TypingController typingController,
+            ILogger<AppLogicService> logger,
+            LoginController loginController,
+            PermissionsController permissionsController
+        )
         {
             _dbContext = dbContext;
             _guildController = guildController;
             _friendController = friendController;
             _typingController = typingController;
-            _logger = logger;
+            _loginController = loginController;
             _permissionsController = permissionsController;
             _membersController = membersController;
+            _logger = logger;
         }
+
         public async Task HandleInitRequest(HttpContext context)
         {
             try
@@ -46,10 +56,12 @@ namespace LiventCord.Helpers
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
                 if (user == null)
                 {
-                    await context.Response.WriteAsync("User session is no longer valid. Please log in again.");
+                    await context.Response.WriteAsync(
+                        "User session is no longer valid. Please log in again."
+                    );
+                    await _loginController.Logout();
                     return;
                 }
-
 
                 _logger.LogInformation("Fetching guilds for user...");
                 var guilds = await _membersController.GetUserGuilds(userId);
@@ -65,7 +77,7 @@ namespace LiventCord.Helpers
                     permissionsMap = new Dictionary<string, string>(),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
-                    guildsJson = guilds
+                    guildsJson = guilds,
                 };
 
                 context.Response.ContentType = "application/json";
@@ -79,7 +91,12 @@ namespace LiventCord.Helpers
             }
         }
 
-        public async Task HandleChannelRequest(HttpContext context, string? guildId, string? channelId, string? friendId = null)
+        public async Task HandleChannelRequest(
+            HttpContext context,
+            string? guildId,
+            string? channelId,
+            string? friendId = null
+        )
         {
             try
             {
@@ -92,7 +109,10 @@ namespace LiventCord.Helpers
                     return;
                 }
 
-                var filePath = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "app.html");
+                var filePath = Path.Combine(
+                    context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath,
+                    "app.html"
+                );
                 _logger.LogInformation("Reading HTML file from path: {FilePath}", filePath);
                 var htmlContent = await File.ReadAllTextAsync(filePath);
 

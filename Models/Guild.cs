@@ -33,18 +33,29 @@ namespace LiventCord.Models
 
         [Column("is_guild_uploaded_img")]
         public bool IsGuildUploadedImg { get; set; }
+
         [Column("is_public")]
         public bool IsPublic { get; set; }
 
-        public virtual ICollection<GuildMember> GuildMembers { get; set; } = new List<GuildMember>();
+        public virtual ICollection<GuildMember> GuildMembers { get; set; } =
+            new List<GuildMember>();
         public virtual ICollection<Channel> Channels { get; set; } = new List<Channel>();
 
         [NotMapped]
         public IEnumerable<string> UserIds => GuildMembers.Select(gu => gu.MemberId);
 
-        public virtual ICollection<GuildPermissions> GuildPermissions { get; set; } = new List<GuildPermissions>();
+        public virtual ICollection<GuildPermissions> GuildPermissions { get; set; } =
+            new List<GuildPermissions>();
 
-        public Guild(string guildId, string ownerId, string guildName, string rootChannel, string? region = null, bool isGuildUploadedImg = false,bool isPublic=false)
+        public Guild(
+            string guildId,
+            string ownerId,
+            string guildName,
+            string rootChannel,
+            string? region = null,
+            bool isGuildUploadedImg = false,
+            bool isPublic = false
+        )
         {
             GuildId = guildId;
             OwnerId = ownerId;
@@ -55,9 +66,6 @@ namespace LiventCord.Models
             IsPublic = isPublic;
         }
     }
-
-
-
 
     public class Channel
     {
@@ -85,7 +93,6 @@ namespace LiventCord.Models
         public int Order { get; set; }
 
         public virtual Guild Guild { get; set; } = null!;
-        public virtual ICollection<UserChannel>? UserChannels { get; set; } 
-
+        public virtual ICollection<UserChannel>? UserChannels { get; set; }
     }
 }

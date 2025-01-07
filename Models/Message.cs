@@ -9,13 +9,13 @@ namespace LiventCord.Models
     {
         [Key]
         [Column("message_id")]
-        public required string MessageId { get; set; } 
+        public required string MessageId { get; set; }
 
         [ForeignKey("User")]
-        public required string UserId { get; set; } 
+        public required string UserId { get; set; }
 
         [ForeignKey("Channel")]
-        public required string ChannelId { get; set; } 
+        public required string ChannelId { get; set; }
 
         public required string Content { get; set; }
 
@@ -35,5 +35,4 @@ namespace LiventCord.Models
         [JsonIgnore]
         public virtual Channel Channel { get; set; } = null!;
     }
-
 }

@@ -1,13 +1,12 @@
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using LiventCord.Helpers;
 using LiventCord.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-
-namespace LiventCord.Controllers {
-
+namespace LiventCord.Controllers
+{
     [ApiController]
     [Authorize]
     [Route("")]
@@ -24,11 +23,22 @@ namespace LiventCord.Controllers {
 
         // Post Message (Guild or DM)
         [HttpPost("/api/{mode}/{targetId}/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleNewMessage([FromRoute] string mode, [FromRoute][IdLengthValidation] string targetId, [FromRoute][IdLengthValidation] string channelId, [FromBody] NewMessageRequest request)
+        public async Task<IActionResult> HandleNewMessage(
+            [FromRoute] string mode,
+            [FromRoute] [IdLengthValidation] string targetId,
+            [FromRoute] [IdLengthValidation] string channelId,
+            [FromBody] NewMessageRequest request
+        )
         {
             if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
             {
-                return BadRequest(new { Type = "error", Message = "Required properties (channelId, content) are missing." });
+                return BadRequest(
+                    new
+                    {
+                        Type = "error",
+                        Message = "Required properties (channelId, content) are missing.",
+                    }
+                );
             }
 
             if (mode == "guilds")
@@ -43,12 +53,28 @@ namespace LiventCord.Controllers {
                     return Forbid();
                 }
 
-                await NewMessage(UserId!, targetId, channelId, request.Content, request.AttachmentUrls, request.ReplyToId, request.ReactionEmojisIds);
+                await NewMessage(
+                    UserId!,
+                    targetId,
+                    channelId,
+                    request.Content,
+                    request.AttachmentUrls,
+                    request.ReplyToId,
+                    request.ReactionEmojisIds
+                );
                 return Ok(new { Type = "success", Message = "Message sent to guild." });
             }
             else if (mode == "dms")
             {
-                await NewMessage(UserId!, targetId, channelId, request.Content, request.AttachmentUrls, request.ReplyToId, request.ReactionEmojisIds);
+                await NewMessage(
+                    UserId!,
+                    targetId,
+                    channelId,
+                    request.Content,
+                    request.AttachmentUrls,
+                    request.ReplyToId,
+                    request.ReactionEmojisIds
+                );
                 return Ok(new { Type = "success", Message = "Message sent to DM." });
             }
             else
@@ -59,7 +85,11 @@ namespace LiventCord.Controllers {
 
         // Get Messages (Guild or DM)
         [HttpGet("/api/{mode}/{targetId}/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleGetMessages([FromRoute] string mode, [FromRoute][IdLengthValidation] string targetId, [FromRoute][IdLengthValidation] string channelId)
+        public async Task<IActionResult> HandleGetMessages(
+            [FromRoute] string mode,
+            [FromRoute] [IdLengthValidation] string targetId,
+            [FromRoute] [IdLengthValidation] string channelId
+        )
         {
             if (mode == "guilds")
             {
@@ -79,7 +109,12 @@ namespace LiventCord.Controllers {
 
         // Edit Message (Guild or DM)
         [HttpPut("/api/{mode}/{targetId}/channels/{channelId}/messages/edit")]
-        public async Task<IActionResult> HandleEditMessage([FromRoute] string mode, [FromRoute][IdLengthValidation] string targetId, [FromRoute][IdLengthValidation] string channelId, [FromBody] EditMessageRequest request)
+        public async Task<IActionResult> HandleEditMessage(
+            [FromRoute] string mode,
+            [FromRoute] [IdLengthValidation] string targetId,
+            [FromRoute] [IdLengthValidation] string channelId,
+            [FromBody] EditMessageRequest request
+        )
         {
             if (string.IsNullOrEmpty(request.Content))
             {
@@ -110,15 +145,20 @@ namespace LiventCord.Controllers {
 
         // Search Messages (Guild only)
         [HttpGet("/api/guilds/{guildId}/search")]
-        public async Task<ActionResult<IEnumerable<Message>>> SearchMessages([FromRoute] string guildId, [FromBody] string query)
+        public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
+            [FromRoute] string guildId,
+            [FromBody] string query
+        )
         {
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest("Query cannot be empty.");
 
             try
             {
-                var results = await _context.Messages
-                    .FromSqlInterpolated($"SELECT * FROM messages WHERE guild_id = {guildId} AND search_vector @@ to_tsquery('english', {query})")
+                var results = await _context
+                    .Messages.FromSqlInterpolated(
+                        $"SELECT * FROM messages WHERE guild_id = {guildId} AND search_vector @@ to_tsquery('english', {query})"
+                    )
                     .ToListAsync();
 
                 if (results.Count == 0)
@@ -135,15 +175,23 @@ namespace LiventCord.Controllers {
         [NonAction]
         private async Task<List<Message>> GetMessages(string targetId, string channelId)
         {
-            return await _context.Messages
-                .Where(m => m.ChannelId == channelId)
+            return await _context
+                .Messages.Where(m => m.ChannelId == channelId)
                 .OrderBy(m => m.Date)
                 .Take(50)
                 .ToListAsync();
         }
 
         [NonAction]
-        private async Task NewMessage(string userId, string targetId, string channelId, string content, string? attachmentUrls, string? replyToId, string? reactionEmojisIds)
+        private async Task NewMessage(
+            string userId,
+            string targetId,
+            string channelId,
+            string content,
+            string? attachmentUrls,
+            string? replyToId,
+            string? reactionEmojisIds
+        )
         {
             var message = new Message
             {
@@ -155,7 +203,7 @@ namespace LiventCord.Controllers {
                 LastEdited = null,
                 AttachmentUrls = attachmentUrls,
                 ReplyToId = replyToId,
-                ReactionEmojisIds = reactionEmojisIds
+                ReactionEmojisIds = reactionEmojisIds,
             };
 
             await _context.Messages.AddAsync(message);
@@ -165,8 +213,9 @@ namespace LiventCord.Controllers {
         [NonAction]
         private async Task EditMessage(string channelId, string messageId, string newContent)
         {
-            var message = await _context.Messages
-                .FirstOrDefaultAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
+            var message = await _context.Messages.FirstOrDefaultAsync(m =>
+                m.MessageId == messageId && m.ChannelId == channelId
+            );
 
             if (message != null)
             {
@@ -175,11 +224,10 @@ namespace LiventCord.Controllers {
                 await _context.SaveChangesAsync();
             }
         }
+
         private async Task DeleteMessagesFromUser(string userId)
         {
-            var messages = await _context.Messages
-                .Where(m => m.UserId == userId)
-                .ToListAsync();
+            var messages = await _context.Messages.Where(m => m.UserId == userId).ToListAsync();
 
             if (messages.Any())
             {
@@ -190,8 +238,9 @@ namespace LiventCord.Controllers {
 
         private async Task DeleteMessage(string channelId, string messageId)
         {
-            var message = await _context.Messages
-                .FirstOrDefaultAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
+            var message = await _context.Messages.FirstOrDefaultAsync(m =>
+                m.MessageId == messageId && m.ChannelId == channelId
+            );
 
             if (message != null)
             {
@@ -200,10 +249,7 @@ namespace LiventCord.Controllers {
             }
         }
     }
-
-
 }
-
 
 public class NewMessageRequest
 {
@@ -217,12 +263,16 @@ public class NewMessageRequest
 
 public class EditMessageRequest
 {
-    [IdLengthValidation][Required(ErrorMessage = "GuildId is required.")]
+    [IdLengthValidation]
+    [Required(ErrorMessage = "GuildId is required.")]
     public required string GuildId { get; set; }
-    [IdLengthValidation][Required(ErrorMessage = "MessageId is required.")]
+
+    [IdLengthValidation]
+    [Required(ErrorMessage = "MessageId is required.")]
     public required string MessageId { get; set; }
 
-    [IdLengthValidation][Required(ErrorMessage = "ChannelId is required.")]
+    [IdLengthValidation]
+    [Required(ErrorMessage = "ChannelId is required.")]
     public required string ChannelId { get; set; }
 
     [Required(ErrorMessage = "Content is required.")]

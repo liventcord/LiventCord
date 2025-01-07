@@ -17,6 +17,4 @@ namespace LiventCord.Models
 
         public virtual required User User { get; set; }
     }
-
-
 }

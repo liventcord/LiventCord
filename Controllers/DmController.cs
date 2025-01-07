@@ -1,30 +1,30 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
-
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-
     [ApiController]
     [Route("api/dm")]
     [Authorize]
     public class DmController : BaseController
     {
         private readonly AppDbContext _dbContext;
+
         public DmController(AppDbContext dbContext)
         {
             _dbContext = dbContext;
         }
+
         [HttpGet("")]
         public async Task<IActionResult> GetDmEndpoint()
         {
             if (string.IsNullOrEmpty(UserId))
                 return Unauthorized("User ID is missing.");
 
-            var publicDmUsers = await _dbContext.Friends
-                .Where(f => f.UserId == UserId && f.Status == FriendStatus.Accepted)
+            var publicDmUsers = await _dbContext
+                .Friends.Where(f => f.UserId == UserId && f.Status == FriendStatus.Accepted)
                 .Join(
                     _dbContext.Users,
                     friend => friend.FriendId,
@@ -37,7 +37,9 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> AddDmEndpoint([FromRoute][IdLengthValidation] string friendId)
+        public async Task<IActionResult> AddDmEndpoint(
+            [FromRoute] [IdLengthValidation] string friendId
+        )
         {
             var result = await AddDmUser(UserId!, friendId);
 
@@ -51,12 +53,11 @@ namespace LiventCord.Controllers
             }
         }
 
-
         private async Task<Result> AddDmUser(string userId, string friendId)
         {
-            var friend = await _dbContext.Users
-                .Where(u => u.UserId == friendId)
-                .Select(u => new { u.UserId})
+            var friend = await _dbContext
+                .Users.Where(u => u.UserId == friendId)
+                .Select(u => new { u.UserId })
                 .FirstOrDefaultAsync();
 
             if (friend == null)
@@ -65,9 +66,10 @@ namespace LiventCord.Controllers
             if (friend.UserId == userId)
                 return Result.Failure("You cannot add yourself as a friend.");
 
-            var existingFriendship = await _dbContext.Friends
-                .AnyAsync(f => (f.UserId == userId && f.FriendId == friend.UserId) || 
-                            (f.UserId == friend.UserId && f.FriendId == userId));
+            var existingFriendship = await _dbContext.Friends.AnyAsync(f =>
+                (f.UserId == userId && f.FriendId == friend.UserId)
+                || (f.UserId == friend.UserId && f.FriendId == userId)
+            );
 
             if (existingFriendship)
                 return Result.Failure("You are already friends with this user.");
@@ -78,14 +80,14 @@ namespace LiventCord.Controllers
                 {
                     UserId = userId,
                     FriendId = friend.UserId,
-                    Status = FriendStatus.Pending
+                    Status = FriendStatus.Pending,
                 };
 
                 var reverseFriendship = new Friend
                 {
                     UserId = friend.UserId,
                     FriendId = userId,
-                    Status = FriendStatus.Pending
+                    Status = FriendStatus.Pending,
                 };
 
                 _dbContext.Friends.Add(newFriendship);
@@ -97,11 +99,5 @@ namespace LiventCord.Controllers
                 return Result.Success("Friend request sent.");
             }
         }
-
-
-
-
-
     }
-
 }

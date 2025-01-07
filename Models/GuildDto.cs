@@ -1,4 +1,3 @@
-
 namespace LiventCord.Models
 {
     public class GuildDto
@@ -10,6 +9,6 @@ namespace LiventCord.Models
         public required string? Region { get; set; }
         public required bool IsGuildUploadedImg { get; set; }
         public required List<string> GuildMembers { get; set; }
-        public List<ChannelWithLastRead>? GuildChannels {get; set; }
+        public List<ChannelWithLastRead>? GuildChannels { get; set; }
     }
 }

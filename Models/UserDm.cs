@@ -9,7 +9,7 @@ namespace LiventCord.Models
         [Key]
         [Column("user_id", Order = 0)]
         public required string UserId { get; set; }
-        
+
         [Key]
         [Column("friend_id", Order = 1)]
         public required string FriendId { get; set; }

@@ -1,10 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using LiventCord.Helpers;
 using LiventCord.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.ComponentModel.DataAnnotations;
-
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
@@ -18,8 +17,13 @@ namespace LiventCord.Controllers
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
 
-
-        public ChannelController(AppDbContext dbContext, UploadController uploadController,MessageController messageController,MembersController membersController, PermissionsController permissionsController)
+        public ChannelController(
+            AppDbContext dbContext,
+            UploadController uploadController,
+            MessageController messageController,
+            MembersController membersController,
+            PermissionsController permissionsController
+        )
         {
             _dbContext = dbContext;
             _uploadController = uploadController;
@@ -27,11 +31,10 @@ namespace LiventCord.Controllers
             _membersController = membersController;
         }
 
-
-
-        
         [HttpGet("")]
-        public async Task<IActionResult> HandleGetChannels([FromRoute][IdLengthValidation] string guildId)
+        public async Task<IActionResult> HandleGetChannels(
+            [FromRoute] [IdLengthValidation] string guildId
+        )
         {
             var channels = await GetGuildChannels(UserId!, guildId);
 
@@ -41,9 +44,11 @@ namespace LiventCord.Controllers
             return Ok(new { guildId, channels });
         }
 
-        
         [HttpDelete("/{guildId}/channels/{channelId}")]
-        public async Task<IActionResult> DeleteChannel([FromRoute][IdLengthValidation] string guildId,[IdLengthValidation] string channelId)
+        public async Task<IActionResult> DeleteChannel(
+            [FromRoute] [IdLengthValidation] string guildId,
+            [IdLengthValidation] string channelId
+        )
         {
             var channel = _dbContext.Channels.Find(channelId);
             if (channel == null)
@@ -51,7 +56,13 @@ namespace LiventCord.Controllers
 
             if (!await _membersController.DoesMemberExistInGuild(UserId!, guildId))
                 return BadRequest(new { Type = "error", Message = "User not in guild." });
-            if (!await _permissionsController.HasPermission(UserId!,guildId,PermissionFlags.ManageChannels))
+            if (
+                !await _permissionsController.HasPermission(
+                    UserId!,
+                    guildId,
+                    PermissionFlags.ManageChannels
+                )
+            )
                 return Forbid("User is not authorized to delete this channel.");
 
             _dbContext.Channels.Remove(channel);
@@ -59,16 +70,23 @@ namespace LiventCord.Controllers
             return Ok();
         }
 
-
-        
         [HttpPost("/{guildId}/channels")]
-        public async Task<IActionResult> CreateChannel([FromRoute][IdLengthValidation] string guildId, [FromBody] CreateChannelRequest request)
+        public async Task<IActionResult> CreateChannel(
+            [FromRoute] [IdLengthValidation] string guildId,
+            [FromBody] CreateChannelRequest request
+        )
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
-                return Unauthorized(new { Type = "error", Message = "User does not have permission to manage channels." });
+                return Unauthorized(
+                    new
+                    {
+                        Type = "error",
+                        Message = "User does not have permission to manage channels.",
+                    }
+                );
 
-            var guild = await _dbContext.Guilds
-                .Include(g => g.Channels)
+            var guild = await _dbContext
+                .Guilds.Include(g => g.Channels)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);
 
             if (guild == null)
@@ -80,7 +98,7 @@ namespace LiventCord.Controllers
                 ChannelName = request.ChannelName,
                 IsTextChannel = request.IsTextChannel,
                 GuildId = guildId,
-                Order = guild.Channels.Count
+                Order = guild.Channels.Count,
             };
 
             guild.Channels.Add(newChannel);
@@ -89,36 +107,36 @@ namespace LiventCord.Controllers
             return Ok();
         }
 
-
-
         [NonAction]
         public async Task<List<ChannelWithLastRead>> GetGuildChannels(string userId, string guildId)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(guildId))
                 return new List<ChannelWithLastRead>();
 
-            return await _dbContext.Channels
-                .Where(c => c.GuildId == guildId)
+            return await _dbContext
+                .Channels.Where(c => c.GuildId == guildId)
                 .Select(c => new ChannelWithLastRead
                 {
                     ChannelId = c.ChannelId,
                     ChannelName = c.ChannelName,
                     IsTextChannel = c.IsTextChannel,
-                    LastReadDateTime = _dbContext.UserChannels
-                        .Where(uc => uc.UserId == userId && uc.ChannelId == c.ChannelId)
+                    LastReadDateTime = _dbContext
+                        .UserChannels.Where(uc =>
+                            uc.UserId == userId && uc.ChannelId == c.ChannelId
+                        )
                         .Select(uc => uc.LastReadDatetime)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
                 })
                 .ToListAsync();
         }
-
     }
-
 }
+
 public class CreateChannelRequest
 {
     [Required(ErrorMessage = "Channel name is required.")]
     public required string ChannelName { get; set; }
+
     [Required(ErrorMessage = "IsTextChannel is required.")]
     public required bool IsTextChannel { get; set; }
 }

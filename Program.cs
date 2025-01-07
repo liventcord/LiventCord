@@ -24,21 +24,19 @@ else
     builder.WebHost.UseUrls("http://0.0.0.0:5005");
 }
 
-
-
-
-
-bool usePostgres = bool.TryParse(builder.Configuration["AppSettings:usePostgres"], out var result) && result;
+bool usePostgres =
+    bool.TryParse(builder.Configuration["AppSettings:usePostgres"], out var result) && result;
 
 if (usePostgres)
 {
     var connectionString = builder.Configuration.GetConnectionString("RemoteConnection");
     if (string.IsNullOrEmpty(connectionString))
     {
-        throw new InvalidOperationException("RemoteConnection string is missing in the configuration.");
+        throw new InvalidOperationException(
+            "RemoteConnection string is missing in the configuration."
+        );
     }
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 }
 else
 {
@@ -57,9 +55,9 @@ else
         Console.WriteLine($"Info: Created missing directory {dataDirectory}");
     }
 
-
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite($"Data Source={connectionString}"));
+        options.UseSqlite($"Data Source={connectionString}")
+    );
 }
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
@@ -67,31 +65,29 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
-
-
-builder.Host.UseSerilog(); 
+builder.Host.UseSerilog();
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
 builder.Services.AddScoped<MessageController>();
 builder.Services.AddScoped<RegisterController>();
 builder.Services.AddScoped<NickDiscriminatorController>();
-builder.Services.AddScoped<AppLogic>();
 builder.Services.AddScoped<MembersController>();
 builder.Services.AddScoped<ChannelController>();
+builder.Services.AddScoped<AppLogicService>();
 builder.Services.AddScoped<SSEManager>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
 builder.Services.AddScoped<UploadController>();
 builder.Services.AddScoped<InviteController>();
+builder.Services.AddScoped<LoginController>();
 builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
-
-
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder
+    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true;
@@ -99,28 +95,29 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
         options.LoginPath = "/auth/login";
     });
-builder.Services.AddControllers()
+builder
+    .Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
         {
-            var errors = context.ModelState
-                .Where(entry => entry.Value?.Errors.Count > 0) 
+            var errors = context
+                .ModelState.Where(entry => entry.Value?.Errors.Count > 0)
                 .ToDictionary(
                     entry => entry.Key,
-                    entry => entry.Value?.Errors
-                        .Where(e => e != null) 
-                        .Select(e => e.ErrorMessage)
-                        .ToArray() ?? Array.Empty<string>() 
+                    entry =>
+                        entry
+                            .Value?.Errors.Where(e => e != null)
+                            .Select(e => e.ErrorMessage)
+                            .ToArray() ?? Array.Empty<string>()
                 );
 
             return new BadRequestObjectResult(errors);
         };
-    }).AddJsonOptions(options =>
-    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
-
-
-
+    })
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    );
 
 builder.Services.AddResponseCompression(options =>
 {
@@ -147,16 +144,19 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 }
-if(isDevelopment) {
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
-        context.Response.Headers["Pragma"] = "no-cache";
-        context.Response.Headers["Expires"] = "0";
+if (isDevelopment)
+{
+    app.Use(
+        async (context, next) =>
+        {
+            context.Response.Headers["Cache-Control"] =
+                "no-store, no-cache, must-revalidate, proxy-revalidate";
+            context.Response.Headers["Pragma"] = "no-cache";
+            context.Response.Headers["Expires"] = "0";
 
-        await next();
-    });
-
+            await next();
+        }
+    );
 }
 using (var scope = app.Services.CreateScope())
 {
@@ -165,7 +165,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseExceptionHandler("/error");
-
 
 if (isDevelopment)
 {
@@ -176,19 +175,25 @@ else
     app.UseExceptionHandler("/error");
 }
 
-app.Map("/error", (HttpContext context) =>
-{
-    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    context.Response.ContentType = "text/plain";
-    return context.Response.WriteAsync("500 Internal Server Error");
-});
+app.Map(
+    "/error",
+    (HttpContext context) =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "text/plain";
+        return context.Response.WriteAsync("500 Internal Server Error");
+    }
+);
 
 app.UseStatusCodePages(async context =>
 {
     var httpContext = context.HttpContext;
     var statusCode = httpContext.Response.StatusCode;
 
-    var isApiRequest = httpContext.Request.Headers["Accept"].ToString().Contains("application/json");
+    var isApiRequest = httpContext
+        .Request.Headers["Accept"]
+        .ToString()
+        .Contains("application/json");
 
     if (statusCode == StatusCodes.Status404NotFound)
     {
@@ -238,7 +243,6 @@ app.MapFallback(async context =>
     }
 });
 
-
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();
@@ -259,9 +263,6 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "LiventCord API V1");
     c.RoutePrefix = "docs";
 });
-
-
-
 
 app.MapControllers();
 app.Run();

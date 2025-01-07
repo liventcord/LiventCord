@@ -1,0 +1,1 @@
+find . -type f -name "*.cs" | xargs dotnet-csharpier

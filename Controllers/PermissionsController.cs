@@ -1,14 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
     public class PermissionsController : BaseController
     {
-
         private readonly AppDbContext _dbContext;
+
         public PermissionsController(AppDbContext dbContext)
         {
             _dbContext = dbContext;
@@ -18,41 +17,61 @@ namespace LiventCord.Controllers
         public async Task<bool> CanManageChannels(string userId, string guildId)
         {
             var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId || await HasPermission(userId, guildId, PermissionFlags.ManageChannels);
+            return ownerId == userId
+                || await HasPermission(userId, guildId, PermissionFlags.ManageChannels);
         }
+
         [NonAction]
-        public async Task<bool> CanSendMessages(string userId, string guildId,string ?oldSenderId=null)
+        public async Task<bool> CanSendMessages(
+            string userId,
+            string guildId,
+            string? oldSenderId = null
+        )
         {
-            if(oldSenderId != null && oldSenderId != userId) {
+            if (oldSenderId != null && oldSenderId != userId)
+            {
                 return false;
             }
             var ownerId = await GetGuildOwner(guildId);
-            if (ownerId == userId) return true;
+            if (ownerId == userId)
+                return true;
 
-            bool canSendMessages = await HasPermission(userId, guildId, PermissionFlags.SendMessages);
+            bool canSendMessages = await HasPermission(
+                userId,
+                guildId,
+                PermissionFlags.SendMessages
+            );
 
             return canSendMessages;
         }
-
 
         [NonAction]
         public async Task<bool> IsUserAdmin(string guildId, string userId)
         {
             var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId || await HasPermission(userId, guildId, PermissionFlags.IsAdmin);
+            return ownerId == userId
+                || await HasPermission(userId, guildId, PermissionFlags.IsAdmin);
         }
+
         private async Task<string> GetGuildOwner(string guildId)
         {
             var guild = await _dbContext.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
             return guild?.OwnerId ?? throw new Exception("Guild not found");
         }
-        [NonAction]
-        public async Task<bool> HasPermission(string userId, string guildId, PermissionFlags permission)
-        {
-            var userPermissions = await _dbContext.GuildPermissions
-                .FirstOrDefaultAsync(gp => gp.UserId == userId && gp.GuildId == guildId);
 
-            if (userPermissions == null) return false;
+        [NonAction]
+        public async Task<bool> HasPermission(
+            string userId,
+            string guildId,
+            PermissionFlags permission
+        )
+        {
+            var userPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
+                gp.UserId == userId && gp.GuildId == guildId
+            );
+
+            if (userPermissions == null)
+                return false;
 
             if (userPermissions.Permissions.HasFlag(PermissionFlags.IsAdmin))
                 return true;
@@ -60,14 +79,13 @@ namespace LiventCord.Controllers
             return userPermissions.Permissions.HasFlag(permission);
         }
 
-
         [NonAction]
         public Dictionary<string, Dictionary<string, int>> GetPermissionsMapForUser(string userId)
         {
             var permissionsMap = new Dictionary<string, Dictionary<string, int>>();
 
-            var userPermissions = _dbContext.GuildPermissions
-                .Where(gp => gp.UserId == userId)
+            var userPermissions = _dbContext
+                .GuildPermissions.Where(gp => gp.UserId == userId)
                 .Include(gp => gp.Guild)
                 .ToList();
 
@@ -86,7 +104,7 @@ namespace LiventCord.Controllers
                         { "mention_everyone", perm.MentionEveryone },
                         { "add_reaction", perm.AddReaction },
                         { "is_admin", perm.IsAdmin },
-                        { "can_invite", perm.CanInvite }
+                        { "can_invite", perm.CanInvite },
                     };
                     permissionsMap[perm.GuildId] = permDict;
                 }
@@ -95,10 +113,15 @@ namespace LiventCord.Controllers
             return permissionsMap;
         }
 
-        public async Task AssignPermissions(string guildId, string userId, PermissionFlags permissions)
+        public async Task AssignPermissions(
+            string guildId,
+            string userId,
+            PermissionFlags permissions
+        )
         {
-            var existingPermissions = await _dbContext.GuildPermissions
-                .FirstOrDefaultAsync(gp => gp.GuildId == guildId && gp.UserId == userId);
+            var existingPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
+                gp.GuildId == guildId && gp.UserId == userId
+            );
 
             if (existingPermissions != null)
             {
@@ -107,22 +130,19 @@ namespace LiventCord.Controllers
             }
             else
             {
-
                 var guildPermissions = new GuildPermissions
                 {
                     GuildId = guildId,
                     UserId = userId,
-                    Permissions = permissions
+                    Permissions = permissions,
                 };
                 _dbContext.GuildPermissions.Add(guildPermissions);
             }
             await _dbContext.SaveChangesAsync();
         }
-
-
-
     }
 }
+
 public enum PermissionType
 {
     ReadMessages,
@@ -134,8 +154,9 @@ public enum PermissionType
     MentionEveryone,
     AddReaction,
     IsAdmin,
-    CanInvite
+    CanInvite,
 }
+
 [Flags]
 public enum PermissionFlags
 {
@@ -150,6 +171,15 @@ public enum PermissionFlags
     AddReaction = 1 << 7,
     IsAdmin = 1 << 8,
     CanInvite = 1 << 9,
-    All = ReadMessages | SendMessages | MentionEveryone | ManageRoles | KickMembers 
-          | BanMembers | ManageChannels | AddReaction | IsAdmin | CanInvite
+    All =
+        ReadMessages
+        | SendMessages
+        | MentionEveryone
+        | ManageRoles
+        | KickMembers
+        | BanMembers
+        | ManageChannels
+        | AddReaction
+        | IsAdmin
+        | CanInvite,
 }

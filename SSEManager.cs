@@ -1,16 +1,14 @@
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using LiventCord.Controllers;
 using LiventCord.Models;
+using Microsoft.AspNetCore.Mvc;
 
 public class SSEManager
 {
     private readonly Dictionary<string, HttpContext> _activeConnections = new();
 
-    public SSEManager()
-    {
-    }
+    public SSEManager() { }
 
     public async Task EventsStream(HttpContext context, string guildId)
     {
@@ -64,12 +62,11 @@ public class SSEManager
 
     public async Task EmitToGuild(Task<List<string>> guildMembersTask, object messageToEmit)
     {
-        List<string> guildMembers = await guildMembersTask; 
-        
+        List<string> guildMembers = await guildMembersTask;
+
         foreach (var user in guildMembers)
         {
             await EmitToUser(user, "guild_event", messageToEmit);
         }
     }
-
 }
