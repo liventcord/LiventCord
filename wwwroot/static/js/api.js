@@ -65,8 +65,8 @@ const EventUrlMap = {
     [EventType.GET_INVITES]: "/guilds/{guildId}/invites",
     [EventType.START_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/start",
     [EventType.STOP_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/stop",
-    [EventType.ADD_FRIEND]: "/friends?name={friendName}&discriminator={friendDiscriminator}",
-    [EventType.ADD_FRIEND_ID]: "/friends?id={friendId}",
+    [EventType.ADD_FRIEND]: "/friends",
+    [EventType.ADD_FRIEND_ID]: "/friends",
     [EventType.CHANGE_NICK]: "/nicks",
     [EventType.ADD_DM]: "/dm/friendId={friendId}"
 };
@@ -101,48 +101,52 @@ class ApiClient {
         return { method: this.getHttpMethod(event), url: basePath + url };
     }
 
+    async handleError(response) {
+        let errorCode = null;
 
-    handleError(status, event) {
-        console.error(event,isOnDm);
-        if (event === EventType.ADD_DM && isOnDm && status === 404) {
-            alertUser("Error: User does not exists");
-        } else if (status === 404) {
-            alertUser("Error: The requested resource was not found.");
-        } else if (status >= 400 && status < 500) {
-            alertUser("Client error occurred.");
-        } else if (status >= 500) {
-            alertUser("Server error. Please try again later.");
-        } else {
-            alertUser("An unexpected error occurred.");
+        try {
+        const responseBody = await response.json();
+        errorCode = responseBody?.code || null;
+        } catch (err) {
+        console.warn("Failed to parse error response:", err);
         }
+
+        
+        printFriendMessage(translations.getErrorMessage(errorCode) || "An unexpected error occurred.");
     }
     
+    
+    
 
-    async sendRequest(data, url, method, event,expectsResponse = true) {
+    async sendRequest(data, url, method, event, expectsResponse = true) {
+        const body = method === HttpMethod.POST ? JSON.stringify(data) : undefined;
+        const headers = method === HttpMethod.GET ? undefined : { "Content-Type": "application/json" };
+    
         try {
             const response = await fetch(url, {
                 method,
-                headers: { "Content-Type": "application/json" },
-                body: method === HttpMethod.GET ? undefined : JSON.stringify(data),
+                headers,
+                body,
                 credentials: "same-origin",
             });
-
+    
             if (!response.ok) {
-                this.handleError(response.status, event);
+                await this.handleError(response);
                 return null;
             }
-
+    
             if (!expectsResponse) {
                 return null;
             }
-
+    
             const responseBody = await response.text();
-            return responseBody ? JSON.parse(responseBody) : null; 
+            return responseBody ? JSON.parse(responseBody) : null;
         } catch (error) {
             console.error("Failed to send request:", error);
             throw error;
         }
     }
+    
     
     async send(event, data = {}) {
         if (!event) {

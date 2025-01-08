@@ -10,6 +10,13 @@ namespace LiventCord.Controllers
     [Authorize]
     public class FriendController : BaseController
     {
+
+        private readonly AppDbContext _dbContext;
+
+        public FriendController(AppDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
         [HttpGet("")]
         public async Task<IActionResult> GetFriendEndpoint()
         {
@@ -19,61 +26,106 @@ namespace LiventCord.Controllers
             var friends = await GetFriends(UserId);
             return Ok(friends);
         }
-
         [HttpPost("")]
-        public async Task<IActionResult> AddFriendEndpoint(
-            [FromQuery] string friendName,
-            [FromQuery] string friendDiscriminator
-        )
+        public async Task<IActionResult> AddFriendEndpoint([FromBody] AddFriendRequest request)
         {
-            if (
-                string.IsNullOrWhiteSpace(friendName)
-                || string.IsNullOrWhiteSpace(friendDiscriminator)
-            )
+            if (string.IsNullOrWhiteSpace(request.FriendName) || string.IsNullOrWhiteSpace(request.FriendDiscriminator))
             {
-                return BadRequest(
-                    new
-                    {
-                        Type = "error",
-                        Message = "Friend name and discriminator must be provided.",
-                    }
-                );
+                return BadRequest(new { Code = "ERR_INVALID_INPUT" });
             }
 
-            var result = await AddFriend(UserId!, friendName, friendDiscriminator);
+            var result = await AddFriend(UserId!, request.FriendName, request.FriendDiscriminator);
 
             if (result.IsSuccess)
             {
-                return Ok(new { Type = "success", Message = result.Message });
+                return Ok(new { Code = result.Message });
+            }
+            else if (result.Message == "ERR_USER_NOT_FOUND")
+            {
+                return NotFound(new { Code = result.Message });
             }
             else
             {
-                return BadRequest(new { Type = "error", Message = result.Message });
+                return BadRequest(new { Code = result.Message });
             }
         }
 
-        private readonly AppDbContext _dbContext;
-
-        public FriendController(AppDbContext dbContext)
+        private async Task<Result> AddFriend(string userId, string friendName, string friendDiscriminator)
         {
-            _dbContext = dbContext;
+            var friend = await _dbContext.Users
+                .Where(u => u.Nickname == friendName && u.Discriminator == friendDiscriminator)
+                .Select(u => new { u.UserId, u.Nickname })
+                .FirstOrDefaultAsync();
+
+            if (friend == null)
+                return Result.Failure("ERR_USER_NOT_FOUND");
+
+            if (friend.UserId == userId)
+                return Result.Failure("ERR_CANNOT_ADD_SELF");
+
+            var existingFriendship = await _dbContext.Friends.AnyAsync(f =>
+                (f.UserId == userId && f.FriendId == friend.UserId) ||
+                (f.UserId == friend.UserId && f.FriendId == userId)
+            );
+
+            if (existingFriendship)
+                return Result.Failure("ERR_ALREADY_FRIENDS");
+
+            using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+            {
+                var newFriendship = new Friend
+                {
+                    UserId = userId,
+                    FriendId = friend.UserId,
+                    Status = FriendStatus.Pending,
+                };
+
+                var reverseFriendship = new Friend
+                {
+                    UserId = friend.UserId,
+                    FriendId = userId,
+                    Status = FriendStatus.Pending,
+                };
+
+                _dbContext.Friends.Add(newFriendship);
+                _dbContext.Friends.Add(reverseFriendship);
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Result.Success("SUCCESS_REQUEST_SENT");
+            }
         }
 
+
+
+
         [NonAction]
-        public async Task<List<PublicUser>> GetFriendsStatus(string userId)
+        public async Task<List<PublicUserWithStatus>> GetFriendsStatus(string userId)
         {
-            var publicFriends = await _dbContext
-                .Friends.Where(f => f.UserId == userId && f.Status == FriendStatus.Accepted)
+            var friends = await _dbContext
+                .Friends
+                .Where(f => f.UserId == userId && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending))
                 .Join(
                     _dbContext.Users,
                     friend => friend.FriendId,
                     user => user.UserId,
-                    (friend, user) => user.GetPublicUser()
+                    (friend, user) => new PublicUserWithStatus
+                    {
+                        PublicUser = user.GetPublicUser(),
+                        Status = friend.Status
+                    }
                 )
                 .ToListAsync();
 
-            return publicFriends;
+            return friends;
         }
+        public class PublicUserWithStatus
+        {
+            public required PublicUser PublicUser { get; set; }
+            public FriendStatus Status { get; set; }
+        }
+
 
         private async Task<List<FriendDto>> GetFriends(string userId)
         {
@@ -117,62 +169,15 @@ namespace LiventCord.Controllers
 
             return result;
         }
-
-        private async Task<Result> AddFriend(
-            string userId,
-            string friendName,
-            string friendDiscriminator
-        )
-        {
-            var friend = await _dbContext
-                .Users.Where(u =>
-                    u.Nickname == friendName && u.Discriminator == friendDiscriminator
-                )
-                .Select(u => new { u.UserId, u.Nickname })
-                .FirstOrDefaultAsync();
-
-            if (friend == null)
-                return Result.Failure("Friend not found.");
-
-            if (friend.UserId == userId)
-                return Result.Failure("You cannot add yourself as a friend.");
-
-            var existingFriendship = await _dbContext.Friends.AnyAsync(f =>
-                (f.UserId == userId && f.FriendId == friend.UserId)
-                || (f.UserId == friend.UserId && f.FriendId == userId)
-            );
-
-            if (existingFriendship)
-                return Result.Failure("You are already friends with this user.");
-
-            using (var transaction = await _dbContext.Database.BeginTransactionAsync())
-            {
-                var newFriendship = new Friend
-                {
-                    UserId = userId,
-                    FriendId = friend.UserId,
-                    Status = FriendStatus.Pending,
-                };
-
-                var reverseFriendship = new Friend
-                {
-                    UserId = friend.UserId,
-                    FriendId = userId,
-                    Status = FriendStatus.Pending,
-                };
-
-                _dbContext.Friends.Add(newFriendship);
-                _dbContext.Friends.Add(reverseFriendship);
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return Result.Success("Friend request sent.");
-            }
-        }
     }
-}
 
+        
+}
+public class AddFriendRequest
+{
+    public required string FriendName { get; set; }
+    public required string FriendDiscriminator { get; set; }
+}
 public class FriendDto
 {
     public required string UserId { get; set; }

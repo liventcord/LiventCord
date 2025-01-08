@@ -8,7 +8,6 @@ let friendsContainer = null;
 let friends_cache = {};
 let fetchUsersTimeout = null;
 
-let existingFriends = null;
 let isPopulating = false;
 
 const offline = "offline";
@@ -23,38 +22,19 @@ const blocked = "blocked";
 
 
 const FriendErrorType = {
-  INVALID_EVENT: "INVALID_EVENT",
-  CANNOT_ADD_SELF: "CANNOT_ADD_SELF",
-  USER_NOT_FOUND: "USER_NOT_FOUND",
-  INVALID_IDENTIFIER: "INVALID_IDENTIFIER",
-  FRIEND_REQUEST_EXISTS: "FRIEND_REQUEST_EXISTS",
-  FRIEND_REQUEST_NOT_EXISTS: "FRIEND_REQUEST_NOT_EXISTS",
-  REQUEST_ALREADY_ACCEPTED: "REQUEST_ALREADY_ACCEPTED",
-  NOT_FRIENDS: "NOT_FRIENDS",
-  REQUEST_NOT_SENT: "REQUEST_NOT_SENT",
-  SUCCESS: "SUCCESS",
-};
-const FRIEND_REQUEST_TYPE = {
-  ADD_FRIEND_REQUEST: "add_friend_request",
-  ACCEPT_FRIEND_REQUEST: "accept_friend_request",
-  REMOVE_FRIEND_REQUEST: "remove_friend_request",
-  REMOVE_FRIEND: "remove_friend",
-  DENY_FRIEND: "deny_friend",
+  ERR_INVALID_EVENT: "ERR_INVALID_EVENT",
+  ERR_CANNOT_ADD_SELF: "ERR_CANNOT_ADD_SELF",
+  ERR_USER_NOT_FOUND: "ERR_USER_NOT_FOUND",
+  ERR_INVALID_IDENTIFIER: "ERR_INVALID_IDENTIFIER",
+  ERR_FRIEND_REQUEST_EXISTS: "ERR_FRIEND_REQUEST_EXISTS",
+  ERR_FRIEND_REQUEST_NOT_EXISTS: "ERR_FRIEND_REQUEST_NOT_EXISTS",
+  ERR_REQUEST_ALREADY_ACCEPTED: "ERR_REQUEST_ALREADY_ACCEPTED",
+  ERR_NOT_FRIENDS: "ERR_NOT_FRIENDS",
+  ERR_REQUEST_NOT_SENT: "ERR_REQUEST_NOT_SENT",
+  ERR_SUCCESS: "ERR_SUCCESS",
 };
 
 
-const errorMessages = {
-  [FriendErrorType.INVALID_EVENT]: "Bilinmeyen hata!",
-  [FriendErrorType.CANNOT_ADD_SELF]: "Kendinle arkadaş olamazsın!",
-  [FriendErrorType.USER_NOT_FOUND]: "Kullanıcı bulunamadı!",
-  [FriendErrorType.INVALID_IDENTIFIER]: "Geçersiz tanımlayıcı!",
-  [FriendErrorType.FRIEND_REQUEST_EXISTS]: "Bu kullanıcıya zaten istek gönderdin!",
-  [FriendErrorType.FRIEND_REQUEST_NOT_EXISTS]: "Bu kullanıcıya istek göndermedin!",
-  [FriendErrorType.REQUEST_ALREADY_ACCEPTED]: "Bu isteği zaten kabul ettin!",
-  [FriendErrorType.NOT_FRIENDS]: "Bu kullanıcıyla arkadaş değilsin!",
-  [FriendErrorType.REQUEST_NOT_SENT]: "Bu kullanıcı sana istek göndermedi!",
-  [FriendErrorType.SUCCESS]: "İşlem başarıyla gerçekleştirildi!",
-};
 
 class Friend {
   constructor(friend) {
@@ -115,42 +95,43 @@ class FriendsCache {
 
 
 
-function displayFriendsMessage(msg) {
-  printFriendMessage(msg);
-  if (currentSelectedStatus === pending && !isAddFriendsOpen) {
-    getFriends(pending);
+function getFriendMessage(userNick, isSuccess, errorType) {
+  if (isSuccess) {
+    return translations.replacePlaceholder(errorType, { userNick });
+  } else {
+    return translations.getErrorMessage(errorType);
   }
 }
 
-function handleAddFriendResponse(message) {
-  const { userId, userNick: userNick, user_data: userData, isSuccess } = message;
+
+function displayFriendActionMessage(userNick, isSuccess, errorType) {
   const text = isSuccess
-    ? `${userNick} kullanıcısına arkadaşlık isteği gönderildi.`
-    : errorMessages[FriendErrorType.FRIEND_REQUEST_EXISTS];
+    ? getFriendMessage(userNick, isSuccess, errorType) 
+    : getFriendMessage(userNick, false, errorType); 
+  
   displayFriendsMessage(text);
 }
 
+function handleAddFriendResponse(message) {
+  const { userId, userNick, user_data, isSuccess } = message;
+  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.FRIEND_REQUEST_EXISTS);
+}
+
 function handleAcceptFriendRequestResponse(message) {
-  const { userId, userNick: userNick, user_data: userData, isSuccess } = message;
-  const text = isSuccess
-    ? `${userNick} kullanıcısından gelen arkadaşlık isteği kabul edildi.`
-    : errorMessages[FriendErrorType.REQUEST_ALREADY_ACCEPTED];
+  const { userId, userNick, user_data, isSuccess } = message;
+  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.REQUEST_ALREADY_ACCEPTED);
 
   if (isSuccess) {
-    friends_cache[userId] = userData;
+    friends_cache[userId] = user_data;
     disableElement("pendingAlertRight");
     disableElement("pendingAlertLeft");
     document.title = "LiventCord";
   }
-
-  displayFriendsMessage(text);
 }
 
 function handleRemoveFriendResponse(message) {
-  const { userId, userNick: userNick, isSuccess } = message;
-  const text = isSuccess
-    ? `${userNick} kullanıcısı arkadaşlıktan çıkarıldı.`
-    : errorMessages[FriendErrorType.NOT_FRIENDS];
+  const { userId, userNick, isSuccess } = message;
+  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.NOT_FRIENDS);
 
   if (isSuccess) {
     const friCard = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
@@ -159,18 +140,14 @@ function handleRemoveFriendResponse(message) {
     }
     reCalculateFriTitle();
   }
-
-  displayFriendsMessage(text);
 }
 
 function handleDenyFriendRequestResponse(message) {
-  const { userId, userNick: userNick, isSuccess } = message;
-  const text = isSuccess
-    ? `${userNick} kullanıcısından gelen arkadaşlık isteği reddedildi.`
-    : errorMessages[FriendErrorType.REQUEST_NOT_SENT];
-
-  displayFriendsMessage(text);
+  const { userId, userNick, isSuccess } = message;
+  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.REQUEST_NOT_SENT);
 }
+
+
 
 function handleFriendEventResponse(message) {
   const { type } = message;
@@ -230,29 +207,37 @@ function updateFriendsList(friends, isPending) {
 }
 
 function addPendingButtons(friendButton, friend) {
-  const acceptButton = createButtonWithBubblesImg(
-    friendButton,
-    ButtonTypes.TickBtn,
-    "Kabul Et",
-  );
-  acceptButton.addEventListener("click", (event) =>
-    handleButtonClick(event, EventType.ADD_FRIEND, friend),
-  );
+  //TODO: fix isFriendsRequestsToUser
+  let isFriendsRequestsToUser = false;
+  if(isFriendsRequestsToUser) {
+    const acceptButton = createButtonWithBubblesImg(
+      friendButton,
+      ButtonTypes.TickBtn,
+      translations.getTranslation("accept")
+  
+    );
+    acceptButton.addEventListener("click", (event) =>
+      handleButtonClick(event, EventType.ADD_FRIEND, friend),
+    );
 
-  const closeButton = createButtonWithBubblesImg(
-    friendButton,
-    ButtonTypes.CloseBtn,
-    translations.translations["cancel"]
-  );
-  closeButton.addEventListener("click", (event) =>
-    handleButtonClick(
-      event,
-      friend.isFriendsRequestsToUser
-        ? EventType.ADD_FRIEND
-        : EventType.ADD_FRIEND_ID,
-      friend,
-    ),
-  );
+  } else {
+    const closeButton = createButtonWithBubblesImg(
+      friendButton,
+      ButtonTypes.CloseBtn,
+      translations.getTranslation("cancel")
+    );
+    closeButton.addEventListener("click", (event) =>
+      handleButtonClick(
+        event,
+        isFriendsRequestsToUser
+          ? EventType.ADD_FRIEND
+          : EventType.ADD_FRIEND_ID,
+        friend,
+      ),
+    );
+
+  }
+
 }
 
 function handleButtonClick(event, action, friend) {

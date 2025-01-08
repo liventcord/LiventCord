@@ -3,7 +3,7 @@ class Translations {
     this.currentLanguage = "en";
     this.enLocale = "en-us";
     this.trLocale = "tr-TR";
-
+    this.errorTranslations = {};
     this.translations = {
       en: {
         "online": "Online",
@@ -53,6 +53,7 @@ class Translations {
         "delete_guild_text_2": "This action cannot be undone",
         "ok" : "Okay",
         "cancel" : "Cancel",
+        "accept": "Accept",
         "channel-name": "Channel Name",
         "about": "About",
         "create-myself": "Create myself",
@@ -82,6 +83,7 @@ class Translations {
         "addfrienddetailtext": "You can add your friends with their LiventCord name.",
         "addfriendinputbutton": "Send Friend Request",
         "send-message": "Send Message",
+        "more": "More"
 
       },
 
@@ -133,6 +135,7 @@ class Translations {
         "delete_guild_text_2": "This action cannot be undone",
         "ok" : "Tamam",
         "cancel" : "İptal",
+        "accept": "Kabul et",
         "channel-name": "Kanal Adı",
         "about": "Hakkında",
         "create-myself": "Kendim Oluşturayım",
@@ -163,6 +166,7 @@ class Translations {
         "addfrienddetailtext": "Arkadaşlarını LiventCord kullanıcı adı ile ekleyebilirsin.",
         "addfriendinputbutton": "Arkadaşlık İsteği Gönder",
         "send-message": "Mesaj Gönder",
+        "more": "Daha fazla"
 
         
       }
@@ -211,29 +215,24 @@ class Translations {
   };
   
   replacePlaceholder(templateKey, replacements, truncation = {}) {
-
       const languageData = this.templateTranslations[templateKey];
       if (!languageData) {
           console.log(`No template found for key: ${templateKey}`);
           return "";
       }
-
       const text = languageData[this.currentLanguage];
       if (!text) {
           console.log(`No translation found for key: ${templateKey} in language: ${this.currentLanguage}`);
           return "";
       }
-
       const result = Object.keys(replacements).reduce((result, key) => {
           //console.log(`Processing placeholder: {{${key}}}, Replacement Value:`, replacements[key]);
           const value = truncation[key]
               ? truncateString(replacements[key], truncation[key])
               : replacements[key];
-          
           if (truncation[key]) {
               //console.log(`Truncated Value for {{${key}}}:`, value);
           }
-
           return result.replace(`{{${key}}}`, value);
       }, text);
 
@@ -311,81 +310,12 @@ class Translations {
 
   getTranslation(key) {
     const result = this.translations[this.currentLanguage]?.[key] ?? null;
-    if (!result) {
+    if (key && !result) {
       console.error("Cant find translation for:", key);
     }
     return result;
   }
-  contextTranslations = {
-    en: {
-      ActionType: {
-        COPY_ID: "Copy ID",
-        COPY_USER_ID: "Copy User ID",
-        INVITE_TO_GUILD: "Invite to Server",
-        BLOCK_USER: "Block User",
-        REPORT_USER: "Report User Profile",
-        REMOVE_USER: "Remove Friend",
-        EDIT_GUILD_PROFILE: "Edit Server Profile",
-        MENTION_USER: "Mention User",
-      },
-      ChannelsActionType: {
-        MARK_AS_READ: "Mark as Read",
-        COPY_LINK: "Copy Link",
-        MUTE_CHANNEL: "Mute Channel",
-        NOTIFY_SETTINGS: "Notification Settings",
-        EDIT_CHANNEL: "Edit Channel",
-        DELETE_CHANNEL: "Delete Channel",
-      },
-      VoiceActionType: {
-        OPEN_PROFILE: "Profile",
-        MENTION_USER: "Mention User",
-        MUTE_USER: "Mute User",
-        DEAFEN_USER: "Deafen User",
-      },
-      MessagesActionType: {
-        ADD_REACTION: "Add Reaction",
-        EDIT_MESSAGE: "Edit Message",
-        PIN_MESSAGE: "Pin Message",
-        REPLY: "Reply",
-        MARK_AS_UNREAD: "Mark As Unread",
-        DELETE_MESSAGE: "Delete Message",
-      }
-    },
-    tr: {
-      ActionType: {
-        COPY_ID: "ID'yi Kopyala",
-        COPY_USER_ID: "Kullanıcı ID'sini Kopyala",
-        INVITE_TO_GUILD: "Sunucuya Davet Et",
-        BLOCK_USER: "Engelle",
-        REPORT_USER: "Kullanıcı Profilini Bildir",
-        REMOVE_USER: "Arkadaşı Çıkar",
-        EDIT_GUILD_PROFILE: "Sunucu Profilini Düzenle",
-        MENTION_USER: "Bahset",
-      },
-      ChannelsActionType: {
-        MARK_AS_READ: "Okundu olarak işaretle",
-        COPY_LINK: "Bağlantıyı Kopyala",
-        MUTE_CHANNEL: "Kanalı Sessize Al",
-        NOTIFY_SETTINGS: "Bildirim Ayarları",
-        EDIT_CHANNEL: "Kanalı Düzenle",
-        DELETE_CHANNEL: "Kanalı Sil",
-      },
-      VoiceActionType: {
-        OPEN_PROFILE: "Profil",
-        MENTION_USER: "Bahset",
-        MUTE_USER: "Sustur",
-        DEAFEN_USER: "Sağırlaştır",
-      },
-      MessagesActionType: {
-        ADD_REACTION: "Tepki Ekle",
-        EDIT_MESSAGE: "Mesajı Düzenle",
-        PIN_MESSAGE: "Mesajı Sabitle",
-        REPLY: "Yanıtla",
-        MARK_AS_UNREAD: "Okunmadı olarak işaretle",
-        DELETE_MESSAGE: "Mesajı Sil",
-      }
-    }
-  };
+  
   
   contextTranslations = {
     en: {
@@ -450,6 +380,65 @@ class Translations {
     return translation || key; 
   }
 
+  initializeErrorTranslations() {
+    this.errorTranslations = {
+      en: {
+        [FriendErrorType.ERR_INVALID_EVENT]: "Unknown error!",
+        [FriendErrorType.ERR_CANNOT_ADD_SELF]: "You cannot friend yourself!",
+        [FriendErrorType.ERR_USER_NOT_FOUND]: "User not found!",
+        [FriendErrorType.ERR_INVALID_IDENTIFIER]: "Invalid identifier!",
+        [FriendErrorType.ERR_FRIEND_REQUEST_EXISTS]: "You already sent a request to this user!",
+        [FriendErrorType.ERR_FRIEND_REQUEST_NOT_EXISTS]: "You haven't sent a request to this user!",
+        [FriendErrorType.ERR_REQUEST_ALREADY_ACCEPTED]: "You have already accepted this request!",
+        [FriendErrorType.ERR_NOT_FRIENDS]: "You are not friends with this user!",
+        [FriendErrorType.ERR_REQUEST_NOT_SENT]: "This user hasn't sent you a request!",
+        [FriendErrorType.ERR_SUCCESS]: "Operation completed successfully!",
+        default: "An unexpected error occurred. Please try again."
+      },
+      tr: {
+        [FriendErrorType.ERR_INVALID_EVENT]: "Bilinmeyen hata!",
+        [FriendErrorType.ERR_CANNOT_ADD_SELF]: "Kendinle arkadaş olamazsın!",
+        [FriendErrorType.ERR_USER_NOT_FOUND]: "Kullanıcı bulunamadı!",
+        [FriendErrorType.ERR_INVALID_IDENTIFIER]: "Geçersiz tanımlayıcı!",
+        [FriendErrorType.ERR_FRIEND_REQUEST_EXISTS]: "Bu kullanıcıya zaten istek gönderdin!",
+        [FriendErrorType.ERR_FRIEND_REQUEST_NOT_EXISTS]: "Bu kullanıcıya istek göndermedin!",
+        [FriendErrorType.ERR_REQUEST_ALREADY_ACCEPTED]: "Bu isteği zaten kabul ettin!",
+        [FriendErrorType.ERR_NOT_FRIENDS]: "Bu kullanıcıyla arkadaş değilsin!",
+        [FriendErrorType.ERR_REQUEST_NOT_SENT]: "Bu kullanıcı sana istek göndermedi!",
+        [FriendErrorType.ERR_SUCCESS]: "İşlem başarıyla gerçekleştirildi!",
+        default: "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin."
+      },
+    };
+  }
+
+
+  placeholderFriendTranslations = {
+    "sent_request": {
+      "en": "Sent request to user {{userNick}}",
+      "tr": "{{userNick}} kullanıcısına arkadaşlık isteği gönderildi."
+    },
+    "accept_request": {
+      "en": "Accepted friend request from {{userNick}}",
+      "tr": "{{userNick}} kullanıcısından gelen arkadaşlık isteği kabul edildi."
+    },
+    "remove_friend": {
+      "en": "Removed {{userNick}} from friends",
+      "tr": "{{userNick}} kullanıcısı arkadaşlıktan çıkarıldı."
+    },
+    "deny_request": {
+      "en": "Denied friend request from {{userNick}}",
+      "tr": "{{userNick}} kullanıcısından gelen arkadaşlık isteği reddedildi."
+    }
+  };
+    
+  
+  getErrorMessage(key) {
+    const result =  this.errorTranslations[this.currentLanguage][key];
+    if (key && !result) {
+      console.error("Cant find translation for:", key);
+    }
+    return result;
+  }
   
   
 
@@ -471,3 +460,6 @@ translations.setLanguage("en");
 setTimeout(() => {
   translations.initializeTranslations();
 });
+document.addEventListener("DOMContentLoaded",()=> {
+  translations.initializeErrorTranslations();
+})

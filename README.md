@@ -18,7 +18,7 @@ git checkout dev
     {
       "ConnectionStrings": {
         "RemoteConnection": "Host=host;Database=database;Username=username;Password=password;Port=port;SSL Mode=sslmode",
-        "SqlitePath": "Data Source=Data/<Database-name>.db",
+        "SqlitePath": "Data Source=<Database-name>.db",
       },
       "AppSettings": {
         "SecretKey": "Secret-Key",

@@ -1,7 +1,3 @@
-// TODO : Fix messages date orders when rendering
-
-
-
 let bottomestChatDateStr;
 let lastMessageDate = null; 
 let currentLastDate;
@@ -43,7 +39,7 @@ function handleReplies() {
         replierElements.forEach(replier => {
             message.replies.forEach(msg => {
                 createReplyBar(replier, message.messageId, msg.userId, msg.content, msg.attachmentUrls);
-                console.log("Creating replly bar.", replier, message.messageId, msg.userId, msg.content);
+                console.log("Creating reply bar.", replier, message.messageId, msg.userId, msg.content);
             });
         });
     });

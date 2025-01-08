@@ -6,6 +6,8 @@ Migrations/
 Logs/
 Data/
 wwwroot/static/css/loginfullstyles.css
+wwwroot/static/w
+wwwroot/static/404
 appsettings.Development.json
 appsettings.json
 *.suo

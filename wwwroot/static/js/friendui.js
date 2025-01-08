@@ -225,6 +225,8 @@ function selectFriendMenu(clickedButton) {
     currentSelectedStatus = getRequestType(clickedButton);
     console.log("Selected: ",currentSelectedStatus);
 
+    populateFriendsContainer(friendCache.friendsCache,clickedButton == buttonElements.pending);
+
     if (!ButtonsList) {
         ButtonsList = Object.values(buttonElements);
     }
@@ -356,6 +358,8 @@ function createAddFriendForm() {
         textContent: translations.getTranslation("addfrienddetailtext") });
     const addfriendinputcontainer = createEl("div");
     const addfriendinput = createEl("input", { id: "addfriendinputfield", placeholder: translations.getTranslation("addfrienddetailtext"), autocomplete: "off" });
+    addfriendinput.value = "Reeyuki#1234";
+
     const addfriendinputbutton = createEl("button", { id: "addfriendinputbutton", textContent: translations.getTranslation("addfriendinputbutton") });
 
     const userlistline = createEl("hr", { className: "vertical-line-long" });
@@ -437,33 +441,32 @@ function displayWumpus() {
 }
 
 function populateFriendsContainer(friends, isPending) {
-    console.log(friends,typeof(friends));
     if (friends.length === 0) {
         return;
     }
 
-    friends.forEach(user => {
-        addUser(user.userId, user.nickName, user.discriminator);
+    friends.forEach(friend => {
+        const { userId, nickName, discriminator } = friend.publicUser; 
+        addUser(userId, nickName, discriminator); 
     });
 
     const friendsContainer = getId("friends-container");
     try {
-        
         if (currentSelectedStatus == online) {
-            friends = friends.filter(user => user.is_online);
+            friends = friends.filter(friend => friend.publicUser.status === "online");
         } else if (currentSelectedStatus == all) {
         } else if (currentSelectedStatus == blocked) {
-            friends = friends.filter(user => isBlocked(user.userId));
+            friends = friends.filter(friend => isBlocked(friend.publicUser.userId));
         } else if(currentSelectedStatus == pending) {
         } else {
             console.warn("Unhandled status:" + currentSelectedStatus);
             return;
         }
-        
+
         const friendsCount = friends.length;
         const textToWrite = friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
-        const friendsTitleContainer = createEl("h2",{marginRight: "50px", marginTop: "100px",textContent:textToWrite, id:"friendsTitleContainer"});
-        
+        const friendsTitleContainer = createEl("h2", { marginRight: "50px", marginTop: "100px", textContent: textToWrite, id: "friendsTitleContainer" });
+
         if (friendsCount === 0) {
             displayWumpus();
         } else {
@@ -474,58 +477,58 @@ function populateFriendsContainer(friends, isPending) {
                 filterFriends();
             }, 10);
             for (const friend of friends) {
-                createFriendCard({ ...friend }, isPending,friendsContainer);
-                if(friend.activity) {
-                    updateUsersStatus(friend)
+                const { userId, nickName, discriminator, isOnline } = friend.publicUser;
+                createFriendCard(userId, nickName, discriminator, isOnline, isPending, friendsContainer);
+                if (friend.activity) {
+                    updateUsersStatus(friend);
                 }
             }
             enableElement("friendsTitleContainer");
         }
 
-        existingFriends = friends;
     } catch (error) {
         console.error("Error populating friends container:", error);
     }
 }
-
-function createFriendCard(friend, isPending, friendsContainer) {
-    const friendCard = createEl("div", { className: "friend-card", id: friend.userId });
+function createFriendCard(userId, nickName, discriminator, isOnline, isPending, friendsContainer) {
+    const friendCard = createEl("div", { className: "friend-card", id: userId });
     const img = createEl("img");
-    setProfilePic(img, friend.userId);
+    setProfilePic(img, userId);
     img.classList.add("friend-image");
     img.style.transition = "border-radius 0.5s ease-out";
 
-    const bubble = createFriendCardBubble(friend.is_online);
+    const bubble = createFriendCardBubble(isOnline);
     bubble.style.transition = "display 0.5s ease-in-out";
     if (!isPending) friendCard.appendChild(bubble);
 
-    img.addEventListener("mouseover", () => handleImageHover(img, bubble, isPending, friend.is_online, true));
-    img.addEventListener("mouseout", () => handleImageHover(img, bubble, isPending, friend.is_online, false));
+    img.addEventListener("mouseover", () => handleImageHover(img, bubble, isPending, isOnline, true));
+    img.addEventListener("mouseout", () => handleImageHover(img, bubble, isPending, isOnline, false));
 
-    appendToProfileContextList(friend, friend.userId);
+    appendToProfileContextList({ userId }, userId); 
 
     const friendInfo = createEl("div", { className: "friend-info" });
-    friendInfo.appendChild(createEl("div", { className: "friend-name", textContent: friend.name }));
-    friendInfo.appendChild(createEl("div", { className: "friend-discriminator", textContent: `#${friend.discriminator}` }));
+    friendInfo.appendChild(createEl("div", { className: "friend-name", textContent: nickName }));
+    friendInfo.appendChild(createEl("div", { className: "friend-discriminator", textContent: `#${discriminator}` }));
     const onlineStatus = isPending ? 
-        (friend.is_friends_requests_to_user ? translations[currentLanguage].incoming-friend-request : translations[currentLanguage].outgoing-friend-request) : 
-        (friend.is_online ? translations[currentLanguage].online : translations[currentLanguage].offline);
+        (isOnline ? translations.getTranslation("incoming-friend-request") : translations.getTranslation("outgoing-friend-request")) :
+        (isOnline ? translations.getTranslation("online") : translations.getTranslation("offline"));
     friendInfo.appendChild(createEl("div", { className: "friend-status", textContent: onlineStatus }));
 
     const friendButton = createEl("div", { className: "friend-button" });
 
     if (isPending) {
-        addpending-buttons(friendButton, friend);
+        addPendingButtons(friendButton, { userId });
     } else {
-        addFriendButtons(friendButton, friend);
+        addFriendButtons(friendButton, { userId });
     }
 
     friendCard.appendChild(img);
     friendCard.appendChild(friendInfo);
     friendCard.appendChild(friendButton);
     friendsContainer.appendChild(friendCard);
-    friendCard.dataset.name = friend.name;
+    friendCard.dataset.name = nickName;
 }
+
 
 function handleImageHover(img, bubble, isPending, isOnline, isMouseOver) {
     img.style.borderRadius = isMouseOver ? "0px" : "25px";
@@ -540,7 +543,7 @@ function addFriendButtons(friendButton, friend) {
     const sendMsgBtn = createButtonWithBubblesImg(friendButton, ButtonTypes.SendMsgBtn, translations.getTranslation("send-message"));
     sendMsgBtn.addEventListener("click", () => OpenDm(friend.userId));
 
-    const optionsButton = createButtonWithBubblesImg(friendButton, ButtonTypes.OptionsBtn, "");
+    const optionsButton = createButtonWithBubblesImg(friendButton, ButtonTypes.OptionsBtn, translations.getTranslation("more"));
     optionsButton.id = friend.userId;
     optionsButton.addEventListener("click", (event) => handleOptionsClick(event, optionsButton));
 }
