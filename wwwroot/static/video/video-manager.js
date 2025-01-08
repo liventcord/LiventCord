@@ -9,17 +9,17 @@ $(document).ready(function() {
         var autoStabilizerTimeout;
     
         // Get the draggable element
-        var draggableElement = document.getElementById('local_vid');
+        var draggableElement = document.getElementById("local_vid");
     
         // Add touch event listeners for mobile dragging
-        draggableElement.addEventListener('touchstart', function(e) {
+        draggableElement.addEventListener("touchstart", function(e) {
             clearTimeout(autoStabilizerTimeout);
             isDragging = true;
             initialX = e.touches[0].clientX - offsetX;
             initialY = e.touches[0].clientY - offsetY;
         });
     
-        draggableElement.addEventListener('touchmove', function(e) {
+        draggableElement.addEventListener("touchmove", function(e) {
             if (isDragging) {
                 e.preventDefault();
                 var currentX = e.touches[0].clientX - initialX;
@@ -30,13 +30,13 @@ $(document).ready(function() {
             }
         });
     
-        draggableElement.addEventListener('touchend', function() {
+        draggableElement.addEventListener("touchend", function() {
             isDragging = false;
             startAutoStabilizer();
         });
     
         function setTranslate(xPos, yPos, element) {
-            element.style.transform = 'translate3d(' + xPos + 'px, ' + yPos + 'px, 0)';
+            element.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
         }
         function setTranslateBasedOnViewport(xPercent, yPercent, element) {
             const viewportWidth = window.innerWidth;
@@ -87,8 +87,8 @@ $(document).ready(function() {
     // Function to handle desktop dragging
     function handleDesktopDragging() {
         // Use jQuery UI draggable for desktop dragging
-        $('#local_vid').draggable({
-            containment: 'body',
+        $("#local_vid").draggable({
+            containment: "body",
             zIndex: 1,
             // set start position at bottom right
             start: function (event, ui) {
@@ -113,8 +113,8 @@ $(document).ready(function() {
             }
         }).css({
             // Set initial position
-            left: $(window).width() - $('#local_vid').width(),
-            top: $(window).height() - $('#local_vid').height()
+            left: $(window).width() - $("#local_vid").width(),
+            top: $(window).height() - $("#local_vid").height()
         });
 
         
@@ -133,10 +133,10 @@ $(document).ready(function() {
     }
 
 
-    $(window).on('resize', function() {
+    $(window).on("resize", function() {
         checkVideoLayout();
     });
-    $(window).on('click', function() {
+    $(window).on("click", function() {
         checkVideoLayout();
     });
     
@@ -156,47 +156,47 @@ function checkVideoLayout() {
     const videos = videoGrid.querySelectorAll("video");
     const videoCount = videos.length;
 
-    videoGrid.style.display = 'flex';
-    videoGrid.style.flexWrap = 'wrap';
-    videoGrid.style.justifyContent = 'center';
-    videoGrid.style.alignItems = 'center';
+    videoGrid.style.display = "flex";
+    videoGrid.style.flexWrap = "wrap";
+    videoGrid.style.justifyContent = "center";
+    videoGrid.style.alignItems = "center";
 
     videos.forEach(video => {
-        video.style.width = '100%'; // Ensure videos take full width initially
-        video.style.height = 'auto'; // Allow height to adjust according to aspect ratio
-        video.style.flex = '1 1 45%'; // Base size, adjusted for 2x2 grid or similar
-        video.style.maxWidth = '50%';
-        video.style.zIndex = '1';
-        video.style.maxHeight = '50%';
+        video.style.width = "100%"; // Ensure videos take full width initially
+        video.style.height = "auto"; // Allow height to adjust according to aspect ratio
+        video.style.flex = "1 1 45%"; // Base size, adjusted for 2x2 grid or similar
+        video.style.maxWidth = "50%";
+        video.style.zIndex = "1";
+        video.style.maxHeight = "50%";
     });
 
     if (videoCount === 1) {
-        videos[0].style.flex = '1 1 100%';
-        videos[0].style.maxWidth = '100%';
-        videos[0].style.maxHeight = '100%';
+        videos[0].style.flex = "1 1 100%";
+        videos[0].style.maxWidth = "100%";
+        videos[0].style.maxHeight = "100%";
     } else if (videoCount === 2) {
         videos.forEach(video => {
-            video.style.flex = '1 1 50%';
-            video.style.maxWidth = '50%';
-            video.style.maxHeight = '100%';
+            video.style.flex = "1 1 50%";
+            video.style.maxWidth = "50%";
+            video.style.maxHeight = "100%";
         });
     } else if (videoCount === 3) {
         videos.forEach((video, index) => {
             if (index === 0) {
-                video.style.flex = '1 1 100%';
-                video.style.maxWidth = '100%';
-                video.style.maxHeight = '50%';
+                video.style.flex = "1 1 100%";
+                video.style.maxWidth = "100%";
+                video.style.maxHeight = "50%";
             } else {
-                video.style.flex = '1 1 50%';
-                video.style.maxWidth = '50%';
-                video.style.maxHeight = '50%';
+                video.style.flex = "1 1 50%";
+                video.style.maxWidth = "50%";
+                video.style.maxHeight = "50%";
             }
         });
     } else if (videoCount === 4) {
         videos.forEach(video => {
-            video.style.flex = '1 1 50%';
-            video.style.maxWidth = '50%';
-            video.style.maxHeight = '50%';
+            video.style.flex = "1 1 50%";
+            video.style.maxWidth = "50%";
+            video.style.maxHeight = "50%";
         });
     } else if (videoCount > 4) {
         // Calculate grid dimensions dynamically for more than 4 videos
@@ -213,13 +213,13 @@ function checkVideoLayout() {
     }
 
     // Media query for smaller screens
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
     if (mediaQuery.matches) {
         videos.forEach(video => {
-            if(video.id !== 'local-vid') {
-                video.style.flex = '1 1 100%'; // Full width for single video
-                video.style.maxWidth = '100%';
-                video.style.maxHeight = 'auto'; // Allow height to adjust based on content
+            if(video.id !== "local-vid") {
+                video.style.flex = "1 1 100%"; // Full width for single video
+                video.style.maxWidth = "100%";
+                video.style.maxHeight = "auto"; // Allow height to adjust based on content
 
             }
         });
@@ -227,5 +227,5 @@ function checkVideoLayout() {
 }
 
 checkVideoLayout();
-window.addEventListener('resize', checkVideoLayout);
-window.addEventListener('click', checkVideoLayout);
+window.addEventListener("resize", checkVideoLayout);
+window.addEventListener("click", checkVideoLayout);

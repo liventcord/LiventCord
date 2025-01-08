@@ -47,7 +47,7 @@ function validateRoute() {
     //console.log("Is Pathname Correct:", isPathnameCorrectValue);
 
     if (isOnMe && !isPathnameCorrectValue) {
-        //console.log("User is on '/me' but pathname is incorrect. Redirecting to /channels/@me.");
+        //console.log("User is on "/me" but pathname is incorrect. Redirecting to /channels/@me.");
         window.history.pushState(null, null, "/channels/@me");
         return { isValid: false, initialGuildId: null, initialChannelId: null, initialFriendId: null };
     }

@@ -110,7 +110,7 @@ const toggleManager = {
         }
     },
     isSlide() {
-        return this.states['slide-toggle'];
+        return this.states["slide-toggle"];
     },
     startSnowEffect() {
         const particeContainer = getId("confetti-container");

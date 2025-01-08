@@ -7,7 +7,7 @@ var _peer_list = {};
 
 var socket = io();
 socket.on("disconnect", (reason, details) => {
-    console.log('Disconnected from server.', reason);
+    console.log("Disconnected from server.", reason);
 });
 
 document.addEventListener("DOMContentLoaded", (event)=>{
@@ -115,7 +115,7 @@ async function pingServer(serverUrl) {
     };
 
     // Create an empty data channel to trigger ICE candidates
-    peerConnection.createDataChannel('ping');
+    peerConnection.createDataChannel("ping");
 
     try {
         const offer = await peerConnection.createOffer();
@@ -126,15 +126,15 @@ async function pingServer(serverUrl) {
 }
 
 const servers = [
-    'stun:stun.l.google.com:19302', 
-    'stun:stun1.l.google.com:19302',
-    'stun:stun2.l.google.com:19302',
-    'stun:stun3.l.google.com:19302',
-    'stun:stun4.l.google.com:19302',
-    'stun:stun5.l.google.com:19302',
-    'stun:stun6.l.google.com:19302',
-    'stun:stun7.l.google.com:19302',
-    'stun:stun8.l.google.com:19302'
+    "stun:stun.l.google.com:19302", 
+    "stun:stun1.l.google.com:19302",
+    "stun:stun2.l.google.com:19302",
+    "stun:stun3.l.google.com:19302",
+    "stun:stun4.l.google.com:19302",
+    "stun:stun5.l.google.com:19302",
+    "stun:stun6.l.google.com:19302",
+    "stun:stun7.l.google.com:19302",
+    "stun:stun8.l.google.com:19302"
 ];
 
 async function checkServers() {
@@ -150,15 +150,15 @@ async function checkServers() {
 var PC_CONFIG = {
     iceServers: [
         { urls: [
-            'stun:stun.l.google.com:19302', 
-            'stun:stun1.l.google.com:19302',
-            'stun:stun2.l.google.com:19302',
-            'stun:stun3.l.google.com:19302',
-            'stun:stun4.l.google.com:19302',
-            'stun:stun5.l.google.com:19302',
-            'stun:stun6.l.google.com:19302',
-            'stun:stun7.l.google.com:19302',
-            'stun:stun8.l.google.com:19302'
+            "stun:stun.l.google.com:19302", 
+            "stun:stun1.l.google.com:19302",
+            "stun:stun2.l.google.com:19302",
+            "stun:stun3.l.google.com:19302",
+            "stun:stun4.l.google.com:19302",
+            "stun:stun5.l.google.com:19302",
+            "stun:stun6.l.google.com:19302",
+            "stun:stun7.l.google.com:19302",
+            "stun:stun8.l.google.com:19302"
         ]
         },
     ]
@@ -195,8 +195,8 @@ function start_webrtc()
 }
 
 function createBlackStream(fps = 1) {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
     const width = 640;
     const height = 480;
     canvas.width = width;
@@ -204,7 +204,7 @@ function createBlackStream(fps = 1) {
 
     const stream = canvas.captureStream(fps);
 
-    const blackColor = 'black';
+    const blackColor = "black";
 
     function drawBlackFrame() {
         context.fillStyle = blackColor;
@@ -254,7 +254,7 @@ function waitForConnection(peer_id) {
     return new Promise((resolve) => {
         _peer_list[peer_id].oniceconnectionstatechange = () => {
             const iceState = _peer_list[peer_id].iceConnectionState;
-            if (iceState === 'connected' || iceState === 'completed') {
+            if (iceState === "connected" || iceState === "completed") {
                 console.log(`Peer <${peer_id}> connected!`);
                 resolve();
             }
@@ -302,12 +302,12 @@ function getStream() {
 }
 function handleOfferMsg(msg)
 {   
-    peer_id = msg['sender_id'];
+    peer_id = msg["sender_id"];
 
     console.log(`offer recieved from <${peer_id}>`);
     
     createPeerConnection(peer_id);
-    let desc = new RTCSessionDescription(msg['sdp']);
+    let desc = new RTCSessionDescription(msg["sdp"]);
     _peer_list[peer_id].setRemoteDescription(desc)
     .then(()=>{
         let local_stream = getStream()
@@ -331,9 +331,9 @@ function handleOfferMsg(msg)
 
 function handleAnswerMsg(msg)
 {
-    peer_id = msg['sender_id'];
+    peer_id = msg["sender_id"];
     console.log(`answer recieved from <${peer_id}>`);
-    let desc = new RTCSessionDescription(msg['sdp']);
+    let desc = new RTCSessionDescription(msg["sdp"]);
     _peer_list[peer_id].setRemoteDescription(desc)
 }
 

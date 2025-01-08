@@ -71,7 +71,7 @@ function initialiseState(data) {
         guildMembers: guild_members
     } = data;  
     
-    console.log('Data loaded:', data);
+    console.log("Data loaded:", data);
 
     initialOwnerId = ownerId;
     initialUserId = userId;
@@ -86,7 +86,7 @@ function initialiseState(data) {
 
     maskedEmail = getMaskedEmail(email);
 
-    const guildsList = document.getElementById('guilds-list');
+    const guildsList = document.getElementById("guilds-list");
     
     if (Array.isArray(guildsArray)) {
         guildsArray.forEach(guild => {
@@ -107,7 +107,7 @@ function initialiseState(data) {
 
     const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
     if (selectedGuild) {
-        selectedGuild.parentNode.classList.add('selected-guild');
+        selectedGuild.parentNode.classList.add("selected-guild");
     }
 
 }
@@ -116,7 +116,7 @@ async function loadInitialData() {
     try {
         const response = await fetch("/api/init");
         if (!response.ok) {
-            throw new Error('Failed to load initial data');
+            throw new Error("Failed to load initial data");
         }
         const rawResponse = await response.text(); 
 

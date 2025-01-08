@@ -8,10 +8,10 @@ let currentGuildName = "";
 const renderGuilds = (guilds) => {
     const uniqueGuildIds = new Set();
     return guilds.map(({ guildId, rootChannel, guildName, ownerId }) => {
-        if (uniqueGuildIds.has(guildId)) return '';
+        if (uniqueGuildIds.has(guildId)) return "";
         uniqueGuildIds.add(guildId);
-        return createGuildListItem(String(guildId), `/guilds/${guildId}`, rootChannel, guildName || '');
-    }).join('');
+        return createGuildListItem(String(guildId), `/guilds/${guildId}`, rootChannel, guildName || "");
+    }).join("");
 };
 
 const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => `
@@ -88,8 +88,8 @@ let isGuildKeyDown = false;
 
 
 function clearKeybinds() {
-    if (keybindHandlers['shift']) {
-        document.removeEventListener('keydown', keybindHandlers['shift']);
+    if (keybindHandlers["shift"]) {
+        document.removeEventListener("keydown", keybindHandlers["shift"]);
     }
     keybindHandlers = {};
 }
@@ -97,7 +97,7 @@ let currentGuildIndex = 1;
 
 function addKeybinds() {
     clearKeybinds();
-    const guilds = Array.from(document.querySelectorAll('#guilds-list img'));
+    const guilds = Array.from(document.querySelectorAll("#guilds-list img"));
     let isGuildKeyDown = false;
 
     const handler = (event) => {
@@ -105,14 +105,14 @@ function addKeybinds() {
 
         const key = event.key;
 
-        if (key === 'ArrowUp' || key === 'ArrowDown') {
+        if (key === "ArrowUp" || key === "ArrowDown") {
             event.preventDefault();
 
             if (isGuildKeyDown) return;
 
-            if (key === 'ArrowUp') {
+            if (key === "ArrowUp") {
                 currentGuildIndex = (currentGuildIndex - 1 + guilds.length) % guilds.length;
-            } else if (key === 'ArrowDown') {
+            } else if (key === "ArrowDown") {
                 currentGuildIndex = (currentGuildIndex + 1) % guilds.length;
             }
 
@@ -122,13 +122,13 @@ function addKeybinds() {
         }
     };
 
-    document.addEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
 
-    document.addEventListener('keyup', () => {
+    document.addEventListener("keyup", () => {
         isGuildKeyDown = false;
     });
 
-    keybindHandlers['shift'] = handler;
+    keybindHandlers["shift"] = handler;
 }
 
 

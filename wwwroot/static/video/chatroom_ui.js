@@ -25,19 +25,19 @@ document.addEventListener("DOMContentLoaded", (event) => {
         toggleIconClass(muteVidBttn, videoMuted);
     });    
     callEndBttn.addEventListener("click", (event)=>{
-        document.href = '/';
+        document.href = "/";
     });
 
     function toggleIconClass(button, isMuted) {
-        const icon = button.querySelector('.icon');
+        const icon = button.querySelector(".icon");
         if (isMuted) {
-            icon.classList.remove('fa-microphone');
-            icon.classList.add('fa-microphone-slash');
-            icon.classList.add('icon-off'); // Add off state class
+            icon.classList.remove("fa-microphone");
+            icon.classList.add("fa-microphone-slash");
+            icon.classList.add("icon-off"); // Add off state class
         } else {
-            icon.classList.remove('fa-microphone-slash');
-            icon.classList.add('fa-microphone');
-            icon.classList.remove('icon-off'); // Remove off state class
+            icon.classList.remove("fa-microphone-slash");
+            icon.classList.add("fa-microphone");
+            icon.classList.remove("icon-off"); // Remove off state class
         }
     }
 
@@ -50,7 +50,7 @@ function startLocalVideoStream() {
     .then((stream) => {
         console.log("Stream obtained");
         if (myVideo) {
-            // Only set srcObject if it's different from the current stream
+            // Only set srcObject if it"s different from the current stream
             if (myVideo.srcObject !== stream) {
                 myVideo.srcObject = stream;
             }

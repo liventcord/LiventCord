@@ -177,7 +177,7 @@ function handleHistoryResponse(data) {
 
     const wasAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop === chatContainer.clientHeight;
 
-    chatContainer.style.overflow = 'hidden'; // Disable scrolling temporarily
+    chatContainer.style.overflow = "hidden"; // Disable scrolling temporarily
 
     messages.forEach((msgData) => {
         const msg = new Message(msgData);
@@ -231,7 +231,7 @@ function handleHistoryResponse(data) {
     };
 
     Promise.all(mediaLoadedPromises).then(() => {
-        chatContainer.style.overflow = '';
+        chatContainer.style.overflow = "";
         observer.disconnect();
     });
 
@@ -247,7 +247,7 @@ function handleHistoryResponse(data) {
         lastHeight = currentHeight;
 
         if (checkAllMediaLoaded()) {
-            chatContainer.style.overflow = '';
+            chatContainer.style.overflow = "";
             observer.disconnect();
         } else {
             setTimeout(monitorContentSizeChanges, 50);
@@ -266,17 +266,17 @@ function handleHistoryResponse(data) {
 
     let isUserInteracted = false;
 
-    const userScrollEvents = ['mousedown', 'touchstart', 'wheel'];
+    const userScrollEvents = ["mousedown", "touchstart", "wheel"];
 
     const releaseScrollLock = () => {
         isUserInteracted = true;
-        chatContainer.style.overflow = ''; 
+        chatContainer.style.overflow = ""; 
         userScrollEvents.forEach(event => chatContainer.removeEventListener(event, releaseScrollLock)); 
     };
 
     userScrollEvents.forEach(event => chatContainer.addEventListener(event, releaseScrollLock));
 
-    chatContainer.addEventListener('scroll', () => {
+    chatContainer.addEventListener("scroll", () => {
         if (chatContainer.scrollTop < chatContainer.scrollHeight - chatContainer.clientHeight) {
             isUserInteracted = true; 
         } else {

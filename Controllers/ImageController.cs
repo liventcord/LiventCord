@@ -287,7 +287,7 @@ namespace LiventCord.Controllers
                 )
                 {
                     html +=
-                        $"<div><h3>{file.FileName}</h3><img src='{fileUrl}' alt='{file.FileName}' width='200' /></div>";
+                        $"<div><h3>{file.FileName}</h3><img src={fileUrl} alt={file.FileName} width=200 /></div>";
                 }
                 else
                 {

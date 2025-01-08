@@ -101,20 +101,20 @@ const settingTranslations = {
     }
 };
 const userSettings = [
-    { category: 'MyAccount', label: t('MyAccount') },
-    { category: 'SoundAndVideo', label: t('SoundAndVideo') },
-    { category: 'Notifications', label: t('Notifications') },
-    { category: 'ActivityPresence', label: t('ActivityPresence') },
-    { category: 'Appearance', label: t('Appearance') },
-    { category: 'Language', label: t('Language') }
+    { category: "MyAccount", label: t("MyAccount") },
+    { category: "SoundAndVideo", label: t("SoundAndVideo") },
+    { category: "Notifications", label: t("Notifications") },
+    { category: "ActivityPresence", label: t("ActivityPresence") },
+    { category: "Appearance", label: t("Appearance") },
+    { category: "Language", label: t("Language") }
 ];
 
 const guildSettings = [
-    { category: 'Overview', label: t('GeneralOverview') },
-    { category: 'Emoji', label: t('Emoji') },
+    { category: "Overview", label: t("GeneralOverview") },
+    { category: "Emoji", label: t("Emoji") },
 ];
 function t(key) {
-    const translation = settingTranslations[translations.currentLanguage]?.[key] || settingTranslations['en']?.[key];
+    const translation = settingTranslations[translations.currentLanguage]?.[key] || settingTranslations["en"]?.[key];
     if (!translation) console.error(`Missing translation for key: ${key} in language: ${translations.currentLanguage}`);
     return translation || key;
 }
@@ -211,7 +211,7 @@ function getAccountSettingsHtml() {
 
 function getLanguageHtml() {
     return `
-        <h3>${t('Language')}</h3>
+        <h3>${t("Language")}</h3>
         <select class="dropdown" id="language-dropdown">
             <option value="en">${t("en")}</option>
             <option value="tr">${t("tr")}</option>
@@ -221,31 +221,31 @@ function getLanguageHtml() {
 
 function getAppearanceHtml() {
     const toggles = [
-        { id: 'snow-toggle', label: t("WinterMode"), description: t("EnableSnowEffect") },
-        { id: 'party-toggle', label: t("PartyMode"), description: t("EnablePartyMode") },
-        { id: 'slide-toggle', label: t("SlideMode"), description: t("EnableSlideMode") },
+        { id: "snow-toggle", label: t("WinterMode"), description: t("EnableSnowEffect") },
+        { id: "party-toggle", label: t("PartyMode"), description: t("EnablePartyMode") },
+        { id: "slide-toggle", label: t("SlideMode"), description: t("EnableSlideMode") },
     ];
 
     return `
         <h3>${t("Appearance")}</h3>
-        ${toggles.map(toggle => createToggle(toggle.id, toggle.label, toggle.description)).join('')}
+        ${toggles.map(toggle => createToggle(toggle.id, toggle.label, toggle.description)).join("")}
     `;
 }
 
 function getNotificationsHtml() {
     const toggles = [
-        { id: 'notify-toggle', label: t("Notifications"), description: t("EnableNotifications") }
+        { id: "notify-toggle", label: t("Notifications"), description: t("EnableNotifications") }
     ];
     return `
         <h3>${t("Notifications")}</h3>
-        ${toggles.map(toggle => createToggle(toggle.id, toggle.label, toggle.description)).join('')}
+        ${toggles.map(toggle => createToggle(toggle.id, toggle.label, toggle.description)).join("")}
     `;
 }
 
 function generateSettingsHtml(settings, isGuild = false) {
     const buttons = settings.map(setting => `
-        <button class="settings-buttons" onclick="selectSettingCategory('${setting.category}')">${t(setting.category)}</button>
-    `).join('\n');
+        <button class="settings-buttons" onclick="selectSettingCategory("${setting.category}")">${t(setting.category)}</button>
+    `).join("\n");
 
     if (isGuild) {
         return buttons;
@@ -263,9 +263,9 @@ function generateSettingsHtml(settings, isGuild = false) {
 function getGuildSettings() {
     let setToReturn = [...guildSettings]; 
     if (permissionManager.canManageGuild()) {
-        setToReturn.push({ category: 'Invites', label: t('Invites') });
-        setToReturn.push({ category: 'Roles', label: t('Roles') });
-        setToReturn.push({ category: 'DeleteGuild', label: t('DeleteGuild') });
+        setToReturn.push({ category: "Invites", label: t("Invites") });
+        setToReturn.push({ category: "Roles", label: t("Roles") });
+        setToReturn.push({ category: "DeleteGuild", label: t("DeleteGuild") });
     }
     return setToReturn; 
 }
@@ -273,7 +273,7 @@ function getGuildSettings() {
 function getSettingsConfig() {
     return {
         SoundAndVideo: {
-            title: t('SoundAndVideoSettings'),
+            title: t("SoundAndVideoSettings"),
             html: `
                 <select class="dropdown"></select>
                 <select class="dropdown"></select>
@@ -281,42 +281,42 @@ function getSettingsConfig() {
             `
         },
         MyAccount: {
-            title: t('MyAccount'),
+            title: t("MyAccount"),
             html: getAccountSettingsHtml()
         },
         Notifications: {
-            title: t('Notifications'),
+            title: t("Notifications"),
             html: getNotificationsHtml()
         },
         ActivityPresence: {
-            title: t('ActivityStatus'),
+            title: t("ActivityStatus"),
             html: getActivityPresenceHtml()
         },
         Appearance: {
-            title: t('Appearance'),
+            title: t("Appearance"),
             html: getAppearanceHtml()
         },
         Language: {
-            title: t('Language'),
+            title: t("Language"),
             html: getLanguageHtml()
         },
         Overview: {
-            title: t('ServerOverview'),
+            title: t("ServerOverview"),
             html: getOverviewHtml()
         },
         DeleteGuild: {
-            title: t('DeleteServer'),
-            html: `<button id="delete-guild-button">${t('DeleteServerButton')}</button>`
+            title: t("DeleteServer"),
+            html: `<button id="delete-guild-button">${t("DeleteServerButton")}</button>`
         }
     };
 }
 
 
 function selectSettingCategory(settingType) {
-    const settingsContainer = getId('settings-rightcontainer');
+    const settingsContainer = getId("settings-rightcontainer");
     currentSettingsType = settingType;
 
-    const settingConfig = getSettingsConfig()[settingType] || { title: 'Unknown Setting', html: '<h3>Unknown Setting</h3>' };
+    const settingConfig = getSettingsConfig()[settingType] || { title: "Unknown Setting", html: "<h3>Unknown Setting</h3>" };
     setTimeout(() => {
         if(settingType === "MyAccount") {
             updateSelfProfile(currentUserId,currentUserNick,true);
@@ -326,10 +326,10 @@ function selectSettingCategory(settingType) {
 
 
     function initializeLanguageDropdown() {
-        const languageDropdown = document.getElementById('language-dropdown');
+        const languageDropdown = document.getElementById("language-dropdown");
         if (languageDropdown) {
             languageDropdown.value = translations.currentLanguage;
-            languageDropdown.addEventListener('change', (event) => {
+            languageDropdown.addEventListener("change", (event) => {
                 translations.currentLanguage = event.target.value;
                 translations.setLanguage(translations.currentLanguage);
                 reconstructSettings(false);
@@ -341,16 +341,16 @@ function selectSettingCategory(settingType) {
     
     
     const closeButton = getCloseButtonElement();
-    closeButton.addEventListener('click',closeSettings);
+    closeButton.addEventListener("click",closeSettings);
     settingsContainer.insertBefore(closeButton, settingsContainer.firstChild);
 
-    const togglesToSetup = ['activity-toggle', 'snow-toggle', 'party-toggle','notify-toggle','slide-toggle'];
+    const togglesToSetup = ["activity-toggle", "snow-toggle", "party-toggle","notify-toggle","slide-toggle"];
     togglesToSetup.forEach(setupToggle);
 
-    if (settingType === 'DeleteGuild') {
-        const deleteButton = getId('delete-guild-button');
+    if (settingType === "DeleteGuild") {
+        const deleteButton = getId("delete-guild-button");
         if (deleteButton) {
-            deleteButton.addEventListener('click', () => createDeleteGuildPrompt(currentGuildId, currentGuildName));
+            deleteButton.addEventListener("click", () => createDeleteGuildPrompt(currentGuildId, currentGuildName));
         }
     }
 
@@ -396,19 +396,19 @@ function openSettings(isNotLoadingDefault = false) {
     }
     selectSettingCategory(settingTypes.MyAccount);
 
-    getId('settings-overlay').style.display = 'flex';
+    getId("settings-overlay").style.display = "flex";
 
     if (toggleManager.isSlide()) {
-        getId('settings-menu').style.animation = 'settings-menu-slide-in 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-slide-in 0.3s forwards";
     } else {
-        getId('settings-menu').style.animation = 'settings-menu-scale-appear 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-scale-appear 0.3s forwards";
     }
 
 
     if (toggleManager.isSlide()) {
-        getId('settings-menu').style.animation = 'settings-menu-slide-in 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-slide-in 0.3s forwards";
     } else {
-        getId('settings-menu').style.animation = 'settings-menu-scale-appear 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-scale-appear 0.3s forwards";
     }
 
     isSettingsOpen = true;
@@ -421,24 +421,24 @@ function closeSettings() {
     }
 
     if (toggleManager.isSlide()) {
-        getId('settings-menu').style.animation = 'settings-menu-slide-out 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-slide-out 0.3s forwards";
     } else {
-        getId('settings-menu').style.animation = 'settings-menu-scale-disappear 0.3s forwards';
+        getId("settings-menu").style.animation = "settings-menu-scale-disappear 0.3s forwards";
     }
 
     setTimeout(() => {
-        getId('settings-overlay').style.display = 'none';
+        getId("settings-overlay").style.display = "none";
     }, 300);
     isSettingsOpen = false;
 }
 
 
 function getCloseButtonElement() {
-    const button = createEl('button', {
-        id: 'close-settings-button',
-        ariaLabel: 'Close settings',
-        role: 'button',
-        tabindex: '0',
+    const button = createEl("button", {
+        id: "close-settings-button",
+        ariaLabel: "Close settings",
+        role: "button",
+        tabindex: "0",
     });
 
     button.innerHTML = `
@@ -454,8 +454,8 @@ function getCloseButtonElement() {
 
 
 function reconstructSettings(_isGuildSettings) { //
-    const leftBar = getId('settings-leftbar');
-    leftBar.innerHTML = '';
+    const leftBar = getId("settings-leftbar");
+    leftBar.innerHTML = "";
     isGuildSettings = _isGuildSettings ;
     if(_isGuildSettings) {
         leftBar.innerHTML = getGuildSettingsHTML();
@@ -470,44 +470,44 @@ function reconstructSettings(_isGuildSettings) { //
 
 
 function hideConfirmationPanel(pop) {
-    pop.style.animation = 'slide-down 0.15s ease-in-out forwards';
+    pop.style.animation = "slide-down 0.15s ease-in-out forwards";
     setTimeout(() => {
-        pop.style.display = 'none';
+        pop.style.display = "none";
     }, 1500); 
 }
 
 function showConfirmationPanel(pop) {
-    pop.style.display = 'block';
-    pop.style.animation = 'slide-up 0.5s ease-in-out forwards';
+    pop.style.display = "block";
+    pop.style.animation = "slide-up 0.5s ease-in-out forwards";
 }
 
 
 function generateConfirmationPanel() {
-    const popupDiv = createEl('div',{id:'settings-unsaved-popup'});
+    const popupDiv = createEl("div",{id:"settings-unsaved-popup"});
   
-    const textDiv = createEl('div', {
-        id: 'settings-unsaved-popup-text',
-        textContent: t('unsavedChangesWarning')
+    const textDiv = createEl("div", {
+        id: "settings-unsaved-popup-text",
+        textContent: t("unsavedChangesWarning")
     });
     popupDiv.appendChild(textDiv);
   
-    const resetButton = createEl('span', {
-        id: 'settings-unsaved-popup-resetbutton',
-        textContent: t('resetButton') 
+    const resetButton = createEl("span", {
+        id: "settings-unsaved-popup-resetbutton",
+        textContent: t("resetButton") 
     });
 
-    resetButton.addEventListener('click',function() {
+    resetButton.addEventListener("click",function() {
 
         hideConfirmationPanel(popupDiv);
-        const nickinput = getId('new-nickname-input')
+        const nickinput = getId("new-nickname-input")
         if(nickinput) {
             nickinput.value = currentUserNick;
         }
-        const profileimg = getId('profileImage');
+        const profileimg = getId("profileImage");
         if(profileimg) {
             profileimg.files = null;
         }
-        const settingsSelfProfile = getId('settings-self-profile');
+        const settingsSelfProfile = getId("settings-self-profile");
 
         if(lastConfirmedProfileImg) {
             settingsSelfProfile.src = lastConfirmedProfileImg;
@@ -515,24 +515,24 @@ function generateConfirmationPanel() {
             
         }
 
-        const guildNameInput = getId('guild-overview-name-input');
+        const guildNameInput = getId("guild-overview-name-input");
         if(guildNameInput) {
             guildNameInput.value = currentGuildName;
         }
 
         isUnsaved = false;
         isChangedProfile = false;
-        getId('');
+        getId("");
 
     });
     popupDiv.appendChild(resetButton);
   
-    const applyButton = createEl('button');
-    applyButton.id = 'settings-unsaved-popup-applybutton';
-    applyButton.textContent = t('saveChanges');
+    const applyButton = createEl("button");
+    applyButton.id = "settings-unsaved-popup-applybutton";
+    applyButton.textContent = t("saveChanges");
     applyButton.onclick = applySettings;
     popupDiv.appendChild(applyButton);
-    getId('settings-menu').appendChild(popupDiv);
+    getId("settings-menu").appendChild(popupDiv);
   
     return popupDiv;
 }
@@ -542,7 +542,7 @@ function shakeScreen() {
     currentSettingsType = null;
     if (!currentPopUp) { currentPopUp = generateConfirmationPanel(); }
     showConfirmationPanel(currentPopUp);
-    currentPopUp.style.backgroundColor = '#ff1717';
+    currentPopUp.style.backgroundColor = "#ff1717";
 
     SHAKE_FORCE += 0.5;
     if (SHAKE_FORCE > 5) {
@@ -551,13 +551,13 @@ function shakeScreen() {
 
     clearTimeout(resetTimeout);
 
-    document.body.classList.remove('shake-screen'); 
-    document.body.classList.add('shake-screen');
+    document.body.classList.remove("shake-screen"); 
+    document.body.classList.add("shake-screen");
 
     resetTimeout = setTimeout(() => {
         SHAKE_FORCE = 1; 
-        document.body.classList.remove('shake-screen'); 
-        currentPopUp.style.backgroundColor = '#0f0f0f'; 
+        document.body.classList.remove("shake-screen"); 
+        currentPopUp.style.backgroundColor = "#0f0f0f"; 
     }, 5000); 
 
     return;
