@@ -1,5 +1,4 @@
 //TODO: make self discriminator be status as default and show discriminator when hovered
-//Clicking would copy username#discriminator
 let currentUserId;
 let currentDiscriminator = null;
 let currentUserNick;
@@ -15,6 +14,23 @@ userNames["1"] = {
 };
 
 
+function copySelfName() {
+    if(!currentUserNick | !currentDiscriminator) return;
+    navigator.clipboard.writeText(`${currentUserNick}#${currentDiscriminator}`);
+    const copiedTextBox = document.createElement("div");
+    copiedTextBox.textContent = "Copied";
+    copiedTextBox.style.position = "fixed";
+    copiedTextBox.style.zIndex = 15;
+    copiedTextBox.style.left = `${event.clientX}px`;
+    copiedTextBox.style.top = `${event.clientY-30}px`;
+    copiedTextBox.style.background = "black";
+    copiedTextBox.style.color = "white";
+    copiedTextBox.style.padding = "5px";
+    copiedTextBox.style.borderRadius = "5px";
+    copiedTextBox.style.pointerEvents = "none";
+    document.body.appendChild(copiedTextBox);
+    setTimeout(() => copiedTextBox.remove(), 2500);
+}
 
 function getUserNick(userId) { 
     if(userId && currentUserId && currentUserId == userId) {

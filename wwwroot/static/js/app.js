@@ -216,6 +216,7 @@ function initializeListeners() {
     const guildContainer = getId("guild-container");
     guildContainer.addEventListener("click", handleGuildClick);
 
+    getId("avatar-wrapper").addEventListener("click",copySelfName);
     addContextListeners();
 }
 
