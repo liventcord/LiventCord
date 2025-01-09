@@ -181,7 +181,7 @@ function getMissingHtml(title) {
         <div id="settings-title">${t("Overview")}</div>
         <div id="guild-settings-rightbar">
             <p style="font-size:20px; color:white; font-weight:bold; margin-top: -150px;">${title}</p>
-            <img src="https://liventcord.github.io/LiventCordPages/static/404_files/noodle.gif">
+            <img src="/static/404_files/noodle.gif">
         </div>
     `;
 }
