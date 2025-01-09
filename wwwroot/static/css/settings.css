@@ -896,6 +896,45 @@ th {
 #self-discriminator {
     position: absolute; left: 50px; top: 22px; font-size: 13px; color:#adadad
 }
+#avatar-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+#self-discriminator {
+    position: absolute;
+    left: 50px;
+    top: 22px;
+    font-size: 13px;
+    color: #adadad;
+    display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+#self-status {
+    position: absolute;
+    left: 50px;
+    top: 22px;
+    font-size: 13px;
+    color: #adadad;
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+}
+
+#avatar-wrapper:hover #self-discriminator {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#avatar-wrapper:hover #self-status {
+    opacity: 0;
+    transform: translateY(-20px);
+}
 #loading-screen {
     position: fixed;
     width: 100%;
