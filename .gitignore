@@ -6,6 +6,7 @@ Migrations/
 Logs/
 Data/
 wwwroot/static/css/loginfullstyles.css
+wwwroot/static/css/fullinvite.min.css
 wwwroot/static/w
 wwwroot/static/404
 appsettings.Development.json

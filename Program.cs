@@ -44,11 +44,12 @@ else
 
     if (string.IsNullOrEmpty(connectionString))
     {
-        connectionString = "Data/liventcord.db";
+        connectionString = Path.Combine("Data", "liventcord.db");
         Console.WriteLine("Warning: SqlitePath is missing. Using default path: Data/liventcord.db");
     }
 
-    var dataDirectory = Path.GetDirectoryName(connectionString);
+    var fullPath = Path.GetFullPath(connectionString);
+    var dataDirectory = Path.GetDirectoryName(fullPath);
     if (!string.IsNullOrEmpty(dataDirectory) && !Directory.Exists(dataDirectory))
     {
         Directory.CreateDirectory(dataDirectory);
@@ -56,8 +57,9 @@ else
     }
 
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite($"Data Source={connectionString}")
+        options.UseSqlite($"Data Source={fullPath}")
     );
+
 }
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)

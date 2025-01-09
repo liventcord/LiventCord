@@ -43,73 +43,74 @@ function assignElements() {
 }
 
 
+let initialState = {
+    user: {
+        id: null,
+        nickname: null,
+        status: null,
+        discriminator: null,
+        maskedEmail: null,
+    },
+    ownerId: null,
+    permissionsMap: null,
+    guilds: [],
+};
 
-
-let initialGuildId;
-let initialChannelId;
-let initialOwnerId;
-let initialUserId;
-let initialNickname;
-let initialDiscriminator;
-let initialPermissionsMap;
-let initialGuildsData;
-let maskedEmail;
 function initialiseState(data) {
     const {
         email,
         userId,
-        nickName: nick_name,
-        userDiscriminator: user_discriminator,
+        nickName,
+        userStatus,
+        userDiscriminator,
         guildName,
         ownerId,
-        messagesReaden,
-        sharedGuildsMap: shared_guilds_map,
+        sharedGuildsMap,
         permissionsMap,
-        friendsStatus: passed_friends_status,
-        dmFriends: passed_dm_friends = [],
-        guildsJson: guildsArray,
-        guildMembers: guild_members
-    } = data;  
-    
+        friendsStatus,
+        dmFriends = [],
+        guildsJson,
+    } = data;
+
     console.log("Data loaded:", data);
 
-    initialOwnerId = ownerId;
-    initialUserId = userId;
-    initialNickname = nick_name;
-    initialDiscriminator = user_discriminator;
-    initialPermissionsMap = permissionsMap;
-    initialGuildsData = guildsArray;
-    currentGuildName = guildName;
-    updateDmsList(passed_dm_friends);
-    setupSampleUsers();
-    friendCache.initialiseFriends(passed_friends_status);
+    initialState = {
+        user: {
+            id: userId,
+            nickname: nickName,
+            status: userStatus,
+            discriminator: userDiscriminator,
+            maskedEmail: getMaskedEmail(email),
+        },
+        ownerId,
+        permissionsMap,
+        guilds: guildsJson || [],
+    };
 
-    maskedEmail = getMaskedEmail(email);
+    currentGuildName = guildName;
+    updateDmsList(dmFriends);
+    setupSampleUsers();
+    friendCache.initialiseFriends(friendsStatus);
 
     const guildsList = document.getElementById("guilds-list");
-    
-    if (Array.isArray(guildsArray)) {
-        guildsArray.forEach(guild => {
-            guildCache.getGuild(guild.guildId).setName(guild.guildName);
-            cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
-            guild.guildMembers.forEach( ()=> {
-                //console.log(guild.guildMembers)
-            });
-            guild.guildChannels.forEach( ()=> {
-                //console.log(guild.guildChannels)
-            });
+
+    if (Array.isArray(guildsJson)) {
+        guildsJson.forEach(({ guildId, guildName, guildMembers, guildChannels }) => {
+            guildCache.getGuild(guildId).setName(guildName);
+            cacheInterface.setMemberIds(guildId, guildMembers);
         });
-        guildsList.innerHTML += renderGuilds(guildsArray);
+
+        guildsList.innerHTML += renderGuilds(guildsJson);
     } else {
         console.error("Non-array guild data");
     }
+
     addKeybinds();
 
     const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
     if (selectedGuild) {
         selectedGuild.parentNode.classList.add("selected-guild");
     }
-
 }
 
 async function loadInitialData() {
@@ -125,14 +126,13 @@ async function loadInitialData() {
             initialiseState(initData); 
             initializeApp();
         } catch (e) {
-            alertUser(rawResponse);
+            console.error(e);
+            alertUser(e.message);
         }
     } catch (error) {
         console.error("Error loading initial data:", error);
     }
 }
-
-
 document.addEventListener("DOMContentLoaded", function () {
     loadInitialData();
     window.onerror = (event, url, line, column, error) => {
@@ -244,8 +244,8 @@ function initializeGuild() {
     
     
     fetchMembers();
-    if (isOnGuild && initialGuildsData && initialGuildsData.length > 0) {
-        initialGuildsData.forEach(data => {
+    if (isOnGuild && initialState.guilds && initialState.guilds.length > 0) {
+        initialState.guilds.forEach(data => {
             if(data.guildId == currentGuildId) {
                 cacheInterface.addChannel(data.guildId, data.guildChannels);
                 updateChannels(data.guildChannels);
@@ -256,11 +256,12 @@ function initializeGuild() {
 
 }
 function initializeProfile() {
-    currentUserId = initialUserId;
-    currentUserNick = initialNickname;
-    currentDiscriminator = initialDiscriminator;
+    currentUserId = initialState.user.id;
+    currentUserNick = initialState.user.nickname;
+    currentDiscriminator = initialState.user.discriminator;
     getId("self-name").textContent = currentUserNick;
-    getId("self-discriminator").textContent = "#"+initialDiscriminator;
+    getId("self-discriminator").textContent = "#"+initialState.user.discriminator;
+    getId("self-status").textContent = initialState.user.status;
     updateSelfProfile(currentUserId);
 }
 

@@ -255,7 +255,7 @@ function loadGuild(guildId,channelId,guildName,isChangingUrl=true,isInitial=fals
     addKeybinds();
 
     currentGuildId = guildId;
-    permissionManager = new PermissionManager(initialPermissionsMap, currentGuildId);
+    permissionManager = new PermissionManager(initialState.permissionsMap, currentGuildId);
     selectGuildList(guildId);
     if(guildName) {
         currentGuildName = guildName;

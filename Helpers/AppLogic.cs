@@ -71,6 +71,7 @@ namespace LiventCord.Helpers
                     email = user.Email ?? "",
                     userId,
                     nickName = user.Nickname ?? "",
+                    userStatus = user.Status ?? "",
                     userDiscriminator = user.Discriminator ?? "",
                     guildMembers = new List<PublicUser>(),
                     sharedGuildsMap = new List<string>(),

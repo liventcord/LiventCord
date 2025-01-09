@@ -93,7 +93,7 @@ function addUser(userId, nick, discriminator,isBlocked) {
 function updateUserOnlineStatus(userId, isOnline) {
     if (userId === currentUserId) return; 
 
-    const guildMembers = guildCache.getMembers(currentGuildId);
+    const guildMembers = cacheInterface.getMembers(currentGuildId);
 
     for (const guildId in guildMembers) {
         const users = guildMembers[guildId];
