@@ -322,7 +322,7 @@
                         <a href="/app" data-track-nav="login" data-track="login" data-w-id="c36f0e26-d62e-952f-a4f7-a242f3e01e65" class="button-white login-button-js w-button">Login</a>
                     </div>
                     <div class="menu-button w-nav-button">
-                        <img src="/static/images/wardmarkcolor.png" loading="lazy" data-w-id="c36f0e26-d62e-952f-a4f7-a242f3e01e68" alt=""/>
+                        <img src="/static/images/wardmarksmall.png" loading="lazy" data-w-id="c36f0e26-d62e-952f-a4f7-a242f3e01e68" alt=""/>
                         <img src="/static/images/wardmarkcolor.png" loading="lazy" alt="" class="invert-color-black"/>
                         <div class="mubu-btn"></div>
                     </div>
@@ -950,13 +950,7 @@
       <script src="/static/404/bodyEnd.js" defer></script>
       
 
-        <script type="text/javascript"  defer>
-        (()=>{"use strict";var o,e,t,n,r,a=["iPhone","iPad","iPod"],c=["Win32","Win64","Windows","WinCE"],i=["Macintosh","MacIntel","MacPPC","Mac68K"],d=["Linux","Linux i686","Linux armv7l","Linux armv8l","Linux x86_64"];function l(){var o=window.location.hostname;return["discord.com","ptb.discord.com","canary.discord.com","staging.discord.co"].includes(o)?o:"discord.com"}o=l(),e="https://"+o+"/register",t="https://"+o+"/channels/@me",n=null!=window.localStorage.getItem("token"),(r=document.querySelectorAll(".open-or-signup-js")).length>0&&r.forEach((function(o){if(n){o.innerText="Open Discord";o.href=t}else{o.innerText="Sign up";o.href=e}}));!function(){var o,e,t,n,r=!0,a=l(),c="https://"+a+"/login",i="https://"+a+"/register",d="https://"+a+"/channels/@me";if(null!=window.localStorage.getItem("token")){o="Open Discord";e=d;r=!0;t="Open Discord";n=d}else{r=!1;o="Login";t="Sign up";e=c;n=i}
-var s=document.querySelectorAll(".login-button-js"),u=document.querySelectorAll(".footer-open-discord-button-js");s.length>0&&s.forEach((function(t){r||t.classList.add("hide-on-mobile");t.innerText=o;t.href=e;r&&(t.dataset.trackNav="navbar-open-button")}));u.length>0&&u.forEach((function(o){window.innerWidth<=768?o.innerText="Download":o.innerText=t;o.href=n}))}();!function(){var o=l(),e=function(){var o=window.navigator.userAgent,e=window.navigator.platform;return a.includes(e)?"IOS":i.includes(e)?"MAC":c.includes(e)?"WINDOWS":/Android/.test(o)?"ANDROID":d.includes(e)||/Linux/.test(o)?"LINUX":void 0}(),t=!1,n={text:"Download",href:"https://discord.com/download"};switch(e){case"IOS":n.text="Download on the App Store";n.href="https://itunes.apple.com/us/app/discord-chat-for-games/id985746746";t=!0;break;case"ANDROID":n.text="Download on Google Play";n.href="https://play.google.com/store/apps/details?id=com.discord";t=!0;break;case"WINDOWS":n.text="Download for Windows"
-;n.href="https://"+o+"/api/download?platform=win";break;case"MAC":n.text="Download for Mac";n.href="https://"+o+"/api/download?platform=osx";break;case"LINUX":n.text="Download for Linux";n.href="https://"+o+"/api/download?platform=linux"}var r=document.querySelectorAll(".download-button"),s=document.querySelectorAll(".menu-button-login"),u=document.querySelectorAll(".ua-download-btn"),h=document.querySelectorAll(".download-other"),f=document.querySelectorAll(".button-blue-menu");r.forEach((function(o){o.text=n.text;o.href=n.href}));s.forEach((function(o){o.hidden=t}));u.forEach((function(o){o.href=n.href;o.text="Download";o.addEventListener("click",(function(){fbq("trackCustom","Download",{source:"banner-download"});rdt("track","Purchase")}),!1)}));h.forEach((function(o){o.href=n.href;o.text="Download";o.addEventListener("click",(function(){fbq("trackCustom","Download",{source:"other-download"});rdt("track","Purchase")}),!1)}));f.forEach((function(o){o.href=n.href;o.text="Download"
-;o.addEventListener("click",(function(){fbq("trackCustom","Download",{source:"menu-download"});rdt("track","Purchase")}),!1)}))}()})();
-//# sourceMappingURL=loginOrDownload.js.map
-</script>
+      <script type="text/javascript" src="/static/w/assets/loginOrDownload.js" defer></script>
 
 </script>
 

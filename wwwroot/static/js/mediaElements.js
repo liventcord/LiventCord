@@ -215,40 +215,8 @@ function processMediaLink(link, newMessage, messageContentElement, content) {
             spanElement.style.marginLeft = "0px";
             messageContentElement.appendChild(spanElement);
         }
-        function escapeHtml(unsafe) {
-            return unsafe.replace(/[&<>"'`=\/]/g, function (char) {
-                switch (char) {
-                    case '&': return '&amp;';
-                    case '<': return '&lt;';
-                    case '>': return '&gt;';
-                    case '"': return '&quot;';
-                    case "'": return '&#x27;';
-                    case '`': return '&#x60;';
-                    case '=': return '&#x3D;';
-                    case '/': return '&#x2F;';
-                    default: return char;
-                }
-            });
-        }
         
-        function isValidUrl(url) {
-            try {
-                const parsedUrl = new URL(url);
-                return ['http:', 'https:'].includes(parsedUrl.protocol);
-            } catch (e) {
-                return false;
-            }
-        }
-        
-        function processAndSanitizeUrl(link) {
-            if (isValidUrl(link)) {
-                const sanitizedLink = escapeHtml(link);
-                return sanitizedLink;
-            } else {
-                console.error("Invalid URL:", link);
-                return "";
-            }
-        }
+
 
         //if (!isJson && !isYt) {
         //    if (String(userId) === String(lastSenderID)) {
@@ -261,7 +229,7 @@ function processMediaLink(link, newMessage, messageContentElement, content) {
 
         if (isImageURL(link) || isAttachmentUrl(link)) {
             mediaElement = document.createElement("img");
-            mediaElement.src = processAndSanitizeUrl(link);
+            mediaElement.src = link;
             mediaElement.style.width = "100%"; 
             mediaElement.style.height = "auto";
             mediaElement.dataset.dummy = link;

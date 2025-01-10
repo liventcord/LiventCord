@@ -1,25 +1,70 @@
+(() => {
+    "use strict";
 
-function detectPlatform() {
-    const userAgent = navigator.userAgent;
-    if (/Windows/.test(userAgent)) return 'WINDOWS';
-    if (/Macintosh|MacIntel/.test(userAgent)) return 'MAC';
-    if (/Linux/.test(userAgent)) return 'LINUX';
-    if (/Android/.test(userAgent)) return 'ANDROID';
-    if (/iPhone|iPad|iPod/.test(userAgent)) return 'IOS';
-    return 'UNKNOWN';
-}
-
-function setupButtons() {
-    const platform = detectPlatform();
-    const downloadButton = document.querySelector('.download-linux .w-dropdown');
-
-    let downloadLink = `/api/download?platform=${platform}`
-
-
-    downloadButton.onclick = function() {
-        window.location.href = downloadLink;
+    const platforms = {
+        IOS: { text: "Download on the App Store", href: "/api/download?platform=ios", hideLogin: true },
+        ANDROID: { text: "Download on Google Play", href: "/api/download?platform=android", hideLogin: true },
+        WINDOWS: { text: "Download for Windows", href: "/api/download?platform=win" },
+        MAC: { text: "Download for Mac", href: "/api/download?platform=osx" },
+        LINUX: { text: "Download for Linux", href: "/api/download?platform=linux" }
     };
 
+    const userAgent = navigator.userAgent.toLowerCase();
+    const platform = navigator.platform;
 
-}
-setupButtons();
+    const devicePlatform = 
+        /iphone|ipad|ipod/.test(userAgent) ? "IOS" :
+        /android/.test(userAgent) ? "ANDROID" :
+        ["win32", "win64", "windows", "wince"].includes(platform.toLowerCase()) ? "WINDOWS" :
+        ["macintosh", "macintel", "macppc", "mac68k"].includes(platform.toLowerCase()) ? "MAC" :
+        /linux/.test(platform.toLowerCase()) ? "LINUX" : "UNKNOWN";
+
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : '';
+    
+    const urls = {
+        register: `${protocol}//${hostname}${port}/register`,
+        login: `${protocol}//${hostname}${port}/login`,
+        dashboard: `${protocol}//${hostname}${port}/channels/@me`
+    };
+    
+    const isLoggedIn = window.localStorage.getItem("token") !== null;
+    
+    const buttons = [
+        { selector: ".open-or-signup-js", text: isLoggedIn ? "Open Discord" : "Sign up", href: isLoggedIn ? urls.dashboard : urls.register },
+        { selector: ".login-button-js", text: isLoggedIn ? "Open Discord" : "Login", href: isLoggedIn ? urls.dashboard : urls.login },
+        { selector: ".footer-open-discord-button-js", text: isLoggedIn ? "Open Discord" : "Download", href: isLoggedIn ? urls.dashboard : `${protocol}//${hostname}${port}/download` }
+    ];
+        
+    const download = platforms[devicePlatform] || { text: platforms, href: "/download" };
+
+    const downloadButtons = [
+        { selector: ".download-button", text: download.text, href: download.href },
+        { selector: ".menu-button-login", hidden: download.hideLogin, text: "", href: "" },
+        { selector: ".ua-download-btn", text: "Download", href: download.href, track: "banner-download" },
+        { selector: ".download-other", text: "Download", href: download.href, track: "other-download" },
+        { selector: ".button-blue-menu", text: "Download", href: download.href, track: "menu-download" }
+    ];
+
+    buttons.forEach(({ selector, text, href }) => {
+        document.querySelectorAll(selector).forEach(el => {
+            if (text) el.innerText = text;
+            if (href) el.href = href;
+        });
+    });
+
+    downloadButtons.forEach(({ selector, text, href, hidden, track }) => {
+        document.querySelectorAll(selector).forEach(el => {
+            if (hidden !== undefined) el.hidden = hidden;
+            if (text) el.innerText = text;
+            if (href) el.href = href;
+            if (track) {
+                el.addEventListener("click", () => {
+                    fbq("trackCustom", "Download", { source: track });
+                    rdt("track", "Purchase");
+                });
+            }
+        });
+    });
+})();

@@ -65,10 +65,6 @@ namespace LiventCord.Models
         [Column("language")]
         public string? Language { get; set; }
 
-        [StringLength(15)]
-        [Column("phone_number")]
-        public string? PhoneNumber { get; set; }
-
         [StringLength(512)]
         [Column("social_media_links")]
         public string? SocialMediaLinks { get; set; }

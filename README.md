@@ -1,4 +1,4 @@
-# Main Environment Setup
+# Dev Environment Setup
 
 This branch sets up environment for running the server.
 
