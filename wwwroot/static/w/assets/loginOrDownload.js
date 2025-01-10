@@ -32,9 +32,9 @@
     const isLoggedIn = window.localStorage.getItem("token") !== null;
     
     const buttons = [
-        { selector: ".open-or-signup-js", text: isLoggedIn ? "Open Discord" : "Sign up", href: isLoggedIn ? urls.dashboard : urls.register },
-        { selector: ".login-button-js", text: isLoggedIn ? "Open Discord" : "Login", href: isLoggedIn ? urls.dashboard : urls.login },
-        { selector: ".footer-open-discord-button-js", text: isLoggedIn ? "Open Discord" : "Download", href: isLoggedIn ? urls.dashboard : `${protocol}//${hostname}${port}/download` }
+        { selector: ".open-or-signup-js", text: isLoggedIn ? "Open LiventCord" : "Sign up", href: isLoggedIn ? urls.dashboard : urls.register },
+        { selector: ".login-button-js", text: isLoggedIn ? "Open LiventCord" : "Login", href: isLoggedIn ? urls.dashboard : urls.login },
+        { selector: ".footer-open-LiventCord-button-js", text: isLoggedIn ? "Open LiventCord" : "Download", href: isLoggedIn ? urls.dashboard : `${protocol}//${hostname}${port}/download` }
     ];
         
     const download = platforms[devicePlatform] || { text: platforms, href: "/download" };

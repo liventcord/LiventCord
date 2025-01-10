@@ -238,7 +238,7 @@ namespace LiventCord.Controllers
             if (!_fileTypeProvider.TryGetContentType(file.FileName, out string contentType))
                 contentType = "application/octet-stream";
 
-            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{file.FileName}\"");
+            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{file.FileName}\"");
             return File(file.Content, contentType);
         }
 

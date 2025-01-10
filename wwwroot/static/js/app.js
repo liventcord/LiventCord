@@ -81,6 +81,7 @@ function initialiseState(data) {
             status: userStatus,
             discriminator: userDiscriminator,
             maskedEmail: getMaskedEmail(email),
+            mail: email,
         },
         ownerId,
         permissionsMap,
@@ -112,12 +113,14 @@ function initialiseState(data) {
         selectedGuild.parentNode.classList.add("selected-guild");
     }
 }
-
 async function loadInitialData() {
     try {
         const response = await fetch("/api/init");
         if (!response.ok) {
-            throw new Error("Failed to load initial data");
+            if(response.status == 401) {
+                await router.changeToLogin();
+                return;
+            }
         }
         const rawResponse = await response.text(); 
 
@@ -230,7 +233,7 @@ function isDefined(variable) {
 }
 function initializeGuild() {
     initialiseMe();
-    let {isValid,initialGuildId,initialChannelId,initialFriendId} = validateRoute();
+    let {isValid,initialGuildId,initialChannelId,initialFriendId} = router.validateRoute();
     console.warn(isValid,initialGuildId,initialChannelId);
     if(isValid) {
         loadGuild(initialGuildId, initialChannelId,null,false,true);

@@ -40,61 +40,61 @@ namespace LiventCord.Helpers
         }
 
         public async Task HandleInitRequest(HttpContext context)
-{
-    try
-    {
-        string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        _logger.LogInformation("userId: {UserId}", userId);
-
-        if (string.IsNullOrEmpty(userId))
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await context.Response.WriteAsJsonAsync(new { message = "User not found." });
-            return;
+            try
+            {
+                string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                _logger.LogInformation("userId: {UserId}", userId);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsJsonAsync(new { message = "User not found." });
+                    return;
+                }
+
+                _logger.LogInformation("Attempting to retrieve user from database...");
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
+                    await _loginController.Logout();
+                    return;
+                }
+
+                _logger.LogInformation("Fetching guilds for user...");
+                var guilds = await _membersController.GetUserGuilds(userId);
+
+                var jsonData = new
+                {
+                    email = user.Email ?? "",
+                    userId,
+                    nickName = user.Nickname ?? "",
+                    userStatus = user.Status ?? "",
+                    userDiscriminator = user.Discriminator ?? "",
+                    guildMembers = new List<PublicUser>(),
+                    sharedGuildsMap = new List<string>(),
+                    permissionsMap = new Dictionary<string, string>(),
+                    friendsStatus = await _friendController.GetFriendsStatus(userId),
+                    dmFriends = new List<string>(),
+                    guildsJson = guilds,
+                };
+
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(jsonData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching the initial data.");
+
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    await context.Response.WriteAsJsonAsync(new { message = "An internal server error occurred." });
+                }
+            }
         }
-
-        _logger.LogInformation("Attempting to retrieve user from database...");
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-        if (user == null)
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
-            await _loginController.Logout();
-            return;
-        }
-
-        _logger.LogInformation("Fetching guilds for user...");
-        var guilds = await _membersController.GetUserGuilds(userId);
-
-        var jsonData = new
-        {
-            email = user.Email ?? "",
-            userId,
-            nickName = user.Nickname ?? "",
-            userStatus = user.Status ?? "",
-            userDiscriminator = user.Discriminator ?? "",
-            guildMembers = new List<PublicUser>(),
-            sharedGuildsMap = new List<string>(),
-            permissionsMap = new Dictionary<string, string>(),
-            friendsStatus = await _friendController.GetFriendsStatus(userId),
-            dmFriends = new List<string>(),
-            guildsJson = guilds,
-        };
-
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(jsonData);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "An error occurred while fetching the initial data.");
-
-        if (!context.Response.HasStarted)
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsJsonAsync(new { message = "An internal server error occurred." });
-        }
-    }
-}
 
 
         public async Task HandleChannelRequest(

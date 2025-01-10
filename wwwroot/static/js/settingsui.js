@@ -196,7 +196,7 @@ function getAccountSettingsHtml() {
                 <div id="set-info-nick">${currentUserNick}</div>
                 <div id="set-info-title-email">${t("Email")}</div>
                 <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password" onclick="toggleEmail()"> </i>
-                <div id="set-info-email">${maskedEmail}</div>
+                <div id="set-info-email">${initialState.user.maskedEmail}</div>
             </div>
             <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" onkeydown="onEditNick()" maxlength="32">
             <img id="settings-self-profile" onclick="triggerFileInput()" style="user-select: none;">
