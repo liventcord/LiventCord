@@ -77,7 +77,7 @@ namespace LiventCord.Models
                 NickName = Nickname,
                 Discriminator = Discriminator,
                 Status = Status,
-                IsOnline =  IsOnline(),
+                IsOnline = IsOnline(),
                 CreatedAt = CreatedAt,
             };
         }
@@ -91,7 +91,8 @@ namespace LiventCord.Models
         public virtual ICollection<GuildPermissions> GuildPermissions { get; set; } =
             new List<GuildPermissions>();
 
-        public bool IsOnline() {
+        public bool IsOnline()
+        {
             return true;
         }
     }

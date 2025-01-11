@@ -1166,7 +1166,7 @@ textarea::-webkit-scrollbar-track {
 }
 .embed-container {
     border-radius: 5px;
-    width: 480px; height: 150px;
+    width: 480px; height: 100px;
     padding: 15px;
     font-size: 14px;
     margin-top: 10px;

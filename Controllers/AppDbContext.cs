@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -315,6 +317,24 @@ namespace LiventCord.Controllers
                     .WithMany()
                     .HasForeignKey(m => m.ChannelId)
                     .OnDelete(DeleteBehavior.Cascade);
+                entity
+                    .Property(e => e.Metadata)
+                    .HasConversion(
+                        v =>
+                            JsonSerializer.Serialize(
+                                v,
+                                new JsonSerializerOptions
+                                {
+                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                                }
+                            ),
+                        v =>
+                            JsonSerializer.Deserialize<Metadata>(
+                                v,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                            )
+                    )
+                    .HasColumnType("json");
             });
         }
     }

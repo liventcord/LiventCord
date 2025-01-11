@@ -59,7 +59,6 @@ else
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite($"Data Source={fullPath}")
     );
-
 }
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
@@ -83,6 +82,8 @@ builder.Services.AddScoped<PermissionsController>();
 builder.Services.AddScoped<UploadController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<MetadataService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

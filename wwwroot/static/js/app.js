@@ -179,7 +179,7 @@ function initializeImages() {
 function initializeElements() {
     createChatScrollButton();
     chatContainer.addEventListener("scroll", handleScroll);
-    initialisechatInput();
+    initialiseChatInput();
     closeReplyMenu();
     adjustHeight();
     setDropHandler();

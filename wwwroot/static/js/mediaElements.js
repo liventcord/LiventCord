@@ -133,7 +133,7 @@ function createVideoElement(url) {
     videoElement.controls = true; 
     return videoElement;
 }
-async function createMediaElement(content, messageContentElement, newMessage, attachmentUrls, callback) {
+async function createMediaElement(content, messageContentElement, newMessage, attachmentUrls,metadata) {
     let links = extractLinks(content) || [];
     let mediaCount = 0;
     let linksProcessed = 0;
@@ -151,7 +151,7 @@ async function createMediaElement(content, messageContentElement, newMessage, at
     const processLinks = async () => {
         while (linksProcessed < links.length && mediaCount < maxLinks) {
             try {
-                const isError = await processMediaLink(links[linksProcessed], newMessage, messageContentElement, content);
+                const isError = await processMediaLink(links[linksProcessed], newMessage, messageContentElement, content,metadata);
                 if (!isError) {
                     mediaCount++;
                 }
@@ -161,14 +161,17 @@ async function createMediaElement(content, messageContentElement, newMessage, at
                 linksProcessed++;
             }
         }
-        if (callback) {
-            callback(mediaCount);
-        }
     };
     
     await processLinks();
 }
-function processMediaLink(link, newMessage, messageContentElement, content) {
+function createRegularText(content) {
+    const spanElement = createEl("p", { id: "message-content-element" });
+    spanElement.textContent = content;
+    spanElement.style.marginLeft = "0px";
+    messageContentElement.appendChild(spanElement);
+}
+function processMediaLink(link, newMessage, messageContentElement, content,metadata) {
     return new Promise((resolve, reject) => {
         let mediaElement = null;
         newMessage.setAttribute("data-attachment_url", link);
@@ -209,13 +212,6 @@ function processMediaLink(link, newMessage, messageContentElement, content) {
             }
         };
 
-        function createRegularText(content) {
-            const spanElement = createEl("p", { id: "message-content-element" });
-            spanElement.textContent = content;
-            spanElement.style.marginLeft = "0px";
-            messageContentElement.appendChild(spanElement);
-        }
-        
 
 
         //if (!isJson && !isYt) {
@@ -265,7 +261,7 @@ function processMediaLink(link, newMessage, messageContentElement, content) {
                     messageContentElement.appendChild(urlSpan);
                 }
             });
-            displayWebPreview(messageContentElement, link);
+            displayWebPreview(messageContentElement, link,metadata);
         } else {
             createRegularText(content);
             resolve(true);
@@ -277,61 +273,29 @@ function processMediaLink(link, newMessage, messageContentElement, content) {
 
 
 
-function appendEmbedToMessage(messageElement, url , data) {
-    const embedContainer = createEl("div",{className:"embed-container"});
+function appendEmbedToMessage(messageElement, url, data) {
+    const embedContainer = createEl("div", { className: "embed-container" });
     const siteName = data.siteName;
-    if(siteName) {
-        const headerElement = createEl("p", {textContent : siteName});
+    if (siteName) {
+        const headerElement = createEl("p", { textContent: siteName });
         embedContainer.appendChild(headerElement);
     }
-    const titleElement = createEl("a", {textContent: data.title,className: "url-link",href: url,target: "_blank"});
-    
-    const descriptionElement = createEl("p", {textContent : data.description});
+    const titleElement = createEl("a", { textContent: data.title, className: "url-link", href: url, target: "_blank" });
+    const descriptionElement = createEl("p", { textContent: data.description });
 
     embedContainer.appendChild(titleElement);
     embedContainer.appendChild(descriptionElement);
     messageElement.appendChild(embedContainer);
-
 }
 
-const previewsCache = new Map();
-const pendingRequests = new Map();
-
-async function displayWebPreview(messageElement, url) {
+function displayWebPreview(messageElement, url, data) {
     try {
-        if (previewsCache.has(url)) {
-            const cachedData = previewsCache.get(url);
-            appendEmbedToMessage(messageElement,url, cachedData);
-            return;
-        }
-        if (pendingRequests.has(url)) {
-            const pendingPromise = pendingRequests.get(url);
-            const cachedData = await pendingPromise;
-            appendEmbedToMessage(messageElement,url, cachedData);
-            return;
-        }
-
-        const requestPromise = (async () => {
-            try {
-                const response = await fetch(`${linkWorkerUrl}/?url=${encodeURIComponent(url)}`);
-                const data = await response.json();
-                if (!data.title && !data.description) {
-                    console.log("No metadata found.");
-                    return null; 
-                }
-                previewsCache.set(url, data);
-                return data;
-            } catch (error) {
-                console.error("Error fetching web preview:", error);
-                return null; 
-            }
-        })();
-
-        pendingRequests.set(url, requestPromise);
-        const data = await requestPromise;
-        pendingRequests.delete(url);
         if (data) {
-            appendEmbedToMessage(messageElement,url, data);
+            appendEmbedToMessage(messageElement, url, {
+                title: data.title,
+                description: data.description || data.title,
+                siteName: data.siteName
+            });
         }
     } catch (error) {
         console.error("Error displaying web preview:", error);

@@ -14,11 +14,17 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
+        private readonly MetadataService _metadataService;
 
-        public MessageController(AppDbContext context, PermissionsController permissionsController)
+        public MessageController(
+            AppDbContext context,
+            PermissionsController permissionsController,
+            MetadataService metadataService
+        )
         {
             _permissionsController = permissionsController;
             _context = context;
+            _metadataService = metadataService;
         }
 
         // Post Message (Guild or DM)
@@ -193,6 +199,19 @@ namespace LiventCord.Controllers
             string? reactionEmojisIds
         )
         {
+            Metadata metadata = new();
+
+            if (Uri.IsWellFormedUriString(content, UriKind.Absolute))
+            {
+                var fetchedMetadata = await _metadataService.ExtractMetadataAsync(content);
+                metadata = new Metadata
+                {
+                    Title = fetchedMetadata.Title,
+                    Description = fetchedMetadata.Description,
+                    SiteName = fetchedMetadata.SiteName,
+                };
+            }
+
             var message = new Message
             {
                 MessageId = Utils.CreateRandomId(),
@@ -204,6 +223,7 @@ namespace LiventCord.Controllers
                 AttachmentUrls = attachmentUrls,
                 ReplyToId = replyToId,
                 ReactionEmojisIds = reactionEmojisIds,
+                Metadata = metadata,
             };
 
             await _context.Messages.AddAsync(message);

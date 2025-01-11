@@ -394,6 +394,8 @@ function displayChatMessage(data) {
     const addToTop = data.addToTop;
     const isBot = data.isBot;
     const replyOf = data.replyOf;
+    const metadata = data.metadata;
+    console.log(data);
 
     if(currentMessagesCache[messageId])  {
         //console.log("Skipping adding message:", content);
@@ -460,7 +462,7 @@ function displayChatMessage(data) {
     messageContentElement.dataset.content_observe = formattedMessage;
     observer.observe(messageContentElement);
     newMessage.appendChild(messageContentElement);
-    createMediaElement(content, messageContentElement,newMessage, attachmentUrls);
+    createMediaElement(content, messageContentElement,newMessage, attachmentUrls,metadata);
     if(currentLastDate) {
         if(date < currentLastDate) {
             date = currentLastDate;

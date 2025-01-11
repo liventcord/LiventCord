@@ -28,6 +28,7 @@ namespace LiventCord.Models
         public string? ReplyToId { get; set; }
 
         public string? ReactionEmojisIds { get; set; }
+        public Metadata? Metadata { get; set; }
 
         [JsonIgnore]
         public virtual User User { get; set; } = null!;

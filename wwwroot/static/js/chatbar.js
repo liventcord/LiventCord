@@ -8,7 +8,7 @@ let chatContent;
 let replyInfo;
 
 
-function initialisechatInput() {
+function initialiseChatInput() {
 
     chatInput.addEventListener("input", adjustHeight);
     chatInput.addEventListener("keydown", handleUserKeydown);

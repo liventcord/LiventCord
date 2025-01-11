@@ -58,7 +58,9 @@ namespace LiventCord.Helpers
                 if (user == null)
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
+                    await context.Response.WriteAsJsonAsync(
+                        new { message = "User session is no longer valid. Please log in again." }
+                    );
                     await _loginController.Logout();
                     return;
                 }
@@ -91,11 +93,12 @@ namespace LiventCord.Helpers
                 if (!context.Response.HasStarted)
                 {
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    await context.Response.WriteAsJsonAsync(new { message = "An internal server error occurred." });
+                    await context.Response.WriteAsJsonAsync(
+                        new { message = "An internal server error occurred." }
+                    );
                 }
             }
         }
-
 
         public async Task HandleChannelRequest(
             HttpContext context,

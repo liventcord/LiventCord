@@ -11,7 +11,8 @@ class Message {
         attachmentUrls,
         replyToId,
         isBot,
-        reactionEmojisIds
+        reactionEmojisIds,
+        metadata
     }) {
         this.messageId = messageId
         this.userId = userId
@@ -24,6 +25,7 @@ class Message {
         this.isBot = isBot
         this.reactionEmojisIds = reactionEmojisIds
         this.addToTop = false
+        this.metadata = metadata
     }
 
     toDisplayData(replyOf) {
@@ -40,7 +42,8 @@ class Message {
             willDisplayProfile: true,
             replyToId: this.replyToId,
             isBot: this.isBot,
-            reactionEmojisIds: this.reactionEmojisIds
+            reactionEmojisIds: this.reactionEmojisIds,
+            metadata: this.metadata
         }
     }
 }

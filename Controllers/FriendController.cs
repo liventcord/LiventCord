@@ -10,13 +10,13 @@ namespace LiventCord.Controllers
     [Authorize]
     public class FriendController : BaseController
     {
-
         private readonly AppDbContext _dbContext;
 
         public FriendController(AppDbContext dbContext)
         {
             _dbContext = dbContext;
         }
+
         [HttpGet("")]
         public async Task<IActionResult> GetFriendEndpoint()
         {
@@ -26,10 +26,14 @@ namespace LiventCord.Controllers
             var friends = await GetFriends(UserId);
             return Ok(friends);
         }
+
         [HttpPost("")]
         public async Task<IActionResult> AddFriendEndpoint([FromBody] AddFriendRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.FriendName) || string.IsNullOrWhiteSpace(request.FriendDiscriminator))
+            if (
+                string.IsNullOrWhiteSpace(request.FriendName)
+                || string.IsNullOrWhiteSpace(request.FriendDiscriminator)
+            )
             {
                 return BadRequest(new { Code = "ERR_INVALID_INPUT" });
             }
@@ -50,10 +54,16 @@ namespace LiventCord.Controllers
             }
         }
 
-        private async Task<Result> AddFriend(string userId, string friendName, string friendDiscriminator)
+        private async Task<Result> AddFriend(
+            string userId,
+            string friendName,
+            string friendDiscriminator
+        )
         {
-            var friend = await _dbContext.Users
-                .Where(u => u.Nickname == friendName && u.Discriminator == friendDiscriminator)
+            var friend = await _dbContext
+                .Users.Where(u =>
+                    u.Nickname == friendName && u.Discriminator == friendDiscriminator
+                )
                 .Select(u => new { u.UserId, u.Nickname })
                 .FirstOrDefaultAsync();
 
@@ -64,8 +74,8 @@ namespace LiventCord.Controllers
                 return Result.Failure("ERR_CANNOT_ADD_SELF");
 
             var existingFriendship = await _dbContext.Friends.AnyAsync(f =>
-                (f.UserId == userId && f.FriendId == friend.UserId) ||
-                (f.UserId == friend.UserId && f.FriendId == userId)
+                (f.UserId == userId && f.FriendId == friend.UserId)
+                || (f.UserId == friend.UserId && f.FriendId == userId)
             );
 
             if (existingFriendship)
@@ -97,35 +107,35 @@ namespace LiventCord.Controllers
             }
         }
 
-
-
-
         [NonAction]
         public async Task<List<PublicUserWithStatus>> GetFriendsStatus(string userId)
         {
             var friends = await _dbContext
-                .Friends
-                .Where(f => f.UserId == userId && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending))
+                .Friends.Where(f =>
+                    f.UserId == userId
+                    && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending)
+                )
                 .Join(
                     _dbContext.Users,
                     friend => friend.FriendId,
                     user => user.UserId,
-                    (friend, user) => new PublicUserWithStatus
-                    {
-                        PublicUser = user.GetPublicUser(),
-                        Status = friend.Status
-                    }
+                    (friend, user) =>
+                        new PublicUserWithStatus
+                        {
+                            PublicUser = user.GetPublicUser(),
+                            Status = friend.Status,
+                        }
                 )
                 .ToListAsync();
 
             return friends;
         }
+
         public class PublicUserWithStatus
         {
             public required PublicUser PublicUser { get; set; }
             public FriendStatus Status { get; set; }
         }
-
 
         private async Task<List<FriendDto>> GetFriends(string userId)
         {
@@ -170,14 +180,14 @@ namespace LiventCord.Controllers
             return result;
         }
     }
-
-        
 }
+
 public class AddFriendRequest
 {
     public required string FriendName { get; set; }
     public required string FriendDiscriminator { get; set; }
 }
+
 public class FriendDto
 {
     public required string UserId { get; set; }

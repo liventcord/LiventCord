@@ -105,10 +105,10 @@ class ApiClient {
         let errorCode = null;
 
         try {
-        const responseBody = await response.json();
-        errorCode = responseBody?.code || null;
+            const responseBody = await response.json();
+            errorCode = responseBody?.code || null;
         } catch (err) {
-        console.warn("Failed to parse error response:", err);
+            console.error("Failed to parse error response:", err);
         }
 
         
