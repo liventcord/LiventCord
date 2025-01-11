@@ -26,6 +26,7 @@ namespace LiventCord.Controllers
         public DbSet<UserChannel> UserChannels { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
+        public DbSet<UrlMetadata> UrlMetadata { get; set; }
 
         public void RecreateDatabase()
         {

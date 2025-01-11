@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using LiventCord.Controllers;
+using Microsoft.EntityFrameworkCore;
 
 public class Metadata
 {
@@ -7,19 +9,54 @@ public class Metadata
     public string? SiteName { get; set; }
 }
 
+public class UrlMetadata
+{
+    public int Id { get; set; }
+    public required string Domain { get; set; }
+    public required string RoutePath { get; set; }
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public string? SiteName { get; set; }
+}
+
 public class MetadataService
 {
+    private readonly int PER_DOMAIN_LIMIT = 100;
     private readonly HttpClient _httpClient;
+    private readonly AppDbContext _dbContext;
 
-    public MetadataService(HttpClient httpClient)
+    public MetadataService(HttpClient httpClient, AppDbContext dbContext)
     {
         _httpClient = httpClient;
+        _dbContext = dbContext;
     }
 
     public async Task<(string? Title, string? Description, string? SiteName)> ExtractMetadataAsync(
         string url
     )
     {
+        var (domain, routePath) = ParseUrl(url);
+
+        var existingMetadata = await _dbContext.UrlMetadata.FirstOrDefaultAsync(u =>
+            u.Domain == domain && u.RoutePath == routePath
+        );
+
+        if (existingMetadata != null)
+        {
+            return (
+                existingMetadata.Title,
+                existingMetadata.Description,
+                existingMetadata.SiteName
+            );
+        }
+
+        var urlCountForDomain = await _dbContext.UrlMetadata.CountAsync(u => u.Domain == domain);
+
+        if (urlCountForDomain >= PER_DOMAIN_LIMIT)
+        {
+            return ("Domain limit reached", null, null);
+        }
+
         try
         {
             var html = await FetchHtmlAsync(url);
@@ -55,6 +92,17 @@ public class MetadataService
                     }
                 ) ?? url;
 
+            var newMetadata = new UrlMetadata
+            {
+                Domain = domain,
+                RoutePath = routePath,
+                Title = title,
+                Description = description,
+                SiteName = siteName,
+            };
+            _dbContext.UrlMetadata.Add(newMetadata);
+            await _dbContext.SaveChangesAsync();
+
             return (title, description, siteName);
         }
         catch
@@ -81,5 +129,14 @@ public class MetadataService
             }
         }
         return null;
+    }
+
+    private (string Domain, string RoutePath) ParseUrl(string url)
+    {
+        var uri = new Uri(url);
+        var domain = uri.GetLeftPart(UriPartial.Authority);
+        var routePath = uri.AbsolutePath.ToLower();
+
+        return (domain, routePath);
     }
 }

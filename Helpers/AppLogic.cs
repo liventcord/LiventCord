@@ -7,7 +7,8 @@ namespace LiventCord.Helpers
 {
     public class AppLogicService
     {
-        private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
+        private readonly string defaultGifWorkerUrl =
+            "https://liventcord-gif-worker.efekantunc0.workers.dev";
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -38,7 +39,10 @@ namespace LiventCord.Helpers
             _permissionsController = permissionsController;
             _membersController = membersController;
             _logger = logger;
-            _gifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] != null ? configuration["AppSettings:GifWorkerUrl"]  : defaultGifWorkerUrl;
+            _gifWorkerUrl =
+                configuration["AppSettings:GifWorkerUrl"] != null
+                    ? configuration["AppSettings:GifWorkerUrl"]
+                    : defaultGifWorkerUrl;
         }
 
         public async Task HandleInitRequest(HttpContext context)
@@ -80,7 +84,7 @@ namespace LiventCord.Helpers
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
                     guildsJson = guilds,
-                    gifWorkerUrl = _gifWorkerUrl 
+                    gifWorkerUrl = _gifWorkerUrl,
                 };
 
                 context.Response.ContentType = "application/json";
@@ -99,6 +103,7 @@ namespace LiventCord.Helpers
                 }
             }
         }
+
         public async Task HandleChannelRequest(
             HttpContext context,
             string? guildId,
