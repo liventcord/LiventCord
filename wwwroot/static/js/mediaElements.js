@@ -1,5 +1,4 @@
 let defaultMediaImageUrl = "/static/images/defaultmediaimage.png"
-const linkWorkerUrl = "https://liventcord-link-worker.efekantunc0.workers.dev";
 
 
 

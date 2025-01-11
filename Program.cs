@@ -67,6 +67,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
 builder.Services.AddScoped<MessageController>();

@@ -54,6 +54,7 @@ let initialState = {
     ownerId: null,
     permissionsMap: null,
     guilds: [],
+    gifWorkerUrl: null
 };
 
 function initialiseState(data) {
@@ -70,6 +71,7 @@ function initialiseState(data) {
         friendsStatus,
         dmFriends = [],
         guildsJson,
+        gifWorkerUrl
     } = data;
 
     console.log("Data loaded:", data);
@@ -86,6 +88,7 @@ function initialiseState(data) {
         ownerId,
         permissionsMap,
         guilds: guildsJson || [],
+        gifWorkerUrl: gifWorkerUrl
     };
 
     currentGuildName = guildName;

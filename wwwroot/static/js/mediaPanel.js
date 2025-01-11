@@ -8,7 +8,6 @@ let mediaMenu, mediaMenuContainer;
 let direction = "";
 
 const exampleTenorId = "LIVDSRZULELA";
-const gifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
 
 
 
@@ -156,7 +155,7 @@ async function loadGifContent(query) {
         showCategoriesList();
         return;
     }
-    const gifUrl = `${gifWorkerUrl}?q=${encodeURIComponent(query)}`;
+    const gifUrl = `${initialState.gifWorkerUrl}?q=${encodeURIComponent(query)}`;
     const response = await fetch(gifUrl);
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
     const data = await response.json();

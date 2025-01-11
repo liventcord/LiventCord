@@ -1,7 +1,5 @@
 using System.Security.Claims;
-using System.Text.Json;
 using LiventCord.Controllers;
-using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +7,7 @@ namespace LiventCord.Helpers
 {
     public class AppLogicService
     {
+        private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -17,6 +16,7 @@ namespace LiventCord.Helpers
         private readonly LoginController _loginController;
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
+        private readonly string? _gifWorkerUrl;
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -26,7 +26,8 @@ namespace LiventCord.Helpers
             TypingController typingController,
             ILogger<AppLogicService> logger,
             LoginController loginController,
-            PermissionsController permissionsController
+            PermissionsController permissionsController,
+            IConfiguration configuration
         )
         {
             _dbContext = dbContext;
@@ -37,6 +38,7 @@ namespace LiventCord.Helpers
             _permissionsController = permissionsController;
             _membersController = membersController;
             _logger = logger;
+            _gifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] != null ? configuration["AppSettings:GifWorkerUrl"]  : defaultGifWorkerUrl;
         }
 
         public async Task HandleInitRequest(HttpContext context)
@@ -44,7 +46,6 @@ namespace LiventCord.Helpers
             try
             {
                 string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                _logger.LogInformation("userId: {UserId}", userId);
 
                 if (string.IsNullOrEmpty(userId))
                 {
@@ -53,7 +54,6 @@ namespace LiventCord.Helpers
                     return;
                 }
 
-                _logger.LogInformation("Attempting to retrieve user from database...");
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
                 if (user == null)
                 {
@@ -65,7 +65,6 @@ namespace LiventCord.Helpers
                     return;
                 }
 
-                _logger.LogInformation("Fetching guilds for user...");
                 var guilds = await _membersController.GetUserGuilds(userId);
 
                 var jsonData = new
@@ -81,6 +80,7 @@ namespace LiventCord.Helpers
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
                     guildsJson = guilds,
+                    gifWorkerUrl = _gifWorkerUrl 
                 };
 
                 context.Response.ContentType = "application/json";
@@ -99,7 +99,6 @@ namespace LiventCord.Helpers
                 }
             }
         }
-
         public async Task HandleChannelRequest(
             HttpContext context,
             string? guildId,
@@ -110,7 +109,6 @@ namespace LiventCord.Helpers
             try
             {
                 string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                _logger.LogInformation("userId: {UserId}", userId);
 
                 if (string.IsNullOrEmpty(userId))
                 {
@@ -122,7 +120,6 @@ namespace LiventCord.Helpers
                     context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath,
                     "app.html"
                 );
-                _logger.LogInformation("Reading HTML file from path: {FilePath}", filePath);
                 var htmlContent = await File.ReadAllTextAsync(filePath);
 
                 context.Response.ContentType = "text/html";
