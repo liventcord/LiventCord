@@ -1,112 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<title>LiventCord</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	
-	<link rel="stylesheet" type="text/css" href="/static/css/loginfullstyles.css">
 
-	<style>
-        .info-container {
-            width: 600px;
-            height: 90px;
-            background-color: #2fdd2c;
-            z-index: 15;
-            border-radius: 25px;
-            position: fixed;
-            top: 100px;
-            margin-left: -300px;
-            left: -600px; /* Start off-screen to the left */
-            animation: moveAndFade 4s ease forwards; /* Use a keyframe animation */
-        }
-		.error-container {
-            width: 600px;
-            height: 90px;
-            background-color: #dd2c2c;
-            z-index: 15;
-            border-radius: 25px;
-            position: fixed;
-            top: 100px;
-            margin-left: -300px;
-            left: -600px; /* Start off-screen to the left */
-            animation: moveAndFade 4s ease forwards; /* Use a keyframe animation */
-        }
-        
-        /* Keyframes for the move and fade animation */
-        @keyframes moveAndFade {
-            0% {
-                left: -600px; /* Start off-screen to the left */
-                opacity: 1; /* Start fully opaque */
-            }
-            30% {
-                left: 50%; /* Move to the middle */
-                opacity: 1; /* Maintain opacity while moving */
-            }
-            50% {
-                left: 50%; /* Pause at the middle for 2 seconds */
-                opacity: 1; /* Maintain opacity */
-            }
-            100% {
-                left: 100%; /* Move off-screen to the right */
-                opacity: 0; /* Fade out to transparent */
-            }
-        }
-    
-        #info-message {
-            color: #ffff;
-            font-size: 25px;
-            white-space: nowrap;
-            z-index: 25;
-            position: absolute;
-            top: 30px;
-            left: 30px;
-        }
+	<link rel="stylesheet" type="text/css" href="/static/css/main.css">
 
-
-		.wrap-login100 {
-			width : 600px;
-			height: 500px;
-
-		}
-		#discriminatorText {
-			z-index: 10;
-			color: white;
-			font-size: 25px;
-			position: absolute;
-            left: 430px;
-		}
-
-
-		
-	</style>
 
 </head>
+
 <body>
 
 
 	<div class="limiter">
-		<div class="container-login100" style="background-image: url('/static/images/nierforest.jpg'); background-size: cover;">
+		<div class="container-login100"
+			style="background-image: url('/static/images/nierforest.jpg'); background-size: cover;">
+
 			<div class="wrap-login100">
 				<form id="register-form" class="login100-form validate-form">
 					<span class="login100-form-title p-b-26">
 						Bir hesap oluştur
 					</span>
 
-	
+
 					<div class="wrap-input100 validate-input" data-validate="Doğru e posta formatı: a@b.c">
 						<input class="input100" type="text" name="email">
 						<span class="focus-input100" data-placeholder="E posta"></span>
 					</div>
 
 
-					<div class="wrap-input100 validate-input"style="width:80%;" data-validate="Kullanıcı adı">
+					<div class="wrap-input100 validate-input" style="width:80%;" data-validate="Kullanıcı adı">
 						<input class="input100" type="text" name="nick">
-						<span class="focus-input100"  data-placeholder="Kullanıcı adı">
+						<span class="focus-input100" data-placeholder="Kullanıcı adı">
 							<p id="discriminatorText"></p>
 						</span>
 					</div>
-	
+
 					<div class="wrap-input100 validate-input" data-validate="Şifre">
 						<span class="btn-show-pass">
 							<i class="zmdi zmdi-eye"></i>
@@ -114,7 +45,7 @@
 						<input class="input100" type="password" name="pass">
 						<span class="focus-input100" data-placeholder="Şifre"></span>
 					</div>
-	
+
 					<div class="container-login100-form-btn">
 						<div class="wrap-login100-form-btn">
 							<div class="login100-form-bgbtn"></div>
@@ -131,73 +62,129 @@
 	
 
 					</div>
-				</form>
+
+
 			</div>
+			</form>
 		</div>
 	</div>
-	
+	</div>
+
 	<script>
 
-		function myalert(text,isSuccess=false) {
+		function myalert(text, isSuccess = false) {
 			const container = document.createElement('div');
 			let idtoadd = isSuccess ? 'info-container' : 'error-container';
 			container.classList.add(idtoadd);
 			container.classList.add('swipe-in');
 			setTimeout(() => {
 				container.classList.remove('swipe-in');
-			}, 3000); 
-			
-			const childDiv = document.createElement('div');
-			childDiv.id = 'info-message'; 
-			childDiv.textContent = text;
-			
-			container.appendChild(childDiv);
-			document.body.prepend(container); 
+			}, 3000);
 
-			
+			const childDiv = document.createElement('div');
+			childDiv.id = 'info-message';
+			childDiv.textContent = text;
+
+			container.appendChild(childDiv);
+			document.body.prepend(container);
+
+
 			setTimeout(() => {
-				container.parentNode.removeChild(container); 
+				container.parentNode.removeChild(container);
 			}, 5000);
 		}
-		function validateEmail(email) {
-			var re = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-			return re.test(email);
-		}
-	
 
+
+
+
+
+		function submitForm(event) {
+			event.preventDefault();
+
+			const lang = translations[currentLanguage];
+			const email = document.querySelector('input[name="email"]').value;
+			const password = document.querySelector('input[name="pass"]').value;
+			const nick = document.querySelector('input[name="nick"]').value;
+
+			if (!validateRegistrationParameters(email, password, nick)) {
+				return;
+			}
+
+			document.querySelector('input[name="email"]').value = '';
+			document.querySelector('input[name="pass"]').value = '';
+			document.querySelector('input[name="nick"]').value = '';
+
+			const formData = new FormData();
+			formData.append('email', email);
+			formData.append('password', password);
+			formData.append('nickname', nick);
+
+			fetch('/auth/register', {
+				method: 'POST',
+				body: formData,
+				credentials: 'same-origin'
+			})
+				.then(response => {
+					if (response.status === 200) {
+						myalert(lang.success, true);
+						setTimeout(() => {
+							window.location.href = '/login';
+						}, 1500);
+					} else if (response.status === 409) {
+						myalert(lang.emailExists);
+					} else {
+						myalert(`${lang.genericError} ${response.status}`);
+					}
+				})
+				.catch(error => {
+					console.error('Error:', error);
+				});
+		}
 
 		function validateRegistrationParameters(email, password, nick) {
-			var isFailed = false;
-			var errorMessage = '';
-		
-			if (!password || password === '' || password.length < 3) {
+			const lang = translations[currentLanguage];
+			let isFailed = false;
+			let errorMessage = '';
+
+			if (!password || password.length < 5) {
 				document.querySelectorAll('.wrap-input100.validate-input')[2].classList.add('alert-validate');
-				errorMessage += 'Şifre';
+				errorMessage += lang.passPlaceholder;
 				isFailed = true;
 			}
-			if (!nick || nick === '' || nick.length < 1) {
+			if (!nick || nick.length < 1) {
 				document.querySelectorAll('.wrap-input100.validate-input')[1].classList.add('alert-validate');
-				errorMessage += (isFailed ? ', ' : '') + 'İsim';
+				errorMessage += (isFailed ? ', ' : '') + lang.nickPlaceholder;
 				isFailed = true;
 			}
-			if (!email || email === '' || email.length < 3 || !validateEmail(email)) {
+			if (!email || email.length < 3 || !validateEmail(email)) {
 				document.querySelectorAll('.wrap-input100.validate-input')[0].classList.add('alert-validate');
-				errorMessage += (isFailed ? ' ve ' : '') + 'E posta';
+				errorMessage += (isFailed ? ' and ' : '') + lang.emailPlaceholder;
 				isFailed = true;
 			}
-		
+
 			if (isFailed) {
-				myalert(errorMessage + ' geçersiz!');
+				if (password.length < 5) {
+					myalert(lang.shortPassword);
+				} else {
+					myalert(errorMessage + ` ${lang.invalidEmail}`);
+				}
 				return false;
 			}
-		
 			return true;
 		}
-		
+
+		function validateEmail(email) {
+			const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			return re.test(email);
+		}
+
+
+
+
 		var emailInput = document.querySelector('input[name="email"]');
 		var nickInput = document.querySelector('input[name="nick"]');
 		var passInput = document.querySelector('input[name="pass"]');
-		emailInput.addEventListener("keypress", function(event) {
+		emailInput.addEventListener("keypress", function (event) {
 			if (event.key === "Enter") {
 				event.preventDefault();
 				nickInput.focus();
@@ -205,13 +192,13 @@
 		});
 		let isFetching = false;
 		let debounceTimer;
-		let currentInputValue = ''; 
+		let currentInputValue = '';
 
-		nickInput.addEventListener("input", async function(event) {
-			const newInputValue = nickInput.value.trim(); 
+		nickInput.addEventListener("input", async function (event) {
+			const newInputValue = nickInput.value.trim();
 
 			if (newInputValue && newInputValue !== currentInputValue && !isFetching) {
-				currentInputValue = newInputValue; 
+				currentInputValue = newInputValue;
 
 				clearTimeout(debounceTimer);
 				debounceTimer = setTimeout(async () => {
@@ -221,7 +208,7 @@
 							method: 'GET',
 							credentials: 'same-origin'
 						});
-						
+
 						if (response.ok) {
 							const data = await response.json();
 							if (currentInputValue === nickInput.value.trim()) {
@@ -233,82 +220,37 @@
 					} catch (error) {
 						console.error('Fetch Error:', error);
 					} finally {
-						isFetching = false; 
+						isFetching = false;
 					}
 				}, 500);
 			}
 		});
 
-		
 
 
-		nickInput.addEventListener("keypress", async function(event) {
+
+		nickInput.addEventListener("keypress", async function (event) {
 			if (event.key === "Enter") {
 				event.preventDefault();
-				passInput.focus(); 
+				passInput.focus();
 			}
 		});
 
-		passInput.addEventListener("keypress", function(event) {
+		passInput.addEventListener("keypress", function (event) {
 			if (event.key === "Enter") {
 				event.preventDefault();
-				submitForm(event); 
+				submitForm(event);
 			}
 		});
-		
 
-		function submitForm(event) {
-			event.preventDefault();
 
-			var email = document.querySelector('input[name="email"]').value;
-			var password = document.querySelector('input[name="pass"]').value;
-			var nick = document.querySelector('input[name="nick"]').value;
 
-			if(!validateRegistrationParameters(email,password,nick)) {
-				return;
-			}
 
-			document.querySelector('input[name="email"]').value = '';
-			document.querySelector('input[name="pass"]').value = '';
-			document.querySelector('input[name="nick"]').value = '';
-		
-			var formData = new FormData();
-			formData.append('email', email);
-			formData.append('password', password);
-			formData.append('nickname', nick);
 
-			fetch('/auth/register', {
-				method: 'POST',
-				body: formData,
-				credentials: 'same-origin'
-			})
-			.then(response => {
-				console.log(response.status);
-				if (response.status === 200) {
-					myalert('Başarıyla kayıt olundu!',isSuccess=true);
-					setTimeout(() => {
-						window.location.href = '/login';
-					}, 1500); 
-					
-				}
-				else if (response.status === 409) { 
-					myalert('E posta adresi zaten kayıtlı!');
-				}
-				else {
-					myalert("Bilinmeyen bir hata oluştu! "+response.status);
-				}
-			})
-			.catch(error => {
-				console.error('Error:', error);
-			});
-		}
-
-		
 	</script>
-	
+
 	<div id="dropDownSelect1"></div>
 
-	<script src="/static/login/fullscript.js"></script>
 
 
-<body>
+	<body>

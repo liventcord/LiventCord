@@ -1,355 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <title>LiventCord</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" type="text/css" href="/static/css/loginfullstyles.css">
-
-    <style>
-        .info-container {
-            width: 600px;
-            height: 90px;
-            background-color: #dd2c2c;
-            z-index: 15;
-            border-radius: 25px;
-            position: fixed;
-            top: 100px;
-            margin-left: -300px;
-            left: -600px; 
-            animation: moveAndFade 4s ease forwards;
-        }
-        
-        @keyframes moveAndFade {
-            0% {
-                left: -600px; 
-                opacity: 1;
-            }
-            30% {
-                left: 50%;
-                opacity: 1;
-            }
-            50% {
-                left: 50%;
-                opacity: 1;
-            }
-            100% {
-                left: 100%;
-                opacity: 0;
-            }
-        }
-        
-        
-        
-        
-        
-    
-        #info-message {
-            color: #ffff;
-            font-size: 25px;
-            white-space: nowrap;
-            z-index: 25;
-            position: absolute;
-            top: 30px;
-            left: 30px;
-        }
-
-        #forgotPasswordText {
-            display: flex;
-            color: #13aff7;
-            font-size: 15px;
-            margin-top : -100px;
-            display: none;
-            z-index: 25;
-            position: absolute;
-            user-select: none;
-        }
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
 
 
-        #forgotPasswordText {
-            color: #ff0000;
-            font-size: 25px;
-            display: none;
-            z-index: 25;
-            position: absolute;
-            user-select: none;
-        }
-        #forgotPasswordText {
-            display: flex;
-            color: #13aff7;
-            font-size: 15px;
-            margin-top : -100px;
-        }
-        #text-center {
-            margin-top : -100px;
-        }
-    </style>
 </head>
+<style>
+    #forgotPasswordText {
+        display: flex;
+        color: #13aff7;
+        font-size: 15px;
+        margin-top: -100px;
+        display: none;
+        z-index: 25;
+        position: absolute;
+        user-select: none;
+    }
+
+
+    #forgotPasswordText {
+        color: #ff0000;
+        font-size: 25px;
+        display: none;
+        z-index: 25;
+        position: absolute;
+        user-select: none;
+    }
+
+    #forgotPasswordText {
+        display: flex;
+        color: #13aff7;
+        font-size: 15px;
+        margin-top: -100px;
+    }
+
+    #text-center {
+        margin-top: -100px;
+    }
+    .wrap-login100 {
+        height: 400px;
+    }
+</style>
+
 <body>
-<script>
 
 
+    <div class="limiter">
+        <div class="container-login100"
+            style="background-image: url('/static/images/nierforest.jpg'); background-size: cover;">
 
-
-    function validateRegistrationParameters(email, password) {
-        if (!email || !password) {
-            myalert('E posta veya şifre geçersiz!');
-            return false;
-        }
-        if (email === '' || password === '') {
-            myalert('E posta veya şifre geçersiz!');
-            return false;
-        }
-        var emailPattern = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-        if (!emailPattern.test(email)) {
-            myalert('E posta geçersiz!');
-            return false;
-        }
-        if (password.length < 3) {
-            myalert('Şifre çok kısa!');
-            return false;
-        }
-
-        return true;
-    }
-    function validateForgotPassParameters(email) {
-        if (!email) {
-            myalert('E posta geçersiz!');
-            return false;
-        }
-        if (email === '') {
-            myalert('E posta geçersiz!');
-            return false;
-        }
-        var emailPattern = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-        if (!emailPattern.test(email)) {
-            myalert('E posta geçersiz!');
-            return false;
-        }
-
-        return true;
-    }
-    
-    document.addEventListener('DOMContentLoaded', function () {
-        var emailInput = document.querySelector('input[name="email"]');
-        var passwordInput = document.querySelector('input[name="pass"]');
-      
-        emailInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            passwordInput.focus();
-          }
-        });
-      
-        passwordInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            submitForm(event);
-          }
-        });
-      
-
-    });
-
-    
-
-
-    
-    function submitForm(event) {
-        event.preventDefault();
-        var email = document.querySelector('input[name="email"]').value;
-        var password = document.querySelector('input[name="pass"]').value;
-
-        if (!validateEmail(email)) {
-            document.querySelector('.wrap-input100.validate-input').classList.add('alert-validate');
-            return;
-        }
-        if (!password) {
-            document.querySelectorAll('.wrap-input100.validate-input')[1].classList.add('alert-validate');
-            return;
-        }
-
-        var formData = new FormData();
-        formData.append('email', email);
-        formData.append('password', password);
-
-        fetch('/auth/login', {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin' 
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json(); 
-            } else if (response.status === 401) {
-                myalert('E posta veya şifre geçersiz!');
-                throw new Error('Unauthorized');
-            } else {
-                myalert('Bir hata oluştu! ' + response.status);
-                throw new Error('Error occurred');
-            }
-        })
-        .then(data => {
-            window.location.href = '/app'; 
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-    function submitForgotPassword(event) {
-        event.preventDefault();
-        var emailInput = document.querySelector('input.input100[name="email"]');
-        var email = emailInput.value.trim();
-    
-        if (!validateEmail(email)) {
-            myalert('E posta geçersiz!');
-            return;
-        }
-        if (!validateForgotPassParameters(email)) {
-            return;
-        }
-    
-        var formData = new FormData();
-        formData.append('email', email);
-    
-        fetch('/forgot-password', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.text();
-            } else {
-                throw new Error('Failed to send reset password request');
-            }
-        })
-        .then(data => {
-            myalert('E posta adresinize şifre sıfırlama linki gönderildi.',isSuccess=true);
-        })
-        .catch(error => {
-            console.error(error);
-            myalert('Bir hata oluştu');
-        });
-    }
-
-
-    function myalert(data) {
-
-        const container = document.createElement('div');
-        container.classList.add('info-container');
-
-        
-        const childDiv = document.createElement('div');
-        childDiv.id = 'info-message'; 
-        childDiv.textContent = data;
-        
-        container.appendChild(childDiv);
-        document.body.prepend(container); 
-
-        setTimeout(() => {
-            container.parentNode.removeChild(container); 
-        }, 5000);
-    }
-    
-    
-    
-    function validateEmail(email) {
-        var re = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
-        return re.test(email);
-    }
-    document.addEventListener('DOMContentLoaded', function () {
-        var inputs = document.querySelectorAll('.input100');
-        inputs.forEach(function(input) {
-
-            input.addEventListener('focus', function() {
-                this.parentNode.querySelector('.focus-input100').style.display = 'none';
-            });
-            input.addEventListener('blur', function() {
-                if (this.value === '') {
-                    this.parentNode.querySelector('.focus-input100').style.display = 'block';
-                }
-            });
-        });
-
-        var inputs = [document.querySelector('input[name="email"]'),document.querySelector('input[name="pass"]') ];
-
-
-        inputs.forEach((input, index) => {
-            input.addEventListener("keydown", function(event) {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    input.click();
-                }
-            });
-        });
-
-    });
-
-
-
-
-        
-</script>
-
-<div class="limiter">
-    <div class="container-login100" style="background-image: url('/static/images/nierforest.jpg'); background-size: cover;">
-        <div class="wrap-login100">
-            <div id="login-form" class="login100-form validate-form">
-                <span class="login100-form-title p-b-26">
-                    Tekrar hoş geldin!
-                </span>
-                <span class="login100-form-title p-b-48">
-                    <i class="zmdi zmdi-fnt">Seni gördüğümüze çok sevindik!</i>
-                </span>
-                <div class="wrap-input100 validate-input" data-validate="Doğru e posta formatı: a@b.c">
-                    <input class="input100" type="text" name="email">
-
-                    <span class="focus-input100" data-placeholder="E-POSTA *"></span>
-                </div>
-                <div class="wrap-input100 validate-input" data-validate="Şifre">
-                    <span class="btn-show-pass">
-                        <i class="zmdi zmdi-eye"></i>
+            <div class="wrap-login100">
+                <form id="register-form" class="login100-form validate-form">
+                    <span class="login100-form-title p-b-26">
+                        Tekrar hoş geldin!
                     </span>
-                    <input class="input100" type="password" name="pass">
-                    <span class="focus-input100" data-placeholder="ŞİFRE *"></span>
-                </div>
-                <div class="container-login100-form-btn">
-                    <div class="wrap-login100-form-btn">
-                        <div class="login100-form-bgbtn"></div>
-                        <button class="login100-form-btn" id="login-btn" onclick="submitForm(event)">
-                            Giriş Yap
-                        </button>
-                    </div>
-                </div>
-                <div class="forgotPasswordForm">
-                    <form id="forgotPasswordForm" class="wrapForgotPasswordForm">
-                        <div class="password-form-bgbtn"></div>
-                        <button class="password-form-btn" id="forgotPasswordText" onclick="submitForgotPassword(event)">
-                            Şifreni mi unuttun?
-                        </button>
-                    </div>
-                </div>
 
-                <div id = "text-center" class="text-center p-t-115">
-                    <span class="txt1">
-                        Bir hesaba mı ihtiyacın var?
-                    </span>
-                    <a id = "txt2" class="txt2" href="/register">
-                        Kaydol
-                    </a>
-                </div>
+
+                    <div class="wrap-input100 validate-input" data-validate="Doğru e posta formatı: a@b.c">
+                        <input class="input100" type="text" name="email">
+                        <span class="focus-input100" data-placeholder="E posta"></span>
+                    </div>
+
+
+                    <div class="wrap-input100 validate-input" data-validate="Şifre">
+                        <span class="btn-show-pass">
+                            <i class="zmdi zmdi-eye"></i>
+                        </span>
+                        <input class="input100" type="password" name="pass">
+                        <span class="focus-input100" data-placeholder="Şifre"></span>
+                    </div>
+
+                    <div class="container-login100-form-btn">
+                        <div class="wrap-login100-form-btn">
+                            <div class="login100-form-bgbtn"></div>
+                            <button class="login100-form-btn" id="register-btn" onclick="submitForm(event)">
+                                Giriş yap
+                            </button>
+                        </div>
+                    </div>
+                    <div class="forgotPasswordForm">
+                        <form id="forgotPasswordForm" class="wrapForgotPasswordForm">
+                            <div class="password-form-bgbtn"></div>
+                            <button class="password-form-btn" id="forgotPasswordText" onclick="submitForgotPassword(event)">
+                                Şifreni mi unuttun?
+                            </button>
+                    </form></div>
+
+                    <div class="text-center p-t-115">
+                        <a class="txt1" href="/register">
+                            Bir hesaba mı ihtiyacın var?
+                        </a>
+
+
+                    </div>
+
+
             </div>
+            </form>
         </div>
     </div>
-</div>
-<div id="dropDownSelect1"></div>
+    </div>
+
+    <script>
+
+        function myalert(text, isSuccess = false) {
+            const container = document.createElement('div');
+            let idtoadd = isSuccess ? 'info-container' : 'error-container';
+            container.classList.add(idtoadd);
+            container.classList.add('swipe-in');
+            setTimeout(() => {
+                container.classList.remove('swipe-in');
+            }, 3000);
+
+            const childDiv = document.createElement('div');
+            childDiv.id = 'info-message';
+            childDiv.textContent = text;
+
+            container.appendChild(childDiv);
+            document.body.prepend(container);
 
 
-<script src="/static/login/fullscript.js"></script>
+            setTimeout(() => {
+                container.parentNode.removeChild(container);
+            }, 5000);
+        }
+
+        
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function validateForgotPassParameters(email) {
+            if (!email) {
+                myalert('E posta geçersiz!');
+                return false;
+            }
+            if (email === '') {
+                myalert('E posta geçersiz!');
+                return false;
+            }
+            var emailPattern = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+            if (!emailPattern.test(email)) {
+                myalert('E posta geçersiz!');
+                return false;
+            }
+
+            return true;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var inputs = document.querySelectorAll('.input100');
+            inputs.forEach(function(input) {
+
+                input.addEventListener('focus', function() {
+                    this.parentNode.querySelector('.focus-input100').style.display = 'none';
+                });
+                input.addEventListener('blur', function() {
+                    if (this.value === '') {
+                        this.parentNode.querySelector('.focus-input100').style.display = 'block';
+                    }
+                });
+            });
+
+            var inputs = [document.querySelector('input[name="email"]'),document.querySelector('input[name="pass"]') ];
+
+
+            inputs.forEach((input, index) => {
+                input.addEventListener("keydown", function(event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        input.click();
+                    }
+                });
+            });
+            var emailInput = document.querySelector('input[name="email"]');
+            var passwordInput = document.querySelector('input[name="pass"]');
+
+            emailInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    passwordInput.focus();
+                }
+            });
+
+            passwordInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    submitForm(event);
+                }
+            });
+
+        });
 
 
 
 
 
-</body>
-</html>
+        function submitForm(event) {
+            event.preventDefault();
+            var email = document.querySelector('input[name="email"]').value;
+            var password = document.querySelector('input[name="pass"]').value;
+
+            if (!validateEmail(email)) {
+                document.querySelector('.wrap-input100.validate-input').classList.add('alert-validate');
+                return;
+            }
+            if (!password) {
+                document.querySelectorAll('.wrap-input100.validate-input')[1].classList.add('alert-validate');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('email', email);
+            formData.append('password', password);
+
+            fetch('/auth/login', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401) {
+                        myalert('E posta veya şifre geçersiz!');
+                        throw new Error('Unauthorized');
+                    } else {
+                        myalert('Bir hata oluştu! ' + response.status);
+                        throw new Error('Error occurred');
+                    }
+                })
+                .then(data => {
+                    window.location.href = '/app';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+        function submitForgotPassword(event) {
+            event.preventDefault();
+            var emailInput = document.querySelector('input.input100[name="email"]');
+            var email = emailInput.value.trim();
+
+            if (!validateEmail(email)) {
+                myalert('E posta geçersiz!');
+                return;
+            }
+            if (!validateForgotPassParameters(email)) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('email', email);
+
+            fetch('/forgot-password', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error('Failed to send reset password request');
+                    }
+                })
+                .then(data => {
+                    myalert('E posta adresinize şifre sıfırlama linki gönderildi.', isSuccess = true);
+                })
+                .catch(error => {
+                    console.error(error);
+                    myalert('Bir hata oluştu');
+                });
+        }
+
+
+
+
+
+
+    </script>
+
+
+
+    <body>
