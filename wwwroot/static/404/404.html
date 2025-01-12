@@ -2,12 +2,12 @@
 <html data-wf-domain="prod-wf1.discord.com" data-wf-page="66b21ecdcf44e23be7a3ae31" data-wf-site="6257adef93867e50d84d30e2">
    <head>
       <meta charset="utf-8"/>
-      <title>Download Discord to Talk, Chat, and Hang Out</title>
+      <title>Download LiventCord to Talk, Chat, and Hang Out</title>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." name="description"/>
-      <meta content="Download Discord to Talk, Chat, and Hang Out" property="og:title"/>
+      <meta content="Download LiventCord to Talk, Chat, and Hang Out" property="og:title"/>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." property="og:description"/>
       <meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" property="og:image"/>
-      <meta content="Download Discord to Talk, Chat, and Hang Out" property="twitter:title"/>
+      <meta content="Download LiventCord to Talk, Chat, and Hang Out" property="twitter:title"/>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." property="twitter:description"/>
       <meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" property="twitter:image"/>
       <meta property="og:type" content="website"/>
@@ -21,13 +21,21 @@
       <link href="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6266bc493fb42d4e27bb8393_847541504914fd33810e70a0ea73177e.ico" rel="apple-touch-icon"/>
       <script src="https://cdn.localizeapi.com/localize.js"></script>
       <script src="/static/404/head.js"></script>
+
       <style>
+                 .nellyNoodles-3yE3vq {
+            margin-top: 150px;
+            width: 30%;
+            padding-bottom: 81px;
+            margin-left: 42%;
+         }
          .body {
           background-color : #1a2081;
          }
          #about {
             background-color: #000000!;
          }
+
          #nierwallpaper {
                 position: fixed;
                 opacity: 0.8;
@@ -35,9 +43,13 @@
                 height: 100vh;
                 object-fit: cover;
                 top: 0;
+                z-index: -1;
                 left: 0;
                 display: block;
-          }
+         }
+         .home_image-static {
+            opacity: 0.8;
+         }
 
 
         .title-2gJ6Dl {
@@ -257,6 +269,7 @@
          margin-top: 20px;
          font-style: normal;
          }
+
       </style>
     <script>
         (this.webpackChunkdiscord_marketing=this.webpackChunkdiscord_marketing||[]).push([[532],{27071:()=>{},94648:n=>{n.exports={recaptchaError:"recaptchaError-3lzLhC"}},41178:n=>{n.exports={icon:"icon-2tQ9Jt"}},38614:n=>{n.exports={dropdown:"dropdown-22wXXq",orientationBottom:"orientationBottom-p8TYeC",orientationTop:"orientationTop-14BnnQ"}},34014:n=>{n.exports={container:"container-2uBSm4",dropdown:"dropdown-2kD-pX",dropdownText:"dropdownText-1QSPwA",dropdownLink:"dropdownLink-3GXIPK",focused:"focused-3A3dxp"}},72896:n=>{n.exports={midMin:"768px",bigMin:"1024px",ctaContainer:"ctaContainer-5100Xg",marginTop24:"marginTop24-3ZXBpg",marginRight24:"marginRight24-2hC304",formContainer:"formContainer-1Mw7aR",form:"form-OFWhKl","form-open":"form-open-28bcFM",username:"username-1XgXmI",tryButton:"tryButton-2kbe5T",arrow:"arrow-1CLBFh",spinner:"spinner-3YAmrq",spinnerItem:"spinnerItem-29alcH",termsContainer:"termsContainer-2t9RCn",termsCheckbox:"termsCheckbox-3JnkRH",termsText:"termsText-3aQkj0",
@@ -265,31 +278,38 @@
         //# sourceMappingURL=styles.js.map
         </script>
    </head>
-   <img id="nierwallpaper">
+   <video id="nierwallpaper" autoplay muted loop></video>
    <script>
      document.addEventListener("DOMContentLoaded", () => {
-        const about = document.getElementById("about")
-        if(about) {
-          about.style.backgroundColor = "#00000000";
-
-        }
-       const wallPaper = document.getElementById('nierwallpaper');
-       if (wallPaper) {
-        
-         if (window.innerWidth <= 768) {
-           wallPaper.src = "/static/images/niermobile.jpg";
+   
+       const wallpaper = document.getElementById('nierwallpaper');
+       if (wallpaper) {
+         const width = window.innerWidth;
+   
+         console.log("Window Width: " + width);  
+   
+         if (width > 1280) {
+           wallpaper.src = "https://motionbgs.com/media/4348/2b-in-nier-automata.3840x2160.mp4";
+           console.log("4K video loaded");
          } else {
-           wallPaper.src = "/static/images/nierwallpaper2.jpg";
+           wallpaper.src = "https://motionbgs.com/media/4348/2b-in-nier-automata.1920x1080.mp4"; 
+           console.log("Full HD video loaded");
          }
        }
+   
        const openbrowserbtn = document.getElementById("openinbrowserbtn");
        if (openbrowserbtn) {
          openbrowserbtn.innerHTML = openbrowserbtn.innerHTML.replace(new RegExp("Discord", 'g'), "Liventcord");
        }
-       
      });
-     
+
+
    </script>
+
+
+   
+   
+   
 
    <body class="body">
     <div>
@@ -306,12 +326,12 @@
                             <img src="/static/images/wardmarkcolor.png" loading="lazy" alt="" class="discord2"/>
                         </div>
                         <div class="div-block-4">
-                            <a href="/download.html" data-track-nav="download" class="nav-link w-nav-link">Download</a>
+                            <a href="/download" data-track-nav="download" class="nav-link w-nav-link">Download</a>
                             <a href="https://liventcord.github.io/Docs/docs/intro" data-track-nav="download" class="nav-link w-nav-link">Docs</a>
                             <a href="https://github.com/liventcord" data-track-nav="download" class="nav-link w-nav-link">Github</a>
                         </div>
                         <div class="div-block-absol">
-                            <a href="https://app.liventcord.workers.dev/download" class="button-blue-menu download-button w-inline-block">
+                            <a  class="button-blue-menu download-button w-inline-block">
                                 <img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/6259470cb8f7d17c38408689_Frame.svg" loading="lazy" alt="" class="img-8px"/>
                                 <div class="new-dark-button download-button mobile">Download</div>
                             </a>
@@ -331,42 +351,14 @@
                 </div>
             </div>
         </div>
-        
-        <div id="about" data-w-id="3c774aa3-1075-c3d5-3da0-7db3a4a329dd" class="section-grey-120px white-bg _2024">
-         <div class="container-1260px">
-            
-
-           <div class="body-1di2mw"><img class="nellyNoodles-3yE3vq" src="/static/404/noodle.gif" alt="Nelly serving noodles!"><div>
-             
-         </div>
-      </div>
-        
-        <div class="w-embed">
-           <style>
-              @media screen and (min-width: 1680px) {
-              .discort_robot {
-              margin-top: 8.7% !important;
-              }
-              }
-              .paragraph-small.font-blue {
-              color: #fff;
-              }
-              .link-footer {
-              color: #fff;
-              }
-              .footer-line-blue {
-              border-top: 1px solid #fff;
-              }
-              aside#landing-cta button {
-              background-color: #161CBB;
-              }
-           </style>
         </div>
+        </body>
+        <div class="body-1di2mw"><img class="nellyNoodles-3yE3vq" src="/static/404/noodle.gif" alt="Nelly serving noodles!"><div>
 
-        </div>
-     </div>
-       
-         </div>
+
+        
+        
+     
 
          <div data-w-id="d182f768-5cb1-47e3-0150-c8832fa3309f" class="footer-black">
             <div class="container-1180px footer-l">
@@ -377,7 +369,38 @@
                            <img src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/6257bee91e6309a5a6f6b994_arrow.svg" loading="lazy" alt="" class="arrow"/>
                            <div>English, USA</div>
                         </div>
-<nav class="dropdown-list w-dropdown-list" id="w-dropdown-list-3" aria-labelledby="w-dropdown-toggle-3"><a href="#" class="dropdown-link w-dropdown-link" tabindex="0">български</a><a href="#" class="dropdown-link czech w-dropdown-link" tabindex="0">Čeština</a><a href="#" class="dropdown-link dansk w-dropdown-link" tabindex="0">Dansk</a><a href="#" class="dropdown-link deutsch w-dropdown-link" tabindex="0">Deutsch</a><a href="#" class="dropdown-link greek w-dropdown-link" tabindex="0">Ελληνικά</a><a href="#" class="dropdown-link english w-dropdown-link" tabindex="0">English, USA</a><a href="#" class="dropdown-link spanish w-dropdown-link" tabindex="0">Español</a><a href="#" class="dropdown-link suomi w-dropdown-link" tabindex="0">Suomi</a><a href="#" class="dropdown-link french w-dropdown-link" tabindex="0">Français</a><a href="#" class="dropdown-link hindi w-dropdown-link" tabindex="0">हिंदी</a><a href="#" class="dropdown-link hrvatski w-dropdown-link" tabindex="0">Hrvatski</a><a href="#" class="dropdown-link magyar w-dropdown-link" tabindex="0">Magyar</a><a href="#" class="dropdown-link italiano w-dropdown-link" tabindex="0">Italiano</a><a href="#" class="dropdown-link japanese w-dropdown-link" tabindex="0">日本語</a><a href="#" class="dropdown-link korean w-dropdown-link" tabindex="0">한국어</a><a href="#" class="dropdown-link lithuanian w-dropdown-link" tabindex="0">Lietuviškai</a><a href="#" class="dropdown-link nederlands w-dropdown-link" tabindex="0">Nederlands</a><a href="#" class="dropdown-link norwegian w-dropdown-link" tabindex="0">Norwegian</a><a href="#" class="dropdown-link polski w-dropdown-link" tabindex="0">Polski</a><a href="#" class="dropdown-link brazilian-portuguese w-dropdown-link" tabindex="0">Português do Brasil</a><a href="#" class="dropdown-link romania w-dropdown-link" tabindex="0">Română</a><a href="#" class="dropdown-link ru w-dropdown-link" tabindex="0">Русский</a><a href="#" class="dropdown-link svenska w-dropdown-link" tabindex="0">Svenska</a><a href="#" class="dropdown-link thai w-dropdown-link" tabindex="0">ไทย</a><a href="#" class="dropdown-link turkey w-dropdown-link" tabindex="0">Türkçe</a><a href="#" class="dropdown-link ua w-dropdown-link" tabindex="0">Українська</a><a href="#" class="dropdown-link vietnamese w-dropdown-link" tabindex="0">Tiếng Việt</a><a href="#" class="dropdown-link chinese1 w-dropdown-link" tabindex="0">中文</a><a href="#" class="dropdown-link chinese w-dropdown-link" tabindex="0">繁體中文</a></nav>
+                        <nav class="dropdown-list w-dropdown-list" id="w-dropdown-list-3"
+                        aria-labelledby="w-dropdown-toggle-3"><a href="#" class="dropdown-link w-dropdown-link"
+                           tabindex="0">български</a><a href="#" class="dropdown-link czech w-dropdown-link"
+                           tabindex="0">Čeština</a><a href="#" class="dropdown-link dansk w-dropdown-link"
+                           tabindex="0">Dansk</a><a href="#" class="dropdown-link deutsch w-dropdown-link"
+                           tabindex="0">Deutsch</a><a href="#" class="dropdown-link greek w-dropdown-link"
+                           tabindex="0">Ελληνικά</a><a href="#" class="dropdown-link english w-dropdown-link"
+                           tabindex="0">English, USA</a><a href="#" class="dropdown-link spanish w-dropdown-link"
+                           tabindex="0">Español</a><a href="#" class="dropdown-link suomi w-dropdown-link"
+                           tabindex="0">Suomi</a><a href="#" class="dropdown-link french w-dropdown-link"
+                           tabindex="0">Français</a><a href="#" class="dropdown-link hindi w-dropdown-link"
+                           tabindex="0">हिंदी</a><a href="#" class="dropdown-link hrvatski w-dropdown-link"
+                           tabindex="0">Hrvatski</a><a href="#" class="dropdown-link magyar w-dropdown-link"
+                           tabindex="0">Magyar</a><a href="#" class="dropdown-link italiano w-dropdown-link"
+                           tabindex="0">Italiano</a><a href="#" class="dropdown-link japanese w-dropdown-link"
+                           tabindex="0">日本語</a><a href="#" class="dropdown-link korean w-dropdown-link"
+                           tabindex="0">한국어</a><a href="#" class="dropdown-link lithuanian w-dropdown-link"
+                           tabindex="0">Lietuviškai</a><a href="#" class="dropdown-link nederlands w-dropdown-link"
+                           tabindex="0">Nederlands</a><a href="#" class="dropdown-link norwegian w-dropdown-link"
+                           tabindex="0">Norwegian</a><a href="#" class="dropdown-link polski w-dropdown-link"
+                           tabindex="0">Polski</a><a href="#"
+                           class="dropdown-link brazilian-portuguese w-dropdown-link" tabindex="0">Português do
+                           Brasil</a><a href="#" class="dropdown-link romania w-dropdown-link"
+                           tabindex="0">Română</a><a href="#" class="dropdown-link ru w-dropdown-link"
+                           tabindex="0">Русский</a><a href="#" class="dropdown-link svenska w-dropdown-link"
+                           tabindex="0">Svenska</a><a href="#" class="dropdown-link thai w-dropdown-link"
+                           tabindex="0">ไทย</a><a href="#" class="dropdown-link turkey w-dropdown-link"
+                           tabindex="0">Türkçe</a><a href="#" class="dropdown-link ua w-dropdown-link"
+                           tabindex="0">Українська</a><a href="#" class="dropdown-link vietnamese w-dropdown-link"
+                           tabindex="0">Tiếng Việt</a><a href="#" class="dropdown-link chinese1 w-dropdown-link"
+                           tabindex="0">中文</a><a href="#" class="dropdown-link chinese w-dropdown-link"
+                           tabindex="0">繁體中文</a></nav>
                      </div>
                      <div class="language">
                         <div class="lang-container">
@@ -396,14 +419,14 @@
                   </div>
                   <div id="w-node-_205fcd10-f41c-19e7-855a-15227d050191-7d05013a">
                      <div class="paragraph-small top-marg font-blue">Product</div>
-                     <a data-track="download" href="https://discord.com/download" class="link-footer">Download</a>
+                     <a data-track="download" href="https:///download" class="link-footer">Download</a>
                   </div>
                </div>
                <div class="footer-line-blue">
                 <a data-track="logo" href="/" class="w-inline-block">
                     <img src="/static/images/wardmarkcolor.png" loading="lazy" alt="" class="discord-footer"/>
                 </a>
-                <a data-track="login_footer" data-w-id="d182f768-5cb1-47e3-0150-c8832fa33126" href="/app" class="button-white color-blue-right footer-open-discord-button footer-open-discord-button-js w-button">Sign up</a>
+                <a data-track="login_footer" data-w-id="d182f768-5cb1-47e3-0150-c8832fa33126" href="/register" class="button-white color-blue-right footer-open-discord-button footer-open-discord-button-js w-button">Sign up</a>
             </div>
             </div>
          </div>
@@ -418,8 +441,7 @@
       <script src="/static/404/bodyEnd.js" defer></script>
       
 
-      <script type="text/javascript" src="/static/w/assets/loginOrDownload.js" defer></script>
-
+      <script type="text/javascript" src="/static/404/loginOrDownload.js" defer></script>
 
 </script>
 
