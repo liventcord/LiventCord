@@ -25,24 +25,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelector("form").addEventListener("submit", submitForm);
 
-    // Listen for the language change event and update the DOM
     window.addEventListener("languageChanged", updateDOM);
+
+    const wallpaper = document.getElementById('video-background');
+    if (wallpaper) {
+      const width = window.innerWidth;
+
+      console.log("Window Width: " + width);  
+
+      if (width > 1280) {
+        wallpaper.src = "https://motionbgs.com/media/492/nier-automata.3840x2160.mp4";
+        console.log("4K video loaded");
+      } else {
+        wallpaper.src = "https://motionbgs.com/media/492/nier-automata.1920x1080.mp4"; 
+        console.log("Full HD video loaded");
+      }
+    }
 });
 
 function updateDOM() {
     const elements = document.querySelectorAll("[data-i18n]");
     elements.forEach((element) => {
         const key = element.getAttribute("data-i18n");
-        element.textContent = getTranslation(key);
+        const translation = getTranslation(key);
+
         if (element.tagName === "A") {
-            element.innerHTML = getTranslation(key);
+            element.textContent = translation;
+        } else if (element.tagName === "P") {
+
+            const textNode = element.childNodes[0];
+            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                textNode.textContent = translation;
+            }
+        } else {
+            element.textContent = translation;
         }
     });
 }
 
 document.querySelectorAll('input').forEach(input => {
     input.addEventListener('input', () => {
-        input.setCustomValidity(''); // Clear custom validity messages on input
+        input.setCustomValidity(''); 
     });
 });
 

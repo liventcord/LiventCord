@@ -45,9 +45,9 @@ public static class RouteConfig
         }
 
         MapRoute("/", "index.html");
-        MapRoute("/beta", "beta.html");
         MapRoute("/download", "download.html");
-        MapRoute("/register", "register.html");
+        MapRoute("/register", "static/register/register.html");
+        MapRoute("/registerold", "register.html");
         MapRoute("/test", "test.html");
         MapRoute("/test2", "test2.html");
         MapRoute("favicon.ico", "static/images/icons/favicon.ico");

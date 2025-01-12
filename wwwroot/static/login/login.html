@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiventCord</title>
-  <link rel="stylesheet" href="/static/login/loginstyle.css">
+  <link rel="stylesheet" href="/static/login/loginsharedstyles.css">
   <script type="module" src="/static/login/login.js" defer></script>
 </head>
 <body>
+  <video id="video-background" autoplay muted loop> </video>
+  
   <div class="wrapper">
     <form>
       <h2 data-i18n="loginTitle"></h2>
@@ -24,8 +26,8 @@
       </div>
       <button type="submit" data-i18n="loginButton"></button>
       <div class="register">
-        <p data-i18n="registerPrompt"> <a href="#" data-i18n="registerLink"></a></p>
-      </div>
+        <p data-i18n="registerPrompt"> <a href="/register" data-i18n="registerLink"></a></p>
+    </div>
     </form>
   </div>
 

@@ -2,12 +2,12 @@
 <html data-wf-domain="prod-wf1.discord.com" data-wf-page="66b21ecdcf44e23be7a3ae31" data-wf-site="6257adef93867e50d84d30e2">
    <head>
       <meta charset="utf-8"/>
-      <title>Download Discord to Talk, Chat, and Hang Out</title>
+      <title>Download LiventCord to Talk, Chat, and Hang Out</title>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." name="description"/>
-      <meta content="Download Discord to Talk, Chat, and Hang Out" property="og:title"/>
+      <meta content="Download LiventCord to Talk, Chat, and Hang Out" property="og:title"/>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." property="og:description"/>
       <meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" property="og:image"/>
-      <meta content="Download Discord to Talk, Chat, and Hang Out" property="twitter:title"/>
+      <meta content="Download LiventCord to Talk, Chat, and Hang Out" property="twitter:title"/>
       <meta content="Download the best app to communicate over video, voice, or text. Available for Windows, macOS, Linux, iOS, and Android devices." property="twitter:description"/>
       <meta content="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg" property="twitter:image"/>
       <meta property="og:type" content="website"/>
@@ -36,9 +36,16 @@
                 height: 100vh;
                 object-fit: cover;
                 top: 0;
+                z-index: -1;
                 left: 0;
                 display: block;
-            }
+         }
+         .home_image-static {
+            opacity: 0.8;
+         }
+         .home--hero {
+            margin-top:150px;
+         }
 
 
         .title-2gJ6Dl {
@@ -267,27 +274,34 @@
         //# sourceMappingURL=styles.js.map
         </script>
    </head>
-   <img id="nierwallpaper">
+   <video id="nierwallpaper" autoplay muted loop></video>
    <script>
      document.addEventListener("DOMContentLoaded", () => {
-
-       const wallPaper = document.getElementById('nierwallpaper');
-       if (wallPaper) {
-        
-         if (window.innerWidth <= 768) {
-           wallPaper.src = "/static/images/niermobile.jpg";
+   
+       const wallpaper = document.getElementById('nierwallpaper');
+       if (wallpaper) {
+         const width = window.innerWidth;
+   
+         console.log("Window Width: " + width);  
+   
+         if (width > 1280) {
+           wallpaper.src = "https://motionbgs.com/media/4348/2b-in-nier-automata.3840x2160.mp4";
+           console.log("4K video loaded");
          } else {
-           wallPaper.src = "/static/images/nierwallpaper2.jpg";
+           wallpaper.src = "https://motionbgs.com/media/4348/2b-in-nier-automata.1920x1080.mp4"; 
+           console.log("Full HD video loaded");
          }
        }
+   
        const openbrowserbtn = document.getElementById("openinbrowserbtn");
        if (openbrowserbtn) {
          openbrowserbtn.innerHTML = openbrowserbtn.innerHTML.replace(new RegExp("Discord", 'g'), "Liventcord");
        }
-       
      });
-     
    </script>
+   
+   
+   
 
    <body class="body">
     <div>
