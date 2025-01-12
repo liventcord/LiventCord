@@ -1,0 +1,221 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Open Sans", sans-serif;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 0 10px;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url("/static/images/nierforest.jpg"), #000;
+  background-position: center;
+  background-size: cover;
+}
+
+.wrapper {
+  width: 400px;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.input-field {
+  position: relative;
+  border-bottom: 2px solid #ccc;
+  margin: 15px 0;
+}
+
+.input-field label {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  color: #fff;
+  font-size: 16px;
+  pointer-events: none;
+  transition: 0.15s ease;
+}
+
+.input-field input {
+  width: 100%;
+  height: 40px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #fff;
+}
+
+.input-field input:focus~label,
+.input-field input:valid~label {
+  font-size: 0.8rem;
+  top: 10px;
+  transform: translateY(-120%);
+}
+
+.forget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 25px 0 35px 0;
+  color: #fff;
+}
+
+#remember {
+  accent-color: #fff;
+}
+
+.forget label {
+  display: flex;
+  align-items: center;
+}
+
+.forget label p {
+  margin-left: 8px;
+}
+
+.wrapper a {
+  color: #efefef;
+  text-decoration: none;
+}
+
+.wrapper a:hover {
+  text-decoration: underline;
+}
+
+button {
+  background: #fff;
+  color: #000;
+  font-weight: 600;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 16px;
+  border: 2px solid transparent;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  color: #fff;
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.register {
+  text-align: center;
+  margin-top: 30px;
+  color: #fff;
+}
+
+.language-selector {
+  position: fixed;
+  bottom: 20px;
+  display: flex;
+  left: 50%; 
+  transform: translateX(-50%);
+  background-color: #333; 
+  padding: 10px 20px;
+  border-radius: 25px; 
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3); 
+  z-index: 1000; 
+}
+
+.language-selector button {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 8px 15px;
+  margin: 0 10px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.language-selector button:hover {
+  background-color: #ddd;
+}
+
+.language-selector button:focus {
+  outline: none;
+}
+
+.info-container {
+  width: 600px;
+  height: 90px;
+  background-color: #2fdd2c;
+  z-index: 15;
+  border-radius: 25px;
+  position: fixed;
+  top: 100px;
+  margin-left: -300px;
+  left: -600px;
+  animation: moveAndFade 4s ease forwards;
+}
+.error-container {
+  width: 600px;
+  height: 90px;
+  background-color: #dd2c2c;
+  z-index: 15;
+  border-radius: 25px;
+  position: fixed;
+  top: 100px;
+  margin-left: -300px;
+  left: -600px;
+  animation: moveAndFade 4s ease forwards;
+}
+
+@keyframes moveAndFade {
+  0% {
+    left: -600px;
+    opacity: 1;
+  }
+  30% {
+    left: 50%;
+    opacity: 1;
+  }
+  50% {
+    left: 50%;
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+#info-message {
+  color: #ffff;
+  font-size: 25px;
+  white-space: nowrap;
+  z-index: 25;
+  position: absolute;
+  top: 30px;
+  left: 30px;
+}

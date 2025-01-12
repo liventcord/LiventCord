@@ -606,51 +606,7 @@ select:autofill:focus {
   position: absolute;
   left: 430px;
 }
-#language-form {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1000; 
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: rgba(83, 83, 83, 0.9);
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-#language-select {
-  padding: 8px 12px;
-  font-size: 16px;
-  font-family: inherit;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #333;
-  appearance: none;
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-}
-#language-select:hover {
-  border-color: #888;
-}
-
-#language-select:focus {
-  border-color: #555;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-}
-
-#language-select option {
-  font-size: 18px;
-  color: #333;
-  background-color: #fff;
-}
-label[for="language-select"] {
-  color: #fff;
-  font-size: 20px;
-}
 
  /*  Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
  *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiventCord</title>
+  <link rel="stylesheet" href="/static/login/loginstyle.css">
+  <script type="module" src="/static/login/login.js" defer></script>
+</head>
+<body>
+  <div class="wrapper">
+    <form>
+      <h2 data-i18n="loginTitle"></h2>
+      <div class="input-field">
+        <input name="email" type="text" required>
+        <label for="email" data-i18n="emailLabel"></label>
+      </div>
+      <div class="input-field">
+        <input name="pass" type="password" required>
+        <label for="pass" data-i18n="passwordLabel"></label>
+      </div>
+      <div class="forget">
+        <a href="#" data-i18n="forgotPassword"></a>
+      </div>
+      <button type="submit" data-i18n="loginButton"></button>
+      <div class="register">
+        <p data-i18n="registerPrompt"> <a href="#" data-i18n="registerLink"></a></p>
+      </div>
+    </form>
+  </div>
+
+  <!-- Language Selector -->
+  <div class="language-selector">
+    <button onclick="setLanguage('en')">English</button>
+    <button onclick="setLanguage('tr')">Türkçe</button>
+  </div>
+</body>
+</html>

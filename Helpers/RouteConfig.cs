@@ -242,6 +242,21 @@ public static class RouteConfig
                 }
 
                 context.Response.ContentType = "text/html";
+                var filePath = Path.Combine(app.Environment.WebRootPath, "static", "login", "login.html");
+                await context.Response.SendFileAsync(filePath);
+            }
+        );
+        app.MapGet(
+            "/loginold",
+            async context =>
+            {
+                if (context.User.Identity?.IsAuthenticated == true)
+                {
+                    context.Response.Redirect("/app");
+                    return;
+                }
+
+                context.Response.ContentType = "text/html";
                 var filePath = Path.Combine(app.Environment.WebRootPath, "login.html");
                 await context.Response.SendFileAsync(filePath);
             }
