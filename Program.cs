@@ -228,24 +228,6 @@ app.UseStatusCodePages(async context =>
     }
 });
 
-app.MapFallback(async context =>
-{
-    var acceptHeader = context.Request.Headers["Accept"].ToString();
-
-    if (acceptHeader.Contains("text/html"))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        context.Response.ContentType = "text/html";
-        var filePath = Path.Combine(app.Environment.WebRootPath, "static", "404", "404.html");
-        await context.Response.SendFileAsync(filePath);
-    }
-    else
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync("404 Not Found");
-    }
-});
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
