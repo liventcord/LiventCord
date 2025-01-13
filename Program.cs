@@ -12,41 +12,32 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
 
-int port;
-if (int.TryParse(builder.Configuration["AppSettings:port"], out port))
+int port = 5005;
+if (!int.TryParse(builder.Configuration["AppSettings:port"], out port))
 {
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+    Console.WriteLine("Invalid or missing port in configuration. Using default port: 5005");
 }
-else
-{
-    builder.WebHost.UseUrls("http://0.0.0.0:5005");
-}
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-bool usePostgres =
-    bool.TryParse(builder.Configuration["AppSettings:usePostgres"], out var result) && result;
+bool usePostgres = bool.TryParse(builder.Configuration["AppSettings:usePostgres"], out var result) && result;
+Console.WriteLine($"Running Postgres: {usePostgres}");
+Console.WriteLine($"Running on port: {port}");
 
 if (usePostgres)
 {
     var connectionString = builder.Configuration.GetConnectionString("RemoteConnection");
     if (string.IsNullOrEmpty(connectionString))
     {
-        throw new InvalidOperationException(
-            "RemoteConnection string is missing in the configuration."
-        );
+        throw new InvalidOperationException("RemoteConnection string is missing in the configuration.");
     }
     builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 }
 else
 {
-    var connectionString = builder.Configuration.GetConnectionString("SqlitePath");
-
-    if (string.IsNullOrEmpty(connectionString))
-    {
-        connectionString = Path.Combine("Data", "liventcord.db");
-        Console.WriteLine("Warning: SqlitePath is missing. Using default path: Data/liventcord.db");
-    }
+    var connectionString = builder.Configuration.GetConnectionString("SqlitePath") ?? Path.Combine("Data", "liventcord.db");
 
     var fullPath = Path.GetFullPath(connectionString);
     var dataDirectory = Path.GetDirectoryName(fullPath);
@@ -59,7 +50,14 @@ else
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite($"Data Source={fullPath}")
     );
+
+    if (string.IsNullOrEmpty(builder.Configuration.GetConnectionString("SqlitePath")))
+    {
+        Console.WriteLine($"Warning: SqlitePath is missing. Using default path: {fullPath}");
+    }
 }
+
+
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
     .Filter.ByExcluding(logEvent => logEvent.MessageTemplate.Text.Contains("db query"))

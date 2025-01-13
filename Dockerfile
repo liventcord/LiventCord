@@ -5,14 +5,12 @@ WORKDIR /source
 COPY --link *.csproj .
 RUN dotnet restore --runtime linux-musl-x64
 
-COPY --link . .
-COPY --link ./Properties ./Properties 
+COPY --link . . 
 RUN dotnet publish -c Release --runtime linux-musl-x64 -o /app --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=true
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 WORKDIR /app
 COPY --link --from=build /app .
-COPY --link --from=build /source/Properties /app/Properties 
 
 USER root
 
