@@ -12,11 +12,15 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
 
-int port = 5005;
-if (!int.TryParse(builder.Configuration["AppSettings:port"], out port))
+int port = 5005;  
+
+if (int.TryParse(builder.Configuration["AppSettings:port"], out int configPort) && configPort > 0)
+{
+    port = configPort;  
+}
+else
 {
     Console.WriteLine("Invalid or missing port in configuration. Using default port: 5005");
 }
