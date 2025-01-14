@@ -21,7 +21,6 @@ sidebar_position: 1
     }
     ```
     Available Database Types:
-  - **MongoDB**
   - **PostgreSQL**
   - **MySQL**
   - **MariaDB**

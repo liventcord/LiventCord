@@ -24,7 +24,6 @@ dotnet run
     {
       "ConnectionStrings": {
         "RemoteConnection": "YOUR_CONNECTION_STRING",
-        "SqlitePath": "Data/database.db",
       },
       "AppSettings": {
         "SecretKey": "SECRET_KEY",
@@ -34,7 +33,6 @@ dotnet run
     }
     ```
   Available Database Types:
-  - **MongoDB**
   - **PostgreSQL**
   - **MySQL**
   - **MariaDB**

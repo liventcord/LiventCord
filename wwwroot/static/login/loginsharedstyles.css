@@ -178,7 +178,7 @@ button:hover {
 }
 
 .language-selector button:focus {
-  outline: none;
+  outline: 3px solid #0057b7;
 }
 
 .info-container {
