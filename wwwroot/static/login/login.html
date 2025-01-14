@@ -8,33 +8,34 @@
   <script type="module" src="/static/login/login.js" defer></script>
 </head>
 <body>
-  <video id="video-background" autoplay muted loop> </video>
+  <video id="video-background" autoplay muted loop></video>
   
   <div class="wrapper">
     <form>
       <h2 data-i18n="loginTitle"></h2>
       <div class="input-field">
-        <input name="email" type="text" required>
+        <input id="email" name="email" type="text" required tabindex="1">
         <label for="email" data-i18n="emailLabel"></label>
       </div>
       <div class="input-field">
-        <input name="pass" type="password" required>
+        <input id="pass" name="pass" type="password" required tabindex="2">
         <label for="pass" data-i18n="passwordLabel"></label>
       </div>
       <div class="forget">
-        <a href="#" data-i18n="forgotPassword"></a>
+        <a href="#" data-i18n="forgotPassword" tabindex="3"></a>
       </div>
-      <button type="submit" data-i18n="loginButton"></button>
+      <button type="submit" data-i18n="loginButton" tabindex="4"></button>
       <div class="register">
-        <p data-i18n="registerPrompt"> <a href="/register" data-i18n="registerLink"></a></p>
-    </div>
+        <p data-i18n="registerPrompt">
+          <a href="/register" data-i18n="registerLink" tabindex="5"></a>
+        </p>
+      </div>
     </form>
   </div>
 
-  <!-- Language Selector -->
   <div class="language-selector">
-    <button onclick="setLanguage('en')">English</button>
-    <button onclick="setLanguage('tr')">Türkçe</button>
+    <button onclick="setLanguage('en')" tabindex="6">English</button>
+    <button onclick="setLanguage('tr')" tabindex="7">Türkçe</button>
   </div>
 </body>
 </html>
