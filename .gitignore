@@ -11,8 +11,7 @@ appsettings.json
 *.suo
 *.user
 *.userprefs
-*.sln.docstates
-*.sln
+LiventCord.sln
 .vs/
 .vscode/
 .config/

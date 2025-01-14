@@ -1,1 +1,6 @@
 Properties/*
+bin/
+obj/
+.git/
+*.log
+Dockerfile

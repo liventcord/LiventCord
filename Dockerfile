@@ -6,7 +6,8 @@ COPY --link *.csproj .
 RUN dotnet restore --runtime linux-musl-x64
 
 COPY --link . . 
-RUN dotnet publish -c Release --runtime linux-musl-x64 -o /app --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=true
+# /p:PublishTrimmed=true causes controllers not being registered
+RUN dotnet publish -c Release --runtime linux-musl-x64 -o /app /p:PublishSingleFile=true
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 WORKDIR /app
