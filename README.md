@@ -23,16 +23,24 @@ dotnet run
     ```json
     {
       "ConnectionStrings": {
-        "RemoteConnection": "Host=host;Database=database;Username=username;Password=password;Port=port;SSL Mode=sslmode",
+        "RemoteConnection": "YOUR_CONNECTION_STRING",
         "SqlitePath": "Data/database.db",
       },
       "AppSettings": {
-        "SecretKey": "Secret-Key",
-        "usePostgres": "false",
+        "SecretKey": "SECRET_KEY",
+        "DatabaseType": "DATABASE_TYPE",
         "port" : "5005"
       }
     }
     ```
+  Available Database Types:
+  - **MongoDB**
+  - **PostgreSQL**
+  - **MySQL**
+  - **MariaDB**
+  - **SQLite**
+  Defaults to sqlite if none provided
+
 ## Docker
 ### Docker Compose
 Run with Docker Compose

@@ -1,35 +1,36 @@
 ---
+slug: /
 sidebar_position: 1
 ---
 
 # Tutorial Intro
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Get started with LiventCord in just a few steps.
 
-## Getting Started
+## Quick Start
 
-Get started by **creating a new site**.
+**Jump in now:** **[liventcord.onrender.com](https://liventcord.onrender.com)**.
+- Or run server locally
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+## Run Locally
 
-## Generate a new site
+### Install .NET SDK 8.0
 
-Generate a new Docusaurus site using the **classic template**:
+Download the SDK from **https://dotnet.microsoft.com/en-us/download**
 
-```shell
-npx @docusaurus/init@latest init my-website classic
+### Clone the repository
+``` shell
+git clone https://github.com/liventcord/Liventcord --depth 1
 ```
 
-## Start your site
+### Start running server
 
-Run the development server:
+Run the server:
 
 ```shell
-cd my-website
-
-npx docusaurus start
+cd LiventCord
+dotnet run
 ```
 
-Your site starts at `http://localhost:3000`.
+Server runs at at `http://localhost:5005`.
 
-Open `docs/intro.md` and edit some lines: the site **reloads automatically** and display your changes.
