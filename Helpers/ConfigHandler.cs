@@ -39,7 +39,7 @@ public static class ConfigHandler {
         if (string.IsNullOrEmpty(connectionString))
         {
             Console.WriteLine("Connection string is missing in the configuration. Defaulting to SQLite.");
-            connectionString = "Data Source=Data/liventcord.db";
+            connectionString = "Data/liventcord.db";
         }
 
         Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");

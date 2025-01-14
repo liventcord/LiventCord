@@ -5,8 +5,6 @@ cache/
 Migrations/
 Logs/
 Data/
-wwwroot/static/css/loginfullstyles.css
-wwwroot/static/css/fullinvite.min.css
 wwwroot/static/w
 appsettings.Development.json
 appsettings.json
@@ -14,8 +12,10 @@ appsettings.json
 *.user
 *.userprefs
 *.sln.docstates
+*.sln
 .vs/
 .vscode/
+.config/
 
 *.tmp
 *.log
