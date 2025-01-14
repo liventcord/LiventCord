@@ -1,8 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using LiventCord.Controllers;
-using LiventCord.Models;
-using Microsoft.AspNetCore.Mvc;
 
 public class SSEManager
 {
@@ -13,8 +10,8 @@ public class SSEManager
     public async Task EventsStream(HttpContext context, string guildId)
     {
         context.Response.ContentType = "text/event-stream";
-        context.Response.Headers.Add("Cache-Control", "no-cache");
-        context.Response.Headers.Add("Connection", "keep-alive");
+        context.Response.Headers["Cache-Control"] = "no-cache"; 
+        context.Response.Headers["Connection"] = "keep-alive";  
 
         string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
@@ -27,6 +24,7 @@ public class SSEManager
         AddConnection(userId, context);
         await Task.Delay(Timeout.Infinite);
     }
+
 
     public void AddConnection(string userId, HttpContext context)
     {

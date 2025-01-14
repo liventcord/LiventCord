@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace LiventCord.Models;
+﻿namespace LiventCord.Models;
 
 public partial class TypingStatus
 {

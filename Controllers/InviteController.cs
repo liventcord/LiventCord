@@ -33,7 +33,7 @@ namespace LiventCord.Controllers
                 );
             }
 
-            string inviteId = await GetGuildIdByInviteAsync(guildId);
+            string ?inviteId = await GetGuildIdByInviteAsync(guildId);
             if (inviteId != null)
             {
                 return Ok(new { InviteId = inviteId });
