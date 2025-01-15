@@ -134,24 +134,5 @@ public static class RouteConfig
                 });
             }
         );
-
-        app.MapGet(
-            "/docs2",
-            async context =>
-            {
-                var filePath = Path.Combine(app.Environment.WebRootPath, "templates","redocs.html");
-
-                if (!File.Exists(filePath))
-                {
-                    context.Response.StatusCode = StatusCodes.Status404NotFound;
-                    await context.Response.WriteAsync("Documentation not yet generated.");
-                }
-                else
-                {
-                    context.Response.ContentType = "text/html";
-                    await context.Response.SendFileAsync(filePath);
-                }
-            }
-        );
     }
 }
