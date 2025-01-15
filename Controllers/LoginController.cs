@@ -61,7 +61,7 @@ namespace LiventCord.Controllers
                 authProperties
             );
 
-            return Ok(new { message = "Login successful!" });
+            return Ok();
         }
 
         private async Task<User?> AuthenticateUser(string email, string password)
@@ -76,7 +76,7 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok(new { message = "Logout successful!" });
+            return Ok();
         }
     }
 }

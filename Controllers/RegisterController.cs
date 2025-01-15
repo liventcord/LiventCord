@@ -29,7 +29,7 @@ namespace LiventCord.Controllers
                 return BadRequest(ModelState);
 
             if (await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower()))
-                return Conflict(new { error = "Email already exists." });
+                return Conflict();
 
             var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(
                 request.Nickname
@@ -51,7 +51,7 @@ namespace LiventCord.Controllers
             );
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Registration successful." });
+            return Ok();
         }
     }
 }

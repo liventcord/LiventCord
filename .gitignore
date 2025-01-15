@@ -6,6 +6,7 @@ Migrations/
 Logs/
 Data/
 wwwroot/static/w
+wwwroot/static/css/fullinvite.min.css
 appsettings.Development.json
 appsettings.json
 *.suo

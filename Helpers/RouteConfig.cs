@@ -47,7 +47,6 @@ public static class RouteConfig
         MapRoute("/", "templates/index.html");
         MapRoute("/download", "templates/download.html");
         MapRoute("/register", "static/register/register.html");
-        MapRoute("/registerold", "static/register/registerold.html");
 
         MapRoute("favicon.ico", "static/images/icons/favicon.ico");
         MapRoute("/service-worker.js", "pwa/service-worker.js");
