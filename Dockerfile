@@ -2,10 +2,11 @@ FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 ARG TARGETARCH
 WORKDIR /source
 
-COPY --link *.csproj .
+COPY --link src/*.csproj .
 RUN dotnet restore --runtime linux-musl-x64
 
-COPY --link . . 
+COPY --link src/. .
+
 # /p:PublishTrimmed=true causes controllers not being registered
 RUN dotnet publish -c Release --runtime linux-musl-x64 -o /app /p:PublishSingleFile=true
 

@@ -31,7 +31,7 @@ const translations = {
         forgotPassword: "Şifrenizi mi unuttunuz?",
         registerPrompt: "Hesabınız yok mu?",
         loginPrompt: "Zaten hesabın var mı?",
-        emailExists: "Bu takma ad, mevcut diskriminatör sayısının maksimum sınırını aşmış durumda",
+        emailExists: "Bu takma ad, mevcut tanımlayıcı sayısının maksimum sınırını aşmış durumda",
     },
 };
 function updateDOM() {
@@ -193,9 +193,9 @@ function validatePassword(password) {
     return password && password.length >= 5;
 }
 
-function validateNick(nick) {
-    const value = nick.value.trim();
-    return value.length >= 1 && value.length <= 32;
+function validateNick(value) {
+    const nick = value.trim();
+    return nick.length >= 1 && nick.length <= 32;
 }
 
 window.setLanguage = setLanguage;

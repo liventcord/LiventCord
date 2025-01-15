@@ -83,7 +83,8 @@ class Translations {
         "addfrienddetailtext": "You can add your friends with their LiventCord name.",
         "addfriendinputbutton": "Send Friend Request",
         "send-message": "Send Message",
-        "more": "More"
+        "more": "More",
+        "addFriendDiscriminatorErrorText": "Invalid discriminator! (#0000)"
 
       },
 
@@ -166,8 +167,8 @@ class Translations {
         "addfrienddetailtext": "Arkadaşlarını LiventCord kullanıcı adı ile ekleyebilirsin.",
         "addfriendinputbutton": "Arkadaşlık İsteği Gönder",
         "send-message": "Mesaj Gönder",
-        "more": "Daha fazla"
-
+        "more": "Daha fazla",
+        "addFriendDiscriminatorErrorText": "Tanımlayıcı geçersiz! (#0000)"
         
       }
     };

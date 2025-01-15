@@ -1,6 +1,5 @@
 $(document).ready(function() {
     function handleMobileDragging() {
-        // Variables to store initial touch position and element position
         var initialX = 0;
         var initialY = 0;
         var offsetX = 0;
@@ -8,10 +7,8 @@ $(document).ready(function() {
         var isDragging = false;
         var autoStabilizerTimeout;
     
-        // Get the draggable element
         var draggableElement = document.getElementById("local_vid");
     
-        // Add touch event listeners for mobile dragging
         draggableElement.addEventListener("touchstart", function(e) {
             clearTimeout(autoStabilizerTimeout);
             isDragging = true;
@@ -52,7 +49,6 @@ $(document).ready(function() {
         function startAutoStabilizer() {
             clearTimeout(autoStabilizerTimeout);
             autoStabilizerTimeout = setTimeout(function() {
-                // Check if the element is colliding with the screen borders
                 var rect = draggableElement.getBoundingClientRect();
                 var screenWidth = window.innerWidth;
                 var screenHeight = window.innerHeight;
@@ -68,29 +64,24 @@ $(document).ready(function() {
                     var newX = Math.min(Math.max(rect.left, 0), screenWidth - rect.width);
                     var newY = Math.min(Math.max(rect.top, 0), screenHeight - rect.height);
         
-                    offsetX = newX - rect.left + offsetX; // Update offsetX
-                    offsetY = newY - rect.top + offsetY; // Update offsetY
+                    offsetX = newX - rect.left + offsetX; 
+                    offsetY = newY - rect.top + offsetY;
 
                     setTranslateBasedOnViewport(2.5, 5, draggableElement);
                 }
             }, 200); 
         }
         
-    
-        // Start the auto stabilizer initially
         startAutoStabilizer();
     }
     
     
 
 
-    // Function to handle desktop dragging
     function handleDesktopDragging() {
-        // Use jQuery UI draggable for desktop dragging
         $("#local_vid").draggable({
             containment: "body",
             zIndex: 1,
-            // set start position at bottom right
             start: function (event, ui) {
                 ui.position.left = $(window).width() - ui.helper.width();
                 ui.position.top = $(window).height() - ui.helper.height();
@@ -112,7 +103,6 @@ $(document).ready(function() {
                 }
             }
         }).css({
-            // Set initial position
             left: $(window).width() - $("#local_vid").width(),
             top: $(window).height() - $("#local_vid").height()
         });
@@ -120,7 +110,6 @@ $(document).ready(function() {
         
     }
 
-    // Function to check and update video layout based on device type
     function checkVideoLayout() {
         var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -162,9 +151,9 @@ function checkVideoLayout() {
     videoGrid.style.alignItems = "center";
 
     videos.forEach(video => {
-        video.style.width = "100%"; // Ensure videos take full width initially
-        video.style.height = "auto"; // Allow height to adjust according to aspect ratio
-        video.style.flex = "1 1 45%"; // Base size, adjusted for 2x2 grid or similar
+        video.style.width = "100%"; 
+        video.style.height = "auto"; 
+        video.style.flex = "1 1 45%"; 
         video.style.maxWidth = "50%";
         video.style.zIndex = "1";
         video.style.maxHeight = "50%";
@@ -199,7 +188,7 @@ function checkVideoLayout() {
             video.style.maxHeight = "50%";
         });
     } else if (videoCount > 4) {
-        // Calculate grid dimensions dynamically for more than 4 videos
+
         const rows = Math.ceil(Math.sqrt(videoCount));
         const cols = Math.ceil(videoCount / rows);
         const videoHeight = 100 / rows;
@@ -212,15 +201,13 @@ function checkVideoLayout() {
         });
     }
 
-    // Media query for smaller screens
     const mediaQuery = window.matchMedia("(max-width: 768px)");
     if (mediaQuery.matches) {
         videos.forEach(video => {
             if(video.id !== "local-vid") {
-                video.style.flex = "1 1 100%"; // Full width for single video
+                video.style.flex = "1 1 100%"; 
                 video.style.maxWidth = "100%";
-                video.style.maxHeight = "auto"; // Allow height to adjust based on content
-
+                video.style.maxHeight = "auto";
             }
         });
     }

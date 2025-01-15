@@ -1,6 +1,3 @@
-const addFriendDiscriminatorErrorText = "Tanımlayıcı geçersiz! (#0000)";
-
-
 let isAddFriendsOpen = false;
 
 let currentSelectedStatus = null;
@@ -255,7 +252,7 @@ function submitAddFriend() {
 
   if (currentValue && currentValue.length > 0) {
     if (!isValidFriendName(currentValue)) {
-      displayFriendsMessage(addFriendDiscriminatorErrorText);
+      displayFriendsMessage(translations.getTranslation("addFriendDiscriminatorErrorText"));
       return;
     }
 
