@@ -1,13 +1,12 @@
-# Dev Environment Setup
+# Server Setup
 
-This branch sets up environment for running the server.
+Run a LiventCord backend server
 
 ## Quick Start
 1. Install .NET SDK https://dotnet.microsoft.com/en-us/download
 1. Clone the repository:
 ```bash
 git clone https://github.com/liventcord/Liventcord --depth 1
-git checkout dev
 ```
 
 ### Run the Server
