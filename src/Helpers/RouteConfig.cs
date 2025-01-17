@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.IO;
 using LiventCord.Helpers;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
@@ -46,13 +43,8 @@ public static class RouteConfig
 
         MapRoute("/", "templates/index.html");
         MapRoute("/download", "templates/download.html");
-        MapRoute("/register", "static/register/register.html");
+        MapRoute("/register", "register/register.html");
 
-        MapRoute("favicon.ico", "static/images/icons/favicon.ico");
-        MapRoute("/service-worker.js", "pwa/service-worker.js");
-        MapRoute("/manifest.json", "pwa/manifest.json");
-
-        
         app.MapFallback(async context =>
         {
             var acceptHeader = context.Request.Headers["Accept"].ToString();
@@ -61,7 +53,7 @@ public static class RouteConfig
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 context.Response.ContentType = "text/html";
-                var filePath = Path.Combine(app.Environment.WebRootPath, "static", "404", "404.html");
+                var filePath = Path.Combine(app.Environment.WebRootPath, "404", "404.html");
                 await context.Response.SendFileAsync(filePath);
             }
             else
@@ -71,7 +63,6 @@ public static class RouteConfig
                 await context.Response.WriteAsync("404 Not Found");
             }
         });
-
 
         app.MapGet(
             "/login",
@@ -84,7 +75,7 @@ public static class RouteConfig
                 }
 
                 context.Response.ContentType = "text/html";
-                var filePath = Path.Combine(app.Environment.WebRootPath, "static", "login", "login.html");
+                var filePath = Path.Combine(app.Environment.WebRootPath, "login", "login.html");
                 await context.Response.SendFileAsync(filePath);
             }
         );

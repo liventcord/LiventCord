@@ -182,7 +182,6 @@ namespace LiventCord.Controllers
             modelBuilder.Entity<GuildFile>(entity =>
             {
                 entity.ToTable("guild_files");
-                entity.Property(f => f.ChannelId).HasColumnName("channel_id");
                 entity.Property(f => f.UserId).HasColumnName("user_id");
             });
 

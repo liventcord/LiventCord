@@ -7,12 +7,11 @@ sidebar_position: 1
 
 Get started with LiventCord in just a few steps.
 
-## Quick Start
+## 🚀 Quick Start
 
 **Jump in now:** **[liventcord.onrender.com](https://liventcord.onrender.com)**.
-- Or run server locally
-
-## Run Locally
+### Or:
+## **Run Locally**
 
 ### Install .NET SDK 8.0
 

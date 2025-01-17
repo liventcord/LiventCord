@@ -3,27 +3,54 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
 
-public static class ConfigHandler {
-    public static void HandleConfig(WebApplicationBuilder builder) {
+public static class ConfigHandler
+{
+    public static void HandleConfig(WebApplicationBuilder builder)
+    {
         builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
 
-        int port = 5005;  
+        int port = 5005;
+        string host = "0.0.0.0";
 
-        if (int.TryParse(builder.Configuration["AppSettings:port"], out int configPort) && configPort > 0)
+        if (
+            int.TryParse(builder.Configuration["AppSettings:port"], out int configPort)
+            && configPort > 0
+        )
         {
-            port = configPort;  
+            port = configPort;
         }
         else
         {
             Console.WriteLine("Invalid or missing port in configuration. Using default port: 5005");
         }
-        Console.WriteLine($"Running on port: {port}");
-        builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
+        string? configHost = builder.Configuration["AppSettings:Host"];
+        if (!string.IsNullOrWhiteSpace(configHost))
+        {
+            host = configHost;
+        }
+        else
+        {
+            Console.WriteLine(
+                "Invalid or missing host in configuration. Using default host: 0.0.0.0"
+            );
+        }
+
+        Console.WriteLine($"Running on host: {host}, port: {port}");
+        builder.WebHost.UseUrls($"http://{host}:{port}");
 
         Log.Logger = new LoggerConfiguration()
             .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-            .Filter.ByExcluding(logEvent => logEvent.MessageTemplate.Text.Contains("db query"))
+            .Filter.ByExcluding(logEvent =>
+                logEvent.Properties.TryGetValue("SourceContext", out var sourceContext)
+                && (
+                    sourceContext.ToString().Contains("Microsoft.AspNetCore")
+                    || sourceContext
+                        .ToString()
+                        .Contains("Microsoft.EntityFrameworkCore.Database.Command")
+                )
+                && logEvent.Level < LogEventLevel.Warning
+            )
             .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
@@ -31,45 +58,60 @@ public static class ConfigHandler {
 
         HandleDatabase(builder);
     }
+
     static void HandleDatabase(WebApplicationBuilder builder)
     {
         var databaseType = builder.Configuration["AppSettings:DatabaseType"];
-        var connectionString = builder.Configuration.GetConnectionString("RemoteConnection");
-
-        if (string.IsNullOrEmpty(connectionString))
+        var connectionString = builder.Configuration["RemoteConnection"];
+        var sqlitePath = builder.Configuration["SqlitePath"];
+        if (
+            databaseType == null
+            || (databaseType.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString))
+        )
         {
-            Console.WriteLine("Connection string is missing in the configuration. Defaulting to SQLite.");
-            connectionString = "Data/liventcord.db";
+            Console.WriteLine(
+                "Connection string is missing in the configuration and non-SQLite database type is selected. Defaulting to SQLite."
+            );
+            sqlitePath = "Data/liventcord.db";
         }
 
-        Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");
+        Console.WriteLine(
+            $"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}"
+        );
 
         switch (databaseType?.ToLowerInvariant())
         {
             case "postgresql":
-                builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseNpgsql(connectionString)
+                );
                 break;
 
             case "mysql":
             case "mariadb":
-                builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+                );
                 break;
 
             case "sqlite":
             default:
-                var fullPath = Path.GetFullPath(connectionString);
+                if (sqlitePath == null)
+                {
+                    sqlitePath = "Data/liventcord.db";
+                }
+
+                var fullPath = Path.GetFullPath(sqlitePath);
                 var dataDirectory = Path.GetDirectoryName(fullPath);
                 if (!string.IsNullOrEmpty(dataDirectory) && !Directory.Exists(dataDirectory))
                 {
                     Directory.CreateDirectory(dataDirectory);
                     Console.WriteLine($"Info: Created missing directory {dataDirectory}");
                 }
-                builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={fullPath}"));
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseSqlite($"Data Source={fullPath}")
+                );
                 break;
-
         }
     }
-
-
-
 }

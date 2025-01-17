@@ -1,10 +1,10 @@
 public abstract class FileBase
 {
     public string? FileName { get; set; }
-    public required string FileId { get; set; }
+    public string FileId { get; set; }
     public string? GuildId { get; set; }
-    public required byte[] Content { get; set; }
-    public required string Extension { get; set; }
+    public byte[] Content { get; set; }
+    public string Extension { get; set; }
 
     protected FileBase(
         string fileId,
@@ -20,13 +20,15 @@ public abstract class FileBase
         Extension = extension;
         GuildId = guildId;
     }
+
+    public abstract bool Matches(string? userId, string? guildId);
 }
 
 public class AttachmentFile : FileBase
 {
-    public required string ChannelId { get; set; }
-    public required string UserId { get; set; }
-    public required string MessageId { get; set; }
+    public string ChannelId { get; set; }
+    public string UserId { get; set; }
+    public string MessageId { get; set; }
 
     public AttachmentFile(
         string fileId,
@@ -43,6 +45,9 @@ public class AttachmentFile : FileBase
         UserId = userId;
         MessageId = messageId;
     }
+
+    public override bool Matches(string? userId, string? guildId) =>
+        UserId == userId && GuildId == guildId;
 }
 
 public class EmojiFile : FileBase
@@ -55,32 +60,34 @@ public class EmojiFile : FileBase
         string? guildId
     )
         : base(fileId, fileName, content, extension, guildId) { }
+
+    public override bool Matches(string? userId, string? guildId) => GuildId == guildId;
 }
 
 public class GuildFile : FileBase
 {
-    public required string ChannelId { get; set; }
-    public required string UserId { get; set; }
+    public string UserId { get; set; }
 
     public GuildFile(
         string fileId,
         string fileName,
         byte[] content,
         string extension,
-        string channelId,
-        string userId,
-        string? guildId
+        string? guildId,
+        string userId
     )
         : base(fileId, fileName, content, extension, guildId)
     {
-        ChannelId = channelId;
         UserId = userId;
     }
+
+    public override bool Matches(string? userId, string? guildId) =>
+        UserId == userId && GuildId == guildId;
 }
 
 public class ProfileFile : FileBase
 {
-    public required string UserId { get; set; }
+    public string UserId { get; set; }
 
     public ProfileFile(
         string fileId,
@@ -93,4 +100,6 @@ public class ProfileFile : FileBase
     {
         UserId = userId;
     }
+
+    public override bool Matches(string? userId, string? guildId) => UserId == userId;
 }

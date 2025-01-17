@@ -24,7 +24,7 @@ builder.Services.AddScoped<SSEManager>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
-builder.Services.AddScoped<UploadController>();
+builder.Services.AddScoped<ImageController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
 builder.Services.AddHttpClient();
@@ -34,16 +34,19 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder
+    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
         options.LoginPath = "/auth/login";
+        options.LogoutPath = "/auth/logout";
     });
 
-builder.Services.AddControllers()
+builder
+    .Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -52,7 +55,9 @@ builder.Services.AddControllers()
                 .ModelState.Where(entry => entry.Value?.Errors.Count > 0)
                 .ToDictionary(
                     entry => entry.Key,
-                    entry => entry.Value?.Errors.Select(e => e?.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    entry =>
+                        entry.Value?.Errors.Select(e => e?.ErrorMessage).ToArray()
+                        ?? Array.Empty<string>()
                 );
             return new BadRequestObjectResult(errors);
         };
@@ -92,13 +97,16 @@ if (isDevelopment)
 {
     Console.WriteLine("Is running development: " + isDevelopment);
 
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
-        context.Response.Headers["Pragma"] = "no-cache";
-        context.Response.Headers["Expires"] = "0";
-        await next();
-    });
+    app.Use(
+        async (context, next) =>
+        {
+            context.Response.Headers["Cache-Control"] =
+                "no-store, no-cache, must-revalidate, proxy-revalidate";
+            context.Response.Headers["Pragma"] = "no-cache";
+            context.Response.Headers["Expires"] = "0";
+            await next();
+        }
+    );
     app.UseDeveloperExceptionPage();
 }
 else

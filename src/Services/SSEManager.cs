@@ -10,8 +10,8 @@ public class SSEManager
     public async Task EventsStream(HttpContext context, string guildId)
     {
         context.Response.ContentType = "text/event-stream";
-        context.Response.Headers["Cache-Control"] = "no-cache"; 
-        context.Response.Headers["Connection"] = "keep-alive";  
+        context.Response.Headers["Cache-Control"] = "no-cache";
+        context.Response.Headers["Connection"] = "keep-alive";
 
         string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
@@ -24,7 +24,6 @@ public class SSEManager
         AddConnection(userId, context);
         await Task.Delay(Timeout.Infinite);
     }
-
 
     public void AddConnection(string userId, HttpContext context)
     {
