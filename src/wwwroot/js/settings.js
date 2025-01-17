@@ -179,12 +179,16 @@ function initializeCookies() {
 
 
 function triggerFileInput() {
-    getId("profileImage").click();
-}
-function triggerguildImageUpdate() {
-    getId("guildImage").click();
+    const profileImageInput = getId("profileImage");
+    profileImageInput.click();
+    profileImageInput.addEventListener('change', onEditProfile);
 }
 
+function triggerguildImageUpdate() {
+    const guildImageInput = getId("guildImage");
+    guildImageInput.click();
+    guildImageInput.addEventListener('change', onEditGuildProfile);
+}
 
 
 

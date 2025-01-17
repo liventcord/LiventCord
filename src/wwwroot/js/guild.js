@@ -170,21 +170,9 @@ function createGuild() {
     const guildName = getId("guild-name-input").value;
     const guildPhotoFile = getId("guildImageInput").files[0];
 
-    if (guildPhotoFile) {
-        const allowedTypes = ["image/jpeg", "image/jpg", "image/gif", "image/png", "image/webp", "image/bmp", "image/tiff", "image/svg+xml"];
-        if (!allowedTypes.includes(guildPhotoFile.type)) {
-            alertUser("Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!");
-            getId("guildImageInput").value = "";
-            getId("guildImg").style.backgroundImage = "";
-            return; 
-        }
-
-        if (guildPhotoFile.size > 8 * 1024 * 1024) {
-            alertUser("Dosya boyutu 8 MB\"den küçük olmalıdır!");
-            getId("guildImageInput").value = "";
-            getId("guildImg").style.backgroundImage = "";
-            return; 
-        }
+    if (guildPhotoFile && !validateImage(guildPhotoFile)) {
+        resetImageInput("guildImageInput", "guildImg");
+        return; 
     }
 
     let formData = new FormData();
@@ -198,9 +186,7 @@ function createGuild() {
         body: formData,
         credentials: "same-origin"
     }).then(response => {
-        if (response.ok) {
-            return response.json();
-        }
+        if (response.ok) return response.json();
         return response.text();
     }).then(data => {
         console.log("Guild creation response:", data);
@@ -219,7 +205,6 @@ function createGuild() {
         console.error("Error:", error);
     });
 }
-
 function selectGuildList(guildId) {
     const guildList = getId("guilds-list"); 
     if (!guildList) return; 

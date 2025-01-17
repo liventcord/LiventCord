@@ -180,7 +180,7 @@ function submitForm(event, isRegister) {
     .then(() => {
         if(isRegister) {
             setTimeout(() => {
-                alertUser(getTranslation(""))
+                alertUser(getTranslation("successRegister"))
                 window.location.href = "/app";
             }, 5000);
         } else {

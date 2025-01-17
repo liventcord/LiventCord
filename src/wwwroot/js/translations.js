@@ -85,8 +85,8 @@ class Translations {
         "send-message": "Send Message",
         "more": "More",
         "addFriendDiscriminatorErrorText": "Invalid discriminator! (#0000)",
-        "friendAddYourselfErrorText": "You can't friend yourself!"
-
+        "upload-error-message" : "You can only upload image files! (JPG, PNG veya GIF)!",
+        "upload-size-error-message" : "File size must be smaller than 8 MB!"
       },
 
       tr: {
@@ -170,7 +170,9 @@ class Translations {
         "send-message": "Mesaj Gönder",
         "more": "Daha fazla",
         "addFriendDiscriminatorErrorText": "Tanımlayıcı geçersiz! (#0000)",
-        "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!"
+        "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
+        "upload-error-message" : "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
+        "upload-size-error-message" : "Dosya boyutu 8 MB\"den küçük olmalıdır!"
         
       }
     };

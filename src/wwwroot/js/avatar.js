@@ -133,155 +133,162 @@ function refreshUserProfile(userId,userNick=null) {
 }
 
 
+function validateImage(file) {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/gif", "image/png", "image/webp", "image/bmp", "image/tiff", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+        alertUser(translations.getTranslation("upload-error-message"));
+        return false;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+        alertUser(translations.getTranslation("upload-size-error-message"));
+        return false;
+    }
+    return true;
+}
+
+function resetImageInput(inputId, imgId) {
+    getId(inputId).value = "";
+    getId(imgId).style.backgroundImage = "";
+}
+
+function updateImageSource(imageElement, imagePath) {
+    imageElement.onerror = () => {
+        if (imageElement.src !== defaultProfileImageUrl) {
+            imageElement.src = defaultProfileImageUrl;
+        }
+    };
+    imageElement.onload = updateSettingsProfileColor;
+    imageElement.src = imagePath;
+}
 
 
-function updateSelfProfile(userId, userName,isTimestamp=false,isAfterUploading=false) {
-    console.log("Updating self profile with: ",userId, userName,isTimestamp,isAfterUploading)
-    if(!userId) { return; }
-    const timestamp = new Date().getTime(); 
-    let selfimagepath = isTimestamp ? `/profiles/${userId}.png?ts=${timestamp}` : `/profiles/${userId}.png`;
+
+function updateSelfProfile(userId, userName, isTimestamp = false, isAfterUploading = false) {
+    if (!userId) return;
+    const timestamp = isTimestamp ? `?ts=${new Date().getTime()}` : '';
+    const selfimagepath = `/profiles/${userId}.png${timestamp}`;
     const selfProfileImage = getId("self-profile-image");
 
-    selfProfileImage.onerror = () => {
-        if (selfProfileImage.src != defaultProfileImageUrl) {
-            selfProfileImage.src = defaultProfileImageUrl;
-        }
-    }
-    selfProfileImage.onload = () => {
-        updateSettingsProfileColor();
-    }
-    selfProfileImage.src = selfimagepath;
-    
-    if(isSettingsOpen && currentSettingsType == settingTypes.MyAccount) {
+    updateImageSource(selfProfileImage, selfimagepath);
+
+    if (isSettingsOpen && currentSettingsType === settingTypes.MyAccount) {
         const settingsSelfNameElement = getId("settings-self-name");
         const selfNameElement = getId("self-name");
         const settingsSelfProfile = getId("settings-self-profile");
-        if(userName){
+
+        if (userName) {
             settingsSelfNameElement.innerText = userName;
             selfNameElement.innerText = userName;
         }
-        settingsSelfProfile.onerror = function() {
-            if (settingsSelfProfile.src != defaultProfileImageUrl) {
-                settingsSelfProfile.src = defaultProfileImageUrl;
+
+        updateImageSource(settingsSelfProfile, selfimagepath);
+
+        if (isAfterUploading) {
+            const base64output = getBase64Image(settingsSelfProfile);
+            if (base64output) {
+                console.log("Setting self profile as ", userId, userName);
+                lastConfirmedProfileImg = base64output;
             }
-        };
-        settingsSelfProfile.onload = function(event) {
-            updateSettingsProfileColor();
-            console.warn("After uploading: ",isAfterUploading)
-            if(isAfterUploading) {
-                const base64output = getBase64Image(settingsSelfProfile);
-                if(base64output) {
-                    console.log("Setting self profile as ", userId, userName)
-                    lastConfirmedProfileImg = base64output;
-                }
-            }
-        };
-        settingsSelfProfile.src = selfimagepath;
-        updateSettingsProfileColor();
-        
+        }
     }
 }
 
 function uploadImage(isGuild) {
-    if (!isChangedProfile) { return; }
+    if (!isChangedProfile) return;
     
     let formData = new FormData();
     const uploadedGuildId = currentGuildId;
     const file = isGuild ? getId("guild-image").src : getId("settings-self-profile").src;
-    
-    console.log(file, isGuild);
-    
+
     if (file && file.startsWith("data:image/")) {
         const byteString = atob(file.split(",")[1]);
         const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
         const ab = new Uint8Array(byteString.length);
-        
+
         for (let i = 0; i < byteString.length; i++) {
             ab[i] = byteString.charCodeAt(i);
         }
-        
+
         const blob = new Blob([ab], { type: mimeString });
-        
+
         if (blob.size <= 8 * 1024 * 1024) {
             formData.append("photo", blob, "profile-image.png");
-            
+
             if (isGuild) {
                 formData.append("guildId", uploadedGuildId);
             }
-            
+
             console.log("Sending req...");
             let xhr = new XMLHttpRequest();
-            xhr.open("POST", "/api/upload_img");
+            xhr.open("POST", "/api/images");
             xhr.onload = function () {
                 if (xhr.status === 200) {
-                    if(isGuild) {
+                    if (isGuild) {
                         updateGuild(uploadedGuildId);
                         lastConfirmedGuildImg = file;
                     } else {
-                        updateSelfProfile(currentUserId,null,true);
+                        updateSelfProfile(currentUserId, null, true);
                         lastConfirmedProfileImg = file;
                     }
                 } else {
                     console.error("Error uploading profile pic!");
                 }
             };
-            xhr.onerror = function() {
-                if(isGuild) {
-                    getId("guild-image").src = lastConfirmedGuildImg 
+            xhr.onerror = function () {
+                if (isGuild) {
+                    getId("guild-image").src = lastConfirmedGuildImg;
                 } else {
                     getId("settings-self-profile").src = lastConfirmedProfileImg;
                 }
-            }
+            };
             xhr.send(formData);
         } else {
             alertUser("Dosya boyutu 8 MB\"den büyük olamaz!");
-            getId("profileImage").value = ""; 
+            getId("profileImage").value = "";
         }
     } else {
         console.error("Invalid file format or undefined file.");
     }
 }
+
 function onEditImage(isGuild) {
-    const filedata = getId(isGuild ? "guildImage":"profileImage").files[0];
-    if (!filedata) {
-        console.log("No file. ", isGuild)
-        return;
-    }
-    console.error("On edit image." , isGuild)
+    const filedata = getId(isGuild ? "guildImage" : "profileImage").files[0];
+    if (!filedata) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         function callbackAfterAccept(outputBase64) {
-            console.log("Callback triggered!", isGuild)
-            if(isGuild) {
-                lastConfirmedGuildImg =  getBase64Image(getId("guild-image"))
+            if (isGuild) {
+                lastConfirmedGuildImg = getBase64Image(getId("guild-image"));
             } else {
-                lastConfirmedProfileImg =  getBase64Image(getId("settings-self-profile"))
+                lastConfirmedProfileImg = getBase64Image(getId("settings-self-profile"));
             }
+
             getId(isGuild ? "guild-image" : "settings-self-profile").src = outputBase64;
             isChangedProfile = true;
-            if(!currentPopUp) {
+
+            if (!currentPopUp) {
                 let _currentPopUp = generateConfirmationPanel();
                 currentPopUp = _currentPopUp;
             }
-            
+
             showConfirmationPanel(currentPopUp);
         }
-        createCropPop(e.target.result,callbackAfterAccept);
-        
+        createCropPop(e.target.result, callbackAfterAccept);
     };
     reader.onerror = (error) => {
         console.error("Error reading file:", error);
     };
     reader.readAsDataURL(filedata);
-    getId(isGuild ? "guildImage":"profileImage").value = "";
-    
-    isUnsaved = true;
+    getId(isGuild ? "guildImage" : "profileImage").value = "";
 
+    isUnsaved = true;
 }
 
 function onEditProfile() {
     onEditImage(false);
 }
+
 function onEditGuildProfile() {
     onEditImage(true);
 }

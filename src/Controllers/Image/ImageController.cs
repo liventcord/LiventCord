@@ -1,11 +1,12 @@
 using LiventCord.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("")]
+    [Route("api")]
     public class ImageController : BaseController
     {
         private readonly AppDbContext _context;
@@ -16,7 +17,12 @@ namespace LiventCord.Controllers
             _context = context;
             _logger = logger;
         }
-
+        [HttpPost("images")]
+        [Authorize]
+        public async Task<IActionResult> UploadImageEndpoint(IFormFile photo, string? guildId = null) {
+            return await UploadImage(photo,UserId!,guildId);
+        }
+        [NonAction]
         public async Task<IActionResult> UploadImage(
             IFormFile photo,
             string userId,
