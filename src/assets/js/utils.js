@@ -1,4 +1,6 @@
-function getMobile() {
+export const createEl = (tag, options) => Object.assign(document.createElement(tag), options);
+
+export function getMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
@@ -6,10 +8,10 @@ function getMobile() {
 const isMobile = getMobile();
 const blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAk0lEQVRoQ+2S0QkAIBCFrv2HrmYQhAKDPp+QtmZm3/v9WT3ksYYVeSzIVKQikoG+liQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjK4LVScOKSGIxtiJYnTSsiCQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjD62iMgGPECk2AAAAAElFTkSuQmCC";
 
-function getId(string) {
+export function getId(string) {
     return document.getElementById(string);
 }
-function getMaskedEmail(email) {
+export function getMaskedEmail(email) {
     const parts = email.split("@");
     if (parts.length !== 2) return email;
     const nickName = parts[0];
@@ -20,24 +22,24 @@ function getMaskedEmail(email) {
 
 
 let defaultProfileImageUrl = `/images/guest.png`;
-function isValidFriendName(input) {
+export function isValidFriendName(input) {
     const pattern = /^[^#]+#\d{4}$/;
     return pattern.test(input);
 }
-function reCalculateFriTitle() {
+export function reCalculateFriTitle() {
     const friendsCount = friendsContainer.children.length;
     const textToWrite = friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
     getId("friendsTitleContainer").textContent = textToWrite;
 }
 
-function setWindowName(pendingCounter) {
+export function setWindowName(pendingCounter) {
     if(pendingCounter) {
         document.title = `LiventCord (${pendingCounter})`;
     }
 }
 
 
-function sendNotify(data) {
+export function sendNotify(data) {
     const container = document.createElement("div");
     container.classList.add("info-container");
     
@@ -56,7 +58,7 @@ function sendNotify(data) {
 }
 
 
-function areJsonsEqual(existingData, newData) {
+export function areJsonsEqual(existingData, newData) {
     if (existingData == null || newData == null) {
         return false;
     }
@@ -69,7 +71,7 @@ function areJsonsEqual(existingData, newData) {
     const newJson = JSON.stringify(newData);
     return existingJson === newJson;
 }
-function parseUsernameDiscriminator(input) {
+export function parseUsernameDiscriminator(input) {
     let parts = input.split("#");
     if (parts.length !== 2) {
         return;
@@ -82,28 +84,28 @@ function parseUsernameDiscriminator(input) {
       discriminator: discriminator
     };
 }
-function extractLinks(message) {
+export function extractLinks(message) {
     if(message) {
         const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
         return message.match(urlRegex) || [];
     }
 }
 
-function constructAppPage(guildId,channelId) {
+export function constructAppPage(guildId,channelId) {
     return`/channels/${guildId}/${channelId}`;
 }
-function constructDmPage(channelId) {
+export function constructDmPage(channelId) {
     return`/channels/@me/${channelId}`;
 }
-function constructAbsoluteAppPage(guildId, channelId) {
+export function constructAbsoluteAppPage(guildId, channelId) {
     return `${window.location.protocol}//${window.location.hostname}/app/channels/${guildId}/${channelId}`;
 }
-function isPathnameCorrect(url) {
+export function isPathnameCorrect(url) {
     return /^\/channels\/\d{18}\/\d{18}$/.test(url);
 }
-function getEmojiPath(emojiName) {   return `/images/${emojiName}.png`; }
+export function getEmojiPath(emojiName) {   return `/images/${emojiName}.png`; }
 
-function getFormattedDate(messageDate) {
+export function getFormattedDate(messageDate) {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -117,24 +119,24 @@ function getFormattedDate(messageDate) {
     }
   }
   
-  function getFormattedDateForSmall(messageDate) {
+  export function getFormattedDateForSmall(messageDate) {
     return messageDate.toLocaleTimeString(translations.getLocale(), { hour: "2-digit", minute: "2-digit" });
   }
-function isImageURL(url) {
+export function isImageURL(url) {
     const imageUrlRegex = /\.(gif|jpe?g|png|bmp|webp|tiff|svg|ico)(\?.*)?$/i;
     return imageUrlRegex.test(url);
 }
-function isAttachmentUrl(url) {
+export function isAttachmentUrl(url) {
     const pattern = /attachments\/\d+/;
     return pattern.test(url);
 }
 
-function isYouTubeURL(url) {
+export function isYouTubeURL(url) {
     return /^(?:(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts)\/|\S*?[?&]v=)|youtu\.be\/|m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11}))$/i.test(url);
 }
 
 
-function getYouTubeEmbedURL(url) {
+export function getYouTubeEmbedURL(url) {
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:shorts\/|(?:v|e(?:mbed)?|watch\?v=))|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regex);
 
@@ -147,12 +149,12 @@ function getYouTubeEmbedURL(url) {
 }
 
 
-function isTenorURL(url) {
+export function isTenorURL(url) {
     return /(?:tenor\.com|media\.tenor\.com)\/(?:[^\/]+\/)+[^\/]+(?:-\w+\.(?:gif|mp4)|$)/.test(url);
 }
 
 
-function isAudioURL(url) {
+export function isAudioURL(url) {
     const audioExtensions = [".mp3", ".wav", ".ogg", ".aac", ".flac"];
     const urlWithoutQueryParams = url.split("?")[0];
     const fileExtension = urlWithoutQueryParams.split(".").pop().toLowerCase();
@@ -162,8 +164,8 @@ function isAudioURL(url) {
 
 
 
-function isJsonUrl(url) {  return url.toLowerCase().includes(".json"); }
-function isVideoUrl(url) {
+export function isJsonUrl(url) {  return url.toLowerCase().includes(".json"); }
+export function isVideoUrl(url) {
     const videoPatterns = [
         /\.mp4/i, /\.avi/i, /\.mov/i, /\.wmv/i, /\.mkv/i, /\.flv/i, /\.webm/i // Video file extensions
     ];
@@ -174,11 +176,11 @@ function isVideoUrl(url) {
 
 const rgbCache = {};
 
-function rgbToHex(r, g, b) {
+export function rgbToHex(r, g, b) {
     return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
 }
 
-function getAverageRGB(imgEl) {
+export function getAverageRGB(imgEl) {
     if (imgEl.src === defaultProfileImageUrl) {
         return "#e7e7e7";
     }
@@ -230,7 +232,7 @@ function getAverageRGB(imgEl) {
     return rgbString;
 }
 
-function debounce(func, delay) {
+export function debounce(func, delay) {
     let timer;
     return function() {
         const context = this;
@@ -241,13 +243,13 @@ function debounce(func, delay) {
         }, delay);
     };
 }
-function isURL(str) {
+export function isURL(str) {
     const urlPattern = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/;
     return urlPattern.test(str);
 }
 
 
-function getProfileUrl(userId) {
+export function getProfileUrl(userId) {
     return `/profiles/${userId}.png`;
 }
 
@@ -269,7 +271,7 @@ const base64Of404 = "data:application/json;base64,W1wiNDA0XCIsNDA0XQ==";
 
 
 
-function pad(number, length) {
+export function pad(number, length) {
     let str = String(number);
     while (str.length < length) {
         str = "0" + str;
@@ -277,7 +279,7 @@ function pad(number, length) {
     return str;
 }
 
-function formatDate(date) {
+export function formatDate(date) {
     const year = date.getUTCFullYear();
     const month = pad(date.getUTCMonth() + 1, 2); 
     const day = pad(date.getUTCDate(), 2);
@@ -290,13 +292,13 @@ function formatDate(date) {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}+00:00`;
 }
 
-function truncateString(str, maxLength) {
+export function truncateString(str, maxLength) {
     if (str.length <= maxLength) {
         return str; 
     }
     return str.slice(0, maxLength) + "..."; 
 }
-function createNowDate() {
+export function createNowDate() {
     let date = new Date();
     let year = date.getUTCFullYear();
     let month = String(date.getUTCMonth() + 1).padStart(2, "0"); 
@@ -310,7 +312,7 @@ function createNowDate() {
 
 }
 
-function createRandomId(length = 19) {
+export function createRandomId(length = 19) {
     const digits = "0123456789";
     let result = "";
     const digitsLength = digits.length;
@@ -320,11 +322,11 @@ function createRandomId(length = 19) {
     return result;
 }
   
-function openExternalUrl(url) {
+export function openExternalUrl(url) {
     window.open(url, "_blank");
 }
 
-function sanitizeHTML(html) {
+export function sanitizeHTML(html) {
     if(typeof html != "string") return;
     function isValidForColoring(content) {
         return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());
@@ -373,14 +375,14 @@ function sanitizeHTML(html) {
 
     return applyCustomStyles(validHtml);
 }
-function disableElement(str) {
+export function disableElement(str) {
     const element = getId(str);
     if(element) {
         element.style.display = "none";
     }   
 
 }
-function enableElement(str, isFlex1 = false, isBlock = false, isInline = false) {
+export function enableElement(str, isFlex1 = false, isBlock = false, isInline = false) {
     const element = getId(str);
     if (element) {
         if (isFlex1) {
@@ -400,14 +402,14 @@ function enableElement(str, isFlex1 = false, isBlock = false, isInline = false) 
 }
 
 
-function removeElement(elementname) {
+export function removeElement(elementname) {
     const element = getId(elementname);
     if(element) {
         element.remove();
     }
 }
 
-function getBeforeElement(element) {
+export function getBeforeElement(element) {
     const elements = Array.from(chatContent.children);
     const index = elements.indexOf(element);
     if (index > 0) {
@@ -417,7 +419,7 @@ function getBeforeElement(element) {
     }
 }
 
-function applyCustomStyles(html) {
+export function applyCustomStyles(html) {
     const styles = {
         "red": "color: red;",
         "blu": "color: blue;",
@@ -439,7 +441,7 @@ function applyCustomStyles(html) {
     return styledHTML.replace(/&lt;br&gt;/g, "&lt;br&gt;");
 }
 
-function getBase64Image(imgElement) {
+export function getBase64Image(imgElement) {
     const canvas = createEl("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = imgElement.naturalWidth;
@@ -448,7 +450,7 @@ function getBase64Image(imgElement) {
     return canvas.toDataURL("image/png");
 }
 
-async function urlToBase64(url) {
+export async function urlToBase64(url) {
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -470,7 +472,7 @@ async function urlToBase64(url) {
         throw error;
     }
 }
-function reloadCSS() {
+export function reloadCSS() {
     const approvedDomains = ["localhost"];
     function getDomain(url) {
         const link = createEl("a");

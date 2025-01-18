@@ -65,7 +65,7 @@ public static class ConfigHandler
         var connectionString = builder.Configuration["RemoteConnection"];
         var sqlitePath = builder.Configuration["SqlitePath"];
         if (
-            databaseType?.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString)
+            databaseType?.ToLower() != "sqlite" && !string.IsNullOrEmpty(connectionString)
         )
         {
             throw new ArgumentNullException(

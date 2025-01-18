@@ -1,3 +1,7 @@
+import { setProfilePic } from "./avatar";
+import { appendToProfileContextList } from "./contextMenuActions";
+
+
 let userList;
 
 function renderTitle(titleText, container, headingLevel = 1) {

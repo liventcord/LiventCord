@@ -176,6 +176,7 @@ class GuildCache {
             return GuildCache.instance;
         }
         this.guilds = {};
+        this.currentGuildId = "";
         GuildCache.instance = this;
     }
 
@@ -275,12 +276,12 @@ class GuildCacheInterface {
         return this.getGuild(guildId)?.messages.getMessages(channelId) || [];
     }
 }
-let replyCache = {};//<messageId> <replies>
-let currentMessagesCache = {};//<messageId> <messageElements>
-let guildChatMessages = {};//<channelId> <messageObjects>
-let messages_raw_cache = {};//<channelId> <messageRawJsons>
+export let replyCache = {};//<messageId> <replies>
+export let currentMessagesCache = {};//<messageId> <messageElements>
+export let guildChatMessages = {};//<channelId> <messageObjects>
+export let messages_raw_cache = {};//<channelId> <messageRawJsons>
 function hasSharedGuild(friend_id) {
     return shared_guilds_map.hasOwnProperty(friend_id);
 }
-const guildCache = new GuildCache();
-const cacheInterface = new GuildCacheInterface();
+export const guildCache = new GuildCache();
+export const cacheInterface = new GuildCacheInterface();

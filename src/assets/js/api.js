@@ -1,4 +1,4 @@
-const EventType = Object.freeze({
+export const EventType = Object.freeze({
     CREATE_CHANNEL: "create_channel",
     JOIN_GUILD: "join_guild",
     LEAVE_GUILD: "leave_guild",
@@ -196,4 +196,4 @@ class ApiClient {
     }
 }
 
-const apiClient = new ApiClient();
+export const apiClient = new ApiClient();

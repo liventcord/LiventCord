@@ -293,7 +293,7 @@ class Translations {
     }
     
     Object.keys(currentTranslations).forEach(key => {
-      const element = getId(key);
+      const element = document.getElementById(key);
       if (element) {
         const textToUse = currentTranslations[key];
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
@@ -476,7 +476,7 @@ class Translations {
   }
 }
 
-const translations = new Translations();
+export const translations = new Translations();
 
 translations.setLanguage("en");
 

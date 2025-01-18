@@ -1,3 +1,7 @@
+
+import { setProfilePic } from "./avatar";
+
+
 let fileInput;
 let currentReplyingTo = "";
 let chatInput ;
@@ -105,7 +109,7 @@ async function handleUserKeydown(event) {
         if (!typingStarted) {
             typingStarted = true;
             apiClient.send(EventType.START_TYPING, {
-                "channelId": isOnDm ? currentDmId : currentChannelId,
+                "channelId": isOnDm ? friendCache.currentDmId : currentChannelId,
                 "guildId": currentGuildId,
                 "isDm": isOnDm
             });
@@ -114,7 +118,7 @@ async function handleUserKeydown(event) {
         typingTimeout = setTimeout(() => {
             typingStarted = false;
             apiClient.send(EventType.STOP_TYPING, {
-                "channelId": isOnDm ? currentDmId : currentChannelId,
+                "channelId": isOnDm ? friendCache.currentDmId : currentChannelId,
                 "guildId": currentGuildId,
                 "isDm": isOnDm
             });
@@ -284,7 +288,7 @@ function displayCannotSendMessage(failedMessageContent) {
         messageId: failedId,
         userId : currentUserId,
         content : failedMessageContent,
-        channelId : currentDmId,
+        channelId : friendCache.currentDmId,
         date : createNowDate(),
         addToTop: false
 
@@ -303,7 +307,7 @@ function displayCannotSendMessage(failedMessageContent) {
         messageId: createRandomId(),
         userId: CLYDE_ID,
         content: translations.getTranslation("fail-message-text"),
-        channelId: currentDmId,
+        channelId: friendCache.currentDmId,
         date: createNowDate(),
         lastEdited: "",
         attachmentUrls: "",
@@ -355,11 +359,11 @@ function displayStartMessage() {
     } else {
         if(chatContent.querySelector(".startmessage")) { return; }
         const message = createEl("div",{className:"startmessage"});
-        const titleToWrite = getUserNick(currentDmId);
+        const titleToWrite = getUserNick(friendCache.currentDmId);
         const msgtitle = createEl("h1",{id:"msgTitle",textContent:titleToWrite});
-        const startChannelText = translations.getDmStartText(getUserNick(currentDmId));
+        const startChannelText = translations.getDmStartText(getUserNick(friendCache.currentDmId));
         const profileImg = createEl("img",{className:"channelIcon"});
-        setProfilePic(profileImg,currentDmId);
+        setProfilePic(profileImg,friendCache.currentDmId);
         const msgdescription = createEl("div",{id:"msgDescription",textContent:startChannelText});
         
     

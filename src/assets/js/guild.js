@@ -1,7 +1,4 @@
 let currentGuildId;
-let currentDmId;
-let currentGuildName = "";
-
 
 
 
@@ -24,7 +21,7 @@ const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => `
 `;
 
 
-function getManageableGuilds() {
+export function getManageableGuilds() {
     try {
         permissionsMap = permissionManager.permissionsMap;
         if(!permissionsMap) { return [] }

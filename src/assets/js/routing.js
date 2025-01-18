@@ -1,3 +1,9 @@
+import { setInactiveIcon } from "./ui";
+
+export let isOnMe = true;
+export let isOnDm = false;
+
+
 class Router {
     constructor() {
         this.ID_LENGTH = 18;
@@ -11,7 +17,7 @@ class Router {
 
     handleVisibilityChange = () => {
         if (!document.hidden) {
-            if (isUnread) setActiveIcon();
+            if (false) setActiveIcon();
         } else {
             setInactiveIcon();
         }

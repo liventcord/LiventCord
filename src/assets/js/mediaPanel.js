@@ -1,3 +1,6 @@
+import { getId,debounce } from "./utils";
+
+
 let isResizing = false;
 let initialX, initialY, initialWidth, initialHeight;
 let initialLeft, initialTop;

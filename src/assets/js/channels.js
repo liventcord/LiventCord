@@ -1,3 +1,6 @@
+import { setProfilePic } from "./avatar";
+
+
 let channelList;
 let channelsUl;
 

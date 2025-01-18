@@ -1,3 +1,6 @@
+import { handleResize } from "./ui";
+import { getId } from "./utils";
+import { initializeButtonsList } from "./friendui";
 let isAddFriendsOpen = false;
 
 let currentSelectedStatus = null;
@@ -56,6 +59,7 @@ class FriendsCache {
   constructor() {
     this.friendsCache = {};
     this.dmFriends = {};
+    this.currentDmId = "";
   }
   setupDmFriends(friends) {
     this.dmFriends = friends;
@@ -295,8 +299,8 @@ function toggleButtonState(booleanstate) {
   }
 }
 
-const friendCache = new FriendsCache();
-let buttonElements = {};
+export const friendCache = new FriendsCache();
+export let buttonElements = {};
 let ButtonsList = {};
 document.addEventListener("DOMContentLoaded", function () {
 

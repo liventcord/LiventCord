@@ -1,5 +1,4 @@
-
-
+import { translations } from "./translations";
 
 const settingTranslations = {
     en: {
@@ -536,7 +535,7 @@ function generateConfirmationPanel() {
     return popupDiv;
 }
 function shakeScreen() {
-    const SHAKE_FORCE = 1;
+    let SHAKE_FORCE = 1;
 
     currentSettingsType = null;
     if (!currentPopUp) { currentPopUp = generateConfirmationPanel(); }

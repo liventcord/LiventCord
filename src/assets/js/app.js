@@ -1,7 +1,10 @@
+import { sendNotify,getId,getMaskedEmail,createEl } from "./utils";
+import { guildCache } from "./cache";
+import { updateDmsList,setupSampleUsers } from "./friendui";
+import { setProfilePic } from "./avatar";
+import { currentUserId } from "./user";
 let isDomLoaded = false;
 
-let isOnMe = true;
-let isOnDm = false;
 
 let cachedFriMenuContent;
 let userListFriActiveHtml;
@@ -17,7 +20,6 @@ const observer = new IntersectionObserver((entries, observer) => {
 }, { threshold: 0.1 });
 
 
-function getId(string) { return document.getElementById(string);}
 
 
 
@@ -90,8 +92,9 @@ function initialiseState(data) {
         guilds: guildsJson || [],
         gifWorkerUrl: gifWorkerUrl
     };
+    window.initialState = initialState;
 
-    currentGuildName = guildName;
+    guildCache.currentGuildName = guildName;
     updateDmsList(dmFriends);
     setupSampleUsers();
     friendCache.initialiseFriends(friendsStatus);
@@ -139,16 +142,8 @@ async function loadInitialData() {
         console.error("Error loading initial data:", error);
     }
 }
-document.addEventListener("DOMContentLoaded", function () {
-    loadInitialData();
-    window.onerror = (event, url, line, column, error) => {
-        let msg = "";
-        msg += "Error: " + error;
-        sendNotify(msg);
-    };
-    setTimeout(() => window.scrollTo(0, 0), 20);
 
-});
+
 
 function initializeApp() {
     window.scrollTo(0, 0);
@@ -372,7 +367,7 @@ let isChangingPage = false;
 function openDm(friendId) {
     const wasOnDm = isOnDm;
     isOnDm = true;
-    currentDmId = friendId;
+    friendCache.currentDmId = friendId;
     lastSenderID = "";
     activateDmContainer(friendId);
     const url = constructDmPage(friendId);
@@ -403,7 +398,7 @@ function loadDmHome(isChangingUrl=true) {
         getId("friend-container-item").classList.add("dm-selected");
         disableDmContainers();
         lastDmId = "";
-        currentDmId = "";
+        friendCache.currentDmId = "";
         enableElement("channel-info-container-for-friend");
         disableElement("channel-info-container-for-index");
         loadMainToolbar();
@@ -474,7 +469,7 @@ function changecurrentGuild() {
     fetchMembers();
     refreshInviteId();
     getId("channel-info").textContent = currentChannelName;
-    getId("guild-name").innerText = currentGuildName;
+    getId("guild-name").innerText = guildCache.currentGuildName;
     isDropdownOpen = false;
     disableElement("settings-dropdown-button");
   
@@ -500,8 +495,8 @@ function loadApp(friendId=null,isInitial=false) {
     if(!friendId) {
         isOnGuild = true;
         isOnDm = false;
-        if(currentDmId) {
-            lastDmId = currentDmId;
+        if(friendCache.currentDmId) {
+            lastDmId = friendCache.currentDmId;
         }
         if(!isInitial) {
             fetchMembers();
@@ -581,3 +576,10 @@ function changeCurrentDm(friendId) {
 
 
 
+loadInitialData();
+window.onerror = (event, url, line, column, error) => {
+    let msg = "";
+    msg += "Error: " + error;
+    sendNotify(msg);
+};
+setTimeout(() => window.scrollTo(0, 0), 20);

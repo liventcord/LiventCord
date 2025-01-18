@@ -55,7 +55,7 @@ function handleToggleClick(toggleElement, toggleClickCallback) {
 }
 
 
-function handleResize() {
+export function handleResize() {
 
     handleMediaPanelResize();
     
@@ -124,12 +124,12 @@ function fillDropDownContent() {
     }
 }
 
-function setActiveIcon() {
+export function setActiveIcon() {
     let favicon = getId("favicon");
     let activeIconHref = "/images/icons/iconactive.png";
     favicon.href = activeIconHref;
 }
-function setInactiveIcon() {
+export function setInactiveIcon() {
     let favicon = getId("favicon");
     let activeIconHref =  "/images/icons/icon.png";
     favicon.href = activeIconHref;
@@ -187,7 +187,7 @@ function hideLoadingScreen() {
 
 let errorCount = 0;  
 
-function alertUser(subject, content) {
+export function alertUser(subject, content) {
     if(content) {
         console.error(subject,content);
     } else {
@@ -224,7 +224,7 @@ function alertUser(subject, content) {
 }
 
 
-function askUser(subject, content, actionText, acceptCallback, isRed = false) {
+export function askUser(subject, content, actionText, acceptCallback, isRed = false) {
     const popUpSubject = createEl("h1", { className: "pop-up-subject", textContent: subject });
     const popUpContent = createEl("p", { className: "pop-up-content", textContent: content });
     const popAcceptButton = createEl("button", { className: "pop-up-accept", textContent: actionText });
@@ -257,12 +257,6 @@ function askUser(subject, content, actionText, acceptCallback, isRed = false) {
 
 
 
-async function setGuildPic(guildImg , guildId) {
-    setPicture(guildImg , guildId,false)
-}
-async function setProfilePic(profileImg, userId, isTimestamp = false) {
-    setPicture(profileImg,userId,true,isTimestamp)
-}
 
 function clickMainLogo() {
     logoClicked ++;

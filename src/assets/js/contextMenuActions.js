@@ -1,3 +1,6 @@
+import { currentUserId } from "./user";
+import { getManageableGuilds } from "./guild";
+import { isOnMe } from "./routing";
 let isDeveloperMode = true;
 let contextList = {};
 let messageContextList = {};
@@ -63,7 +66,7 @@ function deleteMessage(messageId) {
   let data = {
     isDm: isOnDm,
     messageId: messageId,
-    channelId: isOnGuild ? currentChannelId : currentDmId,
+    channelId: isOnGuild ? currentChannelId : friendCache.currentDmId,
   };
   if (isOnGuild) {
     data["guildId"] = currentGuildId;
@@ -132,14 +135,14 @@ function deleteChannel(channelId, guildId) {
 }
 
 
-function appendToChannelContextList(channelId) {
+export function appendToChannelContextList(channelId) {
   contextList[channelId] = createChannelsContext(channelId);
 }
 
-function appendToMessageContextList(messageId, userId) {
+export function appendToMessageContextList(messageId, userId) {
   messageContextList[messageId] = createMessageContext(messageId, userId);
 }
-function appendToProfileContextList(userData, userId) {
+export function appendToProfileContextList(userData, userId) {
   if (userId && userData) {
     contextList[userId] = createProfileContext(userData, userId);
   }

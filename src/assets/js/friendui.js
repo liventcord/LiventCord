@@ -1,3 +1,9 @@
+import { appendToProfileContextList } from "./contextMenuActions";
+
+
+import { setProfilePic } from "./avatar";
+import { buttonElements,friendCache } from "./friends";
+import { createEl } from "./utils";
 const addfriendhighlightedcolor = "#248046";
 const addfrienddefaultcolor = "#248046";
 const highlightedColor = "#43444b";
@@ -43,7 +49,7 @@ class DmUser {
 
     createDmContainer() {
         const dmContainer = createEl("div", { className: "dm-container", id: this.friendId });
-        if (this.friendId == currentDmId) {
+        if (this.friendId == friendCache.currentDmId) {
             dmContainer.classList.add("dm-selected");
         }
 
@@ -117,7 +123,7 @@ function appendToDmList(user) {
     return dmUser.dmContainer;
 }
 
-function updateDmsList(friends) {
+export function updateDmsList(friends) {
     if (typeof friends !== "object" || friends === null) {
         console.error("Expected a dictionary of users");
         return;
@@ -169,7 +175,7 @@ const sampleData  = {
     }
 };
 
-function setupSampleUsers() {
+export function setupSampleUsers() {
     Object.entries(sampleData).forEach(([userId, userData]) => {
         appendToDmList(userData);
     });
@@ -180,7 +186,7 @@ function setupSampleUsers() {
 function getCurrentDmFriends() {
     return {
         currentUserId: { nick:  currentUserNick },
-        currentDmId: { nick : getUserNick(currentDmId)}
+        currentDmId: { nick : getUserNick(friendCache.currentDmId)}
     }
 }
 
@@ -244,7 +250,7 @@ function getRequestType(btn) {
     return Object.keys(buttonElements).find(key => buttonElements[key] === btn) || "online";
 }
 
-function initializeButtonsList(ButtonsList) {
+export function initializeButtonsList(ButtonsList) {
     ButtonsList.forEach(element => {
         const reqType = getRequestType(element);
 

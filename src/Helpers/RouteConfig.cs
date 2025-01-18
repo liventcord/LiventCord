@@ -41,7 +41,7 @@ public static class RouteConfig
             );
         }
 
-        MapRoute("/", "templates/index.html");
+        MapRoute("/", "templates/main.html");
         MapRoute("/download", "templates/download.html");
         MapRoute("/register", "register/register.html");
 
@@ -97,7 +97,7 @@ public static class RouteConfig
                 string channelId
             ) =>
             {
-                await appLogicService.HandleChannelRequest(context, guildId, channelId);
+                await appLogicService.HandleChannelRequest(context);
             }
         );
 
@@ -109,7 +109,7 @@ public static class RouteConfig
                 string friendId
             ) =>
             {
-                await appLogicService.HandleChannelRequest(context, null, null, friendId);
+                await appLogicService.HandleChannelRequest(context);
             }
         );
 

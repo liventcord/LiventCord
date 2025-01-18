@@ -1,3 +1,6 @@
+import {apiClient,EventType} from "./api.js"
+
+
 
 apiClient.on(EventType.REMOVE_MESSAGE, data=> {
     deleteLocalMessage(data.messageId,data.guildId,data.channelId,data.isDm);
@@ -170,7 +173,7 @@ apiClient.on("user_status", (data) => {
 apiClient.on("message", (data) => {
     try {
         const { isDm, messageId, userId, content, channelId, date, attachmentUrls, replyToId,is_bot, guildId, lastEdited, reactionEmojisIds} = data;
-        const idToCompare = isDm ? currentDmId : currentChannelId;
+        const idToCompare = isDm ? friendCache.currentDmId : currentChannelId;
         
         if (data.guildId != currentGuildId || idToCompare != channelId) {
             console.log(`${idToCompare} is not ${channelId} so returning`);

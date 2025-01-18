@@ -292,3 +292,9 @@ function onEditProfile() {
 function onEditGuildProfile() {
     onEditImage(true);
 }
+export async function setGuildPic(guildImg , guildId) {
+    setPicture(guildImg , guildId,false)
+}
+export async function setProfilePic(profileImg, userId, isTimestamp = false) {
+    setPicture(profileImg,userId,true,isTimestamp)
+}

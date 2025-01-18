@@ -1,3 +1,7 @@
+import { setProfilePic } from "./avatar";
+import { appendToProfileContextList } from "./contextMenuActions";
+
+
 
 //Pop ui
 function createChannelsPop() {

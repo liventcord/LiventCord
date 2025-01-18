@@ -51,11 +51,11 @@ class Message {
 
 async function sendMessage(content, user_ids) {
     if (content == "") { return }
-    if(isOnDm && currentDmId && !isFriend(currentDmId) && !hasSharedGuild(currentDmId)) {
+    if(isOnDm && friendCache.currentDmId && !isFriend(friendCache.currentDmId) && !hasSharedGuild(friendCache.currentDmId)) {
         displayCannotSendMessage(content);
         return;
     }
-    let channelIdToSend = isOnDm ? currentDmId : currentChannelId;
+    let channelIdToSend = isOnDm ? friendCache.currentDmId : currentChannelId;
 
     setTimeout(() => {
         scrollToBottom();
@@ -158,7 +158,7 @@ function getOldMessages(date,messageId=null) {
         data["messageId"] = messageId;
     }
 
-    data["channelId"] = isOnDm ? currentDmId : currentChannelId;
+    data["channelId"] = isOnDm ? friendCache.currentDmId : currentChannelId;
     if(isOnGuild) {
         data["guildId"] = currentGuildId;
     }
@@ -209,7 +209,7 @@ function getMessageDate(top=true) {
 
 
 function deleteLocalMessage(messageId,guildId,channelId,isDm) {
-    if(isOnGuild && channelId != currentChannelId || isOnDm && isDm && channelId != currentDmId) { 
+    if(isOnGuild && channelId != currentChannelId || isOnDm && isDm && channelId != friendCache.currentDmId) { 
         console.error("Can not delete message: ",guildId,channelId, messageId,  currentGuildId,  currentChannelId);
         return; 
     }

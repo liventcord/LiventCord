@@ -105,10 +105,7 @@ namespace LiventCord.Helpers
         }
 
         public async Task HandleChannelRequest(
-            HttpContext context,
-            string? guildId,
-            string? channelId,
-            string? friendId = null
+            HttpContext context
         )
         {
             try
@@ -123,8 +120,8 @@ namespace LiventCord.Helpers
 
                 var filePath = Path.Combine(
                     context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath,
-                    "templates",
-                    "app.html"
+                    "app",
+                    "index.html"
                 );
                 var htmlContent = await File.ReadAllTextAsync(filePath);
 

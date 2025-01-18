@@ -1,4 +1,4 @@
-
+import { getId } from "./utils";
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const bufferSize = 4096;
 
@@ -12,7 +12,8 @@ let youtubeIndex = 0;
 
 
 let isInitializedAudio;
-
+let microphoneButton;
+let earphoneButton;
 
 
 

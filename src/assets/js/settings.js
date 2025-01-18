@@ -21,8 +21,6 @@ let isInitialized = false;
 let resetTimeout; 
 let currentPopUp = null;
 
-let microphoneButton = null;
-let earphoneButton;
 let isEmailToggled = false;
 
 let logoClicked = 0;
@@ -35,8 +33,6 @@ let currentSettingsType = settingTypes.MyAccount;
 
 
 
-function getId(string) { return document.getElementById(string);}
-const createEl = (tag, options) => Object.assign(document.createElement(tag), options);
 
 
 

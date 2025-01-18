@@ -1,3 +1,7 @@
+import { appendToProfileContextList } from "./contextMenuActions";
+import { setProfilePic } from "./avatar";
+
+
 let bottomestChatDateStr;
 let lastMessageDate = null; 
 let currentLastDate;

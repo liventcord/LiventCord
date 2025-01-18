@@ -1,12 +1,11 @@
-//TODO: make self discriminator be status as default and show discriminator when hovered
-let currentUserId;
-let currentDiscriminator = null;
-let currentUserNick;
+export let currentUserId;
+export let currentDiscriminator = null;
+export let currentUserNick;
 
 const deletedUser = "Deleted User";
 let lastTopSenderId = null;
 
-let userNames = {};
+export let userNames = {};
 userNames["1"] = {
     nick: "Clyde",
     discriminator: "0000",
