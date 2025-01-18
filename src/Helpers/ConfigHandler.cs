@@ -65,14 +65,13 @@ public static class ConfigHandler
         var connectionString = builder.Configuration["RemoteConnection"];
         var sqlitePath = builder.Configuration["SqlitePath"];
         if (
-            databaseType == null
-            || (databaseType.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString))
+            databaseType?.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString)
         )
         {
-            Console.WriteLine(
-                "Connection string is missing in the configuration and non-SQLite database type is selected. Defaulting to SQLite."
+            throw new ArgumentNullException(
+                "Connection string is missing in the configuration and non-SQLite database type is selected."
             );
-            sqlitePath = "Data/liventcord.db";
+            
         }
 
         Console.WriteLine(
@@ -93,7 +92,21 @@ public static class ConfigHandler
                     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
                 );
                 break;
-
+            case "oracle":
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseOracle(connectionString)
+                );
+                break;
+            case "firebird":
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseFirebird(connectionString)
+                );
+                break;
+            case "sqlserver":
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseSqlServer(connectionString)
+                );
+                break;
             case "sqlite":
             default:
                 if (sqlitePath == null)
