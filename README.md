@@ -28,12 +28,6 @@ Run directly with Docker
 docker run -p 5005:5005 -v /path/to/your/appsettings.json TheLp281/liventcord:latest
 ```
 
-### Available Database Types:
-- **PostgreSQL**
-- **MySQL**
-- **MariaDB**
-- **SQLite**
-
 ### Contributing
 
 Feel free to fork the repository and submit pull requests. We welcome contributions and improvements.

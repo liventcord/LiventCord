@@ -35,8 +35,12 @@ sidebar_position: 1
       - **PostgreSQL**
       - **MySQL**
       - **MariaDB**
+      - **Oracle**
+      - **Firebird**
+      - **SqlServer**
       - **SQLite**
     (defaults to "sqlite" if not provided).
+    (accepts lowercase too).
 
   - **SqlitePath**
     File path where SQLite will store data
