@@ -31,7 +31,7 @@
     <script type="module" defer src="/js/mediaPanel.js"></script> 
     <script type="module" defer src="/js/message.js"></script> 
     <script type="module" defer src="/js/popups.js"></script> 
-    <script type="module" defer src="/js/routing.js"></script> 
+    <script type="module" defer src="/js/router.js"></script> 
     <script type="module" defer src="/js/search.js"></script> 
     <script type="module" defer src="/js/serverEvents.js"></script> 
     <script type="module" defer src="/js/settings.js"></script>
@@ -55,7 +55,6 @@
     <div id="loading-screen"><img id="loading-element" src="/images/icons/icon.png"></div>
 
     <div id="channel-list">
-
         <div class="friend-container dm-selected" id="friend-container-item">
             <div id="friend-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" id="friendiconsvg" width="24" height="24" fill="white"  viewBox="0 0 24 24">
@@ -68,8 +67,9 @@
         </div>
         <span id="dms-title"></span>
         <div id="dm-container-parent"></div>
-        <ul style="width:310%;"><ul>
+        <ul style="width:310%;"></ul> 
     </div>
+    
 
     <div id="chat-container">
         
@@ -180,7 +180,7 @@
                 <button id="pending-button" class="friend-menu-button">Bekleyen</button>
                 <button class="pendingAlert" id="pendingAlertRight"> </button> 
                 <button id="blocked-button" class="friend-menu-button">Engellenen</button>
-                <button id="open-friends-button"  class="friend-menu-button" onclick="openAddFriend()" ></button>
+                <button id="open-friends-button"  class="friend-menu-button" ></button>
             </div>
         </div>
         
@@ -236,7 +236,7 @@
             </svg>
         </div>
         <div id="tb-search" class="iconWrapper">
-            <input id="channelSearchInput" class="searchInput" onfocus="onFocusInput()" onblur="onBlurInput()" oninput="onInputSearchInput()" placeholder="Ara" />
+            <input id="channelSearchInput" class="searchInput"  placeholder="Ara" />
             <div id="search-dropdown" class="search-dropdown hidden">
                 <div class="section" id="userSection"></div>
                 <div class="section" id="mentioningSection"></div>
@@ -295,7 +295,7 @@
 
     <ul id="guilds-list" class="guilds-list">
         <li class='selected-guild'>
-            <img id="main-logo" src="/images/icons/icon.png" style="width: 30px; height: 30px; border: 10px solid #313338;" alt="Main Logo" onclick="clickMainLogo() ">
+            <img id="main-logo" src="/images/icons/icon.png" style="width: 30px; height: 30px; border: 10px solid #313338;" alt="Main Logo">
             <div class="white-rod"></div>
         </li>
     </ul>
@@ -305,7 +305,7 @@
 
     
 
-    <button id="create-guild-button" onclick="showGuildPop();">+</button>
+    <button id="create-guild-button">+</button>
     <div id="sound-panel">
         <button class="sound-panel-button" id="camera-sound-panel">
             <i class="fa-solid fa-video" id="camera-sound-panel"></i>
@@ -374,9 +374,9 @@
         </span>
         <defs><clipPath id="__lottie_element_15"><rect width="24" height="24" x="0" y="0"></rect></clipPath><clipPath id="__lottie_element_17"><path d="M0,0 L600,0 L600,600 L0,600z"></path></clipPath><clipPath id="__lottie_element_21"><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath id="__lottie_element_28"><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath id="__lottie_element_38"><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><mask id="__lottie_element_39"><rect fill="#ffffff" width="600" height="600" transform="matrix(1,0,0,1,200,200)"></rect><path fill="#000000" clip-rule="nonzero" d=" M681.219970703125,212.79600524902344 C681.219970703125,212.79600524902344 215.69700622558594,681.75 215.69700622558594,681.75 C215.69700622558594,681.75 151.75999450683594,749.2319946289062 201.13699340820312,798.8619995117188 C255,853 319.67999267578125,785.0560302734375 319.67999267578125,785.0560302734375 C319.67999267578125,785.0560302734375 785.2030029296875,316.10198974609375 785.2030029296875,316.10198974609375 C785.2030029296875,316.10198974609375 868,234 816.2150268554688,184.4459991455078 C764.781005859375,135.22799682617188 681.219970703125,212.79600524902344 681.219970703125,212.79600524902344" fill-opacity="1"></path><path fill="#ffffff" clip-rule="nonzero" d=" M698,405 C698,405 642,405 642,405 C642,405 642,479 642,479 C642,479 698,479 698,479 C698,479 698,405 698,405" fill-opacity="1"></path></mask></defs>
         </div>  
-        <div class="button-container"> <img id="earphone-button" src="/images/icons/redearphones.png" onclick="setEarphones()"></div>
-        <div class="button-container"> <img id="microphone-button" src="/images/icons/redmic.png" onclick="setMicrophone()"></div>
-        <button id="settings-button" onclick="openSettings()"> 
+        <div class="button-container"> <img id="earphone-button" src="/images/icons/redearphones.png"></div>
+        <div class="button-container"> <img id="microphone-button" src="/images/icons/redmic.png" ></div>
+        <button id="settings-button"> 
             <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0px;left:0px;  pointer-events:none;">
                 <path fill="gray"  fill-rule="evenodd" d="M10.56 1.1c-.46.05-.7.53-.64.98.18 1.16-.19 2.2-.98 2.53-.8.33-1.79-.15-2.49-1.1-.27-.36-.78-.52-1.14-.24-.77.59-1.45 1.27-2.04 2.04-.28.36-.12.87.24 1.14.96.7 1.43 1.7 1.1 2.49-.33.8-1.37 1.16-2.53.98-.45-.07-.93.18-.99.64a11.1 11.1 0 0 0 0 2.88c.06.46.54.7.99.64 1.16-.18 2.2.19 2.53.98.33.8-.14 1.79-1.1 2.49-.36.27-.52.78-.24 1.14.59.77 1.27 1.45 2.04 2.04.36.28.87.12 1.14-.24.7-.95 1.7-1.43 2.49-1.1.8.33 1.16 1.37.98 2.53-.07.45.18.93.64.99a11.1 11.1 0 0 0 2.88 0c.46-.06.7-.54.64-.99-.18-1.16.19-2.2.98-2.53.8-.33 1.79.14 2.49 1.1.27.36.78.52 1.14.24.77-.59 1.45-1.27 2.04-2.04.28-.36.12-.87-.24-1.14-.96-.7-1.43-1.7-1.1-2.49.33-.8 1.37-1.16 2.53-.98.45.07.93-.18.99-.64a11.1 11.1 0 0 0 0-2.88c-.06-.46-.54-.7-.99-.64-1.16.18-2.2-.19-2.53-.98-.33-.8.14-1.79 1.1-2.49.36-.27.52-.78.24-1.14a11.07 11.07 0 0 0-2.04-2.04c-.36-.28-.87-.12-1.14.24-.7.96-1.7 1.43-2.49 1.1-.8-.33-1.16-1.37-.98-2.53.07-.45-.18-.93-.64-.99a11.1 11.1 0 0 0-2.88 0ZM16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" class=""></path>
             </svg>

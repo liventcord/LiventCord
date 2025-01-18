@@ -1,40 +1,40 @@
-import { handleResize } from "./ui";
-import { getId } from "./utils";
-import { initializeButtonsList } from "./friendui";
-let isAddFriendsOpen = false;
+import { populateFriendsContainer, friendsContainer } from './friendui';
+import {
+  disableElement,
+  reCalculateFriTitle,
+  enableElement,
+  setWindowName,
+  parseUsernameDiscriminator,
+} from './utils';
+import { getSelfFullDisplay } from './user';
+import { handleResize } from './ui';
+import { getId } from './utils';
+import { isAddFriendsOpen, openAddFriend } from './friendui';
+import { currentUserId } from './user';
 
-let currentSelectedStatus = null;
-let friendsContainer = null;
 let friends_cache = {};
 let fetchUsersTimeout = null;
 
 let isPopulating = false;
 
-const offline = "offline";
-const online = "online";
-const all = "all";
-const pending = "pending";
-const blocked = "blocked";
-
-
-
-
-
+const offline = 'offline';
+const online = 'online';
+const all = 'all';
+const pending = 'pending';
+const blocked = 'blocked';
 
 const FriendErrorType = {
-  ERR_INVALID_EVENT: "ERR_INVALID_EVENT",
-  ERR_CANNOT_ADD_SELF: "ERR_CANNOT_ADD_SELF",
-  ERR_USER_NOT_FOUND: "ERR_USER_NOT_FOUND",
-  ERR_INVALID_IDENTIFIER: "ERR_INVALID_IDENTIFIER",
-  ERR_FRIEND_REQUEST_EXISTS: "ERR_FRIEND_REQUEST_EXISTS",
-  ERR_FRIEND_REQUEST_NOT_EXISTS: "ERR_FRIEND_REQUEST_NOT_EXISTS",
-  ERR_REQUEST_ALREADY_ACCEPTED: "ERR_REQUEST_ALREADY_ACCEPTED",
-  ERR_NOT_FRIENDS: "ERR_NOT_FRIENDS",
-  ERR_REQUEST_NOT_SENT: "ERR_REQUEST_NOT_SENT",
-  ERR_SUCCESS: "ERR_SUCCESS",
+  ERR_INVALID_EVENT: 'ERR_INVALID_EVENT',
+  ERR_CANNOT_ADD_SELF: 'ERR_CANNOT_ADD_SELF',
+  ERR_USER_NOT_FOUND: 'ERR_USER_NOT_FOUND',
+  ERR_INVALID_IDENTIFIER: 'ERR_INVALID_IDENTIFIER',
+  ERR_FRIEND_REQUEST_EXISTS: 'ERR_FRIEND_REQUEST_EXISTS',
+  ERR_FRIEND_REQUEST_NOT_EXISTS: 'ERR_FRIEND_REQUEST_NOT_EXISTS',
+  ERR_REQUEST_ALREADY_ACCEPTED: 'ERR_REQUEST_ALREADY_ACCEPTED',
+  ERR_NOT_FRIENDS: 'ERR_NOT_FRIENDS',
+  ERR_REQUEST_NOT_SENT: 'ERR_REQUEST_NOT_SENT',
+  ERR_SUCCESS: 'ERR_SUCCESS',
 };
-
-
 
 class Friend {
   constructor(friend) {
@@ -59,7 +59,7 @@ class FriendsCache {
   constructor() {
     this.friendsCache = {};
     this.dmFriends = {};
-    this.currentDmId = "";
+    this.currentDmId = '';
   }
   setupDmFriends(friends) {
     this.dmFriends = friends;
@@ -94,9 +94,7 @@ class FriendsCache {
   }
 }
 
-
-
-function getFriendMessage(userNick, isSuccess, errorType) {
+export function getFriendMessage(userNick, isSuccess, errorType) {
   if (isSuccess) {
     return translations.replacePlaceholder(errorType, { userNick });
   } else {
@@ -104,33 +102,40 @@ function getFriendMessage(userNick, isSuccess, errorType) {
   }
 }
 
-
-function displayFriendActionMessage(userNick, isSuccess, errorType) {
+export function displayFriendActionMessage(userNick, isSuccess, errorType) {
   const text = isSuccess
-    ? getFriendMessage(userNick, isSuccess, errorType) 
-    : getFriendMessage(userNick, false, errorType); 
-  
+    ? getFriendMessage(userNick, isSuccess, errorType)
+    : getFriendMessage(userNick, false, errorType);
+
   printFriendMessage(text);
 }
 
-function handleAddFriendResponse(message) {
+export function handleAddFriendResponse(message) {
   const { userId, userNick, user_data, isSuccess } = message;
-  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.FRIEND_REQUEST_EXISTS);
+  displayFriendActionMessage(
+    userNick,
+    isSuccess,
+    FriendErrorType.FRIEND_REQUEST_EXISTS,
+  );
 }
 
-function handleAcceptFriendRequestResponse(message) {
+export function handleAcceptFriendRequestResponse(message) {
   const { userId, userNick, user_data, isSuccess } = message;
-  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.REQUEST_ALREADY_ACCEPTED);
+  displayFriendActionMessage(
+    userNick,
+    isSuccess,
+    FriendErrorType.REQUEST_ALREADY_ACCEPTED,
+  );
 
   if (isSuccess) {
     friends_cache[userId] = user_data;
-    disableElement("pendingAlertRight");
-    disableElement("pendingAlertLeft");
-    document.title = "LiventCord";
+    disableElement('pendingAlertRight');
+    disableElement('pendingAlertLeft');
+    document.title = 'LiventCord';
   }
 }
 
-function handleRemoveFriendResponse(message) {
+export function handleRemoveFriendResponse(message) {
   const { userId, userNick, isSuccess } = message;
   displayFriendActionMessage(userNick, isSuccess, FriendErrorType.NOT_FRIENDS);
 
@@ -143,13 +148,16 @@ function handleRemoveFriendResponse(message) {
   }
 }
 
-function handleDenyFriendRequestResponse(message) {
+export function handleDenyFriendRequestResponse(message) {
   const { userId, userNick, isSuccess } = message;
-  displayFriendActionMessage(userNick, isSuccess, FriendErrorType.REQUEST_NOT_SENT);
+  displayFriendActionMessage(
+    userNick,
+    isSuccess,
+    FriendErrorType.REQUEST_NOT_SENT,
+  );
 }
 
-
-function handleFriendEventResponse(message) {
+export function handleFriendEventResponse(message) {
   const { type } = message;
 
   switch (type) {
@@ -172,9 +180,9 @@ function handleFriendEventResponse(message) {
   }
 }
 
-function updateFriendsList(friends, isPending) {
+export function updateFriendsList(friends, isPending) {
   if (!data) {
-    console.warn("Empty friend list data.");
+    console.warn('Empty friend list data.');
     return;
   }
 
@@ -191,10 +199,10 @@ function updateFriendsList(friends, isPending) {
     });
 
     if (pendingCounter > 0) {
-      getId("pendingAlertLeft").textContent = pendingCounter;
-      enableElement("pendingAlertLeft");
-      getId("pendingAlertRight").textContent = pendingCounter;
-      enableElement("pendingAlertRight");
+      getId('pendingAlertLeft').textContent = pendingCounter;
+      enableElement('pendingAlertLeft');
+      getId('pendingAlertRight').textContent = pendingCounter;
+      enableElement('pendingAlertRight');
       setWindowName(pendingCounter);
     }
 
@@ -204,59 +212,55 @@ function updateFriendsList(friends, isPending) {
   populateFriendsContainer(friendInstances, isPending);
 }
 
-function addPendingButtons(friendButton, friend) {
+export function addPendingButtons(friendButton, friend) {
   //TODO: fix isFriendsRequestsToUser
   let isFriendsRequestsToUser = true;
-  if(isFriendsRequestsToUser) {
+  if (isFriendsRequestsToUser) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.TickBtn,
-      translations.getTranslation("accept")
-  
+      translations.getTranslation('accept'),
     );
-    acceptButton.addEventListener("click", (event) =>
+    acceptButton.addEventListener('click', (event) =>
       handleButtonClick(event, EventType.ADD_FRIEND, friend),
     );
-
   } else {
     const closeButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.CloseBtn,
-      translations.getTranslation("cancel")
+      translations.getTranslation('cancel'),
     );
-    closeButton.addEventListener("click", (event) =>
-      handleButtonClick(
-        event,
-        EventType.REMOVE_FRIEND,
-        friend,
-      ),
+    closeButton.addEventListener('click', (event) =>
+      handleButtonClick(event, EventType.REMOVE_FRIEND, friend),
     );
-
   }
-
 }
 
-function handleButtonClick(event, action, friend) {
+export function handleButtonClick(event, action, friend) {
   event.stopPropagation();
   apiClient.send(action, { friendId: friend.userId });
 }
 
-function addFriend(userId) {
+export function addFriend(userId) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
 }
 
-function submitAddFriend() {
-  const addfriendinput = getId("addfriendinputfield");
+export function submitAddFriend() {
+  const addfriendinput = getId('addfriendinputfield');
   const currentValue = addfriendinput.value.trim();
 
   if (currentValue && currentValue.length > 0) {
     if (!isValidFriendName(currentValue)) {
-      printFriendMessage(translations.getTranslation("addFriendDiscriminatorErrorText"));
+      printFriendMessage(
+        translations.getTranslation('addFriendDiscriminatorErrorText'),
+      );
       return;
     }
 
-    if(currentValue == getSelfFullDisplay()) {
-      printFriendMessage(translations.getTranslation("friendAddYourselfErrorText"));
+    if (currentValue == getSelfFullDisplay()) {
+      printFriendMessage(
+        translations.getTranslation('friendAddYourselfErrorText'),
+      );
       return;
     }
 
@@ -273,47 +277,39 @@ function submitAddFriend() {
   }
 }
 
-
-
-function filterFriends() {
-  const input = getId("friendsSearchInput").value.toLowerCase();
-  const friends = document.getElementsByClassName("friend-card");
+export function filterFriends() {
+  const input = getId('friendsSearchInput').value.toLowerCase();
+  const friends = document.getElementsByClassName('friend-card');
 
   for (let i = 0; i < friends.length; i++) {
-    const friendName = friends[i].getAttribute("data-name").toLowerCase();
+    const friendName = friends[i].getAttribute('data-name').toLowerCase();
     if (friendName.includes(input)) {
-      friends[i].classList.add("visible");
+      friends[i].classList.add('visible');
     } else {
-      friends[i].classList.remove("visible");
+      friends[i].classList.remove('visible');
     }
   }
 }
 
-function toggleButtonState(booleanstate) {
+export function toggleButtonState(booleanstate) {
   if (booleanstate) {
-    addButton.classList.add("active");
-    addButton.classList.remove("inactive");
+    addButton.classList.add('active');
+    addButton.classList.remove('inactive');
   } else {
-    addButton.classList.add("inactive");
-    addButton.classList.remove("active");
+    addButton.classList.add('inactive');
+    addButton.classList.remove('active');
   }
 }
 
 export const friendCache = new FriendsCache();
-export let buttonElements = {};
-let ButtonsList = {};
-document.addEventListener("DOMContentLoaded", function () {
 
-  window.addEventListener("resize", handleResize);
-  friendsContainer = getId("friends-container");
+function init() {
+  window.addEventListener('resize', handleResize);
 
-  buttonElements = {
-    online: getId("online-button"),
-    all: getId("all-button"),
-    pending: getId("pending-button"),
-    blocked: getId("blocked-button"),
-  };
-  ButtonsList = Object.values(buttonElements);
-  initializeButtonsList(ButtonsList);
+  const addFriButton = getId('open-friends-button');
+  if (addFriButton) {
+    addFriButton.addEventListener('click', openAddFriend);
+  }
+}
 
-});
+init();

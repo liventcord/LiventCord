@@ -1,12 +1,10 @@
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Comic Sans", sans-serif!important;
+  font-family: 'Comic Sans', sans-serif !important;
   font-weight: bold;
   color: white;
-
 }
 
 body {
@@ -19,14 +17,14 @@ body {
 }
 
 body::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-color: #000;
-  z-index: -1; 
+  z-index: -1;
 }
 
 #video-background {
@@ -84,11 +82,11 @@ h2 {
   outline: none;
   font-size: 16px;
   color: #fff;
-  padding-right: 80px; 
+  padding-right: 80px;
 }
 
-.input-field input:focus~label,
-.input-field input:valid~label {
+.input-field input:focus ~ label,
+.input-field input:valid ~ label {
   font-size: 0.9rem;
   top: 0px;
   transform: translateY(-120%);
@@ -103,7 +101,6 @@ h2 {
   color: #ccc;
   pointer-events: none;
 }
-
 
 .forget {
   display: flex;
@@ -164,20 +161,20 @@ button:hover {
   color: #fff;
 }
 .register p a {
-  margin-left:  10px;
+  margin-left: 10px;
 }
 
 .language-selector {
   position: fixed;
   bottom: 20px;
   display: flex;
-  left: 50%; 
+  left: 50%;
   transform: translateX(-50%);
-  background-color: #333; 
+  background-color: #333;
   padding: 10px 20px;
-  border-radius: 25px; 
-  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3); 
-  z-index: 1000; 
+  border-radius: 25px;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 
 .language-selector button {

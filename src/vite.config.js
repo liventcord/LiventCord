@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: './assets',
-  base: '/app/',  
+  base: '/',
   build: {
-    outDir: '../wwwroot/app',  
-    assetsDir: 'js',  
+    outDir: '../wwwroot/app',
+    assetsDir: 'js',
     emptyOutDir: true,
     minify: process.env.NODE_ENV === 'production' ? 'terser' : false,
     terserOptions: {
@@ -39,18 +39,26 @@ export default defineConfig({
   server: {
     hmr: true,
     proxy: {
-      
       '/api': {
         target: 'http://localhost:5005',
         changeOrigin: true,
-        secure: false, 
+        secure: false,
       },
       '/vendor': {
         target: 'http://localhost:5005',
         changeOrigin: true,
-        secure: false, 
+        secure: false,
       },
-      
+      '/images': {
+        target: 'http://localhost:5005',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/guilds': {
+        target: 'http://localhost:5005',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

@@ -3,17 +3,25 @@
   "version": "1.0.0",
   "main": "vite.config.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite && npx eslint assets/js/ --fix",
+    "lint": "npx eslint assets/js/ --fix",
     "build": "vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "format": "npx prettier --write ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "description": "",
   "devDependencies": {
-    "vite": "^6.0.7"
+    "@vitejs/plugin-vue": "^5.2.1",
+    "babel-plugin-import-resolver": "^0.1.2",
+    "eslint": "^9.18.0",
+    "eslint-config-eslint": "^11.0.0",
+    "eslint-define-config": "^2.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-config-prettier": "^8.3.0",
+    "vite": "^6.0.7",
+    "vite-plugin-inspect": "^10.0.7",
+    "vitest": "^3.0.2",
+    "prettier": "^2.7.1"
   },
   "dependencies": {
     "autoprefixer": "^10.4.20",

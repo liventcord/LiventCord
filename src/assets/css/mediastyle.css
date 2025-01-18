@@ -1,354 +1,358 @@
 .users-open {
-    right: 50px !important;
+  right: 50px !important;
 }
 #gifs-menu-line {
-    top: 45px;
-    left: 0%;
+  top: 45px;
+  left: 0%;
 }
 #gifsMenuSearchbar {
-    width: 100%;
-    color: white;
-    font-size: 18px;
-    height: 30px;
-    border-radius: 3px;
-    padding-left: 10px;
-    margin-top: 10px;
-    border: none;
-    background-color: rgb(30, 31, 34);
-    outline: none;
+  width: 100%;
+  color: white;
+  font-size: 18px;
+  height: 30px;
+  border-radius: 3px;
+  padding-left: 10px;
+  margin-top: 10px;
+  border: none;
+  background-color: rgb(30, 31, 34);
+  outline: none;
 }
 .gifs-menu-button {
-    cursor: pointer;
-    width: 60px;
-    height: 25px;
-    margin-right: 10px;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    font-size: 15px;
-    font-weight: 900;
-    background-color: #41434a;
+  cursor: pointer;
+  width: 60px;
+  height: 25px;
+  margin-right: 10px;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 900;
+  background-color: #41434a;
 }
 .media-menu-button {
-    cursor: pointer;
-    width: 60px;
-    height: 25px;
-    margin-right: 10px;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    font-size: 15px;
-    font-weight: 900;
-    background-color: #41434a;
+  cursor: pointer;
+  width: 60px;
+  height: 25px;
+  margin-right: 10px;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 900;
+  background-color: #41434a;
 }
 #categoryName {
-    color: white;
-    font-size: 20px;
-    margin-left: 30px;
-    margin-top: 7px;
-    pointer-events: none;
+  color: white;
+  font-size: 20px;
+  margin-left: 30px;
+  margin-top: 7px;
+  pointer-events: none;
 }
 #gifsBackBtn {
-    display: none;
-    position: fixed;
-    background-color: transparent;
-    border: none;
-    color: white;
-    margin-top: -50px;
-    font-size: 1.35em;
+  display: none;
+  position: fixed;
+  background-color: transparent;
+  border: none;
+  color: white;
+  margin-top: -50px;
+  font-size: 1.35em;
 }
 #media-menu-line {
-    top: 45px;
-    left: 0%;
+  top: 45px;
+  left: 0%;
 }
 #gifs-menu-emoji:hover,
 #gifs-menu-gif:hover {
-    background-color: #41434a;
+  background-color: #41434a;
 }
 .media-menu-button:hover {
-    background-color: #41434a;
+  background-color: #41434a;
 }
 
-
-
 .emoji-category {
-    margin-bottom: 30px; 
+  margin-bottom: 30px;
 }
 
 .category-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: #ffffff;
-    margin-bottom: 10px; 
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 10px;
 }
 
 .emojis-container {
-    display: flex;
-    flex-wrap: wrap;
-    width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .emoji {
-    background-image: url("/images/emojis.png");
-    background-size: 1680px 1560px; 
-    width: 40px; 
-    height: 40px; 
-    transition: background-color 0.3s ease;
-    display: inline-block;
+  background-image: url('/images/emojis.png');
+  background-size: 1680px 1560px;
+  width: 40px;
+  height: 40px;
+  transition: background-color 0.3s ease;
+  display: inline-block;
 }
-
-
-
 
 #media-menu-container::-webkit-scrollbar {
-    width: 5px;
+  width: 5px;
 }
 #media-menu-container::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 #media-menu-container::-webkit-scrollbar-thumb {
-    background-color: rgb(26, 27, 30);
-    border-radius: 10px;
-    border: transparent;
+  background-color: rgb(26, 27, 30);
+  border-radius: 10px;
+  border: transparent;
 }
 .emojis-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
 }
 
 .emoji:hover {
-    background-color: rgba(243, 186, 66, 0.3);
+  background-color: rgba(243, 186, 66, 0.3);
 }
 #gif-menu {
-    overflow: hidden;
-    width: 480px;
-    height: 453px;
-    display: none;
-    border-radius: 10px;
-    border: 0.1px solid rgb(39, 40, 44);
-    background-color: #2b2d31;
-    position: absolute;
-    z-index: 5;
-    right: 253px;
-    bottom: 90px;
-    padding: 15px;
-    resize: both;
-    max-width: 3020px;
-    max-height: 3000px;
+  overflow: hidden;
+  width: 480px;
+  height: 453px;
+  display: none;
+  border-radius: 10px;
+  border: 0.1px solid rgb(39, 40, 44);
+  background-color: #2b2d31;
+  position: absolute;
+  z-index: 5;
+  right: 253px;
+  bottom: 90px;
+  padding: 15px;
+  resize: both;
+  max-width: 3020px;
+  max-height: 3000px;
 }
 #media-menu {
-    overflow: hidden;
-    width: 480px;
-    height: 453px;
-    display: block;
-    border-radius: 10px;
-    border: 0.1px solid rgb(39, 40, 44);
-    background-color: #2b2d31;
-    position: absolute;
-    z-index: 5;
-    right: 253px;
-    bottom: 90px;
-    padding: 15px;
+  overflow: hidden;
+  width: 480px;
+  height: 453px;
+  display: block;
+  border-radius: 10px;
+  border: 0.1px solid rgb(39, 40, 44);
+  background-color: #2b2d31;
+  position: absolute;
+  z-index: 5;
+  right: 253px;
+  bottom: 90px;
+  padding: 15px;
 }
 #media-menu-container {
-    display: flex;
-    flex-wrap: wrap;
-    margin-top: 20px;
-    justify-content: center;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: calc(100% - 80px);
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100% - 80px);
 }
 .gif-content {
-    margin: 9px;
-    max-width: 320px;
-    max-height: 320px;
-    border: 1px solid rgb(39, 40, 44);
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: #f0f0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
+  margin: 9px;
+  max-width: 320px;
+  max-height: 320px;
+  border: 1px solid rgb(39, 40, 44);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
 }
 .gif-content img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 8px;
-    object-fit: contain;
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  object-fit: contain;
 }
 .gif-content:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 .media-menu-button {
-    cursor: pointer;
-    width: 60px;
-    height: 25px;
-    margin-right: 10px;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    font-size: 15px;
-    font-weight: 900;
-    background-color: #41434a;
+  cursor: pointer;
+  width: 60px;
+  height: 25px;
+  margin-right: 10px;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 900;
+  background-color: #41434a;
 }
 .media-menu-button:hover {
-    background-color: #41434a;
+  background-color: #41434a;
 }
 #mediaMenuSearchbar {
-    width: 100%;
-    color: white;
-    font-size: 18px;
-    height: 30px;
-    border-radius: 3px;
-    padding-left: 10px;
-    margin-top: 10px;
-    border: none;
-    background-color: rgb(30, 31, 34);
-    outline: none;
+  width: 100%;
+  color: white;
+  font-size: 18px;
+  height: 30px;
+  border-radius: 3px;
+  padding-left: 10px;
+  margin-top: 10px;
+  border: none;
+  background-color: rgb(30, 31, 34);
+  outline: none;
 }
 .gifsContainer {
-    position: relative;
-    text-align: center;
-    margin-top: 20px;
+  position: relative;
+  text-align: center;
+  margin-top: 20px;
 }
 .categoryBox {
-    display: inline-block;
-    width: 200px;
-    height: 200px;
-    margin: 10px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  margin: 10px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 .categoryBox:hover {
-    background-color: #333;
+  background-color: #333;
 }
 .gifCategoryImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: opacity 0.3s ease-in-out;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
 }
 .gifOverlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    transition: opacity 0.3s ease-in-out;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  transition: opacity 0.3s ease-in-out;
 }
 .gifCategoryCaption {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 30px;
-    color: white;
-    font-weight: bold;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  color: white;
+  font-weight: bold;
 }
 .categoryBox:hover .gifOverlay {
-    opacity: 0;
+  opacity: 0;
 }
 .categoryBox:hover .gifCategoryImage {
-    opacity: 0.7;
+  opacity: 0.7;
 }
 #backButton {
-    display: none;
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    padding: 10px;
-    background-color: #333;
-    cursor: pointer;
+  display: none;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px;
+  background-color: #333;
+  cursor: pointer;
 }
 #backButton:hover {
-    background-color: #555;
+  background-color: #555;
 }
 #gifbtn,
 .emojibtn-base {
-    bottom: -30px;
-    z-index: 2;
-    position: absolute;
-    border-radius: 50px;
-    width: 30px;
-    height: 30px;
-    border: none;   
+  bottom: -30px;
+  z-index: 2;
+  position: absolute;
+  border-radius: 50px;
+  width: 30px;
+  height: 30px;
+  border: none;
 }
 #gifbtn {
-    background-color: rgb(218,224,246);
-    font-weight: bold;
-    text-indent: -2px;
-    right: 630px;
-    border-radius: 2px;
-    bottom: 12px;
-    width: 25px; height: 25px;
-    transition: background-color 0.3s ease;
+  background-color: rgb(218, 224, 246);
+  font-weight: bold;
+  text-indent: -2px;
+  right: 630px;
+  border-radius: 2px;
+  bottom: 12px;
+  width: 25px;
+  height: 25px;
+  transition: background-color 0.3s ease;
 }
 
 #gifbtn:hover {
-    background-color: white;
-    animation: shake 0.5s ease-in-out;
+  background-color: white;
+  animation: shake 0.5s ease-in-out;
 }
 
 @keyframes shake {
-    0% { transform:  rotate(0deg); }
-    25% { transform:  rotate(-5deg); }
-    50% { transform: rotate(5deg); }
-    75% { transform:  rotate(-5deg); }
-    100% { transform:  rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 #gifbtn.gifbtn-user-list-open {
-    right: 390px; 
+  right: 390px;
 }
 #emojibtn.emojibtn-user-list-open {
-    right: 344px;
+  right: 344px;
 }
 #emojibtn {
-    right: 584px;
-    bottom: 0px;
-    width: 48px;
-    height: 48px;
-    background-image: url('/images/preview-emojis.png');
-    background-size: 960px 192px;
-    margin: 2px;
-    border-radius: 50%;
-    transition: transform 0.3s ease, filter 0.3s ease;
-    transform: scale(0.5);
-    background-color: transparent;
-    filter: brightness(2.8);
-
+  right: 584px;
+  bottom: 0px;
+  width: 48px;
+  height: 48px;
+  background-image: url('/images/preview-emojis.png');
+  background-size: 960px 192px;
+  margin: 2px;
+  border-radius: 50%;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  transform: scale(0.5);
+  background-color: transparent;
+  filter: brightness(2.8);
 }
 
 #emojibtn.hovered {
-    animation: wiggle 0.3s ease forwards;
-    filter: sepia(1) saturate(12) hue-rotate(30deg) brightness(1.5);
-    background-color: transparent;
+  animation: wiggle 0.3s ease forwards;
+  filter: sepia(1) saturate(12) hue-rotate(30deg) brightness(1.5);
+  background-color: transparent;
 }
 
-
 @keyframes wiggle {
-    0% {
-      transform: rotate(0deg) scale(0.7);
-    }
-    25% {
-      transform: rotate(10deg) scale(0.7);
-    }
-    50% {
-      transform: rotate(-10deg) scale(0.7);
-    }
-    75% {
-      transform: rotate(5deg) scale(0.7);
-    }
-    100% {
-      transform: rotate(0deg) scale(0.7);
-    }
+  0% {
+    transform: rotate(0deg) scale(0.7);
+  }
+  25% {
+    transform: rotate(10deg) scale(0.7);
+  }
+  50% {
+    transform: rotate(-10deg) scale(0.7);
+  }
+  75% {
+    transform: rotate(5deg) scale(0.7);
+  }
+  100% {
+    transform: rotate(0deg) scale(0.7);
+  }
 }
