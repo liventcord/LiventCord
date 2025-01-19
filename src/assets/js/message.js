@@ -9,14 +9,29 @@ import {
   displayCannotSendMessage,
   closeReplyMenu,
   displayStartMessage,
+  chatInput,
+  chatContent,
 } from './chatbar';
 import { apiClient, EventType } from './api';
 import { alertUser } from './ui';
-import { getEmojiPath, getFormattedDate, getBeforeElement } from './utils';
+import {
+  createEl,
+  getEmojiPath,
+  getFormattedDate,
+  getBeforeElement,
+} from './utils';
 import { getUserNick } from './user';
+import { isOnDm } from './router';
+import { friendCache } from './friends';
+import { guildCache } from './cache';
+import { currentGuildId } from './guild';
+import { isOnGuild } from './router';
+import { formatDate } from './utils';
+import { getMessageFromChat } from './chat';
+
 let isUnread = false;
 
-class Message {
+export class Message {
   constructor({
     messageId,
     userId,
@@ -71,7 +86,7 @@ export async function sendMessage(content, user_ids) {
   if (
     isOnDm &&
     friendCache.currentDmId &&
-    !isFriend(friendCache.currentDmId) &&
+    !friendCache.isFriend(friendCache.currentDmId) &&
     !hasSharedGuild(friendCache.currentDmId)
   ) {
     displayCannotSendMessage(content);

@@ -1,5 +1,5 @@
 import { guildCache } from './cache';
-import { createGuild, joinToGuild } from './guild';
+import { currentGuildId, createGuild, joinToGuild } from './guild';
 import { getId, getAverageRGB, createEl } from './utils';
 import { friendCache, addFriend } from './friends';
 import { currentChannelName } from './channels';
@@ -7,6 +7,7 @@ import { apiClient, EventType } from './api';
 import { currentUserId, getUserNick, currentUserNick } from './user';
 import { loadDmHome, openDm } from './app';
 import { createBubble } from './userList';
+import { isOnGuild } from './router';
 import { showContextMenu, contextList } from './contextMenuActions';
 import {
   textChanHtml,
@@ -391,11 +392,11 @@ export function createPopUp({ contentElements, id, closeBtnId = null }) {
   return popOuterParent;
 }
 export function createInviteUsersPop() {
-  const title = translations.getInviteGuildText(currentGuildName);
+  const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation('invites-guild-detail');
   const invitelink = `${window.location.protocol}//${
     window.location.hostname
-  }/join-guild/${guildCache.getInviteId(guildId)}`;
+  }/join-guild/${guildCache.getInviteId(currentGuildId)}`;
 
   const inviteTitle = createEl('p', {
     id: 'invite-users-title',
@@ -464,7 +465,8 @@ export function toggleDropdown() {
 }
 export function openSearchPop() {}
 
-export function showGuildPop() {
+export async function showGuildPop() {
+  const { createEl } = await import('./utils');
   const subject = translations.getTranslation('create-your-guild');
   const content = translations.getTranslation('create-your-guild-detail');
 
@@ -560,9 +562,9 @@ export function showGuildPop() {
 export function clickToCreateGuildBackButton() {
   closePopUp(newPopOuterParent, newPopParent);
 }
-export function clickToJoinGuildBackButton(event, closeCallback) {
+export async function clickToJoinGuildBackButton(event, closeCallback) {
   closeCallback(event);
-  showGuildPop();
+  await showGuildPop();
 }
 
 export function changePopUpToGuildCreation(
@@ -591,8 +593,8 @@ export function changePopUpToGuildCreation(
     className: 'create-guild-back common-button',
   });
 
-  backButton.addEventListener('click', function (event) {
-    clickToJoinGuildBackButton(event, closeCallback);
+  backButton.addEventListener('click', async function (event) {
+    await clickToJoinGuildBackButton(event, closeCallback);
   });
   const guildNameTitle = createEl('h1', {
     textContent: translations.getTranslation('guildname'),
@@ -715,8 +717,8 @@ export function ChangePopUpToGuildJoining(
     textContent: translations.getTranslation('back'),
     className: 'create-guild-back common-button',
   });
-  backButton.addEventListener('click', function (event) {
-    clickToJoinGuildBackButton(event, closeCallback);
+  backButton.addEventListener('click', async function (event) {
+    await clickToJoinGuildBackButton(event, closeCallback);
   });
   const guildNameTitle = createEl('h1', {
     textContent: translations.getTranslation('invite-link'),

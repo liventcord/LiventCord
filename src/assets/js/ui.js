@@ -18,6 +18,10 @@ import { translations } from './translations';
 import { handleMediaPanelResize } from './mediaPanel';
 import { isOnMe } from './router';
 import { toggleDropdown } from './popups';
+import { initialState } from './app';
+import { permissionManager } from './guildPermissions';
+import { sanitizeHTML } from './utils';
+import { createInviteUsersPop } from './popups';
 
 export const Overview = 'Overview';
 export const Roles = 'Roles';
@@ -247,6 +251,7 @@ export function askUser(
 ) {
   createPopupContent(subject, content, actionText, acceptCallback, isRed);
 }
+let logoClicked = 0;
 
 export function clickMainLogo() {
   logoClicked++;
@@ -282,21 +287,6 @@ export function logOutPrompt() {
   );
 }
 
-export function loadObservedContent(targetElement) {
-  const jsonData = targetElement.dataset.content_observe;
-
-  const sanitizedHTML = sanitizeHTML(jsonData);
-
-  const tempDiv = createEl('div');
-  tempDiv.innerHTML = sanitizedHTML;
-
-  while (tempDiv.firstChild) {
-    targetElement.appendChild(tempDiv.firstChild);
-  }
-
-  observer.unobserve(targetElement);
-}
-
 // media preview
 export function beautifyJson(jsonData) {
   try {
@@ -313,7 +303,6 @@ export function displayImagePreview(sourceimage) {
   let previewImage = getId('preview-image');
   previewImage.style.animation = 'preview-image-animation 0.2s forwards';
   previewImage.src = sourceimage;
-  currentSelectedImg = sourceimage;
   const previewBtn = getId('preview-image-button');
   if (!sourceimage.startsWith('data:')) {
     previewBtn.href = sourceimage;

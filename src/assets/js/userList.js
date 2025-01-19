@@ -9,7 +9,7 @@ import { friendCache } from './friends';
 import { setProfilePic } from './avatar';
 import { appendToProfileContextList } from './contextMenuActions';
 import { translations } from './translations';
-import { currentUserNick } from './user';
+import { currentUserNick, currentUserId, currentDiscriminator } from './user';
 import { isOnMe } from './router';
 import { currentGuildId } from './guild';
 export let userList = getId('user-list');

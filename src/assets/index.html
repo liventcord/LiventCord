@@ -98,7 +98,7 @@
             <button id="emojibtn" class="emojibtn-base selected"></button>
             
             <button id="gifbtn" >GIF</button>
-            <textarea  type="text" id="user-input" class="base-user-input" autocomplete="off" class="autofit" placeholder="send message to #channel"></textarea>
+            <textarea  type="text" id="user-input" class="base-user-input" autocomplete="off" class="autofit" ></textarea>
             <div id="userMentionDropdown"></div>
             <textarea id="reply-info" readonly autocomplete="off" class="autofit" placeholder="Responding to user"></textarea>
             <button id="reply-close-button" onclick="closeReplyMenu()">X</button>
@@ -484,7 +484,6 @@
         const localConfettiUrl = "/vendor/confetti.browser.min.js";
         const confettiUrl = useCDN ? cdnConfettiUrl : localConfettiUrl;
 
-        let isConfettiLoaded = false;
 
         function loadScript(url) {
             const script = document.createElement('script');

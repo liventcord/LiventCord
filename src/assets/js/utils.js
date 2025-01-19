@@ -1,11 +1,15 @@
+import { friendsContainer } from './friendui';
+import { translations } from './translations';
+import { getFriendsTranslation } from './friendui';
+import { chatContent } from './chatbar';
+
 export const createEl = (tag, options) =>
   Object.assign(document.createElement(tag), options);
+export let clydeSrc = '/images/clyde.png';
 
 export let defaultProfileImageUrl = `/images/guest.png`;
-
 export let defaultMediaImageUrl = '/images/defaultmediaimage.png';
 
-export let clydeSrc = '/images/clyde.png';
 export function setDefaultMediaImageUrl(blob) {
   defaultMediaImageUrl = blob;
 }
@@ -248,7 +252,7 @@ export function getAverageRGB(imgEl) {
   let data;
   try {
     data = context.getImageData(0, 0, width, height);
-  } catch (e) {
+  } catch (error) {
     return defaultRGB;
   }
 

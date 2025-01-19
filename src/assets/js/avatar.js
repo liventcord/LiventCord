@@ -2,9 +2,9 @@ import { CLYDE_ID } from './chat';
 import { updateGuild } from './guild';
 import {
   getProfileUrl,
-  defaultProfileImageUrl,
   urlToBase64,
   defaultMediaImageUrl,
+  defaultProfileImageUrl,
   setDefaultMediaImageUrl,
   setDefaultProfileImageUrl,
   clydeSrc,
@@ -22,7 +22,7 @@ import { regenerateConfirmationPanel } from './settings';
 import { createCropPop } from './popups';
 import { getId } from './utils';
 
-let lastConfirmedProfileImg;
+export let lastConfirmedProfileImg;
 let lastConfirmedGuildImg;
 
 export let selfProfileImage;
@@ -348,22 +348,34 @@ export async function setProfilePic(profileImg, userId, isTimestamp = false) {
   setPicture(profileImg, userId, true, isTimestamp);
 }
 
-function init() {
-  urlToBase64(defaultProfileImageUrl)
-    .then((base64) => setDefaultProfileImageUrl(base64))
-    .catch((error) => console.error(error));
+async function init() {
+  try {
+    const {
+      getProfileUrl,
+      urlToBase64,
+      defaultMediaImageUrl,
+      defaultProfileImageUrl,
+      setDefaultMediaImageUrl,
+      setDefaultProfileImageUrl,
+      clydeSrc,
+    } = await import('./utils');
 
-  urlToBase64(defaultMediaImageUrl)
-    .then((base64) => setDefaultMediaImageUrl(base64))
-    .catch((error) => console.error(error));
+    const base64Profile = await urlToBase64(defaultProfileImageUrl);
+    setDefaultProfileImageUrl(base64Profile);
 
-  selfProfileImage = getId('self-profile-image');
-  selfProfileImage.addEventListener('mouseover', function () {
-    this.style.borderRadius = '0px';
-  });
-  selfProfileImage.addEventListener('mouseout', function () {
-    this.style.borderRadius = '50%';
-  });
+    const base64Media = await urlToBase64(defaultMediaImageUrl);
+    setDefaultMediaImageUrl(base64Media);
+
+    const selfProfileImage = getId('self-profile-image');
+    selfProfileImage.addEventListener('mouseover', function () {
+      this.style.borderRadius = '0px';
+    });
+    selfProfileImage.addEventListener('mouseout', function () {
+      this.style.borderRadius = '50%';
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 init();

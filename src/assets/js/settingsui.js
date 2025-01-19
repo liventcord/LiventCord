@@ -15,11 +15,16 @@ import { updateSelfProfile } from './avatar';
 import { apiClient, EventType } from './api';
 import { translations } from './translations';
 import { getId, createEl } from './utils';
-import { currentUserNick } from './user';
+import { currentUserNick, currentUserId } from './user';
 import { guildCache } from './cache';
-import { currentUserId } from './user';
+import { permissionManager } from './guildPermissions';
+import { currentGuildId } from './guild';
+import { Overview } from './ui';
+import { regenerateConfirmationPanel } from './settings';
+import { lastConfirmedProfileImg } from './avatar';
 
 export let currentSettingsType;
+export let isGuildSettings = false;
 
 const userSettings = [
   { category: 'MyAccount', label: t('MyAccount') },
@@ -420,7 +425,6 @@ export function getCloseButtonElement() {
 }
 
 export function reconstructSettings(_isGuildSettings) {
-  //
   const leftBar = getId('settings-leftbar');
   leftBar.innerHTML = '';
   isGuildSettings = _isGuildSettings;

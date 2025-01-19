@@ -33,8 +33,8 @@ export let channelList = getId('channel-list');
 export let channelsUl = channelList.querySelector('ul');
 export let currentChannelName = null;
 
-let currentVoiceChannelId;
-let currentChannels;
+export let currentVoiceChannelId;
+export let currentChannels;
 
 export function getChannels() {
   console.log('Getting channels...');

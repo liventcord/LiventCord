@@ -5,9 +5,18 @@ import {
   sendAudioData,
 } from './audio';
 import { uploadImage } from './avatar';
-import { showConfirmationPanel } from './settingsui';
+import { showConfirmationPanel, isGuildSettings } from './settingsui';
 import { alertUser, hideImagePreviewRequest } from './ui';
 import { closeSettings } from './settingsui';
+import { isDomLoaded } from './app';
+import { handleToggleClick } from './ui';
+import { onEditGuildProfile, onEditProfile } from './avatar';
+import { generateConfirmationPanel } from './settingsui';
+import { hideConfirmationPanel } from './settingsui';
+import { permissionManager } from './guildPermissions';
+import { apiClient, EventType } from './api';
+import { currentGuildId } from './guild';
+import { currentUserNick } from './user';
 
 let isImagePreviewOpen = false;
 let closeCurrentJoinPop;
@@ -35,9 +44,6 @@ export function setIsChangedProfile() {
 let isInitialized = false;
 let resetTimeout;
 export let currentPopUp = null;
-
-let logoClicked = 0;
-let isGuildSettings = false;
 
 export function clearCookies() {
   const cookies = document.cookie.split('; ');
@@ -121,12 +127,7 @@ export const toggleManager = {
     }
 
     (function frame() {
-      if (
-        !toggleManager.states['snow-toggle'] ||
-        !isConfettiLoaded ||
-        !isDomLoaded
-      )
-        return;
+      if (!toggleManager.states['snow-toggle'] || !isDomLoaded) return;
 
       skew = Math.max(0.8, skew - 0.001);
 

@@ -1,5 +1,4 @@
 import {
-  loadObservedContent,
   alertUser,
   loadMainToolbar,
   handleResize,
@@ -80,17 +79,6 @@ import { initialiseAudio } from './audio';
 export let isDomLoaded = false;
 let cachedFriMenuContent;
 let userListFriActiveHtml;
-
-const observer = new IntersectionObserver(
-  (entries, observer) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        loadObservedContent(entry.target);
-      }
-    });
-  },
-  { threshold: 0.1 },
-);
 
 export function assignElements() {
   addChannelSearchListeners();

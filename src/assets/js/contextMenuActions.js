@@ -8,7 +8,8 @@ import { isOnMe } from './router';
 import { friendCache } from './friends';
 import { permissionManager } from './guildPermissions';
 import { translations } from './translations';
-
+import { isOnDm } from './router';
+import { alertUser } from './ui';
 let isDeveloperMode = true;
 export let contextList = {};
 export let messageContextList = {};

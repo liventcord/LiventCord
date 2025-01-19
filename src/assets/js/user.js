@@ -1,6 +1,7 @@
 import { getId } from './utils';
 import { updateSelfProfile } from './avatar';
 import { initialState } from './app';
+import { cacheInterface } from './cache';
 
 export let currentUserId;
 

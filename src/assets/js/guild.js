@@ -1,4 +1,10 @@
-import { getId, blackImage, constructAppPage, getProfileUrl } from './utils';
+import {
+  getId,
+  createEl,
+  blackImage,
+  constructAppPage,
+  getProfileUrl,
+} from './utils';
 import { clickMainLogo, alertUser } from './ui';
 import { changeUrlWithFireWorks } from './extras';
 import {
@@ -21,34 +27,26 @@ guildCreatorBtn.addEventListener('click', showGuildPop());
 
 export function updateGuilds(guildsJson) {
   const guildsList = document.getElementById('guilds-list');
+
   if (Array.isArray(guildsJson)) {
-    guildsJson.forEach(
-      ({ guildId, guildName, guildMembers, guildChannels }) => {
-        guildCache.getGuild(guildId).setName(guildName);
-        cacheInterface.setMemberIds(guildId, guildMembers);
-      },
-    );
+    guildsList.innerHTML = '';
 
-    guildsList.innerHTML += renderGuilds(guildsJson);
+    const mainLogoItem = createMainLogo();
+    guildsList.appendChild(mainLogoItem);
 
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          // If someone tries to add or remove elements, prevent it
-          mutation.removedNodes.forEach((node) => {
-            if (node.parentNode === guildsList) {
-              // Optionally log or alert the removal attempt
-              console.warn('Attempted to remove a child node:', node);
-              node.remove(); // Prevent the removal (or do something else)
-            }
-          });
-        }
-      });
+    guildsJson.forEach(({ guildId, guildName, rootChannel }) => {
+      const listItem = createGuildListItem(
+        guildId,
+        guildName,
+        rootChannel,
+        guildName,
+      );
+      guildsList.appendChild(listItem);
     });
 
-    observer.observe(guildsList, {
-      childList: true, // Observe additions/removals of child elements
-      subtree: true, // Observe all descendants of the parent
+    guildsJson.forEach(({ guildId, guildName, guildMembers }) => {
+      guildCache.getGuild(guildId).setName(guildName);
+      cacheInterface.setMemberIds(guildId, guildMembers);
     });
   } else {
     console.error('Non-array guild data');
@@ -59,32 +57,6 @@ export function updateGuilds(guildsJson) {
     selectedGuild.parentNode.classList.add('selected-guild');
   }
 }
-
-// Wrapping the addEventListener method to track listeners
-const originalAddEventListener = Element.prototype.addEventListener;
-Element.prototype.addEventListener = function (type, listener, options) {
-  if (!this._eventListeners) {
-    this._eventListeners = {};
-  }
-
-  if (!this._eventListeners[type]) {
-    this._eventListeners[type] = [];
-  }
-
-  this._eventListeners[type].push(listener);
-
-  // Call the original addEventListener to actually add the listener
-  originalAddEventListener.call(this, type, listener, options);
-};
-
-// Function to check if an event listener is attached
-const hasListener = (element, eventType) => {
-  return (
-    element._eventListeners &&
-    element._eventListeners[eventType] &&
-    element._eventListeners[eventType].length > 0
-  );
-};
 
 const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
   const listItem = document.createElement('li');
@@ -110,42 +82,12 @@ const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
 
   imgElement.addEventListener('click', clickListener);
 
-  // Return the list item HTML immediately
   const divElement = document.createElement('div');
   divElement.classList.add('white-rod');
 
   listItem.appendChild(imgElement);
   listItem.appendChild(divElement);
-
-  // Run listener check 1 second after the HTML is returned
-  setTimeout(() => {
-    if (hasListener(imgElement, 'click')) {
-      console.log('Click listener successfully added for guild:', guildIdStr);
-      imgElement.click();
-    } else {
-      console.error('Failed to add click listener for guild:', guildIdStr);
-    }
-  }, 1000);
-
-  return listItem.outerHTML;
-};
-
-const renderGuilds = (guilds) => {
-  const uniqueGuildIds = new Set();
-  console.log('Rendering guilds...');
-  return guilds
-    .map(({ guildId, rootChannel, guildName, ownerId }) => {
-      if (uniqueGuildIds.has(guildId)) return '';
-      uniqueGuildIds.add(guildId);
-      console.log(`Rendering guild: ${guildId}`);
-      return createGuildListItem(
-        String(guildId),
-        `/guilds/${guildId}`,
-        rootChannel,
-        guildName || '',
-      );
-    })
-    .join('');
+  return listItem;
 };
 
 export function getManageableGuilds() {
@@ -163,9 +105,7 @@ export function getManageableGuilds() {
       }
     }
     return isFoundAny ? guildsWeAreAdminOn : null;
-  } catch (error) {
-    //console.log(error.message);
-  }
+  } catch (error) {}
 }
 
 export function createMainLogo() {
@@ -405,7 +345,6 @@ export function refreshInviteId() {
     return;
   }
   console.log('Implement invites');
-  //apiClient.send(EventType.GET_INVITES,{"guildId" : currentGuildId});
 }
 
 export function fetchMembers() {

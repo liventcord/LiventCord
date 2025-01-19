@@ -9,6 +9,7 @@ import {
   isJsonUrl,
   isURL,
   openExternalUrl,
+  extractLinks,
 } from './utils';
 
 const maxWidth = 512;

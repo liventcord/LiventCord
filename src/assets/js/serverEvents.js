@@ -29,7 +29,7 @@ import { loadGuild, removeFromGuildList, updateGuild } from './guild';
 import { closeSettings } from './settingsui';
 import { loadDmHome } from './app';
 import { alertUser, setActiveIcon } from './ui';
-import { updateUserOnlineStatus, currentUserNick } from './user';
+import { updateUserOnlineStatus } from './user';
 import {
   friendCache,
   updateFriendsList,
@@ -46,6 +46,8 @@ import {
 import { refreshUserProfile } from './avatar';
 import { isOnGuild } from './router.js';
 import { apiClient, EventType } from './api.js';
+import { permissionManager } from './guildPermissions.js';
+import { translations } from './translations.js';
 
 apiClient.on(EventType.REMOVE_MESSAGE, (data) => {
   deleteLocalMessage(data.messageId, data.guildId, data.channelId, data.isDm);
@@ -64,8 +66,7 @@ apiClient.on(EventType.REMOVE_MESSAGE, (data) => {
 
 apiClient.on('join_guild_response', (data) => {
   if (!data.success) {
-    const errormsg =
-      'DAVET BAĞLANTISI - Davet geçersiz ya da geçerliliğini yitirmiş.';
+    const errormsg = translations.getTranslation('join-error-response');
     getId('create-guild-title').textContent = errormsg;
     getId('create-guild-title').style.color = 'red';
     return;

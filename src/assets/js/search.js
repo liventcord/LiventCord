@@ -1,10 +1,19 @@
 import { getId } from './utils';
+import { isOnGuild } from './router';
+import { cacheInterface } from './cache';
+import { currentGuildId } from './guild';
+import { getCurrentDmFriends } from './friendui';
+import { chatInput } from './chatbar';
+import { getGuildMembers } from './guild';
+import { currentChannels } from './channels';
 
 let channelSearchInputElement;
 export let currentSearchUiIndex = -1;
 export function setCurrentSearchUiIndex(index) {
   currentSearchUiIndex = index;
 }
+export const userMentionDropdown = getId('userMentionDropdown');
+
 export function updateUserMentionDropdown(value) {
   const mentionRegex = /@\w*/g;
   const match = value.match(mentionRegex);

@@ -5,9 +5,11 @@ import {
   cacheInterface,
   setMessagesCache,
   clearMessagesCache,
+  currentMessagesCache,
+  guildCache,
 } from './cache';
-import { isURL, getId } from './utils';
-import { getUserNick } from './user';
+import { isURL, getId, createEl } from './utils';
+import { getUserNick, currentUserId } from './user';
 import { createMediaElement } from './mediaElements';
 import { apiClient, EventType } from './api';
 import { isOnGuild } from './router';
@@ -17,6 +19,16 @@ import { chatContainer, chatContent } from './chatbar';
 import { currentGuildId } from './guild';
 import { isChangingPage } from './app';
 import { loadingScreen } from './ui';
+import { Message } from './message';
+import { translations } from './translations';
+import { appendToMessageContextList } from './contextMenuActions';
+import {
+  getFormattedDateForSmall,
+  sanitizeHTML,
+  getFormattedDate,
+} from './utils';
+import { replyCache } from './cache';
+
 let bottomestChatDateStr;
 export let lastMessageDate = null;
 export let currentLastDate;
@@ -130,7 +142,6 @@ export async function handleScroll() {
     try {
       let continueLoop = true;
 
-      // Prevent further fetching if already fetching
       if (hasJustFetchedMessages || stopFetching) {
         return;
       }
@@ -139,7 +150,7 @@ export async function handleScroll() {
         const updatedScrollPosition = chatContainer.scrollTop;
 
         if (updatedScrollPosition <= buffer) {
-          stopFetching = false; // Reset stop fetching flag
+          stopFetching = false;
           await getOldMessagesOnScroll();
         } else {
           continueLoop = false;
@@ -152,10 +163,35 @@ export async function handleScroll() {
       console.error('Error fetching old messages:', error);
     } finally {
       isFetchingOldMessages = false;
-      stopFetching = true; // Stop further requests if still at top
+      stopFetching = true;
       console.log('Fetching complete. Resetting flag.');
     }
   }
+}
+
+const observer = new IntersectionObserver(
+  (entries, observer) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        loadObservedContent(entry.target);
+      }
+    });
+  },
+  { threshold: 0.1 },
+);
+function loadObservedContent(targetElement) {
+  const jsonData = targetElement.dataset.content_observe;
+
+  const sanitizedHTML = sanitizeHTML(jsonData);
+
+  const tempDiv = createEl('div');
+  tempDiv.innerHTML = sanitizedHTML;
+
+  while (tempDiv.firstChild) {
+    targetElement.appendChild(tempDiv.firstChild);
+  }
+
+  observer.unobserve(targetElement);
 }
 
 export function handleOldMessagesResponse(data) {
@@ -740,7 +776,7 @@ export function getHistoryFromOneChannel(channelId, isDm = false) {
     let repliesList = new Set();
 
     if (messages.length > 0) {
-      currentMessagesCache = {};
+      clearMessagesCache();
       for (const msg of messages) {
         const foundReply = displayChatMessage(msg);
         if (foundReply) {

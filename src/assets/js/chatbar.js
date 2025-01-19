@@ -3,6 +3,7 @@ import {
   setCurrentSearchUiIndex,
   highlightOption,
   selectMember,
+  updateUserMentionDropdown,
 } from './search';
 import { apiClient, EventType } from './api';
 import { currentChannelName } from './channels';
@@ -30,6 +31,7 @@ import { setProfilePic } from './avatar';
 import { cacheInterface, guildCache } from './cache';
 import { currentGuildId } from './guild';
 import { translations } from './translations';
+import { getUserNick } from './user';
 
 let fileInput;
 let currentReplyingTo = '';
@@ -39,7 +41,7 @@ let fileImagePreview;
 export let chatContainer = getId('chat-container');
 export let chatContent = getId('chat-content');
 let replyInfo;
-
+import { userMentionDropdown } from './search';
 export function initialiseChatInput() {
   chatInput.addEventListener('input', adjustHeight);
   chatInput.addEventListener('keydown', handleUserKeydown);

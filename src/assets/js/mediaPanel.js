@@ -4,6 +4,8 @@ import { sendMessage } from './message';
 import { getId, debounce } from './utils';
 import { isUsersOpenGlobal } from './userList';
 
+let initialMouseX;
+let initialMouseY;
 let isResizing = false;
 let initialX, initialY, initialWidth, initialHeight;
 let initialLeft, initialTop;
