@@ -28,6 +28,8 @@ import { isOnMe } from './router';
 import { textChanHtml } from './ui';
 import { permissionManager } from './guildPermissions';
 import { isOnDm } from './router';
+import { getUserNick } from './user';
+
 export let channelTitle = getId('channel-info');
 export let channelList = getId('channel-list');
 export let channelsUl = channelList.querySelector('ul');

@@ -17,6 +17,7 @@ import { permissionManager } from './guildPermissions';
 import { apiClient, EventType } from './api';
 import { currentGuildId } from './guild';
 import { currentUserNick } from './user';
+import { translations } from './translations';
 
 let isImagePreviewOpen = false;
 let closeCurrentJoinPop;
@@ -300,7 +301,7 @@ export async function requestMicrophonePermissions() {
     }
   } catch (error) {
     console.log(error);
-    alertUser('MİKROFON ERİŞİMİ ENGELLENDİ', 'Mikrofon izni reddedildi.');
+    alertUser(translations.getTranslation("microphone-failed"), translations.getTranslation("microphone-failed-2"));
     return false;
   }
 }

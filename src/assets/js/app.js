@@ -5,13 +5,13 @@ import {
   loadGuildToolbar,
   loadDmToolbar,
 } from './ui';
-import { toggleDropdown } from './popups';
 import {
   fetchReplies,
   getHistoryFromOneChannel,
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
+  setLastSenderID,
 } from './chat';
 import {
   chatInput,
@@ -29,14 +29,16 @@ import {
   selectGuildList,
   fetchMembers,
   refreshInviteId,
+  currentGuildId
 } from './guild';
 import { disableDmContainers } from './friendui';
-import { hideGuildSettingsDropdown, openSearchPop } from './popups';
+import { hideGuildSettingsDropdown, openSearchPop,toggleDropdown } from './popups';
 import {
   copySelfName,
   addUser,
   getUserDiscriminator,
   initializeProfile,
+  getUserNick
 } from './user';
 import { addContextListeners } from './contextMenuActions';
 import {
@@ -55,9 +57,10 @@ import {
   createEl,
   enableElement,
   disableElement,
+  constructDmPage,
 } from './utils';
 import { guildCache } from './cache';
-import { updateDmsList, setupSampleUsers } from './friendui';
+import { updateDmsList, setupSampleUsers,activateDmContainer } from './friendui';
 import { setProfilePic, updateSelfProfile } from './avatar';
 import { currentUserId } from './user';
 import { friendCache } from './friends';
@@ -68,17 +71,37 @@ import { setUsersList } from './userList';
 import {
   isOnMe,
   router,
-  isOnGuild,
   isOnDm,
+  isOnGuild,
   setIsOnMe,
   setIsOnDm,
   setIsOnGuild,
 } from './router';
 import { initialiseAudio } from './audio';
+import { translations } from './translations';
+
+
 
 export let isDomLoaded = false;
 let cachedFriMenuContent;
 let userListFriActiveHtml;
+
+
+export function initializeApp() {
+  window.scrollTo(0, 0);
+  assignElements();
+  initializeChatComponents();
+  initializeElements();
+  initializeSettings();
+  initializeListeners();
+  initializeGuild();
+  initializeProfile();
+  initialiseAudio();
+  initializeCookies();
+  isDomLoaded = true;
+}
+
+
 
 export function assignElements() {
   addChannelSearchListeners();
@@ -165,19 +188,6 @@ export async function loadInitialData() {
   }
 }
 
-export function initializeApp() {
-  window.scrollTo(0, 0);
-  assignElements();
-  initializeChatComponents();
-  initializeElements();
-  initializeSettings();
-  initializeListeners();
-  initializeGuild();
-  initializeProfile();
-  initialiseAudio();
-  initializeCookies();
-  isDomLoaded = true;
-}
 
 export function initializeElements() {
   createChatScrollButton();
@@ -199,6 +209,7 @@ export function initializeElements() {
 
   const friendContainer = getId('friend-container-item');
   friendContainer.addEventListener('click', loadDmHome);
+
 
   getId('tb-showprofile').addEventListener('click', toggleUsersList);
 }
@@ -262,8 +273,9 @@ export function initializeGuild() {
   }
 
   fetchMembers();
+  console.log(initialState.guilds);
   if (
-    router.isOnGuild &&
+    isOnGuild &&
     initialState.guilds &&
     initialState.guilds.length > 0
   ) {
@@ -362,7 +374,7 @@ export function openDm(friendId) {
   const wasOnDm = isOnDm;
   setIsOnDm(true);
   friendCache.currentDmId = friendId;
-  lastSenderID = '';
+  setLastSenderID();
   activateDmContainer(friendId);
   const url = constructDmPage(friendId);
   if (url != window.location.pathname) {

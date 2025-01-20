@@ -1,21 +1,16 @@
-import { setActiveIcon } from './ui';
+import { setActiveIcon, setInactiveIcon } from './ui';
 import { cacheInterface } from './cache';
 import { loadDmHome } from './app';
 import { isPathnameCorrect } from './utils';
-import { loadGuild } from './guild';
-import { setInactiveIcon } from './ui';
+import { loadGuild, selectGuildList } from './guild';
+
 export let isOnMe = true;
 export let isOnDm = false;
 export let isOnGuild = false;
-export function setIsOnMe(val) {
-  isOnMe = val;
-}
-export function setIsOnDm(val) {
-  isOnDm = val;
-}
-export function setIsOnGuild(val) {
-  isOnGuild = val;
-}
+export function setIsOnMe(val) { isOnMe = val; }
+export function setIsOnDm(val) { isOnDm = val; }
+export function setIsOnGuild(val) { isOnGuild = val; }
+
 class Router {
   constructor() {
     this.ID_LENGTH = 18;
@@ -28,26 +23,19 @@ class Router {
   }
 
   handleVisibilityChange = () => {
-    if (!document.hidden) {
-      if (false) setActiveIcon();
-    } else {
-      setInactiveIcon();
-    }
+    document.hidden ? setInactiveIcon() : setActiveIcon();
   };
 
-  handlePopState = (event) => {
+  handlePopState = () => {
     try {
       const { pathStr, parts } = this.parsePath();
 
       if (pathStr === '/channels/@me') {
         loadDmHome(false);
       } else if (pathStr.startsWith('/channels/@me/')) {
-        const friendId = parts[3];
-        OpenDm(friendId);
+        OpenDm(parts[3]);
       } else if (pathStr.startsWith('/channels/') && parts.length === 4) {
-        const guildID = parts[2];
-        const channelId = parts[3];
-        loadGuild(guildID, channelId, null, false);
+        loadGuild(parts[2], parts[3], null, false);
       }
     } catch (error) {
       console.error(error);
@@ -55,23 +43,15 @@ class Router {
   };
 
   async changeToLogin() {
-    await fetch('http://localhost:5005/auth/logout', {
-      method: 'POST',
-    });
+    await fetch('http://localhost:5005/auth/logout', { method: 'POST' });
     window.location.href = '/login';
   }
 
-  changePageToMe() {
-    window.location.href = '/channels/@me';
-  }
+  changePageToMe() { window.location.href = '/channels/@me'; }
 
-  changePageToGuild() {
-    window.location.href = '/';
-  }
+  changePageToGuild() { window.location.href = '/'; }
 
-  isIdDefined(id) {
-    return id && id.length === this.ID_LENGTH;
-  }
+  isIdDefined(id) { return id && id.length === this.ID_LENGTH; }
 
   parsePath() {
     const pathStr = window.location.pathname;
@@ -81,54 +61,42 @@ class Router {
 
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
-
-    let guildId, channelId, friendId;
-
-    if (pathStr.startsWith('/channels/@me/')) {
-      friendId = parts[3];
-    } else if (pathStr.startsWith('/channels/') && parts.length === 4) {
-      guildId = parts[2];
-      channelId = parts[3];
-    }
+    const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts);
 
     if (!this.isIdDefined(guildId) || !this.isIdDefined(channelId)) {
-      window.history.pushState(null, null, '/channels/@me');
-      return {
-        isValid: false,
-        initialGuildId: null,
-        initialChannelId: null,
-        initialFriendId: null,
-      };
+      this.resetRoute();
+      return { isValid: false };
     }
 
     const isPathnameCorrectValue = isPathnameCorrect(pathStr);
 
-    if (isOnMe && !isPathnameCorrectValue) {
-      window.history.pushState(null, null, '/channels/@me');
-      return {
-        isValid: false,
-        initialGuildId: null,
-        initialChannelId: null,
-        initialFriendId: null,
-      };
+    if (this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
+      this.resetRoute();
+      return { isValid: false };
     }
 
-    if (isOnGuild && cacheInterface.doesGuildExist(guildId)) {
-      window.history.pushState(null, null, '/channels/@me');
-      return {
-        isValid: false,
-        initialGuildId: null,
-        initialChannelId: null,
-        initialFriendId: null,
-      };
+    return { isValid: true, initialGuildId: guildId, initialChannelId: channelId, initialFriendId: friendId };
+  }
+
+  getRouteIds(pathStr, parts) {
+    let guildId, channelId, friendId;
+
+    if (pathStr.startsWith('/channels/@me/')) friendId = parts[3];
+    else if (pathStr.startsWith('/channels/') && parts.length === 4) {
+      guildId = parts[2];
+      channelId = parts[3];
     }
 
-    return {
-      isValid: true,
-      initialGuildId: guildId,
-      initialChannelId: channelId,
-      initialFriendId: friendId,
-    };
+    return [guildId, channelId, friendId];
+  }
+
+  shouldResetRoute(isPathnameCorrectValue, guildId) {
+    return (isOnMe && !isPathnameCorrectValue) || (isOnGuild && cacheInterface.doesGuildExist(guildId));
+  }
+
+  resetRoute() {
+    window.history.pushState(null, null, '/channels/@me');
+    selectGuildList('main-logo');
   }
 }
 

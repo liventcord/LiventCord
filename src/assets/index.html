@@ -494,57 +494,15 @@
             document.body.appendChild(script);
         }
 
-
         loadScript(confettiUrl);
 
 
-        let isCropieInitialized = false;
-        const croppieUrl = useCDN 
+        const croppieUrl = useCDN
             ? "https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.js"
             : "/vendor/croppie.js";
-        const expectedHash = "0176d11cac2bfdb9e0695a0050e980b2fa0ff55f86eb7e4cf03b32c838e8cb9e";
 
-        async function fetchAndModifyScript(url) {
-            try {
-                const response = await fetch(url);
-                const scriptContent = await response.text();
+        loadScript(croppieUrl);
 
-                if (!crypto || !crypto.subtle) {
-                    console.warn('Crypto context unavailable. Appending script without modification.');
-                    appendScript(scriptContent);
-                    return;
-                }
-
-                const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(scriptContent));
-                const hashArray = Array.from(new Uint8Array(hashBuffer)); 
-                const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join(''); 
-
-                if (hashHex === expectedHash) {
-                    let scriptLines = scriptContent.split('\n');
-                    let lineNumberToModify = 1088; 
-                    if (lineNumberToModify - 1 < scriptLines.length) {
-                        scriptLines[lineNumberToModify - 1] = 'zoomer.max = fix(8);'; 
-                    }
-                    let modifiedScriptContent = scriptLines.join('\n');
-                    appendScript(modifiedScriptContent);
-                } else {
-                    console.warn('Hash does not match. Appending original script.');
-                    appendScript(scriptContent);
-                }
-
-            } catch (error) {
-                console.error('Error fetching or modifying the script:', error);
-            }
-        }
-        function appendScript(scriptContent) {
-            let newScript = document.createElement('script');
-            newScript.type = 'text/javascript';
-            newScript.text = scriptContent;
-            document.body.appendChild(newScript);
-            isCropieInitialized = true;
-        }
-
-        fetchAndModifyScript(croppieUrl);
 
     </script>
 

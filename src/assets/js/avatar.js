@@ -2,18 +2,14 @@ import { CLYDE_ID } from './chat';
 import { updateGuild } from './guild';
 import {
   getProfileUrl,
-  urlToBase64,
-  defaultMediaImageUrl,
   defaultProfileImageUrl,
-  setDefaultMediaImageUrl,
-  setDefaultProfileImageUrl,
   clydeSrc,
 } from './utils';
 import {
   isSettingsOpen,
   settingTypes,
   currentPopUp,
-  isChangedProfile,
+  isChangedProfile,setUnsaved
 } from './settings';
 import { currentSettingsType, showConfirmationPanel } from './settingsui';
 import { userList } from './userList';
@@ -32,7 +28,6 @@ const guildImageCache = {};
 const failedProfiles = new Set();
 const failedGuilds = new Set();
 const requestInProgress = {};
-const bytesOf404 = 'W1wiNDA0XCIsNDA0XQ==';
 const base64Of404 = 'data:application/json;base64,W1wiNDA0XCIsNDA0XQ==';
 
 export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {

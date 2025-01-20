@@ -1,0 +1,26 @@
+{
+    "COPY_ID": "Copy ID",
+    "COPY_USER_ID": "Copy User ID",
+    "INVITE_TO_GUILD": "Invite to Server",
+    "BLOCK_USER": "Block User",
+    "REPORT_USER": "Report User Profile",
+    "REMOVE_USER": "Remove Friend",
+    "EDIT_GUILD_PROFILE": "Edit Server Profile",
+    "MENTION_USER": "Mention User",
+    "MARK_AS_READ": "Mark as Read",
+    "COPY_LINK": "Copy Link",
+    "MUTE_CHANNEL": "Mute Channel",
+    "NOTIFY_SETTINGS": "Notification Settings",
+    "EDIT_CHANNEL": "Edit Channel",
+    "DELETE_CHANNEL": "Delete Channel",
+    "OPEN_PROFILE": "Profile",
+    "MUTE_USER": "Mute User",
+    "DEAFEN_USER": "Deafen User",
+    "ADD_REACTION": "Add Reaction",
+    "EDIT_MESSAGE": "Edit Message",
+    "PIN_MESSAGE": "Pin Message",
+    "REPLY": "Reply",
+    "MARK_AS_UNREAD": "Mark As Unread",
+    "DELETE_MESSAGE": "Delete Message"
+  }
+  

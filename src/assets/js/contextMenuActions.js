@@ -1,15 +1,15 @@
 import { openDm, readCurrentMessages } from './app';
 import { drawProfilePop } from './popups';
-import { showReplyMenu } from './chatbar';
+import { showReplyMenu,chatInput } from './chatbar';
 import { currentUserId, getUserNick } from './user';
 import { getManageableGuilds } from './guild';
 import { createEl } from './utils';
-import { isOnMe } from './router';
+import { isOnMe,isOnDm } from './router';
 import { friendCache } from './friends';
 import { permissionManager } from './guildPermissions';
 import { translations } from './translations';
-import { isOnDm } from './router';
 import { alertUser } from './ui';
+
 let isDeveloperMode = true;
 export let contextList = {};
 export let messageContextList = {};

@@ -6,7 +6,7 @@ import {
   openSettings,
   selectSettingCategory,
 } from './settingsui';
-import { leaveCurrentGuild } from './guild';
+import { leaveCurrentGuild,wrapWhiteRod } from './guild';
 import {
   createEl,
   getId,
@@ -17,11 +17,13 @@ import {
 import { translations } from './translations';
 import { handleMediaPanelResize } from './mediaPanel';
 import { isOnMe } from './router';
-import { toggleDropdown } from './popups';
+import { toggleDropdown,createInviteUsersPop } from './popups';
 import { initialState } from './app';
 import { permissionManager } from './guildPermissions';
-import { sanitizeHTML } from './utils';
-import { createInviteUsersPop } from './popups';
+
+
+
+
 
 export const Overview = 'Overview';
 export const Roles = 'Roles';
@@ -253,7 +255,7 @@ export function askUser(
 }
 let logoClicked = 0;
 
-export function clickMainLogo() {
+export function clickMainLogo(logo) {
   logoClicked++;
   if (logoClicked >= 14) {
     logoClicked = 0;
@@ -264,8 +266,10 @@ export function clickMainLogo() {
       console.log(error);
     }
   }
+  wrapWhiteRod(logo);
   loadDmHome();
 }
+
 
 const preventDrag = (elementId) => {
   const element = document.getElementById(elementId);

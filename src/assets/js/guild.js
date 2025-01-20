@@ -18,77 +18,20 @@ import { updateMemberList } from './userList';
 import { showGuildPop } from './popups';
 import { validateImage } from './avatar';
 import { guildCache, cacheInterface } from './cache';
-import { PermissionManager, permissionManager } from './guildPermissions';
+import { permissionManager } from './guildPermissions';
 import { apiClient, EventType } from './api';
+
+
 export let currentGuildId;
 
-const guildCreatorBtn = getId('create-guild-button');
-guildCreatorBtn.addEventListener('click', showGuildPop());
 
-export function updateGuilds(guildsJson) {
-  const guildsList = document.getElementById('guilds-list');
 
-  if (Array.isArray(guildsJson)) {
-    guildsList.innerHTML = '';
 
-    const mainLogoItem = createMainLogo();
-    guildsList.appendChild(mainLogoItem);
 
-    guildsJson.forEach(({ guildId, guildName, rootChannel }) => {
-      const listItem = createGuildListItem(
-        guildId,
-        guildName,
-        rootChannel,
-        guildName,
-      );
-      guildsList.appendChild(listItem);
-    });
 
-    guildsJson.forEach(({ guildId, guildName, guildMembers }) => {
-      guildCache.getGuild(guildId).setName(guildName);
-      cacheInterface.setMemberIds(guildId, guildMembers);
-    });
-  } else {
-    console.error('Non-array guild data');
-  }
 
-  const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
-  if (selectedGuild) {
-    selectedGuild.parentNode.classList.add('selected-guild');
-  }
-}
 
-const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
-  const listItem = document.createElement('li');
-  const imgElement = document.createElement('img');
-  imgElement.id = guildIdStr;
-  imgElement.src = imgSrc;
-  imgElement.style.width = '50px';
-  imgElement.style.height = '50px';
-  imgElement.style.border = 'none';
 
-  imgElement.onerror = () => {
-    imgElement.src = blackImage;
-  };
-
-  const clickListener = () => {
-    console.log('Image clicked:', guildIdStr, rootChannel, guildNameStr);
-    try {
-      loadGuild(guildIdStr, rootChannel, guildNameStr);
-    } catch (error) {
-      console.error('Error while loading guild:', error);
-    }
-  };
-
-  imgElement.addEventListener('click', clickListener);
-
-  const divElement = document.createElement('div');
-  divElement.classList.add('white-rod');
-
-  listItem.appendChild(imgElement);
-  listItem.appendChild(divElement);
-  return listItem;
-};
 
 export function getManageableGuilds() {
   try {
@@ -108,121 +51,7 @@ export function getManageableGuilds() {
   } catch (error) {}
 }
 
-export function createMainLogo() {
-  const mainLogoImg = createEl('img', {
-    id: 'main-logo',
-    src: '/images/icons/icon.png',
-    'data-src': '/images/icons/icon.png',
-    style:
-      'width: 30px; height: 30px; border: 10px solid rgb(49, 51, 56); user-select: none;',
-  });
 
-  mainLogoImg.addEventListener('mousedown', () => {
-    mainLogoImg.style.transform = 'translateY(50px)';
-  });
-
-  mainLogoImg.addEventListener('mouseup', () => {
-    mainLogoImg.style.transform = 'translateY(0)';
-  });
-
-  mainLogoImg.addEventListener('mouseleave', () => {
-    mainLogoImg.style.transform = 'translateY(0)';
-  });
-
-  mainLogoImg.addEventListener('click', clickMainLogo);
-
-  const mainLogo = createEl('li');
-  mainLogo.appendChild(mainLogoImg);
-
-  return mainLogo;
-}
-
-export function setGuildImage(guildId, imageElement, isUploaded) {
-  imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
-}
-
-export function doesGuildExistInBar(guildId) {
-  return Boolean(guildsList.querySelector(guildId));
-}
-
-let keybindHandlers = {};
-let isGuildKeyDown = false;
-
-export function clearKeybinds() {
-  if (keybindHandlers['shift']) {
-    document.removeEventListener('keydown', keybindHandlers['shift']);
-  }
-  keybindHandlers = {};
-}
-let currentGuildIndex = 1;
-
-export function addKeybinds() {
-  clearKeybinds();
-  const guilds = Array.from(document.querySelectorAll('#guilds-list img'));
-  let isGuildKeyDown = false;
-
-  const handler = (event) => {
-    if (!event.shiftKey) return;
-
-    const key = event.key;
-
-    if (key === 'ArrowUp' || key === 'ArrowDown') {
-      event.preventDefault();
-
-      if (isGuildKeyDown) return;
-
-      if (key === 'ArrowUp') {
-        currentGuildIndex =
-          (currentGuildIndex - 1 + guilds.length) % guilds.length;
-      } else if (key === 'ArrowDown') {
-        currentGuildIndex = (currentGuildIndex + 1) % guilds.length;
-      }
-
-      guilds[currentGuildIndex].click();
-
-      isGuildKeyDown = true;
-    }
-  };
-
-  document.addEventListener('keydown', handler);
-
-  document.addEventListener('keyup', () => {
-    isGuildKeyDown = false;
-  });
-
-  keybindHandlers['shift'] = handler;
-}
-
-export function appendToGuildList(guild) {
-  const guildsList = getId('guilds-list');
-  if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
-  const guildListItem = createGuildListItem(
-    guild.guildId,
-    guild.imgSrc,
-    guild.rootChannel,
-    guild.guildName,
-  );
-  const tempElement = createEl('div', { innerHTML: guildListItem });
-  guildsList.appendChild(tempElement.firstChild);
-  addKeybinds();
-}
-
-export function removeFromGuildList(guildId) {
-  const guildImg = getId(guildId);
-  if (guildImg) {
-    const parentLi = guildImg.closest('li');
-    if (parentLi) parentLi.remove();
-  }
-}
-
-export function updateGuild(uploadedGuildId) {
-  const guildList = getId('guilds-list').querySelectorAll('img');
-  guildList.forEach((img) => {
-    if (img.id === uploadedGuildId) {
-      setGuildImage(uploadedGuildId, img, !!uploadedGuildId);
-    }
-  });
-}
 
 export function createGuild() {
   const guildName = getId('guild-name-input').value;
@@ -265,20 +94,6 @@ export function createGuild() {
     .catch((error) => {
       console.error('Error:', error);
     });
-}
-export function selectGuildList(guildId) {
-  const guildList = getId('guilds-list');
-  if (!guildList) return;
-
-  const foundGuilds = guildList.querySelectorAll('img');
-
-  foundGuilds.forEach((guild) => {
-    if (guild.id === guildId) {
-      guild.parentNode.classList.add('selected-guild');
-    } else {
-      guild.parentNode.classList.remove('selected-guild');
-    }
-  });
 }
 
 export function loadGuild(
@@ -395,3 +210,226 @@ export function joinToGuild(inviteId) {
 export function leaveCurrentGuild() {
   apiClient.send(EventType.LEAVE_GUILD, currentGuildId);
 }
+
+
+
+//ui
+
+let keybindHandlers = {};
+let isGuildKeyDown = false;
+let currentGuildIndex = 1;
+
+export function clearKeybinds() {
+  if (keybindHandlers['shift']) {
+    document.removeEventListener('keydown', keybindHandlers['shift']);
+  }
+  keybindHandlers = {};
+}
+
+export function addKeybinds() {
+  clearKeybinds();
+  const guilds = Array.from(document.querySelectorAll('#guilds-list img'));
+
+  const handler = (event) => {
+    if (!event.shiftKey) return;
+
+    const key = event.key;
+
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      event.preventDefault();
+
+      if (isGuildKeyDown) return;
+
+      if (key === 'ArrowUp') {
+        currentGuildIndex =
+          (currentGuildIndex - 1 + guilds.length) % guilds.length;
+      } else if (key === 'ArrowDown') {
+        currentGuildIndex = (currentGuildIndex + 1) % guilds.length;
+      }
+
+      guilds[currentGuildIndex].click();
+
+      isGuildKeyDown = true;
+    }
+  };
+
+  document.addEventListener('keydown', handler);
+
+  document.addEventListener('keyup', () => {
+    isGuildKeyDown = false;
+  });
+
+  keybindHandlers['shift'] = handler;
+}
+
+
+
+
+
+export function removeFromGuildList(guildId) {
+  const guildImg = getId(guildId);
+  if (guildImg) {
+    const parentLi = guildImg.closest('li');
+    if (parentLi) parentLi.remove();
+  }
+}
+
+export function updateGuild(uploadedGuildId) {
+  const guildList = getId('guilds-list').querySelectorAll('img');
+  guildList.forEach((img) => {
+    if (img.id === uploadedGuildId) {
+      setGuildImage(uploadedGuildId, img, true);
+    }
+  });
+}
+
+
+
+
+export function selectGuildList(guildId) {
+  const guildList = getId('guilds-list');
+  if (!guildList) return;
+
+  const foundGuilds = guildList.querySelectorAll('img');
+
+  foundGuilds.forEach((guild) => {
+    if (guild.id === guildId) {
+      wrapWhiteRod(guild.parentNode);
+      guild.parentNode.classList.add('selected-guild');
+    } else {
+      guild.parentNode.classList.remove('selected-guild');
+    }
+  });
+}
+
+
+export function updateGuilds(guildsJson) {
+  const guildsList = document.getElementById('guilds-list');
+  if (Array.isArray(guildsJson)) {
+    guildsList.innerHTML = '';
+
+    const mainLogoItem = createMainLogo();
+    guildsList.appendChild(mainLogoItem);
+
+    wrapWhiteRod(mainLogoItem);
+
+    guildsJson.forEach(({ guildId, guildName, rootChannel, guildMembers }) => {
+      const listItem = createGuildListItem(guildId, guildName, rootChannel, guildName);
+      guildsList.appendChild(listItem);
+
+      guildCache.getGuild(guildId).setName(guildName);
+      cacheInterface.setMemberIds(guildId, guildMembers);
+    });
+
+    const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
+    if (selectedGuild) {
+      selectedGuild.parentNode.classList.add('selected-guild');
+    }
+  } else {
+    console.error('Non-array guild data');
+  }
+}
+
+
+export function wrapWhiteRod(element) {
+  if (!element) return;
+  if (!element.querySelector('.white-rod')) {
+    const whiteRod = createEl("div", { "className": "white-rod" });
+    element.appendChild(whiteRod);
+  }
+}
+
+
+const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
+  const listItem = createEl('li');
+  const imgElement = createEl('img', { "id": guildIdStr, "src": imgSrc });
+
+  imgElement.classList.add('guild-image');
+  imgElement.onerror = () => {
+    imgElement.src = blackImage;
+  };
+
+  imgElement.addEventListener('click', () => {
+    console.log('Image clicked:', guildIdStr, rootChannel, guildNameStr);
+    try {
+      loadGuild(guildIdStr, rootChannel, guildNameStr);
+    } catch (error) {
+      console.error('Error while loading guild:', error);
+    }
+
+    document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));
+    listItem.classList.add('selected-guild');
+    wrapWhiteRod(listItem);
+  });
+
+  listItem.appendChild(imgElement);
+  return listItem;
+};
+
+
+
+export function appendToGuildList(guild) {
+  const guildsList = getId('guilds-list');
+  if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
+
+  const listItem = createGuildListItem(guild.guildId, guild.imgSrc, guild.rootChannel, guild.guildName);
+  guildsList.appendChild(listItem);
+
+  guildCache.getGuild(guild.guildId).setName(guild.guildName);
+  cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
+}
+
+export function createMainLogo() {
+  const mainLogoImg = createEl('img', {
+    id: 'main-logo',
+    src: '/images/icons/icon.png',
+    'data-src': '/images/icons/icon.png',
+    style: 'width: 30px; height: 30px; border: 10px solid rgb(49, 51, 56); user-select: none;',
+  });
+
+  mainLogoImg.addEventListener('mousedown', () => {
+    mainLogoImg.style.transform = 'translateY(50px)';
+  });
+
+  mainLogoImg.addEventListener('mouseup', () => {
+    mainLogoImg.style.transform = 'translateY(0)';
+  });
+
+  mainLogoImg.addEventListener('mouseleave', () => {
+    mainLogoImg.style.transform = 'translateY(0)';
+  });
+
+  mainLogoImg.addEventListener('click', () => {
+    document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));
+    mainLogoImg.parentElement.classList.add('selected-guild');
+
+    clickMainLogo(mainLogoImg.parentElement);
+  });
+
+  const mainLogo = createEl('li');
+  mainLogo.appendChild(mainLogoImg);
+
+  return mainLogo;
+}
+
+
+export function setGuildImage(guildId, imageElement, isUploaded) {
+  imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
+}
+
+export function doesGuildExistInBar(guildId) {
+  const guildsList = getId('guilds-list');
+  return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
+}
+
+
+
+function init() {
+  const guildCreatorBtn = getId('create-guild-button');
+  if (guildCreatorBtn) {
+    guildCreatorBtn.addEventListener('click', showGuildPop);
+
+  }
+}
+
+init();

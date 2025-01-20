@@ -14,58 +14,55 @@ import { initialState } from './app';
 import { updateSelfProfile } from './avatar';
 import { apiClient, EventType } from './api';
 import { translations } from './translations';
+
 import { getId, createEl } from './utils';
 import { currentUserNick, currentUserId } from './user';
 import { guildCache } from './cache';
 import { permissionManager } from './guildPermissions';
 import { currentGuildId } from './guild';
 import { Overview } from './ui';
-import { regenerateConfirmationPanel } from './settings';
+import { regenerateConfirmationPanel,triggerFileInput } from './settings';
 import { lastConfirmedProfileImg } from './avatar';
 
 export let currentSettingsType;
 export let isGuildSettings = false;
 
-const userSettings = [
-  { category: 'MyAccount', label: t('MyAccount') },
-  { category: 'SoundAndVideo', label: t('SoundAndVideo') },
-  { category: 'Notifications', label: t('Notifications') },
-  { category: 'ActivityPresence', label: t('ActivityPresence') },
-  { category: 'Appearance', label: t('Appearance') },
-  { category: 'Language', label: t('Language') },
-];
 
-const guildSettings = [
-  { category: 'Overview', label: t('GeneralOverview') },
-  { category: 'Emoji', label: t('Emoji') },
-];
+async function loadSettings() {
+  const userSettings = [
+    { category: 'MyAccount', label: translations.getSettingsTranslation('MyAccount') },
+    { category: 'SoundAndVideo', label: translations.getSettingsTranslation('SoundAndVideo') },
+    { category: 'Notifications', label: translations.getSettingsTranslation('Notifications') },
+    { category: 'ActivityPresence', label: translations.getSettingsTranslation('ActivityPresence') },
+    { category: 'Appearance', label: translations.getSettingsTranslation('Appearance') },
+    { category: 'Language', label: translations.getSettingsTranslation('Language') },
+  ];
 
-export function t(key) {
-  const translation =
-    translations.settingTranslations[translations.currentLanguage]?.[key] ||
-    translations.settingTranslations['en']?.[key];
-  if (!translation)
-    console.error(
-      `Missing translation for key: ${key} in language: ${translations.currentLanguage}`,
-    );
-  return translation || key;
+  const guildSettings = [
+    { category: 'Overview', label: translations.getSettingsTranslation('GeneralOverview') },
+    { category: 'Emoji', label: translations.getSettingsTranslation('Emoji') },
+  ];
+
+  return { userSettings, guildSettings };
 }
 
-export function getGuildSettingsHTML() {
-  return generateSettingsHtml(getGuildSettings(), true);
+async function getSettingsHtml() {
+  const settings = await loadSettings();
+  return generateSettingsHtml(settings.userSettings); 
 }
 
-export function getSettingsHtml() {
-  return generateSettingsHtml(userSettings);
+async function getGuildSettingsHTML() {
+  const settings = await loadSettings(); 
+  return generateSettingsHtml(settings.guildSettings, true); 
 }
 
-export function getActivityPresenceHtml() {
+function getActivityPresenceHtml() {
   return `
-        <h3 id="activity-title">${t('ActivityPresence')}</h3>
-        <h3 id="settings-description">${t('ActivityStatus')}</h3>
+        <h3 id="activity-title">${translations.getSettingsTranslation('ActivityPresence')}</h3>
+        <h3 id="settings-description">${translations.getSettingsTranslation('ActivityStatus')}</h3>
         <div class="toggle-card">
-            <label for="activity-toggle">${t('ShareActivityWhenActive')}</label>
-            <label for="activity-toggle">${t(
+            <label for="activity-toggle">${translations.getSettingsTranslation('ShareActivityWhenActive')}</label>
+            <label for="activity-toggle">${translations.getSettingsTranslation(
               'AutoShareActivityParticipation',
             )}</label>
             <div id="activity-toggle" class="toggle-box">
@@ -94,16 +91,16 @@ export function getActivityPresenceHtml() {
     `;
 }
 
-export function getOverviewHtml() {
+function getOverviewHtml() {
   return `
-        <div id="settings-title">${t('Overview')}</div>
+        <div id="settings-title">${translations.getSettingsTranslation('Overview')}</div>
         <div id="guild-settings-rightbar">
-            <div id="set-info-title-guild-name">${t('GuildName')}</div>
+            <div id="set-info-title-guild-name">${translations.getSettingsTranslation('GuildName')}</div>
             <input type="text" id="guild-overview-name-input" autocomplete="off" value="${
               guildCache.currentGuildName
             }" onkeydown="onEditNick()" maxlength="32">
             <img id="guild-image" onclick="triggerguildImageUpdate()" style="user-select: none;">
-            <p id="guild-image-remove" style="display:none">${t('Remove')}</p>
+            <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation('Remove')}</p>
             <form id="guildImageForm" enctype="multipart/form-data">
                 <input type="file" name="guildImage" id="guildImage" accept="image/*" style="display: none;">
             </form>
@@ -111,9 +108,9 @@ export function getOverviewHtml() {
     `;
 }
 
-export function getMissingHtml(title) {
+function getMissingHtml(title) {
   return `
-        <div id="settings-title">${t('Overview')}</div>
+        <div id="settings-title">${translations.getSettingsTranslation('Overview')}</div>
         <div id="guild-settings-rightbar">
             <p style="font-size:20px; color:white; font-weight:bold; margin-top: -150px;">${title}</p>
             <img src="/404_files/noodle.gif">
@@ -121,20 +118,20 @@ export function getMissingHtml(title) {
     `;
 }
 
-export function getAccountSettingsHtml() {
+function getAccountSettingsHtml() {
   return `
         <div id="settings-rightbartop"></div>
-        <div id="settings-title">${t('MyAccount')}</div>
+        <div id="settings-title">${translations.getSettingsTranslation('MyAccount')}</div>
         <div id="settings-rightbar">
             <div id="settings-light-rightbar">
-                <div id="set-info-title-nick">${t('Username')}</div>
+                <div id="set-info-title-nick">${translations.getSettingsTranslation('Username')}</div>
                 <div id="set-info-nick">${currentUserNick}</div>
-                <div id="set-info-title-email">${t('Email')}</div>
+                <div id="set-info-title-email">${translations.getSettingsTranslation('Email')}</div>
                 <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password" onclick="toggleEmail()"> </i>
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
             </div>
             <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" onkeydown="onEditNick()" maxlength="32">
-            <img id="settings-self-profile" onclick="triggerFileInput()" style="user-select: none;">
+            <img id="settings-self-profile"style="user-select: none;">
             <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
             </form>
@@ -143,37 +140,37 @@ export function getAccountSettingsHtml() {
     `;
 }
 
-export function getLanguageHtml() {
+function getLanguageHtml() {
   return `
-        <h3>${t('Language')}</h3>
+        <h3>${translations.getSettingsTranslation('Language')}</h3>
         <select class="dropdown" id="language-dropdown">
-            <option value="en">${t('en')}</option>
-            <option value="tr">${t('tr')}</option>
+            <option value="en">${translations.getSettingsTranslation('en')}</option>
+            <option value="tr">${translations.getSettingsTranslation('tr')}</option>
         </select>
     `;
 }
 
-export function getAppearanceHtml() {
+function getAppearanceHtml() {
   const toggles = [
     {
       id: 'snow-toggle',
-      label: t('WinterMode'),
-      description: t('EnableSnowEffect'),
+      label: translations.getSettingsTranslation('WinterMode'),
+      description: translations.getSettingsTranslation('EnableSnowEffect'),
     },
     {
       id: 'party-toggle',
-      label: t('PartyMode'),
-      description: t('EnablePartyMode'),
+      label: translations.getSettingsTranslation('PartyMode'),
+      description: translations.getSettingsTranslation('EnablePartyMode'),
     },
     {
       id: 'slide-toggle',
-      label: t('SlideMode'),
-      description: t('EnableSlideMode'),
+      label: translations.getSettingsTranslation('SlideMode'),
+      description: translations.getSettingsTranslation('EnableSlideMode'),
     },
   ];
 
   return `
-        <h3>${t('Appearance')}</h3>
+        <h3>${translations.getSettingsTranslation('Appearance')}</h3>
         ${toggles
           .map((toggle) =>
             createToggle(toggle.id, toggle.label, toggle.description),
@@ -182,16 +179,16 @@ export function getAppearanceHtml() {
     `;
 }
 
-export function getNotificationsHtml() {
+function getNotificationsHtml() {
   const toggles = [
     {
       id: 'notify-toggle',
-      label: t('Notifications'),
-      description: t('EnableNotifications'),
+      label: translations.getSettingsTranslation('Notifications'),
+      description: translations.getSettingsTranslation('EnableNotifications'),
     },
   ];
   return `
-        <h3>${t('Notifications')}</h3>
+        <h3>${translations.getSettingsTranslation('Notifications')}</h3>
         ${toggles
           .map((toggle) =>
             createToggle(toggle.id, toggle.label, toggle.description),
@@ -200,13 +197,13 @@ export function getNotificationsHtml() {
     `;
 }
 
-export function generateSettingsHtml(settings, isGuild = false) {
+function generateSettingsHtml(settings, isGuild = false) {
   const buttons = settings
     .map(
       (setting) => `
         <button class="settings-buttons" onclick="selectSettingCategory('${
           setting.category
-        }')">${t(setting.category)}</button>
+        }')">${translations.getSettingsTranslation(setting.category)}</button>
     `,
     )
     .join('\n');
@@ -217,26 +214,26 @@ export function generateSettingsHtml(settings, isGuild = false) {
 
   return `
         ${buttons}
-        <button class="settings-buttons" onclick="logOutPrompt()">${t(
+        <button class="settings-buttons" onclick="logOutPrompt()">${translations.getSettingsTranslation(
           'LogOut',
         )}</button>
     `;
 }
 
-export function getGuildSettings() {
+function getGuildSettings() {
   let setToReturn = [...guildSettings];
   if (permissionManager.canManageGuild()) {
-    setToReturn.push({ category: 'Invites', label: t('Invites') });
-    setToReturn.push({ category: 'Roles', label: t('Roles') });
-    setToReturn.push({ category: 'DeleteGuild', label: t('DeleteGuild') });
+    setToReturn.push({ category: 'Invites', label: translations.getSettingsTranslation('Invites') });
+    setToReturn.push({ category: 'Roles', label: translations.getSettingsTranslation('Roles') });
+    setToReturn.push({ category: 'DeleteGuild', label: translations.getSettingsTranslation('DeleteGuild') });
   }
   return setToReturn;
 }
 
-export function getSettingsConfig() {
+function getSettingsConfig() {
   return {
     SoundAndVideo: {
-      title: t('SoundAndVideoSettings'),
+      title: translations.getSettingsTranslation('SoundAndVideoSettings'),
       html: `
                 <select class="dropdown"></select>
                 <select class="dropdown"></select>
@@ -244,32 +241,32 @@ export function getSettingsConfig() {
             `,
     },
     MyAccount: {
-      title: t('MyAccount'),
+      title: translations.getSettingsTranslation('MyAccount'),
       html: getAccountSettingsHtml(),
     },
     Notifications: {
-      title: t('Notifications'),
+      title: translations.getSettingsTranslation('Notifications'),
       html: getNotificationsHtml(),
     },
     ActivityPresence: {
-      title: t('ActivityStatus'),
+      title: translations.getSettingsTranslation('ActivityStatus'),
       html: getActivityPresenceHtml(),
     },
     Appearance: {
-      title: t('Appearance'),
+      title: translations.getSettingsTranslation('Appearance'),
       html: getAppearanceHtml(),
     },
     Language: {
-      title: t('Language'),
+      title: translations.getSettingsTranslation('Language'),
       html: getLanguageHtml(),
     },
     Overview: {
-      title: t('ServerOverview'),
+      title: translations.getSettingsTranslation('ServerOverview'),
       html: getOverviewHtml(),
     },
     DeleteGuild: {
-      title: t('DeleteServer'),
-      html: `<button id="delete-guild-button">${t(
+      title: translations.getSettingsTranslation('DeleteServer'),
+      html: `<button id="delete-guild-button">${translations.getSettingsTranslation(
         'DeleteServerButton',
       )}</button>`,
     },
@@ -326,9 +323,14 @@ export function selectSettingCategory(settingType) {
       );
     }
   }
+
+  const settingsSelfProfile = getId("settings-self-profile");
+  if(settingsSelfProfile) {
+    settingsSelfProfile.addEventListener("click",triggerFileInput);
+  }
 }
 
-export function createToggle(id, label, description) {
+function createToggle(id, label, description) {
   return `
         <div class="toggle-card">
             <label for="${id}">${label}</label>
@@ -406,7 +408,7 @@ export function closeSettings() {
   setIsSettingsOpen(false);
 }
 
-export function getCloseButtonElement() {
+function getCloseButtonElement() {
   const button = createEl('button', {
     id: 'close-settings-button',
     ariaLabel: 'Close settings',
@@ -432,6 +434,7 @@ export function reconstructSettings(_isGuildSettings) {
     leftBar.innerHTML = getGuildSettingsHTML();
     selectSettingCategory(Overview);
   } else {
+    console.log(getSettingsHtml());
     leftBar.innerHTML = getSettingsHtml();
   }
 }
@@ -453,13 +456,13 @@ export function generateConfirmationPanel() {
 
   const textDiv = createEl('div', {
     id: 'settings-unsaved-popup-text',
-    textContent: t('unsavedChangesWarning'),
+    textContent: translations.getSettingsTranslation('unsavedChangesWarning'),
   });
   popupDiv.appendChild(textDiv);
 
   const resetButton = createEl('span', {
     id: 'settings-unsaved-popup-resetbutton',
-    textContent: t('resetButton'),
+    textContent: translations.getSettingsTranslation('resetButton'),
   });
 
   resetButton.addEventListener('click', function () {
@@ -491,7 +494,7 @@ export function generateConfirmationPanel() {
 
   const applyButton = createEl('button');
   applyButton.id = 'settings-unsaved-popup-applybutton';
-  applyButton.textContent = t('saveChanges');
+  applyButton.textContent = translations.getSettingsTranslation('saveChanges');
   applyButton.onclick = applySettings;
   popupDiv.appendChild(applyButton);
   getId('settings-menu').appendChild(popupDiv);
@@ -499,7 +502,7 @@ export function generateConfirmationPanel() {
   return popupDiv;
 }
 
-export function shakeScreen() {
+function shakeScreen() {
   let SHAKE_FORCE = 1;
 
   currentSettingsType = null;
@@ -526,7 +529,7 @@ export function shakeScreen() {
   return;
 }
 
-export function createDeleteGuildPrompt(guildId, guildName) {
+function createDeleteGuildPrompt(guildId, guildName) {
   if (!guildId) {
     return;
   }

@@ -1,10 +1,14 @@
 import { truncateString } from "./utils";
+
+
+
 class Translations {
   constructor() {
     this.currentLanguage = "en";
     this.enLocale = "en-us";
     this.trLocale = "tr-TR";
     this.errorTranslations = {};
+    this.contextTranslations = {};
     this.translations = {
       en: {
         "online": "Online",
@@ -90,6 +94,8 @@ class Translations {
         "upload-error-message": "You can only upload image files! (JPG, PNG veya GIF)!",
         "upload-size-error-message": "File size must be smaller than 8 MB!",
         "join-error-response": "INVITE LINK - Invite is invalid or expired",
+        "microphone-failed" : "MICROPHONE ACCESS BLOCKED",
+        "microphone-failed-2" : "Microphone permission denied.",
       },
 
       tr: {
@@ -176,7 +182,9 @@ class Translations {
         "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
         "upload-error-message": "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
         "upload-error-message" : "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
-        "upload-size-error-message" : "Dosya boyutu 8 MB\"den küçük olmalıdır!"
+        "upload-size-error-message" : "Dosya boyutu 8 MB\"den küçük olmalıdır!",
+        "microphone-failed" : "MİKROFON ERİŞİMİ ENGELLENDİ",
+        "microphone-failed-2" : "Mikrofon izni reddedildi.",
         
       }
     };
@@ -434,152 +442,52 @@ class Translations {
     });
   }
 
-  getTranslation(key) {
-    const result = this.translations[this.currentLanguage]?.[key] ?? null;
+  getTranslation(key,list=this.translations) {
+    const result = list[this.currentLanguage]?.[key] ?? null;
     if (key && !result) {
       console.error("Cant find translation for:", key);
     }
     return result;
   }
+  getSettingsTranslation(key) {
+    return this.getTranslation(key,this.settingTranslations);
+  }
 
-  contextTranslations = {
-    en: {
-      COPY_ID: "Copy ID",
-      COPY_USER_ID: "Copy User ID",
-      INVITE_TO_GUILD: "Invite to Server",
-      BLOCK_USER: "Block User",
-      REPORT_USER: "Report User Profile",
-      REMOVE_USER: "Remove Friend",
-      EDIT_GUILD_PROFILE: "Edit Server Profile",
-      MENTION_USER: "Mention User",
-      MARK_AS_READ: "Mark as Read",
-      COPY_LINK: "Copy Link",
-      MUTE_CHANNEL: "Mute Channel",
-      NOTIFY_SETTINGS: "Notification Settings",
-      EDIT_CHANNEL: "Edit Channel",
-      DELETE_CHANNEL: "Delete Channel",
-      OPEN_PROFILE: "Profile",
-      MUTE_USER: "Mute User",
-      DEAFEN_USER: "Deafen User",
-      ADD_REACTION: "Add Reaction",
-      EDIT_MESSAGE: "Edit Message",
-      PIN_MESSAGE: "Pin Message",
-      REPLY: "Reply",
-      MARK_AS_UNREAD: "Mark As Unread",
-      DELETE_MESSAGE: "Delete Message",
-    },
-    tr: {
-      COPY_ID: "ID'yi Kopyala",
-      COPY_USER_ID: "Kullanıcı ID'sini Kopyala",
-      INVITE_TO_GUILD: 'Sunucuya Davet Et',
-      BLOCK_USER: 'Engelle',
-      REPORT_USER: 'Kullanıcı Profilini Bildir',
-      REMOVE_USER: 'Arkadaşı Çıkar',
-      EDIT_GUILD_PROFILE: 'Sunucu Profilini Düzenle',
-      MENTION_USER: 'Bahset',
-      MARK_AS_READ: 'Okundu olarak işaretle',
-      COPY_LINK: 'Bağlantıyı Kopyala',
-      MUTE_CHANNEL: 'Kanalı Sessize Al',
-      NOTIFY_SETTINGS: 'Bildirim Ayarları',
-      EDIT_CHANNEL: 'Kanalı Düzenle',
-      DELETE_CHANNEL: 'Kanalı Sil',
-      OPEN_PROFILE: 'Profil',
-      MUTE_USER: 'Sustur',
-      DEAFEN_USER: 'Sağırlaştır',
-      ADD_REACTION: 'Tepki Ekle',
-      EDIT_MESSAGE: 'Mesajı Düzenle',
-      PIN_MESSAGE: 'Mesajı Sabitle',
-      REPLY: 'Yanıtla',
-      MARK_AS_UNREAD: 'Okunmadı olarak işaretle',
-      DELETE_MESSAGE: 'Mesajı Sil',
-    },
-  };
+  
+
+  async loadTranslations(language) {
+    try {
+      const errorTranslationsResponse = await fetch(`/translations/errorTranslations_${language}.json`);
+      const errorTranslations = await errorTranslationsResponse.json();
+  
+      const placeholderTranslationsResponse = await fetch(`/translations/placeholderTranslations_${language}.json`);
+      const placeholderTranslations = await placeholderTranslationsResponse.json();
+  
+      const contextTranslationsResponse = await fetch(`/translations/contextTranslations_${language}.json`);
+      const contextTranslations = await contextTranslationsResponse.json();
+  
+      this.errorTranslations = errorTranslations;
+      this.placeholderFriendTranslations = placeholderTranslations;
+      this.contextTranslations = contextTranslations;
+    } catch (error) {
+      console.error("Error loading translations:", error);
+      this.errorTranslations = {};
+      this.placeholderFriendTranslations = {};
+      this.contextTranslations = {};
+    }
+  }
 
   getContextTranslation(key) {
-    const translation = this.contextTranslations[this.currentLanguage]?.[key];
-
+    const translation = this.contextTranslations[key];
+  
     if (!translation) {
       console.error("Cannot find translation for:", key);
     }
-
+  
     return translation || key;
   }
+  
 
-  initializeErrorTranslations() {
-    this.errorTranslations = {
-      en: {
-        404: {
-          add_friend: "The user you are trying to add was not found.",
-          accept_friend_request:
-            "The friend request you are trying to accept was not found.",
-          remove_friend: "The friend you are trying to remove was not found.",
-          deny_friend_request:
-            "The friend request you are trying to deny was not found.",
-        },
-        409: {
-          add_friend: "This user is already your friend.",
-          accept_friend_request:
-            "The friend request has already been accepted or denied.",
-          remove_friend: "You cannot remove this user at the moment.",
-          deny_friend_request:
-            "The friend request has already been accepted or denied.",
-        },
-        400: {
-          add_friend: "Invalid request to add friend.",
-          remove_friend: "Invalid request to remove friend.",
-        },
-        500: {
-          default: "Internal server error. Please try again later.",
-        },
-        default: "An unexpected error occurred. Please try again.",
-      },
-      tr: {
-        404: {
-          add_friend: "Eklemeye çalıştığın kullanıcı bulunamadı.",
-          accept_friend_request:
-            "Kabul etmeye çalıştığın arkadaşlık isteği bulunamadı.",
-          remove_friend: "Çıkarmaya çalıştığın arkadaş bulunamadı.",
-          deny_friend_request:
-            "Reddetmeye çalıştığın arkadaşlık isteği bulunamadı.",
-        },
-        409: {
-          add_friend: "Bu kullanıcı zaten arkadaşınız.",
-          accept_friend_request:
-            "Arkadaşlık isteği zaten kabul edildi ya da reddedildi.",
-          remove_friend: "Bu kullanıcıyı şu an çıkaramazsınız.",
-          deny_friend_request:
-            "Arkadaşlık isteği zaten kabul edildi ya da reddedildi.",
-        },
-        400: {
-          add_friend: "Geçersiz arkadaşlık isteği.",
-          remove_friend: "Geçersiz arkadaşlık çıkarma isteği.",
-        },
-        500: {
-          default: "Sunucu hatası. Lütfen daha sonra tekrar deneyin.",
-        },
-        default: "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin.",
-      },
-    };
-  }
-
-  placeholderFriendTranslations = {
-    sent_request: {
-      en: "Sent request to user {{userNick}}",
-      tr: "{{userNick}} kullanıcısına arkadaşlık isteği gönderildi.",
-    },
-    accept_request: {
-      en: "Accepted friend request from {{userNick}}",
-      tr: "{{userNick}} kullanıcısından gelen arkadaşlık isteği kabul edildi.",
-    },
-    remove_friend: {
-      en: "Removed {{userNick}} from friends",
-      tr: "{{userNick}} kullanıcısı arkadaşlıktan çıkarıldı.",
-    },
-    deny_request: {
-      en: "Denied friend request from {{userNick}}",
-      tr: "{{userNick}} kullanıcısından gelen arkadaşlık isteği reddedildi.",
-    },
-  };
 
   getErrorMessage(key) {
     const result = this.errorTranslations[this.currentLanguage][key];
@@ -596,6 +504,7 @@ class Translations {
   setLanguage(language) {
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
+    this.loadTranslations(language);
     this.initializeTranslations();
   }
 }
@@ -607,6 +516,4 @@ translations.setLanguage("en");
 setTimeout(() => {
   translations.initializeTranslations();
 });
-document.addEventListener("DOMContentLoaded", () => {
-  translations.initializeErrorTranslations();
-});
+
