@@ -1,0 +1,15 @@
+{
+  "message_placeholder": "Send a message to channel #{{channelName}}",
+  "dm_placeholder": "Send message to user @{{friendNick}}",
+  "guid_name_placeholder": "Guild of {{userNick}}",
+  "delete_guild_text": "Delete guild {{guildName}}",
+  "invites_guild_text": "Invite your friends to guild {{guildName}}",
+  "dm_start_text": "This is the beginning of the direct message history with {{friendNick}}.",
+  "birth_of_channel": "Birth of channel {{channelName}}!",
+  "welcome_channel": "Welcome to channel {{channelName}}!",
+  "replying_to": "Replying to {{userName}}",
+  "sent_request": "Sent request to user {{userNick}}",
+  "accept_request": "Accepted friend request from {{userNick}}",
+  "remove_friend": "Removed {{userNick}} from friends",
+  "deny_request": "Denied friend request from {{userNick}}"
+}

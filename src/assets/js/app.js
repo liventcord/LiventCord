@@ -164,7 +164,8 @@ export function initialiseState(data) {
   updateGuilds(guildsJson);
   addKeybinds();
 }
-export async function loadInitialData() {
+async function loadInitialData() {
+  await translations.translationsLoaded;
   try {
     const response = await fetch('/api/init');
     if (!response.ok) {

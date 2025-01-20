@@ -133,6 +133,7 @@ export function updateMediaPanelPosition() {
   }
 }
 export function handleMediaPanelResize() {
+  if(!mediaMenu) return;
   let viewportWidth = window.innerWidth / 1.7;
   let viewportHeight = window.innerHeight / 1.2;
   mediaMenu.style.width =
