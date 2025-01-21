@@ -5,7 +5,7 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: '../wwwroot/app',
-    assetsDir: 'js',
+    assetsDir: 'ts',
     emptyOutDir: true,
     minify: process.env.NODE_ENV === 'production' ? 'terser' : false,
     terserOptions: {
