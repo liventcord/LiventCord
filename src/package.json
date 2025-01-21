@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite && npx eslint assets/js/ --fix",
     "lint": "npx eslint assets/js/ --fix",
-    "build": "vite build",
+    "build": "vite build && npm run copy-translations",
+    "copy-translations": "cp -r assets/translations wwwroot/translations",
     "serve": "vite preview",
     "format": "npx prettier --write ."
   },

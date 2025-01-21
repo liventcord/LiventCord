@@ -41,7 +41,7 @@ public static class RouteConfig
             );
         }
 
-        MapRoute("/", "templates/main.html");
+        MapRoute("/", "templates/index.html");
         MapRoute("/download", "templates/download.html");
         MapRoute("/register", "register/register.html");
 

@@ -20,4 +20,7 @@ LiventCord.sln
 *.db
 *.pdb
 node_modules/
-wwwroot/app/
+
+# Exclude build-copied files
+wwwroot/app/* 
+wwwroot/translations/*
