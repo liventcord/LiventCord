@@ -271,7 +271,7 @@ export function clickMainLogo(logo) {
 }
 
 
-const preventDrag = (elementId) => {
+export const preventDrag = (elementId) => {
   const element = document.getElementById(elementId);
   if (element) {
     element.addEventListener('dragstart', function (event) {

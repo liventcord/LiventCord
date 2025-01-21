@@ -81,7 +81,6 @@
     "addFriendDiscriminatorErrorText": "Invalid discriminator! (#0000)",
     "friendAddYourselfErrorText": "You cant be friends with yourself!",
     "upload-error-message": "You can only upload image files! (JPG, PNG veya GIF)!",
-    "upload-size-error-message": "File size must be smaller than 8 MB!",
     "join-error-response": "INVITE LINK - Invite is invalid or expired",
     "microphone-failed" : "MICROPHONE ACCESS BLOCKED",
     "microphone-failed-2" : "Microphone permission denied."

@@ -7,8 +7,6 @@ namespace LiventCord.Helpers
 {
     public class AppLogicService
     {
-        private readonly string defaultGifWorkerUrl =
-            "https://liventcord-gif-worker.efekantunc0.workers.dev";
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -18,6 +16,11 @@ namespace LiventCord.Helpers
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly string? _gifWorkerUrl;
+        private readonly float? _maxAvatarSize;
+        private readonly float? _maxAttachmentSize;
+        private readonly float defaultAvatarSize = 3; //megabytes
+        private readonly float defaultAttachmentSize = 30; //megabytes
+        private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -43,6 +46,10 @@ namespace LiventCord.Helpers
                 configuration["AppSettings:GifWorkerUrl"] != null
                     ? configuration["AppSettings:GifWorkerUrl"]
                     : defaultGifWorkerUrl;
+            
+            _maxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize) ? avatarSize : defaultAvatarSize;
+            _maxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var uploadSize) ? uploadSize : defaultAttachmentSize;
+
         }
 
         public async Task HandleInitRequest(HttpContext context)
@@ -73,8 +80,8 @@ namespace LiventCord.Helpers
 
                 var jsonData = new
                 {
-                    email = user.Email ?? "",
                     userId,
+                    email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
                     userStatus = user.Status ?? "",
                     userDiscriminator = user.Discriminator ?? "",
@@ -85,6 +92,8 @@ namespace LiventCord.Helpers
                     dmFriends = new List<string>(),
                     guildsJson = guilds,
                     gifWorkerUrl = _gifWorkerUrl,
+                    maxAvatarSize = _maxAvatarSize,
+                    maxUploadsize = _maxAttachmentSize
                 };
 
                 context.Response.ContentType = "application/json";

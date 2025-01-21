@@ -11,5 +11,7 @@
   "sent_request": "{{userNick}} kullanıcısına arkadaşlık isteği gönderildi.",
   "accept_request": "{{userNick}} kullanıcısından gelen arkadaşlık isteği kabul edildi.",
   "remove_friend": "{{userNick}} kullanıcısı arkadaşlıktan çıkarıldı.",
-  "deny_request": "{{userNick}} kullanıcısından gelen arkadaşlık isteği reddedildi."
+  "deny_request": "{{userNick}} kullanıcısından gelen arkadaşlık isteği reddedildi.",
+  "avatar-upload-size-error-message": "Avatar boyutu {{avatarLimit}}MB'den küçük olmalı!",
+  "attachment-upload-size-error-message": "Ek dosya boyutu {{attachmentLimit}}MB'den küçük olmalı!"
 }

@@ -4,23 +4,26 @@ import {
   getProfileUrl,
   defaultProfileImageUrl,
   clydeSrc,
+  getBase64Image
 } from './utils';
 import {
   isSettingsOpen,
   settingTypes,
   currentPopUp,
-  isChangedProfile,setUnsaved
+  isChangedProfile,setUnsaved,regenerateConfirmationPanel,setIsChangedProfile
 } from './settings';
 import { currentSettingsType, showConfirmationPanel } from './settingsui';
 import { userList } from './userList';
 import { updateSettingsProfileColor } from './ui';
-import { regenerateConfirmationPanel } from './settings';
 import { createCropPop } from './popups';
 import { getId } from './utils';
+import { translations } from './translations';
+
 
 export let lastConfirmedProfileImg;
 let lastConfirmedGuildImg;
-
+let maxAttachmentSize;
+let maxAvatarSize;
 export let selfProfileImage;
 
 const profileCache = {};
@@ -163,7 +166,7 @@ export function refreshUserProfile(userId, userNick = null) {
   });
 }
 
-export function validateImage(file) {
+export function validateAvatar(file) {
   const allowedTypes = [
     'image/jpeg',
     'image/jpg',
@@ -175,11 +178,11 @@ export function validateImage(file) {
     'image/svg+xml',
   ];
   if (!allowedTypes.includes(file.type)) {
-    alertUser(translations.getTranslation('upload-error-message'));
+    alertUser(translations.getTranslation('avatar-upload-error-message'));
     return false;
   }
-  if (file.size > 8 * 1024 * 1024) {
-    alertUser(translations.getTranslation('upload-size-error-message'));
+  if (file.size > maxAvatarSize * 1024 * 1024) {
+    alertUser(translations.getAvatarUploadErrorMsg(maxAvatarSize));
     return false;
   }
   return true;
@@ -235,6 +238,10 @@ export function updateSelfProfile(
   }
 }
 
+export function setUploadSize(_maxAvatarSize,_maxAttachmentSize) {
+  maxAvatarSize = initialState.maxAvatarSize;
+  maxAttachmentSize = initialState.maxAttachmentSize;
+}
 export function uploadImage(isGuild) {
   if (!isChangedProfile) return;
 
@@ -255,8 +262,8 @@ export function uploadImage(isGuild) {
 
     const blob = new Blob([ab], { type: mimeString });
 
-    if (blob.size <= 8 * 1024 * 1024) {
-      formData.append('photo', blob, 'profile-image.png');
+    if (blob.size <= maxAvatarSize) {
+      formData.append('photo', blob, 'profile-image');
 
       if (isGuild) {
         formData.append('guildId', uploadedGuildId);
@@ -287,7 +294,7 @@ export function uploadImage(isGuild) {
       };
       xhr.send(formData);
     } else {
-      alertUser('Dosya boyutu 8 MB"den büyük olamaz!');
+      alertUser(translations.getTranslation("upload-size-error-message"));
       getId('profileImage').value = '';
     }
   } else {
@@ -346,13 +353,11 @@ export async function setProfilePic(profileImg, userId, isTimestamp = false) {
 async function init() {
   try {
     const {
-      getProfileUrl,
       urlToBase64,
       defaultMediaImageUrl,
       defaultProfileImageUrl,
       setDefaultMediaImageUrl,
       setDefaultProfileImageUrl,
-      clydeSrc,
     } = await import('./utils');
 
     const base64Profile = await urlToBase64(defaultProfileImageUrl);

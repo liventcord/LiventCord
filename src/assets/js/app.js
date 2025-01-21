@@ -61,7 +61,7 @@ import {
 } from './utils';
 import { guildCache } from './cache';
 import { updateDmsList, setupSampleUsers,activateDmContainer } from './friendui';
-import { setProfilePic, updateSelfProfile } from './avatar';
+import { setProfilePic, updateSelfProfile,setUploadSize } from './avatar';
 import { currentUserId } from './user';
 import { friendCache } from './friends';
 import { addChannelSearchListeners } from './search';
@@ -136,6 +136,8 @@ export function initialiseState(data) {
     dmFriends = [],
     guildsJson,
     gifWorkerUrl,
+    maxAvatarSize,
+    maxAttachmentSize
   } = data;
 
   console.log('Data loaded:', data);
@@ -153,6 +155,8 @@ export function initialiseState(data) {
     permissionsMap,
     guilds: guildsJson || [],
     gifWorkerUrl: gifWorkerUrl,
+    maxAvatarSize: maxAvatarSize,
+    maxAttachmentSize: maxAttachmentSize
   };
   window.initialState = initialState;
 
@@ -160,6 +164,7 @@ export function initialiseState(data) {
   updateDmsList(dmFriends);
   setupSampleUsers();
   friendCache.initialiseFriends(friendsStatus);
+  setUploadSize(initialState.maxAvatarSize,initialState.maxAttachmentSize);
 
   updateGuilds(guildsJson);
   addKeybinds();
@@ -365,6 +370,7 @@ export function initialiseMe() {
     return;
   }
   enableElement('dms-title');
+  console.warn(translations.textTranslations)
   updateUserListText();
   loadMainToolbar();
 }

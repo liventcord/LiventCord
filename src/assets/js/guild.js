@@ -5,7 +5,7 @@ import {
   constructAppPage,
   getProfileUrl,
 } from './utils';
-import { clickMainLogo, alertUser } from './ui';
+import { clickMainLogo, alertUser,preventDrag } from './ui';
 import { changeUrlWithFireWorks } from './extras';
 import {
   isChangingPage,
@@ -16,7 +16,7 @@ import {
 import { isOnGuild, isOnMe, isOnDm } from './router';
 import { updateMemberList } from './userList';
 import { showGuildPop } from './popups';
-import { validateImage } from './avatar';
+import { validateAvatar } from './avatar';
 import { guildCache, cacheInterface } from './cache';
 import { permissionManager } from './guildPermissions';
 import { apiClient, EventType } from './api';
@@ -57,7 +57,7 @@ export function createGuild() {
   const guildName = getId('guild-name-input').value;
   const guildPhotoFile = getId('guildImageInput').files[0];
 
-  if (guildPhotoFile && !validateImage(guildPhotoFile)) {
+  if (guildPhotoFile && !validateAvatar(guildPhotoFile)) {
     resetImageInput('guildImageInput', 'guildImg');
     return;
   }
@@ -398,6 +398,7 @@ export function createMainLogo() {
   mainLogoImg.addEventListener('mouseleave', () => {
     mainLogoImg.style.transform = 'translateY(0)';
   });
+  preventDrag(mainLogoImg);
 
   mainLogoImg.addEventListener('click', () => {
     document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));

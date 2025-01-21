@@ -81,7 +81,6 @@
     "addFriendDiscriminatorErrorText": "Tanımlayıcı geçersiz! (#0000)",
     "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
     "upload-error-message": "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
-    "upload-size-error-message" : "Dosya boyutu 8 MB\"den küçük olmalıdır!",
     "microphone-failed" : "MİKROFON ERİŞİMİ ENGELLENDİ",
     "microphone-failed-2" : "Mikrofon izni reddedildi."
 }

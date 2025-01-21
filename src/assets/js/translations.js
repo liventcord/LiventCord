@@ -100,6 +100,9 @@ class Translations {
       { channelName: 15 },
     );
   }
+  getAvatarUploadErrorMsg(maxAvatarSize) {
+    return this.replacePlaceholder("avatar-upload-size-error-message",{ avatarLimit: maxAvatarSize });
+  }
   getReplyingTo(userName) {
     return this.replacePlaceholder("replying_to", { userName });
   }
@@ -144,13 +147,21 @@ class Translations {
 
   
 
+  setLanguage(language) {
+    if (!language) return;
+  
+    console.log(`Selected Language: ${language}`);
+    this.currentLanguage = language;
+    this.loadTranslations(language);
+  }
+  
   async loadTranslations(language) {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
-
+  
     try {
       const textTranslationsResponse = await fetch(`/translations/textTranslations${language}.json`);
       const textTranslations = await textTranslationsResponse.json();
-
+  
       const errorTranslationsResponse = await fetch(`/translations/errorTranslations${language}.json`);
       const errorTranslations = await errorTranslationsResponse.json();
   
@@ -159,7 +170,7 @@ class Translations {
   
       const contextTranslationsResponse = await fetch(`/translations/contextTranslations${language}.json`);
       const contextTranslations = await contextTranslationsResponse.json();
-
+  
       const settingTranslationsResponse = await fetch(`/translations/settingTranslations${language}.json`);
       const settingTranslations = await settingTranslationsResponse.json();
   
@@ -169,11 +180,14 @@ class Translations {
       this.contextTranslations = contextTranslations;
       this.settingTranslations = settingTranslations;
       this.resolveTranslations(); 
+  
+      this.initializeTranslations(); 
     } catch (error) {
       console.error("Error loading translations:", error);
       this.rejectTranslations(error);
     }
   }
+  
 
   getContextTranslation(key) {
     const translation = this.contextTranslations[key];
@@ -205,7 +219,6 @@ class Translations {
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
     this.loadTranslations(language);
-    this.initializeTranslations();
   }
 }
 
@@ -215,5 +228,5 @@ translations.setLanguage("en");
 
 setTimeout(() => {
   translations.initializeTranslations();
-});
+},0);
 

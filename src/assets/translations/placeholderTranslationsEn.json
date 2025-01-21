@@ -11,5 +11,7 @@
   "sent_request": "Sent request to user {{userNick}}",
   "accept_request": "Accepted friend request from {{userNick}}",
   "remove_friend": "Removed {{userNick}} from friends",
-  "deny_request": "Denied friend request from {{userNick}}"
+  "deny_request": "Denied friend request from {{userNick}}",
+  "avatar-upload-size-error-message": "Avatar size must be smaller than {{avatarLimit}}MB!",
+  "attachment-upload-size-error-message": "Attachment size must be smaller than {{attachmentLimit}}MB!"
 }

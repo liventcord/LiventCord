@@ -1313,7 +1313,7 @@
     }
 
     zoomer.min = fix(minZoom, 4);
-    zoomer.max = fix(maxZoom, 4);
+    zoomer.max = fix(maxZoom, 8);
 
     if (!initial && (scale < zoomer.min || scale > zoomer.max)) {
       _setZoomerVal.call(self, scale < zoomer.min ? zoomer.min : zoomer.max);
