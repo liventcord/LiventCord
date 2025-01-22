@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({mode}) => {
+  const isDev = mode === 'development';
+
+  return {
+
+  
   root: './assets',
-  base: '/',
+  base: isDev ? '/' : '/app',
   build: {
     outDir: '../wwwroot/app',
     assetsDir: 'js',
@@ -60,5 +65,6 @@ export default defineConfig({
         secure: false,
       },
     },
-  },
+  }
+}
 });
