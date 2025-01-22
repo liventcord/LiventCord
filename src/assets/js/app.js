@@ -185,6 +185,10 @@ async function loadInitialData() {
 
     try {
       const initData = JSON.parse(rawResponse);
+      if(initData.message === "User session is no longer valid. Please log in again.") {
+        router.logOutApp();
+        return;
+      }
       initialiseState(initData);
       initializeApp();
     } catch (e) {
@@ -268,7 +272,7 @@ export function initializeGuild() {
   if (isValid) {
     loadGuild(initialGuildId, initialChannelId, null, false, true);
   } else {
-    console.warn('Route is not a guild');
+    console.log('Route is not a guild');
     return;
   }
   if (isDefined(initialFriendId)) {

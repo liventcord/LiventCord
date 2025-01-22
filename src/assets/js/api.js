@@ -51,7 +51,8 @@ const EventHttpMethodMap = {
   [EventType.CREATE_GUILD]: HttpMethod.POST,
   [EventType.DELETE_GUILD]: HttpMethod.DELETE,
   [EventType.DELETE_GUILD_IMAGE]: HttpMethod.DELETE,
-  [EventType.SEND_MESSAGE]: HttpMethod.POST,
+  [EventType.SEND_MESSAGE_GUILD]: HttpMethod.POST,
+  [EventType.SEND_MESSAGE_DM]: HttpMethod.POST,
   [EventType.GET_MEMBERS]: HttpMethod.GET,
   [EventType.GET_MESSAGE_DATE]: HttpMethod.GET,
   [EventType.GET_CHANNELS]: HttpMethod.GET,
@@ -70,16 +71,19 @@ const EventHttpMethodMap = {
   [EventType.ADD_DM]: HttpMethod.POST,
   [EventType.GET_BULK_REPLY]: HttpMethod.GET,
   [EventType.CHANGE_GUILD_NAME]: HttpMethod.PUT,
+  [EventType.DELETE_CHANNEL]: HttpMethod.DELETE,
+  [EventType.LEAVE_VOICE_CHANNEL]:  HttpMethod.PUT,
+  [EventType.JOIN_VOICE_CHANNEL]:  HttpMethod.POST,
 };
 
 const EventUrlMap = {
   [EventType.CREATE_GUILD]: '/guilds',
   [EventType.CREATE_CHANNEL]: '/guilds/{guildId}/channels',
-  [EventType.JOIN_GUILD]: '/guilds/{guildId}/members',
   [EventType.DELETE_GUILD]: '/guilds/{guildId}',
   [EventType.DELETE_GUILD_IMAGE]: '/guilds/{guildId}/image',
   [EventType.GET_GUILDS]: '/guilds',
   [EventType.GET_CHANNELS]: '/guilds/{guildId}/channels/',
+  [EventType.DELETE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}',
   [EventType.GET_MEMBERS]: '/guilds/{guildId}/members',
   [EventType.GET_INVITES]: '/guilds/{guildId}/invites',
   [EventType.GET_HISTORY_DM]: '/guilds/{guildId}/channels/{channelId}/messages',
@@ -90,7 +94,11 @@ const EventUrlMap = {
   [EventType.START_TYPING]: '/guilds/{guildId}/channels/{channelId}/typing/start',
   [EventType.STOP_TYPING]: '/guilds/{guildId}/channels/{channelId}/typing/stop',
   [EventType.CHANGE_GUILD_NAME]: '/guilds/{guildId}',
-  
+
+  [EventType.JOIN_GUILD]: '/guilds/{guildId}/members',
+  [EventType.LEAVE_GUILD]: '/guilds/{guildId}/members',
+
+  [EventType.GET_FRIENDS]: '/friends',
   [EventType.ADD_FRIEND]: '/friends',
   [EventType.ADD_FRIEND_ID]: '/friends',
   [EventType.REMOVE_FRIEND]: '/friends/{friendId}',
@@ -100,8 +108,12 @@ const EventUrlMap = {
   [EventType.SEND_MESSAGE_GUILD]: '/guilds/{guildId}/channels/{channelId}/messages',
   [EventType.SEND_MESSAGE_DM]: '/dm/{targetId}/channels/{channelId}/messages',
   
-  [EventType.CHANGE_NICK]: '/nicks'
+  [EventType.CHANGE_NICK]: '/nicks',
+  [EventType.LEAVE_VOICE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}/voice',
+  [EventType.JOIN_VOICE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}/voice'
 };
+
+
 
 
 class ApiClient {
@@ -112,7 +124,49 @@ class ApiClient {
       EventType.STOP_TYPING,
       EventType.CHANGE_NICK,
     ];
+    this.validateEventMaps();
+    this.checkFullCrud();
   }
+
+  validateEventMaps() {
+    const eventTypes = Object.values(EventType);
+    eventTypes.forEach(eventType => {
+      if (!EventHttpMethodMap.hasOwnProperty(eventType)) {
+        console.warn(`Missing HTTP method mapping for event type: ${eventType}`);
+      }
+      if (!EventUrlMap.hasOwnProperty(eventType)) {
+        console.warn(`Missing URL mapping for event type: ${eventType}`);
+      }
+    });
+  }
+  checkFullCrud () {
+    const missingCrud = {};
+  
+    Object.keys(EventUrlMap).forEach((eventType) => {
+      const url = EventUrlMap[eventType];
+      const method = EventHttpMethodMap[eventType];
+  
+      const resource = url.split('/')[1];
+      if (!missingCrud[resource]) {
+        missingCrud[resource] = { create: false, read: false, update: false, delete: false };
+      }
+  
+      if (method === HttpMethod.POST) missingCrud[resource].create = true;
+      if (method === HttpMethod.GET) missingCrud[resource].read = true;
+      if (method === HttpMethod.PUT) missingCrud[resource].update = true;
+      if (method === HttpMethod.DELETE) missingCrud[resource].delete = true;
+    });
+  
+    Object.entries(missingCrud).forEach(([resource, ops]) => {
+      const missingOps = Object.entries(ops).filter(([op, present]) => !present);
+      if (missingOps.length > 0) {
+        console.warn(`${resource} is missing the following CRUD operations:`);
+        missingOps.forEach(([op]) => console.warn(`  - ${op}`));
+      } else {
+        console.log(`${resource} has full CRUD`);
+      }
+    });
+  };
 
   getHttpMethod(event) {
     const method = EventHttpMethodMap[event];

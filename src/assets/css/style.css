@@ -529,13 +529,7 @@
   pointer-events: none;
   transform: scale(0.65);
 }
-#tb-inbox:hover,
-#tb-pin:hover,
-#tb-showprofile:hover,
-#tb-help :hover,
-#tb-call :hover,
-#tb-video-call :hover,
-#tb-createdm :hover,
+
 #hash-sign :hover,
 #gifbtn:hover,
 #friend-icon-sign:hover,

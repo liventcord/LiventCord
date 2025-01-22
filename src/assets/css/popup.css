@@ -178,8 +178,10 @@
   overflow-y: scroll;
   max-height: calc(100% - 38px);
   padding: 50px;
+  margin-top: 30px; 
   margin-bottom: 38px;
 }
+
 .pop-up-subject {
   font-size: 24px;
   z-index: 3;
@@ -192,6 +194,8 @@
   overflow: hidden;
   position: fixed;
   text-align: center;
+  width: 90%;
+  margin-top: 20px;
 }
 .pop-up-accept.inactive {
   background-color: #3b428a;
