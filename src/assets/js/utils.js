@@ -73,7 +73,7 @@ export function sendNotify(data) {
 }
 
 export function areJsonsEqual(existingData, newData) {
-  if (existingData == null || newData == null) {
+  if (existingData === null || newData === null) {
     return false;
   }
 
@@ -252,7 +252,8 @@ export function getAverageRGB(imgEl) {
   let data;
   try {
     data = context.getImageData(0, 0, width, height);
-  } catch (error) {
+  } catch (e) {
+    console.error(e);
     return defaultRGB;
   }
 
@@ -314,7 +315,6 @@ export function formatDate(date) {
   const hours = pad(date.getUTCHours(), 2);
   const minutes = pad(date.getUTCMinutes(), 2);
   const seconds = pad(date.getUTCSeconds(), 2);
-  const milliseconds = pad(date.getUTCMilliseconds(), 3);
   const microseconds = pad(date.getUTCMilliseconds() * 1000, 6);
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}+00:00`;
@@ -339,7 +339,7 @@ export function createNowDate() {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${microseconds}+00:00`;
 }
 
-export function createRandomId(length = 19) {
+export function createRandomId(length = 18) {
   const digits = '0123456789';
   let result = '';
   const digitsLength = digits.length;

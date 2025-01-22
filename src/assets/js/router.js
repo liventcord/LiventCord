@@ -1,9 +1,8 @@
 import { setActiveIcon, setInactiveIcon } from './ui';
 import { cacheInterface } from './cache';
-import { loadDmHome } from './app';
+import { loadDmHome,openDm } from './app';
 import { isPathnameCorrect } from './utils';
 import { loadGuild, selectGuildList } from './guild';
-
 export let isOnMe = true;
 export let isOnDm = false;
 export let isOnGuild = false;
@@ -22,29 +21,46 @@ class Router {
     window.addEventListener('popstate', this.handlePopState);
   }
 
-  handleVisibilityChange = () => {
+  handleVisibilityChange() {
     document.hidden ? setInactiveIcon() : setActiveIcon();
-  };
+  }
 
-  handlePopState = () => {
+  handlePopState() {
     try {
       const { pathStr, parts } = this.parsePath();
-
+  
       if (pathStr === '/channels/@me') {
         loadDmHome(false);
       } else if (pathStr.startsWith('/channels/@me/')) {
-        OpenDm(parts[3]);
+        openDm(parts[3]);
       } else if (pathStr.startsWith('/channels/') && parts.length === 4) {
         loadGuild(parts[2], parts[3], null, false);
       }
     } catch (error) {
       console.error(error);
     }
-  };
-
+  }
+  
   async changeToLogin() {
-    await fetch('http://localhost:5005/auth/logout', { method: 'POST' });
+    await fetch('/auth/logout', { method: 'POST' });
     window.location.href = '/login';
+  }
+  async logOutApp() {
+    fetch('/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+      .then((response) => {
+        if (response.ok) {
+          document.body.innerHTML = '';
+          window.location.href = '/';
+        } else {
+          console.error('Logout failed:', response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error('Error during logout:', error);
+      });
   }
 
   changePageToMe() { window.location.href = '/channels/@me'; }

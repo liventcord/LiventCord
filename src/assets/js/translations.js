@@ -1,5 +1,5 @@
 import { truncateString } from "./utils";
-
+import { alertUser } from "./ui";
 
 
 class Translations {
@@ -124,7 +124,7 @@ class Translations {
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
           element.placeholder = textToUse;
         } else {
-          if (element.className == "iconWrapper") {
+          if (element.className === "iconWrapper") {
             element.ariaLabel = textToUse;
           } else {
             element.textContent = textToUse;

@@ -1,4 +1,4 @@
-import { deleteLocalMessage, getLastSecondMessageDate } from './message';
+import { deleteLocalMessage, getLastSecondMessageDate,getOldMessages } from './message';
 import {
   currentLastDate,
   lastMessageDate,
@@ -8,7 +8,7 @@ import {
   displayChatMessage,
   fetchReplies,
   messageDates,
-  handleHistoryResponse,
+  handleHistoryResponse,bottomestChatDateStr,setBottomestChatDateStr
 } from './chat';
 import {
   guildCache,
@@ -22,14 +22,16 @@ import {
   removeChannel,
   editChannel,
   currentChannelName,
+  channelsUl,
+  setCurrentVoiceChannelGuild,setCurrentVoiceChannelId, currentVoiceChannelId
 } from './channels';
-import { getId } from './utils';
+import { enableElement, getId } from './utils';
 import { updateMemberList } from './userList';
-import { loadGuild, removeFromGuildList, updateGuild } from './guild';
+import { loadGuild, removeFromGuildList, updateGuild,currentGuildId } from './guild';
 import { closeSettings } from './settingsui';
 import { loadDmHome } from './app';
 import { alertUser, setActiveIcon } from './ui';
-import { updateUserOnlineStatus } from './user';
+import { updateUserOnlineStatus,currentUserId,setUserNick } from './user';
 import {
   friendCache,
   updateFriendsList,
@@ -48,18 +50,20 @@ import { isOnGuild } from './router.js';
 import { apiClient, EventType } from './api.js';
 import { permissionManager } from './guildPermissions.js';
 import { translations } from './translations.js';
+import { closeCurrentJoinPop } from './popups.js';
+
 
 apiClient.on(EventType.REMOVE_MESSAGE, (data) => {
   deleteLocalMessage(data.messageId, data.guildId, data.channelId, data.isDm);
   guildCache.removeMessage(data.messageId, data.channelId, data.guildId);
   const msgdate = messages_raw_cache[data.messageId].date;
-  if (lastMessageDate == new Date(msgdate).setHours(0, 0, 0, 0)) {
+  if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
     setLastMessageDate(
       new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0),
     );
   }
-  if (bottomestChatDateStr == msgdate) {
-    bottomestChatDateStr = getLastSecondMessageDate();
+  if (bottomestChatDateStr === msgdate) {
+      setBottomestChatDateStr(getLastSecondMessageDate());
   }
   delete messages_raw_cache[data.messageId];
 });
@@ -104,15 +108,15 @@ apiClient.on('deleted_guild', (data) => {
 });
 apiClient.on('get_invites', (data) => {
   if (data && data.invite_ids) {
-    guildCache.addInvites(guildId, data.invite_ids);
+    guildCache.addInvites(data.guildId, data.invite_ids);
   } else {
     console.warn('Invite ids do not exist. ', data);
   }
 });
 
 apiClient.on('update_guild_name', (data) => {
-  if (data.guildId == currentGuildId) {
-    getId('guild-name').innerText = currentGuildName;
+  if (data.guildId === currentGuildId) {
+    getId('guild-name').innerText = guildCache.currentGuildName;
   }
 });
 apiClient.on('update_guild_image', (data) => {
@@ -123,8 +127,8 @@ apiClient.on('old_messages_response', function (data) {
 });
 
 apiClient.on('create_channel_response', (data) => {
-  if (data.success == undefined || data.success == true) return;
-  alertUser(`${currentGuildName} sunucusunda kanal yönetme iznin yok!`);
+  if (data.success === undefined || data.success === true) return;
+  alertUser(`${guildCache.currentGuildName} sunucusunda kanal yönetme iznin yok!`);
 });
 
 apiClient.on('bulk_reply_response', (data) => {
@@ -160,7 +164,7 @@ apiClient.on('channel_update', (data) => {
   const editType = 'edit';
   const createType = 'create';
 
-  if (updateType == createType) {
+  if (updateType === createType) {
     const channel = {
       guildId: data.guildId,
       channelId: data.channelId,
@@ -214,7 +218,7 @@ apiClient.on('message', (data) => {
       ? friendCache.currentDmId
       : guildCache.currentChannelId;
 
-    if (data.guildId != currentGuildId || idToCompare != channelId) {
+    if (data.guildId !== currentGuildId || idToCompare !== channelId) {
       console.log(`${idToCompare} is not ${channelId} so returning`);
       if (userId !== currentUserId) {
         playNotification();
@@ -236,7 +240,7 @@ apiClient.on('message_date_response', (data) => {
   messageDates[data.messageId] = message_date;
   console.log(currentLastDate, message_date);
   if (currentLastDate && currentLastDate > message_date) {
-    GetOldMessages(message_date, data.messageId);
+    getOldMessages(message_date, data.messageId);
   } else {
     console.log('Is less than!', currentLastDate, message_date);
   }
@@ -249,7 +253,7 @@ apiClient.on('get_history', (data) => {
 apiClient.on('update_nick', (data) => {
   const userId = data.userId;
   const newNickname = data.userName;
-  if (userId == currentUserId) {
+  if (userId === currentUserId) {
     const settingsNameText = getId('settings-self-name');
     const setInfoNick = getId('set-info-nick');
     const selfName = getId('self-name');
@@ -297,28 +301,34 @@ apiClient.on(EventType.deny_friend_request, function (message) {
 
 apiClient.on('voice_users_response', function (data) {
   const channelId = data.channelId;
+  const guildId = data.guildId;
+  const voiceUsers = data.usersList;
+  if(!channelId) {
+    console.error("Channel id is null on voice users response");
+    return;
+  }
+  if(!guildId) {
+    console.error("Guild id is null on voice users response");
+    return;
+  }
   playAudio('/sounds/joinvoice.mp3');
   clearVoiceChannel(currentVoiceChannelId);
-  const sp = getId('sound-panel');
-  sp.style.display = 'flex';
-  currentVoiceChannelId = channelId;
+  enableElement('sound-panel');
+
+  setCurrentVoiceChannelId(channelId);
   if (isOnGuild) {
-    currentVoiceChannelGuild = data.guildId;
+    setCurrentVoiceChannelGuild(guildId);
   }
+  cacheInterface.setVoiceChannelMembers(channelId,voiceUsers);
   const soundInfoIcon = getId('sound-info-icon');
-  soundInfoIcon.innerText = `${currentChannelName} / ${currentGuildName}`;
-  if (!usersInVoice[channelId]) {
-    usersInVoice[channelId] = [];
-  }
+  soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
+
   const buttonContainer = channelsUl.querySelector(
     `li[id="${currentVoiceChannelId}"]`,
   );
   const channelSpan = buttonContainer.querySelector('.channelSpan');
   channelSpan.style.marginRight = '30px';
-  if (!usersInVoice[channelId].includes(currentUserId)) {
-    usersInVoice[channelId].push(currentUserId);
-  }
-  usersInVoice[channelId] = data.usersList;
+  
 });
 apiClient.on('incoming_audio', async (data) => {
   if (data && data.byteLength > 0) {
@@ -330,8 +340,8 @@ apiClient.on('incoming_audio', async (data) => {
       } else {
         console.log('Decoded audio data is empty or invalid');
       }
-    } catch (error) {
-      console.log('Error decoding audio data:');
+    } catch (e) {
+      console.log('Error decoding audio data:',e);
     }
   } else {
     console.log('Received silent or invalid audio data');

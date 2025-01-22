@@ -2,13 +2,17 @@ import { openDm, readCurrentMessages } from './app';
 import { drawProfilePop } from './popups';
 import { showReplyMenu,chatInput } from './chatbar';
 import { currentUserId, getUserNick } from './user';
-import { getManageableGuilds } from './guild';
-import { createEl } from './utils';
-import { isOnMe,isOnDm } from './router';
+import { getManageableGuilds,currentGuildId } from './guild';
+import { createEl,constructAbsoluteAppPage } from './utils';
+import { isOnMe,isOnDm,isOnGuild } from './router';
 import { friendCache } from './friends';
 import { permissionManager } from './guildPermissions';
 import { translations } from './translations';
 import { alertUser } from './ui';
+import { guildCache } from './cache';
+import { apiClient,EventType } from './api';
+
+
 
 let isDeveloperMode = true;
 export let contextList = {};
@@ -100,9 +104,16 @@ export function muteChannel(channelId) {
 export function showNotifyMenu(channelId) {
   alertUser('Notify menu is not implemented!');
 }
-export function editChannelUi(channelId) {
+export function onChangeChannel(channelId) {
   alertUser('Channel editing is not implemented!');
 }
+function muteUser() {
+
+}
+function deafenUser() {
+
+}
+
 export function togglePin() {
   console.log('Toggle pin!');
 }
@@ -189,7 +200,7 @@ export function createProfileContext(userData) {
       context[ActionType.INVITE_TO_GUILD] = {
         action: () => {},
         subOptions: guildSubOptions.map((subOption) => ({
-          label: getGuildName(subOption),
+          label: guildCache.getGuildName(subOption),
           action: () => inviteUser(userId, subOption),
         })),
       };
@@ -202,7 +213,7 @@ export function createProfileContext(userData) {
     };
   }
 
-  if (userId == currentUserId) {
+  if (userId === currentUserId) {
     context[ActionType.EDIT_GUILD_PROFILE] = {
       action: () => editGuildProfile(),
     };
@@ -299,7 +310,7 @@ export function createChannelsContext(channelId) {
 
   if (permissionManager.canManageChannels()) {
     context[ChannelsActionType.EDIT_CHANNEL] = {
-      action: () => editChannel(channelId),
+      action: () => onChangeChannel(channelId),
     };
     context[ChannelsActionType.DELETE_CHANNEL] = {
       action: () => deleteChannel(channelId, currentGuildId),

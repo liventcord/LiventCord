@@ -7,13 +7,12 @@ import { isUsersOpenGlobal } from './userList';
 let initialMouseX;
 let initialMouseY;
 let isResizing = false;
-let initialX, initialY, initialWidth, initialHeight;
-let initialLeft, initialTop;
+let initialWidth, initialHeight;
 let resizingTop, resizingBottom, resizingLeft, resizingRight;
 let isMediaMenuOpen = false;
 let currentMenuType = '';
 let mediaMenu, mediaMenuContainer;
-let direction = '';
+const gifsBackBtn = getId('gifsBackBtn');
 
 const exampleTenorId = 'LIVDSRZULELA';
 
@@ -206,19 +205,21 @@ export function showCategoriesList() {
   console.log('Show categories list');
   const categoryNameText = getId('categoryName');
   categoryNameText.style.display = 'none';
-  getId('gifsBackBtn').style.display = 'none';
+  gifsBackBtn.style.display = 'none';
   getId('mediaMenuSearchbar').style.display = 'flex';
   loadMenuGifContent();
-  categoryName.textContent = '';
+  categoryNameText.textContent = '';
 }
 export function showCategoryView(categoryName) {
   const categoryNameText = getId('categoryName');
   categoryNameText.style.display = 'block';
   categoryNameText.textContent = categoryName;
-  getId('gifsBackBtn').style.display = 'block';
+  gifsBackBtn.style.display = 'block';
   getId('mediaMenuSearchbar').style.display = 'none';
 }
-
+function fetchTrendingGifs() {
+  throw new Error("Trending gifs not implemented");
+}
 export function createCategoryBox(name, categoryPath, previewImage) {
   const box = createEl('div', { className: 'categoryBox' });
   const gifImg = createEl('img', {
@@ -438,8 +439,8 @@ export function initialiseMedia() {
   mediaMenu.style.height = 1200 + 'px';
 
   mediaMenu.addEventListener('mousedown', (e) => {
-    initialX = e.clientX;
-    initialY = e.clientY;
+    initialMouseX = e.clientX;
+    initialMouseY = e.clientY;
     initialWidth = mediaMenu.offsetWidth;
     initialHeight = mediaMenu.offsetHeight;
 

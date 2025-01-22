@@ -1,20 +1,21 @@
-import { removeElement, disableElement, enableElement } from './utils';
+import { removeElement, disableElement, enableElement, createRandomId } from './utils';
 import { openDm, removeDm } from './app';
-import { getUserNick, addUser, isBlocked } from './user';
-import { submitAddFriend, filterFriends, addPendingButtons } from './friends';
+import { getUserNick, addUser, isBlocked,currentUserNick } from './user';
+import { submitAddFriend, filterFriends, addPendingButtons,online,all,blocked,pending } from './friends';
 import { appendToProfileContextList } from './contextMenuActions';
 import { setProfilePic } from './avatar';
-import { friendCache } from './friends';
+import { friendCache as friendsCache } from './friends';
 import { createEl, getId } from './utils';
 import { translations } from './translations';
+import { userList } from './userList';
+import { contextList,showContextMenu } from './contextMenuActions';
 
 const addfriendhighlightedcolor = '#248046';
-const addfrienddefaultcolor = '#248046';
 const highlightedColor = '#43444b';
 const defaultColor = '#313338';
 const grayColor = '#c2c2c2';
 
-const ButtonTypes = {
+export const ButtonTypes = {
   SendMsgBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>`,
   TickBtn: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z" class=""></path></svg>`,
   CloseBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>`,
@@ -43,7 +44,7 @@ export function activateDmContainer(friendId) {
   }
 
   existingFriendsDmContainers.forEach((dmContainer) => {
-    if (dmContainer.id == friendId) {
+    if (dmContainer.id === friendId) {
       dmContainer.classList.add('dm-selected');
     } else {
       dmContainer.classList.remove('dm-selected');
@@ -75,7 +76,7 @@ class DmUser {
       className: 'dm-container',
       id: this.friendId,
     });
-    if (this.friendId == friendCache.currentDmId) {
+    if (this.friendId === friendsCache.currentDmId) {
       dmContainer.classList.add('dm-selected');
     }
 
@@ -203,12 +204,12 @@ export function addToDmList(userData) {
 
 const sampleData = {
   user1: {
-    userId: 'user1',
+    userId: createRandomId(),
     nickName: 'Alice',
     isOnline: true,
   },
   user2: {
-    userId: 'user2',
+    userId: createRandomId(),
     nickName: 'Bob',
     isOnline: false,
   },
@@ -223,7 +224,7 @@ export function setupSampleUsers() {
 export function getCurrentDmFriends() {
   return {
     currentUserId: { nick: currentUserNick },
-    currentDmId: { nick: getUserNick(friendCache.currentDmId) },
+    currentDmId: { nick: getUserNick(friendsCache.currentDmId) },
   };
 }
 
@@ -258,7 +259,7 @@ export function selectFriendMenuStatus(status) {
 }
 
 export function selectFriendMenu(clickedButton) {
-  getId('open-friends-button').style.backgroundColor = '#248046';
+  getId('open-friends-button').style.backgroundColor = addfriendhighlightedcolor;
   getId('open-friends-button').style.color = 'white';
   displayWumpus();
   isAddFriendsOpen = false;
@@ -266,8 +267,8 @@ export function selectFriendMenu(clickedButton) {
   console.log('Selected: ', currentSelectedStatus);
 
   populateFriendsContainer(
-    friendCache.friendsCache,
-    clickedButton == buttonElements.pending,
+    friendsCache.friendsCache,
+    clickedButton === buttonElements.pending,
   );
 
   if (!ButtonsList) {
@@ -526,14 +527,14 @@ export function populateFriendsContainer(friends, isPending) {
 
   const friendsContainer = getId('friends-container');
   try {
-    if (currentSelectedStatus == online) {
+    if (currentSelectedStatus === online) {
       friends = friends.filter(
         (friend) => friend.publicUser.status === 'online',
       );
-    } else if (currentSelectedStatus == all) {
-    } else if (currentSelectedStatus == blocked) {
+    } else if (currentSelectedStatus === all) {
+    } else if (currentSelectedStatus === blocked) {
       friends = friends.filter((friend) => isBlocked(friend.publicUser.userId));
-    } else if (currentSelectedStatus == pending) {
+    } else if (currentSelectedStatus === pending) {
     } else {
       console.warn('Unhandled status:' + currentSelectedStatus);
       return;
@@ -673,7 +674,7 @@ export function addFriendButtons(friendButton, friend) {
     ButtonTypes.SendMsgBtn,
     translations.getTranslation('send-message'),
   );
-  sendMsgBtn.addEventListener('click', () => OpenDm(friend.userId));
+  sendMsgBtn.addEventListener('click', () => openDm(friend.userId));
 
   const optionsButton = createButtonWithBubblesImg(
     friendButton,

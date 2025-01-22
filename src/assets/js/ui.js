@@ -11,7 +11,6 @@ import {
   createEl,
   getId,
   disableElement,
-  getAverageRGB,
   enableElement,
 } from './utils';
 import { translations } from './translations';
@@ -20,8 +19,8 @@ import { isOnMe } from './router';
 import { toggleDropdown,createInviteUsersPop } from './popups';
 import { initialState } from './app';
 import { permissionManager } from './guildPermissions';
-
-
+import { router } from './router';
+import { observe } from './chat';
 
 
 
@@ -57,7 +56,7 @@ export function isLoadingScreen() {
   if (!loadingScreen) {
     return false;
   }
-  return loadingScreen.style.display == 'flex';
+  return loadingScreen.style.display === 'flex';
 }
 
 let isEmailToggled = false;
@@ -286,8 +285,8 @@ export function logOutPrompt() {
     logOut,
     translations.getTranslation('log-out-prompt'),
     logOut,
-    logOutApp,
-    (isRed = true),
+    router.logOutApp,
+    true
   );
 }
 
@@ -326,7 +325,7 @@ export function displayJsonPreview(sourceJson) {
   jsonPreviewElement.dataset.content_observe = sourceJson;
   jsonPreviewElement.style.userSelect = 'text';
   jsonPreviewElement.style.whiteSpace = 'pre-wrap';
-  observer.observe(jsonPreviewElement);
+  observe(jsonPreviewElement);
 }
 
 export function hideImagePreviewRequest(event) {
@@ -353,31 +352,28 @@ export function hideJsonPreview(event) {
 }
 
 export function openGuildSettingsDd(event) {
+  const handlers = {
+    'invite-dropdown-button': createInviteUsersPop,
+    'settings-dropdown-button': () => {
+      reconstructSettings(true);
+      openSettings(true);
+      selectSettingCategory(Overview);
+    },
+    'channel-dropdown-button': createChannelsPop,
+    'exit-dropdown-button': () => {
+      askUser(
+        translations.getTranslation('exit-dropdown-button'),
+        translations.getTranslation('leave-guild-detail'),
+        translations.getTranslation('leave-from-guild'),
+        leaveCurrentGuild
+      );
+    }
+  };
+
   const clicked_id = event.target.id;
   toggleDropdown();
 
-  if (clicked_id === 'invite-dropdown-button') {
-    createInviteUsersPop();
-  } else if (clicked_id === 'settings-dropdown-button') {
-    reconstructSettings(true);
-    openSettings(true);
-    selectSettingCategory(Overview);
-  } else if (clicked_id === 'channel-dropdown-button') {
-    createChannelsPop();
-  } else if (clicked_id === 'notifications-dropdown-button') {
-  } else if (clicked_id === 'exit-dropdown-button') {
-    askUser(
-      translations.getTranslation('exit-dropdown-button'),
-      translations.getTranslation('leave-guild-detail'),
-      transition.getTranslation('leave-from-guild'),
-      leaveCurrentGuild,
-    );
-  }
-}
-export function updateSettingsProfileColor() {
-  const settingsProfileImg = getId('settings-self-profile');
-  const rightBarTop = getId('settings-rightbartop');
-  if (rightBarTop) {
-    rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
+  if (handlers[clicked_id]) {
+    handlers[clicked_id]();
   }
 }

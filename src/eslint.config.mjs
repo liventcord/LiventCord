@@ -1,4 +1,5 @@
 import importPlugin from 'eslint-plugin-import';
+import globals from 'globals';
 
 export default [
   {
@@ -6,10 +7,8 @@ export default [
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        navigator: 'readonly',
+        ...globals.browser,
+        ...globals.es2021,
       },
     },
     plugins: {

@@ -23,7 +23,7 @@ import {
   createEl,
   enableElement,
   createRandomId,
-  createNowDate,
+  createNowDate
 } from './utils';
 import { displayImagePreview } from './ui';
 import { isOnDm } from './router';
@@ -31,17 +31,21 @@ import { setProfilePic } from './avatar';
 import { cacheInterface, guildCache } from './cache';
 import { currentGuildId } from './guild';
 import { translations } from './translations';
-import { getUserNick } from './user';
+import { currentUserId, getUserNick ,getUserIdFromNick} from './user';
 
-let fileInput;
-let currentReplyingTo = '';
+
+
+export let fileInput;
+export let currentReplyingTo = '';
 export let chatInput = getId('user-input');
 
-let fileImagePreview;
+export let fileImagePreview;
 export let chatContainer = getId('chat-container');
 export let chatContent = getId('chat-content');
 let replyInfo;
 import { userMentionDropdown } from './search';
+
+
 export function initialiseChatInput() {
   chatInput.addEventListener('input', adjustHeight);
   chatInput.addEventListener('keydown', handleUserKeydown);
@@ -102,7 +106,7 @@ export function adjustHeight() {
   }
   chatContainer.style.height = `calc(87vh - ${chatInputHeight - 60}px)`;
 
-  if (chatInputHeight == 60) {
+  if (chatInputHeight === 60) {
     chatInput.style.paddingTop = '-5px';
     chatInput.style.height = '45px';
   }
@@ -364,7 +368,7 @@ export function displayStartMessage() {
     }
     const message = createEl('div', { className: 'startmessage' });
     const titleToWrite = isGuildBorn
-      ? currentGuildName
+      ? guildCache.currentGuildName
       : translations.getWelcomeChannel(currentChannelName);
     const msgtitle = createEl('h1', {
       id: isGuildBorn ? 'guildBornTitle' : 'msgTitle',

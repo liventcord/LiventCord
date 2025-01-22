@@ -1,3 +1,4 @@
+/* global Croppie */
 import { guildCache } from './cache';
 import { currentGuildId, createGuild, joinToGuild } from './guild';
 import { getId, getAverageRGB, createEl } from './utils';
@@ -12,13 +13,18 @@ import { showContextMenu, contextList } from './contextMenuActions';
 import {
   textChanHtml,
   fillDropDownContent,
-  updateSettingsProfileColor,
 } from './ui';
 import { setProfilePic } from './avatar';
 import { appendToProfileContextList } from './contextMenuActions';
 import { translations } from './translations';
+import { updateSettingsProfileColor } from './settingsui';
+
+
 
 let isDropdownOpen = false;
+export let closeCurrentJoinPop;
+
+
 
 //Pop ui
 export function createChannelsPop() {
@@ -284,10 +290,10 @@ export function drawProfilePop(userData) {
     className: 'profile-options-container',
   });
 
-  if (userId != currentUserId) {
+  if (userId !== currentUserId) {
     if (!friendCache.isFriend(userId)) {
       const addFriendBtn = createEl('button', {
-        className: 'profile-add-friend-button',
+        id: 'profile-add-friend-button',
       });
       addFriendBtn.innerHTML = ` <div class="icon-container">${createAddFriSVG()}</div> ${translations.getTranslation(
         'open-friends-button',
@@ -559,9 +565,7 @@ export async function showGuildPop() {
 
   document.body.appendChild(newPopOuterParent);
 }
-export function clickToCreateGuildBackButton() {
-  closePopUp(newPopOuterParent, newPopParent);
-}
+
 export async function clickToJoinGuildBackButton(event, closeCallback) {
   closeCallback(event);
   await showGuildPop();
@@ -703,7 +707,7 @@ export function ChangePopUpToGuildJoining(
   joinButton.style.width = '120px';
 
   joinButton.addEventListener('click', function () {
-    if (newInput.value == '') {
+    if (newInput.value === '') {
       guildNameTitle.textContent = 'guild-join-invite-title';
       guildNameTitle.textAlign = 'left';
       guildNameTitle.style.color = 'red';

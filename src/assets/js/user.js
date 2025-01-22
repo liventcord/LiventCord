@@ -2,6 +2,9 @@ import { getId } from './utils';
 import { updateSelfProfile } from './avatar';
 import { initialState } from './app';
 import { cacheInterface } from './cache';
+import { currentGuildId } from './guild';
+
+
 
 export let currentUserId;
 
@@ -9,9 +12,14 @@ export let currentDiscriminator = null;
 export let currentUserNick;
 export let userNames = {};
 
-const deletedUser = 'Deleted User';
-export let lastTopSenderId = null;
+export const deletedUser = 'Deleted User';
+// eslint-disable-next-line no-unused-vars
+let lastTopSenderId = null;
 
+export function setLastTopSenderId(id) {
+  if(!id) return;
+  lastTopSenderId = id;
+} 
 userNames['1'] = {
   nick: 'Clyde',
   discriminator: '0000',
@@ -59,7 +67,7 @@ export function copySelfName() {
 }
 
 export function getUserNick(userId) {
-  if (userId && currentUserId && currentUserId == userId) {
+  if (userId && currentUserId && currentUserId === userId) {
     return currentUserNick;
   }
   return userId in userNames ? userNames[userId].nick : deletedUser;
@@ -68,23 +76,7 @@ export function getUserDiscriminator(userId) {
   return userId in userNames ? userNames[userId].discriminator : '0000';
 }
 
-export function logOutApp() {
-  fetch('/auth/logout', {
-    method: 'POST',
-    credentials: 'same-origin',
-  })
-    .then((response) => {
-      if (response.ok) {
-        document.body.innerHTML = '';
-        window.location.href = '/';
-      } else {
-        console.error('Logout failed:', response.statusText);
-      }
-    })
-    .catch((error) => {
-      console.error('Error during logout:', error);
-    });
-}
+
 export function getUserIdFromNick(nick) {
   for (const [userId, userInfo] of Object.entries(userNames)) {
     if (userInfo.nick === nick) {

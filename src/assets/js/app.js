@@ -11,7 +11,7 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID,
+  setLastSenderID,scrollToMessage
 } from './chat';
 import {
   chatInput,
@@ -31,7 +31,7 @@ import {
   refreshInviteId,
   currentGuildId
 } from './guild';
-import { disableDmContainers } from './friendui';
+import { disableDmContainers, printFriendMessage } from './friendui';
 import { hideGuildSettingsDropdown, openSearchPop,toggleDropdown } from './popups';
 import {
   copySelfName,
@@ -64,10 +64,10 @@ import { updateDmsList, setupSampleUsers,activateDmContainer } from './friendui'
 import { setProfilePic, updateSelfProfile,setUploadSize } from './avatar';
 import { currentUserId } from './user';
 import { friendCache } from './friends';
-import { addChannelSearchListeners } from './search';
+import { addChannelSearchListeners,userMentionDropdown } from './search';
 import { chatContainer } from './chatbar';
 import { loadBooleanCookie, initializeCookies } from './settings';
-import { setUsersList } from './userList';
+import { setUsersList,updateDmFriendList } from './userList';
 import {
   isOnMe,
   router,
@@ -79,7 +79,6 @@ import {
 } from './router';
 import { initialiseAudio } from './audio';
 import { translations } from './translations';
-
 
 
 export let isDomLoaded = false;
@@ -174,7 +173,7 @@ async function loadInitialData() {
   try {
     const response = await fetch('/api/init');
     if (!response.ok) {
-      if (response.status == 401) {
+      if (response.status === 401) {
         await router.changeToLogin();
         return;
       }
@@ -271,10 +270,7 @@ export function initializeGuild() {
   }
   if (isDefined(initialFriendId)) {
     addUser(
-      initialFriendId,
-      passed_friend_name,
-      passed_friend_discriminator,
-      passed_friend_blocked,
+      initialFriendId
     );
   }
 
@@ -286,7 +282,7 @@ export function initializeGuild() {
     initialState.guilds.length > 0
   ) {
     initialState.guilds.forEach((data) => {
-      if (data.guildId == currentGuildId) {
+      if (data.guildId === currentGuildId) {
         cacheInterface.addChannel(data.guildId, data.guildChannels);
         updateChannels(data.guildChannels);
       }
@@ -323,9 +319,6 @@ export function createReplyBar(
   const replyBar = createEl('div', { className: 'replyBar' });
   newMessage.appendChild(replyBar);
   newMessage.classList.add('replyMessage');
-  const messageContentElement = newMessage.querySelector(
-    '#message-content-element',
-  );
 
   const nick = getUserNick(userId);
   replyBar.style.height = '100px';
@@ -354,7 +347,7 @@ export function createReplyBar(
     if (originalMsg) {
       scrollToMessage(originalMsg);
     } else {
-      fetchReplies(newMessage.dataset.replyToId, null, (goToOld = true));
+      fetchReplies(newMessage.dataset.replyToId, null, true);
     }
   };
   replyBar.appendChild(replyAvatar);
@@ -384,17 +377,27 @@ export function openDm(friendId) {
   setLastSenderID();
   activateDmContainer(friendId);
   const url = constructDmPage(friendId);
-  if (url != window.location.pathname) {
+  if (url !== window.location.pathname) {
     window.history.pushState(null, null, url);
   }
   if (!friendCache.userExistsDm(friendId)) {
-    apiClient.send(EventType.ADD_DM, { friendId: friendId });
+    try {
+      apiClient.send(EventType.ADD_DM, { friendId: friendId });
+    }
+    catch(e) {
+      printFriendMessage(e);
+    }
   }
   loadApp(friendId);
   if (wasOnDm) {
     changeCurrentDm(friendId);
   }
-  getHistoryFromOneChannel(friendId, true);
+  try {
+    getHistoryFromOneChannel(friendId, true); 
+  }
+  catch(e) {
+    printFriendMessage(e);
+  }
 }
 
 let lastDmId;

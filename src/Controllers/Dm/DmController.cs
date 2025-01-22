@@ -36,7 +36,7 @@ namespace LiventCord.Controllers
             return Ok(publicDmUsers);
         }
 
-        [HttpPost("")]
+        [HttpPost("{friendId}")]
         public async Task<IActionResult> AddDmEndpoint(
             [FromRoute] [IdLengthValidation] string friendId
         )

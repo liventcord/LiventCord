@@ -162,6 +162,7 @@ class Guild {
     this.members = new GuildMembersCache();
     this.messages = new MessagesCache();
     this.invites = new InviteIdsCache();
+    this.voiceChannels = new VoiceChannelCache();
     this.ownerId = null;
   }
   setName(guildName) {
@@ -236,9 +237,29 @@ class GuildCacheInterface {
 
   isInvitesEmpty(guildId) {
     return (
-      this.guildCache.getGuild(guildId).invites.getInviteIds(guildId) != null
+      this.guildCache.getGuild(guildId).invites.getInviteIds(guildId) !== null
     );
   }
+  //voice
+  getVoiceChannelMembers(channelId) {
+    if(!channelId) return;
+    this.guildCache.forEach(guild => {
+        if(guild.channelId === channelId && guild.voiceChannels  ) {
+          return guild.voiceChannels.getUsersInVoiceChannel();
+        }
+    })
+  }
+  setVoiceChannelMembers(channelId,usersArray) {
+    if(!channelId) return;
+    this.guildCache.forEach(guild => {
+      if(guild.channelId === channelId && guild.voiceChannels  ) {
+        usersArray.forEach(userId => {
+          guild.voiceChannels.addUserToVoiceChannel(userId);
+        })
+      }
+  })
+  }
+
   //member
   getMembers(guildId) {
     return this.getGuild(guildId)?.members.getMembers(guildId) || [];
@@ -287,6 +308,7 @@ class GuildCacheInterface {
   getMessages(guildId, channelId) {
     return this.getGuild(guildId)?.messages.getMessages(channelId) || [];
   }
+
 }
 export let currentMessagesCache = {}; //<messageId> <messageElements>
 export function setMessagesCache(id, msg) {
@@ -300,7 +322,7 @@ export let replyCache = {}; //<messageId> <replies>
 export let guildChatMessages = {}; //<channelId> <messageObjects>
 export let messages_raw_cache = {}; //<channelId> <messageRawJsons>
 export function hasSharedGuild(friend_id) {
-  return shared_guilds_map.hasOwnProperty(friend_id);
+  //return shared_guilds_map.hasOwnProperty(friend_id);
 }
 export const guildCache = new GuildCache();
 export const cacheInterface = new GuildCacheInterface();

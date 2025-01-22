@@ -9,9 +9,12 @@ import { friendCache } from './friends';
 import { setProfilePic } from './avatar';
 import { appendToProfileContextList } from './contextMenuActions';
 import { translations } from './translations';
-import { currentUserNick, currentUserId, currentDiscriminator } from './user';
+import { currentUserNick, currentUserId, currentDiscriminator,deletedUser } from './user';
 import { isOnMe } from './router';
 import { currentGuildId } from './guild';
+
+
+
 export let userList = getId('user-list');
 export let isUsersOpenGlobal;
 
@@ -32,7 +35,7 @@ export function createUserProfile(userId, nickName, isUserOnline) {
   }
 
   const userNameDiv = createEl('span', {
-    textContent: nickName,
+    textContent: nickName ?? deletedUser,
     className: 'profileName',
   });
   userNameDiv.style.color = 'white';
@@ -178,7 +181,6 @@ export function toggleUsersList() {
   const isUsersOpen = userList.style.display === 'flex';
   setUsersList(!isUsersOpen);
 }
-let isUsersOpen = true;
 
 export function setUserListLine() {
   const userLine = document.querySelector('.horizontal-line');
@@ -215,13 +217,13 @@ export function updateDmFriendList(friendId, friendNick, friendDiscriminator) {
   const usersData = [
     {
       userId: currentUserId,
-      name: currentUserNick,
+      nickName: currentUserNick,
       isOnline: true,
       discriminator: currentDiscriminator,
     },
     {
       userId: friendId,
-      name: friendNick,
+      nickName: friendNick,
       isOnline: friendCache.isOnline(friendId),
       discriminator: friendDiscriminator,
     },

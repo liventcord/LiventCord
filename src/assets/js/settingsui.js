@@ -1,4 +1,4 @@
-import { askUser } from './ui';
+import { askUser,Overview,logOutPrompt, openGuildSettingsDd } from './ui';
 import {
   setupToggle,
   settingTypes,
@@ -9,26 +9,36 @@ import {
   currentPopUp,
   isUnsaved,
   setUnsaved,
+  
 } from './settings';
 import { initialState } from './app';
 import { updateSelfProfile } from './avatar';
 import { apiClient, EventType } from './api';
 import { translations } from './translations';
-
-import { getId, createEl } from './utils';
+import { getId, createEl,getAverageRGB } from './utils';
 import { currentUserNick, currentUserId } from './user';
 import { guildCache } from './cache';
 import { permissionManager } from './guildPermissions';
 import { currentGuildId } from './guild';
-import { Overview } from './ui';
 import { regenerateConfirmationPanel,triggerFileInput } from './settings';
 import { lastConfirmedProfileImg } from './avatar';
 
 export let currentSettingsType;
 export let isGuildSettings = false;
+let resetTimeout;
+
+export function updateSettingsProfileColor() {
+  const settingsProfileImg = getId('settings-self-profile');
+  const rightBarTop = getId('settings-rightbartop');
+  if (rightBarTop) {
+    rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
+  }
+}
 
 
-async function loadSettings() {
+
+let currentSettings;
+function loadSettings() {
   const userSettings = [
     { category: 'MyAccount', label: translations.getSettingsTranslation('MyAccount') },
     { category: 'SoundAndVideo', label: translations.getSettingsTranslation('SoundAndVideo') },
@@ -37,6 +47,7 @@ async function loadSettings() {
     { category: 'Appearance', label: translations.getSettingsTranslation('Appearance') },
     { category: 'Language', label: translations.getSettingsTranslation('Language') },
   ];
+  console.log(translations.settingTranslations);
 
   const guildSettings = [
     { category: 'Overview', label: translations.getSettingsTranslation('GeneralOverview') },
@@ -45,14 +56,24 @@ async function loadSettings() {
 
   return { userSettings, guildSettings };
 }
+function getGuildSettings() {
+  let setToReturn = [...currentSettings.guildSettings];
+  if (permissionManager.canManageGuild()) {
+    setToReturn.push({ category: 'Invites', label: translations.getSettingsTranslation('Invites') });
+    setToReturn.push({ category: 'Roles', label: translations.getSettingsTranslation('Roles') });
+    setToReturn.push({ category: 'DeleteGuild', label: translations.getSettingsTranslation('DeleteGuild') });
+  }
+  return setToReturn;
+}
 
-async function getSettingsHtml() {
-  const settings = await loadSettings();
+function getSettingsHtml() {
+  const settings = loadSettings();
+  currentSettings = settings;
   return generateSettingsHtml(settings.userSettings); 
 }
 
-async function getGuildSettingsHTML() {
-  const settings = await loadSettings(); 
+function getGuildSettingsHTML() {
+  const settings =loadSettings(); 
   return generateSettingsHtml(settings.guildSettings, true); 
 }
 
@@ -196,39 +217,29 @@ function getNotificationsHtml() {
           .join('')}
     `;
 }
-
 function generateSettingsHtml(settings, isGuild = false) {
-  const buttons = settings
-    .map(
-      (setting) => `
-        <button class="settings-buttons" onclick="selectSettingCategory('${
-          setting.category
-        }')">${translations.getSettingsTranslation(setting.category)}</button>
-    `,
-    )
-    .join('\n');
+  const container = document.createElement('div');
 
-  if (isGuild) {
-    return buttons;
+  settings.forEach((setting) => {
+    const button = document.createElement('button');
+    button.className = 'settings-buttons';
+    button.textContent = translations.getSettingsTranslation(setting.category);
+    button.addEventListener('click', () => selectSettingCategory(setting.category));
+    container.appendChild(button);
+  });
+
+  if (!isGuild) {
+    const logOutButton = document.createElement('button');
+    logOutButton.className = 'settings-buttons';
+    logOutButton.addEventListener('click', logOutPrompt);
+    container.appendChild(logOutButton);
   }
 
-  return `
-        ${buttons}
-        <button class="settings-buttons" onclick="logOutPrompt()">${translations.getSettingsTranslation(
-          'LogOut',
-        )}</button>
-    `;
+  return container.innerHTML;
 }
 
-function getGuildSettings() {
-  let setToReturn = [...guildSettings];
-  if (permissionManager.canManageGuild()) {
-    setToReturn.push({ category: 'Invites', label: translations.getSettingsTranslation('Invites') });
-    setToReturn.push({ category: 'Roles', label: translations.getSettingsTranslation('Roles') });
-    setToReturn.push({ category: 'DeleteGuild', label: translations.getSettingsTranslation('DeleteGuild') });
-  }
-  return setToReturn;
-}
+
+
 
 function getSettingsConfig() {
   return {
@@ -362,9 +373,7 @@ function createToggle(id, label, description) {
 }
 
 export function openSettings(isNotLoadingDefault = false) {
-  if (!isNotLoadingDefault) {
-    reconstructSettings(false);
-  }
+  reconstructSettings(false);
   selectSettingCategory(settingTypes.MyAccount);
 
   getId('settings-overlay').style.display = 'flex';
@@ -450,8 +459,8 @@ export function showConfirmationPanel(pop) {
   pop.style.display = 'block';
   pop.style.animation = 'slide-up 0.5s ease-in-out forwards';
 }
-
 export function generateConfirmationPanel() {
+  setIsChangedProfile(true);
   const popupDiv = createEl('div', { id: 'settings-unsaved-popup' });
 
   const textDiv = createEl('div', {
@@ -495,7 +504,7 @@ export function generateConfirmationPanel() {
   const applyButton = createEl('button');
   applyButton.id = 'settings-unsaved-popup-applybutton';
   applyButton.textContent = translations.getSettingsTranslation('saveChanges');
-  applyButton.onclick = applySettings;
+  applyButton.addEventListener("click",applySettings);
   popupDiv.appendChild(applyButton);
   getId('settings-menu').appendChild(popupDiv);
 
@@ -543,7 +552,8 @@ function createDeleteGuildPrompt(guildId, guildName) {
     translations.getTranslation('delete_guild_text_2'),
     actionText,
     onClickHandler,
-    (isRed = true),
+    null,
+    true
   );
 }
 
@@ -552,5 +562,18 @@ function init() {
   if (openSettingsButton) {
     openSettingsButton.addEventListener('click', openSettings);
   }
+  
+  const buttonIds = [
+    "invite-dropdown-button",
+    "settings-dropdown-button",
+    "channel-dropdown-button",
+    "notifications-dropdown-button",
+    "exit-dropdown-button"
+  ];
+
+  buttonIds.forEach(id => {
+    const button = getId(id);
+    button.addEventListener("click", openGuildSettingsDd);
+  });
 }
 init();

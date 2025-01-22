@@ -9,15 +9,15 @@ import {
   guildCache,
 } from './cache';
 import { isURL, getId, createEl } from './utils';
-import { getUserNick, currentUserId } from './user';
+import { getUserNick, currentUserId,setLastTopSenderId } from './user';
 import { createMediaElement } from './mediaElements';
 import { apiClient, EventType } from './api';
-import { isOnGuild } from './router';
+import { isOnGuild,isOnMe } from './router';
 import { appendToProfileContextList } from './contextMenuActions';
 import { setProfilePic } from './avatar';
 import { chatContainer, chatContent } from './chatbar';
 import { currentGuildId } from './guild';
-import { isChangingPage } from './app';
+import { isChangingPage,createReplyBar } from './app';
 import { loadingScreen } from './ui';
 import { Message } from './message';
 import { translations } from './translations';
@@ -29,7 +29,10 @@ import {
 } from './utils';
 import { replyCache } from './cache';
 
-let bottomestChatDateStr;
+export let bottomestChatDateStr;
+export function setBottomestChatDateStr(date) { 
+  bottomestChatDateStr = date;
+}
 export let lastMessageDate = null;
 export let currentLastDate;
 export function clearLastDate() {
@@ -52,7 +55,6 @@ let isReachedChannelEnd = false;
 export function setReachedChannelEnd(val) {
   isReachedChannelEnd = val;
 }
-let isOldMessageCd = false;
 
 export const CLYDE_ID = '1';
 
@@ -78,7 +80,7 @@ export function createChatScrollButton() {
 export function handleReplies() {
   Object.values(replyCache).forEach((message) => {
     const replierElements = Array.from(chatContent.children).filter(
-      (element) => element.dataset.replyToId == message.messageId,
+      (element) => element.dataset.replyToId === message.messageId,
     );
     console.log(replierElements, message.replies);
     replierElements.forEach((replier) => {
@@ -101,10 +103,14 @@ export function handleReplies() {
     });
   });
 }
+export function scrollToMessage(messageElement) {
+  messageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 
 export function scrollToBottom() {
   chatContainer.scrollTop = chatContainer.scrollHeight;
 }
+
 export let hasJustFetchedMessages = false;
 export function setHasJustFetchedMessagesFalse() {
   hasJustFetchedMessages = false;
@@ -121,7 +127,7 @@ export function getOldMessagesOnScroll() {
   }
   const oldestDate = getMessageDate();
   if (!oldestDate) return;
-  if (oldestDate == '1970-01-01 00:00:00.000000+00:00') {
+  if (oldestDate === '1970-01-01 00:00:00.000000+00:00') {
     return;
   }
   getOldMessages(oldestDate);
@@ -179,6 +185,10 @@ const observer = new IntersectionObserver(
   },
   { threshold: 0.1 },
 );
+export function observe(element) {
+  if(!element) return;
+  observer.observe(element);
+}
 function loadObservedContent(targetElement) {
   const jsonData = targetElement.dataset.content_observe;
 
@@ -506,6 +516,7 @@ export function displayChatMessage(data) {
   const isBot = data.isBot;
   const replyOf = data.replyOf;
   const metadata = data.metadata;
+  const willDisplayProfile = data.willDisplayProfile;
   console.log(data);
 
   if (currentMessagesCache[messageId]) {
@@ -515,7 +526,7 @@ export function displayChatMessage(data) {
   if (!channelId || !date) {
     return;
   }
-  if (!attachmentUrls && content == '') {
+  if (!attachmentUrls && content === '') {
     return;
   }
 
@@ -568,7 +579,7 @@ export function displayChatMessage(data) {
         isBot,
       );
     } else {
-      if (lastSenderID != userId || isTimeGap) {
+      if (lastSenderID !== userId || isTimeGap) {
         isCreatedProfile = true;
         createProfileImageChat(
           newMessage,
@@ -618,9 +629,9 @@ export function displayChatMessage(data) {
   if (!addToTop) {
     lastSenderID = userId;
   } else {
-    lastTopSenderId = userId;
+    setLastTopSenderId(userId);
   }
-  if (userId != currentUserId) {
+  if (userId !== currentUserId) {
     createMsgOptionButton(newMessage, true);
   }
   createOptions3Button(newMessage, messageId, userId);
@@ -647,7 +658,7 @@ export function displayChatMessage(data) {
     }
   }
 
-  if (userId == CLYDE_ID) {
+  if (userId === CLYDE_ID) {
     const youCanSeeText = createEl('p', {
       textContent: 'Bunu sadece sen görebilirsin.',
     });
@@ -667,7 +678,7 @@ export function displayChatMessage(data) {
     newMessage.appendChild(parentElement);
   }
 
-  if (replyOf == messageId) {
+  if (replyOf === messageId) {
     setTimeout(() => {
       scrollToMessage(newMessage);
     }, 0);
@@ -689,7 +700,6 @@ export function displayChatMessage(data) {
   }
 }
 
-let replyIdToGo = '';
 export function fetchReplies(messages, repliesList = null, goToOld = false) {
   if (!repliesList) {
     repliesList = new Set();
@@ -699,7 +709,6 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
     const existingDate = messageDates[messageId];
     if (existingDate) {
       if (existingDate > currentLastDate) {
-        replyIdToGo = messageId;
         getOldMessages(existingDate, messageId);
       }
 
@@ -738,7 +747,7 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
 }
 
 export function updateChatWidth() {
-  if (getId('user-list').style.display == 'none') {
+  if (getId('user-list').style.display === 'none') {
     getId('user-input').classList.add('user-list-hidden');
     getId('gifbtn').classList.add('gifbtn-user-list-open');
     getId('emojibtn').classList.add('emojibtn-user-list-open');
@@ -804,8 +813,8 @@ export function fetchMessagesFromServer(channelId, isDm = false) {
   hasJustFetchedMessages = setTimeout(() => {
     hasJustFetchedMessages = null;
   }, 5000);
-
-  apiClient.send(EventType.GET_HISTORY, requestData);
+  const typeToUse = isOnGuild ? EventType.GET_HISTORY_GUILD : EventType.GET_HISTORY_DM;
+  apiClient.send(typeToUse, requestData);
 }
 
 export function createMsgOptionButton(message, isReply) {
@@ -855,12 +864,13 @@ export function createMsgOptionButton(message, isReply) {
 
 export function createNonProfileImage(newMessage, date) {
   const messageDate = new Date(date);
-  const smallDateElement = createEl('p');
-  smallDateElement.className = 'small-date-element';
-  smallDateElement.textContent = getFormattedDateForSmall(messageDate);
+  const smallDateElement = createEl('p',{"className" : "small-date-element",
+    "textContent" : getFormattedDateForSmall(messageDate)
+  });
   newMessage.appendChild(smallDateElement);
   smallDateElement.style.position = 'absolute';
   smallDateElement.style.marginLeft = '5px';
 
   return smallDateElement;
 }
+

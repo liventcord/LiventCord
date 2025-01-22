@@ -12,12 +12,16 @@ import {
   currentPopUp,
   isChangedProfile,setUnsaved,regenerateConfirmationPanel,setIsChangedProfile
 } from './settings';
-import { currentSettingsType, showConfirmationPanel } from './settingsui';
+import { currentSettingsType, showConfirmationPanel,updateSettingsProfileColor } from './settingsui';
 import { userList } from './userList';
-import { updateSettingsProfileColor } from './ui';
 import { createCropPop } from './popups';
-import { getId } from './utils';
+import { getId,blackImage } from './utils';
 import { translations } from './translations';
+import { currentUserId } from './user';
+import { alertUser } from './ui';
+import { guildCache } from './cache';
+import { chatContainer } from './chatbar';
+import { initialState } from './app';
 
 
 export let lastConfirmedProfileImg;
@@ -40,7 +44,7 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
   }
   if (!imgToUpdate) return;
 
-  if (srcId == CLYDE_ID) {
+  if (srcId === CLYDE_ID) {
     imgToUpdate.src = clydeSrc;
     return;
   }
@@ -108,9 +112,10 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
       });
 
       return base64data;
-    } catch (error) {
+    } catch (e) {
       imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
       isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
+      console.error(e);
       return null;
     } finally {
       delete requestInProgress[srcId];
@@ -132,7 +137,7 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
 }
 
 export function refreshUserProfile(userId, userNick = null) {
-  if (userId == currentUserId) {
+  if (userId === currentUserId) {
     updateSelfProfile(userId, null, true, true);
   }
   // from user list
@@ -243,10 +248,12 @@ export function setUploadSize(_maxAvatarSize,_maxAttachmentSize) {
   maxAttachmentSize = initialState.maxAttachmentSize;
 }
 export function uploadImage(isGuild) {
-  if (!isChangedProfile) return;
-
+  if (!isChangedProfile) {
+    console.warn("isChangedProfile is false. not uploading");
+    return;
+  }
   let formData = new FormData();
-  const uploadedGuildId = currentGuildId;
+  const uploadedGuildId = guildCache.currentGuildId;
   const file = isGuild
     ? getId('guild-image').src
     : getId('settings-self-profile').src;

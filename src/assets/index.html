@@ -58,8 +58,8 @@
         <div class="friend-container dm-selected" id="friend-container-item">
             <div id="friend-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" id="friendiconsvg" width="24" height="24" fill="white"  viewBox="0 0 24 24">
-                    <path d="M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
-                    <path d="M3 5v-.75C3 3.56 3.56 3 4.25 3s1.24.56 1.33 1.25C6.12 8.65 9.46 12 13 12h1a8 8 0 0 1 8 8 2 2 0 0 1-2 2 .21.21 0 0 1-.2-.15 7.65 7.65 0 0 0-1.32-2.3c-.15-.2-.42-.06-.39.17l.25 2c.02.15-.1.28-.25.28H9a2 2 0 0 1-2-2v-2.22c0-1.57-.67-3.05-1.53-4.37A15.85 15.85 0 0 1 3 5Z"></path>
+                    <path class="head" d="M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+                    <path class="arm" d="M3 5v-.75C3 3.56 3.56 3 4.25 3s1.24.56 1.33 1.25C6.12 8.65 9.46 12 13 12h1a8 8 0 0 1 8 8 2 2 0 0 1-2 2 .21.21 0 0 1-.2-.15 7.65 7.65 0 0 0-1.32-2.3c-.15-.2-.42-.06-.39.17l.25 2c.02.15-.1.28-.25.28H9a2 2 0 0 1-2-2v-2.22c0-1.57-.67-3.05-1.53-4.37A15.85 15.85 0 0 1 3 5Z"></path>
                 </svg>
             </div>
             <button class="pendingAlert" id="pendingAlertLeft"> </button> 
@@ -131,30 +131,30 @@
         <div id="guild-settings-button">^</div>
         <div id="guild-settings-dropdown"> 
 
-            <button class="dropdown-button" id="invite-dropdown-button" onclick="openGuildSettingsDd(event)" >İnsanları Davet Et
+            <button class="dropdown-button" id="invite-dropdown-button"  >İnsanları Davet Et
                 <svg viewBox="5 0 40 40" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;right:-2px; "  >
                     <path d="M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path> <path d="M3 5v-.75C3 3.56 3.56 3 4.25 3s1.24.56 1.33 1.25C6.12 8.65 9.46 12 13 12h1a8 8 0 0 1 8 8 2 2 0 0 1-2 2 .21.21 0 0 1-.2-.15 7.65 7.65 0 0 0-1.32-2.3c-.15-.2-.42-.06-.39.17l.25 2c.02.15-.1.28-.25.28H9a2 2 0 0 1-2-2v-2.22c0-1.57-.67-3.05-1.53-4.37A15.85 15.85 0 0 1 3 5Z"></path>
                 </svg>
             </button>
-            <button class="dropdown-button" id="settings-dropdown-button" onclick="openGuildSettingsDd(event)">Sunucu Ayarları
+            <button class="dropdown-button" id="settings-dropdown-button">Sunucu Ayarları
                 <svg viewBox="0 0 40 40" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;right:0px; ">
                     <path fill="white" fill-rule="evenodd" d="M10.56 1.1c-.46.05-.7.53-.64.98.18 1.16-.19 2.2-.98 2.53-.8.33-1.79-.15-2.49-1.1-.27-.36-.78-.52-1.14-.24-.77.59-1.45 1.27-2.04 2.04-.28.36-.12.87.24 1.14.96.7 1.43 1.7 1.1 2.49-.33.8-1.37 1.16-2.53.98-.45-.07-.93.18-.99.64a11.1 11.1 0 0 0 0 2.88c.06.46.54.7.99.64 1.16-.18 2.2.19 2.53.98.33.8-.14 1.79-1.1 2.49-.36.27-.52.78-.24 1.14.59.77 1.27 1.45 2.04 2.04.36.28.87.12 1.14-.24.7-.95 1.7-1.43 2.49-1.1.8.33 1.16 1.37.98 2.53-.07.45.18.93.64.99a11.1 11.1 0 0 0 2.88 0c.46-.06.7-.54.64-.99-.18-1.16.19-2.2.98-2.53.8-.33 1.79.14 2.49 1.1.27.36.78.52 1.14.24.77-.59 1.45-1.27 2.04-2.04.28-.36.12-.87-.24-1.14-.96-.7-1.43-1.7-1.1-2.49.33-.8 1.37-1.16 2.53-.98.45.07.93-.18.99-.64a11.1 11.1 0 0 0 0-2.88c-.06-.46-.54-.7-.99-.64-1.16.18-2.2-.19-2.53-.98-.33-.8.14-1.79 1.1-2.49.36-.27.52-.78.24-1.14a11.07 11.07 0 0 0-2.04-2.04c-.36-.28-.87-.12-1.14.24-.7.96-1.7 1.43-2.49 1.1-.8-.33-1.16-1.37-.98-2.53.07-.45-.18-.93-.64-.99a11.1 11.1 0 0 0-2.88 0ZM16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" class=""></path>
                 </svg>
             </button>
-            <button class="dropdown-button" id="channel-dropdown-button" onclick="openGuildSettingsDd(event)">Kanal Oluştur
+            <button class="dropdown-button" id="channel-dropdown-button" >Kanal Oluştur
                 <svg viewBox="0 0 40 40" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;right:0px; ">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23a11 11 0 1 0 0-22 11 11 0 0 0 0 22Zm0-17a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H7a1 1 0 1 1 0-2h4V7a1 1 0 0 1 1-1Z"></path>
                 </svg>
             </button>
             
-            <button class="dropdown-button" id="notifications-dropdown-button" onclick="openGuildSettingsDd(event)">Bildirim Ayarları
+            <button class="dropdown-button" id="notifications-dropdown-button">Bildirim Ayarları
                 <svg viewBox="0 0 40 40" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;right:0px;">
                     <path fill="white" fill-rule="evenodd" d="M9.7 2.89c.18-.07.32-.24.37-.43a2 2 0 0 1 3.86 0c.05.2.19.36.38.43A7 7 0 0 1 19 9.5v2.09c0 .12.05.24.13.33l1.1 1.22a3 3 0 0 1 .77 2.01v.28c0 .67-.34 1.29-.95 1.56-1.31.6-4 1.51-8.05 1.51-4.05 0-6.74-.91-8.05-1.5-.61-.28-.95-.9-.95-1.57v-.28a3 3 0 0 1 .77-2l1.1-1.23a.5.5 0 0 0 .13-.33V9.5a7 7 0 0 1 4.7-6.61ZM9.18 19.84A.16.16 0 0 0 9 20a3 3 0 1 0 6 0c0-.1-.09-.17-.18-.16a24.86 24.86 0 0 1-5.64 0Z" clip-rule="evenodd"></path>
                     <path fill="white" d="M15.3 16.7a1 1 0 0 1 1.4-1.4l4.3 4.29V16a1 1 0 1 1 2 0v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.59l-4.3-4.3Z"></path>
                 </svg>
             </button>
 
-            <button class="dropdown-button" id="exit-dropdown-button" onclick="openGuildSettingsDd(event)">Sunucudan Ayrıl
+            <button class="dropdown-button" id="exit-dropdown-button" >Sunucudan Ayrıl
                 <svg viewBox="0 0 40 40" fill="white" xmlns="http://www.w3.org/2000/svg" style="position:absolute;right:0px;" >
                     <path fill="white" fill-rule="evenodd" d="M2.75 3.02A3 3 0 0 1 5 2h10a3 3 0 0 1 3 3v7.64c0 .44-.55.7-.95.55a3 3 0 0 0-3.17 4.93l.02.03a.5.5 0 0 1-.35.85h-.05a.5.5 0 0 0-.5.5 2.5 2.5 0 0 1-3.68 2.2l-5.8-3.09A3 3 0 0 1 2 16V5a3 3 0 0 1 .76-1.98Zm1.3 1.95A.04.04 0 0 0 4 5v11c0 .36.2.68.49.86l5.77 3.08a.5.5 0 0 0 .74-.44V8.02a.5.5 0 0 0-.32-.46l-6.63-2.6Z" clip-rule="evenodd"></path>
                     <path fill="white" d="M15.3 16.7a1 1 0 0 1 1.4-1.4l4.3 4.29V16a1 1 0 1 1 2 0v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.59l-4.3-4.3Z"></path>
@@ -187,8 +187,8 @@
         
         <div id="friend-icon-sign">
             <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="rgb(128 132 142)" viewBox="0 0 24 24">
-                <path d="M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
-                <path d="M3 5v-.75C3 3.56 3.56 3 4.25 3s1.24.56 1.33 1.25C6.12 8.65 9.46 12 13 12h1a8 8 0 0 1 8 8 2 2 0 0 1-2 2 .21.21 0 0 1-.2-.15 7.65 7.65 0 0 0-1.32-2.3c-.15-.2-.42-.06-.39.17l.25 2c.02.15-.1.28-.25.28H9a2 2 0 0 1-2-2v-2.22c0-1.57-.67-3.05-1.53-4.37A15.85 15.85 0 0 1 3 5Z"></path>
+                <path class="head" d="M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"></path>
+                <path class="arm" d="M3 5v-.75C3 3.56 3.56 3 4.25 3s1.24.56 1.33 1.25C6.12 8.65 9.46 12 13 12h1a8 8 0 0 1 8 8 2 2 0 0 1-2 2 .21.21 0 0 1-.2-.15 7.65 7.65 0 0 0-1.32-2.3c-.15-.2-.42-.06-.39.17l.25 2c.02.15-.1.28-.25.28H9a2 2 0 0 1-2-2v-2.22c0-1.57-.67-3.05-1.53-4.37A15.85 15.85 0 0 1 3 5Z"></path>
             </svg>
             
         </div>
@@ -358,7 +358,7 @@
 
         <i class="fa-solid fa-wifi" id="sound-connection-icon"></i>
 
-        <span id="sound-panel-status" >Ses bağlantısı kuruldu</span>
+        <span id="sound-panel-status" ></span>
     </div>
 
 

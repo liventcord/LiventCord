@@ -10,8 +10,11 @@ import {
   isURL,
   openExternalUrl,
   extractLinks,
+  createEl,
+  getYouTubeEmbedURL
 } from './utils';
 
+import { defaultMediaImageUrl,defaultProfileImageUrl } from './utils';
 const maxWidth = 512;
 const maxHeight = 384;
 
@@ -45,7 +48,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultErrorImageUrl;
+    imgElement.src = defaultProfileImageUrl;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -73,7 +76,7 @@ export function createImageElement(msgContentElement, inputText, url_src) {
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultErrorImageUrl;
+    imgElement.src = defaultProfileImageUrl;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -200,7 +203,7 @@ export function createRegularText(content) {
   const spanElement = createEl('p', { id: 'message-content-element' });
   spanElement.textContent = content;
   spanElement.style.marginLeft = '0px';
-  messageContentElement.appendChild(spanElement);
+  return spanElement
 }
 export function processMediaLink(
   link,
@@ -306,7 +309,9 @@ export function processMediaLink(
       });
       displayWebPreview(messageContentElement, link, metadata);
     } else {
-      createRegularText(content);
+      const spanElement = createRegularText(content);
+      messageContentElement.appendChild(spanElement);
+
       resolve(true);
     }
 

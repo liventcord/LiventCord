@@ -11,6 +11,8 @@ import {
   displayStartMessage,
   chatInput,
   chatContent,
+  fileImagePreview,
+  fileInput,currentReplyingTo
 } from './chatbar';
 import { apiClient, EventType } from './api';
 import { alertUser } from './ui';
@@ -28,8 +30,6 @@ import { currentGuildId } from './guild';
 import { isOnGuild } from './router';
 import { formatDate } from './utils';
 import { getMessageFromChat } from './chat';
-
-let isUnread = false;
 
 export class Message {
   constructor({
@@ -80,9 +80,10 @@ export class Message {
 }
 
 export async function sendMessage(content, user_ids) {
-  if (content == '') {
+  if (content === '') {
     return;
   }
+
   if (
     isOnDm &&
     friendCache.currentDmId &&
@@ -92,13 +93,12 @@ export async function sendMessage(content, user_ids) {
     displayCannotSendMessage(content);
     return;
   }
+
   let channelIdToSend = isOnDm
     ? friendCache.currentDmId
     : guildCache.currentChannelId;
 
-  setTimeout(() => {
-    scrollToBottom();
-  }, 10);
+  setTimeout(scrollToBottom, 10);
 
   if (fileInput.files.length < 1) {
     const message = {
@@ -123,19 +123,31 @@ export async function sendMessage(content, user_ids) {
     formData.append('file', file);
     formData.append('guildId', currentGuildId);
     formData.append('channelId', channelIdToSend);
+
     const uploadResponse = await fetch('/upload', {
       method: 'POST',
       body: formData,
     });
+
     if (uploadResponse.ok) {
       const uploadData = await uploadResponse.json();
-      data.fileName = uploadData.fileName;
-      data.type = uploadData.type;
-      data.attachmentUrls = uploadData.attachmentUrls;
-      data.attachmentId = uploadData.attachmentId;
-      console.log('File uploaded successfully:', data.fileName);
+      const messageData = {
+        guildId: currentGuildId,
+        channelId: channelIdToSend,
+        content: content,
+        attachmentUrls: uploadData.attachmentUrls,
+        attachmentId: uploadData.attachmentId,
+        fileName: uploadData.fileName,
+        type: uploadData.type,
+        replyToId: currentReplyingTo,
+        reactionEmojisIds: null,
+        lastEdited: null,
+      };
+
+      console.log('File uploaded successfully:', uploadData.fileName);
+
       if (isOnGuild) {
-        apiClient.send(EventType.SEND_MESSAGE, data);
+        apiClient.send(EventType.SEND_MESSAGE, messageData);
       } else {
         alertUser('Implement Direct messages ');
       }
@@ -150,6 +162,7 @@ export async function sendMessage(content, user_ids) {
     console.error('Error Sending File Message:', error);
   }
 }
+
 export function replaceCustomEmojis(message) {
   let currentCustomEmojis = {};
   if (message) {
@@ -242,8 +255,8 @@ export function getMessageDate(top = true) {
 
 export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
   if (
-    (isOnGuild && channelId != guildCache.currentChannelId) ||
-    (isOnDm && isDm && channelId != friendCache.currentDmId)
+    (isOnGuild && channelId !== guildCache.currentChannelId) ||
+    (isOnDm && isDm && channelId !== friendCache.currentDmId)
   ) {
     console.error(
       'Can not delete message: ',
@@ -264,7 +277,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
     }
     const userId = element.dataset.userId;
 
-    if (String(element.id) == String(messageId)) {
+    if (String(element.id) === String(messageId)) {
       console.log('Removing element:', messageId);
       element.remove();
       const foundMsg = getMessageFromChat(false);
@@ -274,7 +287,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
     } // Check if the element matches the currentSenderOfMsg and it doesn"t have a profile picture already
     else if (
       !element.querySelector('.profile-pic') &&
-      getBeforeElement(element).dataset.userId != element.dataset.userId
+      getBeforeElement(element).dataset.userId !== element.dataset.userId
     ) {
       console.log('Creating profile img...');
       const messageContentElement = element.querySelector(

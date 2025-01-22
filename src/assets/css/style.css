@@ -1154,7 +1154,7 @@ textarea::-webkit-scrollbar-track {
   margin-top: -25px;
   border-radius: 5px;
 }
-.profile-add-friend-button {
+#profile-add-friend-button {
   cursor: pointer;
   border: none;
   background-color: rgb(88, 101, 242);

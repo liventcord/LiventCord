@@ -16,6 +16,7 @@ import {
   inviteHtml,
   muteHtml,
   inviteVoiceHtml,
+  voiceChanHtml
 } from './ui';
 import {
   appendToChannelContextList,
@@ -24,11 +25,14 @@ import {
 import { setProfilePic } from './avatar';
 import { guildCache, cacheInterface } from './cache';
 import { currentGuildId } from './guild';
-import { isOnMe } from './router';
+import { isOnMe,isOnDm } from './router';
 import { textChanHtml } from './ui';
 import { permissionManager } from './guildPermissions';
-import { isOnDm } from './router';
 import { getUserNick } from './user';
+import { loadGuild } from './guild';
+
+
+
 
 export let channelTitle = getId('channel-info');
 export let channelList = getId('channel-list');
@@ -37,6 +41,15 @@ export let currentChannelName = null;
 
 export let currentVoiceChannelId;
 export let currentChannels;
+
+export let currentVoiceChannelGuild;
+export function setCurrentVoiceChannelId(val) {
+  currentVoiceChannelId = val;
+}
+export function setCurrentVoiceChannelGuild(val) {
+  currentVoiceChannelGuild = val;
+}
+
 
 export function getChannels() {
   console.log('Getting channels...');
@@ -62,7 +75,7 @@ export async function changeChannel(newChannel) {
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
   const url = constructAppPage(currentGuildId, channelId);
-  if (url != window.location.pathname && isTextChannel) {
+  if (url !== window.location.pathname && isTextChannel) {
     window.history.pushState(null, null, url);
   }
   const newChannelName = newChannel.channelName;
@@ -91,7 +104,7 @@ export async function changeChannel(newChannel) {
       `li[id="${channel.channelId}"]`,
     );
     if (channelButton) {
-      if (channel.channelId != channelId) {
+      if (channel.channelId !== channelId) {
         mouseHoverChannelButton(
           channelButton,
           channel.isTextChannel,
@@ -103,8 +116,8 @@ export async function changeChannel(newChannel) {
           channel.channelId,
         );
       } else if (!isTextChannel) {
-        const usersInChannel = usersInVoice[channelId];
-        if (usersInChannel) {
+        const voiceUsersInChannel = cacheInterface.getVoiceChannelMembers(channelId);
+        if (voiceUsersInChannel) {
           let allUsersContainer = channelButton.querySelector(
             '.channel-users-container',
           );
@@ -114,7 +127,7 @@ export async function changeChannel(newChannel) {
             });
           }
           channelButton.style.width = '100%';
-          usersInChannel.forEach((userId, index) => {
+          voiceUsersInChannel.forEach((userId, index) => {
             drawVoiceChannelUser(
               index,
               userId,
@@ -165,7 +178,7 @@ export function mouseHoverChannelButton(
   channelButton.style.color = 'white';
 }
 export function hashChildElements(channelButton) {
-  return channelButton.querySelector('.channel-users-container') != null;
+  return channelButton.querySelector('.channel-users-container') !== null;
 }
 export function mouseLeaveChannelButton(
   channelButton,
@@ -185,12 +198,12 @@ export function mouseLeaveChannelButton(
   }
   if (contentWrapper) {
     if (!isTextChannel) {
-      if (currentVoiceChannelId == channelId) {
+      if (currentVoiceChannelId === channelId) {
         contentWrapper.style.display = 'flex';
       } else {
         contentWrapper.style.display = 'none';
       }
-    } else if (guildCache.currentChannelId != channelId) {
+    } else if (guildCache.currentChannelId !== channelId) {
       contentWrapper.style.display = 'none';
     }
   }
@@ -310,13 +323,13 @@ export function addEventListeners(
   channel,
 ) {
   channelButton.addEventListener('mouseover', function (event) {
-    if (event.target.id == channelId) {
+    if (event.target.id === channelId) {
       mouseHoverChannelButton(channelButton, isTextChannel, channelId);
     }
   });
 
   channelButton.addEventListener('mouseleave', function (event) {
-    if (event.target.id == channelId) {
+    if (event.target.id === channelId) {
       mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
     }
   });
@@ -328,7 +341,7 @@ export function addEventListeners(
 }
 
 export function handleChannelChangeOnLoad(channel, channelId) {
-  if (channelId == guildCache.currentChannelId) {
+  if (channelId === guildCache.currentChannelId) {
     changeChannel(channel);
   }
 }
@@ -462,7 +475,7 @@ export function removeChannel(data) {
   const channelsArray = cacheInterface.getChannels(guildId);
   currentChannels = channelsArray;
   removeChannelElement(channelId);
-  if (guildCache.currentChannelId == channelId) {
+  if (guildCache.currentChannelId === channelId) {
     const firstChannel = channelsArray[0].channelId;
     loadGuild(currentGuildId, firstChannel);
   }
@@ -509,7 +522,7 @@ export function drawVoiceChannelUser(
   });
   setProfilePic(userElement, userId);
   userContainer.appendChild(userElement);
-  userContainer.style.marginTop = index == 0 ? '30px' : '10px';
+  userContainer.style.marginTop = index === 0 ? '30px' : '10px';
   userContainer.style.marginLeft = '-220px';
   userContainer.style.width = '90%';
   userContainer.style.justifyContent = 'center';

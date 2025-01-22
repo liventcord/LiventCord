@@ -20,6 +20,10 @@ import { validateAvatar } from './avatar';
 import { guildCache, cacheInterface } from './cache';
 import { permissionManager } from './guildPermissions';
 import { apiClient, EventType } from './api';
+import { currentVoiceChannelId } from './channels';
+import { resetImageInput } from './avatar';
+
+
 
 
 export let currentGuildId;
@@ -28,14 +32,9 @@ export let currentGuildId;
 
 
 
-
-
-
-
-
 export function getManageableGuilds() {
   try {
-    permissionsMap = permissionManager.permissionsMap;
+    const permissionsMap = permissionManager.permissionsMap;
     if (!permissionsMap) {
       return [];
     }
@@ -48,7 +47,9 @@ export function getManageableGuilds() {
       }
     }
     return isFoundAny ? guildsWeAreAdminOn : null;
-  } catch (error) {}
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 
@@ -111,7 +112,7 @@ export function loadGuild(
 
   if (isChangingUrl) {
     const state = constructAppPage(guildId, channelId);
-    if (window.location.pathname != state) {
+    if (window.location.pathname !== state) {
       window.history.pushState(null, null, state);
     }
   }
@@ -147,7 +148,7 @@ export function loadGuild(
 }
 
 export function joinVoiceChannel(channelId) {
-  if (currentVoiceChannelId == channelId) {
+  if (currentVoiceChannelId === channelId) {
     return;
   }
   const data = { guildId: currentGuildId, channelId: channelId };

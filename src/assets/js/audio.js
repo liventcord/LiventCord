@@ -1,8 +1,11 @@
 import { selfProfileImage } from './avatar';
-import { mouseLeaveChannelButton } from './channels';
+import { mouseLeaveChannelButton,channelsUl,currentVoiceChannelId,setCurrentVoiceChannelGuild,currentVoiceChannelGuild } from './channels';
 import { apiClient, EventType } from './api';
-import { getId } from './utils';
+import { getId,createEl } from './utils';
+import { userList } from './userList';
 import { toggleManager } from './settings';
+import { currentUserId } from './user';
+import { isOnGuild } from './router';
 
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 const bufferSize = 4096;
@@ -157,7 +160,7 @@ export function initializeMp3Yt() {
 export async function fetchAudioStreamUrl(videoId) {
   try {
     const response = await fetch(
-      `https://localhost:5009/ytstream/?videoId=${encodeURIComponent(videoId)}`,
+      `/ytstream/?videoId=${encodeURIComponent(videoId)}`,
     );
 
     if (!response.ok) {
@@ -351,7 +354,8 @@ export function activateSoundOutput() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
       return true;
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       return false;
     }
   }
@@ -534,12 +538,13 @@ export function closeCurrentCall() {
   const oldVoiceId = currentVoiceChannelId;
   sp.style.display = 'none';
   clearVoiceChannel(oldVoiceId);
-  currentVoiceChannelId = '';
-  currentVoiceChannelGuild = '';
+  setCurrentVoiceChannelGuild();
+  if(isOnGuild) {
+    setCurrentVoiceChannelGuild();
+  }
   const buttonContainer = channelsUl.querySelector(`li[id="${oldVoiceId}"]`);
 
   mouseLeaveChannelButton(buttonContainer, false, oldVoiceId);
-  usersInVoice[oldVoiceId] = [];
 
   const data = {
     guildId: currentVoiceChannelGuild,
@@ -573,7 +578,7 @@ export function playNotification() {
   try {
     if (!cachedAudioNotify) {
       cachedAudioNotify = new Audio(
-        'https://raw.githubusercontent.com/liventcord/LiventCord/main/notification.mp3',
+        '/sounds/notification.mp3',
       );
     }
     cachedAudioNotify.play();
@@ -629,7 +634,8 @@ export function convertToArrayBuffer(data) {
 
 export function decodeAudioDataAsync(arrayBuffer) {
   try {
-  } catch (error) {
+  } catch (e) {
+    console.error(e);
     return new Promise((resolve, reject) => {
       audioContext.decodeAudioData(arrayBuffer, resolve, reject);
     });

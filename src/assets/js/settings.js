@@ -16,11 +16,10 @@ import { hideConfirmationPanel } from './settingsui';
 import { permissionManager } from './guildPermissions';
 import { apiClient, EventType } from './api';
 import { currentGuildId } from './guild';
-import { currentUserNick } from './user';
+import { currentUserNick,setUserNick } from './user';
 import { translations } from './translations';
-
+import { guildCache } from './cache';
 let isImagePreviewOpen = false;
-let closeCurrentJoinPop;
 
 export let settingTypes = {
   MyAccount: 'MyAccount',
@@ -42,8 +41,6 @@ export let isChangedProfile = false;
 export function setIsChangedProfile() {
   isChangedProfile = false;
 }
-let isInitialized = false;
-let resetTimeout;
 export let currentPopUp = null;
 
 export function clearCookies() {
@@ -71,7 +68,7 @@ export function loadBooleanCookie(name) {
   for (const cookie of cookies) {
     if (cookie.startsWith(cookieName)) {
       const result = decodeURIComponent(cookie.substring(cookieName.length));
-      return result == 1;
+      return result === 1;
     }
   }
   return false;
@@ -132,6 +129,7 @@ export const toggleManager = {
 
       skew = Math.max(0.8, skew - 0.001);
 
+      // eslint-disable-next-line no-undef
       confetti({
         particleCount: 1,
         startVelocity: 0,
@@ -211,7 +209,6 @@ export function applySettings() {
   if (currentPopUp) {
     hideConfirmationPanel(currentPopUp);
   }
-  console.log(isUnsaved);
   if (isUnsaved) {
     if (isGuildSettings) {
       changeGuildName();
@@ -248,10 +245,10 @@ export function changeNickname() {
   if (
     newNickname !== '' &&
     !changeNicknameTimeout &&
-    newNickname != currentUserNick
+    newNickname !== currentUserNick
   ) {
     console.log('Changed your nickname to: ' + newNickname);
-    userNick = newNickname;
+    setUserNick(newNickname);
     apiClient.send(EventType.CHANGE_NICK, { newNickname: newNickname });
 
     newNicknameInput.value = newNickname;
@@ -268,7 +265,7 @@ export function changeGuildName() {
   if (
     newGuildName !== '' &&
     !changeGuildNameTimeout &&
-    newGuildName != currentGuildName
+    newGuildName !== guildCache.currentGuildName
   ) {
     console.log('Changed guild name to: ' + newGuildName);
     const objecttosend = { '': newGuildName, guildId: currentGuildId };
@@ -283,22 +280,9 @@ export function changeGuildName() {
     }, 1000);
   }
 }
-
 export async function requestMicrophonePermissions() {
   try {
-    const isNoMic = false;
-    if (isNoMic) {
-      const response = await fetch('/notification.mp3');
-      const blob = await response.blob();
-      const reader = new FileReader();
-      reader.onload = function () {
-        const bytes = new Uint8Array(reader.result);
-        audioManager.emit('audio_data', bytes);
-      };
-      reader.readAsArrayBuffer(blob);
-    } else {
-      await sendAudioData();
-    }
+    await sendAudioData();
   } catch (error) {
     console.log(error);
     alertUser(translations.getTranslation("microphone-failed"), translations.getTranslation("microphone-failed-2"));

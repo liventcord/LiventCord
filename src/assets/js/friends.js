@@ -8,20 +8,20 @@ import {
 } from './utils';
 import { getSelfFullDisplay } from './user';
 import { handleResize } from './ui';
-import { getId } from './utils';
-import { isAddFriendsOpen, openAddFriend } from './friendui';
+import { getId,isValidFriendName } from './utils';
+import { isAddFriendsOpen, openAddFriend,printFriendMessage,ButtonTypes,createButtonWithBubblesImg } from './friendui';
 import { currentUserId } from './user';
+import { translations } from './translations';
+import { apiClient,EventType } from './api';
 
 let friends_cache = {};
-let fetchUsersTimeout = null;
 
-let isPopulating = false;
 
-const offline = 'offline';
-const online = 'online';
-const all = 'all';
-const pending = 'pending';
-const blocked = 'blocked';
+export const offline = 'offline';
+export const online = 'online';
+export const all = 'all';
+export const pending = 'pending';
+export const blocked = 'blocked';
 
 const FriendErrorType = {
   ERR_INVALID_EVENT: 'ERR_INVALID_EVENT',
@@ -176,12 +176,12 @@ export function handleFriendEventResponse(message) {
       handleDenyFriendRequestResponse(message);
       break;
     default:
-      printFriendMessage(errorMessages[FriendErrorType.INVALID_EVENT]);
+      printFriendMessage("");
   }
 }
 
 export function updateFriendsList(friends, isPending) {
-  if (!data) {
+  if (!friends) {
     console.warn('Empty friend list data.');
     return;
   }
@@ -257,7 +257,7 @@ export function submitAddFriend() {
       return;
     }
 
-    if (currentValue == getSelfFullDisplay()) {
+    if (currentValue === getSelfFullDisplay()) {
       printFriendMessage(
         translations.getTranslation('friendAddYourselfErrorText'),
       );
@@ -292,6 +292,8 @@ export function filterFriends() {
 }
 
 export function toggleButtonState(booleanstate) {
+  const addButton = getId("profile-add-friend-button");
+  if(!addButton) return;
   if (booleanstate) {
     addButton.classList.add('active');
     addButton.classList.remove('inactive');
