@@ -177,7 +177,10 @@ async function loadInitialData() {
         await router.changeToLogin();
         return;
       }
+      alertUser("Cant communicate with api");
+      return;
     }
+
     const rawResponse = await response.text();
 
     try {
@@ -185,8 +188,8 @@ async function loadInitialData() {
       initialiseState(initData);
       initializeApp();
     } catch (e) {
-      console.error(e);
       alertUser(e.message);
+      console.error(e);
     }
   } catch (error) {
     console.error('Error loading initial data:', error);
@@ -265,7 +268,7 @@ export function initializeGuild() {
   if (isValid) {
     loadGuild(initialGuildId, initialChannelId, null, false, true);
   } else {
-    console.warn('Route cannot be validated!!');
+    console.warn('Route is not a guild');
     return;
   }
   if (isDefined(initialFriendId)) {

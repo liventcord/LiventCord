@@ -22,6 +22,7 @@ namespace LiventCord.Helpers
         private readonly float defaultAttachmentSize = 30; //megabytes
         private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
 
+
         public AppLogicService(
             AppDbContext dbContext,
             FriendController friendController,
@@ -32,6 +33,7 @@ namespace LiventCord.Helpers
             LoginController loginController,
             PermissionsController permissionsController,
             IConfiguration configuration
+
         )
         {
             _dbContext = dbContext;
@@ -51,28 +53,29 @@ namespace LiventCord.Helpers
             _maxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var uploadSize) ? uploadSize : defaultAttachmentSize;
 
         }
-
         public async Task HandleInitRequest(HttpContext context)
         {
+            async Task RejectStaleSession()
+            {
+                await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
+                await _loginController.Logout();
+            }
+
             try
             {
                 string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsJsonAsync(new { message = "User not found." });
+                    await RejectStaleSession();
                     return;
                 }
 
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+
                 if (user == null)
                 {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsJsonAsync(
-                        new { message = "User session is no longer valid. Please log in again." }
-                    );
-                    await _loginController.Logout();
+                    await RejectStaleSession();
                     return;
                 }
 

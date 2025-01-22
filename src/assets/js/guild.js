@@ -385,30 +385,26 @@ export function createMainLogo() {
     id: 'main-logo',
     src: '/images/icons/icon.png',
     'data-src': '/images/icons/icon.png',
-    style: 'width: 30px; height: 30px; border: 10px solid rgb(49, 51, 56); user-select: none;',
   });
 
-  mainLogoImg.addEventListener('mousedown', () => {
-    mainLogoImg.style.transform = 'translateY(50px)';
+  const mainLogo = createEl('li');
+
+  mainLogo.addEventListener('mouseover', () => {
+    mainLogoImg.classList.add('rotate-element');
   });
 
-  mainLogoImg.addEventListener('mouseup', () => {
-    mainLogoImg.style.transform = 'translateY(0)';
+  mainLogo.addEventListener('mouseleave', () => {
+    mainLogoImg.classList.remove('rotate-element');
   });
 
-  mainLogoImg.addEventListener('mouseleave', () => {
-    mainLogoImg.style.transform = 'translateY(0)';
-  });
   preventDrag(mainLogoImg);
 
   mainLogoImg.addEventListener('click', () => {
     document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));
     mainLogoImg.parentElement.classList.add('selected-guild');
-
     clickMainLogo(mainLogoImg.parentElement);
   });
 
-  const mainLogo = createEl('li');
   mainLogo.appendChild(mainLogoImg);
 
   return mainLogo;

@@ -3,6 +3,8 @@ import { createEl, defaultMediaImageUrl } from './utils';
 import { sendMessage } from './message';
 import { getId, debounce } from './utils';
 import { isUsersOpenGlobal } from './userList';
+import { hideImagePreviewRequest } from './ui';
+
 
 let initialMouseX;
 let initialMouseY;
@@ -13,8 +15,11 @@ let isMediaMenuOpen = false;
 let currentMenuType = '';
 let mediaMenu, mediaMenuContainer;
 const gifsBackBtn = getId('gifsBackBtn');
+const exampleTenorId = 'LIVDSRZULELA'; //Example tenor apikey from tenor docs
 
-const exampleTenorId = 'LIVDSRZULELA';
+
+getId("image-preview-container").addEventListener("click",hideImagePreviewRequest);
+
 
 export function onMouseMove(e) {
   if (!isResizing) return;

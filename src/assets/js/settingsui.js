@@ -47,7 +47,6 @@ function loadSettings() {
     { category: 'Appearance', label: translations.getSettingsTranslation('Appearance') },
     { category: 'Language', label: translations.getSettingsTranslation('Language') },
   ];
-  console.log(translations.settingTranslations);
 
   const guildSettings = [
     { category: 'Overview', label: translations.getSettingsTranslation('GeneralOverview') },
@@ -73,8 +72,9 @@ function getSettingsHtml() {
 }
 
 function getGuildSettingsHTML() {
-  const settings =loadSettings(); 
-  return generateSettingsHtml(settings.guildSettings, true); 
+  const settings = loadSettings();
+  currentSettings = settings;
+  return generateSettingsHtml(getGuildSettings(), true); 
 }
 
 function getActivityPresenceHtml() {
@@ -129,15 +129,7 @@ function getOverviewHtml() {
     `;
 }
 
-function getMissingHtml(title) {
-  return `
-        <div id="settings-title">${translations.getSettingsTranslation('Overview')}</div>
-        <div id="guild-settings-rightbar">
-            <p style="font-size:20px; color:white; font-weight:bold; margin-top: -150px;">${title}</p>
-            <img src="/404_files/noodle.gif">
-        </div>
-    `;
-}
+
 
 function getAccountSettingsHtml() {
   return `

@@ -1,5 +1,10 @@
 import { translations } from './translations';
 import { printFriendMessage } from './friendui';
+import { alertUser } from './ui';
+
+
+
+
 export const EventType = Object.freeze({
   CREATE_CHANNEL: 'create_channel',
   JOIN_GUILD: 'join_guild',
@@ -190,9 +195,9 @@ class ApiClient {
       console.error('Event is required');
       return;
     }
-
+  
     const expectsResponse = !this.nonResponseEvents.includes(event);
-
+  
     try {
       const { url, method } = this.getUrlForEvent(event, data);
       const response = await this.sendRequest(
@@ -202,19 +207,18 @@ class ApiClient {
         event,
         expectsResponse,
       );
-
+  
       if (response) {
         this.handleMessage(event, response);
       }
     } catch (error) {
-      console.error(
-        `Error during request for event "${event}":`,
-        error,
-        event,
-        data,
+      alertUser(
+        `Error during request for event "${event}"`,
+        `${error} ${event} ${JSON.stringify(data)}`
       );
     }
   }
+  
   handleMessage(event, data) {
     if (this.nonResponseEvents.includes(event)) {
       return;

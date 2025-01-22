@@ -8,7 +8,6 @@ import { currentUserId } from './user';
 import { isOnGuild } from './router';
 
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-const bufferSize = 4096;
 
 let currentAudioPlayer;
 let isAudioPlaying = false;
@@ -450,7 +449,8 @@ export function activateMicAndCamera() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       return true;
-    } catch (error) {
+    } catch (e) {
+      console.error(e);
       return false;
     }
   }

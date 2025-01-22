@@ -19,6 +19,11 @@ import { currentGuildId } from './guild';
 import { currentUserNick,setUserNick } from './user';
 import { translations } from './translations';
 import { guildCache } from './cache';
+
+
+
+
+
 let isImagePreviewOpen = false;
 
 export let settingTypes = {
@@ -38,8 +43,8 @@ export function setUnsaved(val) {
   isUnsaved = val;
 }
 export let isChangedProfile = false;
-export function setIsChangedProfile() {
-  isChangedProfile = false;
+export function setIsChangedProfile(val) {
+  isChangedProfile = val;
 }
 export let currentPopUp = null;
 

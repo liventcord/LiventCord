@@ -44,6 +44,15 @@ export const inviteVoiceHtml =
 export const selectedChanColor = 'rgb(64, 66, 73)';
 export const hoveredChanColor = 'rgb(53, 55, 60';
 
+
+let activeIconHref = '/images/icons/iconactive.png';
+let inactiveIconHref = '/images/icons/icon.png';
+let favicon = getId('favicon');
+
+
+
+
+
 export let loadingScreen;
 export function enableLoadingScreen() {
   loadingScreen = createEl('div', { id: 'loading-screen' });
@@ -149,15 +158,17 @@ export function fillDropDownContent() {
   }
 }
 
+
 export function setActiveIcon() {
-  let favicon = getId('favicon');
-  let activeIconHref = '/images/icons/iconactive.png';
-  favicon.href = activeIconHref;
+  if (favicon.href !== activeIconHref) {
+    favicon.href = activeIconHref;
+  }
 }
+
 export function setInactiveIcon() {
-  let favicon = getId('favicon');
-  let activeIconHref = '/images/icons/icon.png';
-  favicon.href = activeIconHref;
+  if (favicon.href !== inactiveIconHref) {
+    favicon.href = inactiveIconHref;
+  }
 }
 
 export function isProfilePopOpen() {
@@ -173,6 +184,7 @@ export function hideLoadingScreen() {
 let errorCount = 0;
 
 function createPopupContent(
+  includeCancel=false,
   subject,
   content,
   buttonText,
@@ -195,18 +207,9 @@ function createPopupContent(
   if (isRed) {
     popAcceptButton.style.backgroundColor = 'rgb(218, 55, 60)';
   }
-
-  const popRefuseButton = createEl('button', {
-    className: 'pop-up-refuse',
-    textContent: translations.getTranslation('cancel'),
-  });
-
   const buttonContainer = createEl('div', {
     className: 'pop-button-container',
   });
-  buttonContainer.appendChild(popAcceptButton);
-  buttonContainer.appendChild(popRefuseButton);
-
   const contentElements = [popUpSubject, popUpContent, buttonContainer];
 
   const outerParent = createPopUp({
@@ -214,14 +217,28 @@ function createPopupContent(
     id: null,
   });
 
+  if(includeCancel) {
+    const popRefuseButton = createEl('button', {
+      className: 'pop-up-refuse',
+      textContent: translations.getTranslation('cancel'),
+    });
+  
+    buttonContainer.appendChild(popRefuseButton);
+    popRefuseButton.addEventListener('click', function () {
+      closePopUp(outerParent, outerParent.firstChild);
+    });
+
+  }
+  buttonContainer.appendChild(popAcceptButton);
+
+
+
   popAcceptButton.addEventListener('click', function () {
     if (acceptCallback) acceptCallback();
     closePopUp(outerParent, outerParent.firstChild);
   });
 
-  popRefuseButton.addEventListener('click', function () {
-    closePopUp(outerParent, outerParent.firstChild);
-  });
+
 
   return outerParent;
 }
@@ -234,6 +251,7 @@ export function alertUser(subject, content) {
   }
 
   const outerParent = createPopupContent(
+    false,
     subject,
     content,
     translations.getTranslation('ok'),
@@ -250,7 +268,7 @@ export function askUser(
   acceptCallback,
   isRed = false,
 ) {
-  createPopupContent(subject, content, actionText, acceptCallback, isRed);
+  createPopupContent(true,subject, content, actionText, acceptCallback, isRed);
 }
 let logoClicked = 0;
 
@@ -351,6 +369,10 @@ export function hideJsonPreview(event) {
   }
 }
 
+
+
+
+
 export function openGuildSettingsDd(event) {
   const handlers = {
     'invite-dropdown-button': createInviteUsersPop,
@@ -377,3 +399,29 @@ export function openGuildSettingsDd(event) {
     handlers[clicked_id]();
   }
 }
+function setDynamicAnimations() {
+  const dynamicAnimElements = "#tb-inbox, #tb-pin, #tb-showprofile, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
+
+  document.querySelectorAll(dynamicAnimElements).forEach(function(element) {
+    element.addEventListener('mousemove', function(event) {
+      const rect = element.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const distanceX = (mouseX - centerX) / centerX; 
+      const distanceY = (mouseY - centerY) / centerY; 
+
+      const shakeIntensity = Math.max(Math.abs(distanceX), Math.abs(distanceY)) * 10; 
+
+      element.style.transform = `rotate(${shakeIntensity * (distanceX < 0 ? -1 : 1)}deg) translate(${distanceX * 3}px, ${distanceY * 3}px)`; 
+    });
+
+    element.addEventListener('mouseleave', function() {
+      element.style.transform = 'rotate(0deg) translate(0, 0)'; // Reset the transform when mouse leaves
+    });
+  });
+}
+
+setDynamicAnimations();

@@ -10,6 +10,10 @@ export function setIsOnMe(val) { isOnMe = val; }
 export function setIsOnDm(val) { isOnDm = val; }
 export function setIsOnGuild(val) { isOnGuild = val; }
 
+
+
+const hasNotifications = false;
+
 class Router {
   constructor() {
     this.ID_LENGTH = 18;
@@ -22,7 +26,10 @@ class Router {
   }
 
   handleVisibilityChange() {
-    document.hidden ? setInactiveIcon() : setActiveIcon();
+    if(hasNotifications) {
+      document.hidden ? setActiveIcon() : setInactiveIcon();
+
+    }
   }
 
   handlePopState() {
@@ -112,7 +119,7 @@ class Router {
 
   resetRoute() {
     window.history.pushState(null, null, '/channels/@me');
-    selectGuildList('main-logo');
+    selectGuildList('a');
   }
 }
 
