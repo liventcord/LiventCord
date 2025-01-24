@@ -30,6 +30,14 @@ export const blackImage =
 export function getId(string) {
   return document.getElementById(string);
 }
+
+export function capitalizeFirstCharacter(str) {
+  if (!str) return str; 
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+
+
 export function getMaskedEmail(email) {
   const parts = email.split('@');
   if (parts.length !== 2) return email;

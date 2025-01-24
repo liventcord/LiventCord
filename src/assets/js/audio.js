@@ -621,33 +621,52 @@ export function initializeMusic() {
     modal.style.display = 'none';
   });
 }
-
-export function convertToArrayBuffer(data) {
-  if (data instanceof ArrayBuffer) {
-    return data;
-  } else if (data.buffer instanceof ArrayBuffer) {
-    return data.buffer;
-  } else {
-    throw new Error('Unsupported data format');
+class VoiceChandler {
+  async handleAudio(data) {
+    if (data && data.byteLength > 0) {
+      try {
+        const arrayBuffer = this.convertToArrayBuffer(data);
+        const decodedData = await this.decodeAudioDataAsync(arrayBuffer);
+        if (decodedData) {
+          this.playAudioBuffer(decodedData);
+        } else {
+          console.log('Decoded audio data is empty or invalid');
+        }
+      } catch (e) {
+        console.log('Error decoding audio data:',e);
+      }
+    } else {
+      console.log('Received silent or invalid audio data');
+    }
+  }
+  convertToArrayBuffer(data) {
+    if (data instanceof ArrayBuffer) {
+      return data;
+    } else if (data.buffer instanceof ArrayBuffer) {
+      return data.buffer;
+    } else {
+      throw new Error('Unsupported data format');
+    }
+  }
+  
+  decodeAudioDataAsync(arrayBuffer) {
+    try {
+    } catch (e) {
+      console.error(e);
+      return new Promise((resolve, reject) => {
+        audioContext.decodeAudioData(arrayBuffer, resolve, reject);
+      });
+    }
+  }
+  
+  playAudioBuffer(audioBuffer) {
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start(0);
   }
 }
 
-export function decodeAudioDataAsync(arrayBuffer) {
-  try {
-  } catch (e) {
-    console.error(e);
-    return new Promise((resolve, reject) => {
-      audioContext.decodeAudioData(arrayBuffer, resolve, reject);
-    });
-  }
-}
-
-export function playAudioBuffer(audioBuffer) {
-  const source = audioContext.createBufferSource();
-  source.buffer = audioBuffer;
-  source.connect(audioContext.destination);
-  source.start(0);
-}
 
 export function applyWiggleEffect(profileElement, selfProfileElement) {
   if (profileElement) {

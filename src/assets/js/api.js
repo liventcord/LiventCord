@@ -1,47 +1,55 @@
-import { translations } from './translations';
-import { printFriendMessage } from './friendui';
-import { alertUser } from './ui';
+import { translations } from "./translations";
+import { printFriendMessage } from "./friendui";
+import { alertUser } from "./ui";
 
 
 
 
 export const EventType = Object.freeze({
-  CREATE_CHANNEL: 'create_channel',
-  JOIN_GUILD: 'join_guild',
-  LEAVE_GUILD: 'leave_guild',
-  CREATE_GUILD: 'create_guild',
-  DELETE_GUILD: 'delete_guild',
-  DELETE_GUILD_IMAGE: 'delete_guild_image',
-  SEND_MESSAGE_GUILD: 'send_message_guild',
-  SEND_MESSAGE_DM: 'send_message_dm',
-  GET_MEMBERS: 'get_members',
-  GET_MESSAGE_DATE: 'get_message_date',
-  GET_CHANNELS: 'get_channels',
-  DELETE_CHANNEL: 'delete_channel',
-  GET_FRIENDS: 'get_friends',
-  GET_HISTORY_GUILD: 'get_history_guild',
-  GET_HISTORY_DM: 'get_history_dm',
-  GET_SCROLL_HISTORY: 'get_old_history',
-  GET_GUILDS: 'get_guilds',
-  GET_INVITES: 'get_invites',
-  START_TYPING: 'start_typing',
-  STOP_TYPING: 'stop_typing',
-  ADD_FRIEND: 'add_friend',
-  REMOVE_FRIEND: 'remove_friend',
-  ADD_FRIEND_ID: 'add_friend_id',
-  CHANGE_NICK: 'change_nick',
-  ADD_DM: 'add_dm',
-  LEAVE_VOICE_CHANNEL: 'LEAVE_VOICE_CHANNEL',
-  JOIN_VOICE_CHANNEL: 'JOIN_VOICE_CHANNEL',
-  GET_BULK_REPLY: 'GET_BULK_REPLY',
-  CHANGE_GUILD_NAME: 'CHANGE_GUILD_NAME',
+  CREATE_CHANNEL: "CREATE_CHANNEL",
+  JOIN_GUILD: "JOIN_GUILD",
+  LEAVE_GUILD: "LEAVE_GUILD",
+  CREATE_GUILD: "CREATE_GUILD",
+  DELETE_GUILD: "DELETE_GUILD",
+  DELETE_GUILD_IMAGE: "DELETE_GUILD_IMAGE",
+  SEND_MESSAGE_GUILD: "SEND_MESSAGE_GUILD",
+  SEND_MESSAGE_DM: "SEND_MESSAGE_DM",
+  DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
+  DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
+  GET_MEMBERS: "GET_MEMBERS",
+  UPDATE_GUILD_NAME: "UPDATE_GUILD_NAME",
+  UPDATE_GUILD_IMAGE: "UPDATE_GUILD_IMAGE",
+  GET_MESSAGE_DATE: "GET_MESSAGE_DATE",
+  GET_CHANNELS: "GET_CHANNELS",
+  DELETE_CHANNEL: "DELETE_CHANNEL",
+  GET_FRIENDS: "GET_FRIENDS",
+  GET_HISTORY_GUILD: "GET_HISTORY_GUILD",
+  GET_HISTORY_DM: "GET_HISTORY_DM",
+  GET_SCROLL_HISTORY: "GET_OLD_HISTORY",
+  GET_GUILDS: "GET_GUILDS",
+  GET_INVITES: "GET_INVITES",
+  START_TYPING: "START_TYPING",
+  STOP_TYPING: "STOP_TYPING",
+  ADD_FRIEND: "ADD_FRIEND",
+  ACCEPT_FRIEND : "ACCEPT_FRIEND",
+  REMOVE_FRIEND: "REMOVE_FRIEND",
+  ADD_FRIEND_ID: "ADD_FRIEND_ID",
+  CHANGE_NICK: "CHANGE_NICK",
+  ADD_DM: "ADD_DM",
+  LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
+  JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
+  GET_BULK_REPLY: "GET_BULK_REPLY",
+  CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
+  GET_MESSAGE_DATES : "GET_MESSAGE_DATES",
+  DELETE_MESSAGE : "DELETE_MESSAGE"
 });
 
+
 const HttpMethod = Object.freeze({
-  POST: 'POST',
-  GET: 'GET',
-  PUT: 'PUT',
-  DELETE: 'DELETE',
+  POST: "POST",
+  GET: "GET",
+  PUT: "PUT",
+  DELETE: "DELETE",
 });
 
 const EventHttpMethodMap = {
@@ -74,43 +82,47 @@ const EventHttpMethodMap = {
   [EventType.DELETE_CHANNEL]: HttpMethod.DELETE,
   [EventType.LEAVE_VOICE_CHANNEL]:  HttpMethod.PUT,
   [EventType.JOIN_VOICE_CHANNEL]:  HttpMethod.POST,
+  [EventType.DELETE_MESSAGE] : HttpMethod.DELETE
 };
 
 const EventUrlMap = {
-  [EventType.CREATE_GUILD]: '/guilds',
-  [EventType.CREATE_CHANNEL]: '/guilds/{guildId}/channels',
-  [EventType.DELETE_GUILD]: '/guilds/{guildId}',
-  [EventType.DELETE_GUILD_IMAGE]: '/guilds/{guildId}/image',
-  [EventType.GET_GUILDS]: '/guilds',
-  [EventType.GET_CHANNELS]: '/guilds/{guildId}/channels/',
-  [EventType.DELETE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}',
-  [EventType.GET_MEMBERS]: '/guilds/{guildId}/members',
-  [EventType.GET_INVITES]: '/guilds/{guildId}/invites',
-  [EventType.GET_HISTORY_DM]: '/guilds/{guildId}/channels/{channelId}/messages',
-  [EventType.GET_HISTORY_GUILD]: '/guilds/{guildId}/channels/{channelId}/messages',
-  [EventType.GET_SCROLL_HISTORY]: '/guilds/{guildId}/channels/{channelId}/messages',
-  [EventType.GET_BULK_REPLY]: '/guilds/{guildId}/channels/{channelId}/messages/reply',
-  [EventType.GET_MESSAGE_DATE]: '/guilds/{guildId}/channels/{channelId}/messages/date',
-  [EventType.START_TYPING]: '/guilds/{guildId}/channels/{channelId}/typing/start',
-  [EventType.STOP_TYPING]: '/guilds/{guildId}/channels/{channelId}/typing/stop',
-  [EventType.CHANGE_GUILD_NAME]: '/guilds/{guildId}',
+  [EventType.CREATE_GUILD]: "/guilds",
+  [EventType.CREATE_CHANNEL]: "/guilds/{guildId}/channels",
+  [EventType.DELETE_GUILD]: "/guilds/{guildId}",
+  [EventType.DELETE_GUILD_IMAGE]: "/guilds/{guildId}/image",
+  [EventType.GET_GUILDS]: "/guilds",
+  [EventType.GET_CHANNELS]: "/guilds/{guildId}/channels/",
+  [EventType.DELETE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}",
+  [EventType.GET_MEMBERS]: "/guilds/{guildId}/members",
+  [EventType.GET_INVITES]: "/guilds/{guildId}/invites",
+  [EventType.GET_HISTORY_DM]: "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.GET_HISTORY_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.GET_SCROLL_HISTORY]: "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.GET_BULK_REPLY]: "/guilds/{guildId}/channels/{channelId}/messages/reply",
+  [EventType.GET_MESSAGE_DATE]: "/guilds/{guildId}/channels/{channelId}/messages/date",
+  [EventType.START_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/start",
+  [EventType.STOP_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/stop",
+  [EventType.CHANGE_GUILD_NAME]: "/guilds/{guildId}",
 
-  [EventType.JOIN_GUILD]: '/guilds/{guildId}/members',
-  [EventType.LEAVE_GUILD]: '/guilds/{guildId}/members',
+  [EventType.JOIN_GUILD]: "/guilds/{guildId}/members",
+  [EventType.LEAVE_GUILD]: "/guilds/{guildId}/members",
 
-  [EventType.GET_FRIENDS]: '/friends',
-  [EventType.ADD_FRIEND]: '/friends',
-  [EventType.ADD_FRIEND_ID]: '/friends',
-  [EventType.REMOVE_FRIEND]: '/friends/{friendId}',
+  [EventType.GET_FRIENDS]: "/friends",
+  [EventType.ADD_FRIEND]: "/friends",
+  [EventType.ADD_FRIEND_ID]: "/friends",
+  [EventType.REMOVE_FRIEND]: "/friends/{friendId}",
   
-  [EventType.ADD_DM]: '/dm/{friendId}',
+  [EventType.ADD_DM]: "/dm/{friendId}",
   
-  [EventType.SEND_MESSAGE_GUILD]: '/guilds/{guildId}/channels/{channelId}/messages',
-  [EventType.SEND_MESSAGE_DM]: '/dm/{targetId}/channels/{channelId}/messages',
+  [EventType.SEND_MESSAGE_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.SEND_MESSAGE_DM]: "/dm/{targetId}/channels/{channelId}/messages",
+  [EventType.DELETE_MESSAGE_DM] : "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.DELETE_MESSAGE_GUILD] : "/guilds/{guildId}/channels/{channelId}/messages",
   
-  [EventType.CHANGE_NICK]: '/nicks',
-  [EventType.LEAVE_VOICE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}/voice',
-  [EventType.JOIN_VOICE_CHANNEL]: '/guilds/{guildId}/channels/{channelId}/voice'
+  [EventType.CHANGE_NICK]: "/nicks",
+  [EventType.LEAVE_VOICE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}/voice",
+  [EventType.JOIN_VOICE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}/voice",
+
 };
 
 
@@ -146,7 +158,7 @@ class ApiClient {
       const url = EventUrlMap[eventType];
       const method = EventHttpMethodMap[eventType];
   
-      const resource = url.split('/')[1];
+      const resource = url.split("/")[1];
       if (!missingCrud[resource]) {
         missingCrud[resource] = { create: false, read: false, update: false, delete: false };
       }
@@ -177,7 +189,7 @@ class ApiClient {
   }
 
   getUrlForEvent(event, data = {}) {
-    const basePath = '/api';
+    const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
   
     if (!urlTemplate) {
@@ -191,11 +203,11 @@ class ApiClient {
     });
   
     url.match(/{(.*?)}/g)?.forEach((match) => {
-      missingKeys.push(match.replace(/[{}]/g, ''));
+      missingKeys.push(match.replace(/[{}]/g, ""));
     });
   
     if (missingKeys.length > 0) {
-      throw new Error(`Missing data for URL placeholders: ${missingKeys.join(', ')}`);
+      throw new Error(`Missing data for URL placeholders: ${missingKeys.join(", ")}`);
     }
   
     return { method: this.getHttpMethod(event), url: basePath + url };
@@ -205,7 +217,7 @@ class ApiClient {
   async handleError(response, event) {
     let predefinedMessage =
       translations.getErrorMessage(response.status)?.[event] ||
-      translations.getErrorMessage('default');
+      translations.getErrorMessage("default");
     printFriendMessage(predefinedMessage);
     console.error(
       `Error [${response.status}] for event "${event}": ${predefinedMessage}`,
@@ -217,14 +229,14 @@ class ApiClient {
     const headers =
       method === HttpMethod.GET
         ? undefined
-        : { 'Content-Type': 'application/json' };
+        : { "Content-Type": "application/json" };
 
     try {
       const response = await fetch(url, {
         method,
         headers,
         body,
-        credentials: 'same-origin',
+        credentials: "same-origin",
       });
 
       if (!response.ok) {
@@ -246,7 +258,7 @@ class ApiClient {
 
   async send(event, data = {}) {
     if (!event) {
-      console.error('Event is required');
+      console.error("Event is required");
       return;
     }
   
@@ -266,6 +278,7 @@ class ApiClient {
         this.handleMessage(event, response);
       }
     } catch (error) {
+      console.error(error);
       alertUser(
         `Error during request for event "${event}"`,
         `${error} ${event} ${JSON.stringify(data)}`
@@ -277,13 +290,23 @@ class ApiClient {
     if (this.nonResponseEvents.includes(event)) {
       return;
     }
-
+    console.log("Handing event: ",event, " with data: ", data, " listeners: ", this.listeners[event] , " all listeners: ", this.listeners);
     if (this.listeners[event] && data !== null) {
       this.listeners[event].forEach((callback) => callback(data));
     }
   }
 
   on(event, callback) {
+    if (Object.values(EventType).includes(event)) {
+      console.log("Processing response for: ",event);
+    } else {
+      console.error("Event type doesnt includes: ",event);
+      if(event) {
+        alertUser("Event type doesnt includes: ",event);
+      } else {
+        console.error("Event type called null ");
+      }
+    }
     if (!this.listeners[event]) {
       this.listeners[event] = [];
     }

@@ -1,4 +1,4 @@
-import { truncateString } from "./utils";
+import { capitalizeFirstCharacter, truncateString } from "./utils";
 import { alertUser } from "./ui";
 
 
@@ -137,7 +137,8 @@ class Translations {
   getTranslation(key,list=this.textTranslations) {
     const result = list?.[key] ?? null;
     if (key && !result) {
-      console.error("Cant find translation for:", key,list);
+      console.warn("Cant find translation for:", key,list);
+      return capitalizeFirstCharacter(key);
     }
     return result;
   }

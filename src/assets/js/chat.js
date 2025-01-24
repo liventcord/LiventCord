@@ -7,8 +7,9 @@ import {
   clearMessagesCache,
   currentMessagesCache,
   guildCache,
+  replyCache
 } from './cache';
-import { isURL, getId, createEl } from './utils';
+import { isURL, getId, createEl,getFormattedDateForSmall,sanitizeHTML,getFormattedDate } from './utils';
 import { getUserNick, currentUserId,setLastTopSenderId } from './user';
 import { createMediaElement } from './mediaElements';
 import { apiClient, EventType } from './api';
@@ -18,16 +19,13 @@ import { setProfilePic } from './avatar';
 import { chatContainer, chatContent } from './chatbar';
 import { currentGuildId } from './guild';
 import { isChangingPage,createReplyBar } from './app';
-import { loadingScreen } from './ui';
+import { loadingScreen,setActiveIcon } from './ui';
 import { Message } from './message';
 import { translations } from './translations';
 import { appendToMessageContextList } from './contextMenuActions';
-import {
-  getFormattedDateForSmall,
-  sanitizeHTML,
-  getFormattedDate,
-} from './utils';
-import { replyCache } from './cache';
+import { friendCache } from './friends';
+import { playNotification } from './audio';
+
 
 export let bottomestChatDateStr;
 export function setBottomestChatDateStr(date) { 
@@ -205,7 +203,7 @@ function loadObservedContent(targetElement) {
 }
 
 export function handleOldMessagesResponse(data) {
-  const { history, oldest_message_date } = data;
+  const { history, oldest_message_date: oldestMessageDate } = data;
 
   if (!Array.isArray(history) || history.length === 0) {
     isReachedChannelEnd = true;
@@ -214,20 +212,21 @@ export function handleOldMessagesResponse(data) {
   }
 
   const repliesList = new Set();
-  const oldestMessageDateOnChannel = new Date(oldest_message_date);
+  const oldestMessageDateOnChannel = new Date(oldestMessageDate);
 
-  let firstMessageDate = null;
+  let firstMessageDate = new Date();
 
   history.forEach((msgData) => {
     const msg = new Message(msgData);
-    const displayMessageData = msg.toDisplayData(data.messageId);
+    const { date, messageId } = msgData;
+    const displayMessageData = msg.toDisplayData(messageId);
 
-    const foundReply = displayChatMessage(displayMessageData);
+    if (displayChatMessage(displayMessageData)) {
+      repliesList.add(messageId);
+    }
 
-    if (foundReply) repliesList.add(msg.messageId);
-
-    if (!firstMessageDate || msg.date < firstMessageDate) {
-      firstMessageDate = msg.date;
+    if (!firstMessageDate || new Date(date) < firstMessageDate) {
+      firstMessageDate = new Date(date);
     }
   });
 
@@ -239,10 +238,44 @@ export function handleOldMessagesResponse(data) {
   ) {
     displayStartMessage();
   } else if (isNaN(oldestMessageDateOnChannel)) {
-    console.error('Invalid oldest message date from data.');
+    console.error('Invalid oldest message date received.');
   }
 }
 
+export function handleMessage(data) {
+  try {
+    if(data.isOldMessages) {
+      handleOldMessagesResponse(data);
+      return;
+    }
+
+    const {
+      isDm,
+      userId,
+      channelId,
+    } = data;
+    
+    
+    const idToCompare = isDm
+      ? friendCache.currentDmId
+      : guildCache.currentChannelId;
+
+    if (data.guildId !== currentGuildId || idToCompare !== channelId) {
+      console.log(`${idToCompare} is not ${channelId} so returning`);
+      if (userId !== currentUserId) {
+        playNotification();
+        setActiveIcon();
+      }
+      return;
+    }
+
+    displayChatMessage(data);
+
+    fetchReplies(data);
+  } catch (error) {
+    console.error('Error processing message:', error);
+  }
+}
 export function handleHistoryResponse(data) {
   if (isChangingPage) {
     return;

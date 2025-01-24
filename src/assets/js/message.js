@@ -15,7 +15,6 @@ import {
   fileInput,currentReplyingTo
 } from './chatbar';
 import { apiClient, EventType } from './api';
-import { alertUser } from './ui';
 import {
   createEl,
   getEmojiPath,
@@ -110,7 +109,7 @@ export async function sendMessage(content, user_ids) {
       reactionEmojisIds: null,
       lastEdited: null,
     };
-    apiClient.send(EventType.SEND_MESSAGE, message);
+    apiClient.send(EventType.SEND_MESSAGE_GUILD, message);
     chatInput.value = '';
     closeReplyMenu();
     return;
@@ -147,9 +146,9 @@ export async function sendMessage(content, user_ids) {
       console.log('File uploaded successfully:', uploadData.fileName);
 
       if (isOnGuild) {
-        apiClient.send(EventType.SEND_MESSAGE, messageData);
+        apiClient.send(EventType.SEND_MESSAGE_GUILD, messageData);
       } else {
-        alertUser('Implement Direct messages ');
+        apiClient.send(EventType.SEND_MESSAGE_DM, messageData);
       }
 
       chatInput.value = '';
@@ -185,20 +184,15 @@ export function displayWelcomeMessage(userName, date) {
   const messageContentElement = createEl('div', {
     id: 'message-content-element',
   });
-  const authorAndDate = createEl('div');
-  authorAndDate.classList.add('author-and-date');
-  const nickElement = createEl('span');
-  nickElement.textContent = userName;
+  const authorAndDate = createEl('div', { className:"author-and-date" });
+  const nickElement = createEl('span', {textContent: userName});
   nickElement.classList.add('nick-element');
   authorAndDate.appendChild(nickElement);
-  const dateElement = createEl('span');
-  dateElement.textContent = getFormattedDate(new Date(date));
-  dateElement.classList.add('date-element');
+  const dateElement = createEl('span' , {className : "date-element", textContent: getFormattedDate(new Date(date))});
   authorAndDate.appendChild(dateElement);
   newMessage.appendChild(authorAndDate);
   newMessage.appendChild(messageContentElement);
   chatContent.appendChild(newMessage);
-  console.log(newMessage.parentNode);
 }
 
 export function getOldMessages(date, messageId = null) {
