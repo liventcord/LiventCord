@@ -23,9 +23,19 @@ import { currentGuildId } from './guild';
 import { regenerateConfirmationPanel,triggerFileInput } from './settings';
 import { lastConfirmedProfileImg } from './avatar';
 
+
+
+
 export let currentSettingsType;
 export let isGuildSettings = false;
+let currentSettings;
+
+
+const settingsMenu = getId('settings-menu');
+
 let resetTimeout;
+
+
 
 export function updateSettingsProfileColor() {
   const settingsProfileImg = getId('settings-self-profile');
@@ -37,7 +47,6 @@ export function updateSettingsProfileColor() {
 
 
 
-let currentSettings;
 function loadSettings() {
   const userSettings = [
     { category: 'MyAccount', label: translations.getSettingsTranslation('MyAccount') },
@@ -210,24 +219,25 @@ function getNotificationsHtml() {
     `;
 }
 function generateSettingsHtml(settings, isGuild = false) {
-  const container = document.createElement('div');
+  const container = createEl('div');
 
   settings.forEach((setting) => {
-    const button = document.createElement('button');
-    button.className = 'settings-buttons';
-    button.textContent = translations.getSettingsTranslation(setting.category);
-    button.addEventListener('click', () => selectSettingCategory(setting.category));
+    const button = createEl("button",{ "className": "settings-buttons","textContent":translations.getSettingsTranslation(setting.category)});
+    button.addEventListener('click', () => {
+      selectSettingCategory(setting.category)
+    console.log(getSettingsHtml());
+
+    });
     container.appendChild(button);
   });
 
   if (!isGuild) {
-    const logOutButton = document.createElement('button');
-    logOutButton.className = 'settings-buttons';
+    const logOutButton = createEl("button",{"className":"settings-buttons"});
     logOutButton.addEventListener('click', logOutPrompt);
     container.appendChild(logOutButton);
   }
 
-  return container.innerHTML;
+  return container; 
 }
 
 
@@ -371,18 +381,18 @@ export function openSettings(isNotLoadingDefault = false) {
   getId('settings-overlay').style.display = 'flex';
 
   if (toggleManager.isSlide()) {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-slide-in 0.3s forwards';
   } else {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-scale-appear 0.3s forwards';
   }
 
   if (toggleManager.isSlide()) {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-slide-in 0.3s forwards';
   } else {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-scale-appear 0.3s forwards';
   }
 
@@ -396,10 +406,10 @@ export function closeSettings() {
   }
 
   if (toggleManager.isSlide()) {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-slide-out 0.3s forwards';
   } else {
-    getId('settings-menu').style.animation =
+    settingsMenu.style.animation =
       'settings-menu-scale-disappear 0.3s forwards';
   }
 
@@ -432,11 +442,10 @@ export function reconstructSettings(_isGuildSettings) {
   leftBar.innerHTML = '';
   isGuildSettings = _isGuildSettings;
   if (_isGuildSettings) {
-    leftBar.innerHTML = getGuildSettingsHTML();
+    leftBar.appendChild(getGuildSettingsHTML());
     selectSettingCategory(Overview);
   } else {
-    console.log(getSettingsHtml());
-    leftBar.innerHTML = getSettingsHtml();
+    leftBar.appendChild(getSettingsHtml())
   }
 }
 
@@ -493,12 +502,13 @@ export function generateConfirmationPanel() {
   });
   popupDiv.appendChild(resetButton);
 
-  const applyButton = createEl('button');
-  applyButton.id = 'settings-unsaved-popup-applybutton';
-  applyButton.textContent = translations.getSettingsTranslation('saveChanges');
+  const applyButton = createEl('button',{ 
+    "id" : "settings-unsaved-popup-applybutton",
+    "textContent": translations.getSettingsTranslation('saveChanges')
+  });
   applyButton.addEventListener("click",applySettings);
   popupDiv.appendChild(applyButton);
-  getId('settings-menu').appendChild(popupDiv);
+  settingsMenu.appendChild(popupDiv);
 
   return popupDiv;
 }

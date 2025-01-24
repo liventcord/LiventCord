@@ -57,12 +57,9 @@ export function setWindowName(pendingCounter) {
 }
 
 export function sendNotify(data) {
-  const container = document.createElement('div');
-  container.classList.add('info-container');
+  const container = createEl('div',{"className": "info-container"});
 
-  const childDiv = document.createElement('div');
-  childDiv.className = 'info-message';
-  childDiv.textContent = data;
+  const childDiv = createEl('div',{"className" : "info-message", "textContent" : data});
   container.appendChild(childDiv);
 
   document.body.prepend(container);
@@ -231,7 +228,7 @@ export function getAverageRGB(imgEl) {
 
   const blockSize = 5;
   const defaultRGB = { r: 0, g: 0, b: 0 };
-  const canvas = document.createElement('canvas');
+  const canvas = createEl('canvas');
   const context = canvas.getContext && canvas.getContext('2d');
 
   if (!context) {
@@ -510,8 +507,7 @@ export async function urlToBase64(url) {
 export function reloadCSS() {
   const approvedDomains = ['localhost'];
   function getDomain(url) {
-    const link = createEl('a');
-    link.href = url;
+    const link = createEl('a', { "href" : url});
     return link.hostname;
   }
   const links = document.getElementsByTagName('link');
