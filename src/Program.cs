@@ -6,9 +6,13 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.SignalR;
 using Serilog;
 
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSignalR();
 
 ConfigHandler.HandleConfig(builder);
 
@@ -135,5 +139,6 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "docs";
 });
 
+app.MapHub<Hub>("/socket");
 app.MapControllers();
 app.Run();

@@ -1,21 +1,34 @@
-import { cacheInterface } from "./cache";
+/*global signalR */
+import { cacheInterface,guildCache,messages_raw_cache } from "./cache";
 import { refreshUserProfile } from "./avatar";
 import { updateUserOnlineStatus } from "./user";
 import { addChannel,removeChannel,editChannel } from "./channels";
-import { playAudio,clearVoiceChannel } from "./audio";
-import { currentVoiceChannelId,setCurrentVoiceChannelId,setCurrentVoiceChannelGuild } from "./channels";
-import { enableElement } from "./utils";
-import { convertToArrayBuffer } from "./audio";
+import { currentVoiceChannelId,setCurrentVoiceChannelId,setCurrentVoiceChannelGuild,currentChannelName,channelsUl } from "./channels";
+import { getId,enableElement } from "./utils";
+import { deleteLocalMessage, getLastSecondMessageDate } from "./message";
+import { bottomestChatDateStr, setBottomestChatDateStr, setLastMessageDate,lastMessageDate,handleMessage } from "./chat";
+import { isOnGuild } from "./router";
+import { playAudio,VoiceHandler,clearVoiceChannel } from "./audio";
 
 
 
+const socketClient = new signalR.HubConnectionBuilder()
+    .withUrl("/socket")
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
 
-SocketEvent = Object.freeze({
-  GUILD_MESSAGE : "GUILD_MESSAGE",
-})
 
 
-socketClient = new SocketClient();
+const SocketEvent = Object.freeze({
+  GUILD_MESSAGE: "GUILD_MESSAGE",
+  DM_MESSAGE: "DM_MESSAGE",
+  UPDATE_USER: "UPDATE_USER",
+  USER_STATUS: "USER_STATUS",
+  UPDATE_CHANNEL: "UPDATE_CHANNEL",
+  DELETE_MESSAGE: "DELETE_MESSAGE"
+});
+
+
 socketClient.on(SocketEvent.GUILD_MESSAGE), (data) => {
   handleMessage(data);
 }
@@ -54,6 +67,22 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL, (data) => {
   }
 });
 
+
+
+socketClient.on(SocketEvent.DELETE_MESSAGE, (data) => {
+  deleteLocalMessage(data.messageId, data.guildId, data.channelId, data.isDm);
+  guildCache.removeMessage(data.messageId, data.channelId, data.guildId);
+  const msgdate = messages_raw_cache[data.messageId].date;
+  if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
+    setLastMessageDate(
+      new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0),
+    );
+  }
+  if (bottomestChatDateStr === msgdate) {
+      setBottomestChatDateStr(getLastSecondMessageDate());
+  }
+  delete messages_raw_cache[data.messageId];
+});
 //audio
 
 socketClient.on(SocketEvent.JOIN_VOICE_CHANNEL, function (data) {
@@ -88,8 +117,18 @@ socketClient.on(SocketEvent.JOIN_VOICE_CHANNEL, function (data) {
   
 });
 
-const voiceHandler = new VoiceChandler();
+
+const voiceHandler = new VoiceHandler();
 
 socketClient.on(SocketEvent.INCOMING_AUDIO, async (data) => {
   await voiceHandler.handleAudio(data);
 });
+
+
+socketClient.start()
+    .then(() => {
+        console.log("SignalR connection established.");
+    })
+    .catch((err) => {
+        console.error("Error while establishing connection: ", err);
+    });

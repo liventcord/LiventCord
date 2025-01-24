@@ -33,6 +33,7 @@ export const EventType = Object.freeze({
   ADD_FRIEND: "ADD_FRIEND",
   ACCEPT_FRIEND : "ACCEPT_FRIEND",
   REMOVE_FRIEND: "REMOVE_FRIEND",
+  DENY_FRIEND: "REMOVE_FRIEND",
   ADD_FRIEND_ID: "ADD_FRIEND_ID",
   CHANGE_NICK: "CHANGE_NICK",
   ADD_DM: "ADD_DM",
@@ -41,7 +42,6 @@ export const EventType = Object.freeze({
   GET_BULK_REPLY: "GET_BULK_REPLY",
   CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
   GET_MESSAGE_DATES : "GET_MESSAGE_DATES",
-  DELETE_MESSAGE : "DELETE_MESSAGE"
 });
 
 
@@ -70,11 +70,14 @@ const EventHttpMethodMap = {
   [EventType.GET_SCROLL_HISTORY]: HttpMethod.GET,
   [EventType.GET_GUILDS]: HttpMethod.GET,
   [EventType.GET_INVITES]: HttpMethod.GET,
+  [EventType.GET_MESSAGE_DATES]: HttpMethod.GET,
   [EventType.START_TYPING]: HttpMethod.POST,
   [EventType.STOP_TYPING]: HttpMethod.POST,
   [EventType.ADD_FRIEND]: HttpMethod.POST,
   [EventType.ADD_FRIEND_ID]: HttpMethod.POST,
   [EventType.REMOVE_FRIEND]: HttpMethod.DELETE,
+  [EventType.DENY_FRIEND]: HttpMethod.POST,
+  [EventType.ACCEPT_FRIEND] : HttpMethod.POST,
   [EventType.CHANGE_NICK]: HttpMethod.PUT,
   [EventType.ADD_DM]: HttpMethod.POST,
   [EventType.GET_BULK_REPLY]: HttpMethod.GET,
@@ -82,7 +85,11 @@ const EventHttpMethodMap = {
   [EventType.DELETE_CHANNEL]: HttpMethod.DELETE,
   [EventType.LEAVE_VOICE_CHANNEL]:  HttpMethod.PUT,
   [EventType.JOIN_VOICE_CHANNEL]:  HttpMethod.POST,
-  [EventType.DELETE_MESSAGE] : HttpMethod.DELETE
+  [EventType.DELETE_MESSAGE_DM] : HttpMethod.DELETE,
+  [EventType.DELETE_MESSAGE_GUILD] : HttpMethod.DELETE,
+  [EventType.UPDATE_GUILD_NAME] : HttpMethod.PUT,
+  [EventType.UPDATE_GUILD_IMAGE] : HttpMethod.PUT
+  
 };
 
 const EventUrlMap = {

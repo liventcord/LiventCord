@@ -621,7 +621,7 @@ export function initializeMusic() {
     modal.style.display = 'none';
   });
 }
-class VoiceChandler {
+export class VoiceHandler {
   async handleAudio(data) {
     if (data && data.byteLength > 0) {
       try {

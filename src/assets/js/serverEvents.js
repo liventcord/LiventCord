@@ -33,20 +33,7 @@ import { translations } from './translations.js';
 import { closeCurrentJoinPop } from './popups.js';
 
 
-apiClient.on(EventType.DELETE_MESSAGE, (data) => {
-  deleteLocalMessage(data.messageId, data.guildId, data.channelId, data.isDm);
-  guildCache.removeMessage(data.messageId, data.channelId, data.guildId);
-  const msgdate = messages_raw_cache[data.messageId].date;
-  if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
-    setLastMessageDate(
-      new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0),
-    );
-  }
-  if (bottomestChatDateStr === msgdate) {
-      setBottomestChatDateStr(getLastSecondMessageDate());
-  }
-  delete messages_raw_cache[data.messageId];
-});
+
 
 apiClient.on(EventType.JOIN_GUILD, (data) => {
   if (!data.success) {
@@ -199,7 +186,7 @@ apiClient.on(EventType.ADD_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
 
-apiClient.on(EventType.ACCEPT_FRIEND_REQUEST, function (message) {
+apiClient.on(EventType.ACCEPT_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
 
@@ -207,7 +194,7 @@ apiClient.on(EventType.REMOVE_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
 
-apiClient.on(EventType.deny_friend_request, function (message) {
+apiClient.on(EventType.DENY_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
 
