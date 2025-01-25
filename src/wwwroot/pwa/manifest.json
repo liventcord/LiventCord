@@ -2,7 +2,7 @@
   "name": "LiventCord",
   "short_name": "App",
   "description": "LiventCord Desktop App",
-  "start_url": "/app", 
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",

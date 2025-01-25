@@ -1,4 +1,5 @@
 using LiventCord.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
@@ -97,7 +98,7 @@ public static class RouteConfig
                 string channelId
             ) =>
             {
-                await appLogicService.HandleChannelRequest(context, guildId, channelId);
+                await appLogicService.HandleChannelRequest(context);
             }
         );
 
@@ -109,7 +110,7 @@ public static class RouteConfig
                 string friendId
             ) =>
             {
-                await appLogicService.HandleChannelRequest(context, null, null, friendId);
+                await appLogicService.HandleChannelRequest(context);
             }
         );
 

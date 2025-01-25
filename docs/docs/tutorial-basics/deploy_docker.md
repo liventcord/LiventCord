@@ -15,18 +15,17 @@ Run **LiventCord** using Docker.
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/liventcord/Liventcord --depth 1
+   git clone https://github.com/liventcord/liventcord
    cd LiventCord
    ```
 
 2. **Run the Docker Container**
   ## Docker
    ```bash
-   docker run -p 5005:5005 -v /path/to/your/appsettings.json TheLp281/liventcord:latest
+   docker run -p 5005:5005 -v appsettings.json TheLp281/liventcord:latest
    ```
   ## Docker Compose
   ```bash
-  ASPNETCORE_ENVIRONMENT=Development 
   docker-compose up --build
   ```
 

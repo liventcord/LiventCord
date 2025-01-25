@@ -7,8 +7,6 @@ namespace LiventCord.Helpers
 {
     public class AppLogicService
     {
-        private readonly string defaultGifWorkerUrl =
-            "https://liventcord-gif-worker.efekantunc0.workers.dev";
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -18,6 +16,12 @@ namespace LiventCord.Helpers
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly string? _gifWorkerUrl;
+        private readonly float? _maxAvatarSize;
+        private readonly float? _maxAttachmentSize;
+        private readonly float defaultAvatarSize = 3; //megabytes
+        private readonly float defaultAttachmentSize = 30; //megabytes
+        private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
+
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -29,6 +33,7 @@ namespace LiventCord.Helpers
             LoginController loginController,
             PermissionsController permissionsController,
             IConfiguration configuration
+
         )
         {
             _dbContext = dbContext;
@@ -43,29 +48,34 @@ namespace LiventCord.Helpers
                 configuration["AppSettings:GifWorkerUrl"] != null
                     ? configuration["AppSettings:GifWorkerUrl"]
                     : defaultGifWorkerUrl;
-        }
+            
+            _maxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize) ? avatarSize : defaultAvatarSize;
+            _maxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var uploadSize) ? uploadSize : defaultAttachmentSize;
 
+        }
         public async Task HandleInitRequest(HttpContext context)
         {
+            async Task RejectStaleSession()
+            {
+                await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
+                await _loginController.Logout();
+            }
+
             try
             {
                 string? userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsJsonAsync(new { message = "User not found." });
+                    await RejectStaleSession();
                     return;
                 }
 
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+
                 if (user == null)
                 {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsJsonAsync(
-                        new { message = "User session is no longer valid. Please log in again." }
-                    );
-                    await _loginController.Logout();
+                    await RejectStaleSession();
                     return;
                 }
 
@@ -73,8 +83,8 @@ namespace LiventCord.Helpers
 
                 var jsonData = new
                 {
-                    email = user.Email ?? "",
                     userId,
+                    email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
                     userStatus = user.Status ?? "",
                     userDiscriminator = user.Discriminator ?? "",
@@ -85,6 +95,8 @@ namespace LiventCord.Helpers
                     dmFriends = new List<string>(),
                     guildsJson = guilds,
                     gifWorkerUrl = _gifWorkerUrl,
+                    maxAvatarSize = _maxAvatarSize,
+                    maxUploadsize = _maxAttachmentSize
                 };
 
                 context.Response.ContentType = "application/json";
@@ -105,10 +117,7 @@ namespace LiventCord.Helpers
         }
 
         public async Task HandleChannelRequest(
-            HttpContext context,
-            string? guildId,
-            string? channelId,
-            string? friendId = null
+            HttpContext context
         )
         {
             try
@@ -123,8 +132,8 @@ namespace LiventCord.Helpers
 
                 var filePath = Path.Combine(
                     context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath,
-                    "templates",
-                    "app.html"
+                    "app",
+                    "index.html"
                 );
                 var htmlContent = await File.ReadAllTextAsync(filePath);
 

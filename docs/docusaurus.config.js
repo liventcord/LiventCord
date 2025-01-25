@@ -7,12 +7,12 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
   title: 'LiventCord Docs',
   tagline: 'Dinosaurs are cool',
   url: 'https://liventcord.github.io',
-  baseUrl: '/',
+  baseUrl: '/LiventCord/',
   onBrokenLinks: 'ignore',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
-  organizationName: 'LiventCord',
-  projectName: 'Docs',
+  organizationName: 'liventcord',
+  projectName: 'LiventCord',
   trailingSlash: false,
 
   presets: [

@@ -93,18 +93,17 @@ namespace LiventCord.Controllers
         [HttpGet("/api/{mode}/{targetId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetMessages(
             [FromRoute] string mode,
-            [FromRoute] [IdLengthValidation] string targetId,
             [FromRoute] [IdLengthValidation] string channelId
         )
         {
             if (mode == "guilds")
             {
-                var messages = await GetMessages(targetId, channelId);
+                var messages = await GetMessages(channelId);
                 return Ok(new { messages });
             }
             else if (mode == "dms")
             {
-                var messages = await GetMessages(targetId, channelId);
+                var messages = await GetMessages(channelId);
                 return Ok(new { messages });
             }
             else
@@ -179,7 +178,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task<List<Message>> GetMessages(string targetId, string channelId)
+        private async Task<List<Message>> GetMessages(string channelId)
         {
             return await _context
                 .Messages.Where(m => m.ChannelId == channelId)

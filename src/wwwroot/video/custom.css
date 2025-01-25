@@ -1,9 +1,7 @@
 html,
 body {
-
   height: 100%;
   background-color: #313338;
-  
 }
 
 #local_vid {
@@ -17,9 +15,8 @@ body {
   border: 2px solid black;
   right: 2.5%;
 
-  background-color: black;   
+  background-color: black;
 }
-
 
 #video_grid {
   display: flex;
@@ -46,8 +43,6 @@ body {
   }
 }
 
-
-
 .button-container {
   z-index: 3;
   position: absolute;
@@ -57,7 +52,7 @@ body {
   transform: translateX(-50%);
 
   align-items: center;
-  margin-bottom: 100px; 
+  margin-bottom: 100px;
   margin-left: 25px;
 }
 

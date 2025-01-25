@@ -5,8 +5,6 @@ cache/
 Migrations/
 Logs/
 Data/
-wwwroot/static/w
-wwwroot/static/css/fullinvite.min.css
 appsettings.Development.json
 appsettings.json
 *.suo
@@ -16,9 +14,13 @@ LiventCord.sln
 .vs/
 .vscode/
 .config/
-
 *.tmp
 *.log
 *.dSYM/
 *.db
 *.pdb
+node_modules/
+
+# Exclude build-copied files
+wwwroot/app/* 
+wwwroot/translations/*

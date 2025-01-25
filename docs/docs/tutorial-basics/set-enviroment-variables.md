@@ -15,17 +15,19 @@ sidebar_position: 1
         "RemoteConnection": "CONNECTION_STRING",
         "DatabaseType": "DATABASE_TYPE",
         "SqlitePath": "Data/database.db",
-        "GifWorkerUrl": "WORKER_URL"
+        "GifWorkerUrl": "WORKER_URL",
+        "MaxAvatarSize" : "MAX_AVATAR",
+        "MaxAttachmentsSize" : "MAX_ATTACHMENTS"
       }
     }
     ```
   - **Host**:
     Hostname the server will run at.
-    (defaults to 0.0.0.0)
+    Defaults to 0.0.0.0
 
   - **Port**:
     Port the server will run at.
-    (defaults to 5005)
+    Defaults to 5005
 
   - **RemoteConnection**:
     Connection string for the database.
@@ -35,12 +37,26 @@ sidebar_position: 1
       - **PostgreSQL**
       - **MySQL**
       - **MariaDB**
+      - **Oracle**
+      - **Firebird**
+      - **SqlServer**
       - **SQLite**
-    (defaults to "sqlite" if not provided).
+    Defaults to "sqlite" if not provided.
 
   - **SqlitePath**
     File path where SQLite will store data
-    (defaults to Data/liventcord.db)
+    Defaults to Data/liventcord.db
   
   - **GifWorkerUrl**: 
     URL of the Cloudflare Worker for querying Tenor GIFs.
+    Defaults to "liventcord-gif-worker.efekantunc0.workers.dev"
+
+  - **MaxAvatarSize**:
+    Maximum upload size(in MB) for avatar on guilds and profiles
+    Defaults to 3
+  
+  - **MaxAttachmentsSize**:
+    Maximum attachment size (in MB) allowed for message uploads.
+    Defaults to 30
+
+  
