@@ -3,8 +3,8 @@ import {
   setHasJustFetchedMessagesFalse,
   setLastSenderID,
   createProfileImageChat,
-} from './chat';
-import { hasSharedGuild } from './cache';
+} from "./chat";
+import { hasSharedGuild } from "./cache";
 import {
   displayCannotSendMessage,
   closeReplyMenu,
@@ -12,23 +12,24 @@ import {
   chatInput,
   chatContent,
   fileImagePreview,
-  fileInput,currentReplyingTo
-} from './chatbar';
-import { apiClient, EventType } from './api';
+  fileInput,
+  currentReplyingTo,
+} from "./chatbar";
+import { apiClient, EventType } from "./api";
 import {
   createEl,
   getEmojiPath,
   getFormattedDate,
   getBeforeElement,
-} from './utils';
-import { getUserNick } from './user';
-import { isOnDm } from './router';
-import { friendCache } from './friends';
-import { guildCache } from './cache';
-import { currentGuildId } from './guild';
-import { isOnGuild } from './router';
-import { formatDate } from './utils';
-import { getMessageFromChat } from './chat';
+} from "./utils";
+import { getUserNick } from "./user";
+import { isOnDm } from "./router";
+import { friendCache } from "./friends";
+import { guildCache } from "./cache";
+import { currentGuildId } from "./guild";
+import { isOnGuild } from "./router";
+import { formatDate } from "./utils";
+import { getMessageFromChat } from "./chat";
 
 export class Message {
   constructor({
@@ -79,7 +80,7 @@ export class Message {
 }
 
 export async function sendMessage(content, user_ids) {
-  if (content === '') {
+  if (content === "") {
     return;
   }
 
@@ -110,21 +111,21 @@ export async function sendMessage(content, user_ids) {
       lastEdited: null,
     };
     apiClient.send(EventType.SEND_MESSAGE_GUILD, message);
-    chatInput.value = '';
+    chatInput.value = "";
     closeReplyMenu();
     return;
   }
 
   try {
     const file = fileInput.files[0];
-    fileInput.value = '';
+    fileInput.value = "";
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('guildId', currentGuildId);
-    formData.append('channelId', channelIdToSend);
+    formData.append("file", file);
+    formData.append("guildId", currentGuildId);
+    formData.append("channelId", channelIdToSend);
 
-    const uploadResponse = await fetch('/upload', {
-      method: 'POST',
+    const uploadResponse = await fetch("/upload", {
+      method: "POST",
       body: formData,
     });
 
@@ -143,7 +144,7 @@ export async function sendMessage(content, user_ids) {
         lastEdited: null,
       };
 
-      console.log('File uploaded successfully:', uploadData.fileName);
+      console.log("File uploaded successfully:", uploadData.fileName);
 
       if (isOnGuild) {
         apiClient.send(EventType.SEND_MESSAGE_GUILD, messageData);
@@ -151,14 +152,14 @@ export async function sendMessage(content, user_ids) {
         apiClient.send(EventType.SEND_MESSAGE_DM, messageData);
       }
 
-      chatInput.value = '';
+      chatInput.value = "";
       closeReplyMenu();
-      fileImagePreview.innerHTML = '';
+      fileImagePreview.innerHTML = "";
     } else {
-      console.error('Failed to upload file:', uploadResponse.statusText);
+      console.error("Failed to upload file:", uploadResponse.statusText);
     }
   } catch (error) {
-    console.error('Error Sending File Message:', error);
+    console.error("Error Sending File Message:", error);
   }
 }
 
@@ -180,15 +181,18 @@ export function replaceCustomEmojis(message) {
   return message;
 }
 export function displayWelcomeMessage(userName, date) {
-  const newMessage = createEl('div', { className: 'message' });
-  const messageContentElement = createEl('div', {
-    id: 'message-content-element',
+  const newMessage = createEl("div", { className: "message" });
+  const messageContentElement = createEl("div", {
+    id: "message-content-element",
   });
-  const authorAndDate = createEl('div', { className:"author-and-date" });
-  const nickElement = createEl('span', {textContent: userName});
-  nickElement.classList.add('nick-element');
+  const authorAndDate = createEl("div", { className: "author-and-date" });
+  const nickElement = createEl("span", { textContent: userName });
+  nickElement.classList.add("nick-element");
   authorAndDate.appendChild(nickElement);
-  const dateElement = createEl('span' , {className : "date-element", textContent: getFormattedDate(new Date(date))});
+  const dateElement = createEl("span", {
+    className: "date-element",
+    textContent: getFormattedDate(new Date(date)),
+  });
   authorAndDate.appendChild(dateElement);
   newMessage.appendChild(authorAndDate);
   newMessage.appendChild(messageContentElement);
@@ -201,14 +205,14 @@ export function getOldMessages(date, messageId = null) {
     isDm: isOnDm,
   };
   if (messageId) {
-    data['messageId'] = messageId;
+    data["messageId"] = messageId;
   }
 
-  data['channelId'] = isOnDm
+  data["channelId"] = isOnDm
     ? friendCache.currentDmId
     : guildCache.currentChannelId;
   if (isOnGuild) {
-    data['guildId'] = currentGuildId;
+    data["guildId"] = currentGuildId;
   }
   apiClient.send(EventType.GET_SCROLL_HISTORY, data);
   setTimeout(() => {
@@ -218,18 +222,18 @@ export function getOldMessages(date, messageId = null) {
 
 export function getLastSecondMessageDate() {
   const messages = chatContent.children;
-  if (messages.length < 2) return '';
+  if (messages.length < 2) return "";
 
   const secondToLastMessage = messages[messages.length - 2];
   if (secondToLastMessage) {
-    const dateGathered = secondToLastMessage.getAttribute('data-date');
+    const dateGathered = secondToLastMessage.getAttribute("data-date");
     if (dateGathered) {
       const parsedDate = new Date(dateGathered);
       const formattedDate = formatDate(parsedDate);
       return formattedDate;
     }
   }
-  return '';
+  return "";
 }
 
 export function getMessageDate(top = true) {
@@ -238,7 +242,7 @@ export function getMessageDate(top = true) {
 
   let targetElement = getMessageFromChat(top);
   if (targetElement) {
-    const dateGathered = targetElement.getAttribute('data-date');
+    const dateGathered = targetElement.getAttribute("data-date");
     const parsedDate = new Date(dateGathered);
     const formattedDate = formatDate(parsedDate);
     return formattedDate;
@@ -253,7 +257,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
     (isOnDm && isDm && channelId !== friendCache.currentDmId)
   ) {
     console.error(
-      'Can not delete message: ',
+      "Can not delete message: ",
       guildId,
       channelId,
       messageId,
@@ -266,13 +270,13 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
 
   for (let i = 0; i < messages.length; i++) {
     let element = messages[i];
-    if (!element.classList || !element.classList.contains('message')) {
+    if (!element.classList || !element.classList.contains("message")) {
       continue;
     }
     const userId = element.dataset.userId;
 
     if (String(element.id) === String(messageId)) {
-      console.log('Removing element:', messageId);
+      console.log("Removing element:", messageId);
       element.remove();
       const foundMsg = getMessageFromChat(false);
       if (foundMsg) {
@@ -280,15 +284,15 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
       }
     } // Check if the element matches the currentSenderOfMsg and it doesn"t have a profile picture already
     else if (
-      !element.querySelector('.profile-pic') &&
+      !element.querySelector(".profile-pic") &&
       getBeforeElement(element).dataset.userId !== element.dataset.userId
     ) {
-      console.log('Creating profile img...');
+      console.log("Creating profile img...");
       const messageContentElement = element.querySelector(
-        '#message-content-element',
+        "#message-content-element",
       );
       const date = element.dataset.date;
-      const smallDate = element.querySelector('.small-date-element');
+      const smallDate = element.querySelector(".small-date-element");
       if (smallDate) {
         smallDate.remove();
       }
@@ -305,7 +309,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
       break;
     }
   }
-  const dateBars = chatContent.querySelectorAll('.dateBar');
+  const dateBars = chatContent.querySelectorAll(".dateBar");
 
   dateBars.forEach((bar) => {
     if (bar === chatContent.lastElementChild) {

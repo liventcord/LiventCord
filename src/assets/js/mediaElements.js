@@ -1,4 +1,4 @@
-import { displayImagePreview, beautifyJson, displayJsonPreview } from './ui';
+import { displayImagePreview, beautifyJson, displayJsonPreview } from "./ui";
 import {
   isImageURL,
   isAttachmentUrl,
@@ -11,13 +11,11 @@ import {
   openExternalUrl,
   extractLinks,
   createEl,
-  getYouTubeEmbedURL
-} from './utils';
+  getYouTubeEmbedURL,
+} from "./utils";
 
-import DOMPurify from 'dompurify';
-import { defaultMediaImageUrl,defaultProfileImageUrl } from './utils';
-
-
+import DOMPurify from "dompurify";
+import { defaultMediaImageUrl, defaultProfileImageUrl } from "./utils";
 
 const maxWidth = 512;
 const maxHeight = 384;
@@ -26,32 +24,35 @@ const maxTenorWidth = 512 * 1.5;
 const maxTenorHeight = 384 * 1.5;
 
 export function createTenorElement(msgContentElement, inputText, url) {
-  let tenorURL = '';
+  let tenorURL = "";
   try {
     const parsedUrl = new URL(url);
-    const allowedHosts = ['media1.tenor.com', 'c.tenor.com', 'tenor.com'];
+    const allowedHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
     if (allowedHosts.includes(parsedUrl.host)) {
-      tenorURL = parsedUrl.host === 'tenor.com' && !url.endsWith('.gif') ? `${url}.gif` : url;
+      tenorURL =
+        parsedUrl.host === "tenor.com" && !url.endsWith(".gif")
+          ? `${url}.gif`
+          : url;
     }
   } catch (error) {
-    console.error('Invalid URL:', url, error);
+    console.error("Invalid URL:", url, error);
   }
 
-  const imgElement = createEl('img', {
+  const imgElement = createEl("img", {
     src: defaultMediaImageUrl,
     style: {
-      cursor: 'pointer',
+      cursor: "pointer",
       maxWidth: `${maxTenorWidth}px`,
       maxHeight: `${maxTenorHeight}px`,
     },
-    loading: 'lazy',
-    className: 'tenor-image',
+    loading: "lazy",
+    className: "tenor-image",
   });
 
-  imgElement.setAttribute('data-src', tenorURL);
+  imgElement.setAttribute("data-src", tenorURL);
 
   imgElement.onload = function () {
-    const actualSrc = imgElement.getAttribute('data-src');
+    const actualSrc = imgElement.getAttribute("data-src");
     if (actualSrc) {
       imgElement.src = DOMPurify.sanitize(actualSrc);
     }
@@ -63,27 +64,25 @@ export function createTenorElement(msgContentElement, inputText, url) {
     msgContentElement.textContent = inputText;
   };
 
-  imgElement.addEventListener('click', function () {
+  imgElement.addEventListener("click", function () {
     displayImagePreview(imgElement.src);
   });
 
   return imgElement;
 }
 
-
 export function createImageElement(msgContentElement, inputText, url_src) {
-  const imgElement = createEl('img', {
-    className: 'imageElement',
+  const imgElement = createEl("img", {
+    className: "imageElement",
     src: defaultMediaImageUrl,
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`,
     },
   });
-  
 
   imgElement.onload = function () {
-    const actualSrc = DOMPurify.sanitize(imgElement.getAttribute('data-src'));
+    const actualSrc = DOMPurify.sanitize(imgElement.getAttribute("data-src"));
     if (actualSrc && imgElement.src === defaultMediaImageUrl) {
       imgElement.src = actualSrc;
     }
@@ -95,7 +94,7 @@ export function createImageElement(msgContentElement, inputText, url_src) {
     msgContentElement.textContent = inputText;
   };
 
-  imgElement.addEventListener('click', function () {
+  imgElement.addEventListener("click", function () {
     displayImagePreview(imgElement.src);
   });
 
@@ -103,31 +102,37 @@ export function createImageElement(msgContentElement, inputText, url_src) {
 }
 
 export function createAudioElement(audioURL) {
-  const audioElement = createEl('audio', {src :  DOMPurify.sanitize(audioURL),controls : true });
+  const audioElement = createEl("audio", {
+    src: DOMPurify.sanitize(audioURL),
+    controls: true,
+  });
   return audioElement;
 }
 export async function createJsonElement(url) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error('Failed to fetch JSON data');
+      throw new Error("Failed to fetch JSON data");
     }
     let jsonData = await response.json();
     const beautifiedData = beautifyJson(jsonData);
     const truncatedJsonLines = beautifiedData
-      .split('\n')
+      .split("\n")
       .slice(0, 15)
-      .join('\n');
-    const jsonContainer = createEl('div', {className : "json-container"});
-    const jsonElement = createEl('pre', {className : "json-element", textContent : truncatedJsonLines});
+      .join("\n");
+    const jsonContainer = createEl("div", { className: "json-container" });
+    const jsonElement = createEl("pre", {
+      className: "json-element",
+      textContent: truncatedJsonLines,
+    });
 
     jsonContainer.appendChild(jsonElement);
-    jsonContainer.addEventListener('click', function () {
+    jsonContainer.addEventListener("click", function () {
       displayJsonPreview(beautifiedData);
     });
     return jsonContainer;
   } catch (error) {
-    console.error('Error creating JSON element:', error);
+    console.error("Error creating JSON element:", error);
     return null;
   }
 }
@@ -135,20 +140,20 @@ export async function createJsonElement(url) {
 export function createYouTubeElement(url) {
   const youtubeURL = getYouTubeEmbedURL(url);
 
-  const iframeElement = createEl('iframe', {
+  const iframeElement = createEl("iframe", {
     src: DOMPurify.sanitize(youtubeURL),
-    frameborder: '0',
+    frameborder: "0",
     allow:
-      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
     allowFullscreen: true,
-    className: 'youtube-element',
+    className: "youtube-element",
   });
 
-  iframeElement.setAttribute('allowfullscreen', 'true');
-  iframeElement.setAttribute('mozallowfullscreen', 'true');
-  iframeElement.setAttribute('msallowfullscreen', 'true');
-  iframeElement.setAttribute('oallowfullscreen', 'true');
-  iframeElement.setAttribute('webkitallowfullscreen', 'true');
+  iframeElement.setAttribute("allowfullscreen", "true");
+  iframeElement.setAttribute("mozallowfullscreen", "true");
+  iframeElement.setAttribute("msallowfullscreen", "true");
+  iframeElement.setAttribute("oallowfullscreen", "true");
+  iframeElement.setAttribute("webkitallowfullscreen", "true");
 
   return iframeElement;
 }
@@ -165,12 +170,12 @@ export function createVideoElement(url) {
     throw new Error("Failed to sanitize URL");
   }
 
-  const videoElement = createEl('video');
+  const videoElement = createEl("video");
   videoElement.src = sanitizedUrl;
-  videoElement.width = '560';
-  videoElement.height = '315';
+  videoElement.width = "560";
+  videoElement.height = "315";
   videoElement.controls = true;
-  
+
   return videoElement;
 }
 export async function createMediaElement(
@@ -186,10 +191,10 @@ export async function createMediaElement(
 
   if (
     attachmentUrls &&
-    typeof attachmentUrls === 'string' &&
-    attachmentUrls.trim() !== ''
+    typeof attachmentUrls === "string" &&
+    attachmentUrls.trim() !== ""
   ) {
-    attachmentUrls = JSON.parse(attachmentUrls.replace(/\\/g, ''));
+    attachmentUrls = JSON.parse(attachmentUrls.replace(/\\/g, ""));
     if (
       attachmentUrls.length > 0 &&
       !attachmentUrls[0].startsWith(`${location.origin}`)
@@ -216,7 +221,7 @@ export async function createMediaElement(
         }
         linksProcessed++;
       } catch (error) {
-        console.error('Error processing media link:', error);
+        console.error("Error processing media link:", error);
         linksProcessed++;
       }
     }
@@ -225,10 +230,10 @@ export async function createMediaElement(
   await processLinks();
 }
 export function createRegularText(content) {
-  const spanElement = createEl('p', { id: 'message-content-element' });
+  const spanElement = createEl("p", { id: "message-content-element" });
   spanElement.textContent = content;
-  spanElement.style.marginLeft = '0px';
-  return spanElement
+  spanElement.style.marginLeft = "0px";
+  return spanElement;
 }
 export function processMediaLink(
   link,
@@ -239,7 +244,7 @@ export function processMediaLink(
 ) {
   return new Promise((resolve, reject) => {
     let mediaElement = null;
-    newMessage.setAttribute('data-attachment_url', link);
+    newMessage.setAttribute("data-attachment_url", link);
 
     const handleMediaElement = () => {
       if (mediaElement) {
@@ -254,13 +259,13 @@ export function processMediaLink(
         };
 
         const handleError = (error) => {
-          console.error('Error loading media element:', error);
-          const spanElement = createEl('span');
-          spanElement.textContent = 'Failed to load media';
-          spanElement.style.display = 'inline-block';
-          spanElement.style.maxWidth = '100%';
-          spanElement.style.maxHeight = '100%';
-          spanElement.style.color = 'red';
+          console.error("Error loading media element:", error);
+          const spanElement = createEl("span");
+          spanElement.textContent = "Failed to load media";
+          spanElement.style.display = "inline-block";
+          spanElement.style.maxWidth = "100%";
+          spanElement.style.maxHeight = "100%";
+          spanElement.style.color = "red";
           if (mediaElement.parentNode) {
             mediaElement.parentNode.replaceChild(spanElement, mediaElement);
           }
@@ -272,8 +277,8 @@ export function processMediaLink(
           mediaElement instanceof HTMLAudioElement ||
           mediaElement instanceof HTMLVideoElement
         ) {
-          mediaElement.addEventListener('load', handleLoad);
-          mediaElement.addEventListener('error', handleError);
+          mediaElement.addEventListener("load", handleLoad);
+          mediaElement.addEventListener("error", handleError);
         } else {
           messageContentElement.appendChild(mediaElement);
           resolve();
@@ -293,12 +298,12 @@ export function processMediaLink(
     //}
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      mediaElement = createEl('img', { 
-        className : "chat-image",
-        src :  DOMPurify.sanitize(link) 
+      mediaElement = createEl("img", {
+        className: "chat-image",
+        src: DOMPurify.sanitize(link),
       });
       mediaElement.dataset.dummy = link;
-      mediaElement.addEventListener('click', function () {
+      mediaElement.addEventListener("click", function () {
         displayImagePreview(mediaElement.src);
       });
       messageContentElement.appendChild(mediaElement);
@@ -319,14 +324,14 @@ export function processMediaLink(
 
       parts.forEach((part, index) => {
         if (part) {
-          const normalSpan = createEl('span', { textContent: part });
+          const normalSpan = createEl("span", { textContent: part });
           messageContentElement.appendChild(normalSpan);
         }
 
         if (index < urls.length) {
-          const urlSpan = createEl('a', { textContent: urls[index] });
-          urlSpan.classList.add('url-link');
-          urlSpan.addEventListener('click', () => {
+          const urlSpan = createEl("a", { textContent: urls[index] });
+          urlSpan.classList.add("url-link");
+          urlSpan.addEventListener("click", () => {
             openExternalUrl(urls[index]);
           });
           messageContentElement.appendChild(urlSpan);
@@ -345,19 +350,19 @@ export function processMediaLink(
 }
 
 export function appendEmbedToMessage(messageElement, url, data) {
-  const embedContainer = createEl('div', { className: 'embed-container' });
+  const embedContainer = createEl("div", { className: "embed-container" });
   const siteName = data.siteName;
   if (siteName) {
-    const headerElement = createEl('p', { textContent: siteName });
+    const headerElement = createEl("p", { textContent: siteName });
     embedContainer.appendChild(headerElement);
   }
-  const titleElement = createEl('a', {
+  const titleElement = createEl("a", {
     textContent: data.title,
-    className: 'url-link',
+    className: "url-link",
     href: url,
-    target: '_blank',
+    target: "_blank",
   });
-  const descriptionElement = createEl('p', { textContent: data.description });
+  const descriptionElement = createEl("p", { textContent: data.description });
 
   embedContainer.appendChild(titleElement);
   embedContainer.appendChild(descriptionElement);
@@ -374,6 +379,6 @@ export function displayWebPreview(messageElement, url, data) {
       });
     }
   } catch (error) {
-    console.error('Error displaying web preview:', error);
+    console.error("Error displaying web preview:", error);
   }
 }

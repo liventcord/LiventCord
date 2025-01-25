@@ -1,15 +1,14 @@
 #main-logo {
-  transform-origin: center; 
+  transform-origin: center;
   width: 30px;
   height: 30px;
   border: 10px solid rgb(49, 51, 56);
   -webkit-user-drag: none;
-  display: inline-block; 
+  display: inline-block;
   user-select: none;
-  
 }
 
-#main-logo :hover  {
+#main-logo :hover {
   border: 10px solid #677bc4;
 }
 
@@ -294,14 +293,14 @@
   white-space: nowrap;
   color: oklab(0.786807 -0.0025776 -0.0110238);
   font-size: 16px;
-  font-family: 'gg sans Normal', sans-serif;
+  font-family: "gg sans Normal", sans-serif;
 }
 #guildBornTitle {
   white-space: nowrap;
   font-weight: bold;
   margin: 0;
   font-size: 32px;
-  font-family: 'gg sans Bold', sans-serif;
+  font-family: "gg sans Bold", sans-serif;
 }
 #guildBornTitle-wrapper {
   display: flex;
@@ -318,7 +317,7 @@
   color: rgb(177, 184, 193);
   font-weight: bold;
   font-size: 16px;
-  font-family: 'gg sans Normal', sans-serif;
+  font-family: "gg sans Normal", sans-serif;
   z-index: 1;
 }
 #channel-list {
@@ -1018,7 +1017,7 @@
   border: 1px solid #ccc;
   border-radius: 3px;
 }
-input[type='file'] {
+input[type="file"] {
   display: none;
   position: relative;
 }
@@ -1034,8 +1033,8 @@ input[type='file'] {
   cursor: pointer;
 }
 .chat-image {
-  width : '100%';
-  height : 'auto';
+  width: "100%";
+  height: "auto";
 }
 #change-nick-button {
   top: 30%;
@@ -1154,7 +1153,7 @@ textarea::-webkit-scrollbar-track {
 }
 .dateBar::before,
 .dateBar::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   width: calc(50% - 50px);
@@ -1418,8 +1417,8 @@ textarea::-webkit-scrollbar-track {
   display: grid;
   grid-template-columns: max-content max-content;
   grid-template-areas:
-    'A B'
-    'A C';
+    "A B"
+    "A C";
   gap: 32px;
   place-content: center;
   height: 100vh;
@@ -1479,7 +1478,7 @@ textarea::-webkit-scrollbar-track {
   background: transparent;
 }
 .track::before {
-  content: '';
+  content: "";
   height: 6px;
   width: 100%;
   display: block;
@@ -1490,7 +1489,7 @@ textarea::-webkit-scrollbar-track {
   top: 0;
 }
 .track::after {
-  content: '';
+  content: "";
   height: 6px;
   width: 85%;
   display: block;

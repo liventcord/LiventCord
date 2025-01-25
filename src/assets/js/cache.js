@@ -12,7 +12,7 @@ class BaseCache {
     this.data[key] = Array.isArray(value) ? value : [];
   }
   setObject(key, value) {
-    this.data[key] = typeof value === 'object' && value !== null ? value : {};
+    this.data[key] = typeof value === "object" && value !== null ? value : {};
   }
   remove(key, id) {
     if (this.data[key]) {
@@ -36,7 +36,7 @@ class ChannelCache extends BaseCache {
     return this.get(guildId) || [];
   }
   isRootChannel(guildId, channelId) {
-    console.log('Root channel unhandled');
+    console.log("Root channel unhandled");
   }
   updateChannel(guildId, channel, add = true) {
     const channels = this.getChannels(guildId);
@@ -187,8 +187,8 @@ class GuildCache {
       return GuildCache.instance;
     }
     this.guilds = {};
-    this.currentGuildId = '';
-    this.currentChannelId = '';
+    this.currentGuildId = "";
+    this.currentChannelId = "";
     GuildCache.instance = this;
   }
 
@@ -242,22 +242,22 @@ class GuildCacheInterface {
   }
   //voice
   getVoiceChannelMembers(channelId) {
-    if(!channelId) return;
-    this.guildCache.forEach(guild => {
-        if(guild.channelId === channelId && guild.voiceChannels  ) {
-          return guild.voiceChannels.getUsersInVoiceChannel();
-        }
-    })
-  }
-  setVoiceChannelMembers(channelId,usersArray) {
-    if(!channelId) return;
-    this.guildCache.forEach(guild => {
-      if(guild.channelId === channelId && guild.voiceChannels  ) {
-        usersArray.forEach(userId => {
-          guild.voiceChannels.addUserToVoiceChannel(userId);
-        })
+    if (!channelId) return;
+    this.guildCache.forEach((guild) => {
+      if (guild.channelId === channelId && guild.voiceChannels) {
+        return guild.voiceChannels.getUsersInVoiceChannel();
       }
-  })
+    });
+  }
+  setVoiceChannelMembers(channelId, usersArray) {
+    if (!channelId) return;
+    this.guildCache.forEach((guild) => {
+      if (guild.channelId === channelId && guild.voiceChannels) {
+        usersArray.forEach((userId) => {
+          guild.voiceChannels.addUserToVoiceChannel(userId);
+        });
+      }
+    });
   }
 
   //member
@@ -308,7 +308,6 @@ class GuildCacheInterface {
   getMessages(guildId, channelId) {
     return this.getGuild(guildId)?.messages.getMessages(channelId) || [];
   }
-
 }
 export let currentMessagesCache = {}; //<messageId> <messageElements>
 export function setMessagesCache(id, msg) {

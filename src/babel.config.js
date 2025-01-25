@@ -1,3 +1,3 @@
 module.exports = {
-  plugins: ['babel-plugin-import-resolver'],
+  plugins: ["babel-plugin-import-resolver"],
 };

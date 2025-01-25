@@ -1,10 +1,9 @@
-import { initialState } from './app';
-import { createEl, defaultMediaImageUrl } from './utils';
-import { sendMessage } from './message';
-import { getId, debounce } from './utils';
-import { isUsersOpenGlobal } from './userList';
-import { hideImagePreviewRequest } from './ui';
-
+import { initialState } from "./app";
+import { createEl, defaultMediaImageUrl } from "./utils";
+import { sendMessage } from "./message";
+import { getId, debounce } from "./utils";
+import { isUsersOpenGlobal } from "./userList";
+import { hideImagePreviewRequest } from "./ui";
 
 let initialMouseX;
 let initialMouseY;
@@ -12,18 +11,19 @@ let isResizing = false;
 let initialWidth, initialHeight;
 let resizingTop, resizingBottom, resizingLeft, resizingRight;
 let isMediaMenuOpen = false;
-let currentMenuType = '';
+let currentMenuType = "";
 let mediaMenu, mediaMenuContainer;
-const gifsBackBtn = getId('gifsBackBtn');
-const exampleTenorId = 'LIVDSRZULELA'; //Example tenor apikey from tenor docs
-
+const gifsBackBtn = getId("gifsBackBtn");
+const exampleTenorId = "LIVDSRZULELA"; //Example tenor apikey from tenor docs
 
 export const gifBtn = getId("gifbtn");
 export const gifBtnTop = getId("gifbtntop");
 export const emojiBtn = getId("emojibtn");
 
-getId("image-preview-container").addEventListener("click",hideImagePreviewRequest);
-
+getId("image-preview-container").addEventListener(
+  "click",
+  hideImagePreviewRequest,
+);
 
 export function onMouseMove(e) {
   if (!isResizing) return;
@@ -42,40 +42,40 @@ export function onMouseMove(e) {
 
   if (resizingLeft) {
     newWidth = Math.max(100, newWidth);
-    mediaMenu.style.width = newWidth + 'px';
+    mediaMenu.style.width = newWidth + "px";
   } else if (resizingRight) {
-    mediaMenu.style.width = newWidth + 'px';
+    mediaMenu.style.width = newWidth + "px";
   }
 
   if (resizingTop) {
     newHeight = Math.max(100, newHeight);
-    mediaMenu.style.height = newHeight + 'px';
+    mediaMenu.style.height = newHeight + "px";
   } else if (resizingBottom) {
-    mediaMenu.style.height = newHeight + 'px';
+    mediaMenu.style.height = newHeight + "px";
   }
 
-  mediaMenu.style.width = Math.min(viewportWidth, newWidth) + 'px';
-  mediaMenu.style.height = Math.min(viewportHeight, newHeight) + 'px';
+  mediaMenu.style.width = Math.min(viewportWidth, newWidth) + "px";
+  mediaMenu.style.height = Math.min(viewportHeight, newHeight) + "px";
 }
 
 export function onMouseUp() {
   if (isResizing) {
     isResizing = false;
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-    document.body.style.userSelect = '';
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    document.body.style.userSelect = "";
   }
 }
 
 const categories = [
-  { title: 'Humans', class: 'human', count: 245 },
-  { title: 'Nature', class: 'nature', count: 213 },
-  { title: 'Food', class: 'food', count: 129 },
-  { title: 'Activities', class: 'activities', count: 76 },
-  { title: 'Travel', class: 'travel', count: 131 },
-  { title: 'Objects', class: 'objects', count: 223 },
-  { title: 'Symbols', class: 'symbols', count: 328 },
-  { title: 'Flags', class: 'flags', count: 269 },
+  { title: "Humans", class: "human", count: 245 },
+  { title: "Nature", class: "nature", count: 213 },
+  { title: "Food", class: "food", count: 129 },
+  { title: "Activities", class: "activities", count: 76 },
+  { title: "Travel", class: "travel", count: 131 },
+  { title: "Objects", class: "objects", count: 223 },
+  { title: "Symbols", class: "symbols", count: 328 },
+  { title: "Flags", class: "flags", count: 269 },
 ];
 
 export function renderEmojis(container, categories) {
@@ -87,16 +87,16 @@ export function renderEmojis(container, categories) {
   let currentIndex = 0;
 
   categories.forEach((category) => {
-    const categoryContainer = document.createElement('div');
-    categoryContainer.className = 'emoji-category';
+    const categoryContainer = document.createElement("div");
+    categoryContainer.className = "emoji-category";
 
-    const categoryTitle = document.createElement('div');
-    categoryTitle.className = 'category-title';
+    const categoryTitle = document.createElement("div");
+    categoryTitle.className = "category-title";
     categoryTitle.textContent = category.title;
     categoryContainer.appendChild(categoryTitle);
 
-    const emojisContainer = document.createElement('div');
-    emojisContainer.className = 'emojis-container';
+    const emojisContainer = document.createElement("div");
+    emojisContainer.className = "emojis-container";
 
     for (let i = 0; i < category.count; i++) {
       const col = currentIndex % columns;
@@ -104,7 +104,7 @@ export function renderEmojis(container, categories) {
       const x = -(col * spriteWidth);
       const y = -(row * spriteHeight);
 
-      const emoji = document.createElement('div');
+      const emoji = document.createElement("div");
       emoji.className = `emoji ${category.class}`;
       emoji.style.backgroundPosition = `${x}px ${y}px`;
 
@@ -119,13 +119,13 @@ export function renderEmojis(container, categories) {
 }
 
 export function getEmojiPanel() {
-  const emojiPanel = createEl('div', { id: 'emoji-panel' });
-  const emojisContainer = createEl('div', {
-    className: 'emojis-container',
+  const emojiPanel = createEl("div", { id: "emoji-panel" });
+  const emojisContainer = createEl("div", {
+    className: "emojis-container",
     style: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
     },
   });
 
@@ -135,24 +135,24 @@ export function getEmojiPanel() {
 }
 
 export function updateMediaPanelPosition() {
-  const mediaMenu = getId('media-menu');
+  const mediaMenu = getId("media-menu");
   if (mediaMenu) {
-    mediaMenu.className = !isUsersOpenGlobal ? 'users-open' : '';
+    mediaMenu.className = !isUsersOpenGlobal ? "users-open" : "";
   }
 }
 export function handleMediaPanelResize() {
-  if(!mediaMenu) return;
+  if (!mediaMenu) return;
   let viewportWidth = window.innerWidth / 1.7;
   let viewportHeight = window.innerHeight / 1.2;
   mediaMenu.style.width =
-    Math.min(viewportWidth, parseInt(mediaMenu.style.width) || 480) + 'px';
+    Math.min(viewportWidth, parseInt(mediaMenu.style.width) || 480) + "px";
   mediaMenu.style.height =
-    Math.min(viewportHeight, parseInt(mediaMenu.style.height) || 453) + 'px';
+    Math.min(viewportHeight, parseInt(mediaMenu.style.height) || 453) + "px";
 }
 
 export async function loadGifContent(query) {
   if (!query) {
-    mediaMenuContainer.innerHTML = '';
+    mediaMenuContainer.innerHTML = "";
     showCategoriesList();
     return;
   }
@@ -166,17 +166,17 @@ export async function loadGifContent(query) {
     gif: result.media_formats.gif.url,
     preview: result.media_formats.tinygif.url,
   }));
-  displayContent(gifElements, 'gif');
+  displayContent(gifElements, "gif");
 }
 
 export function toggleMediaMenu() {
   if (isMediaMenuOpen) {
-    console.log('Closing media menu');
-    mediaMenu.style.display = 'none';
+    console.log("Closing media menu");
+    mediaMenu.style.display = "none";
     isMediaMenuOpen = false;
   } else {
-    console.log('Opening media menu');
-    mediaMenu.style.display = 'block';
+    console.log("Opening media menu");
+    mediaMenu.style.display = "block";
     isMediaMenuOpen = true;
   }
 }
@@ -187,15 +187,15 @@ export function httpGetAsync(url, callback) {
       callback(xmlHttp.responseText);
     }
   };
-  xmlHttp.open('GET', url, true);
+  xmlHttp.open("GET", url, true);
   xmlHttp.send(null);
 }
 export function handleCategoryGifs(responseText) {
   const gifs = JSON.parse(responseText).results;
-  mediaMenuContainer.innerHTML = '';
+  mediaMenuContainer.innerHTML = "";
   gifs.forEach((gif) => {
     console.log(gif);
-    const gifImg = createEl('img', { className: 'gif-content' });
+    const gifImg = createEl("img", { className: "gif-content" });
     gifImg.src = defaultMediaImageUrl;
     mediaMenuContainer.appendChild(gifImg);
     gifImg.onload = function () {
@@ -211,39 +211,39 @@ export async function fetchCategoryGifs(categoryPath) {
 // search input field should hidden and shown category name when rendered gifs
 // should return back to input field when this function is called
 export function showCategoriesList() {
-  console.log('Show categories list');
-  const categoryNameText = getId('categoryName');
-  categoryNameText.style.display = 'none';
-  gifsBackBtn.style.display = 'none';
-  getId('mediaMenuSearchbar').style.display = 'flex';
+  console.log("Show categories list");
+  const categoryNameText = getId("categoryName");
+  categoryNameText.style.display = "none";
+  gifsBackBtn.style.display = "none";
+  getId("mediaMenuSearchbar").style.display = "flex";
   loadMenuGifContent();
-  categoryNameText.textContent = '';
+  categoryNameText.textContent = "";
 }
 export function showCategoryView(categoryName) {
-  const categoryNameText = getId('categoryName');
-  categoryNameText.style.display = 'block';
+  const categoryNameText = getId("categoryName");
+  categoryNameText.style.display = "block";
   categoryNameText.textContent = categoryName;
-  gifsBackBtn.style.display = 'block';
-  getId('mediaMenuSearchbar').style.display = 'none';
+  gifsBackBtn.style.display = "block";
+  getId("mediaMenuSearchbar").style.display = "none";
 }
 function fetchTrendingGifs() {
   throw new Error("Trending gifs not implemented");
 }
 export function createCategoryBox(name, categoryPath, previewImage) {
-  const box = createEl('div', { className: 'categoryBox' });
-  const gifImg = createEl('img', {
-    className: 'gifImg',
+  const box = createEl("div", { className: "categoryBox" });
+  const gifImg = createEl("img", {
+    className: "gifImg",
     src: previewImage,
-    className: 'gifCategoryImage',
+    className: "gifCategoryImage",
   });
-  const overlay = createEl('div', { className: 'gifOverlay' });
-  const caption = createEl('div', {
+  const overlay = createEl("div", { className: "gifOverlay" });
+  const caption = createEl("div", {
     textContent: name,
-    className: 'gifCategoryCaption',
+    className: "gifCategoryCaption",
   });
   box.append(gifImg, overlay, caption);
   box.onclick = () => {
-    if (categoryPath === 'trending') {
+    if (categoryPath === "trending") {
       fetchTrendingGifs();
     } else {
       fetchCategoryGifs(name);
@@ -255,15 +255,15 @@ export function createCategoryBox(name, categoryPath, previewImage) {
 
 export function displayContent(contentData, type, isCategory = false) {
   console.log(type, contentData);
-  mediaMenuContainer.innerHTML = '';
+  mediaMenuContainer.innerHTML = "";
 
   // If it"s emoji type, just set the emoji panel
-  if (type === 'emoji') {
+  if (type === "emoji") {
     mediaMenuContainer.innerHTML = getEmojiPanel();
     return;
   }
 
-  if (type !== 'gif') return;
+  if (type !== "gif") return;
 
   if (isCategory) {
     contentData.forEach((category) => {
@@ -278,18 +278,18 @@ export function displayContent(contentData, type, isCategory = false) {
   }
 
   if (contentData.length === 0) {
-    const baseGif = createEl('img', {
-      className: 'gif-content',
-      textContent: 'No gifs found',
+    const baseGif = createEl("img", {
+      className: "gif-content",
+      textContent: "No gifs found",
     });
     mediaMenuContainer.appendChild(baseGif);
   } else {
     contentData.forEach((data) => {
-      const img = createEl('img', {
+      const img = createEl("img", {
         className: `${type}-content`,
         src: data.preview,
       });
-      img.addEventListener('click', () => {
+      img.addEventListener("click", () => {
         toggleMediaMenu();
         sendMessage(data[type]);
       });
@@ -299,10 +299,10 @@ export function displayContent(contentData, type, isCategory = false) {
 }
 
 export function toggleGifs(isTop) {
-  if (currentMenuType === 'gif') {
+  if (currentMenuType === "gif") {
     toggleMediaMenu();
   } else {
-    currentMenuType = 'gif';
+    currentMenuType = "gif";
     loadMenuGifContent();
     if (!isMediaMenuOpen) {
       toggleMediaMenu();
@@ -311,10 +311,10 @@ export function toggleGifs(isTop) {
 }
 
 export function toggleEmojis(isTop) {
-  if (currentMenuType === 'emoji') {
+  if (currentMenuType === "emoji") {
     toggleMediaMenu();
   } else {
-    currentMenuType = 'emoji';
+    currentMenuType = "emoji";
     mediaMenuContainer.innerHTML = getEmojiPanel();
 
     if (!isMediaMenuOpen) {
@@ -325,7 +325,7 @@ export function toggleEmojis(isTop) {
 
 export function httpGetSync(url) {
   const xmlHttp = new XMLHttpRequest();
-  xmlHttp.open('GET', url, false);
+  xmlHttp.open("GET", url, false);
   xmlHttp.send(null);
   if (xmlHttp.status === 200) {
     return xmlHttp.responseText;
@@ -343,37 +343,37 @@ export async function fetchCategoryUrls() {
     const categories = responseData.tags || [];
 
     if (categories.length === 0) {
-      console.error('No categories found.');
+      console.error("No categories found.");
       return [];
     }
 
     return categories;
   } catch (error) {
-    console.error('Error fetching category GIFs:', error.message);
+    console.error("Error fetching category GIFs:", error.message);
     return [];
   }
 }
 
 export async function loadMenuGifContent() {
-  console.log('Loading GIF content...');
+  console.log("Loading GIF content...");
 
   const categoryUrls = await fetchCategoryUrls();
 
   if (categoryUrls.length > 0) {
-    displayContent(categoryUrls, 'gif', true);
+    displayContent(categoryUrls, "gif", true);
   } else {
-    console.log('No categories available.');
-    displayContent([], 'gif');
+    console.log("No categories available.");
+    displayContent([], "gif");
   }
 }
 export function initialiseEmojiPreview() {
-  const emoji = getId('emojibtn');
+  const emoji = getId("emojibtn");
   const totalEmojis = 73;
   const emojiWidth = 48;
   const emojiHeight = 48;
 
   let isHovered = false;
-  let currentEmojiPosition = '0px 0px';
+  let currentEmojiPosition = "0px 0px";
 
   function getRandomEmojiPosition() {
     const randomIndex = Math.floor(Math.random() * totalEmojis);
@@ -382,19 +382,19 @@ export function initialiseEmojiPreview() {
     return `-${col * emojiWidth}px -${row * emojiHeight}px`;
   }
 
-  emoji.addEventListener('mouseover', () => {
+  emoji.addEventListener("mouseover", () => {
     if (!isHovered) {
       currentEmojiPosition = getRandomEmojiPosition();
       emoji.style.backgroundPosition = currentEmojiPosition;
-      emoji.classList.add('hovered');
-      emoji.classList.remove('selected');
+      emoji.classList.add("hovered");
+      emoji.classList.remove("selected");
       isHovered = true;
     }
   });
 
-  emoji.addEventListener('mouseout', () => {
-    emoji.classList.remove('hovered');
-    emoji.classList.add('selected');
+  emoji.addEventListener("mouseout", () => {
+    emoji.classList.remove("hovered");
+    emoji.classList.add("selected");
     emoji.style.backgroundPosition = currentEmojiPosition;
     isHovered = false;
   });
@@ -402,52 +402,52 @@ export function initialiseEmojiPreview() {
 
 export function initialiseMedia() {
   initialiseEmojiPreview();
-  mediaMenu = getId('media-menu');
-  mediaMenuContainer = getId('media-menu-container');
-  mediaMenu.style.display = 'none';
-  const searchBar = getId('mediaMenuSearchbar');
+  mediaMenu = getId("media-menu");
+  mediaMenuContainer = getId("media-menu-container");
+  mediaMenu.style.display = "none";
+  const searchBar = getId("mediaMenuSearchbar");
 
   searchBar.addEventListener(
-    'keydown',
+    "keydown",
     debounce(async () => {
-      const query = getId('mediaMenuSearchbar').value;
+      const query = getId("mediaMenuSearchbar").value;
       await loadGifContent(query);
     }, 300),
   );
 
-  getId('emojibtntop').addEventListener('click', (e) => {
+  getId("emojibtntop").addEventListener("click", (e) => {
     toggleEmojis(false);
     e.stopPropagation();
   });
-  gifBtn.addEventListener('click', (e) => {
+  gifBtn.addEventListener("click", (e) => {
     toggleGifs(false);
     e.stopPropagation();
   });
-  emojiBtn.addEventListener('click', (e) => {
+  emojiBtn.addEventListener("click", (e) => {
     toggleEmojis(false);
     e.stopPropagation();
   });
-  gifBtnTop.addEventListener('click', (e) => {
+  gifBtnTop.addEventListener("click", (e) => {
     toggleGifs(true);
     e.stopPropagation();
   });
 
-  document.body.addEventListener('click', (event) => {
+  document.body.addEventListener("click", (event) => {
     if (
       mediaMenu &&
       isMediaMenuOpen &&
       !mediaMenu.contains(event.target) &&
-      event.target.id !== 'basebtn'
+      event.target.id !== "basebtn"
     ) {
-      console.log('Clicked outside, closing media menu');
+      console.log("Clicked outside, closing media menu");
       toggleMediaMenu();
     }
   });
-  gifsBackBtn.addEventListener('click', showCategoriesList);
-  mediaMenu.style.width = 1200 + 'px';
-  mediaMenu.style.height = 1200 + 'px';
+  gifsBackBtn.addEventListener("click", showCategoriesList);
+  mediaMenu.style.width = 1200 + "px";
+  mediaMenu.style.height = 1200 + "px";
 
-  mediaMenu.addEventListener('mousedown', (e) => {
+  mediaMenu.addEventListener("mousedown", (e) => {
     initialMouseX = e.clientX;
     initialMouseY = e.clientY;
     initialWidth = mediaMenu.offsetWidth;
@@ -462,11 +462,11 @@ export function initialiseMedia() {
       isResizing = true;
       initialMouseX = e.clientX;
       initialMouseY = e.clientY;
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
     }
   });
 }
 
-document.addEventListener('DOMContentLoaded', initialiseMedia);
+document.addEventListener("DOMContentLoaded", initialiseMedia);

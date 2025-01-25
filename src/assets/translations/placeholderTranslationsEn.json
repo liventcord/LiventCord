@@ -14,5 +14,5 @@
   "deny_request": "Denied friend request from {{userNick}}",
   "avatar-upload-size-error-message": "Avatar size must be smaller than {{avatarLimit}}MB!",
   "attachment-upload-size-error-message": "Attachment size must be smaller than {{attachmentLimit}}MB!",
-  "readen-chat" : "{{count}}+ messages since {{date}} at {{time}}."
+  "readen-chat": "{{count}}+ messages since {{date}} at {{time}}."
 }

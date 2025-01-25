@@ -1,11 +1,11 @@
-addEventListener('fetch', (event) => {
+addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event));
 });
 
 async function handleRequest(event) {
   const request = event.request;
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
+  const query = searchParams.get("q");
 
   if (!query) {
     return new Response(
@@ -13,14 +13,14 @@ async function handleRequest(event) {
       {
         status: 400,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
       },
     );
   }
 
-  const apiKey = 'apikey';
+  const apiKey = "apikey";
   const url = `https://tenor.googleapis.com/v2/search?q=${query}&key=${apiKey}&client_key=my_test_app&limit=50`;
 
   const cacheKey = new URL(request.url).toString();
@@ -41,8 +41,8 @@ async function handleRequest(event) {
 
     response = new Response(JSON.stringify(data), {
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
     });
 
@@ -53,8 +53,8 @@ async function handleRequest(event) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
     });
   }

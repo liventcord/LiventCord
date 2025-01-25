@@ -1,13 +1,12 @@
 import { capitalizeFirstCharacter, getId, truncateString } from "./utils";
 import { alertUser } from "./ui";
 
-
 class Translations {
   constructor() {
     this.currentLanguage = "en";
     this.languages = {
       en: "en-us",
-      tr: "tr-TR"
+      tr: "tr-TR",
     };
     this.errorTranslations = {};
     this.contextTranslations = {};
@@ -20,18 +19,15 @@ class Translations {
   }
   formatTime(date) {
     return date.toLocaleTimeString(this.languages[this.currentLanguage], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   }
 
   formatDate(date) {
     return date.toLocaleDateString(this.languages[this.currentLanguage]);
   }
-
-
-
 
   replacePlaceholder(templateKey, replacements, truncation = {}) {
     const languageData = this.placeholderTranslations[templateKey];
@@ -112,14 +108,16 @@ class Translations {
     );
   }
   getAvatarUploadErrorMsg(maxAvatarSize) {
-    return this.replacePlaceholder("avatar-upload-size-error-message",{ avatarLimit: maxAvatarSize });
+    return this.replacePlaceholder("avatar-upload-size-error-message", {
+      avatarLimit: maxAvatarSize,
+    });
   }
   getReplyingTo(userName) {
     return this.replacePlaceholder("replying_to", { userName });
   }
-  getReadText(date, time,count) {
+  getReadText(date, time, count) {
     count = Math.max(count, 50);
-    return this.replacePlaceholder("readen-chat", { date,time,count });
+    return this.replacePlaceholder("readen-chat", { date, time, count });
   }
 
   initializeTranslations() {
@@ -149,73 +147,79 @@ class Translations {
     });
   }
 
-  getTranslation(key,list=this.textTranslations) {
+  getTranslation(key, list = this.textTranslations) {
     const result = list?.[key] ?? null;
     if (key && !result) {
-      console.warn("Cant find translation for:", key,list);
+      console.warn("Cant find translation for:", key, list);
       return capitalizeFirstCharacter(key);
     }
     return result;
   }
   getSettingsTranslation(key) {
-    return this.getTranslation(key,this.settingTranslations);
+    return this.getTranslation(key, this.settingTranslations);
   }
-
-  
 
   setLanguage(language) {
     if (!language) return;
-  
+
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
     this.loadTranslations(language);
   }
-  
+
   async loadTranslations(language) {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
-  
+
     try {
-      const textTranslationsResponse = await fetch(`/translations/textTranslations${language}.json`);
+      const textTranslationsResponse = await fetch(
+        `/translations/textTranslations${language}.json`,
+      );
       const textTranslations = await textTranslationsResponse.json();
-  
-      const errorTranslationsResponse = await fetch(`/translations/errorTranslations${language}.json`);
+
+      const errorTranslationsResponse = await fetch(
+        `/translations/errorTranslations${language}.json`,
+      );
       const errorTranslations = await errorTranslationsResponse.json();
-  
-      const placeholderTranslationsResponse = await fetch(`/translations/placeholderTranslations${language}.json`);
-      const placeholderTranslations = await placeholderTranslationsResponse.json();
-  
-      const contextTranslationsResponse = await fetch(`/translations/contextTranslations${language}.json`);
+
+      const placeholderTranslationsResponse = await fetch(
+        `/translations/placeholderTranslations${language}.json`,
+      );
+      const placeholderTranslations =
+        await placeholderTranslationsResponse.json();
+
+      const contextTranslationsResponse = await fetch(
+        `/translations/contextTranslations${language}.json`,
+      );
       const contextTranslations = await contextTranslationsResponse.json();
-  
-      const settingTranslationsResponse = await fetch(`/translations/settingTranslations${language}.json`);
+
+      const settingTranslationsResponse = await fetch(
+        `/translations/settingTranslations${language}.json`,
+      );
       const settingTranslations = await settingTranslationsResponse.json();
-  
+
       this.textTranslations = textTranslations;
       this.errorTranslations = errorTranslations;
       this.placeholderTranslations = placeholderTranslations;
       this.contextTranslations = contextTranslations;
       this.settingTranslations = settingTranslations;
-      this.resolveTranslations(); 
-  
-      this.initializeTranslations(); 
+      this.resolveTranslations();
+
+      this.initializeTranslations();
     } catch (error) {
       console.error("Error loading translations:", error);
       this.rejectTranslations(error);
     }
   }
-  
 
   getContextTranslation(key) {
     const translation = this.contextTranslations[key];
-  
+
     if (!translation) {
       console.error("Cannot find translation for:", key);
     }
-  
+
     return translation || key;
   }
-  
-
 
   getErrorMessage(key) {
     const result = this.errorTranslations[key];
@@ -230,7 +234,7 @@ class Translations {
   }
 
   setLanguage(language) {
-    if(!language) return;
+    if (!language) return;
 
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
@@ -244,5 +248,4 @@ translations.setLanguage("en");
 
 setTimeout(() => {
   translations.initializeTranslations();
-},0);
-
+}, 0);

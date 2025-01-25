@@ -351,7 +351,7 @@
   background-color: #393c41;
 }
 .friend-card:not(:last-child)::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -359,7 +359,7 @@
   background-color: #ffffff18;
 }
 #friends-container .friend-card:first-child::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;

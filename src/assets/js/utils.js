@@ -1,14 +1,20 @@
-import { friendsContainer } from './friendui';
-import { translations } from './translations';
-import { getFriendsTranslation } from './friendui';
-import { chatContent } from './chatbar';
+import { friendsContainer } from "./friendui";
+import { translations } from "./translations";
+import { getFriendsTranslation } from "./friendui";
+import { chatContent } from "./chatbar";
 
 export const createEl = (tag, options) =>
   Object.assign(document.createElement(tag), options);
-export let clydeSrc = '/images/clyde.png';
+
+export let clydeSrc = "/images/clyde.png";
 
 export let defaultProfileImageUrl = `/images/guest.png`;
-export let defaultMediaImageUrl = '/images/defaultmediaimage.png';
+export let defaultMediaImageUrl = "/images/defaultmediaimage.png";
+
+export const isMobile = getMobile();
+
+export const blackImage =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAk0lEQVRoQ+2S0QkAIBCFrv2HrmYQhAKDPp+QtmZm3/v9WT3ksYYVeSzIVKQikoG+liQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjK4LVScOKSGIxtiJYnTSsiCQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjD62iMgGPECk2AAAAAElFTkSuQmCC";
 
 export function setDefaultMediaImageUrl(blob) {
   defaultMediaImageUrl = blob;
@@ -23,27 +29,22 @@ export function getMobile() {
     navigator.userAgent,
   );
 }
-export const isMobile = getMobile();
-export const blackImage =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAk0lEQVRoQ+2S0QkAIBCFrv2HrmYQhAKDPp+QtmZm3/v9WT3ksYYVeSzIVKQikoG+liQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjK4LVScOKSGIxtiJYnTSsiCQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjD62iMgGPECk2AAAAAElFTkSuQmCC';
 
 export function getId(string) {
   return document.getElementById(string);
 }
 
 export function capitalizeFirstCharacter(str) {
-  if (!str) return str; 
+  if (!str) return str;
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-
-
 export function getMaskedEmail(email) {
-  const parts = email.split('@');
+  const parts = email.split("@");
   if (parts.length !== 2) return email;
   const nickName = parts[0];
   const domain = parts[1];
-  const hiddenNickname = '*'.repeat(nickName.length);
+  const hiddenNickname = "*".repeat(nickName.length);
   return `${hiddenNickname}@${domain}`;
 }
 
@@ -54,8 +55,8 @@ export function isValidFriendName(input) {
 export function reCalculateFriTitle() {
   const friendsCount = friendsContainer.children.length;
   const textToWrite =
-    friendsCount !== 0 ? getFriendsTranslation() + ' — ' + friendsCount : '';
-  getId('friendsTitleContainer').textContent = textToWrite;
+    friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
+  getId("friendsTitleContainer").textContent = textToWrite;
 }
 
 export function setWindowName(pendingCounter) {
@@ -65,14 +66,17 @@ export function setWindowName(pendingCounter) {
 }
 
 export function sendNotify(data) {
-  const container = createEl('div',{"className": "info-container"});
+  const container = createEl("div", { className: "info-container" });
 
-  const childDiv = createEl('div',{"className" : "info-message", "textContent" : data});
+  const childDiv = createEl("div", {
+    className: "info-message",
+    textContent: data,
+  });
   container.appendChild(childDiv);
 
   document.body.prepend(container);
 
-  container.addEventListener('animationend', () => {
+  container.addEventListener("animationend", () => {
     container.parentNode.removeChild(container);
   });
 }
@@ -82,7 +86,7 @@ export function areJsonsEqual(existingData, newData) {
     return false;
   }
 
-  if (typeof existingData !== 'object' || typeof newData !== 'object') {
+  if (typeof existingData !== "object" || typeof newData !== "object") {
     return false;
   }
 
@@ -91,7 +95,7 @@ export function areJsonsEqual(existingData, newData) {
   return existingJson === newJson;
 }
 export function parseUsernameDiscriminator(input) {
-  let parts = input.split('#');
+  let parts = input.split("#");
   if (parts.length !== 2) {
     return;
   }
@@ -133,32 +137,32 @@ export function getFormattedDate(messageDate) {
 
   if (messageDate.toDateString() === today.toDateString()) {
     return `ㅤ${translations.getTranslation(
-      'today',
+      "today",
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: "2-digit",
+      minute: "2-digit",
     })}`;
   } else if (messageDate.toDateString() === yesterday.toDateString()) {
     return `ㅤ${translations.getTranslation(
-      'yesterday',
+      "yesterday",
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: "2-digit",
+      minute: "2-digit",
     })}`;
   } else {
     return `ㅤ${messageDate.toLocaleDateString(
       translations.getLocale(),
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: '2-digit',
-      minute: '2-digit',
+      hour: "2-digit",
+      minute: "2-digit",
     })}`;
   }
 }
 
 export function getFormattedDateForSmall(messageDate) {
   return messageDate.toLocaleTimeString(translations.getLocale(), {
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 export function isImageURL(url) {
@@ -196,15 +200,15 @@ export function isTenorURL(url) {
 }
 
 export function isAudioURL(url) {
-  const audioExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.flac'];
-  const urlWithoutQueryParams = url.split('?')[0];
-  const fileExtension = urlWithoutQueryParams.split('.').pop().toLowerCase();
+  const audioExtensions = [".mp3", ".wav", ".ogg", ".aac", ".flac"];
+  const urlWithoutQueryParams = url.split("?")[0];
+  const fileExtension = urlWithoutQueryParams.split(".").pop().toLowerCase();
 
   return audioExtensions.includes(`.${fileExtension}`);
 }
 
 export function isJsonUrl(url) {
-  return url.toLowerCase().includes('.json');
+  return url.toLowerCase().includes(".json");
 }
 export function isVideoUrl(url) {
   const videoPatterns = [
@@ -224,20 +228,20 @@ const rgbCache = {};
 
 export function rgbToHex(r, g, b) {
   return (
-    '#' +
+    "#" +
     ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()
   );
 }
 
 export function getAverageRGB(imgEl) {
   if (imgEl.src === defaultProfileImageUrl) {
-    return '#e7e7e7';
+    return "#e7e7e7";
   }
 
   const blockSize = 5;
   const defaultRGB = { r: 0, g: 0, b: 0 };
-  const canvas = createEl('canvas');
-  const context = canvas.getContext && canvas.getContext('2d');
+  const canvas = createEl("canvas");
+  const context = canvas.getContext && canvas.getContext("2d");
 
   if (!context) {
     return defaultRGB;
@@ -308,7 +312,7 @@ export function getProfileUrl(userId) {
 export function pad(number, length) {
   let str = String(number);
   while (str.length < length) {
-    str = '0' + str;
+    str = "0" + str;
   }
   return str;
 }
@@ -329,24 +333,24 @@ export function truncateString(str, maxLength) {
   if (str.length <= maxLength) {
     return str;
   }
-  return str.slice(0, maxLength) + '...';
+  return str.slice(0, maxLength) + "...";
 }
 export function createNowDate() {
   let date = new Date();
   let year = date.getUTCFullYear();
-  let month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  let day = String(date.getUTCDate()).padStart(2, '0');
-  let hours = String(date.getUTCHours()).padStart(2, '0');
-  let minutes = String(date.getUTCMinutes()).padStart(2, '0');
-  let seconds = String(date.getUTCSeconds()).padStart(2, '0');
-  let milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
-  let microseconds = '534260';
+  let month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  let day = String(date.getUTCDate()).padStart(2, "0");
+  let hours = String(date.getUTCHours()).padStart(2, "0");
+  let minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  let seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  let milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
+  let microseconds = "534260";
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${microseconds}+00:00`;
 }
 
 export function createRandomId(length = 18) {
-  const digits = '0123456789';
-  let result = '';
+  const digits = "0123456789";
+  let result = "";
   const digitsLength = digits.length;
   for (let i = 0; i < length; i++) {
     result += digits.charAt(Math.floor(Math.random() * digitsLength));
@@ -355,11 +359,11 @@ export function createRandomId(length = 18) {
 }
 
 export function openExternalUrl(url) {
-  window.open(url, '_blank');
+  window.open(url, "_blank");
 }
 
 export function sanitizeHTML(html) {
-  if (typeof html !== 'string') return;
+  if (typeof html !== "string") return;
   function isValidForColoring(content) {
     return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());
   }
@@ -388,30 +392,30 @@ export function sanitizeHTML(html) {
     }
   });
 
-  html = html.replace(/<br>/gi, '&lt;br&gt;');
-  html = html.replace(/\n/g, '<br>');
+  html = html.replace(/<br>/gi, "&lt;br&gt;");
+  html = html.replace(/\n/g, "<br>");
   const sanitizedString = html.replace(
     /<\/?([a-z][a-z0-9]*)\b[^>]*>?/gi,
     (tag) => {
-      const allowedTags = ['br', 'red', 'blu', 'yellow'];
+      const allowedTags = ["br", "red", "blu", "yellow"];
       const tagMatch = tag.match(/<\/?([a-z][a-z0-9]*)\b[^>]*>?/i);
-      const tagName = tagMatch ? tagMatch[1].toLowerCase() : '';
+      const tagName = tagMatch ? tagMatch[1].toLowerCase() : "";
 
       if (allowedTags.includes(tagName)) {
         return tag;
       } else {
-        return tag.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return tag.replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
     },
   );
   const validHtml = sanitizedString.replace(/<[^>]*$/g, (match) => {
-    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return match.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   });
 
   return applyCustomStyles(validHtml);
 }
 export function disableElement(input) {
-  if(input instanceof HTMLElement ) {
+  if (input instanceof HTMLElement) {
     input.style.display = "none";
     return;
   }
@@ -429,15 +433,15 @@ export function enableElement(
   const element = input instanceof HTMLElement ? input : getId(input);
   if (element) {
     if (isFlex1) {
-      element.style.flex = '1';
+      element.style.flex = "1";
     }
 
     if (isBlock) {
-      element.style.display = 'block';
+      element.style.display = "block";
     } else if (isInline) {
-      element.style.display = 'inline-block';
+      element.style.display = "inline-block";
     } else {
-      element.style.display = 'flex';
+      element.style.display = "flex";
     }
 
     //console.log("Element", str, "is enabled.");
@@ -463,9 +467,9 @@ export function getBeforeElement(element) {
 
 export function applyCustomStyles(html) {
   const styles = {
-    red: 'color: red;',
-    blu: 'color: blue;',
-    yellow: 'color: yellow;',
+    red: "color: red;",
+    blu: "color: blue;",
+    yellow: "color: yellow;",
   };
   const styledHTML = html.replace(
     /<([a-z][a-z0-9]*)\b[^>]*>(.*?)<\/\1>/gi,
@@ -482,16 +486,16 @@ export function applyCustomStyles(html) {
     },
   );
 
-  return styledHTML.replace(/&lt;br&gt;/g, '<br>');
+  return styledHTML.replace(/&lt;br&gt;/g, "<br>");
 }
 
 export function getBase64Image(imgElement) {
-  const canvas = createEl('canvas');
-  const ctx = canvas.getContext('2d');
+  const canvas = createEl("canvas");
+  const ctx = canvas.getContext("2d");
   canvas.width = imgElement.naturalWidth;
   canvas.height = imgElement.naturalHeight;
   ctx.drawImage(imgElement, 0, 0);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL("image/png");
 }
 
 export async function urlToBase64(url) {
@@ -504,33 +508,33 @@ export async function urlToBase64(url) {
     const reader = new FileReader();
     return new Promise((resolve, reject) => {
       reader.onloadend = () => {
-        const base64Data = reader.result.split(',')[1];
-        const mimeType = blob.type || 'image/png';
+        const base64Data = reader.result.split(",")[1];
+        const mimeType = blob.type || "image/png";
         resolve(`data:${mimeType};base64,${base64Data}`);
       };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('Error fetching or converting URL to Base64:', error);
+    console.error("Error fetching or converting URL to Base64:", error);
     throw error;
   }
 }
 export function reloadCSS() {
-  const approvedDomains = ['localhost'];
+  const approvedDomains = ["localhost"];
   function getDomain(url) {
-    const link = createEl('a', { "href" : url});
+    const link = createEl("a", { href: url });
     return link.hostname;
   }
-  const links = document.getElementsByTagName('link');
+  const links = document.getElementsByTagName("link");
   for (let i = 0; i < links.length; i++) {
     const link = links[i];
-    if (link.rel === 'stylesheet') {
+    if (link.rel === "stylesheet") {
       const href = link.href;
       const domain = getDomain(href);
       if (approvedDomains.includes(domain)) {
         const newHref =
-          href.indexOf('?') !== -1
+          href.indexOf("?") !== -1
             ? `${href}&_=${new Date().getTime()}`
             : `${href}?_=${new Date().getTime()}`;
         link.href = newHref;

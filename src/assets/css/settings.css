@@ -1,8 +1,8 @@
 html * {
-  font-family: 'gg sans', sans-serif !important;
-  font-family: 'gg sans Normal', sans-serif !important;
-  font-family: 'gg sans Medium', sans-serif !important;
-  font-family: 'gg sans SemiBold', sans-serif !important;
+  font-family: "gg sans", sans-serif !important;
+  font-family: "gg sans Normal", sans-serif !important;
+  font-family: "gg sans Medium", sans-serif !important;
+  font-family: "gg sans SemiBold", sans-serif !important;
 }
 body {
   margin: 0;
@@ -95,10 +95,10 @@ th {
   margin-left: -30px;
   cursor: pointer;
 }
-.guilds-list li img[src='/images/icons/icon.png']:hover {
+.guilds-list li img[src="/images/icons/icon.png"]:hover {
   border: 10px solid #677bc4;
 }
-.guilds-list li img:not([src='/images/icons/icon.png']):hover {
+.guilds-list li img:not([src="/images/icons/icon.png"]):hover {
   border-radius: 0px;
 }
 .guilds-list li:hover .white-rod {
@@ -623,7 +623,7 @@ th {
   bottom: 25px;
   right: 300px;
 }
-#profileImageForm input[type='file'] {
+#profileImageForm input[type="file"] {
   display: none;
 }
 #profileImageForm label {
@@ -635,7 +635,7 @@ th {
   border-radius: 5px;
   text-align: center;
 }
-#guildImageForm input[type='file'] {
+#guildImageForm input[type="file"] {
   display: none;
 }
 #guildImageForm label {
@@ -859,7 +859,6 @@ th {
     opacity: 1;
   }
 }
-
 
 #close-settings-button {
   width: 36px;

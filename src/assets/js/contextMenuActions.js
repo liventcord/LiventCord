@@ -1,79 +1,77 @@
-import { openDm, readCurrentMessages } from './app';
-import { drawProfilePop } from './popups';
-import { showReplyMenu,chatInput } from './chatbar';
-import { currentUserId, getUserNick } from './user';
-import { getManageableGuilds,currentGuildId } from './guild';
-import { createEl,constructAbsoluteAppPage } from './utils';
-import { isOnMe,isOnDm,isOnGuild } from './router';
-import { friendCache } from './friends';
-import { permissionManager } from './guildPermissions';
-import { translations } from './translations';
-import { alertUser } from './ui';
-import { guildCache } from './cache';
-import { apiClient,EventType } from './api';
-
-
+import { openDm, readCurrentMessages } from "./app";
+import { drawProfilePop } from "./popups";
+import { showReplyMenu, chatInput } from "./chatbar";
+import { currentUserId, getUserNick } from "./user";
+import { getManageableGuilds, currentGuildId } from "./guild";
+import { createEl, constructAbsoluteAppPage } from "./utils";
+import { isOnMe, isOnDm, isOnGuild } from "./router";
+import { friendCache } from "./friends";
+import { permissionManager } from "./guildPermissions";
+import { translations } from "./translations";
+import { alertUser } from "./ui";
+import { guildCache } from "./cache";
+import { apiClient, EventType } from "./api";
 
 let isDeveloperMode = true;
 export let contextList = {};
 export let messageContextList = {};
 const ActionType = {
-  COPY_ID: 'COPY_ID',
-  COPY_USER_ID: 'COPY_USER_ID',
-  INVITE_TO_GUILD: 'INVITE_TO_GUILD',
-  BLOCK_USER: 'BLOCK_USER',
-  REPORT_USER: 'REPORT_USER',
-  REMOVE_USER: 'REMOVE_USER',
-  EDIT_GUILD_PROFILE: 'EDIT_GUILD_PROFILE',
-  MENTION_USER: 'MENTION_USER',
+  COPY_ID: "COPY_ID",
+  COPY_USER_ID: "COPY_USER_ID",
+  INVITE_TO_GUILD: "INVITE_TO_GUILD",
+  BLOCK_USER: "BLOCK_USER",
+  REPORT_USER: "REPORT_USER",
+  REMOVE_USER: "REMOVE_USER",
+  EDIT_GUILD_PROFILE: "EDIT_GUILD_PROFILE",
+  MENTION_USER: "MENTION_USER",
 };
 
 const ChannelsActionType = {
-  MARK_AS_READ: 'MARK_AS_READ',
-  COPY_LINK: 'COPY_LINK',
-  MUTE_CHANNEL: 'MUTE_CHANNEL',
-  NOTIFY_SETTINGS: 'NOTIFY_SETTINGS',
-  EDIT_CHANNEL: 'EDIT_CHANNEL',
-  DELETE_CHANNEL: 'DELETE_CHANNEL',
+  MARK_AS_READ: "MARK_AS_READ",
+  COPY_LINK: "COPY_LINK",
+  MUTE_CHANNEL: "MUTE_CHANNEL",
+  NOTIFY_SETTINGS: "NOTIFY_SETTINGS",
+  EDIT_CHANNEL: "EDIT_CHANNEL",
+  DELETE_CHANNEL: "DELETE_CHANNEL",
 };
 
 const VoiceActionType = {
-  OPEN_PROFILE: 'OPEN_PROFILE',
-  MENTION_USER: 'MENTION_USER',
-  MUTE_USER: 'MUTE_USER',
-  DEAFEN_USER: 'DEAFEN_USER',
+  OPEN_PROFILE: "OPEN_PROFILE",
+  MENTION_USER: "MENTION_USER",
+  MUTE_USER: "MUTE_USER",
+  DEAFEN_USER: "DEAFEN_USER",
 };
 
 const MessagesActionType = {
-  ADD_REACTION: 'ADD_REACTION',
-  EDIT_MESSAGE: 'EDIT_MESSAGE',
-  PIN_MESSAGE: 'PIN_MESSAGE',
-  REPLY: 'REPLY',
-  MARK_AS_UNREAD: 'MARK_AS_UNREAD',
-  DELETE_MESSAGE: 'DELETE_MESSAGE',
+  ADD_REACTION: "ADD_REACTION",
+  EDIT_MESSAGE: "EDIT_MESSAGE",
+  PIN_MESSAGE: "PIN_MESSAGE",
+  REPLY: "REPLY",
+  MARK_AS_UNREAD: "MARK_AS_UNREAD",
+  DELETE_MESSAGE: "DELETE_MESSAGE",
 };
 
 export function openReactionMenu(messageId) {
-  alertUser('Not implemented: React menu for message ');
+  alertUser("Not implemented: React menu for message ");
 }
 
 export function openEditMessage(messageId) {
-  alertUser('Not implemented: Editing message ');
+  alertUser("Not implemented: Editing message ");
 }
 
 export function pinMessage(messageId) {
-  alertUser('Not implemented: Pinning message ');
+  alertUser("Not implemented: Pinning message ");
 }
 
 export function markAsUnread(messageId) {
-  alertUser('Not implemented: Marking message as unread ');
+  alertUser("Not implemented: Marking message as unread ");
 }
 export function editGuildProfile() {
-  alertUser('Not implemented: editing guild profile ');
+  alertUser("Not implemented: editing guild profile ");
 }
 
 export function deleteMessage(messageId) {
-  console.log('Deleting message ', messageId);
+  console.log("Deleting message ", messageId);
   let data = {
     isDm: isOnDm,
     messageId: messageId,
@@ -82,40 +80,36 @@ export function deleteMessage(messageId) {
       : friendCache.currentDmId,
   };
   if (isOnGuild) {
-    data['guildId'] = currentGuildId;
+    data["guildId"] = currentGuildId;
   }
   apiClient.send(EventType.DELETE_MESSAGE, data);
 }
 
 export function inviteToGuild(userId) {
-  alertUser('Not implemented: Inviting user ');
+  alertUser("Not implemented: Inviting user ");
 }
 
 export function blockUser(userId) {
-  alertUser('Not implemented: Blocking user ');
+  alertUser("Not implemented: Blocking user ");
 }
 
 export function reportUser(userId) {
-  alertUser('Not implemented: Reporting user ');
+  alertUser("Not implemented: Reporting user ");
 }
 export function muteChannel(channelId) {
-  alertUser('Mute channel is not implemented!');
+  alertUser("Mute channel is not implemented!");
 }
 export function showNotifyMenu(channelId) {
-  alertUser('Notify menu is not implemented!');
+  alertUser("Notify menu is not implemented!");
 }
 export function onChangeChannel(channelId) {
-  alertUser('Channel editing is not implemented!');
+  alertUser("Channel editing is not implemented!");
 }
-function muteUser() {
-
-}
-function deafenUser() {
-
-}
+function muteUser() {}
+function deafenUser() {}
 
 export function togglePin() {
-  console.log('Toggle pin!');
+  console.log("Toggle pin!");
 }
 export function mentionUser(userId) {
   const userNick = getUserNick(userId);
@@ -126,7 +120,7 @@ export function inviteUser(userId, guildId) {
   if (!userId || !guildId) {
     return;
   }
-  console.log('inviting user : ', userId, ' to guild ', guildId);
+  console.log("inviting user : ", userId, " to guild ", guildId);
   openDm(userId);
   //TODO: add invitation prompt to here
 }
@@ -242,7 +236,7 @@ export function createProfileContext(userData) {
 }
 
 export function addContextListeners() {
-  document.addEventListener('contextmenu', function (event) {
+  document.addEventListener("contextmenu", function (event) {
     event.preventDefault();
 
     let options = null;
@@ -266,7 +260,7 @@ export function addContextListeners() {
     }
   });
 
-  document.addEventListener('click', function (event) {
+  document.addEventListener("click", function (event) {
     if (
       event.target.dataset.m_id &&
       messageContextList.hasOwnProperty(event.target.dataset.m_id)
@@ -280,7 +274,7 @@ export function addContextListeners() {
 
     if (
       event.target.classList &&
-      !event.target.classList.contains('message') &&
+      !event.target.classList.contains("message") &&
       event.target.id &&
       messageContextList.hasOwnProperty(event.target.id)
     ) {
@@ -383,9 +377,9 @@ export function createMessageContext(messageId, userId) {
 
 export function createMenuItem(labelKey, itemOptions) {
   const translatedLabel = translations.getContextTranslation(labelKey);
-  const li = createEl('li', { textContent: translatedLabel });
+  const li = createEl("li", { textContent: translatedLabel });
 
-  li.addEventListener('click', function (event) {
+  li.addEventListener("click", function (event) {
     event.stopPropagation();
     hideContextMenu();
     if (itemOptions.action) {
@@ -394,34 +388,34 @@ export function createMenuItem(labelKey, itemOptions) {
   });
 
   if (itemOptions.subOptions) {
-    const subUl = createEl('ul');
+    const subUl = createEl("ul");
     itemOptions.subOptions.forEach((subOption) => {
       const subLi = createMenuItem(subOption.label, subOption);
       subUl.appendChild(subLi);
     });
     li.appendChild(subUl);
 
-    li.addEventListener('mouseenter', function () {
-      const subMenu = li.querySelector('ul');
-      subMenu.style.display = 'block';
-      subMenu.style.left = '100%';
-      subMenu.style.right = 'auto';
+    li.addEventListener("mouseenter", function () {
+      const subMenu = li.querySelector("ul");
+      subMenu.style.display = "block";
+      subMenu.style.left = "100%";
+      subMenu.style.right = "auto";
 
       const subRect = subMenu.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
 
       if (subRect.right > viewportWidth) {
-        subMenu.style.left = 'auto';
-        subMenu.style.right = '100%';
+        subMenu.style.left = "auto";
+        subMenu.style.right = "100%";
       } else if (subRect.left < 0) {
-        subMenu.style.left = '0';
-        subMenu.style.right = 'auto';
+        subMenu.style.left = "0";
+        subMenu.style.right = "auto";
       }
     });
 
-    li.addEventListener('mouseleave', function () {
-      const subMenu = li.querySelector('ul');
-      subMenu.style.display = 'none';
+    li.addEventListener("mouseleave", function () {
+      const subMenu = li.querySelector("ul");
+      subMenu.style.display = "none";
     });
   }
 
@@ -432,11 +426,11 @@ let contextMenu = null;
 
 export function showContextMenu(x, y, options) {
   hideContextMenu();
-  const tempContextMenu = createEl('div', {
-    id: 'contextMenu',
-    className: 'context-menu',
+  const tempContextMenu = createEl("div", {
+    id: "contextMenu",
+    className: "context-menu",
   });
-  const ul = createEl('ul');
+  const ul = createEl("ul");
 
   for (const key in options) {
     if (options.hasOwnProperty(key)) {
@@ -457,12 +451,12 @@ export function showContextMenu(x, y, options) {
   const left = Math.min(x, viewportWidth - menuWidth);
   const top = Math.min(y, viewportHeight - menuHeight);
 
-  tempContextMenu.style.setProperty('--menu-left', `${left}px`);
-  tempContextMenu.style.setProperty('--menu-top', `${top}px`);
+  tempContextMenu.style.setProperty("--menu-left", `${left}px`);
+  tempContextMenu.style.setProperty("--menu-top", `${top}px`);
 
   contextMenu = tempContextMenu;
 
-  document.addEventListener('click', clickOutsideContextMenu);
+  document.addEventListener("click", clickOutsideContextMenu);
 }
 
 export function clickOutsideContextMenu(event) {
@@ -479,6 +473,6 @@ export function hideContextMenu() {
   if (contextMenu) {
     contextMenu.remove();
     contextMenu = null;
-    document.removeEventListener('click', clickOutsideContextMenu);
+    document.removeEventListener("click", clickOutsideContextMenu);
   }
 }

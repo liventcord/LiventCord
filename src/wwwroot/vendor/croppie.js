@@ -5,12 +5,12 @@
  * Version: 2.6.5
  *************************/
 (function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
+  if (typeof define === "function" && define.amd) {
     // AMD. Register as an anonymous module.
     define(factory);
   } else if (
-    typeof exports === 'object' &&
-    typeof exports.nodeName !== 'string'
+    typeof exports === "object" &&
+    typeof exports.nodeName !== "string"
   ) {
     // CommonJS
     module.exports = factory();
@@ -18,9 +18,9 @@
     // Browser globals
     root.Croppie = factory();
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== "undefined" ? self : this, function () {
   /* Polyfills */
-  if (typeof Promise !== 'function') {
+  if (typeof Promise !== "function") {
     /*! promise-polyfill 3.1.0 */
     !(function (a) {
       function b(a, b) {
@@ -29,9 +29,9 @@
         };
       }
       function c(a) {
-        if ('object' !== typeof this)
-          throw new TypeError('Promises must be constructed via new');
-        if ('function' !== typeof a) throw new TypeError('not a function');
+        if ("object" !== typeof this)
+          throw new TypeError("Promises must be constructed via new");
+        if ("function" !== typeof a) throw new TypeError("not a function");
         (this._state = null),
           (this._value = null),
           (this._deferreds = []),
@@ -57,10 +57,10 @@
       function e(a) {
         try {
           if (a === this)
-            throw new TypeError('A promise cannot be resolved with itself.');
-          if (a && ('object' === typeof a || 'function' === typeof a)) {
+            throw new TypeError("A promise cannot be resolved with itself.");
+          if (a && ("object" === typeof a || "function" === typeof a)) {
             var c = a.then;
-            if ('function' === typeof c)
+            if ("function" === typeof c)
               return void i(b(c, a), b(e, this), b(f, this));
           }
           (this._state = !0), (this._value = a), g.call(this);
@@ -77,8 +77,8 @@
         this._deferreds = null;
       }
       function h(a, b, c, d) {
-        (this.onFulfilled = 'function' === typeof a ? a : null),
-          (this.onRejected = 'function' === typeof b ? b : null),
+        (this.onFulfilled = "function" === typeof a ? a : null),
+          (this.onRejected = "function" === typeof b ? b : null),
           (this.resolve = c),
           (this.reject = d);
       }
@@ -100,16 +100,16 @@
       }
       var j = setTimeout,
         k =
-          ('function' === typeof setImmediate && setImmediate) ||
+          ("function" === typeof setImmediate && setImmediate) ||
           function (a) {
             j(a, 1);
           },
         l =
           Array.isArray ||
           function (a) {
-            return '[object Array]' === Object.prototype.toString.call(a);
+            return "[object Array]" === Object.prototype.toString.call(a);
           };
-      (c.prototype['catch'] = function (a) {
+      (c.prototype["catch"] = function (a) {
         return this.then(null, a);
       }),
         (c.prototype.then = function (a, b) {
@@ -127,9 +127,9 @@
           return new c(function (b, c) {
             function d(f, g) {
               try {
-                if (g && ('object' === typeof g || 'function' === typeof g)) {
+                if (g && ("object" === typeof g || "function" === typeof g)) {
                   var h = g.then;
-                  if ('function' === typeof h)
+                  if ("function" === typeof h)
                     return void h.call(
                       g,
                       function (a) {
@@ -148,7 +148,7 @@
           });
         }),
         (c.resolve = function (a) {
-          return a && 'object' === typeof a && a.constructor === c
+          return a && "object" === typeof a && a.constructor === c
             ? a
             : new c(function (b) {
                 b(a);
@@ -167,15 +167,15 @@
         (c._setImmediateFn = function (a) {
           k = a;
         }),
-        'undefined' !== typeof module && module.exports
+        "undefined" !== typeof module && module.exports
           ? (module.exports = c)
           : a.Promise || (a.Promise = c);
     })(this);
   }
 
   if (
-    typeof window !== 'undefined' &&
-    typeof window.CustomEvent !== 'function'
+    typeof window !== "undefined" &&
+    typeof window.CustomEvent !== "function"
   ) {
     (function () {
       function CustomEvent(event, params) {
@@ -184,7 +184,7 @@
           cancelable: false,
           detail: undefined,
         };
-        var evt = document.createEvent('CustomEvent');
+        var evt = document.createEvent("CustomEvent");
         evt.initCustomEvent(
           event,
           params.bubbles,
@@ -199,12 +199,12 @@
   }
 
   if (
-    typeof HTMLCanvasElement !== 'undefined' &&
+    typeof HTMLCanvasElement !== "undefined" &&
     !HTMLCanvasElement.prototype.toBlob
   ) {
-    Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+    Object.defineProperty(HTMLCanvasElement.prototype, "toBlob", {
       value: function (callback, type, quality) {
-        var binStr = atob(this.toDataURL(type, quality).split(',')[1]),
+        var binStr = atob(this.toDataURL(type, quality).split(",")[1]),
           len = binStr.length,
           arr = new Uint8Array(len);
 
@@ -212,16 +212,16 @@
           arr[i] = binStr.charCodeAt(i);
         }
 
-        callback(new Blob([arr], { type: type || 'image/png' }));
+        callback(new Blob([arr], { type: type || "image/png" }));
       },
     });
   }
   /* End Polyfills */
 
-  var cssPrefixes = ['Webkit', 'Moz', 'ms'],
+  var cssPrefixes = ["Webkit", "Moz", "ms"],
     emptyStyles =
-      typeof document !== 'undefined'
-        ? document.createElement('div').style
+      typeof document !== "undefined"
+        ? document.createElement("div").style
         : {},
     EXIF_NORM = [1, 8, 3, 6],
     EXIF_FLIP = [2, 7, 4, 5],
@@ -245,9 +245,9 @@
     }
   }
 
-  CSS_TRANSFORM = vendorPrefix('transform');
-  CSS_TRANS_ORG = vendorPrefix('transformOrigin');
-  CSS_USERSELECT = vendorPrefix('userSelect');
+  CSS_TRANSFORM = vendorPrefix("transform");
+  CSS_TRANS_ORG = vendorPrefix("transformOrigin");
+  CSS_USERSELECT = vendorPrefix("userSelect");
 
   function getExifOffset(ornt, rotate) {
     var arr = EXIF_NORM.indexOf(ornt) > -1 ? EXIF_NORM : EXIF_FLIP,
@@ -296,18 +296,18 @@
   }
 
   function dispatchChange(element) {
-    if ('createEvent' in document) {
-      var evt = document.createEvent('HTMLEvents');
-      evt.initEvent('change', false, true);
+    if ("createEvent" in document) {
+      var evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", false, true);
       element.dispatchEvent(evt);
     } else {
-      element.fireEvent('onchange');
+      element.fireEvent("onchange");
     }
   }
 
   //http://jsperf.com/vanilla-css
   function css(el, styles, val) {
-    if (typeof styles === 'string') {
+    if (typeof styles === "string") {
       var tmp = styles;
       styles = {};
       styles[tmp] = val;
@@ -322,7 +322,7 @@
     if (el.classList) {
       el.classList.add(c);
     } else {
-      el.className += ' ' + c;
+      el.className += " " + c;
     }
   }
 
@@ -330,7 +330,7 @@
     if (el.classList) {
       el.classList.remove(c);
     } else {
-      el.className = el.className.replace(c, '');
+      el.className = el.className.replace(c, "");
     }
   }
 
@@ -347,22 +347,22 @@
   /* Utilities */
   function loadImage(src, doExif) {
     if (!src) {
-      throw 'Source image missing';
+      throw "Source image missing";
     }
 
     var img = new Image();
-    img.style.opacity = '0';
+    img.style.opacity = "0";
     return new Promise(function (resolve, reject) {
       function _resolve() {
-        img.style.opacity = '1';
+        img.style.opacity = "1";
         setTimeout(function () {
           resolve(img);
         }, 1);
       }
 
-      img.removeAttribute('crossOrigin');
+      img.removeAttribute("crossOrigin");
       if (src.match(/^https?:\/\/|^\/\//)) {
-        img.setAttribute('crossOrigin', 'anonymous');
+        img.setAttribute("crossOrigin", "anonymous");
       }
 
       img.onload = function () {
@@ -399,10 +399,10 @@
   /* CSS Transform Prototype */
   var TRANSLATE_OPTS = {
     translate3d: {
-      suffix: ', 0px',
+      suffix: ", 0px",
     },
     translate: {
-      suffix: '',
+      suffix: "",
     },
   };
   var Transform = function (x, y, scale) {
@@ -414,7 +414,7 @@
   Transform.parse = function (v) {
     if (v.style) {
       return Transform.parse(v.style[CSS_TRANSFORM]);
-    } else if (v.indexOf('matrix') > -1 || v.indexOf('none') > -1) {
+    } else if (v.indexOf("matrix") > -1 || v.indexOf("none") > -1) {
       return Transform.fromMatrix(v);
     } else {
       return Transform.fromString(v);
@@ -422,8 +422,8 @@
   };
 
   Transform.fromMatrix = function (v) {
-    var vals = v.substring(7).split(',');
-    if (!vals.length || v === 'none') {
+    var vals = v.substring(7).split(",");
+    if (!vals.length || v === "none") {
       vals = [1, 0, 0, 1, 0, 0];
     }
 
@@ -431,10 +431,10 @@
   };
 
   Transform.fromString = function (v) {
-    var values = v.split(') '),
+    var values = v.split(") "),
       translate = values[0]
         .substring(Croppie.globals.translate.length + 1)
-        .split(','),
+        .split(","),
       scale = values.length > 1 ? values[1].substring(6) : 1,
       x = translate.length > 1 ? translate[0] : 0,
       y = translate.length > 1 ? translate[1] : 0;
@@ -443,18 +443,18 @@
   };
 
   Transform.prototype.toString = function () {
-    var suffix = TRANSLATE_OPTS[Croppie.globals.translate].suffix || '';
+    var suffix = TRANSLATE_OPTS[Croppie.globals.translate].suffix || "";
     return (
       Croppie.globals.translate +
-      '(' +
+      "(" +
       this.x +
-      'px, ' +
+      "px, " +
       this.y +
-      'px' +
+      "px" +
       suffix +
-      ') scale(' +
+      ") scale(" +
       this.scale +
-      ')'
+      ")"
     );
   };
 
@@ -464,13 +464,13 @@
       this.y = 0;
       return;
     }
-    var css = el.style[CSS_TRANS_ORG].split(' ');
+    var css = el.style[CSS_TRANS_ORG].split(" ");
     this.x = parseFloat(css[0]);
     this.y = parseFloat(css[1]);
   };
 
   TransformOrigin.prototype.toString = function () {
-    return this.x + 'px ' + this.y + 'px';
+    return this.x + "px " + this.y + "px";
   };
 
   function getExifOrientation(img) {
@@ -482,7 +482,7 @@
   function drawCanvas(canvas, img, orientation) {
     var width = img.width,
       height = img.height,
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext("2d");
 
     canvas.width = img.width;
     canvas.height = img.height;
@@ -540,9 +540,9 @@
   /* Private Methods */
   function _create() {
     var self = this,
-      contClass = 'croppie-container',
+      contClass = "croppie-container",
       customViewportClass = self.options.viewport.type
-        ? 'cr-vp-' + self.options.viewport.type
+        ? "cr-vp-" + self.options.viewport.type
         : null,
       boundary,
       img,
@@ -557,43 +557,43 @@
     self.data = {};
     self.elements = {};
 
-    boundary = self.elements.boundary = document.createElement('div');
-    viewport = self.elements.viewport = document.createElement('div');
-    img = self.elements.img = document.createElement('img');
-    overlay = self.elements.overlay = document.createElement('div');
+    boundary = self.elements.boundary = document.createElement("div");
+    viewport = self.elements.viewport = document.createElement("div");
+    img = self.elements.img = document.createElement("img");
+    overlay = self.elements.overlay = document.createElement("div");
 
     if (self.options.useCanvas) {
-      self.elements.canvas = document.createElement('canvas');
+      self.elements.canvas = document.createElement("canvas");
       self.elements.preview = self.elements.canvas;
     } else {
       self.elements.preview = img;
     }
 
-    addClass(boundary, 'cr-boundary');
-    boundary.setAttribute('aria-dropeffect', 'none');
+    addClass(boundary, "cr-boundary");
+    boundary.setAttribute("aria-dropeffect", "none");
     bw = self.options.boundary.width;
     bh = self.options.boundary.height;
     css(boundary, {
-      width: bw + (isNaN(bw) ? '' : 'px'),
-      height: bh + (isNaN(bh) ? '' : 'px'),
+      width: bw + (isNaN(bw) ? "" : "px"),
+      height: bh + (isNaN(bh) ? "" : "px"),
     });
 
-    addClass(viewport, 'cr-viewport');
+    addClass(viewport, "cr-viewport");
     if (customViewportClass) {
       addClass(viewport, customViewportClass);
     }
     css(viewport, {
-      width: self.options.viewport.width + 'px',
-      height: self.options.viewport.height + 'px',
+      width: self.options.viewport.width + "px",
+      height: self.options.viewport.height + "px",
     });
-    viewport.setAttribute('tabindex', 0);
+    viewport.setAttribute("tabindex", 0);
 
-    addClass(self.elements.preview, 'cr-image');
+    addClass(self.elements.preview, "cr-image");
     setAttributes(self.elements.preview, {
-      alt: 'preview',
-      'aria-grabbed': 'false',
+      alt: "preview",
+      "aria-grabbed": "false",
     });
-    addClass(overlay, 'cr-overlay');
+    addClass(overlay, "cr-overlay");
 
     self.element.appendChild(boundary);
     boundary.appendChild(self.elements.preview);
@@ -656,7 +656,7 @@
 
   function _initializeResize() {
     var self = this;
-    var wrap = document.createElement('div');
+    var wrap = document.createElement("div");
     var isDragging = false;
     var direction;
     var originalX;
@@ -667,21 +667,21 @@
     var vr;
     var hr;
 
-    addClass(wrap, 'cr-resizer');
+    addClass(wrap, "cr-resizer");
     css(wrap, {
-      width: this.options.viewport.width + 'px',
-      height: this.options.viewport.height + 'px',
+      width: this.options.viewport.width + "px",
+      height: this.options.viewport.height + "px",
     });
 
     if (this.options.resizeControls.height) {
-      vr = document.createElement('div');
-      addClass(vr, 'cr-resizer-vertical');
+      vr = document.createElement("div");
+      addClass(vr, "cr-resizer-vertical");
       wrap.appendChild(vr);
     }
 
     if (this.options.resizeControls.width) {
-      hr = document.createElement('div');
-      addClass(hr, 'cr-resizer-horisontal');
+      hr = document.createElement("div");
+      addClass(hr, "cr-resizer-horisontal");
       wrap.appendChild(hr);
     }
 
@@ -699,7 +699,7 @@
       originalX = ev.pageX;
       originalY = ev.pageY;
       direction =
-        ev.currentTarget.className.indexOf('vertical') !== -1 ? 'v' : 'h';
+        ev.currentTarget.className.indexOf("vertical") !== -1 ? "v" : "h";
       maxWidth = overlayRect.width;
       maxHeight = overlayRect.height;
 
@@ -709,11 +709,11 @@
         originalY = touches.pageY;
       }
 
-      window.addEventListener('mousemove', mouseMove);
-      window.addEventListener('touchmove', mouseMove);
-      window.addEventListener('mouseup', mouseUp);
-      window.addEventListener('touchend', mouseUp);
-      document.body.style[CSS_USERSELECT] = 'none';
+      window.addEventListener("mousemove", mouseMove);
+      window.addEventListener("touchmove", mouseMove);
+      window.addEventListener("mouseup", mouseUp);
+      window.addEventListener("touchend", mouseUp);
+      document.body.style[CSS_USERSELECT] = "none";
     }
 
     function mouseMove(ev) {
@@ -733,37 +733,37 @@
       var newHeight = self.options.viewport.height + deltaY;
       var newWidth = self.options.viewport.width + deltaX;
 
-      if (direction === 'v' && newHeight >= minSize && newHeight <= maxHeight) {
+      if (direction === "v" && newHeight >= minSize && newHeight <= maxHeight) {
         css(wrap, {
-          height: newHeight + 'px',
+          height: newHeight + "px",
         });
 
         self.options.boundary.height += deltaY;
         css(self.elements.boundary, {
-          height: self.options.boundary.height + 'px',
+          height: self.options.boundary.height + "px",
         });
 
         self.options.viewport.height += deltaY;
         css(self.elements.viewport, {
-          height: self.options.viewport.height + 'px',
+          height: self.options.viewport.height + "px",
         });
       } else if (
-        direction === 'h' &&
+        direction === "h" &&
         newWidth >= minSize &&
         newWidth <= maxWidth
       ) {
         css(wrap, {
-          width: newWidth + 'px',
+          width: newWidth + "px",
         });
 
         self.options.boundary.width += deltaX;
         css(self.elements.boundary, {
-          width: self.options.boundary.width + 'px',
+          width: self.options.boundary.width + "px",
         });
 
         self.options.viewport.width += deltaX;
         css(self.elements.viewport, {
-          width: self.options.viewport.width + 'px',
+          width: self.options.viewport.width + "px",
         });
       }
 
@@ -777,21 +777,21 @@
 
     function mouseUp() {
       isDragging = false;
-      window.removeEventListener('mousemove', mouseMove);
-      window.removeEventListener('touchmove', mouseMove);
-      window.removeEventListener('mouseup', mouseUp);
-      window.removeEventListener('touchend', mouseUp);
-      document.body.style[CSS_USERSELECT] = '';
+      window.removeEventListener("mousemove", mouseMove);
+      window.removeEventListener("touchmove", mouseMove);
+      window.removeEventListener("mouseup", mouseUp);
+      window.removeEventListener("touchend", mouseUp);
+      document.body.style[CSS_USERSELECT] = "";
     }
 
     if (vr) {
-      vr.addEventListener('mousedown', mouseDown);
-      vr.addEventListener('touchstart', mouseDown);
+      vr.addEventListener("mousedown", mouseDown);
+      vr.addEventListener("touchstart", mouseDown);
     }
 
     if (hr) {
-      hr.addEventListener('mousedown', mouseDown);
-      hr.addEventListener('touchstart', mouseDown);
+      hr.addEventListener("mousedown", mouseDown);
+      hr.addEventListener("touchstart", mouseDown);
     }
 
     this.elements.boundary.appendChild(wrap);
@@ -811,16 +811,16 @@
 
   function _initializeZoom() {
     var self = this,
-      wrap = (self.elements.zoomerWrap = document.createElement('div')),
-      zoomer = (self.elements.zoomer = document.createElement('input'));
+      wrap = (self.elements.zoomerWrap = document.createElement("div")),
+      zoomer = (self.elements.zoomer = document.createElement("input"));
 
-    addClass(wrap, 'cr-slider-wrap');
-    addClass(zoomer, 'cr-slider');
-    zoomer.type = 'range';
-    zoomer.step = '0.0001';
-    zoomer.value = '1';
-    zoomer.style.display = self.options.showZoomer ? '' : 'none';
-    zoomer.setAttribute('aria-label', 'zoom');
+    addClass(wrap, "cr-slider-wrap");
+    addClass(zoomer, "cr-slider");
+    zoomer.type = "range";
+    zoomer.step = "0.0001";
+    zoomer.value = "1";
+    zoomer.style.display = self.options.showZoomer ? "" : "none";
+    zoomer.setAttribute("aria-label", "zoom");
 
     self.element.appendChild(wrap);
     wrap.appendChild(zoomer);
@@ -839,7 +839,7 @@
     function scroll(ev) {
       var delta, targetZoom;
 
-      if (self.options.mouseWheelZoom === 'ctrl' && ev.ctrlKey !== true) {
+      if (self.options.mouseWheelZoom === "ctrl" && ev.ctrlKey !== true) {
         return 0;
       } else if (ev.wheelDelta) {
         delta = ev.wheelDelta / 1200; //wheelDelta min: -120 max: 120 // max x 10 x 2
@@ -858,12 +858,12 @@
       change.call(self);
     }
 
-    self.elements.zoomer.addEventListener('input', change); // this is being fired twice on keypress
-    self.elements.zoomer.addEventListener('change', change);
+    self.elements.zoomer.addEventListener("input", change); // this is being fired twice on keypress
+    self.elements.zoomer.addEventListener("change", change);
 
     if (self.options.mouseWheelZoom) {
-      self.elements.boundary.addEventListener('mousewheel', scroll);
-      self.elements.boundary.addEventListener('DOMMouseScroll', scroll);
+      self.elements.boundary.addEventListener("mousewheel", scroll);
+      self.elements.boundary.addEventListener("DOMMouseScroll", scroll);
     }
   }
 
@@ -884,7 +884,7 @@
 
     self._currentZoom = ui ? ui.value : self._currentZoom;
     transform.scale = self._currentZoom;
-    self.elements.zoomer.setAttribute('aria-valuenow', self._currentZoom);
+    self.elements.zoomer.setAttribute("aria-valuenow", self._currentZoom);
     applyCss();
 
     if (self.options.enforceBoundary) {
@@ -992,7 +992,7 @@
     }
 
     var newCss = {};
-    newCss[CSS_TRANS_ORG] = center.x + 'px ' + center.y + 'px';
+    newCss[CSS_TRANS_ORG] = center.x + "px " + center.y + "px";
     newCss[CSS_TRANSFORM] = transform.toString();
     css(self.elements.preview, newCss);
   }
@@ -1032,10 +1032,10 @@
     }
 
     function toggleGrabState(isDragging) {
-      self.elements.preview.setAttribute('aria-grabbed', isDragging);
+      self.elements.preview.setAttribute("aria-grabbed", isDragging);
       self.elements.boundary.setAttribute(
-        'aria-dropeffect',
-        isDragging ? 'move' : 'none',
+        "aria-dropeffect",
+        isDragging ? "move" : "none",
       );
     }
 
@@ -1069,7 +1069,7 @@
         var movement = parseKeyDown(ev.keyCode);
 
         transform = Transform.parse(self.elements.preview);
-        document.body.style[CSS_USERSELECT] = 'none';
+        document.body.style[CSS_USERSELECT] = "none";
         vpRect = self.elements.viewport.getBoundingClientRect();
         keyMove(movement);
       }
@@ -1098,7 +1098,7 @@
       newCss[CSS_TRANSFORM] = transform.toString();
       css(self.elements.preview, newCss);
       _updateOverlay.call(self);
-      document.body.style[CSS_USERSELECT] = '';
+      document.body.style[CSS_USERSELECT] = "";
       _updateCenterPoint.call(self);
       _triggerUpdate.call(self);
       originalDistance = 0;
@@ -1120,11 +1120,11 @@
       }
       toggleGrabState(isDragging);
       transform = Transform.parse(self.elements.preview);
-      window.addEventListener('mousemove', mouseMove);
-      window.addEventListener('touchmove', mouseMove);
-      window.addEventListener('mouseup', mouseUp);
-      window.addEventListener('touchend', mouseUp);
-      document.body.style[CSS_USERSELECT] = 'none';
+      window.addEventListener("mousemove", mouseMove);
+      window.addEventListener("touchmove", mouseMove);
+      window.addEventListener("mouseup", mouseUp);
+      window.addEventListener("touchend", mouseUp);
+      document.body.style[CSS_USERSELECT] = "none";
       vpRect = self.elements.viewport.getBoundingClientRect();
     }
 
@@ -1143,7 +1143,7 @@
         deltaY = pageY - originalY,
         newCss = {};
 
-      if (ev.type === 'touchmove') {
+      if (ev.type === "touchmove") {
         if (ev.touches.length > 1) {
           var touch1 = ev.touches[0];
           var touch2 = ev.touches[1];
@@ -1176,19 +1176,19 @@
     function mouseUp() {
       isDragging = false;
       toggleGrabState(isDragging);
-      window.removeEventListener('mousemove', mouseMove);
-      window.removeEventListener('touchmove', mouseMove);
-      window.removeEventListener('mouseup', mouseUp);
-      window.removeEventListener('touchend', mouseUp);
-      document.body.style[CSS_USERSELECT] = '';
+      window.removeEventListener("mousemove", mouseMove);
+      window.removeEventListener("touchmove", mouseMove);
+      window.removeEventListener("mouseup", mouseUp);
+      window.removeEventListener("touchend", mouseUp);
+      document.body.style[CSS_USERSELECT] = "";
       _updateCenterPoint.call(self);
       _triggerUpdate.call(self);
       originalDistance = 0;
     }
 
-    self.elements.overlay.addEventListener('mousedown', mouseDown);
-    self.elements.viewport.addEventListener('keydown', keyDown);
-    self.elements.overlay.addEventListener('touchstart', mouseDown);
+    self.elements.overlay.addEventListener("mousedown", mouseDown);
+    self.elements.viewport.addEventListener("keydown", keyDown);
+    self.elements.overlay.addEventListener("touchstart", mouseDown);
   }
 
   function _updateOverlay() {
@@ -1198,10 +1198,10 @@
       imgData = self.elements.preview.getBoundingClientRect();
 
     css(self.elements.overlay, {
-      width: imgData.width + 'px',
-      height: imgData.height + 'px',
-      top: imgData.top - boundRect.top + 'px',
-      left: imgData.left - boundRect.left + 'px',
+      width: imgData.width + "px",
+      height: imgData.height + "px",
+      top: imgData.top - boundRect.top + "px",
+      left: imgData.left - boundRect.left + "px",
     });
   }
   var _debouncedOverlay = debounce(_updateOverlay, 500);
@@ -1215,15 +1215,15 @@
     }
 
     self.options.update.call(self, data);
-    if (self.$ && typeof Prototype === 'undefined') {
-      self.$(self.element).trigger('update.croppie', data);
+    if (self.$ && typeof Prototype === "undefined") {
+      self.$(self.element).trigger("update.croppie", data);
     } else {
       var ev;
       if (window.CustomEvent) {
-        ev = new CustomEvent('update', { detail: data });
+        ev = new CustomEvent("update", { detail: data });
       } else {
-        ev = document.createEvent('CustomEvent');
-        ev.initCustomEvent('update', true, true, data);
+        ev = document.createEvent("CustomEvent");
+        ev.initCustomEvent("update", true, true, data);
       }
 
       self.element.dispatchEvent(ev);
@@ -1255,7 +1255,7 @@
     self.data.bound = true;
     cssReset[CSS_TRANSFORM] = transformReset.toString();
     cssReset[CSS_TRANS_ORG] = originReset.toString();
-    cssReset['opacity'] = 1;
+    cssReset["opacity"] = 1;
     css(img, cssReset);
 
     imgData = self.elements.preview.getBoundingClientRect();
@@ -1332,7 +1332,7 @@
 
   function _bindPoints(points) {
     if (points.length !== 4) {
-      throw 'Croppie - Invalid number of points supplied: ' + points;
+      throw "Croppie - Invalid number of points supplied: " + points;
     }
     var self = this,
       pointsWidth = points[2] - points[0],
@@ -1350,7 +1350,7 @@
       transformLeft = -1 * points[0] + vpOffset.left,
       newCss = {};
 
-    newCss[CSS_TRANS_ORG] = originLeft + 'px ' + originTop + 'px';
+    newCss[CSS_TRANS_ORG] = originLeft + "px " + originTop + "px";
     newCss[CSS_TRANSFORM] = new Transform(
       transformLeft,
       transformTop,
@@ -1380,7 +1380,7 @@
     var self = this,
       canvas = self.elements.canvas,
       img = self.elements.img,
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext("2d");
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     canvas.width = img.width;
@@ -1402,8 +1402,8 @@
       width = right - left,
       height = bottom - top,
       circle = data.circle,
-      canvas = document.createElement('canvas'),
-      ctx = canvas.getContext('2d'),
+      canvas = document.createElement("canvas"),
+      ctx = canvas.getContext("2d"),
       startX = 0,
       startY = 0,
       canvasWidth = data.outputWidth || width,
@@ -1475,8 +1475,8 @@
       dHeight,
     );
     if (circle) {
-      ctx.fillStyle = '#fff';
-      ctx.globalCompositeOperation = 'destination-in';
+      ctx.fillStyle = "#fff";
+      ctx.globalCompositeOperation = "destination-in";
       ctx.beginPath();
       ctx.arc(
         canvas.width / 2,
@@ -1494,21 +1494,21 @@
 
   function _getHtmlResult(data) {
     var points = data.points,
-      div = document.createElement('div'),
-      img = document.createElement('img'),
+      div = document.createElement("div"),
+      img = document.createElement("img"),
       width = points[2] - points[0],
       height = points[3] - points[1];
 
-    addClass(div, 'croppie-result');
+    addClass(div, "croppie-result");
     div.appendChild(img);
     css(img, {
-      left: -1 * points[0] + 'px',
-      top: -1 * points[1] + 'px',
+      left: -1 * points[0] + "px",
+      top: -1 * points[1] + "px",
     });
     img.src = data.url;
     css(div, {
-      width: width + 'px',
-      height: height + 'px',
+      width: width + "px",
+      height: height + "px",
     });
 
     return div;
@@ -1549,12 +1549,12 @@
       zoom = null,
       hasExif = _hasExif.call(self);
 
-    if (typeof options === 'string') {
+    if (typeof options === "string") {
       url = options;
       options = {};
     } else if (Array.isArray(options)) {
       points = options.slice();
-    } else if (typeof options === 'undefined' && self.data.url) {
+    } else if (typeof options === "undefined" && self.data.url) {
       //refreshing
       _updatePropertiesFromImage.call(self);
       _triggerUpdate.call(self);
@@ -1562,7 +1562,7 @@
     } else {
       url = options.url;
       points = options.points || [];
-      zoom = typeof options.zoom === 'undefined' ? null : options.zoom;
+      zoom = typeof options.zoom === "undefined" ? null : options.zoom;
     }
 
     self.data.bound = false;
@@ -1647,34 +1647,34 @@
   }
 
   var RESULT_DEFAULTS = {
-      type: 'canvas',
-      format: 'png',
+      type: "canvas",
+      format: "png",
       quality: 1,
     },
-    RESULT_FORMATS = ['jpeg', 'webp', 'png'];
+    RESULT_FORMATS = ["jpeg", "webp", "png"];
 
   function _result(options) {
     var self = this,
       data = _get.call(self),
       opts = deepExtend(clone(RESULT_DEFAULTS), clone(options)),
       resultType =
-        typeof options === 'string' ? options : opts.type || 'base64',
-      size = opts.size || 'viewport',
+        typeof options === "string" ? options : opts.type || "base64",
+      size = opts.size || "viewport",
       format = opts.format,
       quality = opts.quality,
       backgroundColor = opts.backgroundColor,
       circle =
-        typeof opts.circle === 'boolean'
+        typeof opts.circle === "boolean"
           ? opts.circle
-          : self.options.viewport.type === 'circle',
+          : self.options.viewport.type === "circle",
       vpRect = self.elements.viewport.getBoundingClientRect(),
       ratio = vpRect.width / vpRect.height,
       prom;
 
-    if (size === 'viewport') {
+    if (size === "viewport") {
       data.outputWidth = vpRect.width;
       data.outputHeight = vpRect.height;
-    } else if (typeof size === 'object') {
+    } else if (typeof size === "object") {
       if (size.width && size.height) {
         data.outputWidth = size.width;
         data.outputHeight = size.height;
@@ -1688,7 +1688,7 @@
     }
 
     if (RESULT_FORMATS.indexOf(format) > -1) {
-      data.format = 'image/' + format;
+      data.format = "image/" + format;
       data.quality = quality;
     }
 
@@ -1698,14 +1698,14 @@
 
     prom = new Promise(function (resolve) {
       switch (resultType.toLowerCase()) {
-        case 'rawcanvas':
+        case "rawcanvas":
           resolve(_getCanvas.call(self, data));
           break;
-        case 'canvas':
-        case 'base64':
+        case "canvas":
+        case "base64":
           resolve(_getBase64Result.call(self, data));
           break;
-        case 'blob':
+        case "blob":
           _getBlobResult.call(self, data).then(resolve);
           break;
         default:
@@ -1722,7 +1722,7 @@
 
   function _rotate(deg) {
     if (!this.options.useCanvas || !this.options.enableOrientation) {
-      throw 'Croppie: Cannot rotate without enableOrientation && EXIF.js included';
+      throw "Croppie: Cannot rotate without enableOrientation && EXIF.js included";
     }
 
     var self = this,
@@ -1745,66 +1745,66 @@
   function _destroy() {
     var self = this;
     self.element.removeChild(self.elements.boundary);
-    removeClass(self.element, 'croppie-container');
+    removeClass(self.element, "croppie-container");
     if (self.options.enableZoom) {
       self.element.removeChild(self.elements.zoomerWrap);
     }
     delete self.elements;
   }
 
-  if (typeof window !== 'undefined' && window.jQuery) {
+  if (typeof window !== "undefined" && window.jQuery) {
     var $ = window.jQuery;
     $.fn.croppie = function (opts) {
       var ot = typeof opts;
 
-      if (ot === 'string') {
+      if (ot === "string") {
         var args = Array.prototype.slice.call(arguments, 1);
-        var singleInst = $(this).data('croppie');
+        var singleInst = $(this).data("croppie");
 
-        if (opts === 'get') {
+        if (opts === "get") {
           return singleInst.get();
-        } else if (opts === 'result') {
+        } else if (opts === "result") {
           return singleInst.result.apply(singleInst, args);
-        } else if (opts === 'bind') {
+        } else if (opts === "bind") {
           return singleInst.bind.apply(singleInst, args);
         }
 
         return this.each(function () {
-          var i = $(this).data('croppie');
+          var i = $(this).data("croppie");
           if (!i) return;
 
           var method = i[opts];
           if ($.isFunction(method)) {
             method.apply(i, args);
-            if (opts === 'destroy') {
-              $(this).removeData('croppie');
+            if (opts === "destroy") {
+              $(this).removeData("croppie");
             }
           } else {
-            throw 'Croppie ' + opts + ' method not found';
+            throw "Croppie " + opts + " method not found";
           }
         });
       } else {
         return this.each(function () {
           var i = new Croppie(this, opts);
           i.$ = $;
-          $(this).data('croppie', i);
+          $(this).data("croppie", i);
         });
       }
     };
   }
 
   function Croppie(element, opts) {
-    if (element.className.indexOf('croppie-container') > -1) {
+    if (element.className.indexOf("croppie-container") > -1) {
       throw new Error("Croppie: Can't initialize croppie more than once");
     }
     this.element = element;
     this.options = deepExtend(clone(Croppie.defaults), opts);
 
-    if (this.element.tagName.toLowerCase() === 'img') {
+    if (this.element.tagName.toLowerCase() === "img") {
       var origImage = this.element;
-      addClass(origImage, 'cr-original-image');
-      setAttributes(origImage, { 'aria-hidden': 'true', alt: '' });
-      var replacementDiv = document.createElement('div');
+      addClass(origImage, "cr-original-image");
+      setAttributes(origImage, { "aria-hidden": "true", alt: "" });
+      var replacementDiv = document.createElement("div");
       this.element.parentNode.appendChild(replacementDiv);
       replacementDiv.appendChild(origImage);
       this.element = replacementDiv;
@@ -1817,8 +1817,8 @@
         url: this.options.url,
         points: this.options.points,
       };
-      delete this.options['url'];
-      delete this.options['points'];
+      delete this.options["url"];
+      delete this.options["points"];
       _bind.call(this, bindOpts);
     }
   }
@@ -1827,19 +1827,19 @@
     viewport: {
       width: 100,
       height: 100,
-      type: 'square',
+      type: "square",
     },
     boundary: {},
     orientationControls: {
       enabled: true,
-      leftClass: '',
-      rightClass: '',
+      leftClass: "",
+      rightClass: "",
     },
     resizeControls: {
       width: true,
       height: true,
     },
-    customClass: '',
+    customClass: "",
     showZoomer: true,
     enableZoom: true,
     enableResize: false,
@@ -1852,7 +1852,7 @@
   };
 
   Croppie.globals = {
-    translate: 'translate3d',
+    translate: "translate3d",
   };
 
   deepExtend(Croppie.prototype, {

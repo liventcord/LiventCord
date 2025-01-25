@@ -7,16 +7,16 @@ $(document).ready(function () {
     var isDragging = false;
     var autoStabilizerTimeout;
 
-    var draggableElement = document.getElementById('local_vid');
+    var draggableElement = document.getElementById("local_vid");
 
-    draggableElement.addEventListener('touchstart', function (e) {
+    draggableElement.addEventListener("touchstart", function (e) {
       clearTimeout(autoStabilizerTimeout);
       isDragging = true;
       initialX = e.touches[0].clientX - offsetX;
       initialY = e.touches[0].clientY - offsetY;
     });
 
-    draggableElement.addEventListener('touchmove', function (e) {
+    draggableElement.addEventListener("touchmove", function (e) {
       if (isDragging) {
         e.preventDefault();
         var currentX = e.touches[0].clientX - initialX;
@@ -27,14 +27,14 @@ $(document).ready(function () {
       }
     });
 
-    draggableElement.addEventListener('touchend', function () {
+    draggableElement.addEventListener("touchend", function () {
       isDragging = false;
       startAutoStabilizer();
     });
 
     function setTranslate(xPos, yPos, element) {
       element.style.transform =
-        'translate3d(' + xPos + 'px, ' + yPos + 'px, 0)';
+        "translate3d(" + xPos + "px, " + yPos + "px, 0)";
     }
     function setTranslateBasedOnViewport(xPercent, yPercent, element) {
       const viewportWidth = window.innerWidth;
@@ -78,9 +78,9 @@ $(document).ready(function () {
   }
 
   function handleDesktopDragging() {
-    $('#local_vid')
+    $("#local_vid")
       .draggable({
-        containment: 'body',
+        containment: "body",
         zIndex: 1,
         start: function (event, ui) {
           ui.position.left = $(window).width() - ui.helper.width();
@@ -104,8 +104,8 @@ $(document).ready(function () {
         },
       })
       .css({
-        left: $(window).width() - $('#local_vid').width(),
-        top: $(window).height() - $('#local_vid').height(),
+        left: $(window).width() - $("#local_vid").width(),
+        top: $(window).height() - $("#local_vid").height(),
       });
   }
 
@@ -119,60 +119,60 @@ $(document).ready(function () {
     }
   }
 
-  $(window).on('resize', function () {
+  $(window).on("resize", function () {
     checkVideoLayout();
   });
-  $(window).on('click', function () {
+  $(window).on("click", function () {
     checkVideoLayout();
   });
 });
 
 function checkVideoLayout() {
-  const videoGrid = document.getElementById('video_grid');
-  const videos = videoGrid.querySelectorAll('video');
+  const videoGrid = document.getElementById("video_grid");
+  const videos = videoGrid.querySelectorAll("video");
   const videoCount = videos.length;
 
-  videoGrid.style.display = 'flex';
-  videoGrid.style.flexWrap = 'wrap';
-  videoGrid.style.justifyContent = 'center';
-  videoGrid.style.alignItems = 'center';
+  videoGrid.style.display = "flex";
+  videoGrid.style.flexWrap = "wrap";
+  videoGrid.style.justifyContent = "center";
+  videoGrid.style.alignItems = "center";
 
   videos.forEach((video) => {
-    video.style.width = '100%';
-    video.style.height = 'auto';
-    video.style.flex = '1 1 45%';
-    video.style.maxWidth = '50%';
-    video.style.zIndex = '1';
-    video.style.maxHeight = '50%';
+    video.style.width = "100%";
+    video.style.height = "auto";
+    video.style.flex = "1 1 45%";
+    video.style.maxWidth = "50%";
+    video.style.zIndex = "1";
+    video.style.maxHeight = "50%";
   });
 
   if (videoCount === 1) {
-    videos[0].style.flex = '1 1 100%';
-    videos[0].style.maxWidth = '100%';
-    videos[0].style.maxHeight = '100%';
+    videos[0].style.flex = "1 1 100%";
+    videos[0].style.maxWidth = "100%";
+    videos[0].style.maxHeight = "100%";
   } else if (videoCount === 2) {
     videos.forEach((video) => {
-      video.style.flex = '1 1 50%';
-      video.style.maxWidth = '50%';
-      video.style.maxHeight = '100%';
+      video.style.flex = "1 1 50%";
+      video.style.maxWidth = "50%";
+      video.style.maxHeight = "100%";
     });
   } else if (videoCount === 3) {
     videos.forEach((video, index) => {
       if (index === 0) {
-        video.style.flex = '1 1 100%';
-        video.style.maxWidth = '100%';
-        video.style.maxHeight = '50%';
+        video.style.flex = "1 1 100%";
+        video.style.maxWidth = "100%";
+        video.style.maxHeight = "50%";
       } else {
-        video.style.flex = '1 1 50%';
-        video.style.maxWidth = '50%';
-        video.style.maxHeight = '50%';
+        video.style.flex = "1 1 50%";
+        video.style.maxWidth = "50%";
+        video.style.maxHeight = "50%";
       }
     });
   } else if (videoCount === 4) {
     videos.forEach((video) => {
-      video.style.flex = '1 1 50%';
-      video.style.maxWidth = '50%';
-      video.style.maxHeight = '50%';
+      video.style.flex = "1 1 50%";
+      video.style.maxWidth = "50%";
+      video.style.maxHeight = "50%";
     });
   } else if (videoCount > 4) {
     const rows = Math.ceil(Math.sqrt(videoCount));
@@ -187,18 +187,18 @@ function checkVideoLayout() {
     });
   }
 
-  const mediaQuery = window.matchMedia('(max-width: 768px)');
+  const mediaQuery = window.matchMedia("(max-width: 768px)");
   if (mediaQuery.matches) {
     videos.forEach((video) => {
-      if (video.id !== 'local-vid') {
-        video.style.flex = '1 1 100%';
-        video.style.maxWidth = '100%';
-        video.style.maxHeight = 'auto';
+      if (video.id !== "local-vid") {
+        video.style.flex = "1 1 100%";
+        video.style.maxWidth = "100%";
+        video.style.maxHeight = "auto";
       }
     });
   }
 }
 
 checkVideoLayout();
-window.addEventListener('resize', checkVideoLayout);
-window.addEventListener('click', checkVideoLayout);
+window.addEventListener("resize", checkVideoLayout);
+window.addEventListener("click", checkVideoLayout);

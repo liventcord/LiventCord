@@ -1,12 +1,18 @@
-import { selfProfileImage } from './avatar';
-import { mouseLeaveChannelButton,channelsUl,currentVoiceChannelId,setCurrentVoiceChannelGuild,currentVoiceChannelGuild } from './channels';
-import { apiClient, EventType } from './api';
-import { getId,createEl } from './utils';
-import { userList } from './userList';
-import { toggleManager } from './settings';
-import { currentUserId } from './user';
-import { isOnGuild } from './router';
-import { translations } from './translations';
+import { selfProfileImage } from "./avatar";
+import {
+  mouseLeaveChannelButton,
+  channelsUl,
+  currentVoiceChannelId,
+  setCurrentVoiceChannelGuild,
+  currentVoiceChannelGuild,
+} from "./channels";
+import { apiClient, EventType } from "./api";
+import { getId, createEl } from "./utils";
+import { userList } from "./userList";
+import { toggleManager } from "./settings";
+import { currentUserId } from "./user";
+import { isOnGuild } from "./router";
+import { translations } from "./translations";
 
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -15,27 +21,27 @@ let isAudioPlaying = false;
 let analyser = null;
 let source = null;
 let isAnalyzing = false;
-let youtubeIds = ['hOYzB3Qa9DE', 'UgSHUZvs8jg'];
+let youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 
 let isInitializedAudio;
 let microphoneButton;
 let earphoneButton;
 
-microphoneButton = getId('microphone-button');
-earphoneButton = getId('earphone-button');
+microphoneButton = getId("microphone-button");
+earphoneButton = getId("earphone-button");
 
 if (microphoneButton) {
-  microphoneButton.addEventListener('click', setMicrophone);
+  microphoneButton.addEventListener("click", setMicrophone);
 }
 if (earphoneButton) {
-  earphoneButton.addEventListener('click', setEarphones);
+  earphoneButton.addEventListener("click", setEarphones);
 }
 
 //initializeMp3Yt();
 
 export function initialiseAudio() {
-  if (toggleManager.states['party-toggle'] && isAudioPlaying) {
+  if (toggleManager.states["party-toggle"] && isAudioPlaying) {
     enableBorderMovement();
   }
 }
@@ -47,11 +53,11 @@ export async function playAudio(audioUrl) {
     }
 
     const audioElement = new Audio(audioUrl);
-    audioElement.crossOrigin = 'anonymous';
+    audioElement.crossOrigin = "anonymous";
     currentAudioPlayer = audioElement;
 
-    const playButton = document.querySelector('#player01 .play');
-    playButton.addEventListener('click', () => {
+    const playButton = document.querySelector("#player01 .play");
+    playButton.addEventListener("click", () => {
       if (isAudioPlaying) {
         audioElement.pause();
         playButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>`; // Play icon
@@ -62,8 +68,8 @@ export async function playAudio(audioUrl) {
       isAudioPlaying = !isAudioPlaying;
     });
 
-    const nextButton = document.querySelector('#player01 .next');
-    nextButton.addEventListener('click', async () => {
+    const nextButton = document.querySelector("#player01 .next");
+    nextButton.addEventListener("click", async () => {
       if (youtubeIndex < youtubeIds.length - 1) {
         youtubeIndex++;
         const nextYtId = youtubeIds[youtubeIndex];
@@ -71,13 +77,13 @@ export async function playAudio(audioUrl) {
         if (audioStreamUrl) {
           playAudio(audioStreamUrl);
         } else {
-          console.error('Failed to retrieve audio stream URL for next track.');
+          console.error("Failed to retrieve audio stream URL for next track.");
         }
       }
     });
 
-    const prevButton = document.querySelector('#player01 .prev');
-    prevButton.addEventListener('click', async () => {
+    const prevButton = document.querySelector("#player01 .prev");
+    prevButton.addEventListener("click", async () => {
       if (youtubeIndex > 0) {
         youtubeIndex--;
         const prevYtId = youtubeIds[youtubeIndex];
@@ -86,26 +92,26 @@ export async function playAudio(audioUrl) {
           playAudio(audioStreamUrl);
         } else {
           console.error(
-            'Failed to retrieve audio stream URL for previous track.',
+            "Failed to retrieve audio stream URL for previous track.",
           );
         }
       }
     });
 
-    audioElement.addEventListener('timeupdate', () => {
-      const totalTime = document.querySelector('#player01 .total-time');
-      const lastTime = document.querySelector('#player01 .last-time');
+    audioElement.addEventListener("timeupdate", () => {
+      const totalTime = document.querySelector("#player01 .total-time");
+      const lastTime = document.querySelector("#player01 .last-time");
       totalTime.innerText = formatTime(audioElement.duration);
       lastTime.innerText = formatTime(audioElement.currentTime);
 
-      const track = document.querySelector('#player01 .track');
+      const track = document.querySelector("#player01 .track");
       track.style.width = `${
         (audioElement.currentTime / audioElement.duration) * 100
       }%`;
     });
 
-    const track = document.querySelector('#player01 .track');
-    track.addEventListener('click', (e) => {
+    const track = document.querySelector("#player01 .track");
+    track.addEventListener("click", (e) => {
       const rect = track.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const width = rect.width;
@@ -113,26 +119,26 @@ export async function playAudio(audioUrl) {
       audioElement.currentTime = clickRatio * audioElement.duration;
     });
 
-    audioElement.addEventListener('ended', function () {
+    audioElement.addEventListener("ended", function () {
       isAudioPlaying = false;
-      const playButton = document.querySelector('#player01 .play');
+      const playButton = document.querySelector("#player01 .play");
       playButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>`; // Play icon
     });
 
     await audioElement.play();
   } catch (error) {
-    console.error('Error playing audio:', error);
+    console.error("Error playing audio:", error);
   }
 }
 
 export function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return `${minutes}:${secs < 10 ? '0' + secs : secs}`;
+  return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
 }
 
 export function initializeMp3Yt() {
-  const modal = createEl('div', { className: 'modal' });
+  const modal = createEl("div", { className: "modal" });
   document.body.appendChild(modal);
 
   const handleClick = async function () {
@@ -141,7 +147,7 @@ export function initializeMp3Yt() {
     }
 
     const ytId = youtubeIds[youtubeIndex];
-    document.removeEventListener('click', handleClick);
+    document.removeEventListener("click", handleClick);
     modal.remove();
 
     isAudioPlaying = true;
@@ -151,11 +157,11 @@ export function initializeMp3Yt() {
     if (audioStreamUrl) {
       playAudio(audioStreamUrl);
     } else {
-      console.error('Failed to retrieve audio stream URL.');
+      console.error("Failed to retrieve audio stream URL.");
     }
   };
 
-  document.addEventListener('click', handleClick);
+  document.addEventListener("click", handleClick);
 }
 export async function fetchAudioStreamUrl(videoId) {
   try {
@@ -164,12 +170,12 @@ export async function fetchAudioStreamUrl(videoId) {
     );
 
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+      throw new Error("Network response was not ok");
     }
 
     return response.url;
   } catch (error) {
-    console.error('Error fetching audio stream URL:', error);
+    console.error("Error fetching audio stream URL:", error);
     return null;
   }
 }
@@ -189,10 +195,10 @@ export function stopAudioAnalysis() {
 
   let selfProfileDisplayElementList = getSelfFromUserList();
   if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = '50%';
+    selfProfileDisplayElementList.style.borderRadius = "50%";
   }
 
-  const profileDisplayElement = getId('profile-display');
+  const profileDisplayElement = getId("profile-display");
 
   resetWiggleEffect(
     profileDisplayElement,
@@ -205,7 +211,7 @@ export function startAudioAnalysis() {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
   if (!(currentAudioPlayer instanceof HTMLMediaElement)) {
-    console.error('currentAudioPlayer is not a valid HTMLMediaElement.');
+    console.error("currentAudioPlayer is not a valid HTMLMediaElement.");
     return;
   }
 
@@ -223,14 +229,14 @@ export function startAudioAnalysis() {
   analyzeAudio(bufferSize, dataArray, recentVolumes);
 }
 export function getSelfFromUserList() {
-  const userProfiles = userList.querySelectorAll('.profile-container');
+  const userProfiles = userList.querySelectorAll(".profile-container");
   if (!userList || !userProfiles.length) return null;
   for (const profile of userProfiles) {
     if (profile.id === currentUserId) {
-      return profile.querySelector('.profile-pic');
+      return profile.querySelector(".profile-pic");
     }
   }
-  return null; 
+  return null;
 }
 export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
   if (!isAnalyzing || !analyser) return;
@@ -258,23 +264,23 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
     255 - averageVolume * 2,
   )})`;
 
-  const profileDisplayElement = getId('profile-display');
+  const profileDisplayElement = getId("profile-display");
 
   if (averageVolume > dynamicThreshold) {
     if (profileDisplayElement) {
-      profileDisplayElement.classList.add('dancing-border');
+      profileDisplayElement.classList.add("dancing-border");
       profileDisplayElement.style.transform = `scale(${scaleFactor})`;
       profileDisplayElement.style.borderColor = borderColor;
     }
     if (selfProfileImage) {
-      selfProfileImage.classList.add('dancing-border');
+      selfProfileImage.classList.add("dancing-border");
       selfProfileImage.style.transform = `scale(${scaleFactor})`;
       selfProfileImage.style.borderColor = borderColor;
     }
 
     const selfUserListProfileList = getSelfFromUserList();
     if (selfUserListProfileList) {
-      selfUserListProfileList.classList.add('dancing-border');
+      selfUserListProfileList.classList.add("dancing-border");
       selfUserListProfileList.style.transform = `scale(${scaleFactor})`;
       selfUserListProfileList.style.borderColor = borderColor;
     }
@@ -289,20 +295,20 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
 
 export function resetStyles(profileDisplayElement, selfProfileImage) {
   if (profileDisplayElement) {
-    profileDisplayElement.classList.remove('dancing-border');
+    profileDisplayElement.classList.remove("dancing-border");
     profileDisplayElement.style.transform = `scale(1)`;
-    profileDisplayElement.style.borderColor = 'rgb(17, 18, 20)';
+    profileDisplayElement.style.borderColor = "rgb(17, 18, 20)";
   }
   if (selfProfileImage) {
-    selfProfileImage.classList.remove('dancing-border');
+    selfProfileImage.classList.remove("dancing-border");
     selfProfileImage.style.transform = `scale(1)`;
-    selfProfileImage.style.borderColor = 'rgb(17, 18, 20)';
+    selfProfileImage.style.borderColor = "rgb(17, 18, 20)";
   }
   const selfUserListProfileList = getSelfFromUserList();
   if (selfUserListProfileList) {
-    selfUserListProfileList.classList.remove('dancing-border');
+    selfUserListProfileList.classList.remove("dancing-border");
     selfUserListProfileList.style.transform = `scale(1)`;
-    selfUserListProfileList.style.borderColor = 'rgb(17, 18, 20)';
+    selfUserListProfileList.style.borderColor = "rgb(17, 18, 20)";
   }
 }
 
@@ -328,24 +334,24 @@ export function stopCurrentMusic() {
 }
 
 export function resetProfileBorders() {
-  const profileDisplayElement = getId('profile-display');
+  const profileDisplayElement = getId("profile-display");
 
   const selfProfileDisplayElementList = getSelfFromUserList();
   if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = '50%';
-    selfProfileDisplayElementList.style.borderColor = '';
-    selfProfileDisplayElementList.style.transform = '';
+    selfProfileDisplayElementList.style.borderRadius = "50%";
+    selfProfileDisplayElementList.style.borderColor = "";
+    selfProfileDisplayElementList.style.transform = "";
   }
 
   if (profileDisplayElement) {
-    profileDisplayElement.style.borderRadius = '50%';
-    profileDisplayElement.style.borderColor = '';
-    profileDisplayElement.style.transform = '';
+    profileDisplayElement.style.borderRadius = "50%";
+    profileDisplayElement.style.borderColor = "";
+    profileDisplayElement.style.transform = "";
   }
   if (selfProfileImage) {
-    selfProfileImage.style.borderRadius = '50%';
-    selfProfileImage.style.borderColor = '';
-    selfProfileImage.style.transform = '';
+    selfProfileImage.style.borderRadius = "50%";
+    selfProfileImage.style.borderColor = "";
+    selfProfileImage.style.transform = "";
   }
 }
 
@@ -364,13 +370,13 @@ export function activateSoundOutput() {
     return navigator.mediaDevices
       .enumerateDevices()
       .then((devices) =>
-        devices.filter((device) => device.kind === 'audiooutput'),
+        devices.filter((device) => device.kind === "audiooutput"),
       );
   }
 
   async function updateSoundOutputOptions() {
-    const dropdown = getId('sound-output-dropdown');
-    dropdown.innerHTML = '';
+    const dropdown = getId("sound-output-dropdown");
+    dropdown.innerHTML = "";
 
     try {
       const hasPermission = await requestSoundOutputPermissions();
@@ -378,33 +384,34 @@ export function activateSoundOutput() {
       if (hasPermission) {
         const soundOutputs = await getSoundOutputList();
         soundOutputs.forEach((output, index) => {
-          const option = createEl('option', { style : { fontSize : "12px",
-             border : "none"},
-             value : output.deviceId, 
-             textContent : output.label || `Sound Output ${index + 1}`});
+          const option = createEl("option", {
+            style: { fontSize: "12px", border: "none" },
+            value: output.deviceId,
+            textContent: output.label || `Sound Output ${index + 1}`,
+          });
           dropdown.appendChild(option);
         });
       }
 
-      const defaultOption = createEl('option');
-      defaultOption.style.fontSize = '12px';
-      defaultOption.value = 'default';
-      defaultOption.textContent = 'Default Sound Output';
+      const defaultOption = createEl("option");
+      defaultOption.style.fontSize = "12px";
+      defaultOption.value = "default";
+      defaultOption.textContent = "Default Sound Output";
       dropdown.appendChild(defaultOption);
     } catch (error) {
-      console.error('Error updating sound output options:', error);
+      console.error("Error updating sound output options:", error);
 
-      const defaultOption = createEl('option');
-      defaultOption.style.fontSize = '12px';
-      defaultOption.value = 'default';
-      defaultOption.textContent = 'Default Sound Output';
+      const defaultOption = createEl("option");
+      defaultOption.style.fontSize = "12px";
+      defaultOption.value = "default";
+      defaultOption.textContent = "Default Sound Output";
       dropdown.appendChild(defaultOption);
     }
   }
 
   updateSoundOutputOptions();
   navigator.mediaDevices.addEventListener(
-    'devicechange',
+    "devicechange",
     updateSoundOutputOptions,
   );
 }
@@ -416,7 +423,7 @@ export function setMicrophone() {
     : `/images/icons/redmic.png`;
   microphoneButton.src = imagePath;
   isMicrophoneOpen = !isMicrophoneOpen;
-  console.log('Set microphone! to ', isMicrophoneOpen);
+  console.log("Set microphone! to ", isMicrophoneOpen);
 }
 
 let isEarphonesOpen = true;
@@ -426,7 +433,7 @@ export function setEarphones() {
     : `/images/icons/redearphones.png`;
   earphoneButton.src = imagePath;
   isEarphonesOpen = !isEarphonesOpen;
-  console.log('Set earphones! to ', isEarphonesOpen);
+  console.log("Set earphones! to ", isEarphonesOpen);
 }
 
 export async function activateMicAndSoundOutput() {
@@ -440,7 +447,7 @@ export async function sendAudioData() {
     mediaRecorder.ondataavailable = async (e) => {};
     mediaRecorder.start();
   } catch (err) {
-    console.error('Error accessing microphone:', err);
+    console.error("Error accessing microphone:", err);
   }
 }
 
@@ -461,24 +468,24 @@ export function activateMicAndCamera() {
       .then((devices) =>
         devices.filter(
           (device) =>
-            device.kind === 'audioinput' || device.kind === 'videoinput',
+            device.kind === "audioinput" || device.kind === "videoinput",
         ),
       );
   }
 
   function createDropdownOption(label, value) {
-    return createEl('option', {
+    return createEl("option", {
       textContent: label,
       value,
-      style: { fontSize: '12px' },
+      style: { fontSize: "12px" },
     });
   }
 
   async function updateMediaOptions() {
-    const micDropdown = getId('sound-mic-dropdown');
-    const cameraDropdown = getId('camera-dropdown');
-    micDropdown.innerHTML = '';
-    cameraDropdown.innerHTML = '';
+    const micDropdown = getId("sound-mic-dropdown");
+    const cameraDropdown = getId("camera-dropdown");
+    micDropdown.innerHTML = "";
+    cameraDropdown.innerHTML = "";
 
     try {
       const hasPermission = await requestMediaPermissions();
@@ -488,43 +495,56 @@ export function activateMicAndCamera() {
         mediaDevices.forEach((device, index) => {
           const label =
             device.label ||
-            (device.kind === 'audioinput'
+            (device.kind === "audioinput"
               ? `Microphone ${index + 1}`
               : `Camera ${index + 1}`);
           const dropdown =
-            device.kind === 'audioinput' ? micDropdown : cameraDropdown;
+            device.kind === "audioinput" ? micDropdown : cameraDropdown;
 
           dropdown.appendChild(createDropdownOption(label, device.deviceId));
         });
       }
 
-      micDropdown.appendChild(createDropdownOption(translations.getTranslation("default-microphone"), 'default'));
-      cameraDropdown.appendChild(createDropdownOption('Default Camera', 'default'));
+      micDropdown.appendChild(
+        createDropdownOption(
+          translations.getTranslation("default-microphone"),
+          "default",
+        ),
+      );
+      cameraDropdown.appendChild(
+        createDropdownOption("Default Camera", "default"),
+      );
     } catch (error) {
-      console.error('Error updating media options:', error);
+      console.error("Error updating media options:", error);
 
-      micDropdown.appendChild(createDropdownOption(translations.getTranslation("default-microphone"), 'default'));
-      cameraDropdown.appendChild(createDropdownOption('Default Camera', 'default'));
+      micDropdown.appendChild(
+        createDropdownOption(
+          translations.getTranslation("default-microphone"),
+          "default",
+        ),
+      );
+      cameraDropdown.appendChild(
+        createDropdownOption("Default Camera", "default"),
+      );
     }
   }
 
   updateMediaOptions();
   if (navigator && navigator.mediaDevices) {
-    navigator.mediaDevices.addEventListener('devicechange', updateMediaOptions);
+    navigator.mediaDevices.addEventListener("devicechange", updateMediaOptions);
   }
 }
 
-
 export function closeCurrentCall() {
-  currentAudioPlayer = getId('audio-player');
-  playAudio('/sounds/leavevoice.mp3');
+  currentAudioPlayer = getId("audio-player");
+  playAudio("/sounds/leavevoice.mp3");
 
-  const sp = getId('sound-panel');
+  const sp = getId("sound-panel");
   const oldVoiceId = currentVoiceChannelId;
-  sp.style.display = 'none';
+  sp.style.display = "none";
   clearVoiceChannel(oldVoiceId);
   setCurrentVoiceChannelGuild();
-  if(isOnGuild) {
+  if (isOnGuild) {
     setCurrentVoiceChannelGuild();
   }
   const buttonContainer = channelsUl.querySelector(`li[id="${oldVoiceId}"]`);
@@ -542,19 +562,19 @@ export function clearVoiceChannel(channelId) {
   if (!channelButton) {
     return;
   }
-  const buttons = channelButton.querySelectorAll('.channel-button');
+  const buttons = channelButton.querySelectorAll(".channel-button");
   buttons.forEach((btn, index) => {
     btn.remove();
   });
   let channelUsersContainer = channelButton.querySelector(
-    '.channel-users-container',
+    ".channel-users-container",
   );
   if (channelUsersContainer) {
     channelUsersContainer.remove();
   }
-  let existingContentWrapper = channelButton.querySelector('.content-wrapper');
+  let existingContentWrapper = channelButton.querySelector(".content-wrapper");
   console.log(existingContentWrapper.style.marginRight);
-  existingContentWrapper.style.marginRight = '100px';
+  existingContentWrapper.style.marginRight = "100px";
 }
 
 let cachedAudioNotify = null;
@@ -562,9 +582,7 @@ let cachedAudioNotify = null;
 export function playNotification() {
   try {
     if (!cachedAudioNotify) {
-      cachedAudioNotify = new Audio(
-        '/sounds/notification.mp3',
-      );
+      cachedAudioNotify = new Audio("/sounds/notification.mp3");
     }
     cachedAudioNotify.play();
   } catch (error) {
@@ -573,14 +591,14 @@ export function playNotification() {
 }
 
 export function initializeMusic() {
-  const modal = createEl('div', { className: 'modal' });
+  const modal = createEl("div", { className: "modal" });
   document.body.appendChild(modal);
 
   const songs = [
-    '/sounds/musics/2.mp3',
-    '/sounds/musics/1.mp3',
-    '/sounds/musics/3.mp3',
-    '/sounds/musics/4.mp3',
+    "/sounds/musics/2.mp3",
+    "/sounds/musics/1.mp3",
+    "/sounds/musics/3.mp3",
+    "/sounds/musics/4.mp3",
   ];
 
   let currentSongIndex = 0;
@@ -601,9 +619,9 @@ export function initializeMusic() {
     };
   }
 
-  modal.addEventListener('click', function () {
+  modal.addEventListener("click", function () {
     playCurrentSong();
-    modal.style.display = 'none';
+    modal.style.display = "none";
   });
 }
 export class VoiceHandler {
@@ -615,13 +633,13 @@ export class VoiceHandler {
         if (decodedData) {
           this.playAudioBuffer(decodedData);
         } else {
-          console.log('Decoded audio data is empty or invalid');
+          console.log("Decoded audio data is empty or invalid");
         }
       } catch (e) {
-        console.log('Error decoding audio data:',e);
+        console.log("Error decoding audio data:", e);
       }
     } else {
-      console.log('Received silent or invalid audio data');
+      console.log("Received silent or invalid audio data");
     }
   }
   convertToArrayBuffer(data) {
@@ -630,10 +648,10 @@ export class VoiceHandler {
     } else if (data.buffer instanceof ArrayBuffer) {
       return data.buffer;
     } else {
-      throw new Error('Unsupported data format');
+      throw new Error("Unsupported data format");
     }
   }
-  
+
   decodeAudioDataAsync(arrayBuffer) {
     try {
     } catch (e) {
@@ -643,7 +661,7 @@ export class VoiceHandler {
       });
     }
   }
-  
+
   playAudioBuffer(audioBuffer) {
     const source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
@@ -652,20 +670,19 @@ export class VoiceHandler {
   }
 }
 
-
 export function applyWiggleEffect(profileElement, selfProfileElement) {
   if (profileElement) {
-    profileElement.classList.add('dancing-border');
+    profileElement.classList.add("dancing-border");
   }
   if (selfProfileElement) {
-    selfProfileElement.classList.add('dancing-border');
+    selfProfileElement.classList.add("dancing-border");
   }
   setTimeout(() => {
     if (profileElement) {
-      profileElement.classList.remove('dancing-border');
+      profileElement.classList.remove("dancing-border");
     }
     if (selfProfileElement) {
-      selfProfileElement.classList.remove('dancing-border');
+      selfProfileElement.classList.remove("dancing-border");
     }
   }, 500);
 }
@@ -673,10 +690,10 @@ export function applyWiggleEffect(profileElement, selfProfileElement) {
 export function resetWiggleEffect(...elements) {
   elements.forEach((element) => {
     if (element) {
-      element.style.transition = 'none';
-      element.style.borderRadius = '0%';
+      element.style.transition = "none";
+      element.style.borderRadius = "0%";
       setTimeout(() => {
-        element.style.transition = 'border-radius 0.1s';
+        element.style.transition = "border-radius 0.1s";
       }, 0);
     }
   });

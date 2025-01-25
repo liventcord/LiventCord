@@ -4,11 +4,11 @@ var myID;
 var _peer_list = {};
 
 var socket = io();
-socket.on('disconnect', (reason, details) => {
-  console.log('Disconnected from server.', reason);
+socket.on("disconnect", (reason, details) => {
+  console.log("Disconnected from server.", reason);
 });
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener("DOMContentLoaded", (event) => {
   startCamera();
 });
 
@@ -29,29 +29,29 @@ function startCamera() {
   });
 }
 
-socket.on('connect', () => {
-  console.log('socket connected....');
-  socket.emit('join-room', { room_id: myRoomID, name: myName });
+socket.on("connect", () => {
+  console.log("socket connected....");
+  socket.emit("join-room", { room_id: myRoomID, name: myName });
 });
-socket.on('user-connect', (data) => {
-  console.log('user-connect ', data);
-  let peer_id = data['sid'];
-  let display_name = data['name'];
+socket.on("user-connect", (data) => {
+  console.log("user-connect ", data);
+  let peer_id = data["sid"];
+  let display_name = data["name"];
   _peer_list[peer_id] = undefined; // add new user to user list
   addVideoElement(peer_id, display_name);
 });
-socket.on('user-disconnect', (data) => {
-  console.log('user-disconnect ', data);
-  let peer_id = data['sid'];
+socket.on("user-disconnect", (data) => {
+  console.log("user-disconnect ", data);
+  let peer_id = data["sid"];
   closeConnection(peer_id);
   removeVideoElement(peer_id);
 });
-socket.on('user-list', (data) => {
-  console.log('user list recvd ', data);
-  myID = data['my_id'];
-  if ('list' in data) {
+socket.on("user-list", (data) => {
+  console.log("user list recvd ", data);
+  myID = data["my_id"];
+  if ("list" in data) {
     // not the first to connect to room, existing user list recieved
-    let recvd_list = data['list'];
+    let recvd_list = data["list"];
     // add existing users to user list
     for (peer_id in recvd_list) {
       display_name = recvd_list[peer_id];
@@ -107,7 +107,7 @@ async function pingServer(serverUrl) {
   };
 
   // Create an empty data channel to trigger ICE candidates
-  peerConnection.createDataChannel('ping');
+  peerConnection.createDataChannel("ping");
 
   try {
     const offer = await peerConnection.createOffer();
@@ -118,15 +118,15 @@ async function pingServer(serverUrl) {
 }
 
 const servers = [
-  'stun:stun.l.google.com:19302',
-  'stun:stun1.l.google.com:19302',
-  'stun:stun2.l.google.com:19302',
-  'stun:stun3.l.google.com:19302',
-  'stun:stun4.l.google.com:19302',
-  'stun:stun5.l.google.com:19302',
-  'stun:stun6.l.google.com:19302',
-  'stun:stun7.l.google.com:19302',
-  'stun:stun8.l.google.com:19302',
+  "stun:stun.l.google.com:19302",
+  "stun:stun1.l.google.com:19302",
+  "stun:stun2.l.google.com:19302",
+  "stun:stun3.l.google.com:19302",
+  "stun:stun4.l.google.com:19302",
+  "stun:stun5.l.google.com:19302",
+  "stun:stun6.l.google.com:19302",
+  "stun:stun7.l.google.com:19302",
+  "stun:stun8.l.google.com:19302",
 ];
 
 async function checkServers() {
@@ -139,36 +139,36 @@ var PC_CONFIG = {
   iceServers: [
     {
       urls: [
-        'stun:stun.l.google.com:19302',
-        'stun:stun1.l.google.com:19302',
-        'stun:stun2.l.google.com:19302',
-        'stun:stun3.l.google.com:19302',
-        'stun:stun4.l.google.com:19302',
-        'stun:stun5.l.google.com:19302',
-        'stun:stun6.l.google.com:19302',
-        'stun:stun7.l.google.com:19302',
-        'stun:stun8.l.google.com:19302',
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+        "stun:stun2.l.google.com:19302",
+        "stun:stun3.l.google.com:19302",
+        "stun:stun4.l.google.com:19302",
+        "stun:stun5.l.google.com:19302",
+        "stun:stun6.l.google.com:19302",
+        "stun:stun7.l.google.com:19302",
+        "stun:stun8.l.google.com:19302",
       ],
     },
   ],
 };
 
 function log_error(e) {
-  console.log('[ERROR] ', e);
+  console.log("[ERROR] ", e);
 }
 function sendViaServer(data) {
-  socket.emit('data', data);
+  socket.emit("data", data);
 }
 
-socket.on('data', (msg) => {
-  switch (msg['type']) {
-    case 'offer':
+socket.on("data", (msg) => {
+  switch (msg["type"]) {
+    case "offer":
       handleOfferMsg(msg);
       break;
-    case 'answer':
+    case "answer":
       handleAnswerMsg(msg);
       break;
-    case 'new-ice-candidate':
+    case "new-ice-candidate":
       handleNewICECandidateMsg(msg);
       break;
   }
@@ -184,8 +184,8 @@ function start_webrtc() {
 }
 
 function createBlackStream(fps = 1) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
   const width = 640;
   const height = 480;
   canvas.width = width;
@@ -193,7 +193,7 @@ function createBlackStream(fps = 1) {
 
   const stream = canvas.captureStream(fps);
 
-  const blackColor = 'black';
+  const blackColor = "black";
 
   function drawBlackFrame() {
     context.fillStyle = blackColor;
@@ -213,10 +213,10 @@ async function invite(peer_id) {
 
   if (_peer_list[peer_id]) {
     console.log(
-      '[Not supposed to happen!] Attempting to start a connection that already exists!',
+      "[Not supposed to happen!] Attempting to start a connection that already exists!",
     );
   } else if (peer_id === myID) {
-    console.log('[Not supposed to happen!] Trying to connect to self!');
+    console.log("[Not supposed to happen!] Trying to connect to self!");
   } else {
     console.log(`Creating peer connection for <${peer_id}> ...`);
     createPeerConnection(peer_id);
@@ -238,7 +238,7 @@ function waitForConnection(peer_id) {
   return new Promise((resolve) => {
     _peer_list[peer_id].oniceconnectionstatechange = () => {
       const iceState = _peer_list[peer_id].iceConnectionState;
-      if (iceState === 'connected' || iceState === 'completed') {
+      if (iceState === "connected" || iceState === "completed") {
         console.log(`Peer <${peer_id}> connected!`);
         resolve();
       }
@@ -271,7 +271,7 @@ function handleNegotiationNeededEvent(peer_id) {
       sendViaServer({
         sender_id: myID,
         target_id: peer_id,
-        type: 'offer',
+        type: "offer",
         sdp: _peer_list[peer_id].localDescription,
       });
     })
@@ -287,12 +287,12 @@ function getStream() {
   }
 }
 function handleOfferMsg(msg) {
-  peer_id = msg['sender_id'];
+  peer_id = msg["sender_id"];
 
   console.log(`offer recieved from <${peer_id}>`);
 
   createPeerConnection(peer_id);
-  let desc = new RTCSessionDescription(msg['sdp']);
+  let desc = new RTCSessionDescription(msg["sdp"]);
   _peer_list[peer_id]
     .setRemoteDescription(desc)
     .then(() => {
@@ -314,7 +314,7 @@ function handleOfferMsg(msg) {
       sendViaServer({
         sender_id: myID,
         target_id: peer_id,
-        type: 'answer',
+        type: "answer",
         sdp: _peer_list[peer_id].localDescription,
       });
     })
@@ -322,9 +322,9 @@ function handleOfferMsg(msg) {
 }
 
 function handleAnswerMsg(msg) {
-  peer_id = msg['sender_id'];
+  peer_id = msg["sender_id"];
   console.log(`answer recieved from <${peer_id}>`);
-  let desc = new RTCSessionDescription(msg['sdp']);
+  let desc = new RTCSessionDescription(msg["sdp"]);
   _peer_list[peer_id].setRemoteDescription(desc);
 }
 
@@ -333,7 +333,7 @@ function handleICECandidateEvent(event, peer_id) {
     sendViaServer({
       sender_id: myID,
       target_id: peer_id,
-      type: 'new-ice-candidate',
+      type: "new-ice-candidate",
       candidate: event.candidate,
     });
   }
@@ -342,7 +342,7 @@ function handleICECandidateEvent(event, peer_id) {
 function handleNewICECandidateMsg(msg) {
   console.log(`ICE candidate recieved from <${peer_id}>`);
   var candidate = new RTCIceCandidate(msg.candidate);
-  _peer_list[msg['sender_id']].addIceCandidate(candidate).catch(log_error);
+  _peer_list[msg["sender_id"]].addIceCandidate(candidate).catch(log_error);
 }
 
 function handleTrackEvent(event, peer_id) {

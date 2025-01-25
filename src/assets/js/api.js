@@ -2,9 +2,6 @@ import { translations } from "./translations";
 import { printFriendMessage } from "./friendui";
 import { alertUser } from "./ui";
 
-
-
-
 export const EventType = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
   JOIN_GUILD: "JOIN_GUILD",
@@ -31,7 +28,7 @@ export const EventType = Object.freeze({
   START_TYPING: "START_TYPING",
   STOP_TYPING: "STOP_TYPING",
   ADD_FRIEND: "ADD_FRIEND",
-  ACCEPT_FRIEND : "ACCEPT_FRIEND",
+  ACCEPT_FRIEND: "ACCEPT_FRIEND",
   REMOVE_FRIEND: "REMOVE_FRIEND",
   DENY_FRIEND: "REMOVE_FRIEND",
   ADD_FRIEND_ID: "ADD_FRIEND_ID",
@@ -41,9 +38,8 @@ export const EventType = Object.freeze({
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
   GET_BULK_REPLY: "GET_BULK_REPLY",
   CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
-  GET_MESSAGE_DATES : "GET_MESSAGE_DATES",
+  GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
 });
-
 
 const HttpMethod = Object.freeze({
   POST: "POST",
@@ -77,19 +73,18 @@ const EventHttpMethodMap = {
   [EventType.ADD_FRIEND_ID]: HttpMethod.POST,
   [EventType.REMOVE_FRIEND]: HttpMethod.DELETE,
   [EventType.DENY_FRIEND]: HttpMethod.POST,
-  [EventType.ACCEPT_FRIEND] : HttpMethod.POST,
+  [EventType.ACCEPT_FRIEND]: HttpMethod.POST,
   [EventType.CHANGE_NICK]: HttpMethod.PUT,
   [EventType.ADD_DM]: HttpMethod.POST,
   [EventType.GET_BULK_REPLY]: HttpMethod.GET,
   [EventType.CHANGE_GUILD_NAME]: HttpMethod.PUT,
   [EventType.DELETE_CHANNEL]: HttpMethod.DELETE,
-  [EventType.LEAVE_VOICE_CHANNEL]:  HttpMethod.PUT,
-  [EventType.JOIN_VOICE_CHANNEL]:  HttpMethod.POST,
-  [EventType.DELETE_MESSAGE_DM] : HttpMethod.DELETE,
-  [EventType.DELETE_MESSAGE_GUILD] : HttpMethod.DELETE,
-  [EventType.UPDATE_GUILD_NAME] : HttpMethod.PUT,
-  [EventType.UPDATE_GUILD_IMAGE] : HttpMethod.PUT
-  
+  [EventType.LEAVE_VOICE_CHANNEL]: HttpMethod.PUT,
+  [EventType.JOIN_VOICE_CHANNEL]: HttpMethod.POST,
+  [EventType.DELETE_MESSAGE_DM]: HttpMethod.DELETE,
+  [EventType.DELETE_MESSAGE_GUILD]: HttpMethod.DELETE,
+  [EventType.UPDATE_GUILD_NAME]: HttpMethod.PUT,
+  [EventType.UPDATE_GUILD_IMAGE]: HttpMethod.PUT,
 };
 
 const EventUrlMap = {
@@ -104,12 +99,17 @@ const EventUrlMap = {
   [EventType.GET_INVITES]: "/guilds/{guildId}/invites",
 
   [EventType.GET_HISTORY_DM]: "/guilds/{guildId}/channels/{channelId}/messages",
-  [EventType.GET_HISTORY_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
-  
-  [EventType.GET_SCROLL_HISTORY]: "/guilds/{guildId}/channels/{channelId}/messages",
-  [EventType.GET_BULK_REPLY]: "/guilds/{guildId}/channels/{channelId}/messages/reply",
-  [EventType.GET_MESSAGE_DATE]: "/guilds/{guildId}/channels/{channelId}/messages/date",
-  [EventType.START_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/start",
+  [EventType.GET_HISTORY_GUILD]:
+    "/guilds/{guildId}/channels/{channelId}/messages",
+
+  [EventType.GET_SCROLL_HISTORY]:
+    "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.GET_BULK_REPLY]:
+    "/guilds/{guildId}/channels/{channelId}/messages/reply",
+  [EventType.GET_MESSAGE_DATE]:
+    "/guilds/{guildId}/channels/{channelId}/messages/date",
+  [EventType.START_TYPING]:
+    "/guilds/{guildId}/channels/{channelId}/typing/start",
   [EventType.STOP_TYPING]: "/guilds/{guildId}/channels/{channelId}/typing/stop",
   [EventType.CHANGE_GUILD_NAME]: "/guilds/{guildId}",
 
@@ -120,22 +120,23 @@ const EventUrlMap = {
   [EventType.ADD_FRIEND]: "/friends",
   [EventType.ADD_FRIEND_ID]: "/friends",
   [EventType.REMOVE_FRIEND]: "/friends/{friendId}",
-  
+
   [EventType.ADD_DM]: "/dm/{friendId}",
-  
-  [EventType.SEND_MESSAGE_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
+
+  [EventType.SEND_MESSAGE_GUILD]:
+    "/guilds/{guildId}/channels/{channelId}/messages",
   [EventType.SEND_MESSAGE_DM]: "/dms/{Id}/channels/{channelId}/messages",
-  [EventType.DELETE_MESSAGE_DM] : "/guilds/{guildId}/channels/{channelId}/messages",
-  [EventType.DELETE_MESSAGE_GUILD] : "/guilds/{guildId}/channels/{channelId}/messages",
-  
+  [EventType.DELETE_MESSAGE_DM]:
+    "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.DELETE_MESSAGE_GUILD]:
+    "/guilds/{guildId}/channels/{channelId}/messages",
+
   [EventType.CHANGE_NICK]: "/nicks",
-  [EventType.LEAVE_VOICE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}/voice",
-  [EventType.JOIN_VOICE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}/voice",
-
+  [EventType.LEAVE_VOICE_CHANNEL]:
+    "/guilds/{guildId}/channels/{channelId}/voice",
+  [EventType.JOIN_VOICE_CHANNEL]:
+    "/guilds/{guildId}/channels/{channelId}/voice",
 };
-
-
-
 
 class ApiClient {
   constructor() {
@@ -151,35 +152,44 @@ class ApiClient {
 
   validateEventMaps() {
     const eventTypes = Object.values(EventType);
-    eventTypes.forEach(eventType => {
+    eventTypes.forEach((eventType) => {
       if (!EventHttpMethodMap.hasOwnProperty(eventType)) {
-        console.warn(`Missing HTTP method mapping for event type: ${eventType}`);
+        console.warn(
+          `Missing HTTP method mapping for event type: ${eventType}`,
+        );
       }
       if (!EventUrlMap.hasOwnProperty(eventType)) {
         console.warn(`Missing URL mapping for event type: ${eventType}`);
       }
     });
   }
-  checkFullCrud () {
+  checkFullCrud() {
     const missingCrud = {};
-  
+
     Object.keys(EventUrlMap).forEach((eventType) => {
       const url = EventUrlMap[eventType];
       const method = EventHttpMethodMap[eventType];
-  
+
       const resource = url.split("/")[1];
       if (!missingCrud[resource]) {
-        missingCrud[resource] = { create: false, read: false, update: false, delete: false };
+        missingCrud[resource] = {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        };
       }
-  
+
       if (method === HttpMethod.POST) missingCrud[resource].create = true;
       if (method === HttpMethod.GET) missingCrud[resource].read = true;
       if (method === HttpMethod.PUT) missingCrud[resource].update = true;
       if (method === HttpMethod.DELETE) missingCrud[resource].delete = true;
     });
-  
+
     Object.entries(missingCrud).forEach(([resource, ops]) => {
-      const missingOps = Object.entries(ops).filter(([op, present]) => !present);
+      const missingOps = Object.entries(ops).filter(
+        ([op, present]) => !present,
+      );
       if (missingOps.length > 0) {
         console.warn(`${resource} is missing the following CRUD operations:`);
         missingOps.forEach(([op]) => console.warn(`  - ${op}`));
@@ -187,7 +197,7 @@ class ApiClient {
         console.log(`${resource} has full CRUD`);
       }
     });
-  };
+  }
 
   getHttpMethod(event) {
     const method = EventHttpMethodMap[event];
@@ -199,44 +209,46 @@ class ApiClient {
   getUrlForEvent(event, data = {}) {
     const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
-  
+
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);
     }
-  
+
     let url = urlTemplate;
     let missingKeys = [];
     let requiredKeys = [];
-  
+
     // Extract the placeholders required by the URL template
-    const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) => match.replace(/[{}]/g, ""));
-  
+    const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) =>
+      match.replace(/[{}]/g, ""),
+    );
+
     // Populate the requiredKeys list
     requiredKeys = allPlaceholders;
-  
+
     // Replace placeholders with actual values from data
     Object.keys(data).forEach((key) => {
       url = url.replace(`{${key}}`, data[key]);
     });
-  
+
     // Check for any remaining placeholders that weren't replaced
     allPlaceholders.forEach((placeholder) => {
       if (!data.hasOwnProperty(placeholder)) {
-        missingKeys.push(placeholder);  // Add missing keys to the list
+        missingKeys.push(placeholder); // Add missing keys to the list
       }
     });
-  
+
     if (missingKeys.length > 0) {
       alertUser(
-        `Missing data for URL placeholders: ${missingKeys.join(", ")}. Template ${event} requires: ${requiredKeys.join(", ")}.`
+        `Missing data for URL placeholders: ${missingKeys.join(
+          ", ",
+        )}. Template ${event} requires: ${requiredKeys.join(", ")}.`,
       );
     }
-  
+
     return { method: this.getHttpMethod(event), url: basePath + url };
   }
-  
-  
-  
+
   async handleError(response, event) {
     let predefinedMessage =
       translations.getErrorMessage(response.status)?.[event] ||
@@ -284,9 +296,9 @@ class ApiClient {
       console.error("Event is required");
       return;
     }
-  
+
     const expectsResponse = !this.nonResponseEvents.includes(event);
-  
+
     try {
       const { url, method } = this.getUrlForEvent(event, data);
       const response = await this.sendRequest(
@@ -296,7 +308,7 @@ class ApiClient {
         event,
         expectsResponse,
       );
-  
+
       if (response) {
         this.handleMessage(event, response);
       }
@@ -304,16 +316,25 @@ class ApiClient {
       console.error(error);
       alertUser(
         `Error during request for event "${event}"`,
-        `${error} ${event} ${JSON.stringify(data)}`
+        `${error} ${event} ${JSON.stringify(data)}`,
       );
     }
   }
-  
+
   handleMessage(event, data) {
     if (this.nonResponseEvents.includes(event)) {
       return;
     }
-    console.log("Handing event: ",event, " with data: ", data, " listeners: ", this.listeners[event] , " all listeners: ", this.listeners);
+    console.log(
+      "Handing event: ",
+      event,
+      " with data: ",
+      data,
+      " listeners: ",
+      this.listeners[event],
+      " all listeners: ",
+      this.listeners,
+    );
     if (this.listeners[event] && data !== null) {
       this.listeners[event].forEach((callback) => callback(data));
     }
@@ -321,11 +342,11 @@ class ApiClient {
 
   on(event, callback) {
     if (Object.values(EventType).includes(event)) {
-      console.log("Processing response for: ",event);
+      console.log("Processing response for: ", event);
     } else {
-      console.error("Event type doesnt includes: ",event);
-      if(event) {
-        alertUser("Event type doesnt includes: ",event);
+      console.error("Event type doesnt includes: ", event);
+      if (event) {
+        alertUser("Event type doesnt includes: ", event);
       } else {
         console.error("Event type called null ");
       }

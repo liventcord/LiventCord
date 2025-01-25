@@ -1,41 +1,47 @@
-import { populateFriendsContainer, friendsContainer } from './friendui';
+import { populateFriendsContainer, friendsContainer } from "./friendui";
 import {
   disableElement,
   reCalculateFriTitle,
   enableElement,
   setWindowName,
   parseUsernameDiscriminator,
-} from './utils';
-import { getSelfFullDisplay } from './user';
-import { handleResize } from './ui';
-import { getId,isValidFriendName } from './utils';
-import { isAddFriendsOpen, openAddFriend,printFriendMessage,ButtonTypes,createButtonWithBubblesImg } from './friendui';
-import { currentUserId } from './user';
-import { translations } from './translations';
-import { apiClient,EventType } from './api';
+} from "./utils";
+import { getSelfFullDisplay } from "./user";
+import { handleResize } from "./ui";
+import { getId, isValidFriendName } from "./utils";
+import {
+  isAddFriendsOpen,
+  openAddFriend,
+  printFriendMessage,
+  ButtonTypes,
+  createButtonWithBubblesImg,
+} from "./friendui";
+import { currentUserId } from "./user";
+import { translations } from "./translations";
+import { apiClient, EventType } from "./api";
 
 let friends_cache = {};
 
 const pendingAlertRight = getId("pendingAlertRight");
 const pendingAlertLeft = getId("pendingAlertLeft");
 
-export const offline = 'offline';
-export const online = 'online';
-export const all = 'all';
-export const pending = 'pending';
-export const blocked = 'blocked';
+export const offline = "offline";
+export const online = "online";
+export const all = "all";
+export const pending = "pending";
+export const blocked = "blocked";
 
 const FriendErrorType = {
-  ERR_INVALID_EVENT: 'ERR_INVALID_EVENT',
-  ERR_CANNOT_ADD_SELF: 'ERR_CANNOT_ADD_SELF',
-  ERR_USER_NOT_FOUND: 'ERR_USER_NOT_FOUND',
-  ERR_INVALID_IDENTIFIER: 'ERR_INVALID_IDENTIFIER',
-  ERR_FRIEND_REQUEST_EXISTS: 'ERR_FRIEND_REQUEST_EXISTS',
-  ERR_FRIEND_REQUEST_NOT_EXISTS: 'ERR_FRIEND_REQUEST_NOT_EXISTS',
-  ERR_REQUEST_ALREADY_ACCEPTED: 'ERR_REQUEST_ALREADY_ACCEPTED',
-  ERR_NOT_FRIENDS: 'ERR_NOT_FRIENDS',
-  ERR_REQUEST_NOT_SENT: 'ERR_REQUEST_NOT_SENT',
-  ERR_SUCCESS: 'ERR_SUCCESS',
+  ERR_INVALID_EVENT: "ERR_INVALID_EVENT",
+  ERR_CANNOT_ADD_SELF: "ERR_CANNOT_ADD_SELF",
+  ERR_USER_NOT_FOUND: "ERR_USER_NOT_FOUND",
+  ERR_INVALID_IDENTIFIER: "ERR_INVALID_IDENTIFIER",
+  ERR_FRIEND_REQUEST_EXISTS: "ERR_FRIEND_REQUEST_EXISTS",
+  ERR_FRIEND_REQUEST_NOT_EXISTS: "ERR_FRIEND_REQUEST_NOT_EXISTS",
+  ERR_REQUEST_ALREADY_ACCEPTED: "ERR_REQUEST_ALREADY_ACCEPTED",
+  ERR_NOT_FRIENDS: "ERR_NOT_FRIENDS",
+  ERR_REQUEST_NOT_SENT: "ERR_REQUEST_NOT_SENT",
+  ERR_SUCCESS: "ERR_SUCCESS",
 };
 
 class Friend {
@@ -61,7 +67,7 @@ class FriendsCache {
   constructor() {
     this.friendsCache = {};
     this.dmFriends = {};
-    this.currentDmId = '';
+    this.currentDmId = "";
   }
   setupDmFriends(friends) {
     this.dmFriends = friends;
@@ -133,7 +139,7 @@ export function handleAcceptFriendRequestResponse(message) {
     friends_cache[userId] = user_data;
     disableElement(pendingAlertRight);
     disableElement(pendingAlertLeft);
-    document.title = 'LiventCord';
+    document.title = "LiventCord";
   }
 }
 
@@ -163,18 +169,18 @@ export function handleFriendEventResponse(message) {
   const { type } = message;
 
   switch (type) {
-    case 'add_friend':
-    case 'add_friend_request_id':
+    case "add_friend":
+    case "add_friend_request_id":
       handleAddFriendResponse(message);
       break;
-    case 'accept_friend_request':
+    case "accept_friend_request":
       handleAcceptFriendRequestResponse(message);
       break;
-    case 'remove_friend':
-    case 'remove_friend_request':
+    case "remove_friend":
+    case "remove_friend_request":
       handleRemoveFriendResponse(message);
       break;
-    case 'deny_friend_request':
+    case "deny_friend_request":
       handleDenyFriendRequestResponse(message);
       break;
     default:
@@ -184,7 +190,7 @@ export function handleFriendEventResponse(message) {
 
 export function updateFriendsList(friends, isPending) {
   if (!friends) {
-    console.warn('Empty friend list data.');
+    console.warn("Empty friend list data.");
     return;
   }
 
@@ -221,18 +227,18 @@ export function addPendingButtons(friendButton, friend) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.TickBtn,
-      translations.getTranslation('accept'),
+      translations.getTranslation("accept"),
     );
-    acceptButton.addEventListener('click', (event) =>
+    acceptButton.addEventListener("click", (event) =>
       handleButtonClick(event, EventType.ADD_FRIEND, friend),
     );
   } else {
     const closeButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.CloseBtn,
-      translations.getTranslation('cancel'),
+      translations.getTranslation("cancel"),
     );
-    closeButton.addEventListener('click', (event) =>
+    closeButton.addEventListener("click", (event) =>
       handleButtonClick(event, EventType.REMOVE_FRIEND, friend),
     );
   }
@@ -248,20 +254,20 @@ export function addFriend(userId) {
 }
 
 export function submitAddFriend() {
-  const addfriendinput = getId('addfriendinputfield');
+  const addfriendinput = getId("addfriendinputfield");
   const currentValue = addfriendinput.value.trim();
 
   if (currentValue && currentValue.length > 0) {
     if (!isValidFriendName(currentValue)) {
       printFriendMessage(
-        translations.getTranslation('addFriendDiscriminatorErrorText'),
+        translations.getTranslation("addFriendDiscriminatorErrorText"),
       );
       return;
     }
 
     if (currentValue === getSelfFullDisplay()) {
       printFriendMessage(
-        translations.getTranslation('friendAddYourselfErrorText'),
+        translations.getTranslation("friendAddYourselfErrorText"),
       );
       return;
     }
@@ -280,39 +286,39 @@ export function submitAddFriend() {
 }
 
 export function filterFriends() {
-  const input = getId('friendsSearchInput').value.toLowerCase();
-  const friends = document.getElementsByClassName('friend-card');
+  const input = getId("friendsSearchInput").value.toLowerCase();
+  const friends = document.getElementsByClassName("friend-card");
 
   for (let i = 0; i < friends.length; i++) {
-    const friendName = friends[i].getAttribute('data-name').toLowerCase();
+    const friendName = friends[i].getAttribute("data-name").toLowerCase();
     if (friendName.includes(input)) {
-      friends[i].classList.add('visible');
+      friends[i].classList.add("visible");
     } else {
-      friends[i].classList.remove('visible');
+      friends[i].classList.remove("visible");
     }
   }
 }
 
 export function toggleButtonState(booleanstate) {
   const addButton = getId("profile-add-friend-button");
-  if(!addButton) return;
+  if (!addButton) return;
   if (booleanstate) {
-    addButton.classList.add('active');
-    addButton.classList.remove('inactive');
+    addButton.classList.add("active");
+    addButton.classList.remove("inactive");
   } else {
-    addButton.classList.add('inactive');
-    addButton.classList.remove('active');
+    addButton.classList.add("inactive");
+    addButton.classList.remove("active");
   }
 }
 
 export const friendCache = new FriendsCache();
 
 function init() {
-  window.addEventListener('resize', handleResize);
+  window.addEventListener("resize", handleResize);
 
-  const addFriButton = getId('open-friends-button');
+  const addFriButton = getId("open-friends-button");
   if (addFriButton) {
-    addFriButton.addEventListener('click', openAddFriend);
+    addFriButton.addEventListener("click", openAddFriend);
   }
 }
 

@@ -1,16 +1,16 @@
 const Permission = {
-  READ_MESSAGES: 'read_messages',
-  SEND_MESSAGES: 'send_messages',
-  MANAGE_MESSAGES: 'manage_messages',
-  MANAGE_ROLES: 'manage_roles',
-  MANAGE_GUILD: 'manage_guild',
-  KICK_MEMBERS: 'kick_members',
-  BAN_MEMBERS: 'ban_members',
-  MANAGE_CHANNELS: 'manage_channels',
-  MENTION_EVERYONE: 'mention_everyone',
-  ADD_REACTION: 'add_reaction',
-  IS_ADMIN: 'is_admin',
-  CAN_INVITE: 'can_invite',
+  READ_MESSAGES: "read_messages",
+  SEND_MESSAGES: "send_messages",
+  MANAGE_MESSAGES: "manage_messages",
+  MANAGE_ROLES: "manage_roles",
+  MANAGE_GUILD: "manage_guild",
+  KICK_MEMBERS: "kick_members",
+  BAN_MEMBERS: "ban_members",
+  MANAGE_CHANNELS: "manage_channels",
+  MENTION_EVERYONE: "mention_everyone",
+  ADD_REACTION: "add_reaction",
+  IS_ADMIN: "is_admin",
+  CAN_INVITE: "can_invite",
 };
 
 export class PermissionManager {

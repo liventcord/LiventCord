@@ -4,15 +4,16 @@ import {
   handleResize,
   loadGuildToolbar,
   loadDmToolbar,
-} from './ui';
+} from "./ui";
 import {
   fetchReplies,
   getHistoryFromOneChannel,
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID,scrollToMessage
-} from './chat';
+  setLastSenderID,
+  scrollToMessage,
+} from "./chat";
 import {
   chatInput,
   initializeChatComponents,
@@ -22,8 +23,8 @@ import {
   adjustHeight,
   setDropHandler,
   newMessagesBar,
-} from './chatbar';
-import { cacheInterface } from './cache';
+} from "./chatbar";
+import { cacheInterface } from "./cache";
 import {
   updateGuilds,
   addKeybinds,
@@ -33,27 +34,35 @@ import {
   refreshInviteId,
   currentGuildId,
   guildName,
-  guildContainer
-} from './guild';
-import { disableDmContainers, friendContainerItem, printFriendMessage } from './friendui';
-import { hideGuildSettingsDropdown, openSearchPop,toggleDropdown } from './popups';
+  guildContainer,
+} from "./guild";
+import {
+  disableDmContainers,
+  friendContainerItem,
+  printFriendMessage,
+} from "./friendui";
+import {
+  hideGuildSettingsDropdown,
+  openSearchPop,
+  toggleDropdown,
+} from "./popups";
 import {
   copySelfName,
   addUser,
   getUserDiscriminator,
   initializeProfile,
-  getUserNick
-} from './user';
-import { addContextListeners } from './contextMenuActions';
+  getUserNick,
+} from "./user";
+import { addContextListeners } from "./contextMenuActions";
 import {
   updateChannels,
   channelTitle,
   channelsUl,
   getChannels,
   currentChannelName,
-} from './channels';
-import { apiClient, EventType } from './api';
-import { updateUserListText, toggleUsersList, userList } from './userList';
+} from "./channels";
+import { apiClient, EventType } from "./api";
+import { updateUserListText, toggleUsersList, userList } from "./userList";
 import {
   sendNotify,
   getId,
@@ -62,16 +71,20 @@ import {
   enableElement,
   disableElement,
   constructDmPage,
-} from './utils';
-import { guildCache } from './cache';
-import { updateDmsList, setupSampleUsers,activateDmContainer } from './friendui';
-import { setProfilePic, updateSelfProfile,setUploadSize } from './avatar';
-import { currentUserId } from './user';
-import { friendCache } from './friends';
-import { addChannelSearchListeners,userMentionDropdown } from './search';
-import { chatContainer } from './chatbar';
-import { loadBooleanCookie, initializeCookies } from './settings';
-import { setUsersList,updateDmFriendList } from './userList';
+} from "./utils";
+import { guildCache } from "./cache";
+import {
+  updateDmsList,
+  setupSampleUsers,
+  activateDmContainer,
+} from "./friendui";
+import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar";
+import { currentUserId } from "./user";
+import { friendCache } from "./friends";
+import { addChannelSearchListeners, userMentionDropdown } from "./search";
+import { chatContainer } from "./chatbar";
+import { loadBooleanCookie, initializeCookies } from "./settings";
+import { setUsersList, updateDmFriendList } from "./userList";
 import {
   isOnMe,
   router,
@@ -80,15 +93,13 @@ import {
   setIsOnMe,
   setIsOnDm,
   setIsOnGuild,
-} from './router';
-import { initialiseAudio } from './audio';
-import { translations } from './translations';
-
+} from "./router";
+import { initialiseAudio } from "./audio";
+import { translations } from "./translations";
 
 export let isDomLoaded = false;
 let cachedFriMenuContent;
 let userListFriActiveHtml;
-
 
 export function initializeApp() {
   window.scrollTo(0, 0);
@@ -103,8 +114,6 @@ export function initializeApp() {
   initializeCookies();
   isDomLoaded = true;
 }
-
-
 
 export function assignElements() {
   addChannelSearchListeners();
@@ -140,10 +149,10 @@ export function initialiseState(data) {
     guildsJson,
     gifWorkerUrl,
     maxAvatarSize,
-    maxAttachmentSize
+    maxAttachmentSize,
   } = data;
 
-  console.log('Data loaded:', data);
+  console.log("Data loaded:", data);
 
   initialState = {
     user: {
@@ -159,7 +168,7 @@ export function initialiseState(data) {
     guilds: guildsJson || [],
     gifWorkerUrl: gifWorkerUrl,
     maxAvatarSize: maxAvatarSize,
-    maxAttachmentSize: maxAttachmentSize
+    maxAttachmentSize: maxAttachmentSize,
   };
   window.initialState = initialState;
 
@@ -167,7 +176,7 @@ export function initialiseState(data) {
   updateDmsList(dmFriends);
   setupSampleUsers();
   friendCache.initialiseFriends(friendsStatus);
-  setUploadSize(initialState.maxAvatarSize,initialState.maxAttachmentSize);
+  setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
 
   updateGuilds(guildsJson);
   addKeybinds();
@@ -175,7 +184,7 @@ export function initialiseState(data) {
 async function loadInitialData() {
   await translations.translationsLoaded;
   try {
-    const response = await fetch('/api/init');
+    const response = await fetch("/api/init");
     if (!response.ok) {
       if (response.status === 401) {
         await router.changeToLogin();
@@ -189,8 +198,13 @@ async function loadInitialData() {
 
     try {
       const initData = JSON.parse(rawResponse);
-      if(initData.message === "User session is no longer valid. Please log in again.") {
-        alertUser("User session is not valid. Please log in at localhost:5005/login.");
+      if (
+        initData.message ===
+        "User session is no longer valid. Please log in again."
+      ) {
+        alertUser(
+          "User session is not valid. Please log in at localhost:5005/login.",
+        );
         return;
       }
       initialiseState(initData);
@@ -200,14 +214,13 @@ async function loadInitialData() {
       console.error(e);
     }
   } catch (error) {
-    console.error('Error loading initial data:', error);
+    console.error("Error loading initial data:", error);
   }
 }
 
-
 export function initializeElements() {
   createChatScrollButton();
-  chatContainer.addEventListener('scroll', handleScroll);
+  chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
   initialiseReadUi();
   closeReplyMenu();
@@ -215,56 +228,55 @@ export function initializeElements() {
   setDropHandler();
 
   guildContainer.addEventListener(
-    'mouseover',
-    () => (guildContainer.style.backgroundColor = '#333538'),
+    "mouseover",
+    () => (guildContainer.style.backgroundColor = "#333538"),
   );
   guildContainer.addEventListener(
-    'mouseout',
-    () => (guildContainer.style.backgroundColor = '#2b2d31'),
+    "mouseout",
+    () => (guildContainer.style.backgroundColor = "#2b2d31"),
   );
 
-  friendContainerItem.addEventListener('click', loadDmHome);
+  friendContainerItem.addEventListener("click", loadDmHome);
 
-
-  getId('tb-showprofile').addEventListener('click', toggleUsersList);
+  getId("tb-showprofile").addEventListener("click", toggleUsersList);
 }
 
 export function initializeSettings() {
   updateSelfProfile(currentUserId);
-  const isCookieUsersOpen = loadBooleanCookie('isUsersOpen');
+  const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
   setUsersList(isCookieUsersOpen, true);
-  disableElement('loading-screen');
+  disableElement("loading-screen");
 }
 
 export function initializeListeners() {
-  document.addEventListener('click', (event) => {
+  document.addEventListener("click", (event) => {
     if (
       !userMentionDropdown.contains(event.target) &&
       event.target !== chatInput
     ) {
-      userMentionDropdown.style.display = 'none';
+      userMentionDropdown.style.display = "none";
     }
   });
-  getId('global-search-input').addEventListener('click', function () {
+  getId("global-search-input").addEventListener("click", function () {
     openSearchPop();
   });
 
-  guildContainer.addEventListener('click', handleGuildClick);
+  guildContainer.addEventListener("click", handleGuildClick);
 
-  getId('avatar-wrapper').addEventListener('click', copySelfName);
+  getId("avatar-wrapper").addEventListener("click", copySelfName);
   addContextListeners();
 }
 
 export function handleGuildClick(event) {
   if (
-    event.target.id === 'guild-container' ||
-    event.target.id === 'guild-name'
+    event.target.id === "guild-container" ||
+    event.target.id === "guild-name"
   ) {
     toggleDropdown();
   }
 }
 export function isDefined(variable) {
-  return typeof variable !== 'undefined' && variable !== null;
+  return typeof variable !== "undefined" && variable !== null;
 }
 export function initializeGuild() {
   initialiseMe();
@@ -274,22 +286,16 @@ export function initializeGuild() {
   if (isValid) {
     loadGuild(initialGuildId, initialChannelId, null, false, true);
   } else {
-    console.log('Route is not a guild');
+    console.log("Route is not a guild");
     return;
   }
   if (isDefined(initialFriendId)) {
-    addUser(
-      initialFriendId
-    );
+    addUser(initialFriendId);
   }
 
   fetchMembers();
   console.log(initialState.guilds);
-  if (
-    isOnGuild &&
-    initialState.guilds &&
-    initialState.guilds.length > 0
-  ) {
+  if (isOnGuild && initialState.guilds && initialState.guilds.length > 0) {
     initialState.guilds.forEach((data) => {
       if (data.guildId === currentGuildId) {
         cacheInterface.addChannel(data.guildId, data.guildChannels);
@@ -307,7 +313,7 @@ export function readCurrentMessages() {
     channelId: guildCache.currentChannelId,
     guildId: currentGuildId,
   });
-  newMessagesBar.style.display = 'none';
+  newMessagesBar.style.display = "none";
 }
 
 export function createReplyBar(
@@ -317,37 +323,37 @@ export function createReplyBar(
   content,
   attachmentUrls,
 ) {
-  if (newMessage.querySelector('.replyBar')) {
+  if (newMessage.querySelector(".replyBar")) {
     return;
   }
-  const smallDate = newMessage.querySelector('.small-date-element');
+  const smallDate = newMessage.querySelector(".small-date-element");
   if (smallDate) {
     smallDate.remove();
   }
 
-  const replyBar = createEl('div', { className: 'replyBar' });
+  const replyBar = createEl("div", { className: "replyBar" });
   newMessage.appendChild(replyBar);
-  newMessage.classList.add('replyMessage');
+  newMessage.classList.add("replyMessage");
 
   const nick = getUserNick(userId);
-  replyBar.style.height = '100px';
-  const replyAvatar = createEl('img', { className: 'profile-pic', id: userId });
-  replyAvatar.classList.add('reply-avatar');
-  replyAvatar.style.width = '15px';
-  replyAvatar.style.height = '15px';
+  replyBar.style.height = "100px";
+  const replyAvatar = createEl("img", { className: "profile-pic", id: userId });
+  replyAvatar.classList.add("reply-avatar");
+  replyAvatar.style.width = "15px";
+  replyAvatar.style.height = "15px";
 
   setProfilePic(replyAvatar, userId);
-  const replyNick = createEl('span', {
+  const replyNick = createEl("span", {
     textContent: nick,
-    className: 'reply-nick',
+    className: "reply-nick",
   });
   const textToWrite = content
     ? content
     : attachmentUrls
     ? attachmentUrls
-    : 'Eki görüntülemek için tıkla';
-  const replyContent = createEl('span', {
-    className: 'replyContent',
+    : "Eki görüntülemek için tıkla";
+  const replyContent = createEl("span", {
+    className: "replyContent",
     textContent: textToWrite,
   });
 
@@ -368,11 +374,11 @@ export function removeDm(userId) {}
 
 export function initialiseMe() {
   if (!isOnMe) {
-    console.log('Cant initialise me while isOnMe is false');
+    console.log("Cant initialise me while isOnMe is false");
     return;
   }
-  enableElement('dms-title');
-  console.warn(translations.textTranslations)
+  enableElement("dms-title");
+  console.warn(translations.textTranslations);
   updateUserListText();
   loadMainToolbar();
 }
@@ -392,8 +398,7 @@ export function openDm(friendId) {
   if (!friendCache.userExistsDm(friendId)) {
     try {
       apiClient.send(EventType.ADD_DM, { friendId: friendId });
-    }
-    catch(e) {
+    } catch (e) {
       printFriendMessage(e);
     }
   }
@@ -402,40 +407,39 @@ export function openDm(friendId) {
     changeCurrentDm(friendId);
   }
   try {
-    getHistoryFromOneChannel(friendId, true); 
-  }
-  catch(e) {
+    getHistoryFromOneChannel(friendId, true);
+  } catch (e) {
     printFriendMessage(e);
   }
 }
 
 let lastDmId;
 export function loadDmHome(isChangingUrl = true) {
-  console.log('Loading main menu...');
+  console.log("Loading main menu...");
   function handleMenu() {
-    selectGuildList('main-logo');
+    selectGuildList("main-logo");
     if (isChangingUrl) {
-      window.history.pushState(null, null, '/channels/@me');
+      window.history.pushState(null, null, "/channels/@me");
     }
-    enableElement('friends-container', false, true);
-    friendContainerItem.classList.add('dm-selected');
+    enableElement("friends-container", false, true);
+    friendContainerItem.classList.add("dm-selected");
     disableDmContainers();
-    lastDmId = '';
-    friendCache.currentDmId = '';
-    enableElement('channel-info-container-for-friend');
-    disableElement('channel-info-container-for-index');
+    lastDmId = "";
+    friendCache.currentDmId = "";
+    enableElement("channel-info-container-for-friend");
+    disableElement("channel-info-container-for-index");
     loadMainToolbar();
-    disableElement('chat-container');
-    disableElement('message-input-container');
-    friendContainerItem.style.color = 'white';
+    disableElement("chat-container");
+    disableElement("message-input-container");
+    friendContainerItem.style.color = "white";
 
     updateUserListText();
-    userList.classList.add('friendactive');
+    userList.classList.add("friendactive");
     if (userListFriActiveHtml) {
       userList.innerHTML = userListFriActiveHtml;
     }
-    const nowOnlineTitle = getId('nowonline');
-    if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = 'bolder';
+    const nowOnlineTitle = getId("nowonline");
+    if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
     if (isOnMe) {
       return;
     }
@@ -445,7 +449,7 @@ export function loadDmHome(isChangingUrl = true) {
 
   function handleDm() {
     openDm(lastDmId);
-    disableElement('friends-container');
+    disableElement("friends-container");
   }
   if (isOnGuild) {
     if (isOnDm) {
@@ -461,19 +465,19 @@ export function loadDmHome(isChangingUrl = true) {
     handleMenu();
   }
 
-  enableElement('friend-container-item');
-  guildName.innerText = '';
-  disableElement('guild-settings-button');
-  enableElement('global-search-input', false, true);
-  enableElement('friends-container-item');
+  enableElement("friend-container-item");
+  guildName.innerText = "";
+  disableElement("guild-settings-button");
+  enableElement("global-search-input", false, true);
+  enableElement("friends-container-item");
 
-  enableElement('dms-title');
-  enableElement('dm-container-parent', false, true);
-  channelsUl.innerHTML = '';
+  enableElement("dms-title");
+  enableElement("dm-container-parent", false, true);
+  channelsUl.innerHTML = "";
 
-  enableElement('guild-container', false, true);
+  enableElement("guild-container", false, true);
 
-  const chanList = getId('channel-list');
+  const chanList = getId("channel-list");
   if (cachedFriMenuContent) {
     chanList.innerHTML = cachedFriMenuContent;
   }
@@ -491,7 +495,7 @@ export function changecurrentGuild() {
   channelTitle.textContent = currentChannelName;
   guildName.innerText = guildCache.currentGuildName;
   hideGuildSettingsDropdown();
-  disableElement('settings-dropdown-button');
+  disableElement("settings-dropdown-button");
 
   isChangingPage = false;
 }
@@ -508,10 +512,10 @@ export function loadApp(friendId = null, isInitial = false) {
 
   setIsOnMe(false);
 
-  userList.innerHTML = '';
-  userList.classList.remove('friendactive');
-  enableElement('guild-name');
-  console.log('Loading app with friend id:', friendId);
+  userList.innerHTML = "";
+  userList.classList.remove("friendactive");
+  enableElement("guild-name");
+  console.log("Loading app with friend id:", friendId);
 
   if (!friendId) {
     setIsOnGuild(true);
@@ -523,45 +527,45 @@ export function loadApp(friendId = null, isInitial = false) {
       fetchMembers();
       getChannels();
     }
-    disableElement('dms-title');
-    disableElement('dm-container-parent');
-    disableElement('friend-container-item');
-    enableElement('guild-settings-button');
-    enableElement('hash-sign');
+    disableElement("dms-title");
+    disableElement("dm-container-parent");
+    disableElement("friend-container-item");
+    enableElement("guild-settings-button");
+    enableElement("hash-sign");
     guildName.innerText = guildCache.currentGuildName;
-    disableElement('global-search-input');
-    disableElement('dm-profile-sign-bubble');
-    disableElement('dm-profile-sign');
+    disableElement("global-search-input");
+    disableElement("dm-profile-sign-bubble");
+    disableElement("dm-profile-sign");
     loadGuildToolbar();
   } else {
     loadDmToolbar();
     setIsOnGuild(false);
     setIsOnDm(true);
-    enableElement('dm-profile-sign-bubble');
-    enableElement('dm-profile-sign');
-    enableElement('guild-container', false, true);
-    disableElement('guild-settings-button');
+    enableElement("dm-profile-sign-bubble");
+    enableElement("dm-profile-sign");
+    enableElement("guild-container", false, true);
+    disableElement("guild-settings-button");
     activateDmContainer(friendId);
     const friendNick = getUserNick(friendId);
     chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
 
     channelTitle.textContent = friendNick;
-    disableElement('hash-sign');
-    enableElement('dm-profile-sign');
-    const dmProfSign = getId('dm-profile-sign');
+    disableElement("hash-sign");
+    enableElement("dm-profile-sign");
+    const dmProfSign = getId("dm-profile-sign");
     setProfilePic(dmProfSign, friendId);
     dmProfSign.dataset.cid = friendId;
 
     updateDmFriendList(friendId, friendNick, getUserDiscriminator(friendId));
   }
 
-  disableElement('channel-info-container-for-friend');
-  disableElement('friends-container');
+  disableElement("channel-info-container-for-friend");
+  disableElement("friends-container");
   disableElement("user-line");
 
-  enableElement('channel-info-container-for-index');
-  enableElement('chat-container', true);
-  enableElement('message-input-container', false, true);
+  enableElement("channel-info-container-for-index");
+  enableElement("chat-container", true);
+  enableElement("message-input-container", false, true);
   adjustHeight();
 
   handleResize();
@@ -578,7 +582,7 @@ export function changeCurrentDm(friendId) {
   const friendNick = getUserNick(friendId);
   channelTitle.textContent = friendNick;
   chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
-  const dmProfSign = getId('dm-profile-sign');
+  const dmProfSign = getId("dm-profile-sign");
   setProfilePic(dmProfSign, friendId);
   dmProfSign.dataset.cid = friendId;
   updateDmFriendList(friendId, friendNick);
@@ -588,8 +592,8 @@ export function changeCurrentDm(friendId) {
 
 loadInitialData();
 window.onerror = (event, url, line, column, error) => {
-  let msg = '';
-  msg += 'Error: ' + error;
+  let msg = "";
+  msg += "Error: " + error;
   console.error(msg);
   sendNotify(msg);
 };

@@ -1,14 +1,14 @@
-import { apiClient, EventType } from './api';
-import { constructAppPage, disableElement, getId, createEl } from './utils';
+import { apiClient, EventType } from "./api";
+import { constructAppPage, disableElement, getId, createEl } from "./utils";
 import {
   getHistoryFromOneChannel,
   setLastSenderID,
   setReachedChannelEnd,
   clearLastDate,
-} from './chat';
-import { translations } from './translations';
-import { closeReplyMenu, chatInput, chatContent } from './chatbar';
-import { joinVoiceChannel } from './guild';
+} from "./chat";
+import { translations } from "./translations";
+import { closeReplyMenu, chatInput, chatContent } from "./chatbar";
+import { joinVoiceChannel } from "./guild";
 import {
   selectedChanColor,
   hoveredChanColor,
@@ -16,27 +16,24 @@ import {
   inviteHtml,
   muteHtml,
   inviteVoiceHtml,
-  voiceChanHtml
-} from './ui';
+  voiceChanHtml,
+} from "./ui";
 import {
   appendToChannelContextList,
   createUserContext,
-} from './contextMenuActions';
-import { setProfilePic } from './avatar';
-import { guildCache, cacheInterface } from './cache';
-import { currentGuildId } from './guild';
-import { isOnMe,isOnDm } from './router';
-import { textChanHtml } from './ui';
-import { permissionManager } from './guildPermissions';
-import { getUserNick } from './user';
-import { loadGuild } from './guild';
+} from "./contextMenuActions";
+import { setProfilePic } from "./avatar";
+import { guildCache, cacheInterface } from "./cache";
+import { currentGuildId } from "./guild";
+import { isOnMe, isOnDm } from "./router";
+import { textChanHtml } from "./ui";
+import { permissionManager } from "./guildPermissions";
+import { getUserNick } from "./user";
+import { loadGuild } from "./guild";
 
-
-
-
-export let channelTitle = getId('channel-info');
-export let channelList = getId('channel-list');
-export let channelsUl = channelList.querySelector('ul');
+export let channelTitle = getId("channel-info");
+export let channelList = getId("channel-list");
+export let channelsUl = channelList.querySelector("ul");
 export let currentChannelName = null;
 
 export let currentVoiceChannelId;
@@ -50,25 +47,24 @@ export function setCurrentVoiceChannelGuild(val) {
   currentVoiceChannelGuild = val;
 }
 
-
 export function getChannels() {
-  console.log('Getting channels...');
+  console.log("Getting channels...");
   if (guildCache.currentChannelId) {
     const channels = cacheInterface.getChannels(currentGuildId);
     if (channels.length > 0) {
       updateChannels(channels);
-      console.log('Using cached channels: ', channels);
+      console.log("Using cached channels: ", channels);
     } else {
-      console.warn('Channel cache is empty. fetching channels...');
+      console.warn("Channel cache is empty. fetching channels...");
       apiClient.send(EventType.GET_CHANNELS, { guildId: currentGuildId });
     }
   } else {
-    console.warn('Current channel id is null!');
+    console.warn("Current channel id is null!");
   }
 }
 
 export async function changeChannel(newChannel) {
-  console.log('Changed channel: ', newChannel);
+  console.log("Changed channel: ", newChannel);
   if (isOnMe || isOnDm) {
     return;
   }
@@ -87,7 +83,7 @@ export async function changeChannel(newChannel) {
     chatInput.placeholder = translations.getMessagePlaceholder(newChannelName);
     channelTitle.textContent = newChannelName;
     setLastSenderID();
-    chatContent.innerHTML = '';
+    chatContent.innerHTML = "";
     clearLastDate();
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
@@ -116,17 +112,18 @@ export async function changeChannel(newChannel) {
           channel.channelId,
         );
       } else if (!isTextChannel) {
-        const voiceUsersInChannel = cacheInterface.getVoiceChannelMembers(channelId);
+        const voiceUsersInChannel =
+          cacheInterface.getVoiceChannelMembers(channelId);
         if (voiceUsersInChannel) {
           let allUsersContainer = channelButton.querySelector(
-            '.channel-users-container',
+            ".channel-users-container",
           );
           if (!allUsersContainer) {
-            allUsersContainer = createEl('div', {
-              className: 'channel-users-container',
+            allUsersContainer = createEl("div", {
+              className: "channel-users-container",
             });
           }
-          channelButton.style.width = '100%';
+          channelButton.style.width = "100%";
           voiceUsersInChannel.forEach((userId, index) => {
             drawVoiceChannelUser(
               index,
@@ -151,7 +148,7 @@ export function isChannelMatching(channelId, isTextChannel) {
   if (channelId === currentChannel) {
     return true;
   } else {
-    console.error('Match failed');
+    console.error("Match failed");
     return false;
   }
 }
@@ -164,9 +161,9 @@ export function mouseHoverChannelButton(
   if (!channelButton) {
     return;
   }
-  const contentWrapper = channelButton.querySelector('.content-wrapper');
+  const contentWrapper = channelButton.querySelector(".content-wrapper");
 
-  contentWrapper.style.display = 'flex';
+  contentWrapper.style.display = "flex";
   if (isTextChannel) {
     const isMatch = isChannelMatching(channelId, isTextChannel);
     channelButton.style.backgroundColor = isMatch
@@ -175,10 +172,10 @@ export function mouseHoverChannelButton(
   } else {
     channelButton.style.backgroundColor = hoveredChanColor;
   }
-  channelButton.style.color = 'white';
+  channelButton.style.color = "white";
 }
 export function hashChildElements(channelButton) {
-  return channelButton.querySelector('.channel-users-container') !== null;
+  return channelButton.querySelector(".channel-users-container") !== null;
 }
 export function mouseLeaveChannelButton(
   channelButton,
@@ -188,23 +185,23 @@ export function mouseLeaveChannelButton(
   if (!channelButton) {
     return;
   }
-  const contentWrapper = channelButton.querySelector('.content-wrapper');
-  const channelSpan = channelButton.querySelector('.channelSpan');
+  const contentWrapper = channelButton.querySelector(".content-wrapper");
+  const channelSpan = channelButton.querySelector(".channelSpan");
 
   if (channelSpan && !isTextChannel) {
     channelSpan.style.marginRight = hashChildElements(channelButton)
-      ? '30px'
-      : '0px';
+      ? "30px"
+      : "0px";
   }
   if (contentWrapper) {
     if (!isTextChannel) {
       if (currentVoiceChannelId === channelId) {
-        contentWrapper.style.display = 'flex';
+        contentWrapper.style.display = "flex";
       } else {
-        contentWrapper.style.display = 'none';
+        contentWrapper.style.display = "none";
       }
     } else if (guildCache.currentChannelId !== channelId) {
-      contentWrapper.style.display = 'none';
+      contentWrapper.style.display = "none";
     }
   }
   if (isTextChannel) {
@@ -213,26 +210,26 @@ export function mouseLeaveChannelButton(
       isTextChannel,
     )
       ? selectedChanColor
-      : 'transparent';
+      : "transparent";
   } else {
-    channelButton.style.backgroundColor = 'transparent';
+    channelButton.style.backgroundColor = "transparent";
   }
   channelButton.style.color = isChannelMatching(channelId, isTextChannel)
-    ? 'white'
-    : 'rgb(148, 155, 164)';
+    ? "white"
+    : "rgb(148, 155, 164)";
 }
 export function handleKeydown(event) {
   if (isKeyDown || isOnMe) return;
   currentChannels.forEach((channel, index) => {
-    let hotkey = index < 9 ? (index + 1).toString() : index === 9 ? '0' : null;
+    let hotkey = index < 9 ? (index + 1).toString() : index === 9 ? "0" : null;
     if (hotkey && event.key === hotkey && event.altKey) {
       changeChannel(channel);
     }
   });
   if (event.altKey) {
-    if (event.key === 'ArrowUp') {
+    if (event.key === "ArrowUp") {
       moveChannel(-1);
-    } else if (event.key === 'ArrowDown') {
+    } else if (event.key === "ArrowDown") {
       moveChannel(1);
     }
   }
@@ -245,7 +242,7 @@ export function editChannelElement(channelId, new_channel_name) {
   if (!existingChannelButton) {
     return;
   }
-  existingChannelButton.querySelector('channelSpan').textContent =
+  existingChannelButton.querySelector("channelSpan").textContent =
     new_channel_name;
 }
 export function removeChannelElement(channelId) {
@@ -267,25 +264,25 @@ export function isChannelExist(channelId) {
 
 export function createChannelButton(channelId, channelName, isTextChannel) {
   const htmlToSet = isTextChannel ? textChanHtml : voiceChanHtml;
-  const channelButton = createEl('li', {
-    className: 'channel-button',
+  const channelButton = createEl("li", {
+    className: "channel-button",
     id: channelId,
   });
-  channelButton.style.marginLeft = '-80px';
+  channelButton.style.marginLeft = "-80px";
 
-  const hashtagSpan = createEl('span', {
+  const hashtagSpan = createEl("span", {
     innerHTML: htmlToSet,
-    marginLeft: '50px',
+    marginLeft: "50px",
   });
-  hashtagSpan.style.color = 'rgb(128, 132, 142)';
+  hashtagSpan.style.color = "rgb(128, 132, 142)";
 
-  const channelSpan = createEl('span', {
-    className: 'channelSpan',
+  const channelSpan = createEl("span", {
+    className: "channelSpan",
     textContent: channelName,
   });
-  channelSpan.style.marginRight = '30px';
-  channelSpan.style.width = '100%';
-  channelButton.style.width = '70%';
+  channelSpan.style.marginRight = "30px";
+  channelSpan.style.width = "100%";
+  channelButton.style.width = "70%";
 
   channelButton.appendChild(hashtagSpan);
   channelButton.appendChild(channelSpan);
@@ -294,20 +291,20 @@ export function createChannelButton(channelId, channelName, isTextChannel) {
 }
 
 export function createContentWrapper(channel, channelName, isTextChannel) {
-  const contentWrapper = createEl('div', { className: 'content-wrapper' });
-  contentWrapper.style.display = 'none';
-  contentWrapper.style.marginRight = '100px';
-  contentWrapper.style.marginTop = '4px';
+  const contentWrapper = createEl("div", { className: "content-wrapper" });
+  contentWrapper.style.display = "none";
+  contentWrapper.style.marginRight = "100px";
+  contentWrapper.style.marginTop = "4px";
 
-  const settingsSpan = createEl('span', { innerHTML: settingsHtml });
-  settingsSpan.addEventListener('click', () => {
-    console.log('Click to settings on:', channelName);
+  const settingsSpan = createEl("span", { innerHTML: settingsHtml });
+  settingsSpan.addEventListener("click", () => {
+    console.log("Click to settings on:", channelName);
   });
 
   if (permissionManager.canInvite()) {
-    const inviteSpan = createEl('span', { innerHTML: inviteHtml });
-    inviteSpan.addEventListener('click', () => {
-      console.log('Click to invite on:', channelName);
+    const inviteSpan = createEl("span", { innerHTML: inviteHtml });
+    inviteSpan.addEventListener("click", () => {
+      console.log("Click to invite on:", channelName);
     });
     contentWrapper.appendChild(inviteSpan);
   }
@@ -322,20 +319,20 @@ export function addEventListeners(
   isTextChannel,
   channel,
 ) {
-  channelButton.addEventListener('mouseover', function (event) {
+  channelButton.addEventListener("mouseover", function (event) {
     if (event.target.id === channelId) {
       mouseHoverChannelButton(channelButton, isTextChannel, channelId);
     }
   });
 
-  channelButton.addEventListener('mouseleave', function (event) {
+  channelButton.addEventListener("mouseleave", function (event) {
     if (event.target.id === channelId) {
       mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
     }
   });
 
   mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
-  channelButton.addEventListener('click', function () {
+  channelButton.addEventListener("click", function () {
     changeChannel(channel);
   });
 }
@@ -364,13 +361,13 @@ export function moveChannel(direction) {
 }
 
 export function removeChannelEventListeners() {
-  document.removeEventListener('keydown', handleKeydown);
-  document.removeEventListener('keyup', resetKeydown);
+  document.removeEventListener("keydown", handleKeydown);
+  document.removeEventListener("keyup", resetKeydown);
 }
 
 export function addChannelEventListeners() {
-  document.addEventListener('keydown', handleKeydown);
-  document.addEventListener('keyup', resetKeydown);
+  document.addEventListener("keydown", handleKeydown);
+  document.addEventListener("keyup", resetKeydown);
 }
 
 export function validateChannel(channel) {
@@ -378,7 +375,7 @@ export function validateChannel(channel) {
   const channelName = channel.channelName;
   const isTextChannel = channel.isTextChannel;
 
-  return channelId && channelName && typeof isTextChannel !== 'undefined';
+  return channelId && channelName && typeof isTextChannel !== "undefined";
 }
 
 export function validateChannels(channels) {
@@ -426,7 +423,7 @@ export function addChannel(channel) {
       isTextChannel: isTextChannel,
     })
   ) {
-    console.error('Invalid channel data:', channel);
+    console.error("Invalid channel data:", channel);
     return;
   }
 
@@ -445,15 +442,15 @@ export function addChannel(channel) {
 
 export function updateChannels(channels) {
   if (!validateChannels(channels)) {
-    console.error('Invalid channels format or missing channel data:', channels);
+    console.error("Invalid channels format or missing channel data:", channels);
     return;
   }
 
-  console.log('Updating channels with:', channels);
+  console.log("Updating channels with:", channels);
 
-  channelsUl.innerHTML = '';
+  channelsUl.innerHTML = "";
   if (!isOnMe) {
-    disableElement('dm-container-parent');
+    disableElement("dm-container-parent");
   }
 
   removeChannelEventListeners();
@@ -502,47 +499,47 @@ export function drawVoiceChannelUser(
   isTextChannel,
 ) {
   const userName = getUserNick(userId);
-  const userContainer = createEl('li', {
-    className: 'channel-button',
+  const userContainer = createEl("li", {
+    className: "channel-button",
     id: userId,
   });
-  userContainer.addEventListener('mouseover', function (event) {
+  userContainer.addEventListener("mouseover", function (event) {
     //mouseHoverChannelButton(userContainer, isTextChannel,channelId);
   });
-  userContainer.addEventListener('mouseleave', function (event) {
+  userContainer.addEventListener("mouseleave", function (event) {
     //mouseLeaveChannelButton(userContainer, isTextChannel,channelId);
   });
 
   createUserContext(userId);
 
   userContainer.id = `user-${userId}`;
-  const userElement = createEl('img', {
+  const userElement = createEl("img", {
     style:
-      'width: 25px; height: 25px; border-radius: 50px; position:fixed; margin-right: 170px;',
+      "width: 25px; height: 25px; border-radius: 50px; position:fixed; margin-right: 170px;",
   });
   setProfilePic(userElement, userId);
   userContainer.appendChild(userElement);
-  userContainer.style.marginTop = index === 0 ? '30px' : '10px';
-  userContainer.style.marginLeft = '-220px';
-  userContainer.style.width = '90%';
-  userContainer.style.justifyContent = 'center';
-  userContainer.style.alignItems = 'center';
+  userContainer.style.marginTop = index === 0 ? "30px" : "10px";
+  userContainer.style.marginLeft = "-220px";
+  userContainer.style.width = "90%";
+  userContainer.style.justifyContent = "center";
+  userContainer.style.alignItems = "center";
 
-  const contentWrapper = createEl('div', { className: 'content-wrapper' });
-  const userSpan = createEl('span', {
-    className: 'channelSpan',
+  const contentWrapper = createEl("div", { className: "content-wrapper" });
+  const userSpan = createEl("span", {
+    className: "channelSpan",
     textContent: userName,
-    style: 'position: fixed;',
+    style: "position: fixed;",
   });
-  userSpan.style.color = 'rgb(128, 132, 142)';
-  userSpan.style.border = 'none';
-  userSpan.style.width = 'auto';
+  userSpan.style.color = "rgb(128, 132, 142)";
+  userSpan.style.border = "none";
+  userSpan.style.width = "auto";
 
-  const muteSpan = createEl('span', { innerHTML: muteHtml });
-  const inviteVoiceSpan = createEl('span', { innerHTML: inviteVoiceHtml });
+  const muteSpan = createEl("span", { innerHTML: muteHtml });
+  const inviteVoiceSpan = createEl("span", { innerHTML: inviteVoiceHtml });
   contentWrapper.appendChild(muteSpan);
   contentWrapper.appendChild(inviteVoiceSpan);
-  contentWrapper.style.marginRight = '-115px';
+  contentWrapper.style.marginRight = "-115px";
   userContainer.appendChild(userSpan);
   userContainer.appendChild(contentWrapper);
   allUsersContainer.appendChild(userContainer);

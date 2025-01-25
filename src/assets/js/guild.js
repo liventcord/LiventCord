@@ -4,33 +4,29 @@ import {
   blackImage,
   constructAppPage,
   getProfileUrl,
-} from './utils';
-import { clickMainLogo, alertUser,preventDrag } from './ui';
-import { changeUrlWithFireWorks } from './extras';
+} from "./utils";
+import { clickMainLogo, alertUser, preventDrag } from "./ui";
+import { changeUrlWithFireWorks } from "./extras";
 import {
   isChangingPage,
   initialState,
   loadApp,
   changecurrentGuild,
-} from './app';
-import { isOnGuild, isOnMe, isOnDm } from './router';
-import { updateMemberList } from './userList';
-import { showGuildPop } from './popups';
-import { validateAvatar } from './avatar';
-import { guildCache, cacheInterface } from './cache';
-import { permissionManager } from './guildPermissions';
-import { apiClient, EventType } from './api';
-import { currentVoiceChannelId } from './channels';
-import { resetImageInput } from './avatar';
-
+} from "./app";
+import { isOnGuild, isOnMe, isOnDm } from "./router";
+import { updateMemberList } from "./userList";
+import { showGuildPop } from "./popups";
+import { validateAvatar } from "./avatar";
+import { guildCache, cacheInterface } from "./cache";
+import { permissionManager } from "./guildPermissions";
+import { apiClient, EventType } from "./api";
+import { currentVoiceChannelId } from "./channels";
+import { resetImageInput } from "./avatar";
 
 export let currentGuildId;
-export const guildName = getId('guild-name');
-export const guildContainer = getId('guild-container');
-const guildsList = getId('guilds-list');
-
-
-
+export const guildName = getId("guild-name");
+export const guildContainer = getId("guild-container");
+const guildsList = getId("guilds-list");
 
 export function getManageableGuilds() {
   try {
@@ -48,40 +44,38 @@ export function getManageableGuilds() {
     }
     return isFoundAny ? guildsWeAreAdminOn : null;
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
 }
 
-
-
 export function createGuild() {
-  const guildName = getId('guild-name-input').value;
-  const guildPhotoFile = getId('guildImageInput').files[0];
+  const guildName = getId("guild-name-input").value;
+  const guildPhotoFile = getId("guildImageInput").files[0];
 
   if (guildPhotoFile && !validateAvatar(guildPhotoFile)) {
-    resetImageInput('guildImageInput', 'guildImg');
+    resetImageInput("guildImageInput", "guildImg");
     return;
   }
 
   let formData = new FormData();
   if (guildPhotoFile) {
-    formData.append('Photo', guildPhotoFile);
+    formData.append("Photo", guildPhotoFile);
   }
-  formData.append('GuildName', guildName);
+  formData.append("GuildName", guildName);
 
-  fetch('/api/guilds', {
-    method: 'POST',
+  fetch("/api/guilds", {
+    method: "POST",
     body: formData,
-    credentials: 'same-origin',
+    credentials: "same-origin",
   })
     .then((response) => {
       if (response.ok) return response.json();
       return response.text();
     })
     .then((data) => {
-      console.log('Guild creation response:', data);
-      if (typeof data === 'object') {
-        const popup = getId('guild-pop-up');
+      console.log("Guild creation response:", data);
+      if (typeof data === "object") {
+        const popup = getId("guild-pop-up");
         if (popup) {
           popup.parentNode.remove();
         }
@@ -93,7 +87,7 @@ export function createGuild() {
       }
     })
     .catch((error) => {
-      console.error('Error:', error);
+      console.error("Error:", error);
     });
 }
 
@@ -105,10 +99,10 @@ export function loadGuild(
   isInitial = false,
 ) {
   if (!guildId || !channelId) {
-    console.error('Load guild called with null values: ', guildId, channelId);
+    console.error("Load guild called with null values: ", guildId, channelId);
     return;
   }
-  console.log('Loading guild: ', guildId, channelId, guildName);
+  console.log("Loading guild: ", guildId, channelId, guildName);
 
   if (isChangingUrl) {
     const state = constructAppPage(guildId, channelId);
@@ -117,7 +111,7 @@ export function loadGuild(
     }
   }
   if (isChangingPage) {
-    console.warn(' Already changing guild! can not change guild');
+    console.warn(" Already changing guild! can not change guild");
     return;
   }
   addKeybinds();
@@ -132,7 +126,7 @@ export function loadGuild(
     if (cachedGuildName) {
       guildCache.currentGuildName = cachedGuildName;
     } else {
-      console.warn('Name does not exist for guild: ', guildId);
+      console.warn("Name does not exist for guild: ", guildId);
     }
   }
 
@@ -160,21 +154,21 @@ export function refreshInviteId() {
   if (!cacheInterface.isInvitesEmpty(currentGuildId)) {
     return;
   }
-  console.log('Implement invites');
+  console.log("Implement invites");
 }
 
 export function fetchMembers() {
   if (!currentGuildId) {
-    console.warn('Current guild id is null! cant fetch members');
+    console.warn("Current guild id is null! cant fetch members");
     return;
   }
   const members = cacheInterface.getMembers(currentGuildId);
 
   if (members.length > 0) {
-    console.log('Using cached members...');
+    console.log("Using cached members...");
     updateMemberList(members);
   } else {
-    console.log('Fetching members...');
+    console.log("Fetching members...");
     apiClient.send(EventType.GET_MEMBERS, { guildId: currentGuildId });
   }
 }
@@ -212,8 +206,6 @@ export function leaveCurrentGuild() {
   apiClient.send(EventType.LEAVE_GUILD, currentGuildId);
 }
 
-
-
 //ui
 
 let keybindHandlers = {};
@@ -221,30 +213,30 @@ let isGuildKeyDown = false;
 let currentGuildIndex = 1;
 
 export function clearKeybinds() {
-  if (keybindHandlers['shift']) {
-    document.removeEventListener('keydown', keybindHandlers['shift']);
+  if (keybindHandlers["shift"]) {
+    document.removeEventListener("keydown", keybindHandlers["shift"]);
   }
   keybindHandlers = {};
 }
 
 export function addKeybinds() {
   clearKeybinds();
-  const guilds = Array.from(document.querySelectorAll('#guilds-list img'));
+  const guilds = Array.from(document.querySelectorAll("#guilds-list img"));
 
   const handler = (event) => {
     if (!event.shiftKey) return;
 
     const key = event.key;
 
-    if (key === 'ArrowUp' || key === 'ArrowDown') {
+    if (key === "ArrowUp" || key === "ArrowDown") {
       event.preventDefault();
 
       if (isGuildKeyDown) return;
 
-      if (key === 'ArrowUp') {
+      if (key === "ArrowUp") {
         currentGuildIndex =
           (currentGuildIndex - 1 + guilds.length) % guilds.length;
-      } else if (key === 'ArrowDown') {
+      } else if (key === "ArrowDown") {
         currentGuildIndex = (currentGuildIndex + 1) % guilds.length;
       }
 
@@ -254,29 +246,25 @@ export function addKeybinds() {
     }
   };
 
-  document.addEventListener('keydown', handler);
+  document.addEventListener("keydown", handler);
 
-  document.addEventListener('keyup', () => {
+  document.addEventListener("keyup", () => {
     isGuildKeyDown = false;
   });
 
-  keybindHandlers['shift'] = handler;
+  keybindHandlers["shift"] = handler;
 }
-
-
-
-
 
 export function removeFromGuildList(guildId) {
   const guildImg = getId(guildId);
   if (guildImg) {
-    const parentLi = guildImg.closest('li');
+    const parentLi = guildImg.closest("li");
     if (parentLi) parentLi.remove();
   }
 }
 
 export function updateGuild(uploadedGuildId) {
-  const guildList = getId('guilds-list').querySelectorAll('img');
+  const guildList = getId("guilds-list").querySelectorAll("img");
   guildList.forEach((img) => {
     if (img.id === uploadedGuildId) {
       setGuildImage(uploadedGuildId, img, true);
@@ -284,28 +272,24 @@ export function updateGuild(uploadedGuildId) {
   });
 }
 
-
-
-
 export function selectGuildList(guildId) {
   if (!guildsList) return;
 
-  const foundGuilds = guildsList.querySelectorAll('img');
+  const foundGuilds = guildsList.querySelectorAll("img");
 
   foundGuilds.forEach((guild) => {
     if (guild.id === guildId) {
       wrapWhiteRod(guild.parentNode);
-      guild.parentNode.classList.add('selected-guild');
+      guild.parentNode.classList.add("selected-guild");
     } else {
-      guild.parentNode.classList.remove('selected-guild');
+      guild.parentNode.classList.remove("selected-guild");
     }
   });
 }
 
-
 export function updateGuilds(guildsJson) {
   if (Array.isArray(guildsJson)) {
-    guildsList.innerHTML = '';
+    guildsList.innerHTML = "";
 
     const mainLogoItem = createMainLogo();
     guildsList.appendChild(mainLogoItem);
@@ -313,51 +297,58 @@ export function updateGuilds(guildsJson) {
     wrapWhiteRod(mainLogoItem);
 
     guildsJson.forEach(({ guildId, guildName, rootChannel, guildMembers }) => {
-      const listItem = createGuildListItem(guildId, guildName, rootChannel, guildName);
+      const listItem = createGuildListItem(
+        guildId,
+        guildName,
+        rootChannel,
+        guildName,
+      );
       guildsList.appendChild(listItem);
 
       guildCache.getGuild(guildId).setName(guildName);
       cacheInterface.setMemberIds(guildId, guildMembers);
     });
 
-    const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
+    const selectedGuild = guildsList.querySelector(
+      `img[id="${currentGuildId}"]`,
+    );
     if (selectedGuild) {
-      selectedGuild.parentNode.classList.add('selected-guild');
+      selectedGuild.parentNode.classList.add("selected-guild");
     }
   } else {
-    console.error('Non-array guild data');
+    console.error("Non-array guild data");
   }
 }
 
-
 export function wrapWhiteRod(element) {
   if (!element) return;
-  if (!element.querySelector('.white-rod')) {
-    const whiteRod = createEl("div", { "className": "white-rod" });
+  if (!element.querySelector(".white-rod")) {
+    const whiteRod = createEl("div", { className: "white-rod" });
     element.appendChild(whiteRod);
   }
 }
 
-
 const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
-  const listItem = createEl('li');
-  const imgElement = createEl('img', { "id": guildIdStr, "src": imgSrc });
+  const listItem = createEl("li");
+  const imgElement = createEl("img", { id: guildIdStr, src: imgSrc });
 
-  imgElement.classList.add('guild-image');
+  imgElement.classList.add("guild-image");
   imgElement.onerror = () => {
     imgElement.src = blackImage;
   };
 
-  imgElement.addEventListener('click', () => {
-    console.log('Image clicked:', guildIdStr, rootChannel, guildNameStr);
+  imgElement.addEventListener("click", () => {
+    console.log("Image clicked:", guildIdStr, rootChannel, guildNameStr);
     try {
       loadGuild(guildIdStr, rootChannel, guildNameStr);
     } catch (error) {
-      console.error('Error while loading guild:', error);
+      console.error("Error while loading guild:", error);
     }
 
-    document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));
-    listItem.classList.add('selected-guild');
+    document
+      .querySelectorAll(".guild")
+      .forEach((item) => item.classList.remove("selected-guild"));
+    listItem.classList.add("selected-guild");
     wrapWhiteRod(listItem);
   });
 
@@ -365,12 +356,15 @@ const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
   return listItem;
 };
 
-
-
 export function appendToGuildList(guild) {
   if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
 
-  const listItem = createGuildListItem(guild.guildId, guild.imgSrc, guild.rootChannel, guild.guildName);
+  const listItem = createGuildListItem(
+    guild.guildId,
+    guild.imgSrc,
+    guild.rootChannel,
+    guild.guildName,
+  );
   guildsList.appendChild(listItem);
 
   guildCache.getGuild(guild.guildId).setName(guild.guildName);
@@ -378,27 +372,29 @@ export function appendToGuildList(guild) {
 }
 
 export function createMainLogo() {
-  const mainLogoImg = createEl('img', {
-    id: 'main-logo',
-    src: '/images/icons/icon.png',
-    'data-src': '/images/icons/icon.png',
+  const mainLogoImg = createEl("img", {
+    id: "main-logo",
+    src: "/images/icons/icon.png",
+    "data-src": "/images/icons/icon.png",
   });
 
-  const mainLogo = createEl('li');
+  const mainLogo = createEl("li");
 
-  mainLogo.addEventListener('mouseover', () => {
-    mainLogoImg.classList.add('rotate-element');
+  mainLogo.addEventListener("mouseover", () => {
+    mainLogoImg.classList.add("rotate-element");
   });
 
-  mainLogo.addEventListener('mouseleave', () => {
-    mainLogoImg.classList.remove('rotate-element');
+  mainLogo.addEventListener("mouseleave", () => {
+    mainLogoImg.classList.remove("rotate-element");
   });
 
   preventDrag(mainLogoImg);
 
-  mainLogoImg.addEventListener('click', () => {
-    document.querySelectorAll('.guild').forEach(item => item.classList.remove('selected-guild'));
-    mainLogoImg.parentElement.classList.add('selected-guild');
+  mainLogoImg.addEventListener("click", () => {
+    document
+      .querySelectorAll(".guild")
+      .forEach((item) => item.classList.remove("selected-guild"));
+    mainLogoImg.parentElement.classList.add("selected-guild");
     clickMainLogo(mainLogoImg.parentElement);
   });
 
@@ -406,7 +402,6 @@ export function createMainLogo() {
 
   return mainLogo;
 }
-
 
 export function setGuildImage(guildId, imageElement, isUploaded) {
   imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
@@ -416,13 +411,10 @@ export function doesGuildExistInBar(guildId) {
   return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
 }
 
-
-
 function init() {
-  const guildCreatorBtn = getId('create-guild-button');
+  const guildCreatorBtn = getId("create-guild-button");
   if (guildCreatorBtn) {
-    guildCreatorBtn.addEventListener('click', showGuildPop);
-
+    guildCreatorBtn.addEventListener("click", showGuildPop);
   }
 }
 

@@ -1,23 +1,22 @@
 {
-    "404": {
-      "add_friend": "The user you are trying to add was not found.",
-      "accept_friend_request": "The friend request you are trying to accept was not found.",
-      "remove_friend": "The friend you are trying to remove was not found.",
-      "deny_friend_request": "The friend request you are trying to deny was not found."
-    },
-    "409": {
-      "add_friend": "This user is already your friend.",
-      "accept_friend_request": "The friend request has already been accepted or denied.",
-      "remove_friend": "You cannot remove this user at the moment.",
-      "deny_friend_request": "The friend request has already been accepted or denied."
-    },
-    "400": {
-      "add_friend": "Invalid request to add friend.",
-      "remove_friend": "Invalid request to remove friend."
-    },
-    "500": {
-      "default": "Internal server error. Please try again later."
-    },
-    "default": "An unexpected error occurred. Please try again."
-  }
-  
+  "404": {
+    "add_friend": "The user you are trying to add was not found.",
+    "accept_friend_request": "The friend request you are trying to accept was not found.",
+    "remove_friend": "The friend you are trying to remove was not found.",
+    "deny_friend_request": "The friend request you are trying to deny was not found."
+  },
+  "409": {
+    "add_friend": "This user is already your friend.",
+    "accept_friend_request": "The friend request has already been accepted or denied.",
+    "remove_friend": "You cannot remove this user at the moment.",
+    "deny_friend_request": "The friend request has already been accepted or denied."
+  },
+  "400": {
+    "add_friend": "Invalid request to add friend.",
+    "remove_friend": "Invalid request to remove friend."
+  },
+  "500": {
+    "default": "Internal server error. Please try again later."
+  },
+  "default": "An unexpected error occurred. Please try again."
+}

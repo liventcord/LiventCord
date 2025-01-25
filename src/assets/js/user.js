@@ -1,26 +1,30 @@
-import { selfDiscriminator, selfName, selfStatus, updateSelfProfile } from './avatar';
-import { initialState } from './app';
-import { cacheInterface } from './cache';
-import { currentGuildId } from './guild';
-import { createEl } from './utils';
-
+import {
+  selfDiscriminator,
+  selfName,
+  selfStatus,
+  updateSelfProfile,
+} from "./avatar";
+import { initialState } from "./app";
+import { cacheInterface } from "./cache";
+import { currentGuildId } from "./guild";
+import { createEl } from "./utils";
 
 export let currentUserId;
 
 export let currentDiscriminator = null;
 export let currentUserNick;
 export let userNames = {};
-export const deletedUser = 'Deleted User';
+export const deletedUser = "Deleted User";
 // eslint-disable-next-line no-unused-vars
 let lastTopSenderId = null;
 
 export function setLastTopSenderId(id) {
-  if(!id) return;
+  if (!id) return;
   lastTopSenderId = id;
-} 
-userNames['1'] = {
-  nick: 'Clyde',
-  discriminator: '0000',
+}
+userNames["1"] = {
+  nick: "Clyde",
+  discriminator: "0000",
   is_blocked: false,
 };
 
@@ -36,23 +40,22 @@ export function initializeProfile() {
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
-  selfDiscriminator.textContent =
-    '#' + initialState.user.discriminator;
+  selfDiscriminator.textContent = "#" + initialState.user.discriminator;
   selfStatus.textContent = initialState.user.status;
   updateSelfProfile(currentUserId);
 }
 
 export function getSelfFullDisplay() {
-  return initialState.user.nickname + '#' + initialState.user.discriminator;
+  return initialState.user.nickname + "#" + initialState.user.discriminator;
 }
 
 export function copySelfName() {
   if (!currentUserNick | !currentDiscriminator) return;
   navigator.clipboard.writeText(`${currentUserNick}#${currentDiscriminator}`);
   const copiedTextBox = createEl("div", {
-    textContent: 'Copied',
-    className : "copied-pop",
-  })
+    textContent: "Copied",
+    className: "copied-pop",
+  });
   document.body.appendChild(copiedTextBox);
   copiedTextBox.style.left = `${event.clientX}px`;
   copiedTextBox.style.top = `${event.clientY - 30}px`;
@@ -66,9 +69,8 @@ export function getUserNick(userId) {
   return userId in userNames ? userNames[userId].nick : deletedUser;
 }
 export function getUserDiscriminator(userId) {
-  return userId in userNames ? userNames[userId].discriminator : '0000';
+  return userId in userNames ? userNames[userId].discriminator : "0000";
 }
-
 
 export function getUserIdFromNick(nick) {
   for (const [userId, userInfo] of Object.entries(userNames)) {

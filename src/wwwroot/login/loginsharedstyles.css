@@ -2,7 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Comic Sans', sans-serif !important;
+  font-family: "Comic Sans", sans-serif !important;
   font-weight: bold;
   color: white;
 }
@@ -17,7 +17,7 @@ body {
 }
 
 body::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;

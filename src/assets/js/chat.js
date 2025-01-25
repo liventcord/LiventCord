@@ -1,5 +1,10 @@
-import { getMessageDate, getOldMessages, replaceCustomEmojis } from './message';
-import { chatInput, displayStartMessage, newMessagesBar, showReplyMenu } from './chatbar';
+import { getMessageDate, getOldMessages, replaceCustomEmojis } from "./message";
+import {
+  chatInput,
+  displayStartMessage,
+  newMessagesBar,
+  showReplyMenu,
+} from "./chatbar";
 import {
   messages_raw_cache,
   cacheInterface,
@@ -7,38 +12,44 @@ import {
   clearMessagesCache,
   currentMessagesCache,
   guildCache,
-  replyCache
-} from './cache';
-import { isURL, getId, createEl,getFormattedDateForSmall,sanitizeHTML,getFormattedDate } from './utils';
-import { getUserNick, currentUserId,setLastTopSenderId } from './user';
-import { createMediaElement } from './mediaElements';
-import { apiClient, EventType } from './api';
-import { isOnGuild,isOnMe } from './router';
-import { appendToProfileContextList } from './contextMenuActions';
-import { setProfilePic } from './avatar';
-import { chatContainer, chatContent } from './chatbar';
-import { currentGuildId } from './guild';
-import { isChangingPage,createReplyBar } from './app';
-import { alertUser, loadingScreen,setActiveIcon } from './ui';
-import { Message } from './message';
-import { translations } from './translations';
-import { appendToMessageContextList } from './contextMenuActions';
-import { friendCache } from './friends';
-import { playNotification } from './audio';
-import { userList } from './userList';
-import { emojiBtn, gifBtn } from './mediaPanel';
-
+  replyCache,
+} from "./cache";
+import {
+  isURL,
+  getId,
+  createEl,
+  getFormattedDateForSmall,
+  sanitizeHTML,
+  getFormattedDate,
+} from "./utils";
+import { getUserNick, currentUserId, setLastTopSenderId } from "./user";
+import { createMediaElement } from "./mediaElements";
+import { apiClient, EventType } from "./api";
+import { isOnGuild, isOnMe } from "./router";
+import { appendToProfileContextList } from "./contextMenuActions";
+import { setProfilePic } from "./avatar";
+import { chatContainer, chatContent } from "./chatbar";
+import { currentGuildId } from "./guild";
+import { isChangingPage, createReplyBar } from "./app";
+import { alertUser, loadingScreen, setActiveIcon } from "./ui";
+import { Message } from "./message";
+import { translations } from "./translations";
+import { appendToMessageContextList } from "./contextMenuActions";
+import { friendCache } from "./friends";
+import { playNotification } from "./audio";
+import { userList } from "./userList";
+import { emojiBtn, gifBtn } from "./mediaPanel";
 
 export let bottomestChatDateStr;
-export function setBottomestChatDateStr(date) { 
+export function setBottomestChatDateStr(date) {
   bottomestChatDateStr = date;
 }
 export let lastMessageDate = null;
 export let currentLastDate;
 export function clearLastDate() {
-  currentLastDate = '';
+  currentLastDate = "";
 }
-export let lastSenderID = '';
+export let lastSenderID = "";
 export function setLastSenderID(id) {
   lastSenderID = id;
 }
@@ -56,24 +67,24 @@ export function setReachedChannelEnd(val) {
   isReachedChannelEnd = val;
 }
 
-export const CLYDE_ID = '1';
+export const CLYDE_ID = "1";
 
 export function createChatScrollButton() {
-  let scrollButton = getId('scroll-to-bottom');
+  let scrollButton = getId("scroll-to-bottom");
 
-  chatContainer.addEventListener('scroll', function () {
+  chatContainer.addEventListener("scroll", function () {
     let threshold = window.innerHeight;
     let hiddenContent =
       chatContainer.scrollHeight -
       (chatContainer.scrollTop + chatContainer.clientHeight);
     if (hiddenContent > threshold) {
-      scrollButton.style.display = 'flex';
+      scrollButton.style.display = "flex";
     } else {
-      scrollButton.style.display = 'none';
+      scrollButton.style.display = "none";
     }
   });
-  scrollButton.addEventListener('click', function () {
-    scrollButton.style.display = 'none';
+  scrollButton.addEventListener("click", function () {
+    scrollButton.style.display = "none";
     scrollToBottom();
   });
 }
@@ -93,7 +104,7 @@ export function handleReplies() {
           msg.attachmentUrls,
         );
         console.log(
-          'Creating reply bar.',
+          "Creating reply bar.",
           replier,
           message.messageId,
           msg.userId,
@@ -104,7 +115,7 @@ export function handleReplies() {
   });
 }
 export function scrollToMessage(messageElement) {
-  messageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  messageElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 export function scrollToBottom() {
@@ -127,14 +138,14 @@ export function getOldMessagesOnScroll() {
   }
   const oldestDate = getMessageDate();
   if (!oldestDate) return;
-  if (oldestDate === '1970-01-01 00:00:00.000000+00:00') {
+  if (oldestDate === "1970-01-01 00:00:00.000000+00:00") {
     return;
   }
   getOldMessages(oldestDate);
 }
 
 export async function handleScroll() {
-  if (loadingScreen && loadingScreen.style.display === 'flex') {
+  if (loadingScreen && loadingScreen.style.display === "flex") {
     return;
   }
 
@@ -144,7 +155,7 @@ export async function handleScroll() {
 
   if (isAtTop && !isFetchingOldMessages && chatContent.children.length > 0) {
     isFetchingOldMessages = true;
-    console.log('Fetching old messages...');
+    console.log("Fetching old messages...");
     try {
       let continueLoop = true;
 
@@ -160,17 +171,17 @@ export async function handleScroll() {
           await getOldMessagesOnScroll();
         } else {
           continueLoop = false;
-          console.log('Scroll position exceeded threshold.');
+          console.log("Scroll position exceeded threshold.");
         }
 
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     } catch (error) {
-      console.error('Error fetching old messages:', error);
+      console.error("Error fetching old messages:", error);
     } finally {
       isFetchingOldMessages = false;
       stopFetching = true;
-      console.log('Fetching complete. Resetting flag.');
+      console.log("Fetching complete. Resetting flag.");
     }
   }
 }
@@ -186,7 +197,7 @@ const observer = new IntersectionObserver(
   { threshold: 0.1 },
 );
 export function observe(element) {
-  if(!element) return;
+  if (!element) return;
   observer.observe(element);
 }
 function loadObservedContent(targetElement) {
@@ -194,7 +205,7 @@ function loadObservedContent(targetElement) {
 
   const sanitizedHTML = sanitizeHTML(jsonData);
 
-  const tempDiv = createEl('div');
+  const tempDiv = createEl("div");
   tempDiv.innerHTML = sanitizedHTML;
 
   while (tempDiv.firstChild) {
@@ -240,24 +251,19 @@ export function handleOldMessagesResponse(data) {
   ) {
     displayStartMessage();
   } else if (isNaN(oldestMessageDateOnChannel)) {
-    console.error('Invalid oldest message date received.');
+    console.error("Invalid oldest message date received.");
   }
 }
 
 export function handleMessage(data) {
   try {
-    if(data.isOldMessages) {
+    if (data.isOldMessages) {
       handleOldMessagesResponse(data);
       return;
     }
 
-    const {
-      isDm,
-      userId,
-      channelId,
-    } = data;
-    
-    
+    const { isDm, userId, channelId } = data;
+
     const idToCompare = isDm
       ? friendCache.currentDmId
       : guildCache.currentChannelId;
@@ -275,7 +281,7 @@ export function handleMessage(data) {
 
     fetchReplies(data);
   } catch (error) {
-    console.error('Error processing message:', error);
+    console.error("Error processing message:", error);
   }
 }
 export function handleHistoryResponse(data) {
@@ -294,9 +300,9 @@ export function handleHistoryResponse(data) {
   }
 
   if (guildId !== currentGuildId)
-    console.warn('History guild ID is different from current guild');
+    console.warn("History guild ID is different from current guild");
   if (channelId !== guildCache.currentChannelId)
-    console.warn('History channel ID is different from current channel');
+    console.warn("History channel ID is different from current channel");
 
   cacheInterface.setMessages(guildId, guildId, messages);
 
@@ -307,7 +313,7 @@ export function handleHistoryResponse(data) {
     chatContainer.scrollHeight - chatContainer.scrollTop ===
     chatContainer.clientHeight;
 
-  chatContainer.style.overflow = 'hidden'; // Disable scrolling temporarily
+  chatContainer.style.overflow = "hidden"; // Disable scrolling temporarily
 
   messages.forEach((msgData) => {
     const msg = new Message(msgData);
@@ -343,25 +349,25 @@ export function handleHistoryResponse(data) {
     subtree: true,
   });
 
-  const mediaElements = chatContainer.querySelectorAll('img, video, iframe');
+  const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
   const mediaLoadedPromises = [];
 
   mediaElements.forEach((media) => {
     if (!media.complete) {
       const mediaPromise = new Promise((resolve) => {
-        media.addEventListener('load', resolve);
+        media.addEventListener("load", resolve);
       });
       mediaLoadedPromises.push(mediaPromise);
     }
   });
 
   const checkAllMediaLoaded = () => {
-    const mediaElements = chatContainer.querySelectorAll('img, video, iframe');
+    const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
     return Array.from(mediaElements).every((media) => media.complete);
   };
 
   Promise.all(mediaLoadedPromises).then(() => {
-    chatContainer.style.overflow = '';
+    chatContainer.style.overflow = "";
     observer.disconnect();
   });
 
@@ -377,7 +383,7 @@ export function handleHistoryResponse(data) {
     lastHeight = currentHeight;
 
     if (checkAllMediaLoaded()) {
-      chatContainer.style.overflow = '';
+      chatContainer.style.overflow = "";
       observer.disconnect();
     } else {
       setTimeout(monitorContentSizeChanges, 50);
@@ -396,11 +402,11 @@ export function handleHistoryResponse(data) {
 
   let isUserInteracted = false;
 
-  const userScrollEvents = ['mousedown', 'touchstart', 'wheel'];
+  const userScrollEvents = ["mousedown", "touchstart", "wheel"];
 
   const releaseScrollLock = () => {
     isUserInteracted = true;
-    chatContainer.style.overflow = '';
+    chatContainer.style.overflow = "";
     userScrollEvents.forEach((event) =>
       chatContainer.removeEventListener(event, releaseScrollLock),
     );
@@ -410,7 +416,7 @@ export function handleHistoryResponse(data) {
     chatContainer.addEventListener(event, releaseScrollLock),
   );
 
-  chatContainer.addEventListener('scroll', () => {
+  chatContainer.addEventListener("scroll", () => {
     if (
       chatContainer.scrollTop <
       chatContainer.scrollHeight - chatContainer.clientHeight
@@ -429,7 +435,7 @@ export function handleHistoryResponse(data) {
 
   setInterval(preventScrollJump, 50);
   setTimeout(() => {
-    console.log('Scolled!');
+    console.log("Scolled!");
     scrollToBottom();
   }, 200);
 }
@@ -438,13 +444,13 @@ export function createDateBar(currentDate) {
   const formattedDate = new Date(currentDate).toLocaleDateString(
     translations.getLocale(),
     {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     },
   );
-  const datebar = createEl('span', {
-    className: 'dateBar',
+  const datebar = createEl("span", {
+    className: "dateBar",
     textContent: formattedDate,
   });
   chatContent.appendChild(datebar);
@@ -460,38 +466,38 @@ export function createProfileImageChat(
   replyBar,
 ) {
   if (!messageContentElement) {
-    console.error('No msg content element. ', replyBar);
+    console.error("No msg content element. ", replyBar);
     return;
   }
-  const profileImg = createEl('img', { className: 'profile-pic', id: userId });
+  const profileImg = createEl("img", { className: "profile-pic", id: userId });
   setProfilePic(profileImg, userId);
 
-  profileImg.style.width = '40px';
-  profileImg.style.height = '40px';
+  profileImg.style.width = "40px";
+  profileImg.style.height = "40px";
   profileImg.dataset.userId = userId;
   appendToProfileContextList(userId);
 
-  profileImg.addEventListener('mouseover', function () {
-    this.style.borderRadius = '0px';
+  profileImg.addEventListener("mouseover", function () {
+    this.style.borderRadius = "0px";
   });
-  profileImg.addEventListener('mouseout', function () {
-    this.style.borderRadius = '25px';
+  profileImg.addEventListener("mouseout", function () {
+    this.style.borderRadius = "25px";
   });
 
-  const authorAndDate = createEl('div');
-  authorAndDate.classList.add('author-and-date');
-  const nickElement = createEl('span');
+  const authorAndDate = createEl("div");
+  authorAndDate.classList.add("author-and-date");
+  const nickElement = createEl("span");
   nickElement.textContent = nick;
-  nickElement.classList.add('nick-element');
+  nickElement.classList.add("nick-element");
   if (isBot) {
-    const botSign = createEl('span', { className: 'botSign' });
+    const botSign = createEl("span", { className: "botSign" });
     authorAndDate.appendChild(botSign);
   }
   authorAndDate.appendChild(nickElement);
   const messageDate = new Date(date);
-  const dateElement = createEl('span');
+  const dateElement = createEl("span");
   dateElement.textContent = getFormattedDate(messageDate);
-  dateElement.classList.add('date-element');
+  dateElement.classList.add("date-element");
   authorAndDate.appendChild(dateElement);
   if (replyBar) {
     newMessage.appendChild(profileImg);
@@ -499,20 +505,20 @@ export function createProfileImageChat(
 
     newMessage.appendChild(messageContentElement);
 
-    const mediaElement = newMessage.querySelector('.imageElement');
+    const mediaElement = newMessage.querySelector(".imageElement");
     if (mediaElement) {
       messageContentElement.appendChild(mediaElement);
     }
     if (replyBar) {
       newMessage.insertBefore(replyBar, newMessage.firstChild);
     }
-    newMessage.classList.add('replier');
+    newMessage.classList.add("replier");
   } else {
     if (isAfterDeleting) {
       newMessage.appendChild(profileImg);
       newMessage.appendChild(authorAndDate);
       newMessage.appendChild(messageContentElement);
-      const mediaElement = newMessage.querySelector('.imageElement');
+      const mediaElement = newMessage.querySelector(".imageElement");
       if (mediaElement && messageContentElement) {
         messageContentElement.appendChild(mediaElement);
       }
@@ -525,7 +531,7 @@ export function createProfileImageChat(
   }
   setProfilePic(profileImg, userId);
 
-  messageContentElement.classList.add('onsmallprofile');
+  messageContentElement.classList.add("onsmallprofile");
 }
 export function setLastMessageDate(date) {
   lastMessageDate = date;
@@ -561,14 +567,14 @@ export function displayChatMessage(data) {
   if (!channelId || !date) {
     return;
   }
-  if (!attachmentUrls && content === '') {
+  if (!attachmentUrls && content === "") {
     return;
   }
 
   const nick = getUserNick(userId);
-  const newMessage = createEl('div', { className: 'message' });
-  const messageContentElement = createEl('p', {
-    id: 'message-content-element',
+  const newMessage = createEl("div", { className: "message" });
+  const messageContentElement = createEl("p", {
+    id: "message-content-element",
   });
 
   setMessagesCache(messageId, newMessage);
@@ -632,10 +638,10 @@ export function displayChatMessage(data) {
   }
   let formattedMessage = replaceCustomEmojis(content);
   if (isURL(content)) {
-    formattedMessage = '';
+    formattedMessage = "";
   }
-  messageContentElement.style.position = 'relative';
-  messageContentElement.style.wordBreak = 'break-all';
+  messageContentElement.style.position = "relative";
+  messageContentElement.style.wordBreak = "break-all";
   newMessage.id = messageId;
   newMessage.dataset.userId = userId;
   newMessage.dataset.date = date;
@@ -681,31 +687,31 @@ export function displayChatMessage(data) {
     const previousSibling = newMessage.previousElementSibling;
     if (previousSibling) {
       const previousMsgContent = previousSibling.querySelector(
-        '#message-content-element',
+        "#message-content-element",
       );
       if (
         isCreatedProfile &&
         previousMsgContent &&
-        previousMsgContent.classList.contains('onsmallprofile')
+        previousMsgContent.classList.contains("onsmallprofile")
       ) {
-        newMessage.classList.add('profile-after-profile');
+        newMessage.classList.add("profile-after-profile");
       }
     }
   }
 
   if (userId === CLYDE_ID) {
-    const youCanSeeText = createEl('p', {
-      textContent: 'Bunu sadece sen görebilirsin.',
+    const youCanSeeText = createEl("p", {
+      textContent: "Bunu sadece sen görebilirsin.",
     });
-    youCanSeeText.style.fontSize = '12px';
-    youCanSeeText.style.color = 'rgb(148, 155, 164)';
+    youCanSeeText.style.fontSize = "12px";
+    youCanSeeText.style.color = "rgb(148, 155, 164)";
 
-    const parentElement = createEl('div', {
-      display: 'flex',
-      flexDirection: 'column',
+    const parentElement = createEl("div", {
+      display: "flex",
+      flexDirection: "column",
       zIndex: 1,
     });
-    parentElement.style.height = '100%';
+    parentElement.style.height = "100%";
 
     parentElement.appendChild(messageContentElement);
 
@@ -767,7 +773,7 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
       (msg) =>
         msg.replyToId !== undefined &&
         msg.replyToId !== null &&
-        msg.replyToId !== '',
+        msg.replyToId !== "",
     )
     .map((msg) => msg.replyToId);
 
@@ -782,15 +788,15 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
 }
 
 export function updateChatWidth() {
-  if (userList.style.display === 'none') {
-    chatInput.classList.add('user-list-hidden');
-    gifBtn.classList.add('gifbtn-user-list-open');
-    emojiBtn.classList.add('emojibtn-user-list-open');
+  if (userList.style.display === "none") {
+    chatInput.classList.add("user-list-hidden");
+    gifBtn.classList.add("gifbtn-user-list-open");
+    emojiBtn.classList.add("emojibtn-user-list-open");
     newMessagesBar.classList.add("new-messages-bar-user-list-open");
   } else {
-    chatInput.classList.remove('user-list-hidden');
-    gifBtn.classList.remove('gifbtn-user-list-open');
-    emojiBtn.classList.remove('emojibtn-user-list-open');
+    chatInput.classList.remove("user-list-hidden");
+    gifBtn.classList.remove("gifbtn-user-list-open");
+    emojiBtn.classList.remove("emojibtn-user-list-open");
     newMessagesBar.classList.remove("new-messages-bar-user-list-open");
   }
 }
@@ -798,7 +804,7 @@ export function updateChatWidth() {
 export function getMessageFromChat(top = true) {
   const messages = Array.from(chatContent.children);
   const filteredMessages = messages.filter((message) =>
-    message.classList.contains('message'),
+    message.classList.contains("message"),
   );
 
   if (filteredMessages.length === 0) return null;
@@ -815,7 +821,7 @@ export function getMessageFromChat(top = true) {
 }
 
 export function getHistoryFromOneChannel(channelId, isDm = false) {
-  console.log('Retrieving history...');
+  console.log("Retrieving history...");
   const messages = cacheInterface.getMessages(currentGuildId, channelId);
 
   if (!isDm && messages && Array.isArray(messages)) {
@@ -832,7 +838,7 @@ export function getHistoryFromOneChannel(channelId, isDm = false) {
       fetchReplies(messages, repliesList);
       return;
     } else {
-      console.warn('No messages found in cache for this channel.');
+      console.warn("No messages found in cache for this channel.");
     }
   }
 
@@ -844,24 +850,26 @@ export function fetchMessagesFromServer(channelId, isDm = false) {
     isDm: isDm,
   };
   if (isOnGuild) {
-    requestData['guildId'] = currentGuildId;
+    requestData["guildId"] = currentGuildId;
   }
 
   hasJustFetchedMessages = setTimeout(() => {
     hasJustFetchedMessages = null;
   }, 5000);
-  const typeToUse = isOnGuild ? EventType.GET_HISTORY_GUILD : EventType.GET_HISTORY_DM;
+  const typeToUse = isOnGuild
+    ? EventType.GET_HISTORY_GUILD
+    : EventType.GET_HISTORY_DM;
   apiClient.send(typeToUse, requestData);
 }
 
 export function createMsgOptionButton(message, isReply) {
-  const textc = isReply ? '↪' : '⋯';
+  const textc = isReply ? "↪" : "⋯";
 
-  const newButton = createEl('button', { className: 'message-button' });
+  const newButton = createEl("button", { className: "message-button" });
 
-  const textEl = createEl('div', {
+  const textEl = createEl("div", {
     textContent: textc,
-    className: 'message-button-text',
+    className: "message-button-text",
   });
   newButton.appendChild(textEl);
   if (isReply) {
@@ -870,28 +878,28 @@ export function createMsgOptionButton(message, isReply) {
     };
   }
 
-  newButton.addEventListener('mousedown', function () {
-    newButton.style.border = '2px solid #000000';
+  newButton.addEventListener("mousedown", function () {
+    newButton.style.border = "2px solid #000000";
   });
-  newButton.addEventListener('mouseup', function () {
-    newButton.style.border = 'none';
+  newButton.addEventListener("mouseup", function () {
+    newButton.style.border = "none";
   });
-  newButton.addEventListener('mouseover', function () {
-    newButton.style.backgroundColor = '#393a3b';
+  newButton.addEventListener("mouseover", function () {
+    newButton.style.backgroundColor = "#393a3b";
   });
-  newButton.addEventListener('mouseout', function () {
-    newButton.style.backgroundColor = '#313338';
+  newButton.addEventListener("mouseout", function () {
+    newButton.style.backgroundColor = "#313338";
   });
-  newButton.addEventListener('focus', () => {
-    newButton.classList.add('is-focused');
+  newButton.addEventListener("focus", () => {
+    newButton.classList.add("is-focused");
   });
-  newButton.addEventListener('blur', () => {
-    newButton.classList.remove('is-focused');
+  newButton.addEventListener("blur", () => {
+    newButton.classList.remove("is-focused");
   });
-  let buttonContainer = message.querySelector('.message-button-container');
+  let buttonContainer = message.querySelector(".message-button-container");
   if (!buttonContainer) {
-    buttonContainer = createEl('div');
-    buttonContainer.classList.add('message-button-container');
+    buttonContainer = createEl("div");
+    buttonContainer.classList.add("message-button-container");
     message.appendChild(buttonContainer);
   }
 
@@ -901,13 +909,13 @@ export function createMsgOptionButton(message, isReply) {
 
 export function createNonProfileImage(newMessage, date) {
   const messageDate = new Date(date);
-  const smallDateElement = createEl('p',{"className" : "small-date-element",
-    "textContent" : getFormattedDateForSmall(messageDate)
+  const smallDateElement = createEl("p", {
+    className: "small-date-element",
+    textContent: getFormattedDateForSmall(messageDate),
   });
   newMessage.appendChild(smallDateElement);
-  smallDateElement.style.position = 'absolute';
-  smallDateElement.style.marginLeft = '5px';
+  smallDateElement.style.position = "absolute";
+  smallDateElement.style.marginLeft = "5px";
 
   return smallDateElement;
 }
-

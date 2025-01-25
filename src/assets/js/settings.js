@@ -1,37 +1,33 @@
-import { blackImage, getId } from './utils';
+import { blackImage, getId } from "./utils";
 import {
   enableBorderMovement,
   stopAudioAnalysis,
   sendAudioData,
-} from './audio';
-import { uploadImage } from './avatar';
-import { showConfirmationPanel, isGuildSettings } from './settingsui';
-import { alertUser, hideImagePreviewRequest } from './ui';
-import { closeSettings } from './settingsui';
-import { isDomLoaded } from './app';
-import { handleToggleClick } from './ui';
-import { onEditGuildProfile, onEditProfile } from './avatar';
-import { generateConfirmationPanel } from './settingsui';
-import { hideConfirmationPanel } from './settingsui';
-import { permissionManager } from './guildPermissions';
-import { apiClient, EventType } from './api';
-import { currentGuildId } from './guild';
-import { currentUserNick,setUserNick } from './user';
-import { translations } from './translations';
-import { guildCache } from './cache';
-
-
-
-
+} from "./audio";
+import { uploadImage } from "./avatar";
+import { showConfirmationPanel, isGuildSettings } from "./settingsui";
+import { alertUser, hideImagePreviewRequest } from "./ui";
+import { closeSettings } from "./settingsui";
+import { isDomLoaded } from "./app";
+import { handleToggleClick } from "./ui";
+import { onEditGuildProfile, onEditProfile } from "./avatar";
+import { generateConfirmationPanel } from "./settingsui";
+import { hideConfirmationPanel } from "./settingsui";
+import { permissionManager } from "./guildPermissions";
+import { apiClient, EventType } from "./api";
+import { currentGuildId } from "./guild";
+import { currentUserNick, setUserNick } from "./user";
+import { translations } from "./translations";
+import { guildCache } from "./cache";
 
 let isImagePreviewOpen = false;
 
 export let settingTypes = {
-  MyAccount: 'MyAccount',
-  SoundAndVideo: 'SoundAndVideo',
-  Notifications: 'Notifications',
-  ActivityPresence: 'ActivityPresence',
-  Appearance: 'Appearance',
+  MyAccount: "MyAccount",
+  SoundAndVideo: "SoundAndVideo",
+  Notifications: "Notifications",
+  ActivityPresence: "ActivityPresence",
+  Appearance: "Appearance",
 };
 
 export let isSettingsOpen = false;
@@ -49,9 +45,9 @@ export function setIsChangedProfile(val) {
 export let currentPopUp = null;
 
 export function clearCookies() {
-  const cookies = document.cookie.split('; ');
+  const cookies = document.cookie.split("; ");
   for (const cookie of cookies) {
-    const [name] = cookie.split('=');
+    const [name] = cookie.split("=");
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
   }
 }
@@ -68,8 +64,8 @@ export function saveBooleanCookie(name, value) {
 }
 
 export function loadBooleanCookie(name) {
-  const cookieName = encodeURIComponent(name) + '=';
-  const cookies = document.cookie.split('; ');
+  const cookieName = encodeURIComponent(name) + "=";
+  const cookies = document.cookie.split("; ");
   for (const cookie of cookies) {
     if (cookie.startsWith(cookieName)) {
       const result = decodeURIComponent(cookie.substring(cookieName.length));
@@ -81,11 +77,11 @@ export function loadBooleanCookie(name) {
 
 export const toggleManager = {
   states: {
-    'notify-toggle': loadBooleanCookie('notify-toggle') ?? false,
-    'snow-toggle': loadBooleanCookie('snow-toggle') ?? false,
-    'party-toggle': loadBooleanCookie('party-toggle') ?? false,
-    'activity-toggle': loadBooleanCookie('activity-toggle') ?? false,
-    'slide-toggle': loadBooleanCookie('slide-toggle') ?? false,
+    "notify-toggle": loadBooleanCookie("notify-toggle") ?? false,
+    "snow-toggle": loadBooleanCookie("snow-toggle") ?? false,
+    "party-toggle": loadBooleanCookie("party-toggle") ?? false,
+    "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
+    "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
   },
   updateState(toggleId, newValue) {
     this.states[toggleId] = newValue;
@@ -97,32 +93,32 @@ export const toggleManager = {
     const toggleElement = getId(toggleId);
     if (toggleElement) {
       toggleElement
-        .querySelector('.toggle-switch')
-        .classList.toggle('active', newValue);
-      toggleElement.classList.toggle('active', newValue);
+        .querySelector(".toggle-switch")
+        .classList.toggle("active", newValue);
+      toggleElement.classList.toggle("active", newValue);
     }
   },
   triggerActions(toggleId, newValue) {
     const toggleActions = {
-      'snow-toggle': this.toggleEffect.bind(this, 'snow', newValue),
-      'party-toggle': this.toggleEffect.bind(this, 'party', newValue),
+      "snow-toggle": this.toggleEffect.bind(this, "snow", newValue),
+      "party-toggle": this.toggleEffect.bind(this, "party", newValue),
     };
     if (toggleActions[toggleId]) {
       toggleActions[toggleId]();
     }
   },
   toggleEffect(effect, enable) {
-    if (effect === 'snow') {
+    if (effect === "snow") {
       enable ? this.startSnowEffect() : this.stopSnowEffect();
-    } else if (effect === 'party') {
+    } else if (effect === "party") {
       enable ? this.startPartyEffect() : this.stopPartyEffect();
     }
   },
   isSlide() {
-    return this.states['slide-toggle'];
+    return this.states["slide-toggle"];
   },
   startSnowEffect() {
-    const particeContainer = getId('confetti-container');
+    const particeContainer = getId("confetti-container");
     let skew = 1;
 
     function randomInRange(min, max) {
@@ -130,7 +126,7 @@ export const toggleManager = {
     }
 
     (function frame() {
-      if (!toggleManager.states['snow-toggle'] || !isDomLoaded) return;
+      if (!toggleManager.states["snow-toggle"] || !isDomLoaded) return;
 
       skew = Math.max(0.8, skew - 0.001);
 
@@ -143,8 +139,8 @@ export const toggleManager = {
           x: Math.random(),
           y: Math.random() * skew - 0.2,
         },
-        colors: ['#ffff'],
-        shapes: ['circle'],
+        colors: ["#ffff"],
+        shapes: ["circle"],
         gravity: randomInRange(0.4, 0.6),
         scalar: randomInRange(0.4, 1),
         drift: randomInRange(-0.4, 0.4),
@@ -176,30 +172,30 @@ export function setupToggle(id) {
 
 export function initializeCookies() {
   [
-    'activity-toggle',
-    'snow-toggle',
-    'party-toggle',
-    'notify-toggle',
-    'slide-toggle',
+    "activity-toggle",
+    "snow-toggle",
+    "party-toggle",
+    "notify-toggle",
+    "slide-toggle",
   ].forEach(setupToggle);
 
-  console.log('init cookies', toggleManager.states);
-  if (toggleManager.states['snow-toggle'])
-    toggleManager.toggleEffect('snow', true);
-  if (toggleManager.states['party-toggle'])
-    toggleManager.toggleEffect('party', true);
+  console.log("init cookies", toggleManager.states);
+  if (toggleManager.states["snow-toggle"])
+    toggleManager.toggleEffect("snow", true);
+  if (toggleManager.states["party-toggle"])
+    toggleManager.toggleEffect("party", true);
 }
 
 export function triggerFileInput() {
-  const profileImageInput = getId('profileImage');
+  const profileImageInput = getId("profileImage");
   profileImageInput.click();
-  profileImageInput.addEventListener('change', onEditProfile);
+  profileImageInput.addEventListener("change", onEditProfile);
 }
 
 export function triggerguildImageUpdate() {
-  const guildImageInput = getId('guildImage');
+  const guildImageInput = getId("guildImage");
   guildImageInput.click();
-  guildImageInput.addEventListener('change', onEditGuildProfile);
+  guildImageInput.addEventListener("change", onEditGuildProfile);
 }
 
 export function regenerateConfirmationPanel() {
@@ -238,21 +234,21 @@ export function onEditNick() {
 
 export function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
-  getId('guildImage').value = '';
-  getId('guild-image').src = blackImage;
+  getId("guildImage").value = "";
+  getId("guild-image").src = blackImage;
 }
 
 let changeNicknameTimeout;
 export function changeNickname() {
-  const newNicknameInput = getId('new-nickname-input');
+  const newNicknameInput = getId("new-nickname-input");
   const newNickname = newNicknameInput.value.trim();
 
   if (
-    newNickname !== '' &&
+    newNickname !== "" &&
     !changeNicknameTimeout &&
     newNickname !== currentUserNick
   ) {
-    console.log('Changed your nickname to: ' + newNickname);
+    console.log("Changed your nickname to: " + newNickname);
     setUserNick(newNickname);
     apiClient.send(EventType.CHANGE_NICK, { newNickname: newNickname });
 
@@ -265,17 +261,17 @@ export function changeNickname() {
 
 let changeGuildNameTimeout;
 export function changeGuildName() {
-  const newGuildInput = getId('guild-overview-name-input');
+  const newGuildInput = getId("guild-overview-name-input");
   const newGuildName = newGuildInput.value.trim();
   if (
-    newGuildName !== '' &&
+    newGuildName !== "" &&
     !changeGuildNameTimeout &&
     newGuildName !== guildCache.currentGuildName
   ) {
-    console.log('Changed guild name to: ' + newGuildName);
-    const objecttosend = { '': newGuildName, guildId: currentGuildId };
+    console.log("Changed guild name to: " + newGuildName);
+    const objecttosend = { "": newGuildName, guildId: currentGuildId };
     apiClient.send(EventType.CHANGE_GUILD_NAME, objecttosend);
-    const setInfoNick = getId('set-info-nick');
+    const setInfoNick = getId("set-info-nick");
     if (setInfoNick) {
       setInfoNick.innerText = newGuildName;
     }
@@ -290,13 +286,16 @@ export async function requestMicrophonePermissions() {
     await sendAudioData();
   } catch (error) {
     console.log(error);
-    alertUser(translations.getTranslation("microphone-failed"), translations.getTranslation("microphone-failed-2"));
+    alertUser(
+      translations.getTranslation("microphone-failed"),
+      translations.getTranslation("microphone-failed-2"),
+    );
     return false;
   }
 }
 
 export function keydownHandler(event) {
-  if (event.key === 'Escape') {
+  if (event.key === "Escape") {
     event.preventDefault();
     if (isSettingsOpen) {
       closeSettings();
@@ -308,4 +307,4 @@ export function keydownHandler(event) {
   }
 }
 
-document.addEventListener('keydown', keydownHandler);
+document.addEventListener("keydown", keydownHandler);

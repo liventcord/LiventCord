@@ -87,7 +87,7 @@
 }
 
 .emoji {
-  background-image: url('/images/emojis.png');
+  background-image: url("/images/emojis.png");
   background-size: 1680px 1560px;
   width: 40px;
   height: 40px;
@@ -329,7 +329,7 @@
   bottom: 0px;
   width: 48px;
   height: 48px;
-  background-image: url('/images/preview-emojis.png');
+  background-image: url("/images/preview-emojis.png");
   background-size: 960px 192px;
   margin: 2px;
   border-radius: 50%;
@@ -364,6 +364,6 @@
 }
 
 .json-element {
-  user-select :'text';
-  white-space : 'pre-wrap';
+  user-select: "text";
+  white-space: "pre-wrap";
 }

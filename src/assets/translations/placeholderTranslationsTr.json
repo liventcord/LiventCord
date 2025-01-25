@@ -14,5 +14,5 @@
   "deny_request": "{{userNick}} kullanıcısından gelen arkadaşlık isteği reddedildi.",
   "avatar-upload-size-error-message": "Avatar boyutu {{avatarLimit}}MB'den küçük olmalı!",
   "attachment-upload-size-error-message": "Ek dosya boyutu {{attachmentLimit}}MB'den küçük olmalı!",
-  "readen-chat" : "{{date}}'da {{time}}'den beri {{count}}+ yeni mesaj"
+  "readen-chat": "{{date}}'da {{time}}'den beri {{count}}+ yeni mesaj"
 }

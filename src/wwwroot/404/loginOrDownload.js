@@ -1,45 +1,45 @@
 (() => {
-  'use strict';
+  "use strict";
 
   const platforms = {
     IOS: {
-      text: 'Download on the App Store',
-      href: '/api/download?platform=ios',
+      text: "Download on the App Store",
+      href: "/api/download?platform=ios",
       hideLogin: true,
     },
     ANDROID: {
-      text: 'Download on Google Play',
-      href: '/api/download?platform=android',
+      text: "Download on Google Play",
+      href: "/api/download?platform=android",
       hideLogin: true,
     },
     WINDOWS: {
-      text: 'Download for Windows',
-      href: '/api/download?platform=win',
+      text: "Download for Windows",
+      href: "/api/download?platform=win",
     },
-    MAC: { text: 'Download for Mac', href: '/api/download?platform=osx' },
-    LINUX: { text: 'Download for Linux', href: '/api/download?platform=linux' },
+    MAC: { text: "Download for Mac", href: "/api/download?platform=osx" },
+    LINUX: { text: "Download for Linux", href: "/api/download?platform=linux" },
   };
 
   const userAgent = navigator.userAgent.toLowerCase();
   const platform = navigator.platform;
 
   const devicePlatform = /iphone|ipad|ipod/.test(userAgent)
-    ? 'IOS'
+    ? "IOS"
     : /android/.test(userAgent)
-    ? 'ANDROID'
-    : ['win32', 'win64', 'windows', 'wince'].includes(platform.toLowerCase())
-    ? 'WINDOWS'
-    : ['macintosh', 'macintel', 'macppc', 'mac68k'].includes(
+    ? "ANDROID"
+    : ["win32", "win64", "windows", "wince"].includes(platform.toLowerCase())
+    ? "WINDOWS"
+    : ["macintosh", "macintel", "macppc", "mac68k"].includes(
         platform.toLowerCase(),
       )
-    ? 'MAC'
+    ? "MAC"
     : /linux/.test(platform.toLowerCase())
-    ? 'LINUX'
-    : 'UNKNOWN';
+    ? "LINUX"
+    : "UNKNOWN";
 
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
-  const port = window.location.port ? `:${window.location.port}` : '';
+  const port = window.location.port ? `:${window.location.port}` : "";
 
   const urls = {
     register: `${protocol}//${hostname}${port}/register`,
@@ -47,22 +47,22 @@
     dashboard: `${protocol}//${hostname}${port}/channels/@me`,
   };
 
-  const isLoggedIn = window.localStorage.getItem('token') !== null;
+  const isLoggedIn = window.localStorage.getItem("token") !== null;
 
   const buttons = [
     {
-      selector: '.open-or-signup-js',
-      text: isLoggedIn ? 'Open LiventCord' : 'Sign up',
+      selector: ".open-or-signup-js",
+      text: isLoggedIn ? "Open LiventCord" : "Sign up",
       href: isLoggedIn ? urls.dashboard : urls.register,
     },
     {
-      selector: '.login-button-js',
-      text: isLoggedIn ? 'Open LiventCord' : 'Login',
+      selector: ".login-button-js",
+      text: isLoggedIn ? "Open LiventCord" : "Login",
       href: isLoggedIn ? urls.dashboard : urls.login,
     },
     {
-      selector: '.footer-open-LiventCord-button-js',
-      text: isLoggedIn ? 'Open LiventCord' : 'Download',
+      selector: ".footer-open-LiventCord-button-js",
+      text: isLoggedIn ? "Open LiventCord" : "Download",
       href: isLoggedIn
         ? urls.dashboard
         : `${protocol}//${hostname}${port}/download`,
@@ -71,34 +71,34 @@
 
   const download = platforms[devicePlatform] || {
     text: platforms,
-    href: '/download',
+    href: "/download",
   };
 
   const downloadButtons = [
-    { selector: '.download-button', text: download.text, href: download.href },
+    { selector: ".download-button", text: download.text, href: download.href },
     {
-      selector: '.menu-button-login',
+      selector: ".menu-button-login",
       hidden: download.hideLogin,
-      text: '',
-      href: '',
+      text: "",
+      href: "",
     },
     {
-      selector: '.ua-download-btn',
-      text: 'Download',
+      selector: ".ua-download-btn",
+      text: "Download",
       href: download.href,
-      track: 'banner-download',
+      track: "banner-download",
     },
     {
-      selector: '.download-other',
-      text: 'Download',
+      selector: ".download-other",
+      text: "Download",
       href: download.href,
-      track: 'other-download',
+      track: "other-download",
     },
     {
-      selector: '.button-blue-menu',
-      text: 'Download',
+      selector: ".button-blue-menu",
+      text: "Download",
       href: download.href,
-      track: 'menu-download',
+      track: "menu-download",
     },
   ];
 
@@ -115,9 +115,9 @@
       if (text) el.innerText = text;
       if (href) el.href = href;
       if (track) {
-        el.addEventListener('click', () => {
-          fbq('trackCustom', 'Download', { source: track });
-          rdt('track', 'Purchase');
+        el.addEventListener("click", () => {
+          fbq("trackCustom", "Download", { source: track });
+          rdt("track", "Purchase");
         });
       }
     });
