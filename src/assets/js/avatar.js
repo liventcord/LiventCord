@@ -24,11 +24,32 @@ import { chatContainer } from './chatbar';
 import { initialState } from './app';
 
 
+
+
+export const selfName = getId('self-name');
+export const selfDiscriminator = getId('self-discriminator');
 export let lastConfirmedProfileImg;
+export const selfProfileImage = getId('self-profile-image');
+export const selfStatus = getId('self-status');
+
+
+
 let lastConfirmedGuildImg;
 let maxAttachmentSize;
 let maxAvatarSize;
-export let selfProfileImage;
+
+const allowedAvatarTypes = [
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/png',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+  'image/svg+xml',
+];
+
+
 
 const profileCache = {};
 const guildImageCache = {};
@@ -172,17 +193,8 @@ export function refreshUserProfile(userId, userNick = null) {
 }
 
 export function validateAvatar(file) {
-  const allowedTypes = [
-    'image/jpeg',
-    'image/jpg',
-    'image/gif',
-    'image/png',
-    'image/webp',
-    'image/bmp',
-    'image/tiff',
-    'image/svg+xml',
-  ];
-  if (!allowedTypes.includes(file.type)) {
+
+  if (!allowedAvatarTypes.includes(file.type)) {
     alertUser(translations.getTranslation('avatar-upload-error-message'));
     return false;
   }
@@ -217,18 +229,16 @@ export function updateSelfProfile(
   if (!userId) return;
   const timestamp = isTimestamp ? `?ts=${new Date().getTime()}` : '';
   const selfimagepath = `/profiles/${userId}.png${timestamp}`;
-  selfProfileImage = getId('self-profile-image');
 
   updateImageSource(selfProfileImage, selfimagepath);
 
   if (isSettingsOpen && currentSettingsType === settingTypes.MyAccount) {
     const settingsSelfNameElement = getId('settings-self-name');
-    const selfNameElement = getId('self-name');
     const settingsSelfProfile = getId('settings-self-profile');
 
     if (userName) {
       settingsSelfNameElement.innerText = userName;
-      selfNameElement.innerText = userName;
+      selfName.innerText = userName;
     }
 
     updateImageSource(settingsSelfProfile, selfimagepath);
@@ -373,7 +383,6 @@ async function init() {
     const base64Media = await urlToBase64(defaultMediaImageUrl);
     setDefaultMediaImageUrl(base64Media);
 
-    const selfProfileImage = getId('self-profile-image');
     selfProfileImage.addEventListener('mouseover', function () {
       this.style.borderRadius = '0px';
     });

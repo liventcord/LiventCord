@@ -27,13 +27,30 @@ namespace LiventCord.Controllers
             _metadataService = metadataService;
         }
 
-        // Post Message (Guild or DM)
-        [HttpPost("/api/{mode}/{targetId}/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleNewMessage(
-            [FromRoute] string mode,
-            [FromRoute] [IdLengthValidation] string targetId,
-            [FromRoute] [IdLengthValidation] string channelId,
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages")]
+        public async Task<IActionResult> HandleNewGuildMessage(
+            [FromRoute] string guildId,
+            [FromRoute] string channelId,
             [FromBody] NewMessageRequest request
+        )
+        {
+            return await HandleMessage("guilds", guildId, channelId, request);
+        }
+
+        [HttpPost("/api/dms/{channelId}/messages")]
+        public async Task<IActionResult> HandleNewDmMessage(
+            [FromRoute] string channelId,
+            [FromBody] NewMessageRequest request
+        )
+        {
+            return await HandleMessage("dms", null, channelId, request);
+        }
+
+        private async Task<IActionResult> HandleMessage(
+            string mode,
+            string? guildId,
+            string channelId,
+            NewMessageRequest request
         )
         {
             if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
@@ -49,75 +66,54 @@ namespace LiventCord.Controllers
 
             if (mode == "guilds")
             {
-                if (string.IsNullOrEmpty(targetId))
+                if (string.IsNullOrWhiteSpace(guildId))
                 {
-                    return BadRequest(new { Type = "error", Message = "Guild ID is missing." });
+                    return BadRequest(
+                        new { Type = "error", Message = "Missing guildId for guild mode." }
+                    );
                 }
-
-                if (!await _permissionsController.CanSendMessages(UserId!, targetId))
+                if (!await _permissionsController.CanSendMessages(UserId!, guildId))
                 {
                     return Forbid();
                 }
+            }
 
-                await NewMessage(
-                    UserId!,
-                    targetId,
-                    channelId,
-                    request.Content,
-                    request.AttachmentUrls,
-                    request.ReplyToId,
-                    request.ReactionEmojisIds
-                );
-                return Ok(new { Type = "success", Message = "Message sent to guild." });
-            }
-            else if (mode == "dms")
-            {
-                await NewMessage(
-                    UserId!,
-                    targetId,
-                    channelId,
-                    request.Content,
-                    request.AttachmentUrls,
-                    request.ReplyToId,
-                    request.ReactionEmojisIds
-                );
-                return Ok(new { Type = "success", Message = "Message sent to DM." });
-            }
-            else
-            {
-                return BadRequest(new { Type = "error", Message = "Invalid mode." });
-            }
+            await NewMessage(
+                UserId!,
+                guildId,
+                channelId,
+                request.Content,
+                request.AttachmentUrls,
+                request.ReplyToId,
+                request.ReactionEmojisIds
+            );
+
+            return Ok(new { Type = "success", Message = $"Message sent to {mode}." });
         }
 
-        // Get Messages (Guild or DM)
-        [HttpGet("/api/{mode}/{targetId}/channels/{channelId}/messages")]
+        [HttpGet("/api/{mode:regex(guilds|dms)}/{guildId?}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetMessages(
             [FromRoute] string mode,
-            [FromRoute] [IdLengthValidation] string channelId
+            [FromRoute] string channelId,
+            [FromRoute] string? guildId = null
         )
         {
-            if (mode == "guilds")
+            if (mode == "guilds" && string.IsNullOrWhiteSpace(guildId))
             {
-                var messages = await GetMessages(channelId);
-                return Ok(new { messages });
+                return BadRequest(
+                    new { Type = "error", Message = "Missing guildId for guild mode." }
+                );
             }
-            else if (mode == "dms")
-            {
-                var messages = await GetMessages(channelId);
-                return Ok(new { messages });
-            }
-            else
-            {
-                return BadRequest(new { Type = "error", Message = "Invalid mode." });
-            }
+
+            var messages = await GetMessages(channelId, guildId);
+            return Ok(new { messages });
         }
 
-        // Edit Message (Guild or DM)
-        [HttpPut("/api/{mode}/{targetId}/channels/{channelId}/messages/edit")]
+        [HttpPut("/api/{mode:regex(guilds|dms)}/{guildId?}/channels/{channelId}/messages/edit")]
         public async Task<IActionResult> HandleEditMessage(
             [FromRoute] string mode,
-            [FromRoute] [IdLengthValidation] string targetId,
-            [FromRoute] [IdLengthValidation] string channelId,
+            [FromRoute] string targetId,
+            [FromRoute] string channelId,
             [FromBody] EditMessageRequest request
         )
         {
@@ -128,6 +124,13 @@ namespace LiventCord.Controllers
 
             if (mode == "guilds")
             {
+                if (string.IsNullOrEmpty(targetId))
+                {
+                    return BadRequest(
+                        new { Type = "error", Message = "Missing guildId for guild mode." }
+                    );
+                }
+
                 if (!await _permissionsController.CanManageChannels(UserId!, targetId))
                 {
                     return Forbid();
@@ -138,7 +141,17 @@ namespace LiventCord.Controllers
             }
             else if (mode == "dms")
             {
-                // DM-specific logic for editing message
+                if (!string.IsNullOrEmpty(targetId))
+                {
+                    return BadRequest(
+                        new
+                        {
+                            Type = "error",
+                            Message = "guildId should not be provided for DM mode.",
+                        }
+                    );
+                }
+
                 await EditMessage(channelId, request.MessageId, request.Content);
                 return Ok(new { Type = "success", Message = "Message edited in DM." });
             }
@@ -178,13 +191,16 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task<List<Message>> GetMessages(string channelId)
+        private async Task<List<Message>> GetMessages(string channelId, string? guildId = null)
         {
-            return await _context
-                .Messages.Where(m => m.ChannelId == channelId)
-                .OrderBy(m => m.Date)
-                .Take(50)
-                .ToListAsync();
+            IQueryable<Message> query = _context.Messages.Where(m => m.ChannelId == channelId);
+
+            if (!string.IsNullOrEmpty(guildId))
+            {
+                query = query.Where(m => m.Channel.GuildId == guildId);
+            }
+
+            return await query.OrderBy(m => m.Date).Take(50).ToListAsync();
         }
 
         [NonAction]

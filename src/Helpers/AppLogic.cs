@@ -20,8 +20,8 @@ namespace LiventCord.Helpers
         private readonly float? _maxAttachmentSize;
         private readonly float defaultAvatarSize = 3; //megabytes
         private readonly float defaultAttachmentSize = 30; //megabytes
-        private readonly string defaultGifWorkerUrl = "https://liventcord-gif-worker.efekantunc0.workers.dev";
-
+        private readonly string defaultGifWorkerUrl =
+            "https://liventcord-gif-worker.efekantunc0.workers.dev";
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -33,7 +33,6 @@ namespace LiventCord.Helpers
             LoginController loginController,
             PermissionsController permissionsController,
             IConfiguration configuration
-
         )
         {
             _dbContext = dbContext;
@@ -48,16 +47,28 @@ namespace LiventCord.Helpers
                 configuration["AppSettings:GifWorkerUrl"] != null
                     ? configuration["AppSettings:GifWorkerUrl"]
                     : defaultGifWorkerUrl;
-            
-            _maxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize) ? avatarSize : defaultAvatarSize;
-            _maxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var uploadSize) ? uploadSize : defaultAttachmentSize;
 
+            _maxAvatarSize = float.TryParse(
+                configuration["AppSettings:MaxAvatarSize"],
+                out var avatarSize
+            )
+                ? avatarSize
+                : defaultAvatarSize;
+            _maxAttachmentSize = float.TryParse(
+                configuration["AppSettings:MaxAttachmentSize"],
+                out var uploadSize
+            )
+                ? uploadSize
+                : defaultAttachmentSize;
         }
+
         public async Task HandleInitRequest(HttpContext context)
         {
             async Task RejectStaleSession()
             {
-                await context.Response.WriteAsJsonAsync(new { message = "User session is no longer valid. Please log in again." });
+                await context.Response.WriteAsJsonAsync(
+                    new { message = "User session is no longer valid. Please log in again." }
+                );
                 await _loginController.Logout();
             }
 
@@ -96,7 +107,7 @@ namespace LiventCord.Helpers
                     guildsJson = guilds,
                     gifWorkerUrl = _gifWorkerUrl,
                     maxAvatarSize = _maxAvatarSize,
-                    maxUploadsize = _maxAttachmentSize
+                    maxUploadsize = _maxAttachmentSize,
                 };
 
                 context.Response.ContentType = "application/json";
@@ -116,9 +127,7 @@ namespace LiventCord.Helpers
             }
         }
 
-        public async Task HandleChannelRequest(
-            HttpContext context
-        )
+        public async Task HandleChannelRequest(HttpContext context)
         {
             try
             {

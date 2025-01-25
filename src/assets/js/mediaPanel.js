@@ -18,6 +18,10 @@ const gifsBackBtn = getId('gifsBackBtn');
 const exampleTenorId = 'LIVDSRZULELA'; //Example tenor apikey from tenor docs
 
 
+export const gifBtn = getId("gifbtn");
+export const gifBtnTop = getId("gifbtntop");
+export const emojiBtn = getId("emojibtn");
+
 getId("image-preview-container").addEventListener("click",hideImagePreviewRequest);
 
 
@@ -415,15 +419,15 @@ export function initialiseMedia() {
     toggleEmojis(false);
     e.stopPropagation();
   });
-  getId('gifbtn').addEventListener('click', (e) => {
+  gifBtn.addEventListener('click', (e) => {
     toggleGifs(false);
     e.stopPropagation();
   });
-  getId('emojibtn').addEventListener('click', (e) => {
+  emojiBtn.addEventListener('click', (e) => {
     toggleEmojis(false);
     e.stopPropagation();
   });
-  getId('gifbtntop').addEventListener('click', (e) => {
+  gifBtnTop.addEventListener('click', (e) => {
     toggleGifs(true);
     e.stopPropagation();
   });

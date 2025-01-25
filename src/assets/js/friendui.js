@@ -15,6 +15,13 @@ const highlightedColor = '#43444b';
 const defaultColor = '#313338';
 const grayColor = '#c2c2c2';
 
+let currentSelectedStatus = null;
+const dmContainerParent = getId('dm-container-parent');
+export const friendContainerItem = getId('friend-container-item');
+export let friendsContainer = getId('friends-container');
+export let isAddFriendsOpen = false;
+
+
 export const ButtonTypes = {
   SendMsgBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>`,
   TickBtn: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z" class=""></path></svg>`,
@@ -28,17 +35,14 @@ let buttonElements = {
   pending: getId('pending-button'),
   blocked: getId('blocked-button'),
 };
-
 let ButtonsList = Object.values(buttonElements);
-let currentSelectedStatus = null;
 
 initializeButtonsList(ButtonsList);
 
-export let friendsContainer = getId('friends-container');
-export let isAddFriendsOpen = false;
+
 
 export function activateDmContainer(friendId) {
-  getId('friend-container-item').classList.remove('dm-selected');
+  friendContainerItem.classList.remove('dm-selected');
   if (!existingFriendsDmContainers || existingFriendsDmContainers.size < 1) {
     return;
   }
@@ -147,7 +151,6 @@ export function appendToDmList(user) {
   }
 
   const dmUser = new DmUser(user);
-  const dmContainerParent = getId('dm-container-parent');
 
   dmContainerParent.appendChild(dmUser.dmContainer);
   existingFriendsDmContainers.add(dmUser.dmContainer);
@@ -176,7 +179,6 @@ export function updateDmsList(friends) {
 
   Object.entries(friends).forEach(([userId, user]) => {
     const dmUser = new DmUser({ userId, ...user });
-    const dmContainerParent = getId('dm-container-parent');
 
     dmContainerParent.appendChild(dmUser.dmContainer);
     existingFriendsDmContainers.add(dmUser.dmContainer);
@@ -186,7 +188,6 @@ export function updateDmsList(friends) {
 }
 
 export function addToDmList(userData) {
-  const dmContainerParent = getId('dm-container-parent');
   const existingDmContainer = dmContainerParent.querySelector(
     `#${CSS.escape(userData.userId)}`,
   );
@@ -391,7 +392,7 @@ export function updateUsersStatus(friend) {
   activityCard.appendChild(contentDiv);
   activityCard.appendChild(iconImg);
 
-  getId('user-list').appendChild(activityCard);
+  userList.appendChild(activityCard);
 }
 export function openAddFriend() {
   resetButtons();

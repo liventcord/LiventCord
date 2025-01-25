@@ -16,6 +16,9 @@ import {
 
 import DOMPurify from 'dompurify';
 import { defaultMediaImageUrl,defaultProfileImageUrl } from './utils';
+
+
+
 const maxWidth = 512;
 const maxHeight = 384;
 
@@ -33,12 +36,18 @@ export function createTenorElement(msgContentElement, inputText, url) {
   } catch (error) {
     console.error('Invalid URL:', url, error);
   }
-  let imgElement = createEl('img');
-  imgElement.src = defaultMediaImageUrl;
-  imgElement.style.cursor = 'pointer';
-  imgElement.style.maxWidth = `${maxTenorWidth}px`;
-  imgElement.style.maxHeight = `${maxTenorHeight}px`;
-  imgElement.setAttribute('loading', 'lazy');
+
+  const imgElement = createEl('img', {
+    src: defaultMediaImageUrl,
+    style: {
+      cursor: 'pointer',
+      maxWidth: `${maxTenorWidth}px`,
+      maxHeight: `${maxTenorHeight}px`,
+    },
+    loading: 'lazy',
+    className: 'tenor-image',
+  });
+
   imgElement.setAttribute('data-src', tenorURL);
 
   imgElement.onload = function () {
@@ -61,13 +70,17 @@ export function createTenorElement(msgContentElement, inputText, url) {
   return imgElement;
 }
 
+
 export function createImageElement(msgContentElement, inputText, url_src) {
-  const imgElement = createEl('img', { class: 'imageElement' });
-  imgElement.src = defaultMediaImageUrl;
-  imgElement.style.maxWidth = `${maxWidth}px`;
-  imgElement.style.maxHeight = `${maxHeight}px`;
-  imgElement.setAttribute('data-src', url_src);
-  imgElement.setAttribute('loading', 'lazy');
+  const imgElement = createEl('img', {
+    className: 'imageElement',
+    src: defaultMediaImageUrl,
+    style: {
+      maxWidth: `${maxWidth}px`,
+      maxHeight: `${maxHeight}px`,
+    },
+  });
+  
 
   imgElement.onload = function () {
     const actualSrc = DOMPurify.sanitize(imgElement.getAttribute('data-src'));
@@ -90,9 +103,7 @@ export function createImageElement(msgContentElement, inputText, url_src) {
 }
 
 export function createAudioElement(audioURL) {
-  const audioElement = createEl('audio');
-  audioElement.src = DOMPurify.sanitize(audioURL);
-  audioElement.controls = true;
+  const audioElement = createEl('audio', {src :  DOMPurify.sanitize(audioURL),controls : true });
   return audioElement;
 }
 export async function createJsonElement(url) {
@@ -107,12 +118,9 @@ export async function createJsonElement(url) {
       .split('\n')
       .slice(0, 15)
       .join('\n');
-    const jsonContainer = createEl('div');
-    jsonContainer.classList.add('jsonContainer');
-    const jsonElement = createEl('pre');
-    jsonElement.textContent = truncatedJsonLines;
-    jsonElement.style.userSelect = 'text';
-    jsonElement.style.whiteSpace = 'pre-wrap';
+    const jsonContainer = createEl('div', {className : "json-container"});
+    const jsonElement = createEl('pre', {className : "json-element", textContent : truncatedJsonLines});
+
     jsonContainer.appendChild(jsonElement);
     jsonContainer.addEventListener('click', function () {
       displayJsonPreview(beautifiedData);
@@ -126,18 +134,22 @@ export async function createJsonElement(url) {
 
 export function createYouTubeElement(url) {
   const youtubeURL = getYouTubeEmbedURL(url);
-  const iframeElement = createEl('iframe');
-  iframeElement.src = DOMPurify.sanitize(youtubeURL);
-  iframeElement.frameborder = '0';
-  iframeElement.allow =
-    'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-  iframeElement.allowFullscreen = true;
+
+  const iframeElement = createEl('iframe', {
+    src: DOMPurify.sanitize(youtubeURL),
+    frameborder: '0',
+    allow:
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+    allowFullscreen: true,
+    className: 'youtube-element',
+  });
+
   iframeElement.setAttribute('allowfullscreen', 'true');
   iframeElement.setAttribute('mozallowfullscreen', 'true');
   iframeElement.setAttribute('msallowfullscreen', 'true');
   iframeElement.setAttribute('oallowfullscreen', 'true');
   iframeElement.setAttribute('webkitallowfullscreen', 'true');
-  iframeElement.className = 'youtube-element';
+
   return iframeElement;
 }
 
@@ -147,7 +159,7 @@ export function createVideoElement(url) {
   }
   let sanitizedUrl;
   try {
-    sanitizedUrl = DOMPurify.sanitize(url);  // Sanitize URL
+    sanitizedUrl = DOMPurify.sanitize(url);
   } catch (e) {
     console.error("Error sanitizing URL", e);
     throw new Error("Failed to sanitize URL");
@@ -281,10 +293,10 @@ export function processMediaLink(
     //}
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      mediaElement = document.createElement('img');
-      mediaElement.src = DOMPurify.sanitize(link);
-      mediaElement.style.width = '100%';
-      mediaElement.style.height = 'auto';
+      mediaElement = createEl('img', { 
+        className : "chat-image",
+        src :  DOMPurify.sanitize(link) 
+      });
       mediaElement.dataset.dummy = link;
       mediaElement.addEventListener('click', function () {
         displayImagePreview(mediaElement.src);

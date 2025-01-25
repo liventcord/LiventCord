@@ -24,10 +24,10 @@ import { currentVoiceChannelId } from './channels';
 import { resetImageInput } from './avatar';
 
 
-
-
 export let currentGuildId;
-
+export const guildName = getId('guild-name');
+export const guildContainer = getId('guild-container');
+const guildsList = getId('guilds-list');
 
 
 
@@ -288,10 +288,9 @@ export function updateGuild(uploadedGuildId) {
 
 
 export function selectGuildList(guildId) {
-  const guildList = getId('guilds-list');
-  if (!guildList) return;
+  if (!guildsList) return;
 
-  const foundGuilds = guildList.querySelectorAll('img');
+  const foundGuilds = guildsList.querySelectorAll('img');
 
   foundGuilds.forEach((guild) => {
     if (guild.id === guildId) {
@@ -305,7 +304,6 @@ export function selectGuildList(guildId) {
 
 
 export function updateGuilds(guildsJson) {
-  const guildsList = document.getElementById('guilds-list');
   if (Array.isArray(guildsJson)) {
     guildsList.innerHTML = '';
 
@@ -370,7 +368,6 @@ const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
 
 
 export function appendToGuildList(guild) {
-  const guildsList = getId('guilds-list');
   if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
 
   const listItem = createGuildListItem(guild.guildId, guild.imgSrc, guild.rootChannel, guild.guildName);
@@ -416,7 +413,6 @@ export function setGuildImage(guildId, imageElement, isUploaded) {
 }
 
 export function doesGuildExistInBar(guildId) {
-  const guildsList = getId('guilds-list');
   return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
 }
 

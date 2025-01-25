@@ -64,14 +64,11 @@ public static class ConfigHandler
         var databaseType = builder.Configuration["AppSettings:DatabaseType"];
         var connectionString = builder.Configuration["RemoteConnection"];
         var sqlitePath = builder.Configuration["SqlitePath"];
-        if (
-            databaseType?.ToLower() != "sqlite" && !string.IsNullOrEmpty(connectionString)
-        )
+        if (databaseType?.ToLower() != "sqlite" && !string.IsNullOrEmpty(connectionString))
         {
             throw new ArgumentNullException(
                 "Connection string is missing in the configuration and non-SQLite database type is selected."
             );
-            
         }
 
         Console.WriteLine(

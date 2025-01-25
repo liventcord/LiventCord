@@ -1,15 +1,11 @@
-import { deleteLocalMessage, getLastSecondMessageDate,getOldMessages } from './message';
+import { getOldMessages } from './message';
 import {
   currentLastDate,
-  lastMessageDate,
-  setLastMessageDate,
   handleReplies,
   messageDates,
-  handleHistoryResponse,bottomestChatDateStr,setBottomestChatDateStr
-} from './chat';
+  handleHistoryResponse} from './chat';
 import {
   guildCache,
-  messages_raw_cache,
   replyCache,
   cacheInterface,
 } from './cache';
@@ -17,7 +13,7 @@ import {
   updateChannels} from './channels';
 import { getId } from './utils';
 import { updateMemberList } from './userList';
-import { loadGuild, removeFromGuildList, updateGuild,currentGuildId } from './guild';
+import { loadGuild, removeFromGuildList, updateGuild,currentGuildId, guildName } from './guild';
 import { closeSettings } from './settingsui';
 import { loadDmHome } from './app';
 import { alertUser } from './ui';
@@ -26,7 +22,7 @@ import {
   updateFriendsList,
   handleFriendEventResponse,
 } from './friends';
-import { refreshUserProfile } from './avatar';
+import { refreshUserProfile, selfName } from './avatar';
 import { apiClient, EventType } from './api.js';
 import { permissionManager } from './guildPermissions.js';
 import { translations } from './translations.js';
@@ -78,7 +74,7 @@ apiClient.on(EventType.GET_INVITES, (data) => {
 
 apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
   if (data.guildId === currentGuildId) {
-    getId('guild-name').innerText = guildCache.currentGuildName;
+    guildName.innerText = guildCache.currentGuildName;
   }
 });
 apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
@@ -160,7 +156,6 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
   if (userId === currentUserId) {
     const settingsNameText = getId('settings-self-name');
     const setInfoNick = getId('set-info-nick');
-    const selfName = getId('self-name');
 
     selfName.innerText = newNickname;
     if (setInfoNick) {

@@ -461,3 +461,13 @@
   border-radius: 5px;
   cursor: pointer;
 }
+
+.copied-pop {
+  position: fixed;
+  z-index: 15;
+  background: black;
+  color: white;
+  padding: 5px;
+  border-radius: 5px;
+  pointer-events: none;
+}

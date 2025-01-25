@@ -791,10 +791,10 @@
 }
 #newMessagesBar {
   cursor: pointer;
-  z-index: 50;
+  z-index: 2;
   height: 30px;
   margin-left: 12px;
-  width: calc(100vw - 585px);
+  width: calc(100vw - 612px);
   border-radius: 0 0 7px 7px;
   display: none;
   align-items: center;
@@ -803,6 +803,9 @@
   position: fixed;
   overflow: hidden;
   padding: 0 12px;
+}
+.new-messages-bar-user-list-open {
+  width: calc(100vw - 368px) !important;
 }
 #newMessagesText {
   white-space: nowrap;
@@ -1030,6 +1033,10 @@ input[type='file'] {
   border-radius: 3px;
   cursor: pointer;
 }
+.chat-image {
+  width : '100%';
+  height : 'auto';
+}
 #change-nick-button {
   top: 30%;
   right: 40%;
@@ -1065,12 +1072,12 @@ textarea::-webkit-scrollbar-thumb {
 textarea::-webkit-scrollbar-track {
   background-color: #2b2d31;
 }
-.jsonContainer {
+.json-container {
   background-color: rgb(34, 33, 33);
   border-radius: 5px;
   margin-bottom: 10px;
 }
-.jsonContainer .jsonMessage {
+.json-container .jsonMessage {
   margin-left: 15px;
 }
 #message-content-element {
@@ -1514,7 +1521,4 @@ textarea::-webkit-scrollbar-track {
     height: auto;
     padding-block: 60px;
   }
-}
-#user-list ~ #target-div {
-  background-color: yellow;
 }

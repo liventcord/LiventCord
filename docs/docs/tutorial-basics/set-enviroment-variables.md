@@ -41,22 +41,22 @@ sidebar_position: 1
       - **Firebird**
       - **SqlServer**
       - **SQLite**
-    Defaults to "sqlite" if not provided.
+    Defaults to "sqlite".
 
   - **SqlitePath**
-    File path where SQLite will store data
+    File path where SQLite will store data.
     Defaults to Data/liventcord.db
   
   - **GifWorkerUrl**: 
     URL of the Cloudflare Worker for querying Tenor GIFs.
-    Defaults to "liventcord-gif-worker.efekantunc0.workers.dev"
+    Defaults to "liventcord-gif-worker.efekantunc0.workers.dev".
 
   - **MaxAvatarSize**:
     Maximum upload size(in MB) for avatar on guilds and profiles
-    Defaults to 3
+    Defaults to 3.
   
   - **MaxAttachmentsSize**:
     Maximum attachment size (in MB) allowed for message uploads.
-    Defaults to 30
+    Defaults to 30.
 
   
