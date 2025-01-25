@@ -3,16 +3,19 @@
   "version": "1.0.0",
   "main": "vite.config.js",
   "scripts": {
-    "dev": "vite && npx eslint assets/js/ --fix",
+    "dev": "concurrently \"npm run watch:format\" \"vite\"",
     "lint": "npx eslint assets/js/ --fix",
     "build": "vite build && npm run copy-translations",
     "copy-translations": "cp -r assets/translations wwwroot/translations",
     "serve": "vite preview",
-    "format": "npx prettier --write ."
+    "format": "npx prettier --write .",
+    "watch:format": "chokidar 'assets/**/*.{js,ts,vue,css,scss}' -c 'npm run format'"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "babel-plugin-import-resolver": "^0.1.2",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^9.1.2",
     "dompurify": "^3.2.3",
     "eslint": "^9.18.0",
     "eslint-config-eslint": "^11.0.0",
