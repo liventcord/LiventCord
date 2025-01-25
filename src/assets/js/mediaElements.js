@@ -14,6 +14,7 @@ import {
   getYouTubeEmbedURL
 } from './utils';
 
+import DOMPurify from 'dompurify';
 import { defaultMediaImageUrl,defaultProfileImageUrl } from './utils';
 const maxWidth = 512;
 const maxHeight = 384;
@@ -23,15 +24,15 @@ const maxTenorHeight = 384 * 1.5;
 
 export function createTenorElement(msgContentElement, inputText, url) {
   let tenorURL = '';
-  if (url.includes('media1.tenor.com/m/') || url.includes('c.tenor.com/')) {
-    tenorURL = url;
-  } else if (
-    url.startsWith('tenor.com') ||
-    url.startsWith('https://tenor.com')
-  ) {
-    tenorURL = url.endsWith('.gif') ? url : `${url}.gif`;
+  try {
+    const parsedUrl = new URL(url);
+    const allowedHosts = ['media1.tenor.com', 'c.tenor.com', 'tenor.com'];
+    if (allowedHosts.includes(parsedUrl.host)) {
+      tenorURL = parsedUrl.host === 'tenor.com' && !url.endsWith('.gif') ? `${url}.gif` : url;
+    }
+  } catch (error) {
+    console.error('Invalid URL:', url, error);
   }
-
   let imgElement = createEl('img');
   imgElement.src = defaultMediaImageUrl;
   imgElement.style.cursor = 'pointer';
@@ -43,7 +44,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
   imgElement.onload = function () {
     const actualSrc = imgElement.getAttribute('data-src');
     if (actualSrc) {
-      imgElement.src = actualSrc;
+      imgElement.src = DOMPurify.sanitize(actualSrc);
     }
   };
 
@@ -69,7 +70,7 @@ export function createImageElement(msgContentElement, inputText, url_src) {
   imgElement.setAttribute('loading', 'lazy');
 
   imgElement.onload = function () {
-    const actualSrc = imgElement.getAttribute('data-src');
+    const actualSrc = DOMPurify.sanitize(imgElement.getAttribute('data-src'));
     if (actualSrc && imgElement.src === defaultMediaImageUrl) {
       imgElement.src = actualSrc;
     }
@@ -90,7 +91,7 @@ export function createImageElement(msgContentElement, inputText, url_src) {
 
 export function createAudioElement(audioURL) {
   const audioElement = createEl('audio');
-  audioElement.src = audioURL;
+  audioElement.src = DOMPurify.sanitize(audioURL);
   audioElement.controls = true;
   return audioElement;
 }
@@ -126,7 +127,7 @@ export async function createJsonElement(url) {
 export function createYouTubeElement(url) {
   const youtubeURL = getYouTubeEmbedURL(url);
   const iframeElement = createEl('iframe');
-  iframeElement.src = youtubeURL;
+  iframeElement.src = DOMPurify.sanitize(youtubeURL);
   iframeElement.frameborder = '0';
   iframeElement.allow =
     'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
@@ -141,11 +142,23 @@ export function createYouTubeElement(url) {
 }
 
 export function createVideoElement(url) {
+  if (!isVideoUrl(url)) {
+    throw new Error("Invalid video URL");
+  }
+  let sanitizedUrl;
+  try {
+    sanitizedUrl = DOMPurify.sanitize(url);  // Sanitize URL
+  } catch (e) {
+    console.error("Error sanitizing URL", e);
+    throw new Error("Failed to sanitize URL");
+  }
+
   const videoElement = createEl('video');
-  videoElement.src = url;
+  videoElement.src = sanitizedUrl;
   videoElement.width = '560';
   videoElement.height = '315';
   videoElement.controls = true;
+  
   return videoElement;
 }
 export async function createMediaElement(
@@ -269,7 +282,7 @@ export function processMediaLink(
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
       mediaElement = document.createElement('img');
-      mediaElement.src = link;
+      mediaElement.src = DOMPurify.sanitize(link);
       mediaElement.style.width = '100%';
       mediaElement.style.height = 'auto';
       mediaElement.dataset.dummy = link;

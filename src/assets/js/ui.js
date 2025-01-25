@@ -319,18 +319,21 @@ export function beautifyJson(jsonData) {
   }
 }
 
+import DOMPurify from 'dompurify';
+
 export function displayImagePreview(sourceimage) {
   enableElement('image-preview-container');
   let previewImage = getId('preview-image');
   previewImage.style.animation = 'preview-image-animation 0.2s forwards';
-  previewImage.src = sourceimage;
+  const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
+  previewImage.src = sanitizedSourceImage;
   const previewBtn = getId('preview-image-button');
-  if (!sourceimage.startsWith('data:')) {
-    previewBtn.href = sourceimage;
-    previewBtn.target = sourceimage;
+  if (!sanitizedSourceImage.startsWith('data:')) {
+    previewBtn.href = sanitizedSourceImage;
+    previewBtn.target = sanitizedSourceImage;
   } else {
-    previewBtn.href = sourceimage;
-    previewBtn.target = sourceimage;
+    previewBtn.href = sanitizedSourceImage;
+    previewBtn.target = sanitizedSourceImage;
   }
 }
 

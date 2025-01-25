@@ -478,7 +478,7 @@ export function applyCustomStyles(html) {
     },
   );
 
-  return styledHTML.replace(/&lt;br&gt;/g, '&lt;br&gt;');
+  return styledHTML.replace(/&lt;br&gt;/g, '<br>');
 }
 
 export function getBase64Image(imgElement) {
