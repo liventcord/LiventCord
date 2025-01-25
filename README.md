@@ -26,6 +26,12 @@ npm run dev
 ```
 ---
 
+## Website
+https://liventcord.github.io
+
+## Docs
+https://liventcord.github.io/LiventCord
+
 ## Docker
 ### Docker Compose
 Run with Docker Compose
