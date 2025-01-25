@@ -1,9 +1,8 @@
-import { getId } from './utils';
-import { updateSelfProfile } from './avatar';
+import { selfDiscriminator, selfName, selfStatus, updateSelfProfile } from './avatar';
 import { initialState } from './app';
 import { cacheInterface } from './cache';
 import { currentGuildId } from './guild';
-
+import { createEl } from './utils';
 
 
 export let currentUserId;
@@ -11,7 +10,6 @@ export let currentUserId;
 export let currentDiscriminator = null;
 export let currentUserNick;
 export let userNames = {};
-
 export const deletedUser = 'Deleted User';
 // eslint-disable-next-line no-unused-vars
 let lastTopSenderId = null;
@@ -37,10 +35,10 @@ export function initializeProfile() {
   setCurrentUserId(initialState.user.id);
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
-  getId('self-name').textContent = currentUserNick;
-  getId('self-discriminator').textContent =
+  selfName.textContent = currentUserNick;
+  selfDiscriminator.textContent =
     '#' + initialState.user.discriminator;
-  getId('self-status').textContent = initialState.user.status;
+  selfStatus.textContent = initialState.user.status;
   updateSelfProfile(currentUserId);
 }
 
@@ -51,18 +49,13 @@ export function getSelfFullDisplay() {
 export function copySelfName() {
   if (!currentUserNick | !currentDiscriminator) return;
   navigator.clipboard.writeText(`${currentUserNick}#${currentDiscriminator}`);
-  const copiedTextBox = document.createElement('div');
-  copiedTextBox.textContent = 'Copied';
-  copiedTextBox.style.position = 'fixed';
-  copiedTextBox.style.zIndex = 15;
+  const copiedTextBox = createEl("div", {
+    textContent: 'Copied',
+    className : "copied-pop",
+  })
+  document.body.appendChild(copiedTextBox);
   copiedTextBox.style.left = `${event.clientX}px`;
   copiedTextBox.style.top = `${event.clientY - 30}px`;
-  copiedTextBox.style.background = 'black';
-  copiedTextBox.style.color = 'white';
-  copiedTextBox.style.padding = '5px';
-  copiedTextBox.style.borderRadius = '5px';
-  copiedTextBox.style.pointerEvents = 'none';
-  document.body.appendChild(copiedTextBox);
   setTimeout(() => copiedTextBox.remove(), 2500);
 }
 

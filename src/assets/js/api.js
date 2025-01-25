@@ -102,8 +102,10 @@ const EventUrlMap = {
   [EventType.DELETE_CHANNEL]: "/guilds/{guildId}/channels/{channelId}",
   [EventType.GET_MEMBERS]: "/guilds/{guildId}/members",
   [EventType.GET_INVITES]: "/guilds/{guildId}/invites",
+
   [EventType.GET_HISTORY_DM]: "/guilds/{guildId}/channels/{channelId}/messages",
   [EventType.GET_HISTORY_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
+  
   [EventType.GET_SCROLL_HISTORY]: "/guilds/{guildId}/channels/{channelId}/messages",
   [EventType.GET_BULK_REPLY]: "/guilds/{guildId}/channels/{channelId}/messages/reply",
   [EventType.GET_MESSAGE_DATE]: "/guilds/{guildId}/channels/{channelId}/messages/date",
@@ -122,7 +124,7 @@ const EventUrlMap = {
   [EventType.ADD_DM]: "/dm/{friendId}",
   
   [EventType.SEND_MESSAGE_GUILD]: "/guilds/{guildId}/channels/{channelId}/messages",
-  [EventType.SEND_MESSAGE_DM]: "/dm/{targetId}/channels/{channelId}/messages",
+  [EventType.SEND_MESSAGE_DM]: "/dms/{Id}/channels/{channelId}/messages",
   [EventType.DELETE_MESSAGE_DM] : "/guilds/{guildId}/channels/{channelId}/messages",
   [EventType.DELETE_MESSAGE_GUILD] : "/guilds/{guildId}/channels/{channelId}/messages",
   
@@ -194,7 +196,6 @@ class ApiClient {
     }
     return method;
   }
-
   getUrlForEvent(event, data = {}) {
     const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
@@ -205,20 +206,35 @@ class ApiClient {
   
     let url = urlTemplate;
     let missingKeys = [];
+    let requiredKeys = [];
+  
+    // Extract the placeholders required by the URL template
+    const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) => match.replace(/[{}]/g, ""));
+  
+    // Populate the requiredKeys list
+    requiredKeys = allPlaceholders;
+  
+    // Replace placeholders with actual values from data
     Object.keys(data).forEach((key) => {
       url = url.replace(`{${key}}`, data[key]);
     });
   
-    url.match(/{(.*?)}/g)?.forEach((match) => {
-      missingKeys.push(match.replace(/[{}]/g, ""));
+    // Check for any remaining placeholders that weren't replaced
+    allPlaceholders.forEach((placeholder) => {
+      if (!data.hasOwnProperty(placeholder)) {
+        missingKeys.push(placeholder);  // Add missing keys to the list
+      }
     });
   
     if (missingKeys.length > 0) {
-      throw new Error(`Missing data for URL placeholders: ${missingKeys.join(", ")}`);
+      alertUser(
+        `Missing data for URL placeholders: ${missingKeys.join(", ")}. Template ${event} requires: ${requiredKeys.join(", ")}.`
+      );
     }
   
     return { method: this.getHttpMethod(event), url: basePath + url };
   }
+  
   
   
   async handleError(response, event) {

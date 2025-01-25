@@ -1,5 +1,5 @@
 import { getMessageDate, getOldMessages, replaceCustomEmojis } from './message';
-import { displayStartMessage, showReplyMenu } from './chatbar';
+import { chatInput, displayStartMessage, newMessagesBar, showReplyMenu } from './chatbar';
 import {
   messages_raw_cache,
   cacheInterface,
@@ -19,12 +19,14 @@ import { setProfilePic } from './avatar';
 import { chatContainer, chatContent } from './chatbar';
 import { currentGuildId } from './guild';
 import { isChangingPage,createReplyBar } from './app';
-import { loadingScreen,setActiveIcon } from './ui';
+import { alertUser, loadingScreen,setActiveIcon } from './ui';
 import { Message } from './message';
 import { translations } from './translations';
 import { appendToMessageContextList } from './contextMenuActions';
 import { friendCache } from './friends';
 import { playNotification } from './audio';
+import { userList } from './userList';
+import { emojiBtn, gifBtn } from './mediaPanel';
 
 
 export let bottomestChatDateStr;
@@ -780,14 +782,16 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
 }
 
 export function updateChatWidth() {
-  if (getId('user-list').style.display === 'none') {
-    getId('user-input').classList.add('user-list-hidden');
-    getId('gifbtn').classList.add('gifbtn-user-list-open');
-    getId('emojibtn').classList.add('emojibtn-user-list-open');
+  if (userList.style.display === 'none') {
+    chatInput.classList.add('user-list-hidden');
+    gifBtn.classList.add('gifbtn-user-list-open');
+    emojiBtn.classList.add('emojibtn-user-list-open');
+    newMessagesBar.classList.add("new-messages-bar-user-list-open");
   } else {
-    getId('user-input').classList.remove('user-list-hidden');
-    getId('gifbtn').classList.remove('gifbtn-user-list-open');
-    getId('emojibtn').classList.remove('emojibtn-user-list-open');
+    chatInput.classList.remove('user-list-hidden');
+    gifBtn.classList.remove('gifbtn-user-list-open');
+    emojiBtn.classList.remove('emojibtn-user-list-open');
+    newMessagesBar.classList.remove("new-messages-bar-user-list-open");
   }
 }
 

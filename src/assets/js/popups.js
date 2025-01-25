@@ -878,3 +878,4 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
     .querySelector('.cr-slider-wrap')
     .querySelector('.cr-slider').style.transform = 'scale(1.5);';
 }
+

@@ -43,7 +43,7 @@
     "tb-showprofile": "Kullanıcı Profilini Göster",
     "today": "Bugün saat",
     "yesterday": "Dün saat",
-    "delete_guild_text_2": "This action cannot be undone",
+    "delete_guild_text_2": "Bu işlem geri alınamaz",
     "ok" : "Tamam",
     "cancel" : "İptal",
     "accept": "Kabul et",
@@ -82,5 +82,6 @@
     "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
     "upload-error-message": "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
     "microphone-failed" : "MİKROFON ERİŞİMİ ENGELLENDİ",
-    "microphone-failed-2" : "Mikrofon izni reddedildi."
+    "microphone-failed-2" : "Mikrofon izni reddedildi.",
+    "default-microphone" : "Varsayılan Mikrofon"
 }

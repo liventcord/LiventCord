@@ -1,4 +1,4 @@
-import { setUserListLine, userList } from './userList';
+import { setUserListLine, userLine, userList } from './userList';
 import { loadDmHome } from './app';
 import { closePopUp, createPopUp, createChannelsPop } from './popups';
 import {
@@ -97,9 +97,8 @@ export function handleResize() {
 
   if (window.innerWidth < 1200) {
     if (isOnMe) {
-      disableElement('user-list');
-      const userLine = document.querySelector('.horizontal-line');
-      userLine.style.display = 'none';
+      disableElement(userList);
+      disableElement(userLine);
     } else {
       setUserListLine();
     }
@@ -289,7 +288,7 @@ export function clickMainLogo(logo) {
 
 
 export const preventDrag = (elementId) => {
-  const element = document.getElementById(elementId);
+  const element = getId(elementId);
   if (element) {
     element.addEventListener('dragstart', function (event) {
       event.preventDefault();
@@ -416,13 +415,13 @@ function setDynamicAnimations() {
       const distanceX = (mouseX - centerX) / centerX; 
       const distanceY = (mouseY - centerY) / centerY; 
 
-      const shakeIntensity = Math.max(Math.abs(distanceX), Math.abs(distanceY)) * 10; 
+      const shakeIntensity = Math.max(Math.abs(distanceX), Math.abs(distanceY)); 
 
       element.style.transform = `rotate(${shakeIntensity * (distanceX < 0 ? -1 : 1)}deg) translate(${distanceX * 3}px, ${distanceY * 3}px)`; 
     });
 
     element.addEventListener('mouseleave', function() {
-      element.style.transform = 'rotate(0deg) translate(0, 0)'; // Reset the transform when mouse leaves
+      element.style.transform = 'rotate(0deg) translate(0, 0)'; 
     });
   });
 }

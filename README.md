@@ -21,6 +21,7 @@ npm install
 dotnet run
 ```
 ### Run Vite for Development (SPA)
+**Note**: For using vite, you should login at dotnet server first.
 ```bash
 npm run dev
 ```

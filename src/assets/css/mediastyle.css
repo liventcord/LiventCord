@@ -362,3 +362,8 @@
     transform: rotate(0deg) scale(0.7);
   }
 }
+
+.json-element {
+  user-select :'text';
+  white-space : 'pre-wrap';
+}

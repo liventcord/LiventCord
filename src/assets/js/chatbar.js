@@ -15,7 +15,7 @@ import {
   setIsLastMessageStart,
 } from './chat';
 import { sendMessage } from './message';
-import { isDomLoaded } from './app';
+import { isDomLoaded, readCurrentMessages } from './app';
 import { toggleManager } from './settings';
 import { popKeyboardConfetti } from './extras';
 import {
@@ -25,27 +25,47 @@ import {
   createRandomId,
   createNowDate
 } from './utils';
-import { displayImagePreview } from './ui';
+import { alertUser, displayImagePreview } from './ui';
 import { isOnDm } from './router';
 import { setProfilePic } from './avatar';
 import { cacheInterface, guildCache } from './cache';
 import { currentGuildId } from './guild';
 import { translations } from './translations';
 import { currentUserId, getUserNick ,getUserIdFromNick} from './user';
+import { userMentionDropdown } from './search';
 
 
 
 export let fileInput;
 export let currentReplyingTo = '';
-export let chatInput = getId('user-input');
-
 export let fileImagePreview;
-export let chatContainer = getId('chat-container');
-export let chatContent = getId('chat-content');
-let replyInfo;
-import { userMentionDropdown } from './search';
+
+export const chatInput = getId('user-input');
+export const chatContainer = getId('chat-container');
+export const chatContent = getId('chat-content');
+
+export const newMessagesBar = getId("newMessagesBar");
+const newMessagesText = getId("newMessagesText");
+const replyInfo = getId('reply-info');
 
 
+
+function getReadText() {
+  const currentDate = new Date();
+  const lastMessagesDate = translations.formatDate(currentDate);
+  const lastMessageTime = translations.formatTime(currentDate);
+  const messagesCount = 5;
+  return translations.getReadText(lastMessagesDate, lastMessageTime, messagesCount);
+}
+
+export function initialiseReadUi() {
+  if(newMessagesBar) {
+    newMessagesBar.addEventListener("click",readCurrentMessages);
+  }
+  if(newMessagesText) {
+    newMessagesText.textContent = getReadText();
+  }
+}
 export function initialiseChatInput() {
   chatInput.addEventListener('input', adjustHeight);
   chatInput.addEventListener('keydown', handleUserKeydown);
@@ -304,7 +324,7 @@ export function updateFileImageBorder() {
 }
 
 export function initializeChatComponents() {
-  replyInfo = getId('reply-info');
+
   replyCloseButton = getId('reply-close-button');
   fileImagePreview = getId('image-preview');
 

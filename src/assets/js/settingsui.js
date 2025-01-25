@@ -1,4 +1,4 @@
-import { askUser,Overview,logOutPrompt, openGuildSettingsDd } from './ui';
+import { askUser,Overview,logOutPrompt, openGuildSettingsDd, toggleEmail } from './ui';
 import {
   setupToggle,
   settingTypes,
@@ -9,13 +9,14 @@ import {
   currentPopUp,
   isUnsaved,
   setUnsaved,
+  onEditNick,
   
 } from './settings';
 import { initialState } from './app';
 import { updateSelfProfile } from './avatar';
 import { apiClient, EventType } from './api';
 import { translations } from './translations';
-import { getId, createEl,getAverageRGB } from './utils';
+import { getId, createEl,getAverageRGB, disableElement, enableElement } from './utils';
 import { currentUserNick, currentUserId } from './user';
 import { guildCache } from './cache';
 import { permissionManager } from './guildPermissions';
@@ -149,10 +150,10 @@ function getAccountSettingsHtml() {
                 <div id="set-info-title-nick">${translations.getSettingsTranslation('Username')}</div>
                 <div id="set-info-nick">${currentUserNick}</div>
                 <div id="set-info-title-email">${translations.getSettingsTranslation('Email')}</div>
-                <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password" onclick="toggleEmail()"> </i>
+                <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password"> </i>
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
             </div>
-            <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" onkeydown="onEditNick()" maxlength="32">
+            <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" maxlength="32">
             <img id="settings-self-profile"style="user-select: none;">
             <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
@@ -302,7 +303,7 @@ export function selectSettingCategory(settingType) {
   settingsContainer.innerHTML = settingConfig.html;
 
   function initializeLanguageDropdown() {
-    const languageDropdown = document.getElementById('language-dropdown');
+    const languageDropdown = getId('language-dropdown');
     if (languageDropdown) {
       languageDropdown.value = translations.currentLanguage;
       languageDropdown.addEventListener('change', (event) => {
@@ -341,6 +342,15 @@ export function selectSettingCategory(settingType) {
   if(settingsSelfProfile) {
     settingsSelfProfile.addEventListener("click",triggerFileInput);
   }
+
+  const newNickInput = getId("new-nickname-input") 
+  if(newNickInput) {
+    newNickInput.addEventListener("onkeydown", onEditNick);
+  }
+  const emailToggler = getId("set-info-email-eye");
+  if(emailToggler) {
+    emailToggler.addEventListener("onclick",toggleEmail);
+  }
 }
 
 function createToggle(id, label, description) {
@@ -374,11 +384,11 @@ function createToggle(id, label, description) {
     `;
 }
 
-export function openSettings(isNotLoadingDefault = false) {
+export function openSettings() {
   reconstructSettings(false);
   selectSettingCategory(settingTypes.MyAccount);
 
-  getId('settings-overlay').style.display = 'flex';
+  enableElement('settings-overlay');
 
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation =
@@ -414,7 +424,7 @@ export function closeSettings() {
   }
 
   setTimeout(() => {
-    getId('settings-overlay').style.display = 'none';
+    disableElement("settings-overlay");
   }, 300);
   setIsSettingsOpen(false);
 }

@@ -6,6 +6,7 @@ import { userList } from './userList';
 import { toggleManager } from './settings';
 import { currentUserId } from './user';
 import { isOnGuild } from './router';
+import { translations } from './translations';
 
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -229,7 +230,7 @@ export function getSelfFromUserList() {
       return profile.querySelector('.profile-pic');
     }
   }
-  return null; // Return null if no profile found
+  return null; 
 }
 export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
   if (!isAnalyzing || !analyser) return;
@@ -377,11 +378,10 @@ export function activateSoundOutput() {
       if (hasPermission) {
         const soundOutputs = await getSoundOutputList();
         soundOutputs.forEach((output, index) => {
-          const option = createEl('option');
-          option.style.fontSize = '12px';
-          option.style.border = 'none';
-          option.value = output.deviceId;
-          option.textContent = output.label || `Sound Output ${index + 1}`;
+          const option = createEl('option', { style : { fontSize : "12px",
+             border : "none"},
+             value : output.deviceId, 
+             textContent : output.label || `Sound Output ${index + 1}`});
           dropdown.appendChild(option);
         });
       }
@@ -465,62 +465,46 @@ export function activateMicAndCamera() {
         ),
       );
   }
+
+  function createDropdownOption(label, value) {
+    return createEl('option', {
+      textContent: label,
+      value,
+      style: { fontSize: '12px' },
+    });
+  }
+
   async function updateMediaOptions() {
     const micDropdown = getId('sound-mic-dropdown');
-    micDropdown.innerHTML = '';
     const cameraDropdown = getId('camera-dropdown');
+    micDropdown.innerHTML = '';
     cameraDropdown.innerHTML = '';
+
     try {
       const hasPermission = await requestMediaPermissions();
 
       if (hasPermission) {
         const mediaDevices = await getMediaDevicesList();
         mediaDevices.forEach((device, index) => {
-          const option = createEl('option', {
-            fontSize: '12px',
-            border: 'none',
-          });
+          const label =
+            device.label ||
+            (device.kind === 'audioinput'
+              ? `Microphone ${index + 1}`
+              : `Camera ${index + 1}`);
+          const dropdown =
+            device.kind === 'audioinput' ? micDropdown : cameraDropdown;
 
-          option.value = device.deviceId;
-          if (device.kind === 'audioinput') {
-            option.textContent = device.label || `Microphone ${index + 1}`;
-            micDropdown.appendChild(option);
-          } else if (device.kind === 'videoinput') {
-            option.textContent = device.label || `Camera ${index + 1}`;
-            cameraDropdown.appendChild(option);
-          }
+          dropdown.appendChild(createDropdownOption(label, device.deviceId));
         });
       }
 
-      const defaultMicOption = createEl('option', {
-        fontSize: '12px',
-        value: 'default',
-      });
-      defaultMicOption.textContent = 'Default Microphone';
-      micDropdown.appendChild(defaultMicOption);
-
-      const defaultCameraOption = createEl('option', {
-        fontSize: '12px',
-        value: 'default',
-      });
-      defaultCameraOption.textContent = 'Default Camera';
-      cameraDropdown.appendChild(defaultCameraOption);
+      micDropdown.appendChild(createDropdownOption(translations.getTranslation("default-microphone"), 'default'));
+      cameraDropdown.appendChild(createDropdownOption('Default Camera', 'default'));
     } catch (error) {
       console.error('Error updating media options:', error);
 
-      const defaultMicOption = createEl('option', {
-        fontSize: '12px',
-        value: 'default',
-      });
-      defaultMicOption.textContent = 'Default Microphone';
-      micDropdown.appendChild(defaultMicOption);
-
-      const defaultCameraOption = createEl('option', {
-        fontSize: '12px',
-        value: 'default',
-      });
-      defaultCameraOption.textContent = 'Default Camera';
-      cameraDropdown.appendChild(defaultCameraOption);
+      micDropdown.appendChild(createDropdownOption(translations.getTranslation("default-microphone"), 'default'));
+      cameraDropdown.appendChild(createDropdownOption('Default Camera', 'default'));
     }
   }
 
@@ -529,6 +513,7 @@ export function activateMicAndCamera() {
     navigator.mediaDevices.addEventListener('devicechange', updateMediaOptions);
   }
 }
+
 
 export function closeCurrentCall() {
   currentAudioPlayer = getId('audio-player');

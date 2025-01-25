@@ -1,4 +1,4 @@
-import { capitalizeFirstCharacter, truncateString } from "./utils";
+import { capitalizeFirstCharacter, getId, truncateString } from "./utils";
 import { alertUser } from "./ui";
 
 
@@ -17,6 +17,17 @@ class Translations {
       this.resolveTranslations = resolve;
       this.rejectTranslations = reject;
     });
+  }
+  formatTime(date) {
+    return date.toLocaleTimeString(this.languages[this.currentLanguage], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  formatDate(date) {
+    return date.toLocaleDateString(this.languages[this.currentLanguage]);
   }
 
 
@@ -106,6 +117,10 @@ class Translations {
   getReplyingTo(userName) {
     return this.replacePlaceholder("replying_to", { userName });
   }
+  getReadText(date, time,count) {
+    count = Math.max(count, 50);
+    return this.replacePlaceholder("readen-chat", { date,time,count });
+  }
 
   initializeTranslations() {
     const currentTranslations = this.textTranslations;
@@ -118,7 +133,7 @@ class Translations {
     }
 
     Object.keys(currentTranslations).forEach((key) => {
-      const element = document.getElementById(key);
+      const element = getId(key);
       if (element) {
         const textToUse = currentTranslations[key];
         if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {

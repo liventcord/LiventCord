@@ -17,9 +17,11 @@ import {
   chatInput,
   initializeChatComponents,
   initialiseChatInput,
+  initialiseReadUi,
   closeReplyMenu,
   adjustHeight,
   setDropHandler,
+  newMessagesBar,
 } from './chatbar';
 import { cacheInterface } from './cache';
 import {
@@ -29,9 +31,11 @@ import {
   selectGuildList,
   fetchMembers,
   refreshInviteId,
-  currentGuildId
+  currentGuildId,
+  guildName,
+  guildContainer
 } from './guild';
-import { disableDmContainers, printFriendMessage } from './friendui';
+import { disableDmContainers, friendContainerItem, printFriendMessage } from './friendui';
 import { hideGuildSettingsDropdown, openSearchPop,toggleDropdown } from './popups';
 import {
   copySelfName,
@@ -186,7 +190,7 @@ async function loadInitialData() {
     try {
       const initData = JSON.parse(rawResponse);
       if(initData.message === "User session is no longer valid. Please log in again.") {
-        router.logOutApp();
+        alertUser("User session is not valid. Please log in at localhost:5005/login.");
         return;
       }
       initialiseState(initData);
@@ -205,11 +209,11 @@ export function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener('scroll', handleScroll);
   initialiseChatInput();
+  initialiseReadUi();
   closeReplyMenu();
   adjustHeight();
   setDropHandler();
 
-  const guildContainer = getId('guild-container');
   guildContainer.addEventListener(
     'mouseover',
     () => (guildContainer.style.backgroundColor = '#333538'),
@@ -219,8 +223,7 @@ export function initializeElements() {
     () => (guildContainer.style.backgroundColor = '#2b2d31'),
   );
 
-  const friendContainer = getId('friend-container-item');
-  friendContainer.addEventListener('click', loadDmHome);
+  friendContainerItem.addEventListener('click', loadDmHome);
 
 
   getId('tb-showprofile').addEventListener('click', toggleUsersList);
@@ -246,7 +249,6 @@ export function initializeListeners() {
     openSearchPop();
   });
 
-  const guildContainer = getId('guild-container');
   guildContainer.addEventListener('click', handleGuildClick);
 
   getId('avatar-wrapper').addEventListener('click', copySelfName);
@@ -305,7 +307,7 @@ export function readCurrentMessages() {
     channelId: guildCache.currentChannelId,
     guildId: currentGuildId,
   });
-  getId('newMessagesBar').style.display = 'none';
+  newMessagesBar.style.display = 'none';
 }
 
 export function createReplyBar(
@@ -408,7 +410,6 @@ export function openDm(friendId) {
 }
 
 let lastDmId;
-
 export function loadDmHome(isChangingUrl = true) {
   console.log('Loading main menu...');
   function handleMenu() {
@@ -417,7 +418,7 @@ export function loadDmHome(isChangingUrl = true) {
       window.history.pushState(null, null, '/channels/@me');
     }
     enableElement('friends-container', false, true);
-    getId('friend-container-item').classList.add('dm-selected');
+    friendContainerItem.classList.add('dm-selected');
     disableDmContainers();
     lastDmId = '';
     friendCache.currentDmId = '';
@@ -426,7 +427,7 @@ export function loadDmHome(isChangingUrl = true) {
     loadMainToolbar();
     disableElement('chat-container');
     disableElement('message-input-container');
-    getId('friend-container-item').style.color = 'white';
+    friendContainerItem.style.color = 'white';
 
     updateUserListText();
     userList.classList.add('friendactive');
@@ -461,7 +462,7 @@ export function loadDmHome(isChangingUrl = true) {
   }
 
   enableElement('friend-container-item');
-  getId('guild-name').innerText = '';
+  guildName.innerText = '';
   disableElement('guild-settings-button');
   enableElement('global-search-input', false, true);
   enableElement('friends-container-item');
@@ -487,8 +488,8 @@ export function changecurrentGuild() {
   getChannels();
   fetchMembers();
   refreshInviteId();
-  getId('channel-info').textContent = currentChannelName;
-  getId('guild-name').innerText = guildCache.currentGuildName;
+  channelTitle.textContent = currentChannelName;
+  guildName.innerText = guildCache.currentGuildName;
   hideGuildSettingsDropdown();
   disableElement('settings-dropdown-button');
 
@@ -500,7 +501,6 @@ export function loadApp(friendId = null, isInitial = false) {
     return;
   }
   isChangingPage = true;
-  const userList = getId('user-list');
 
   if (isOnMe) {
     userListFriActiveHtml = userList.innerHTML;
@@ -528,7 +528,7 @@ export function loadApp(friendId = null, isInitial = false) {
     disableElement('friend-container-item');
     enableElement('guild-settings-button');
     enableElement('hash-sign');
-    getId('guild-name').innerText = guildCache.currentGuildName;
+    guildName.innerText = guildCache.currentGuildName;
     disableElement('global-search-input');
     disableElement('dm-profile-sign-bubble');
     disableElement('dm-profile-sign');
@@ -557,7 +557,7 @@ export function loadApp(friendId = null, isInitial = false) {
 
   disableElement('channel-info-container-for-friend');
   disableElement('friends-container');
-  document.querySelector('.horizontal-line').style.display = 'none';
+  disableElement("user-line");
 
   enableElement('channel-info-container-for-index');
   enableElement('chat-container', true);
@@ -590,6 +590,7 @@ loadInitialData();
 window.onerror = (event, url, line, column, error) => {
   let msg = '';
   msg += 'Error: ' + error;
+  console.error(msg);
   sendNotify(msg);
 };
 setTimeout(() => window.scrollTo(0, 0), 20);

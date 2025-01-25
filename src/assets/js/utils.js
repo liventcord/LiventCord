@@ -122,8 +122,8 @@ export function constructAbsoluteAppPage(guildId, channelId) {
 export function isPathnameCorrect(url) {
   return /^\/channels\/\d{18}\/\d{18}$/.test(url);
 }
-export function getEmojiPath(emojiName) {
-  return `/images/${emojiName}.png`;
+export function getEmojiPath(emojiId) {
+  return `/emojis/${emojiId}.png`;
 }
 
 export function getFormattedDate(messageDate) {
@@ -410,19 +410,23 @@ export function sanitizeHTML(html) {
 
   return applyCustomStyles(validHtml);
 }
-export function disableElement(str) {
-  const element = getId(str);
+export function disableElement(input) {
+  if(input instanceof HTMLElement ) {
+    input.style.display = "none";
+    return;
+  }
+  const element = getId(input);
   if (element) {
-    element.style.display = 'none';
+    element.style.display = "none";
   }
 }
 export function enableElement(
-  str,
+  input,
   isFlex1 = false,
   isBlock = false,
   isInline = false,
 ) {
-  const element = getId(str);
+  const element = input instanceof HTMLElement ? input : getId(input);
   if (element) {
     if (isFlex1) {
       element.style.flex = '1';

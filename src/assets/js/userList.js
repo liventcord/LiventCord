@@ -14,7 +14,7 @@ import { isOnMe } from './router';
 import { currentGuildId } from './guild';
 
 
-
+export const userLine = document.querySelector('.horizontal-line');
 export let userList = getId('user-list');
 export let isUsersOpenGlobal;
 
@@ -183,7 +183,6 @@ export function toggleUsersList() {
 }
 
 export function setUserListLine() {
-  const userLine = document.querySelector('.horizontal-line');
   if (isUsersOpenGlobal) {
     enableElement('user-list');
     userLine.style.display = 'flex';
@@ -198,7 +197,6 @@ export function setUsersList(isUsersOpen, isLoadingFromCookie = false) {
 
   userList.style.display = displayToSet;
 
-  const userLine = document.querySelector('.horizontal-line');
   if (userLine) {
     userLine.style.display = displayToSet;
   }

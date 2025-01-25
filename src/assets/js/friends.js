@@ -16,6 +16,8 @@ import { apiClient,EventType } from './api';
 
 let friends_cache = {};
 
+const pendingAlertRight = getId("pendingAlertRight");
+const pendingAlertLeft = getId("pendingAlertLeft");
 
 export const offline = 'offline';
 export const online = 'online';
@@ -129,8 +131,8 @@ export function handleAcceptFriendRequestResponse(message) {
 
   if (isSuccess) {
     friends_cache[userId] = user_data;
-    disableElement('pendingAlertRight');
-    disableElement('pendingAlertLeft');
+    disableElement(pendingAlertRight);
+    disableElement(pendingAlertLeft);
     document.title = 'LiventCord';
   }
 }
@@ -199,10 +201,10 @@ export function updateFriendsList(friends, isPending) {
     });
 
     if (pendingCounter > 0) {
-      getId('pendingAlertLeft').textContent = pendingCounter;
-      enableElement('pendingAlertLeft');
-      getId('pendingAlertRight').textContent = pendingCounter;
-      enableElement('pendingAlertRight');
+      getId(pendingAlertLeft).textContent = pendingCounter;
+      enableElement(pendingAlertLeft);
+      getId(pendingAlertRight).textContent = pendingCounter;
+      enableElement(pendingAlertRight);
       setWindowName(pendingCounter);
     }
 
