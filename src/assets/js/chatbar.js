@@ -25,7 +25,7 @@ import {
   createRandomId,
   createNowDate,
 } from "./utils";
-import { alertUser, displayImagePreview } from "./ui";
+import { displayImagePreview } from "./ui";
 import { isOnDm } from "./router";
 import { setProfilePic } from "./avatar";
 import { cacheInterface, guildCache } from "./cache";

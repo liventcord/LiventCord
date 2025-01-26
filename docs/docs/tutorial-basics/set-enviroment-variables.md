@@ -52,7 +52,7 @@ sidebar_position: 1
     Defaults to "liventcord-gif-worker.efekantunc0.workers.dev".
 
   - **MaxAvatarSize**:
-    Maximum upload size(in MB) for avatar on guilds and profiles
+    Maximum upload size(in MB) for avatar on guilds and profiles.
     Defaults to 3.
   
   - **MaxAttachmentsSize**:
