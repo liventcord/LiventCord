@@ -14,7 +14,7 @@ Get started with LiventCord in just a few steps.
 ## **Run Locally**
 
 ## Requirements
-### 1. Install .NET SDK https://dotnet.microsoft.com/en-us/download
+### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
 ### 2. Install Node https://nodejs.org/en/download
 
 

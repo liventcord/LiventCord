@@ -32,7 +32,7 @@ import { setProfilePic } from "./avatar";
 import { chatContainer, chatContent } from "./chatbar";
 import { currentGuildId } from "./guild";
 import { isChangingPage, createReplyBar } from "./app";
-import { alertUser, loadingScreen, setActiveIcon } from "./ui";
+import { loadingScreen, setActiveIcon } from "./ui";
 import { Message } from "./message";
 import { translations } from "./translations";
 import { appendToMessageContextList } from "./contextMenuActions";

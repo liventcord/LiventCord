@@ -84,7 +84,10 @@ namespace LiventCord.Controllers
             var permissionsDict = new Dictionary<string, int>();
             foreach (PermissionFlags permissionFlag in Enum.GetValues(typeof(PermissionFlags)))
             {
-                if (permissionFlag != PermissionFlags.None && (permissions & (int)permissionFlag) != 0)
+                if (
+                    permissionFlag != PermissionFlags.None
+                    && (permissions & (int)permissionFlag) != 0
+                )
                 {
                     permissionsDict[permissionFlag.ToString()] = 1;
                 }
@@ -104,19 +107,23 @@ namespace LiventCord.Controllers
             {
                 if (permissionFlag != PermissionFlags.None)
                 {
-                    permissionsDict[permissionFlag.ToString()] = (permissions & permissionFlag) != 0 ? 1 : 0;
+                    permissionsDict[permissionFlag.ToString()] =
+                        (permissions & permissionFlag) != 0 ? 1 : 0;
                 }
             }
 
             return permissionsDict;
         }
+
         [NonAction]
-        public async Task<Dictionary<string, Dictionary<string, int>>> GetPermissionsMapForUser(string userId)
+        public async Task<Dictionary<string, Dictionary<string, int>>> GetPermissionsMapForUser(
+            string userId
+        )
         {
             var permissionsMap = new Dictionary<string, Dictionary<string, int>>();
 
-            var userPermissions = await _dbContext.GuildPermissions
-                .Where(gp => gp.UserId == userId)
+            var userPermissions = await _dbContext
+                .GuildPermissions.Where(gp => gp.UserId == userId)
                 .Include(gp => gp.Guild)
                 .ToListAsync();
 
@@ -127,10 +134,6 @@ namespace LiventCord.Controllers
 
             return permissionsMap;
         }
-
-
-
-
 
         public async Task AssignPermissions(
             string guildId,

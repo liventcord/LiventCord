@@ -21,7 +21,12 @@ export class PermissionManager {
   }
 
   updatePermissions(guildId, newPermissions) {
-    console.log("Updating permissions for guild: ",currentGuildId," with data: ",newPermissions)
+    console.log(
+      "Updating permissions for guild: ",
+      currentGuildId,
+      " with data: ",
+      newPermissions,
+    );
     if (!guildId || typeof newPermissions !== "object") return;
     this.permissionsMap[guildId] = {
       ...newPermissions[guildId],

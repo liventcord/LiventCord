@@ -33,7 +33,8 @@ const SocketEvent = Object.freeze({
   UPDATE_USER: "UPDATE_USER",
   USER_STATUS: "USER_STATUS",
   UPDATE_CHANNEL: "UPDATE_CHANNEL",
-  DELETE_MESSAGE: "DELETE_MESSAGE",
+  DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
+  DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
 });
 
 socketClient.on(SocketEvent.GUILD_MESSAGE),
@@ -75,9 +76,8 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL, (data) => {
     editChannel(data);
   }
 });
-
-socketClient.on(SocketEvent.DELETE_MESSAGE, (data) => {
-  deleteLocalMessage(data.messageId, data.guildId, data.channelId, data.isDm);
+function handleDelete(data, isDm) {
+  deleteLocalMessage(data.messageId, data.guildId, data.channelId, isDm);
   guildCache.removeMessage(data.messageId, data.channelId, data.guildId);
   const msgdate = messages_raw_cache[data.messageId].date;
   if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
@@ -89,6 +89,12 @@ socketClient.on(SocketEvent.DELETE_MESSAGE, (data) => {
     setBottomestChatDateStr(getLastSecondMessageDate());
   }
   delete messages_raw_cache[data.messageId];
+}
+socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data) => {
+  handleDelete(data, true);
+});
+socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data) => {
+  handleDelete(data, false);
 });
 //audio
 

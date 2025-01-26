@@ -132,7 +132,7 @@ export function adjustHeight() {
   };
 
   adjustChatContainerHeight();
-  window.addEventListener('resize', adjustChatContainerHeight);
+  window.addEventListener("resize", adjustChatContainerHeight);
 
   if (chatInputHeight === 60) {
     chatInput.style.paddingTop = "-5px";

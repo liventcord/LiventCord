@@ -402,8 +402,8 @@ export function selectSettingCategory(settingType) {
     newNickInput.addEventListener("keydown", onEditNick);
   }
   const guildNameInput = getId("guild-overview-name-input");
-  if(guildNameInput) {
-    guildNameInput.addEventListener("keydown",onEditNick);
+  if (guildNameInput) {
+    guildNameInput.addEventListener("keydown", onEditNick);
   }
 
   const emailToggler = getId("set-info-email-eye");

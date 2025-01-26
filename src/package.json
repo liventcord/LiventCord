@@ -4,13 +4,13 @@
   "main": "vite.config.js",
   "scripts": {
     "dev": "vite",
-    "start" : "vite",
+    "start": "vite",
     "lint": "npx eslint assets/js/ --fix",
     "build": "vite build && npm run copy-translations",
     "copy-translations": "cp -r assets/translations wwwroot/translations",
     "serve": "vite preview",
     "format": "npx prettier --write . && npm run format-cs",
-    "format-cs" : "find . -type f -name '*.cs' | xargs dotnet-csharpier",
+    "format-cs": "find . -type f -name '*.cs' | xargs dotnet tool run dotnet-csharpier",
     "prepare": "husky"
   },
   "lint-staged": {

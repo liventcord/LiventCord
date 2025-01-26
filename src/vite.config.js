@@ -5,6 +5,28 @@ import cssnano from "cssnano";
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
+  const proxyTarget = "http://localhost:5005";
+
+  const commonProxyConfig = {
+    target: proxyTarget,
+    changeOrigin: true,
+    secure: false,
+  };
+
+  const proxyPaths = [
+    "/api",
+    "/vendor",
+    "/profiles",
+    "/images",
+    "/guilds",
+    "/auth",
+    "/sounds",
+  ];
+
+  const proxyConfig = proxyPaths.reduce((acc, path) => {
+    acc[path] = commonProxyConfig;
+    return acc;
+  }, {});
 
   return {
     root: "./assets",
@@ -39,38 +61,9 @@ export default defineConfig(({ mode }) => {
     server: {
       hmr: true,
       proxy: {
-        "/api": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/vendor": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/profiles": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/images": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/guilds": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/auth": {
-          target: "http://localhost:5005",
-          changeOrigin: true,
-          secure: false,
-        },
+        ...proxyConfig,
         "/socket": {
-          target: "http://localhost:5005",
+          target: proxyTarget,
           changeOrigin: true,
           secure: false,
           ws: true,

@@ -7,14 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <Target Name="BuildFrontend" BeforeTargets="Build">
-    <Exec Command="npm run build"/>
-    <Exec Command="npm run copy-translations"/>
+    <Exec Command="npm run build" />
+    <Exec Command="npm run copy-translations" />
   </Target>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Microsoft.AspNet.SignalR" Version="2.4.3" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="9.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4">

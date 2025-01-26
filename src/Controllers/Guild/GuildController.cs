@@ -150,7 +150,6 @@ namespace LiventCord.Controllers
 
             await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
 
-
             await _dbContext.SaveChangesAsync();
 
             return guild;

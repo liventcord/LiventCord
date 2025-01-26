@@ -211,7 +211,10 @@ export function applySettings() {
   }
   if (isUnsaved) {
     if (isGuildSettings) {
-      console.log("Applying guild settings. can manage guild: ",permissionManager.canManageGuild(currentGuildId));
+      console.log(
+        "Applying guild settings. can manage guild: ",
+        permissionManager.canManageGuild(currentGuildId),
+      );
       changeGuildName();
 
       if (permissionManager.canManageGuild(currentGuildId)) {

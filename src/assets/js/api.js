@@ -127,9 +127,9 @@ const EventUrlMap = {
     "/guilds/{guildId}/channels/{channelId}/messages",
   [EventType.SEND_MESSAGE_DM]: "/dms/{Id}/channels/{channelId}/messages",
   [EventType.DELETE_MESSAGE_DM]:
-    "/guilds/{guildId}/channels/{channelId}/messages",
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
   [EventType.DELETE_MESSAGE_GUILD]:
-    "/guilds/{guildId}/channels/{channelId}/messages",
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
 
   [EventType.CHANGE_NICK]: "/nicks",
   [EventType.LEAVE_VOICE_CHANNEL]:

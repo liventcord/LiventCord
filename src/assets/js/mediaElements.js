@@ -264,11 +264,11 @@ export function processMediaLink(
           const spanElement = createEl("span", {
             textContent: translations.getTranslation("failed-media"),
             style: {
-              display : "inline-block",
-              maxWidth : "100%",
-              maxHeight : "100%",
-              color : "red"
-            }
+              display: "inline-block",
+              maxWidth: "100%",
+              maxHeight: "100%",
+              color: "red",
+            },
           });
           if (mediaElement.parentNode) {
             mediaElement.parentNode.replaceChild(spanElement, mediaElement);
