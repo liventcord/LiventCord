@@ -16,7 +16,6 @@ import {
 } from "./chat";
 import {
   chatInput,
-  initializeChatComponents,
   initialiseChatInput,
   initialiseReadUi,
   closeReplyMenu,
@@ -103,8 +102,7 @@ let userListFriActiveHtml;
 
 export function initializeApp() {
   window.scrollTo(0, 0);
-  assignElements();
-  initializeChatComponents();
+  addChannelSearchListeners();
   initializeElements();
   initializeSettings();
   initializeListeners();
@@ -113,10 +111,6 @@ export function initializeApp() {
   initialiseAudio();
   initializeCookies();
   isDomLoaded = true;
-}
-
-export function assignElements() {
-  addChannelSearchListeners();
 }
 
 export let initialState = {

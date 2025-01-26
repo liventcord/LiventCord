@@ -11,8 +11,7 @@ import { closeSettings } from "./settingsui";
 import { isDomLoaded } from "./app";
 import { handleToggleClick } from "./ui";
 import { onEditGuildProfile, onEditProfile } from "./avatar";
-import { generateConfirmationPanel } from "./settingsui";
-import { hideConfirmationPanel } from "./settingsui";
+import { generateConfirmationPanel, hideConfirmationPanel } from "./settingsui";
 import { permissionManager } from "./guildPermissions";
 import { apiClient, EventType } from "./api";
 import { currentGuildId } from "./guild";
@@ -212,13 +211,15 @@ export function applySettings() {
   }
   if (isUnsaved) {
     if (isGuildSettings) {
+      console.log("Applying guild settings");
       changeGuildName();
 
-      if (permissionManager.canManageGuild()) {
+      if (permissionManager.canManageGuild(currentGuildId)) {
         uploadImage(true);
       }
     } else {
-      // in default settings
+      console.log("Applying profile settings");
+      // in user profile settings
       changeNickname();
       uploadImage(false);
     }

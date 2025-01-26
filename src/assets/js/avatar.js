@@ -37,8 +37,12 @@ export const selfProfileImage = getId("self-profile-image");
 export const selfStatus = getId("self-status");
 
 let lastConfirmedGuildImg;
-let maxAttachmentSize;
-let maxAvatarSize;
+let maxAttachmentSize; // mb
+let maxAvatarSize; // mb
+
+function getMaxAvatarBytes() {
+  return maxAvatarSize * 1024 * 1024;
+}
 
 const allowedAvatarTypes = [
   "image/jpeg",
@@ -197,7 +201,7 @@ export function validateAvatar(file) {
     alertUser(translations.getTranslation("avatar-upload-error-message"));
     return false;
   }
-  if (file.size > maxAvatarSize * 1024 * 1024) {
+  if (file.size > getMaxAvatarBytes()) {
     alertUser(translations.getAvatarUploadErrorMsg(maxAvatarSize));
     return false;
   }
@@ -261,6 +265,7 @@ export function uploadImage(isGuild) {
     console.warn("isChangedProfile is false. not uploading");
     return;
   }
+
   let formData = new FormData();
   const uploadedGuildId = guildCache.currentGuildId;
   const file = isGuild
@@ -271,6 +276,7 @@ export function uploadImage(isGuild) {
     const byteString = atob(file.split(",")[1]);
     const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
     const ab = new Uint8Array(byteString.length);
+    const maxAvatarBytes = getMaxAvatarBytes();
 
     for (let i = 0; i < byteString.length; i++) {
       ab[i] = byteString.charCodeAt(i);
@@ -278,8 +284,9 @@ export function uploadImage(isGuild) {
 
     const blob = new Blob([ab], { type: mimeString });
 
-    if (blob.size <= maxAvatarSize) {
-      formData.append("photo", blob, "profile-image");
+    if (blob.size <= maxAvatarBytes) {
+      const fileName = `profile-image.${mimeString.split("/")[1]}`;
+      formData.append("photo", blob, fileName);
 
       if (isGuild) {
         formData.append("guildId", uploadedGuildId);
@@ -310,7 +317,13 @@ export function uploadImage(isGuild) {
       };
       xhr.send(formData);
     } else {
-      alertUser(translations.getTranslation("upload-size-error-message"));
+      console.error(
+        "Max avatar size is: ",
+        maxAvatarBytes,
+        " while uploaded file size is: ",
+        blob.size,
+      );
+      alertUser(translations.getAvatarUploadErrorMsg(maxAvatarSize));
       getId("profileImage").value = "";
     }
   } else {

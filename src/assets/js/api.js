@@ -342,7 +342,6 @@ class ApiClient {
 
   on(event, callback) {
     if (Object.values(EventType).includes(event)) {
-      console.log("Processing response for: ", event);
     } else {
       console.error("Event type doesnt includes: ", event);
       if (event) {

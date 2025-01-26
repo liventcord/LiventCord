@@ -39,7 +39,10 @@ namespace LiventCord.Controllers
                 return BadRequest("No file uploaded.");
 
             var extension = Path.GetExtension(photo.FileName).ToLowerInvariant();
-            if (!FileExtensions.IsValidImageExtension(extension))
+            if (
+                !FileExtensions.IsValidImageExtension(extension)
+                || !photo.ContentType.StartsWith("image/")
+            )
                 return BadRequest("Invalid file type. Only images are allowed.");
 
             if (!IsValidFileName(photo.FileName))

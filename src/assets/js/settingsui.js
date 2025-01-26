@@ -16,6 +16,7 @@ import {
   isUnsaved,
   setUnsaved,
   onEditNick,
+  triggerguildImageUpdate as triggerGuildImageUpdate,
 } from "./settings";
 import { initialState } from "./app";
 import { updateSelfProfile } from "./avatar";
@@ -173,7 +174,7 @@ function getOverviewHtml() {
             <input type="text" id="guild-overview-name-input" autocomplete="off" value="${
               guildCache.currentGuildName
             }" onkeydown="onEditNick()" maxlength="32">
-            <img id="guild-image" onclick="triggerguildImageUpdate()" style="user-select: none;">
+            <img id="guild-image" style="user-select: none;">
             <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
               "Remove",
             )}</p>
@@ -396,12 +397,17 @@ export function selectSettingCategory(settingType) {
   }
 
   const newNickInput = getId("new-nickname-input");
+  console.log("On Edit nick");
   if (newNickInput) {
     newNickInput.addEventListener("onkeydown", onEditNick);
   }
   const emailToggler = getId("set-info-email-eye");
   if (emailToggler) {
     emailToggler.addEventListener("onclick", toggleEmail);
+  }
+  const guildImage = getId("guild-image");
+  if (guildImage) {
+    guildImage.addEventListener("click", triggerGuildImageUpdate);
   }
 }
 
@@ -437,7 +443,7 @@ function createToggle(id, label, description) {
 }
 
 export function openSettings() {
-  reconstructSettings(false);
+  reconstructSettings(isGuildSettings);
   selectSettingCategory(settingTypes.MyAccount);
 
   enableElement("settings-overlay");

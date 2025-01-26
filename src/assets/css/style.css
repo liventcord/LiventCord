@@ -610,10 +610,9 @@
   overflow-y: hidden;
   overflow-x: hidden;
   border-radius: 7px 7px 0 0;
-  font-size: 17px;
+  font-size: 16px;
   max-height: 500px;
   bottom: 47px;
-  width: calc(100vw - 585px);
   height: 30px;
   z-index: 1;
   outline: none;
@@ -622,6 +621,10 @@
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
+  width: calc(100vw - 585px);
+}
+#reply-info.reply-user-list-open {
+  width: calc(100vw - 350px);
 }
 .base-user-input {
   padding-right: 100px;
@@ -785,9 +788,7 @@
   position: fixed;
   border-radius: 8px;
 }
-#reply-info {
-  font-size: 16px;
-}
+
 #newMessagesBar {
   cursor: pointer;
   z-index: 2;

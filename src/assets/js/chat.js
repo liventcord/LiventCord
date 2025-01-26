@@ -3,6 +3,7 @@ import {
   chatInput,
   displayStartMessage,
   newMessagesBar,
+  replyInfo,
   showReplyMenu,
 } from "./chatbar";
 import {
@@ -558,7 +559,6 @@ export function displayChatMessage(data) {
   const replyOf = data.replyOf;
   const metadata = data.metadata;
   const willDisplayProfile = data.willDisplayProfile;
-  console.log(data);
 
   if (currentMessagesCache[messageId]) {
     //console.log("Skipping adding message:", content);
@@ -790,11 +790,13 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
 export function updateChatWidth() {
   if (userList.style.display === "none") {
     chatInput.classList.add("user-list-hidden");
+    replyInfo.classList.add("reply-user-list-open");
     gifBtn.classList.add("gifbtn-user-list-open");
     emojiBtn.classList.add("emojibtn-user-list-open");
     newMessagesBar.classList.add("new-messages-bar-user-list-open");
   } else {
     chatInput.classList.remove("user-list-hidden");
+    replyInfo.classList.remove("reply-user-list-open");
     gifBtn.classList.remove("gifbtn-user-list-open");
     emojiBtn.classList.remove("emojibtn-user-list-open");
     newMessagesBar.classList.remove("new-messages-bar-user-list-open");

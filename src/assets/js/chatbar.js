@@ -34,18 +34,23 @@ import { translations } from "./translations";
 import { currentUserId, getUserNick, getUserIdFromNick } from "./user";
 import { userMentionDropdown } from "./search";
 
-export let fileInput;
 export let currentReplyingTo = "";
-export let fileImagePreview;
 
 export const chatInput = getId("user-input");
 export const chatContainer = getId("chat-container");
 export const chatContent = getId("chat-content");
+export const replyInfo = getId("reply-info");
 
+export const fileInput = getId("fileInput");
+export const fileImagePreview = getId("image-preview");
 export const newMessagesBar = getId("newMessagesBar");
-const newMessagesText = getId("newMessagesText");
-const replyInfo = getId("reply-info");
 
+const newMessagesText = getId("newMessagesText");
+const replyCloseButton = getId("reply-close-button");
+
+if (replyCloseButton) {
+  replyCloseButton.addEventListener("click", closeReplyMenu);
+}
 function getReadText() {
   const currentDate = new Date();
   const lastMessagesDate = translations.formatDate(currentDate);
@@ -97,7 +102,6 @@ export function initialiseChatInput() {
     }
   });
 }
-let replyCloseButton;
 export function showReplyMenu(replyToMsgId, replyToUserId) {
   replyCloseButton.style.display = "flex";
   replyInfo.textContent = translations.getReplyingTo(
@@ -121,10 +125,14 @@ export function adjustHeight() {
 
   let chatInputHeight = chatInput.scrollHeight;
   chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight;
-  if (chatInputHeight > 500) {
-    return;
-  }
-  chatContainer.style.height = `calc(87vh - ${chatInputHeight - 60}px)`;
+  const adjustChatContainerHeight = () => {
+    const viewportHeight = window.innerHeight;
+    const maxAllowedHeight = viewportHeight - chatInputHeight - 60;
+    chatContainer.style.height = `${Math.max(0, maxAllowedHeight)}px`;
+  };
+
+  adjustChatContainerHeight();
+  window.addEventListener('resize', adjustChatContainerHeight);
 
   if (chatInputHeight === 60) {
     chatInput.style.paddingTop = "-5px";
@@ -321,13 +329,6 @@ export function updateFileImageBorder() {
   } else {
     fileImagePreview.style.border = "20px solid #2b2d31";
   }
-}
-
-export function initializeChatComponents() {
-  replyCloseButton = getId("reply-close-button");
-  fileImagePreview = getId("image-preview");
-
-  fileInput = getId("fileInput");
 }
 
 export function displayCannotSendMessage(failedMessageContent) {

@@ -3,19 +3,33 @@
   "version": "1.0.0",
   "main": "vite.config.js",
   "scripts": {
-    "dev": "concurrently \"npm run watch:format\" \"vite\"",
+    "dev": "vite",
+    "start" : "vite",
     "lint": "npx eslint assets/js/ --fix",
     "build": "vite build && npm run copy-translations",
     "copy-translations": "cp -r assets/translations wwwroot/translations",
     "serve": "vite preview",
-    "format": "npx prettier --write .",
-    "watch:format": "chokidar 'assets/**/*.{js,ts,vue,css,scss}' -c 'npm run format'"
+    "format": "npx prettier --write . && npm run format-cs",
+    "format-cs" : "find . -type f -name '*.cs' | xargs dotnet-csharpier",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npx prettier --write",
+      "npx eslint --fix"
+    ],
+    "*.vue": [
+      "npx prettier --write",
+      "npx eslint --fix"
+    ],
+    "*.css": "npx prettier --write",
+    "*.json": "npx prettier --write",
+    "*.cs": "dotnet-csharpier"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "autoprefixer": "^10.4.20",
     "babel-plugin-import-resolver": "^0.1.2",
-    "chokidar-cli": "^3.0.0",
     "concurrently": "^9.1.2",
     "dompurify": "^3.2.3",
     "eslint": "^9.18.0",
@@ -24,6 +38,8 @@
     "eslint-define-config": "^2.1.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
     "postcss": "^8.5.1",
     "prettier": "^2.7.1",
     "vite": "^6.0.7",
