@@ -101,7 +101,7 @@ namespace LiventCord.Helpers
                     userDiscriminator = user.Discriminator ?? "",
                     guildMembers = new List<PublicUser>(),
                     sharedGuildsMap = new List<string>(),
-                    permissionsMap = new Dictionary<string, string>(),
+                    permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
                     guildsJson = guilds,

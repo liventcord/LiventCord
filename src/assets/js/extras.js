@@ -102,7 +102,6 @@ export function changeUrlWithFireWorks(guildId, channelId, guildName) {
   cacheInterface.addGuild(guildId, guildName, currentUserId);
 
   createFireWorks();
-  permissionManager.addGuildSelfCreated(guildId);
 }
 
 export function enableParty() {

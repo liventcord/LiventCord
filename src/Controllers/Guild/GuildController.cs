@@ -148,11 +148,8 @@ namespace LiventCord.Controllers
             _dbContext.Guilds.Add(guild);
             await _dbContext.SaveChangesAsync();
 
-            var permissions =
-                PermissionFlags.ReadMessages
-                | PermissionFlags.SendMessages
-                | PermissionFlags.MentionEveryone;
-            await _permissionsController.AssignPermissions(guildId, ownerId, permissions);
+            await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
+
 
             await _dbContext.SaveChangesAsync();
 

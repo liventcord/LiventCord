@@ -191,7 +191,7 @@ export function triggerFileInput() {
   profileImageInput.addEventListener("change", onEditProfile);
 }
 
-export function triggerguildImageUpdate() {
+export function triggerGuildImageUpdate() {
   const guildImageInput = getId("guildImage");
   guildImageInput.click();
   guildImageInput.addEventListener("change", onEditGuildProfile);
@@ -211,7 +211,7 @@ export function applySettings() {
   }
   if (isUnsaved) {
     if (isGuildSettings) {
-      console.log("Applying guild settings");
+      console.log("Applying guild settings. can manage guild: ",permissionManager.canManageGuild(currentGuildId));
       changeGuildName();
 
       if (permissionManager.canManageGuild(currentGuildId)) {
@@ -229,6 +229,7 @@ export function applySettings() {
 }
 
 export function onEditNick() {
+  console.log("On edit nick");
   isUnsaved = true;
   regenerateConfirmationPanel();
 }

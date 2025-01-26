@@ -16,7 +16,7 @@ import {
   isUnsaved,
   setUnsaved,
   onEditNick,
-  triggerguildImageUpdate as triggerGuildImageUpdate,
+  triggerGuildImageUpdate,
 } from "./settings";
 import { initialState } from "./app";
 import { updateSelfProfile } from "./avatar";
@@ -173,7 +173,7 @@ function getOverviewHtml() {
             )}</div>
             <input type="text" id="guild-overview-name-input" autocomplete="off" value="${
               guildCache.currentGuildName
-            }" onkeydown="onEditNick()" maxlength="32">
+            }"  maxlength="32">
             <img id="guild-image" style="user-select: none;">
             <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
               "Remove",
@@ -397,13 +397,18 @@ export function selectSettingCategory(settingType) {
   }
 
   const newNickInput = getId("new-nickname-input");
-  console.log("On Edit nick");
+  console.log(newNickInput);
   if (newNickInput) {
-    newNickInput.addEventListener("onkeydown", onEditNick);
+    newNickInput.addEventListener("keydown", onEditNick);
   }
+  const guildNameInput = getId("guild-overview-name-input");
+  if(guildNameInput) {
+    guildNameInput.addEventListener("keydown",onEditNick);
+  }
+
   const emailToggler = getId("set-info-email-eye");
   if (emailToggler) {
-    emailToggler.addEventListener("onclick", toggleEmail);
+    emailToggler.addEventListener("click", toggleEmail);
   }
   const guildImage = getId("guild-image");
   if (guildImage) {

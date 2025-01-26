@@ -16,6 +16,7 @@ import {
 
 import DOMPurify from "dompurify";
 import { defaultMediaImageUrl, defaultProfileImageUrl } from "./utils";
+import { translations } from "./translations";
 
 const maxWidth = 512;
 const maxHeight = 384;
@@ -260,12 +261,15 @@ export function processMediaLink(
 
         const handleError = (error) => {
           console.error("Error loading media element:", error);
-          const spanElement = createEl("span");
-          spanElement.textContent = "Failed to load media";
-          spanElement.style.display = "inline-block";
-          spanElement.style.maxWidth = "100%";
-          spanElement.style.maxHeight = "100%";
-          spanElement.style.color = "red";
+          const spanElement = createEl("span", {
+            textContent: translations.getTranslation("failed-media"),
+            style: {
+              display : "inline-block",
+              maxWidth : "100%",
+              maxHeight : "100%",
+              color : "red"
+            }
+          });
           if (mediaElement.parentNode) {
             mediaElement.parentNode.replaceChild(spanElement, mediaElement);
           }

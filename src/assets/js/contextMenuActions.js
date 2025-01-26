@@ -82,7 +82,8 @@ export function deleteMessage(messageId) {
   if (isOnGuild) {
     data["guildId"] = currentGuildId;
   }
-  apiClient.send(EventType.DELETE_MESSAGE, data);
+  const _eventType = isOnGuild ? EventType.DELETE_MESSAGE_GUILD : EventType.DELETE_MESSAGE_DM;
+  apiClient.send(_eventType, data);
 }
 
 export function inviteToGuild(userId) {

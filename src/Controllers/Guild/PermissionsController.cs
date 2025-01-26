@@ -79,39 +79,58 @@ namespace LiventCord.Controllers
             return userPermissions.Permissions.HasFlag(permission);
         }
 
+        private Dictionary<string, int> GetPermissionsDictionary(int permissions)
+        {
+            var permissionsDict = new Dictionary<string, int>();
+            foreach (PermissionFlags permissionFlag in Enum.GetValues(typeof(PermissionFlags)))
+            {
+                if (permissionFlag != PermissionFlags.None && (permissions & (int)permissionFlag) != 0)
+                {
+                    permissionsDict[permissionFlag.ToString()] = 1;
+                }
+                else
+                {
+                    permissionsDict[permissionFlag.ToString()] = 0;
+                }
+            }
+            return permissionsDict;
+        }
+
+        private Dictionary<string, int> GetPermissionsDictionary(PermissionFlags permissions)
+        {
+            var permissionsDict = new Dictionary<string, int>();
+
+            foreach (PermissionFlags permissionFlag in Enum.GetValues(typeof(PermissionFlags)))
+            {
+                if (permissionFlag != PermissionFlags.None)
+                {
+                    permissionsDict[permissionFlag.ToString()] = (permissions & permissionFlag) != 0 ? 1 : 0;
+                }
+            }
+
+            return permissionsDict;
+        }
         [NonAction]
-        public Dictionary<string, Dictionary<string, int>> GetPermissionsMapForUser(string userId)
+        public async Task<Dictionary<string, Dictionary<string, int>>> GetPermissionsMapForUser(string userId)
         {
             var permissionsMap = new Dictionary<string, Dictionary<string, int>>();
 
-            var userPermissions = _dbContext
-                .GuildPermissions.Where(gp => gp.UserId == userId)
+            var userPermissions = await _dbContext.GuildPermissions
+                .Where(gp => gp.UserId == userId)
                 .Include(gp => gp.Guild)
-                .ToList();
+                .ToListAsync();
 
             foreach (var perm in userPermissions)
             {
-                if (!permissionsMap.TryGetValue(perm.GuildId, out var permDict))
-                {
-                    permDict = new Dictionary<string, int>
-                    {
-                        { "read_messages", perm.ReadMessages },
-                        { "send_messages", perm.SendMessages },
-                        { "manage_roles", perm.ManageRoles },
-                        { "kick_members", perm.KickMembers },
-                        { "ban_members", perm.BanMembers },
-                        { "manage_channels", perm.ManageChannels },
-                        { "mention_everyone", perm.MentionEveryone },
-                        { "add_reaction", perm.AddReaction },
-                        { "is_admin", perm.IsAdmin },
-                        { "can_invite", perm.CanInvite },
-                    };
-                    permissionsMap[perm.GuildId] = permDict;
-                }
+                permissionsMap[perm.GuildId] = GetPermissionsDictionary(perm.Permissions);
             }
 
             return permissionsMap;
         }
+
+
+
+
 
         public async Task AssignPermissions(
             string guildId,
@@ -141,20 +160,6 @@ namespace LiventCord.Controllers
             await _dbContext.SaveChangesAsync();
         }
     }
-}
-
-public enum PermissionType
-{
-    ReadMessages,
-    SendMessages,
-    ManageRoles,
-    KickMembers,
-    BanMembers,
-    ManageChannels,
-    MentionEveryone,
-    AddReaction,
-    IsAdmin,
-    CanInvite,
 }
 
 [Flags]

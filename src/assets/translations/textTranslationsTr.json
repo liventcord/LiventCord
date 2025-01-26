@@ -81,7 +81,10 @@
   "addFriendDiscriminatorErrorText": "Tanımlayıcı geçersiz! (#0000)",
   "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
   "upload-error-message": "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
+  "join-error-response": "DAVET LİNKİ - Davet linki geçersiz veya süresi dolmuş.",
   "microphone-failed": "MİKROFON ERİŞİMİ ENGELLENDİ",
   "microphone-failed-2": "Mikrofon izni reddedildi.",
-  "default-microphone": "Varsayılan Mikrofon"
+  "default-microphone": "Varsayılan Mikrofon",
+  "you-can-see-text" : "Bunu sadece sen görebilirsin.",
+  "failed-media" : "Medya yüklenemedi."
 }

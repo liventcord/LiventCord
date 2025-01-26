@@ -84,5 +84,7 @@
   "join-error-response": "INVITE LINK - Invite is invalid or expired",
   "microphone-failed": "MICROPHONE ACCESS BLOCKED",
   "microphone-failed-2": "Microphone permission denied.",
-  "default-microphone": "Default Microphone"
+  "default-microphone": "Default Microphone",
+  "you-can-see-text" : "Only you can see this.",
+  "failed-media" : "Failed to load media"
 }
