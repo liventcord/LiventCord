@@ -75,26 +75,8 @@ th {
   display: block;
   max-width: 300px;
 }
-.white-rod {
-  position: fixed;
-  width: 5px;
-  height: 50px;
-  margin-top: -60px;
-  margin-left: -40px;
-  border-radius: 50px;
-  background-color: white;
-  display: none;
-}
-.guilds-list li img {
-  transition: border-radius 0.5s ease, border 0.5s ease;
-  border-radius: 50%;
-  width: 50px;
-  top: 5px;
-  position: relative;
-  height: 50px;
-  margin-left: -30px;
-  cursor: pointer;
-}
+
+
 .guilds-list li img[src="/images/icons/icon.png"]:hover {
   border: 10px solid #677bc4;
 }
@@ -111,7 +93,7 @@ th {
   display: block;
 }
 .guilds-list::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 .guilds-list::-webkit-scrollbar-thumb {
   background-color: #21222200;
@@ -957,6 +939,7 @@ th {
   position: fixed;
   height: 100%;
   margin-top: 0px;
+  overflow-y: auto;
   width: 32px;
   z-index: 3;
 }
@@ -998,7 +981,6 @@ th {
   position: fixed;
   width: 5px;
   height: 50px;
-  margin-top: -54px;
   margin-left: -40px;
   border-radius: 50px;
   background-color: white;

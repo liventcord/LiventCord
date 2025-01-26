@@ -18,7 +18,7 @@ module.exports = {
     ],
     "no-undef": "error",
     eqeqeq: ["warn", "always"],
-    "no-trailing-spaces": "off",
+    "no-trailing-spaces": "on",
     semi: "off",
     quotes: "off",
     indent: "off",

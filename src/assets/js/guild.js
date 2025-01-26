@@ -4,6 +4,7 @@ import {
   blackImage,
   constructAppPage,
   getProfileUrl,
+  disableElement,
 } from "./utils";
 import { clickMainLogo, alertUser, preventDrag } from "./ui";
 import { changeUrlWithFireWorks } from "./extras";
@@ -264,7 +265,7 @@ export function removeFromGuildList(guildId) {
 }
 
 export function updateGuild(uploadedGuildId) {
-  const guildList = getId("guilds-list").querySelectorAll("img");
+  const guildList = guildsList.querySelectorAll("img");
   guildList.forEach((img) => {
     if (img.id === uploadedGuildId) {
       setGuildImage(uploadedGuildId, img, true);
@@ -327,7 +328,6 @@ export function wrapWhiteRod(element) {
     element.appendChild(whiteRod);
   }
 }
-
 const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", { id: guildIdStr, src: imgSrc });
@@ -352,6 +352,7 @@ const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
     wrapWhiteRod(listItem);
   });
 
+  wrapWhiteRod(listItem);
   listItem.appendChild(imgElement);
   return listItem;
 };
