@@ -99,7 +99,6 @@ namespace LiventCord.Helpers
                     nickName = user.Nickname ?? "",
                     userStatus = user.Status ?? "",
                     userDiscriminator = user.Discriminator ?? "",
-                    guildMembers = new List<PublicUser>(),
                     sharedGuildsMap = new List<string>(),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),

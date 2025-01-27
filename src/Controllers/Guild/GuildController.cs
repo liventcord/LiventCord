@@ -146,7 +146,6 @@ namespace LiventCord.Controllers
             );
 
             _dbContext.Guilds.Add(guild);
-            await _dbContext.SaveChangesAsync();
 
             await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
 
@@ -165,12 +164,16 @@ namespace LiventCord.Controllers
 
             var guild = await _dbContext.Guilds.FindAsync(guildId);
             if (guild == null)
-                return NotFound(new { Type = "error", Message = "Guild not found." });
+                return NotFound();
 
             if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
-                return Forbid("User is not authorized to delete this guild.");
+                return Forbid();
 
+            _dbContext.Channels.RemoveRange(guild.Channels);
+            _dbContext.GuildMembers.RemoveRange(guild.GuildMembers);
+            _dbContext.GuildPermissions.RemoveRange(guild.GuildPermissions);
             _dbContext.Guilds.Remove(guild);
+
             await _dbContext.SaveChangesAsync();
 
             return Ok();

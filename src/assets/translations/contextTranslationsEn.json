@@ -1,11 +1,11 @@
 {
   "COPY_ID": "Copy ID",
   "COPY_USER_ID": "Copy User ID",
-  "INVITE_TO_GUILD": "Invite to Server",
+  "INVITE_TO_GUILD": "Invite to Guild",
   "BLOCK_USER": "Block User",
   "REPORT_USER": "Report User Profile",
   "REMOVE_USER": "Remove Friend",
-  "EDIT_GUILD_PROFILE": "Edit Server Profile",
+  "EDIT_GUILD_PROFILE": "Edit Guild Profile",
   "MENTION_USER": "Mention User",
   "MARK_AS_READ": "Mark as Read",
   "COPY_LINK": "Copy Link",

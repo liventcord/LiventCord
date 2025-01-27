@@ -6,3 +6,4 @@ wwwroot/vendor/
 wwwroot/translations
 wwwroot/404/
 package-lock.json
+assets/index.html

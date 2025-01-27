@@ -443,10 +443,24 @@ export function createInviteUsersPop() {
 export function hideGuildSettingsDropdown() {
   isDropdownOpen = false;
 }
+
+export function closeDropdown() {
+  let guildSettingsDropdown = getId("guild-settings-dropdown");
+
+  if (guildSettingsDropdown && isDropdownOpen) {
+    guildSettingsDropdown.style.animation = "fadeOut 0.3s forwards";
+    setTimeout(() => {
+      guildSettingsDropdown.style.display = "none";
+      isDropdownOpen = false;
+    }, 300);
+  }
+}
+
 export function toggleDropdown() {
   if (!isOnGuild) {
     return;
   }
+
   let guildSettingsDropdown = getId("guild-settings-dropdown");
 
   if (!isDropdownOpen) {
@@ -455,13 +469,10 @@ export function toggleDropdown() {
     guildSettingsDropdown.style.animation = "fadeIn 0.3s forwards";
     fillDropDownContent();
   } else {
-    guildSettingsDropdown.style.animation = "fadeOut 0.3s forwards";
-    setTimeout(() => {
-      guildSettingsDropdown.style.display = "none";
-      isDropdownOpen = false;
-    }, 300);
+    closeDropdown(); 
   }
 }
+
 export function openSearchPop() {}
 
 export async function showGuildPop() {

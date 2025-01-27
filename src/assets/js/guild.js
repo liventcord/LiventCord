@@ -4,10 +4,8 @@ import {
   blackImage,
   constructAppPage,
   getProfileUrl,
-  disableElement,
 } from "./utils";
 import { clickMainLogo, alertUser, preventDrag } from "./ui";
-import { changeUrlWithFireWorks } from "./extras";
 import {
   isChangingPage,
   initialState,
@@ -23,6 +21,8 @@ import { permissionManager } from "./guildPermissions";
 import { apiClient, EventType } from "./api";
 import { currentVoiceChannelId } from "./channels";
 import { resetImageInput } from "./avatar";
+import { createFireWorks } from "./extras";
+import { currentUserId } from "./user";
 
 export let currentGuildId;
 export const guildName = getId("guild-name");
@@ -67,7 +67,6 @@ export function createGuild() {
   fetch("/api/guilds", {
     method: "POST",
     body: formData,
-    credentials: "same-origin",
   })
     .then((response) => {
       if (response.ok) return response.json();
@@ -80,8 +79,10 @@ export function createGuild() {
         if (popup) {
           popup.parentNode.remove();
         }
+        loadGuild(data.guildId, data.channelId, guildName, currentUserId);
+        cacheInterface.addGuild(data.guildId, guildName, currentUserId);
 
-        changeUrlWithFireWorks(data.guildId, data.rootChannel, data.guildName);
+        createFireWorks();
         appendToGuildList(data);
       } else {
         alertUser(data);
@@ -300,7 +301,6 @@ export function updateGuilds(guildsJson) {
     guildsJson.forEach(({ guildId, guildName, rootChannel, guildMembers }) => {
       const listItem = createGuildListItem(
         guildId,
-        guildName,
         rootChannel,
         guildName,
       );
@@ -328,24 +328,24 @@ export function wrapWhiteRod(element) {
     element.appendChild(whiteRod);
   }
 }
-const createGuildListItem = (guildIdStr, imgSrc, rootChannel, guildNameStr) => {
+const createGuildListItem = (guildIdStr, rootChannel, guildNameStr) => {
   const listItem = createEl("li");
-  const imgElement = createEl("img", { id: guildIdStr, src: imgSrc });
+  const imgElement = createEl("img", { id: guildIdStr, className : "guild-image"});
 
-  imgElement.classList.add("guild-image");
+  setGuildImage(guildIdStr, imgElement);
+
   imgElement.onerror = () => {
     imgElement.src = blackImage;
   };
 
   imgElement.addEventListener("click", () => {
-    console.log("Image clicked:", guildIdStr, rootChannel, guildNameStr);
     try {
       loadGuild(guildIdStr, rootChannel, guildNameStr);
     } catch (error) {
       console.error("Error while loading guild:", error);
     }
 
-    document
+    guildsList
       .querySelectorAll(".guild")
       .forEach((item) => item.classList.remove("selected-guild"));
     listItem.classList.add("selected-guild");
@@ -362,7 +362,6 @@ export function appendToGuildList(guild) {
 
   const listItem = createGuildListItem(
     guild.guildId,
-    guild.imgSrc,
     guild.rootChannel,
     guild.guildName,
   );

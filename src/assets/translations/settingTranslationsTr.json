@@ -29,9 +29,8 @@
   "Email": "E-posta",
   "GeneralOverview": "Genel Bakış",
   "SoundAndVideoSettings": "Ses ve Video Ayarları",
-  "ServerOverview": "Sunucu Genel Bakış",
-  "DeleteServer": "Sunucu Silme",
-  "DeleteServerButton": "Sunucuyu Sil",
+  "GuildOverview": "Sunucu Genel Bakış",
+  "DeleteGuildButton": "Sunucuyu Sil",
   "unsavedChangesWarning": "Dikkat — kaydetmediğin değişiklikler var!",
   "resetButton": "Sıfırla",
   "saveChanges": "Değişiklikleri Kaydet"

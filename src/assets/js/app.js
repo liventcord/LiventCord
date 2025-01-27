@@ -41,6 +41,7 @@ import {
   printFriendMessage,
 } from "./friendui";
 import {
+  closeDropdown,
   hideGuildSettingsDropdown,
   openSearchPop,
   toggleDropdown,
@@ -486,6 +487,7 @@ export function changecurrentGuild() {
   getChannels();
   fetchMembers();
   refreshInviteId();
+  closeDropdown();
   channelTitle.textContent = currentChannelName;
   guildName.innerText = guildCache.currentGuildName;
   hideGuildSettingsDropdown();

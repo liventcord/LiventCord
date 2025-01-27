@@ -28,6 +28,7 @@ import {
   getAverageRGB,
   disableElement,
   enableElement,
+  blackImage,
 } from "./utils";
 import { currentUserNick, currentUserId } from "./user";
 import { guildCache } from "./cache";
@@ -289,7 +290,10 @@ function generateSettingsHtml(settings, isGuild = false) {
   });
 
   if (!isGuild) {
-    const logOutButton = createEl("button", { className: "settings-buttons" });
+    const logOutButton = createEl("button", {
+      className: "settings-buttons",
+      textContent: translations.getTranslation("log-out-button"),
+    });
     logOutButton.addEventListener("click", logOutPrompt);
     container.appendChild(logOutButton);
   }
@@ -328,14 +332,8 @@ function getSettingsConfig() {
       html: getLanguageHtml(),
     },
     Overview: {
-      title: translations.getSettingsTranslation("ServerOverview"),
+      title: translations.getSettingsTranslation("GuildOverview"),
       html: getOverviewHtml(),
-    },
-    DeleteGuild: {
-      title: translations.getSettingsTranslation("DeleteServer"),
-      html: `<button id="delete-guild-button">${translations.getSettingsTranslation(
-        "DeleteServerButton",
-      )}</button>`,
     },
   };
 }
@@ -362,7 +360,7 @@ export function selectSettingCategory(settingType) {
       languageDropdown.addEventListener("change", (event) => {
         translations.currentLanguage = event.target.value;
         translations.setLanguage(translations.currentLanguage);
-        reconstructSettings(false);
+        reconstructSettings(isGuildSettings);
         selectSettingCategory(currentSettingsType);
       });
     }
@@ -383,12 +381,7 @@ export function selectSettingCategory(settingType) {
   togglesToSetup.forEach(setupToggle);
 
   if (settingType === "DeleteGuild") {
-    const deleteButton = getId("delete-guild-button");
-    if (deleteButton) {
-      deleteButton.addEventListener("click", () =>
-        createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName),
-      );
-    }
+    createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
   }
 
   const settingsSelfProfile = getId("settings-self-profile");
@@ -413,6 +406,9 @@ export function selectSettingCategory(settingType) {
   const guildImage = getId("guild-image");
   if (guildImage) {
     guildImage.addEventListener("click", triggerGuildImageUpdate);
+    if (!guildImage.src) {
+      guildImage.src = blackImage;
+    }
   }
 }
 
@@ -485,6 +481,7 @@ export function closeSettings() {
     disableElement("settings-overlay");
   }, 300);
   setIsSettingsOpen(false);
+  isGuildSettings = false;
 }
 
 function getCloseButtonElement() {
@@ -613,7 +610,7 @@ function createDeleteGuildPrompt(guildId, guildName) {
     return;
   }
   var onClickHandler = function () {
-    apiClient.send(EventType.DELETE_GUILD, guildId);
+    apiClient.send(EventType.DELETE_GUILD, { guildId: guildId });
   };
   const actionText = translations.getDeleteGuildText(guildName);
 

@@ -69,7 +69,7 @@
   "create-your-guild-detail": "Your guild is the place where you hang out with your friends. Create your own guild and start chatting.",
   "invites-guild-detail": "Or send a guild invite link to your friend",
   "guild-born-title": "Welcome to guild",
-  "fail-message-text": "The message could not be delivered. This might be because you do not share any servers with the recipient or the recipient only accepts direct messages from friends.",
+  "fail-message-text": "The message could not be delivered. This might be because you do not share any guilds with the recipient or the recipient only accepts direct messages from friends.",
   "start-of-guild": "This, is the start of guild.",
   "channelSearchInput": "Search",
   "friendsSearchInput": "Search",

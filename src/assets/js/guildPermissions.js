@@ -31,12 +31,17 @@ export class PermissionManager {
     this.permissionsMap[guildId] = {
       ...newPermissions[guildId],
     };
+    console.log(
+      "Current permissions for guild: ",
+      guildId,
+      " : ",
+      this.permissionsMap[guildId],
+    );
   }
 
   getPermission(permType) {
     if (!currentGuildId || !permType) return 0;
     const perm = this.permissionsMap[currentGuildId];
-    console.warn(perm);
     return perm;
   }
 

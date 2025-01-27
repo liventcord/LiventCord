@@ -29,9 +29,8 @@
   "Email": "Email",
   "GeneralOverview": "General Overview",
   "SoundAndVideoSettings": "Sound and Video Settings",
-  "ServerOverview": "Server Overview",
-  "DeleteServer": "Delete Server",
-  "DeleteServerButton": "Delete Server",
+  "GuildOverview": "Guild Overview",
+  "DeleteGuildButton": "Delete Guild",
   "unsavedChangesWarning": "Warning — you have unsaved changes!",
   "resetButton": "Reset",
   "saveChanges": "Save Changes"

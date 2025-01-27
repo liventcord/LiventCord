@@ -138,7 +138,7 @@ export function fillDropDownContent() {
     disableElement("invite-dropdown-button");
   }
 
-  if (permissionManager.IsSelfOwner) {
+  if (permissionManager.isSelfOwner()) {
     disableElement("exit-dropdown-button");
   } else {
     enableElement("exit-dropdown-button");
