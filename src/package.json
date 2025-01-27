@@ -10,21 +10,17 @@
     "copy-translations": "cp -r assets/translations wwwroot/translations",
     "serve": "vite preview",
     "format": "npx prettier --write . && npm run format-cs",
-    "format-cs": "find . -type f -name '*.cs' | xargs dotnet tool run dotnet-csharpier",
+    "format-cs": "npx prettier --write '**/*.cs'",
     "prepare": "husky"
   },
   "lint-staged": {
     "*.js": [
-      "npx prettier --write",
+      "npx prettier --write --ignore-unknown",
       "npx eslint --fix"
     ],
-    "*.vue": [
-      "npx prettier --write",
-      "npx eslint --fix"
-    ],
-    "*.css": "npx prettier --write",
-    "*.json": "npx prettier --write",
-    "*.cs": "dotnet-csharpier"
+    "*.css": "npx prettier --write --ignore-unknown",
+    "*.json": "npx prettier --write --ignore-unknown",
+    "*.cs": "npx prettier --write --ignore-unknown"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
@@ -42,6 +38,7 @@
     "lint-staged": "^15.4.3",
     "postcss": "^8.5.1",
     "prettier": "^2.7.1",
+    "prettier-plugin-csharp": "^0.6.0-development",
     "vite": "^6.0.7",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-inspect": "^10.0.7",
