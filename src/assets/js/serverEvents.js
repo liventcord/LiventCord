@@ -48,13 +48,9 @@ apiClient.on(EventType.JOIN_GUILD, (data) => {
 
 apiClient.on(EventType.DELETE_GUILD, (data) => {
   if (typeof data === "object") {
-    if (data.success) {
-      closeSettings();
-      removeFromGuildList(data.guildId);
-      loadDmHome();
-    } else {
-      alertUser(data);
-    }
+    closeSettings();
+    removeFromGuildList(data.guildId);
+    loadDmHome();
   } else {
     alertUser(data);
   }

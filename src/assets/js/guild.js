@@ -299,16 +299,14 @@ export function updateGuilds(guildsJson) {
     wrapWhiteRod(mainLogoItem);
 
     guildsJson.forEach(({ guildId, guildName, rootChannel, guildMembers }) => {
-      const listItem = createGuildListItem(
-        guildId,
-        rootChannel,
-        guildName,
-      );
+      const listItem = createGuildListItem(guildId, rootChannel, guildName);
       guildsList.appendChild(listItem);
 
       guildCache.getGuild(guildId).setName(guildName);
       cacheInterface.setMemberIds(guildId, guildMembers);
     });
+    const createGuildButton = createNewGuildButton();
+    guildsList.appendChild(createGuildButton);
 
     const selectedGuild = guildsList.querySelector(
       `img[id="${currentGuildId}"]`,
@@ -330,7 +328,10 @@ export function wrapWhiteRod(element) {
 }
 const createGuildListItem = (guildIdStr, rootChannel, guildNameStr) => {
   const listItem = createEl("li");
-  const imgElement = createEl("img", { id: guildIdStr, className : "guild-image"});
+  const imgElement = createEl("img", {
+    id: guildIdStr,
+    className: "guild-image",
+  });
 
   setGuildImage(guildIdStr, imgElement);
 
@@ -370,8 +371,39 @@ export function appendToGuildList(guild) {
   guildCache.getGuild(guild.guildId).setName(guild.guildName);
   cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
 }
+function createNewGuildButton() {
+  const createGuildImage = createEl("div", {
+    id: "create-guild-button",
+    className: "guild-image",
+  });
 
-export function createMainLogo() {
+  const createGuildButton = createEl("li");
+
+  createGuildButton.addEventListener("mouseover", () => {
+    createGuildImage.classList.add("rotate-element");
+    createGuildImage.classList.add("create-guild-hover");
+  });
+
+  createGuildButton.addEventListener("mouseleave", () => {
+    createGuildImage.classList.remove("rotate-element");
+    createGuildImage.classList.remove("create-guild-hover");
+  });
+  const newElement = createEl("div", {
+    innerHTML: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z"></path></svg>`,
+  });
+  newElement.style.marginTop = "5px";
+  newElement.style.marginLeft = "13px";
+
+  preventDrag(createGuildImage);
+
+  createGuildImage.addEventListener("click", showGuildPop);
+
+  createGuildButton.appendChild(createGuildImage);
+  createGuildImage.appendChild(newElement);
+
+  return createGuildButton;
+}
+function createMainLogo() {
   const mainLogoImg = createEl("img", {
     id: "main-logo",
     src: "/images/icons/icon.png",
@@ -410,12 +442,3 @@ export function setGuildImage(guildId, imageElement, isUploaded) {
 export function doesGuildExistInBar(guildId) {
   return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
 }
-
-function init() {
-  const guildCreatorBtn = getId("create-guild-button");
-  if (guildCreatorBtn) {
-    guildCreatorBtn.addEventListener("click", showGuildPop);
-  }
-}
-
-init();

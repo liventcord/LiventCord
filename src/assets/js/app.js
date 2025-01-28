@@ -491,7 +491,6 @@ export function changecurrentGuild() {
   channelTitle.textContent = currentChannelName;
   guildName.innerText = guildCache.currentGuildName;
   hideGuildSettingsDropdown();
-  disableElement("settings-dropdown-button");
 
   isChangingPage = false;
 }

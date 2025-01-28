@@ -38,13 +38,13 @@
     "lint-staged": "^15.4.3",
     "postcss": "^8.5.1",
     "prettier": "^2.7.1",
-    "prettier-plugin-csharp": "^0.6.0-development",
     "vite": "^6.0.7",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-inspect": "^10.0.7",
     "vitest": "^3.0.2"
   },
   "dependencies": {
+    "antlr4": "^4.9.0",
     "cssnano": "^7.0.6",
     "terser": "^5.37.0"
   }
