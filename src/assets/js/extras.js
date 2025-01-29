@@ -1,8 +1,5 @@
 /* global confetti */
 import { createEl, getId } from "./utils";
-import { loadGuild } from "./guild";
-import { currentUserId } from "./user";
-import { cacheInterface } from "./cache";
 import { chatInput } from "./chatbar";
 import { enableBorderMovement } from "./audio";
 import { stopAudioAnalysis } from "./audio";
@@ -89,14 +86,12 @@ export function popKeyboardConfetti() {
   }, 0);
 }
 export function createFireWorks() {
-  setTimeout(() => {
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      disableForReducedMotion: true,
-    });
-  }, 500);
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    disableForReducedMotion: true,
+  });
   return;
 }
 

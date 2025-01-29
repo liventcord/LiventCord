@@ -17,6 +17,7 @@ import {
 } from "./user";
 import { isOnMe } from "./router";
 import { currentGuildId } from "./guild";
+import { handleResize } from "./ui";
 
 export const userLine = document.querySelector(".horizontal-line");
 export let userList = getId("user-list");
@@ -185,6 +186,9 @@ export function toggleUsersList() {
   const isUsersOpen = userList.style.display === "flex";
   setUsersList(!isUsersOpen);
 }
+export function enableUserList() {
+  setUsersList(true);
+}
 
 export function setUserListLine() {
   if (isUsersOpenGlobal) {
@@ -235,11 +239,20 @@ export function updateDmFriendList(friendId, friendNick, friendDiscriminator) {
 }
 
 export function updateUserListText() {
-  const userListTitleHTML = `<h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
-    "user-list-title",
-  )}</h1> <ul> </ul>`;
+  const userListTitleHTML = `
+    <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
+      "nowonline"
+    )}</h1>
+    <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
+      "activity-detail"
+    )}</h1>
+    <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
+      "activity-detail-2"
+    )}</h1>
+    <ul></ul>`;
 
   if (userList) {
     userList.innerHTML = userListTitleHTML;
   }
+  handleResize();
 }

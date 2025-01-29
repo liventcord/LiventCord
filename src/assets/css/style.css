@@ -133,7 +133,7 @@
   position: absolute;
   left: 50px;
   top: 22px;
-  font-size: 13px;
+  font-size: 11px;
   color: #adadad;
   display: flex;
   opacity: 1;
@@ -151,95 +151,7 @@
   opacity: 0;
   transform: translateY(-20px);
 }
-.info-container {
-  width: auto;
-  min-width: 300px;
-  max-width: 90%;
-  height: auto;
-  background-color: #312e2e;
-  z-index: 15;
-  border-radius: 25px;
-  position: fixed;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: moveAndFade 9s forwards;
-}
-.info-message {
-  color: #ffffff;
-  font-size: calc(16px + 1vw);
-  white-space: normal;
-  z-index: 25;
-  position: relative;
-  top: 0;
-  left: 0;
-  transform: none;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-@keyframes moveAndFade {
-  0% {
-    left: -900px;
-    opacity: 1;
-  }
-  40% {
-    left: 50%;
-    opacity: 1;
-    transform: translateX(-50%);
-    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
-  }
-  60% {
-    left: 50%;
-    opacity: 1;
-    transform: translateX(-50%);
-  }
-  100% {
-    left: 150%;
-    opacity: 0;
-    transform: translateX(-50%);
-  }
-}
-#create-channel-title {
-  color: white;
-  font-size: 20px;
-  padding: 0px 20px;
-  padding-left: 20px;
-  font-weight: bold;
-}
-#channel-type-icon {
-  color: gray;
-  font-size: 25px;
-  padding: 0px 20px;
-  font-weight: bold;
-}
-#channel-type-title {
-  color: white;
-  margin-left: 45px;
-  margin-top: -75px;
-  font-weight: bold;
-}
-#channel-type-description {
-  color: rgb(181, 186, 193);
-  font-size: 14px;
-  filter: opacity(0.8);
-  margin-left: 45px;
-  margin-top: -10px;
-  width: 80%;
-}
-#special-channel-toggle,
-#special-channel-text {
-  color: white;
-  position: absolute;
-  margin-left: 35px;
-  margin-top: 360px;
-  z-index: 1;
-  font-weight: bold;
-}
+
 .youtube-element {
   width: 560px;
   height: 315px;
@@ -890,7 +802,6 @@
 }
 #user-list {
   padding-top: 65px;
-  max-height: 90vh;
   width: 238px;
   display: flex;
   flex-direction: column;

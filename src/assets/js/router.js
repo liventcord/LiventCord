@@ -25,7 +25,10 @@ class Router {
   }
 
   init() {
-    document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
+    document.addEventListener(
+      "visibilitychange",
+      this.handleVisibilityChange.bind(this),
+    );
     window.addEventListener("popstate", this.handlePopState.bind(this));
   }
 

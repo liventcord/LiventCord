@@ -129,6 +129,12 @@ export function isPathnameCorrect(url) {
 export function getEmojiPath(emojiId) {
   return `/emojis/${emojiId}.png`;
 }
+export function kebapToSentence(text) {
+  return text
+    .replace(/-/g, " ")
+    .toLowerCase()
+    .replace(/^./, (char) => char.toUpperCase());
+}
 
 export function getFormattedDate(messageDate) {
   const today = new Date();

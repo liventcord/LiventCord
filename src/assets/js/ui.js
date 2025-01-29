@@ -1,4 +1,9 @@
-import { setUserListLine, userLine, userList } from "./userList";
+import {
+  enableUserList,
+  setUserListLine,
+  userLine,
+  userList,
+} from "./userList";
 import { loadDmHome } from "./app";
 import { closePopUp, createPopUp, createChannelsPop } from "./popups";
 import {
@@ -91,7 +96,7 @@ export function handleResize() {
       setUserListLine();
     }
   } else {
-    setUserListLine();
+    enableUserList();
   }
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";

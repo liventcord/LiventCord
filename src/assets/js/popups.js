@@ -14,213 +14,207 @@ import { textChanHtml, fillDropDownContent } from "./ui";
 import { setProfilePic } from "./avatar";
 import { appendToProfileContextList } from "./contextMenuActions";
 import { translations } from "./translations";
-import { updateSettingsProfileColor } from "./settingsui";
+import { createToggle, updateSettingsProfileColor } from "./settingsui";
+import { toggleManager } from "./settings";
 
 let isDropdownOpen = false;
 export let closeCurrentJoinPop;
+const hashText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>`;
+const voiceText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z" class="foreground_b545d5"></path><path fill="currentColor" d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z" class="foreground_b545d5"></path></svg>`;
+function createRadioBar() {
+  const radioSvg = `<svg aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="currentColor"></path></svg></div>`;
+  const radioBar = createEl("div", {
+    className: "radio-bar",
+    innerHTML: radioSvg,
+  });
+  return radioBar;
+}
 
-//Pop ui
+const privateChannelHTML = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="lightgray" fill-rule="evenodd" d="M6 9h1V6a5 5 0 0 1 10 0v3h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Zm9-3v3H9V6a3 3 0 1 1 6 0Zm-1 8a2 2 0 0 1-1 1.73V18a1 1 0 1 1-2 0v-2.27A2 2 0 1 1 14 14Z" clip-rule="evenodd" class=""></path></svg>`;
+function createPrivateChannelToggle() {
+  toggleManager.updateState("private-channel-toggle", 0);
+  const toggleHtml = createToggle(
+    "private-channel-toggle",
+    translations.getTranslation("private-channel-text"),
+    translations.getTranslation("private-channel-description"),
+  );
+  const toggleElement = createEl("div", { innerHTML: toggleHtml });
+  toggleElement.style.marginTop = "50px";
+  const label1 = toggleElement.querySelectorAll("label")[0];
+  label1.style.marginTop = "-10px";
+  label1.style.marginLeft = "30px";
+  const label2 = toggleElement.querySelectorAll("label")[1];
+  label2.style.fontSize = "14px";
+  label2.style.marginTop = "10px";
+  const toggleBox = toggleElement
+    .querySelector(".toggle-card")
+    .querySelector(".toggle-box");
+  toggleBox.style.bottom = "40px";
+  toggleBox.style.right = "20px";
+
+  return toggleElement;
+}
+function createChannelType(isVoice) {
+  const channelData = {
+    text: {
+      id: "create-channel-text-type",
+      icon: hashText,
+      title: translations.getTranslation("text-channel"),
+      description: translations.getTranslation("channel-type-description"),
+      brightness: "1.5",
+    },
+    voice: {
+      id: "create-channel-voice-type",
+      icon: voiceText,
+      title: translations.getTranslation("voice-channel"),
+      description: translations.getTranslation(
+        "channel-type-voice-description",
+      ),
+      brightness: "1",
+    },
+  };
+
+  const { id, icon, title, description, brightness } = isVoice
+    ? channelData.voice
+    : channelData.text;
+  const container = createEl("div", { id });
+  container.innerHTML = `
+    <p id="channel-type-icon">${icon}</p>
+    <p id="channel-type-title">${title}</p>
+    <p id="channel-type-description">${description}</p>
+  `;
+  container.appendChild(createRadioBar());
+  container.style.filter = `brightness(${brightness})`;
+  return container;
+}
+
 export function createChannelsPop() {
   let isTextChannel = true;
+
   const newPopOuterParent = createEl("div", { className: "outer-parent" });
   const newPopParent = createEl("div", {
     className: "pop-up",
     id: "createChannelPopContainer",
   });
-  const title = translations.getTranslation("createChannelTitle");
-  const sendText = translations.getTranslation("sendText");
 
-  const inviteTitle = createEl("p", {
-    id: "create-channel-title",
-    textContent: title,
-  });
-  const popBottomContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "create-channel-popup-bottom-container",
-  });
-  const sendInvText = createEl("p", {
-    id: "create-channel-send-text",
-    textContent: sendText,
-  });
-  const closeBtn = createEl("button", {
-    className: "popup-close",
-    id: "invite-close-button",
-    textContent: "X",
-  });
-  const newChannelPlaceholder = translations.getTranslation(
-    "new-channel-placeholder",
-  );
-  const inviteUsersSendInput = createEl("input", {
-    id: "create-channel-send-input",
-    placeholder: newChannelPlaceholder,
-  });
-  inviteUsersSendInput.addEventListener("input", () => {
-    const inputValue = inviteUsersSendInput.value.trim();
-    toggleButtonState(inputValue !== "");
-  });
+  newPopParent.innerHTML = `
+    <p id="create-channel-title">${translations.getTranslation(
+      "channel-dropdown-button",
+    )}</p>
+    <p id="create-channel-type">${translations.getTranslation(
+      "create-channel-type",
+    )}</p>
+    <p id="create-channel-name">${translations.getTranslation(
+      "channel-name",
+    )}</p>
+    <p id="channel-icon">#</p>
+  `;
 
-  const channeltypetitle = createEl("p", {
-    id: "create-channel-type",
-    textContent: translations.getTranslation("channelTypeTitle"),
+  const privateChannelIcon = createEl("div", {
+    innerHTML: privateChannelHTML,
+    id: "private-channel-icon",
   });
-
-  const hashText = `<svg class="icon_b545d5" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>`;
-  const voiceText = `<svg class="icon_b545d5" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z" class="foreground_b545d5"></path><path fill="currentColor" d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z" class="foreground_b545d5"></path></svg>`;
-  const channeltypetexticon = createEl("p", {
-    id: "channel-type-icon",
-    innerHTML: hashText,
-  });
-  const channeltypevoiceicon = createEl("p", {
-    id: "channel-type-icon",
-    innerHTML: voiceText,
-  });
-  const channeltypetexttitle = createEl("p", {
-    id: "channel-type-title",
-    textContent: translations.getTranslation("textChannelTitle"),
-  });
-  const channeltypevoicetitle = createEl("p", {
-    id: "channel-type-title",
-    textContent: translations.getTranslation("voiceChannelTitle"),
-  });
-  const channeltypedescription = createEl("p", {
-    id: "channel-type-description",
-    textContent: translations.getTranslation("channel-type-description"),
-  });
-  const channelTypeVoiceDescription = createEl("p", {
-    id: "channel-type-description",
-    textContent: translations.getTranslation("channel-type-voice-description"),
-  });
-  const channelnametitle = createEl("p", {
-    id: "create-channel-name",
-    textContent: translations.getTranslation("create-channel-name"),
-  });
-  const channelIcon = createEl("p", { id: "channel-icon", textContent: "#" });
-
-  const textChannelContainer = createEl("div", {
-    id: "create-channel-text-type",
-  });
-  const textChannelTitle = createEl("p", { id: "text-channel-title" });
-  const voiceChannelTitle = createEl("p", { id: "voice-channel-title" });
-  const voiceChannelContainer = createEl("div", {
-    id: "create-channel-voice-type",
-  });
-
-  const specialchanHtml = `<svg class="switchIcon_b545d5" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="lightgray" fill-rule="evenodd" d="M6 9h1V6a5 5 0 0 1 10 0v3h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Zm9-3v3H9V6a3 3 0 1 1 6 0Zm-1 8a2 2 0 0 1-1 1.73V18a1 1 0 1 1-2 0v-2.27A2 2 0 1 1 14 14Z" clip-rule="evenodd" class=""></path></svg>`;
-  const specialChanIcon = createEl("div", {
-    innerHTML: specialchanHtml,
-    id: "special-channel-icon",
-  });
-  const specialChanText = createEl("div", {
-    id: "special-channel-text",
-    textContent: translations.getTranslation("special-channel-text"),
-  });
-  const specialChanToggle = createEl("toggle", {
-    id: "special-channel-toggle",
-  });
-  textChannelContainer.style.filter = "brightness(1.5)";
-  voiceChannelContainer.style.filter = "brightness(1)";
-
-  textChannelContainer.addEventListener("click", function () {
-    isTextChannel = true;
-    textChannelContainer.style.filter = "brightness(1.5)";
-    voiceChannelContainer.style.filter = "brightness(1)";
-  });
-
-  voiceChannelContainer.addEventListener("click", function () {
-    isTextChannel = false;
-    textChannelContainer.style.filter = "brightness(1)";
-    voiceChannelContainer.style.filter = "brightness(1.5)";
-  });
+  const privateChanToggle = createPrivateChannelToggle();
 
   const popAcceptButton = createEl("button", {
     className: "pop-up-accept",
-    textContent: translations.getTranslation("popAcceptButton"),
+    textContent: translations.getTranslation("channel-dropdown-button"),
     style:
       "height:40px; width: 25%; top:93%; left: 84%; font-size:14px; disabled=1; white-space:nowrap;",
   });
 
-  popAcceptButton.addEventListener("click", function () {
-    const inviteUsersSendInput = getId("create-channel-send-input");
-    let newchanname = inviteUsersSendInput.value.replace(/^\s+/, "");
+  const inviteUsersSendInput = createEl("input", {
+    id: "create-channel-send-input",
+    placeholder: translations.getTranslation("new-channel-placeholder"),
+  });
+  inviteUsersSendInput.addEventListener("input", () =>
+    toggleButtonState(
+      inviteUsersSendInput.value.trim() !== "",
+      popAcceptButton,
+    ),
+  );
 
-    if (!newchanname) {
-      newchanname = newChannelPlaceholder;
-    }
-    const data = {
+  popAcceptButton.addEventListener("click", () => {
+    const newchanname =
+      inviteUsersSendInput.value.trim() ||
+      translations.getTranslation("new-channel-placeholder");
+    apiClient.send(EventType.CREATE_CHANNEL, {
       channelName: newchanname,
       guildId: currentGuildId,
-      isTextChannel: isTextChannel,
-    };
-
-    apiClient.send(EventType.CREATE_CHANNEL, data);
+      isTextChannel,
+    });
     isTextChannel = true;
     closePopUp(newPopOuterParent, newPopParent);
   });
-  function toggleButtonState(isActive) {
-    if (isActive) {
-      popAcceptButton.classList.remove("inactive");
-      popAcceptButton.classList.add("active");
-    } else {
-      popAcceptButton.classList.remove("active");
-      popAcceptButton.classList.add("inactive");
-    }
-  }
+
   const popRefuseButton = createEl("button", {
     className: "pop-up-refuse",
     textContent: translations.getTranslation("cancel"),
     style: "top: 93%; left:61%; font-size:14px;",
   });
-  popRefuseButton.addEventListener("click", function () {
+  popRefuseButton.addEventListener("click", () =>
+    closePopUp(newPopOuterParent, newPopParent),
+  );
+
+  const textChannelContainer = createChannelType(false);
+  const voiceChannelContainer = createChannelType(true);
+
+  textChannelContainer.addEventListener("click", () => {
     isTextChannel = true;
-    closePopUp(newPopOuterParent, newPopParent);
+    textChannelContainer.style.filter = "brightness(1.5)";
+    voiceChannelContainer.style.filter = "brightness(1)";
   });
-  newPopParent.appendChild(specialChanIcon);
-  newPopParent.appendChild(popAcceptButton);
-  newPopParent.appendChild(specialChanText);
-  newPopParent.appendChild(specialChanToggle);
 
-  newPopParent.appendChild(popRefuseButton);
+  voiceChannelContainer.addEventListener("click", () => {
+    isTextChannel = false;
+    textChannelContainer.style.filter = "brightness(1)";
+    voiceChannelContainer.style.filter = "brightness(1.5)";
+  });
+  const closeButton = createPopUpCloseButton(
+    newPopOuterParent,
+    newPopParent,
+    "popup-close",
+  );
 
-  textChannelContainer.appendChild(channeltypetexticon);
-  voiceChannelContainer.appendChild(channeltypevoiceicon);
+  newPopParent.append(
+    privateChannelIcon,
+    popAcceptButton,
+    privateChanToggle,
+    closeButton,
+    popRefuseButton,
+    textChannelContainer,
+    voiceChannelContainer,
+  );
 
-  textChannelContainer.appendChild(channeltypetexttitle);
-  textChannelContainer.appendChild(channeltypedescription);
-  voiceChannelContainer.appendChild(channeltypevoicetitle);
-  voiceChannelContainer.appendChild(channelTypeVoiceDescription);
-
-  newPopParent.appendChild(closeBtn);
-  newPopParent.appendChild(inviteTitle);
-
-  newPopParent.appendChild(channeltypetitle);
-  newPopParent.appendChild(channelnametitle);
-  newPopParent.appendChild(channelIcon);
-
-  const centerWrapper = createEl("div", { id: "center-wrapper" });
-  centerWrapper.appendChild(textChannelTitle);
-  centerWrapper.appendChild(voiceChannelTitle);
-  newPopParent.appendChild(centerWrapper);
-
-  newPopParent.append(textChannelContainer);
-  newPopParent.append(voiceChannelContainer);
-
-  popBottomContainer.appendChild(sendInvText);
+  const popBottomContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "create-channel-popup-bottom-container",
+  });
+  //popBottomContainer.appendChild(createEl("p", { id: "create-channel-send-text", textContent: translations.getTranslation("private-channel-description") }));
   popBottomContainer.appendChild(inviteUsersSendInput);
+
   newPopParent.appendChild(popBottomContainer);
+
   newPopOuterParent.style.display = "flex";
-  closeBtn.addEventListener("click", function () {
-    closePopUp(newPopOuterParent, newPopParent);
-  });
-
-  newPopOuterParent.addEventListener("click", function (event) {
-    if (event.target === newPopOuterParent) {
-      closePopUp(newPopOuterParent, newPopParent);
-    }
-  });
-
   newPopOuterParent.appendChild(newPopParent);
   document.body.appendChild(newPopOuterParent);
+  toggleManager.setupToggle("private-channel-toggle");
+  newPopOuterParent.addEventListener("click", (event) => {
+    if (event.target === newPopOuterParent)
+      closePopUp(newPopOuterParent, newPopParent);
+  });
 }
+
+function toggleButtonState(isActive, popAcceptButton) {
+  if (isActive) {
+    popAcceptButton.classList.remove("inactive");
+    popAcceptButton.classList.add("active");
+  } else {
+    popAcceptButton.classList.remove("active");
+    popAcceptButton.classList.add("inactive");
+  }
+}
+
 export function drawProfilePop(userData) {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
@@ -359,16 +353,13 @@ export function createPopUp({ contentElements, id, closeBtnId = null }) {
 
   contentElements.forEach((element) => parentContainer.appendChild(element));
   if (closeBtnId) {
-    const closeBtn = createEl("button", {
-      className: "popup-close",
-      id: closeBtnId,
-      textContent: "X",
-    });
+    const closeBtn = createPopUpCloseButton(
+      popOuterParent,
+      parentContainer,
+      "popup-close",
+      closeBtnId,
+    );
     parentContainer.appendChild(closeBtn);
-
-    closeBtn.addEventListener("click", function () {
-      closePopUp(popOuterParent, parentContainer);
-    });
   }
 
   let isMouseDownOnPopOuter = false;
@@ -469,8 +460,22 @@ export function toggleDropdown() {
     guildSettingsDropdown.style.animation = "fadeIn 0.3s forwards";
     fillDropDownContent();
   } else {
-    closeDropdown(); 
+    closeDropdown();
   }
+}
+function createPopUpCloseButton(
+  popOuterParent,
+  parentContainer,
+  className,
+  id,
+) {
+  const closeButton = createEl("button", { className });
+  if (id) closeButton.id = id;
+  closeButton.innerHTML = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path></svg>`;
+  closeButton.addEventListener("click", function () {
+    closePopUp(popOuterParent, parentContainer);
+  });
+  return closeButton;
 }
 
 export function openSearchPop() {}
@@ -542,14 +547,11 @@ export async function showGuildPop() {
   popBottomContainer.appendChild(option2Title);
   popBottomContainer.appendChild(popOptionButton2);
 
-  const closeButton = createEl("button", {
-    className: "pop-up-accept",
-    className: "popup-close",
-    textContent: "X",
-  });
-  closeButton.addEventListener("click", function () {
-    closePopUp(newPopOuterParent, newPopParent);
-  });
+  const closeButton = createPopUpCloseButton(
+    newPopOuterParent,
+    newPopParent,
+    "popup-close",
+  );
 
   newPopParent.appendChild(guildPopSubject);
   newPopParent.appendChild(guildPopContent);

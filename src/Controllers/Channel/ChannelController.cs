@@ -91,10 +91,10 @@ namespace LiventCord.Controllers
 
             if (guild == null)
                 return NotFound(new { Type = "error", Message = "Guild does not exist." });
-
+            string channelId = Utils.CreateRandomId();
             var newChannel = new Channel
             {
-                ChannelId = Utils.CreateRandomId(),
+                ChannelId = channelId,
                 ChannelName = request.ChannelName,
                 IsTextChannel = request.IsTextChannel,
                 GuildId = guildId,
@@ -104,7 +104,7 @@ namespace LiventCord.Controllers
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new {guildId, channelId});
         }
 
         [NonAction]

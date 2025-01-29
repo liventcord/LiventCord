@@ -400,6 +400,7 @@ th {
   font-size: 12px;
   padding-left: 20px;
   font-weight: bold;
+  margin-top: -10px;
 }
 #create-channel-name {
   text-transform: uppercase;
@@ -752,11 +753,6 @@ th {
 #settings-button:not(:hover) svg {
   animation: none;
 }
-#earphonebtn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-}
 #microphone-button {
   margin-top: -35px;
   margin-left: 157px;
@@ -767,7 +763,6 @@ th {
   border-radius: 5px;
   background-color: #ffffff00;
   cursor: pointer;
-  transform: scaleX(-1);
 }
 #microphone-button:hover {
   background-color: #535353;
@@ -782,7 +777,6 @@ th {
   border-radius: 5px;
   background-color: #ffffff00;
   cursor: pointer;
-  transform: scaleX(-1);
 }
 #earphone-button:hover {
   background-color: #535353;
@@ -889,7 +883,7 @@ th {
 }
 .vertical-line {
   border: none;
-  width: 25px;
+  width: 33px;
   left: 415px;
   top: 15px;
   border-top: 1px solid #cccccc23;
@@ -939,6 +933,7 @@ th {
   position: fixed;
   height: 100%;
   margin-top: 0px;
+  padding-top: 7px;
   overflow-y: auto;
   width: 32px;
   z-index: 3;

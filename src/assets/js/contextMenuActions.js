@@ -20,7 +20,6 @@ const ActionType = {
   COPY_USER_ID: "COPY_USER_ID",
   INVITE_TO_GUILD: "INVITE_TO_GUILD",
   BLOCK_USER: "BLOCK_USER",
-  REPORT_USER: "REPORT_USER",
   REMOVE_USER: "REMOVE_USER",
   EDIT_GUILD_PROFILE: "EDIT_GUILD_PROFILE",
   MENTION_USER: "MENTION_USER",
@@ -96,9 +95,6 @@ export function blockUser(userId) {
   alertUser("Not implemented: Blocking user ");
 }
 
-export function reportUser(userId) {
-  alertUser("Not implemented: Reporting user ");
-}
 export function muteChannel(channelId) {
   alertUser("Mute channel is not implemented!");
 }
@@ -217,9 +213,6 @@ export function createProfileContext(userData) {
   } else {
     context[ActionType.BLOCK_USER] = {
       action: () => blockUser(userId),
-    };
-    context[ActionType.REPORT_USER] = {
-      action: () => reportUser(userId),
     };
   }
 

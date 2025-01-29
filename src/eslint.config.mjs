@@ -23,7 +23,7 @@ export default [
       "no-undef": "error",
       eqeqeq: ["warn", "always"],
 
-      "no-trailing-spaces": "off",
+      "no-trailing-spaces": "error",
       semi: "off",
       quotes: "off",
       indent: "off",

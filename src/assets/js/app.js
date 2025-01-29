@@ -62,7 +62,12 @@ import {
   currentChannelName,
 } from "./channels";
 import { apiClient, EventType } from "./api";
-import { updateUserListText, toggleUsersList, userList } from "./userList";
+import {
+  updateUserListText,
+  toggleUsersList,
+  userList,
+  setUserListLine,
+} from "./userList";
 import {
   sendNotify,
   getId,
@@ -430,6 +435,8 @@ export function loadDmHome(isChangingUrl = true) {
 
     updateUserListText();
     userList.classList.add("friendactive");
+    handleResize();
+    setUserListLine();
     if (userListFriActiveHtml) {
       userList.innerHTML = userListFriActiveHtml;
     }

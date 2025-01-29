@@ -40,6 +40,9 @@ export const EventType = Object.freeze({
   CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
   GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
 });
+const friendEvents = Object.values(EventType).filter((event) =>
+  event.includes("friend"),
+);
 
 const HttpMethod = Object.freeze({
   POST: "POST",
@@ -98,7 +101,7 @@ const EventUrlMap = {
   [EventType.GET_MEMBERS]: "/guilds/{guildId}/members",
   [EventType.GET_INVITES]: "/guilds/{guildId}/invites",
 
-  [EventType.GET_HISTORY_DM]: "/guilds/{guildId}/channels/{channelId}/messages",
+  [EventType.GET_HISTORY_DM]: "/dms/channels/{channelId}/messages",
   [EventType.GET_HISTORY_GUILD]:
     "/guilds/{guildId}/channels/{channelId}/messages",
 
@@ -250,13 +253,15 @@ class ApiClient {
   }
 
   async handleError(response, event) {
-    let predefinedMessage =
-      translations.getErrorMessage(response.status)?.[event] ||
-      translations.getErrorMessage("default");
-    printFriendMessage(predefinedMessage);
-    console.error(
-      `Error [${response.status}] for event "${event}": ${predefinedMessage}`,
-    );
+    if (event in friendEvents) {
+      let predefinedMessage =
+        translations.getFriendErrorMessage(response.status)?.[event] ||
+        translations.getFriendErrorMessage("default");
+      printFriendMessage(predefinedMessage);
+      console.error(
+        `Error [${response.status}] for event "${event}": ${predefinedMessage}`,
+      );
+    }
   }
 
   async sendRequest(data, url, method, event, expectsResponse = true) {

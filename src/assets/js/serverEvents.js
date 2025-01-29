@@ -26,6 +26,7 @@ import { apiClient, EventType } from "./api.js";
 import { permissionManager } from "./guildPermissions.js";
 import { translations } from "./translations.js";
 import { closeCurrentJoinPop } from "./popups.js";
+import { createFireWorks } from "./extras.js";
 
 apiClient.on(EventType.JOIN_GUILD, (data) => {
   if (!data.success) {
@@ -73,10 +74,11 @@ apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
 });
 
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
-  if (data.success === undefined || data.success === true) return;
-  alertUser(
-    `${guildCache.currentGuildName} sunucusunda kanal yönetme iznin yok!`,
-  );
+  const guildId = data.guildId;
+  const channelId = data.channelId;
+  if (!guildId | !channelId) return;
+  loadGuild(guildId, channelId);
+  createFireWorks();
 });
 
 apiClient.on(EventType.GET_BULK_REPLY, (data) => {

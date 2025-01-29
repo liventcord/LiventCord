@@ -1,4 +1,4 @@
-import { capitalizeFirstCharacter, getId, truncateString } from "./utils";
+import { kebapToSentence, getId, truncateString } from "./utils";
 import { alertUser } from "./ui";
 
 class Translations {
@@ -8,7 +8,7 @@ class Translations {
       en: "en-us",
       tr: "tr-TR",
     };
-    this.errorTranslations = {};
+    this.friendErrorTranslations = {};
     this.contextTranslations = {};
     this.settingTranslations = {};
     this.textTranslations = {};
@@ -119,6 +119,9 @@ class Translations {
     count = Math.max(count, 50);
     return this.replacePlaceholder("readen-chat", { date, time, count });
   }
+  getChannelManageFailText(name) {
+    return this.replacePlaceholder("channel-manage-fail", { guildName: name });
+  }
 
   initializeTranslations() {
     const currentTranslations = this.textTranslations;
@@ -150,8 +153,8 @@ class Translations {
   getTranslation(key, list = this.textTranslations) {
     const result = list?.[key] ?? null;
     if (key && !result) {
-      console.warn("Cant find translation for:", key, list);
-      return capitalizeFirstCharacter(key);
+      console.error("Cant find translation for:", key, list);
+      return kebapToSentence(key);
     }
     return result;
   }
@@ -176,9 +179,15 @@ class Translations {
       );
       const textTranslations = await textTranslationsResponse.json();
 
+      const friendErrorTranslationsResponse = await fetch(
+        `/translations/friendErrorTranslations${language}.json`,
+      );
+      const friendErrorTranslations =
+        await friendErrorTranslationsResponse.json();
       const errorTranslationsResponse = await fetch(
         `/translations/errorTranslations${language}.json`,
       );
+
       const errorTranslations = await errorTranslationsResponse.json();
 
       const placeholderTranslationsResponse = await fetch(
@@ -198,6 +207,7 @@ class Translations {
       const settingTranslations = await settingTranslationsResponse.json();
 
       this.textTranslations = textTranslations;
+      this.friendErrorTranslations = friendErrorTranslations;
       this.errorTranslations = errorTranslations;
       this.placeholderTranslations = placeholderTranslations;
       this.contextTranslations = contextTranslations;
@@ -221,8 +231,8 @@ class Translations {
     return translation || key;
   }
 
-  getErrorMessage(key) {
-    const result = this.errorTranslations[key];
+  getFriendErrorMessage(key) {
+    const result = this.friendErrorTranslations[key];
     if (key && !result) {
       console.error("Cant find translation for:", key);
     }

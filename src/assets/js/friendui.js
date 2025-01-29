@@ -523,7 +523,6 @@ export function displayWumpus() {
     src: "/images/wumpusalone.png",
   });
   imgElement.style.userSelect = "none";
-  disableElement("friendsTitleContainer");
   friendsContainer.appendChild(imgElement);
 }
 

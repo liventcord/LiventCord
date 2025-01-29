@@ -1,0 +1,22 @@
+{
+  "404": {
+    "add_friend": "Eklemeye çalıştığın kullanıcı bulunamadı.",
+    "accept_friend_request": "Kabul etmeye çalıştığın arkadaşlık isteği bulunamadı.",
+    "remove_friend": "Çıkarmaya çalıştığın arkadaş bulunamadı.",
+    "deny_friend_request": "Reddetmeye çalıştığın arkadaşlık isteği bulunamadı."
+  },
+  "409": {
+    "add_friend": "Bu kullanıcı zaten arkadaşınız.",
+    "accept_friend_request": "Arkadaşlık isteği zaten kabul edildi ya da reddedildi.",
+    "remove_friend": "Bu kullanıcıyı şu an çıkaramazsınız.",
+    "deny_friend_request": "Arkadaşlık isteği zaten kabul edildi ya da reddedildi."
+  },
+  "400": {
+    "add_friend": "Geçersiz arkadaşlık isteği.",
+    "remove_friend": "Geçersiz arkadaşlık çıkarma isteği."
+  },
+  "500": {
+    "default": "Sunucu hatası. Lütfen daha sonra tekrar deneyin."
+  },
+  "default": "Beklenmedik bir hata oluştu. Lütfen tekrar deneyin."
+}

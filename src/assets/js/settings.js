@@ -81,12 +81,30 @@ export const toggleManager = {
     "party-toggle": loadBooleanCookie("party-toggle") ?? false,
     "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
     "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
+    "private-channel-toggle": false,
   },
   updateState(toggleId, newValue) {
     this.states[toggleId] = newValue;
-    saveBooleanCookie(toggleId, newValue);
+    if (toggleId !== "private-channel-toggle") {
+      saveBooleanCookie(toggleId, newValue);
+    }
     this.updateToggleDisplay(toggleId, newValue);
     this.triggerActions(toggleId, newValue);
+  },
+  setupToggles() {
+    Object.keys(this.states).forEach((id) => {
+      this.setupToggle(id);
+    });
+  },
+  setupToggle(id) {
+    const toggleElement = getId(id);
+    if (toggleElement) {
+      this.updateToggleDisplay(id, this.states[id]);
+      handleToggleClick(toggleElement, () => {
+        const newValue = !this.states[id];
+        this.updateState(id, newValue);
+      });
+    }
   },
   updateToggleDisplay(toggleId, newValue) {
     const toggleElement = getId(toggleId);
@@ -158,27 +176,13 @@ export const toggleManager = {
   },
 };
 
-export function setupToggle(id) {
-  const toggleElement = getId(id);
-  if (toggleElement) {
-    toggleManager.updateToggleDisplay(id, toggleManager.states[id]);
-    handleToggleClick(toggleElement, () => {
-      const newValue = !toggleManager.states[id];
-      toggleManager.updateState(id, newValue);
-    });
-  }
-}
-
 export function initializeCookies() {
-  [
-    "activity-toggle",
-    "snow-toggle",
-    "party-toggle",
-    "notify-toggle",
-    "slide-toggle",
-  ].forEach(setupToggle);
+  Object.entries(toggleManager.states).forEach(([key, value]) => {
+    toggleManager.setupToggle(key);
+  });
 
   console.log("init cookies", toggleManager.states);
+
   if (toggleManager.states["snow-toggle"])
     toggleManager.toggleEffect("snow", true);
   if (toggleManager.states["party-toggle"])

@@ -148,7 +148,7 @@ export function isChannelMatching(channelId, isTextChannel) {
   if (channelId === currentChannel) {
     return true;
   } else {
-    console.error("Match failed");
+    //console.error("Match failed");
     return false;
   }
 }

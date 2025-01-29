@@ -6,7 +6,6 @@ import {
   toggleEmail,
 } from "./ui";
 import {
-  setupToggle,
   settingTypes,
   toggleManager,
   setIsChangedProfile,
@@ -36,6 +35,7 @@ import { permissionManager } from "./guildPermissions";
 import { currentGuildId } from "./guild";
 import { regenerateConfirmationPanel, triggerFileInput } from "./settings";
 import { lastConfirmedProfileImg } from "./avatar";
+import { setSelfStatus } from "./user";
 
 export let currentSettingsType;
 export let isGuildSettings = false;
@@ -360,8 +360,11 @@ export function selectSettingCategory(settingType) {
       languageDropdown.addEventListener("change", (event) => {
         translations.currentLanguage = event.target.value;
         translations.setLanguage(translations.currentLanguage);
-        reconstructSettings(isGuildSettings);
-        selectSettingCategory(currentSettingsType);
+        setTimeout(() => {
+          reconstructSettings(isGuildSettings);
+          selectSettingCategory(currentSettingsType);
+          setSelfStatus();
+        }, 200);
       });
     }
   }
@@ -371,14 +374,7 @@ export function selectSettingCategory(settingType) {
   closeButton.addEventListener("click", closeSettings);
   settingsContainer.insertBefore(closeButton, settingsContainer.firstChild);
 
-  const togglesToSetup = [
-    "activity-toggle",
-    "snow-toggle",
-    "party-toggle",
-    "notify-toggle",
-    "slide-toggle",
-  ];
-  togglesToSetup.forEach(setupToggle);
+  toggleManager.setupToggles();
 
   if (settingType === "DeleteGuild") {
     createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
@@ -412,7 +408,7 @@ export function selectSettingCategory(settingType) {
   }
 }
 
-function createToggle(id, label, description) {
+export function createToggle(id, label, description) {
   return `
         <div class="toggle-card">
             <label for="${id}">${label}</label>

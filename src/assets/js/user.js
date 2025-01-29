@@ -8,6 +8,8 @@ import { initialState } from "./app";
 import { cacheInterface } from "./cache";
 import { currentGuildId } from "./guild";
 import { createEl } from "./utils";
+import { offline, online } from "./friends";
+import { translations } from "./translations";
 
 export let currentUserId;
 
@@ -34,6 +36,21 @@ export function setUserNick(newNickname) {
 function setCurrentUserId(id) {
   currentUserId = id;
 }
+const statusTypes = {
+  offline: "offline",
+  online: "online",
+  "dont-disturb": "dont-disturb",
+  idle: "idle",
+};
+
+export function setSelfStatus() {
+  let status = "";
+
+  status =
+    translations.getTranslation(statusTypes[initialState.user.status]) ||
+    translations.getTranslation(statusTypes[offline]);
+  selfStatus.textContent = status;
+}
 
 export function initializeProfile() {
   setCurrentUserId(initialState.user.id);
@@ -41,7 +58,7 @@ export function initializeProfile() {
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
-  selfStatus.textContent = initialState.user.status;
+  setSelfStatus();
   updateSelfProfile(currentUserId);
 }
 
