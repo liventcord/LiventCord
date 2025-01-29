@@ -261,7 +261,15 @@ export function isChannelExist(channelId) {
   );
   return existingChannelButton !== null;
 }
-
+export function createChannel(channelName, isTextChannel, isPrivate) {
+  console.log(channelName, isTextChannel, isPrivate);
+  apiClient.send(EventType.CREATE_CHANNEL, {
+    channelName: channelName,
+    guildId: currentGuildId,
+    isTextChannel,
+    isPrivate,
+  });
+}
 export function createChannelButton(channelId, channelName, isTextChannel) {
   const htmlToSet = isTextChannel ? textChanHtml : voiceChanHtml;
   const channelButton = createEl("li", {
@@ -330,8 +338,11 @@ export function addEventListeners(
       mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
     }
   });
-
   mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
+
+  setTimeout(() => {
+    mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
+  }, 50);
   channelButton.addEventListener("click", function () {
     changeChannel(channel);
   });
@@ -370,74 +381,72 @@ export function addChannelEventListeners() {
   document.addEventListener("keyup", resetKeydown);
 }
 
-export function validateChannel(channel) {
-  const channelId = channel.channelId;
-  const channelName = channel.channelName;
-  const isTextChannel = channel.isTextChannel;
+class Channel {
+  constructor({ channelId, channelName, isTextChannel, guildId }) {
+    this.channelId = channelId;
+    this.channelName = channelName;
+    this.isTextChannel = isTextChannel;
+    this.guildId = guildId;
+  }
 
-  return channelId && channelName && typeof isTextChannel !== "undefined";
+  isValid() {
+    return (
+      this.channelId &&
+      this.channelName &&
+      typeof this.isTextChannel !== "undefined"
+    );
+  }
+
+  createElement() {
+    if (isChannelExist(this.channelId)) return;
+
+    const channelButton = createChannelButton(
+      this.channelId,
+      this.channelName,
+      this.isTextChannel,
+    );
+    const contentWrapper = createContentWrapper(
+      this,
+      this.channelName,
+      this.isTextChannel,
+    );
+
+    channelButton.appendChild(contentWrapper);
+    appendToChannelContextList(this.channelId);
+    channelsUl.appendChild(channelButton);
+
+    addEventListeners(channelButton, this.channelId, this.isTextChannel, this);
+    handleChannelChangeOnLoad(this, this.channelId);
+  }
+}
+
+export function validateChannel(channel) {
+  return new Channel(channel).isValid();
 }
 
 export function validateChannels(channels) {
-  return Array.isArray(channels) && channels.every(validateChannel);
+  return (
+    Array.isArray(channels) &&
+    channels.every((channel) => new Channel(channel).isValid())
+  );
 }
 
 export function createChannelElement(channel) {
-  const {
-    channelId: channelId,
-    channelName: channelName,
-    isTextChannel: isTextChannel,
-  } = channel;
-
-  if (isChannelExist(channelId)) return;
-
-  const channelButton = createChannelButton(
-    channelId,
-    channelName,
-    isTextChannel,
-  );
-  const contentWrapper = createContentWrapper(
-    channel,
-    channelName,
-    isTextChannel,
-  );
-
-  channelButton.appendChild(contentWrapper);
-  appendToChannelContextList(channelId);
-  channelsUl.appendChild(channelButton);
-
-  addEventListeners(channelButton, channelId, isTextChannel, channel);
-  handleChannelChangeOnLoad(channel, channelId);
+  new Channel(channel).createElement();
 }
 
-export function addChannel(channel) {
-  const channelId = channel.channelId;
-  const guildId = channel.guildId;
-  const channelName = channel.channelName;
-  const isTextChannel = channel.isTextChannel;
-
-  if (
-    !validateChannel({
-      channelId: channelId,
-      channelName: channelName,
-      isTextChannel: isTextChannel,
-    })
-  ) {
+export function addChannel(channelData) {
+  const channel = new Channel(channelData);
+  if (!channel.isValid()) {
     console.error("Invalid channel data:", channel);
     return;
   }
 
   console.log(typeof channel, channel);
   currentChannels.push(channel);
+  cacheInterface.addChannel(channel.guildId, channel);
 
-  cacheInterface.addChannel(guildId, channel);
-
-  removeChannelEventListeners();
-  createChannelElement(channel);
-
-  if (currentChannels.length > 1) {
-    addChannelEventListeners();
-  }
+  refreshChannelList(channel);
 }
 
 export function updateChannels(channels) {
@@ -447,45 +456,39 @@ export function updateChannels(channels) {
   }
 
   console.log("Updating channels with:", channels);
-
   channelsUl.innerHTML = "";
-  if (!isOnMe) {
-    disableElement("dm-container-parent");
-  }
+  if (!isOnMe) disableElement("dm-container-parent");
 
-  removeChannelEventListeners();
-
-  channels.forEach(createChannelElement);
-
+  refreshChannelList(channels);
   currentChannels = channels;
+}
 
-  if (currentChannels.length > 1) {
-    addChannelEventListeners();
-  }
+function refreshChannelList(channels) {
+  removeChannelEventListeners();
+  (Array.isArray(channels) ? channels : [channels]).forEach(
+    createChannelElement,
+  );
+  if (currentChannels && currentChannels.length > 1) addChannelEventListeners();
 }
 
 export function removeChannel(data) {
-  const guildId = data.guildId;
-  const channelId = data.channelId;
+  const { guildId, channelId } = data;
   guildCache.removeChannel(guildId, channelId);
 
   const channelsArray = cacheInterface.getChannels(guildId);
   currentChannels = channelsArray;
   removeChannelElement(channelId);
   if (guildCache.currentChannelId === channelId) {
-    const firstChannel = channelsArray[0].channelId;
-    loadGuild(currentGuildId, firstChannel);
+    const firstChannel = channelsArray[0]?.channelId;
+    if (firstChannel) loadGuild(currentGuildId, firstChannel);
   }
 }
 
 export function editChannel(data) {
-  const guildId = data.guildId;
-  const channelId = data.channelId;
-  const channelName = data.channelName;
-  guildCache.editChannel(guildId, channelId, { channelName: channelName });
+  const { guildId, channelId, channelName } = data;
+  guildCache.editChannel(guildId, channelId, { channelName });
 
-  const channelsArray = cacheInterface.getChannels(guildId);
-  currentChannels = channelsArray;
+  currentChannels = cacheInterface.getChannels(guildId);
 }
 
 // voice

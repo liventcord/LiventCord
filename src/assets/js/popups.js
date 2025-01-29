@@ -3,8 +3,7 @@ import { guildCache } from "./cache";
 import { currentGuildId, createGuild, joinToGuild } from "./guild";
 import { getId, getAverageRGB, createEl } from "./utils";
 import { friendCache, addFriend } from "./friends";
-import { currentChannelName } from "./channels";
-import { apiClient, EventType } from "./api";
+import { createChannel, currentChannelName } from "./channels";
 import { currentUserId, getUserNick, currentUserNick } from "./user";
 import { loadDmHome, openDm } from "./app";
 import { createBubble } from "./userList";
@@ -21,12 +20,25 @@ let isDropdownOpen = false;
 export let closeCurrentJoinPop;
 const hashText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>`;
 const voiceText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z" class="foreground_b545d5"></path><path fill="currentColor" d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z" class="foreground_b545d5"></path></svg>`;
+
+const radioStates = {};
+
+function toggleRadio(radio, newValue) {
+  const innerCircle = radio.querySelectorAll("circle")[1];
+  innerCircle.setAttribute("fill", newValue ? "white" : "none");
+  radioStates[radio] = newValue;
+}
+
 function createRadioBar() {
-  const radioSvg = `<svg aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="currentColor"></path></svg></div>`;
+  const radioSvg = `<svg aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"></circle>
+    <circle cx="12" cy="12" r="6" fill="none" stroke="none"></circle>
+  </svg>`;
   const radioBar = createEl("div", {
     className: "radio-bar",
     innerHTML: radioSvg,
   });
+  radioStates[radioBar] = false;
   return radioBar;
 }
 
@@ -135,15 +147,14 @@ export function createChannelsPop() {
   );
 
   popAcceptButton.addEventListener("click", () => {
-    const newchanname =
+    const channelName =
       inviteUsersSendInput.value.trim() ||
       translations.getTranslation("new-channel-placeholder");
-    apiClient.send(EventType.CREATE_CHANNEL, {
-      channelName: newchanname,
-      guildId: currentGuildId,
+    createChannel(
+      channelName,
       isTextChannel,
-    });
-    isTextChannel = true;
+      toggleManager.states["private-channel-toggle"],
+    );
     closePopUp(newPopOuterParent, newPopParent);
   });
 
@@ -159,17 +170,27 @@ export function createChannelsPop() {
   const textChannelContainer = createChannelType(false);
   const voiceChannelContainer = createChannelType(true);
 
-  textChannelContainer.addEventListener("click", () => {
-    isTextChannel = true;
-    textChannelContainer.style.filter = "brightness(1.5)";
-    voiceChannelContainer.style.filter = "brightness(1)";
-  });
+  function updateChannelState(selectedContainer, isText) {
+    const otherContainer =
+      selectedContainer === textChannelContainer
+        ? voiceChannelContainer
+        : textChannelContainer;
+    selectedContainer.style.filter = "brightness(1.5)";
+    otherContainer.style.filter = "brightness(1)";
+    toggleRadio(selectedContainer.querySelector(".radio-bar"), true);
+    toggleRadio(otherContainer.querySelector(".radio-bar"), false);
+    isTextChannel = isText;
+  }
 
-  voiceChannelContainer.addEventListener("click", () => {
-    isTextChannel = false;
-    textChannelContainer.style.filter = "brightness(1)";
-    voiceChannelContainer.style.filter = "brightness(1.5)";
-  });
+  updateChannelState(textChannelContainer, true);
+
+  textChannelContainer.addEventListener("click", () =>
+    updateChannelState(textChannelContainer, true),
+  );
+  voiceChannelContainer.addEventListener("click", () =>
+    updateChannelState(voiceChannelContainer, false),
+  );
+
   const closeButton = createPopUpCloseButton(
     newPopOuterParent,
     newPopParent,
@@ -190,7 +211,7 @@ export function createChannelsPop() {
     className: "popup-bottom-container",
     id: "create-channel-popup-bottom-container",
   });
-  //popBottomContainer.appendChild(createEl("p", { id: "create-channel-send-text", textContent: translations.getTranslation("private-channel-description") }));
+
   popBottomContainer.appendChild(inviteUsersSendInput);
 
   newPopParent.appendChild(popBottomContainer);

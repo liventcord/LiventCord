@@ -6,7 +6,7 @@ import {
   handleHistoryResponse,
 } from "./chat";
 import { guildCache, replyCache, cacheInterface } from "./cache";
-import { updateChannels } from "./channels";
+import { addChannel, changeChannel, updateChannels } from "./channels";
 import { getId } from "./utils";
 import { updateMemberList } from "./userList";
 import {
@@ -76,8 +76,12 @@ apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   const guildId = data.guildId;
   const channelId = data.channelId;
+  const isTextChannel = data.isTextChannel;
   if (!guildId | !channelId) return;
-  loadGuild(guildId, channelId);
+  addChannel(data);
+  if (isTextChannel) {
+    changeChannel(data);
+  }
   createFireWorks();
 });
 

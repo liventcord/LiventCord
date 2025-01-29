@@ -78,6 +78,8 @@ namespace LiventCord.Models
 
         [Column("is_text_channel")]
         public required bool IsTextChannel { get; set; } = false;
+        [Column("is_private")]
+        public required bool IsPrivate { get; set; } = false;
 
         [Column("last_read_datetime")]
         public DateTime? LastReadDateTime { get; set; }

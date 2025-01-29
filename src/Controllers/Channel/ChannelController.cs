@@ -97,6 +97,7 @@ namespace LiventCord.Controllers
                 ChannelId = channelId,
                 ChannelName = request.ChannelName,
                 IsTextChannel = request.IsTextChannel,
+                IsPrivate = request.IsPrivate,
                 GuildId = guildId,
                 Order = guild.Channels.Count,
             };
@@ -104,7 +105,7 @@ namespace LiventCord.Controllers
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new {guildId, channelId});
+            return Ok(new {guildId, channelId,request.IsTextChannel,request.ChannelName});
         }
 
         [NonAction]
@@ -134,9 +135,10 @@ namespace LiventCord.Controllers
 
 public class CreateChannelRequest
 {
-    [Required(ErrorMessage = "Channel name is required.")]
+    [Required()]
     public required string ChannelName { get; set; }
-
-    [Required(ErrorMessage = "IsTextChannel is required.")]
+    [Required()]
     public required bool IsTextChannel { get; set; }
+    [Required()]
+    public required bool IsPrivate {get; set; }
 }
