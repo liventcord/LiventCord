@@ -330,22 +330,30 @@ export function updateFileImageBorder() {
     fileImagePreview.style.border = "20px solid #2b2d31";
   }
 }
+export function displayLocalMessage(channelId,content) {
 
-export function displayCannotSendMessage(failedMessageContent) {
-  if (!isOnDm) {
-    return;
-  }
   const failedId = createRandomId();
-  const failedMessage = {
+
+  const preMessage = {
     messageId: failedId,
     userId: currentUserId,
-    content: failedMessageContent,
-    channelId: friendCache.currentDmId,
+    content: content,
+    channelId: channelId,
     date: createNowDate(),
     addToTop: false,
   };
-  chatInput.value = "";
-  displayChatMessage(failedMessage);
+  
+  displayChatMessage(preMessage);
+}
+export function displayCannotSendMessage(channelId,content) {
+  if (!isOnDm) {
+    return;
+  }
+
+  displayLocalMessage(channelId,content);
+  const failedId = createRandomId();
+
+ 
   const failedMsg = getId(failedId);
   if (failedMsg) {
     const foundMsgContent = failedMsg.querySelector("#message-content-element");
@@ -353,12 +361,11 @@ export function displayCannotSendMessage(failedMessageContent) {
       foundMsgContent.classList.add("failed");
     }
   }
-
   const cannotSendMsg = {
     messageId: createRandomId(),
     userId: CLYDE_ID,
     content: translations.getTranslation("fail-message-text"),
-    channelId: friendCache.currentDmId,
+    channelId: channelId,
     date: createNowDate(),
     lastEdited: "",
     attachmentUrls: "",

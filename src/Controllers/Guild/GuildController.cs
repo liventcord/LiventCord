@@ -115,6 +115,7 @@ namespace LiventCord.Controllers
                     GuildId = guildId,
                     ChannelName = DEFAULT_CHANNEL_NAME,
                     ChannelDescription = "",
+                    IsPrivate = false,
                     IsTextChannel = true,
                     Order = 0,
                 }

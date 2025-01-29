@@ -14,6 +14,7 @@ import {
   fileImagePreview,
   fileInput,
   currentReplyingTo,
+  displayLocalMessage,
 } from "./chatbar";
 import { apiClient, EventType } from "./api";
 import {
@@ -90,13 +91,14 @@ export async function sendMessage(content, user_ids) {
     !friendCache.isFriend(friendCache.currentDmId) &&
     !hasSharedGuild(friendCache.currentDmId)
   ) {
-    displayCannotSendMessage(content);
+    displayCannotSendMessage(friendCache.currentDmId,content);
     return;
   }
-
-  let channelIdToSend = isOnDm
-    ? friendCache.currentDmId
-    : guildCache.currentChannelId;
+  
+    let channelIdToSend = isOnDm
+      ? friendCache.currentDmId
+      : guildCache.currentChannelId;
+  displayLocalMessage(channelIdToSend,content);
 
   setTimeout(scrollToBottom, 10);
 
