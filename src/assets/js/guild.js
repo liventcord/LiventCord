@@ -79,11 +79,11 @@ export function createGuild() {
         if (popup) {
           popup.parentNode.remove();
         }
-        loadGuild(data.guildId, data.channelId, guildName, currentUserId);
         cacheInterface.addGuild(data.guildId, guildName, currentUserId);
-
+        
         createFireWorks();
         appendToGuildList(data);
+        loadGuild(data.guildId, data.rootChannel, guildName);
       } else {
         alertUser(data);
       }
@@ -121,6 +121,8 @@ export function loadGuild(
   currentGuildId = guildId;
   permissionManager.updatePermissions(guildId, initialState.permissionsMap);
   selectGuildList(guildId);
+
+
   if (guildName) {
     guildCache.currentGuildName = guildName;
   } else {
@@ -298,8 +300,8 @@ export function updateGuilds(guildsJson) {
 
     wrapWhiteRod(mainLogoItem);
 
-    guildsJson.forEach(({ guildId, guildName, rootChannel, guildMembers }) => {
-      const listItem = createGuildListItem(guildId, rootChannel, guildName);
+    guildsJson.forEach(({ guildId, guildName,isGuildUploadedImg, rootChannel, guildMembers }) => {
+      const listItem = createGuildListItem(guildId, rootChannel, guildName,isGuildUploadedImg);
       guildsList.appendChild(listItem);
 
       guildCache.getGuild(guildId).setName(guildName);
@@ -326,14 +328,14 @@ export function wrapWhiteRod(element) {
     element.appendChild(whiteRod);
   }
 }
-const createGuildListItem = (guildIdStr, rootChannel, guildNameStr) => {
+const createGuildListItem = (guildId, rootChannel, guildName,isUploaded) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
-    id: guildIdStr,
+    id: guildId,
     className: "guild-image",
   });
 
-  setGuildImage(guildIdStr, imgElement);
+  setGuildImage(guildId, imgElement,isUploaded);
 
   imgElement.onerror = () => {
     imgElement.src = blackImage;
@@ -341,16 +343,11 @@ const createGuildListItem = (guildIdStr, rootChannel, guildNameStr) => {
 
   imgElement.addEventListener("click", () => {
     try {
-      loadGuild(guildIdStr, rootChannel, guildNameStr);
+      loadGuild(guildId, rootChannel, guildName);
     } catch (error) {
       console.error("Error while loading guild:", error);
     }
 
-    guildsList
-      .querySelectorAll(".guild")
-      .forEach((item) => item.classList.remove("selected-guild"));
-    listItem.classList.add("selected-guild");
-    wrapWhiteRod(listItem);
   });
 
   wrapWhiteRod(listItem);
@@ -365,6 +362,7 @@ export function appendToGuildList(guild) {
     guild.guildId,
     guild.rootChannel,
     guild.guildName,
+    guild.isGuildUploadedImg
   );
   guildsList.appendChild(listItem);
 

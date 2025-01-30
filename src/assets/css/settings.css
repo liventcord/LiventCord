@@ -238,9 +238,14 @@ th {
   cursor: pointer;
   user-select: none;
 }
+#guildImg path {
+  transform: scale(0.35) translateY(-50px);;
+  transform-origin: center;
+}
+
 #uploadText {
-  margin-top: 20px;
-  font-size: 12px;
+  margin-top: -12px;
+  font-size: 14px;
   color: white;
 }
 #settings-self-name {
