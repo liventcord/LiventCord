@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
         plugins: [autoprefixer, cssnano({ preset: "default" })],
       },
     },
-    plugins: [eslintPlugin({ emitWarning: true })],
+    plugins: [eslintPlugin({ emitWarning: false })],
     server: {
       hmr: true,
       proxy: {

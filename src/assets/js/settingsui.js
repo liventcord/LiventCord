@@ -617,9 +617,9 @@ export function createToggle(id, label, description) {
 export function openChannelSettings(channel) {
   openSettings(SettingType.CHANNEL);
 }
-export function openSettings(categoryType) {
-  currentSettingsType = SettingType.PROFILE;
-  reconstructSettings(categoryType);
+export function openSettings(settingType) {
+  currentSettingsType = settingType;
+  reconstructSettings(settingType);
 
   enableElement("settings-overlay");
 
@@ -689,9 +689,6 @@ export function reconstructSettings(categoryType) {
     default:
       console.error("Unknown settings category type: ", categoryType);
       break;
-  }
-  if (isGuildSettings()) {
-  } else {
   }
 }
 

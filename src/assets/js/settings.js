@@ -214,7 +214,7 @@ export function applySettings() {
     hideConfirmationPanel(currentPopUp);
   }
   if (isUnsaved) {
-    if (isGuildSettings) {
+    if (isGuildSettings()) {
       console.log(
         "Applying guild settings. can manage guild: ",
         permissionManager.canManageGuild(currentGuildId),
@@ -271,6 +271,9 @@ export function changeNickname() {
 let changeGuildNameTimeout;
 export function changeGuildName() {
   const newGuildInput = getId("guild-overview-name-input");
+  if(!newGuildInput) {
+    console.warn("Guild input does not exist");
+  }
   const newGuildName = newGuildInput.value.trim();
   if (
     newGuildName !== "" &&

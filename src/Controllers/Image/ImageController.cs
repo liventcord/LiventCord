@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace LiventCord.Controllers
 {
     [ApiController]
@@ -18,11 +19,20 @@ namespace LiventCord.Controllers
             _logger = logger;
         }
 
-        [HttpPost("images")]
+        [HttpPost("images/profile")]
         [Authorize]
-        public async Task<IActionResult> UploadImageEndpoint(
-            IFormFile photo,
-            string? guildId = null
+        public async Task<IActionResult> UploadProfileImage(
+            [FromForm] IFormFile photo
+        )
+        {
+            return await UploadImage(photo, UserId!, null);
+        }
+
+        [HttpPost("images/guild")]
+        [Authorize]
+        public async Task<IActionResult> UploadGuildImage(
+            [FromForm] IFormFile photo,
+            [FromForm] [IdLengthValidation]string guildId
         )
         {
             return await UploadImage(photo, UserId!, guildId);
@@ -76,6 +86,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { fileId });
         }
+    
 
         private async Task SaveOrUpdateFile<T>(T newFile)
             where T : FileBase
