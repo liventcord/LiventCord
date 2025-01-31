@@ -10,7 +10,8 @@
     "serve": "vite preview",
     "format": "npx prettier --write . && npm run format-cs",
     "format-cs": "npx prettier --write '**/*.cs'",
-    "prepare": "husky"
+    "prepare": "husky",
+    "copy-translations": "cp -r assets/translations wwwroot/translations"
   },
   "lint-staged": {
     "*.js": [

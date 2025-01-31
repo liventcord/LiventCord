@@ -8,6 +8,7 @@
   </PropertyGroup>
   <Target Name="BuildFrontend" BeforeTargets="Build">
     <Exec Command="npm run build" />
+    <Exec Command="npm run copy-translations" />
   </Target>
 
   <ItemGroup>
