@@ -202,9 +202,14 @@ async function loadInitialData() {
         initData.message ===
         "User session is no longer valid. Please log in again."
       ) {
-        alertUser(
-          "User session is not valid. Please log in at localhost:5005/login.",
-        );
+        if (import.meta.env.MODE === "development") {
+          alertUser(
+            "User session is not valid. Please log in at localhost:5005/login.",
+          );
+          return;
+        }
+        await router.changeToLogin();
+
         return;
       }
       initialiseState(initData);
@@ -212,6 +217,7 @@ async function loadInitialData() {
     } catch (e) {
       alertUser(e.message);
       console.error(e);
+      return;
     }
   } catch (error) {
     console.error("Error loading initial data:", error);
