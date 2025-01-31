@@ -33,5 +33,8 @@
   "DeleteGuildButton": "Sunucuyu Sil",
   "unsavedChangesWarning": "Dikkat — kaydetmediğin değişiklikler var!",
   "resetButton": "Sıfırla",
-  "saveChanges": "Değişiklikleri Kaydet"
+  "saveChanges": "Değişiklikleri Kaydet",
+  "ChannelSettings": "Kanal Ayarları",
+  "DeleteChannel": "Kanalı Sil",
+  "Permissions": "İzinler"
 }

@@ -330,8 +330,7 @@ export function updateFileImageBorder() {
     fileImagePreview.style.border = "20px solid #2b2d31";
   }
 }
-export function displayLocalMessage(channelId,content) {
-
+export function displayLocalMessage(channelId, content) {
   const failedId = createRandomId();
 
   const preMessage = {
@@ -342,18 +341,17 @@ export function displayLocalMessage(channelId,content) {
     date: createNowDate(),
     addToTop: false,
   };
-  
+
   displayChatMessage(preMessage);
 }
-export function displayCannotSendMessage(channelId,content) {
+export function displayCannotSendMessage(channelId, content) {
   if (!isOnDm) {
     return;
   }
 
-  displayLocalMessage(channelId,content);
+  displayLocalMessage(channelId, content);
   const failedId = createRandomId();
 
- 
   const failedMsg = getId(failedId);
   if (failedMsg) {
     const foundMsgContent = failedMsg.querySelector("#message-content-element");

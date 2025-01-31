@@ -1,12 +1,11 @@
 import {
+  alertUser,
   askUser,
-  Overview,
   logOutPrompt,
   openGuildSettingsDd,
   toggleEmail,
 } from "./ui";
 import {
-  settingTypes,
   toggleManager,
   setIsChangedProfile,
   setIsSettingsOpen,
@@ -36,14 +35,140 @@ import { currentGuildId } from "./guild";
 import { regenerateConfirmationPanel, triggerFileInput } from "./settings";
 import { lastConfirmedProfileImg } from "./avatar";
 import { setSelfStatus } from "./user";
+import { currentChannelName } from "./channels";
 
-export let currentSettingsType;
-export let isGuildSettings = false;
+export const SettingType = Object.freeze({
+  GUILD: "GUILD",
+  PROFILE: "PROFILE",
+  CHANNEL: "CHANNEL",
+});
+
+export let currentSettingsCategory;
+export let currentSettingsType = SettingType.PROFILE;
+
+export function isGuildSettings() {
+  return currentSettingsType === SettingType.GUILD;
+}
+
 let currentSettings;
 
 const settingsMenu = getId("settings-menu");
-
 let resetTimeout;
+
+export const GuildCategoryTypes = Object.freeze({
+  GuildOverview: "GuildOverview",
+  Emoji: "Emoji",
+  DeleteGuild: "DeleteGuild",
+  Roles: "Roles",
+  Invites: "Invites",
+});
+
+export const ChannelCategoryTypes = Object.freeze({
+  Overview: "Overview",
+  Permissions: "Permissions",
+  DeleteChannel: "DeleteChannel",
+});
+
+export const ProfileCategoryTypes = Object.freeze({
+  SoundAndVideo: "SoundAndVideo",
+  MyAccount: "MyAccount",
+  Notifications: "Notifications",
+  ActivityPresence: "ActivityPresence",
+  Appearance: "Appearance",
+  Language: "Language",
+});
+
+const CategoryTypeMapping = Object.freeze({
+  ...Object.fromEntries(
+    Object.values(GuildCategoryTypes).map((category) => [
+      category,
+      SettingType.GUILD,
+    ]),
+  ),
+  ...Object.fromEntries(
+    Object.values(ChannelCategoryTypes).map((category) => [
+      category,
+      SettingType.CHANNEL,
+    ]),
+  ),
+  ...Object.fromEntries(
+    Object.values(ProfileCategoryTypes).map((category) => [
+      category,
+      SettingType.PROFILE,
+    ]),
+  ),
+});
+
+function getSettingTypeFromCategory(category) {
+  return CategoryTypeMapping[category] || null;
+}
+
+const createSettingsConfig = (categoryTypes, htmlGenerator) => {
+  return Object.fromEntries(
+    Object.entries(categoryTypes).map(([category, name]) => [
+      name,
+      {
+        title: () => translations.getSettingsTranslation(name),
+        html: htmlGenerator(name),
+      },
+    ]),
+  );
+};
+
+const getProfileSettingsConfig = () => {
+  return createSettingsConfig(ProfileCategoryTypes, (category) => {
+    switch (category) {
+      case ProfileCategoryTypes.SoundAndVideo:
+        return `<select class="dropdown"></select><select class="dropdown"></select><select class="dropdown"></select>`;
+      case ProfileCategoryTypes.MyAccount:
+        return getAccountSettingsHtml();
+      case ProfileCategoryTypes.Notifications:
+        return getNotificationsHtml();
+      case ProfileCategoryTypes.ActivityPresence:
+        return getActivityPresenceHtml();
+      case ProfileCategoryTypes.Appearance:
+        return getAppearanceHtml();
+      case ProfileCategoryTypes.Language:
+        return getLanguageHtml();
+      default:
+        return "";
+    }
+  });
+};
+
+const getGuildSettingsConfig = () => {
+  return createSettingsConfig(GuildCategoryTypes, (category) => {
+    switch (category) {
+      case GuildCategoryTypes.GuildOverview:
+        return getGuildOverviewHtml();
+      default:
+        return "";
+    }
+  });
+};
+
+const getChannelSettingsConfig = () => {
+  return createSettingsConfig(ChannelCategoryTypes, (category) => {
+    switch (category) {
+      case ChannelCategoryTypes.Overview:
+        return getOverviewHtml();
+      case ChannelCategoryTypes.Permissions:
+        return getPermissionsHtml();
+      default:
+        return "";
+    }
+  });
+};
+
+const getSettingsConfigByType = (settingType) => {
+  const configMap = {
+    [SettingType.GUILD]: getGuildSettingsConfig(),
+    [SettingType.PROFILE]: getProfileSettingsConfig(),
+    [SettingType.CHANNEL]: getChannelSettingsConfig(),
+  };
+
+  return configMap[settingType] || {};
+};
 
 export function updateSettingsProfileColor() {
   const settingsProfileImg = getId("settings-self-profile");
@@ -83,13 +208,30 @@ function loadSettings() {
 
   const guildSettings = [
     {
-      category: "Overview",
+      category: "GuildOverview",
       label: translations.getSettingsTranslation("GeneralOverview"),
     },
-    { category: "Emoji", label: translations.getSettingsTranslation("Emoji") },
+    {
+      category: "Emoji",
+      label: translations.getSettingsTranslation("Emoji"),
+    },
+  ];
+  const channelSettings = [
+    {
+      category: "Overview",
+      label: translations.getSettingsTranslation("ChannelSettings"),
+    },
+    {
+      category: "Permissions",
+      label: translations.getSettingsTranslation("Permissions"),
+    },
+    {
+      category: "DeleteChannel",
+      label: translations.getSettingsTranslation("DeleteChannel"),
+    },
   ];
 
-  return { userSettings, guildSettings };
+  return { userSettings, guildSettings, channelSettings };
 }
 function getGuildSettings() {
   let setToReturn = [...currentSettings.guildSettings];
@@ -109,17 +251,121 @@ function getGuildSettings() {
   }
   return setToReturn;
 }
-
-function getSettingsHtml() {
+function getChannelSettingHTML() {
   const settings = loadSettings();
   currentSettings = settings;
-  return generateSettingsHtml(settings.userSettings);
+  return generateSettingsHtml(settings.channelSettings);
+}
+function getProfileSettingsHTML() {
+  const settings = loadSettings();
+  currentSettings = settings;
+  return generateSettingsHtml(settings.userSettings, true);
 }
 
 function getGuildSettingsHTML() {
   const settings = loadSettings();
   currentSettings = settings;
-  return generateSettingsHtml(getGuildSettings(), true);
+  return generateSettingsHtml(getGuildSettings());
+}
+
+function generateSettingsHtml(settings, isProfile = false) {
+  const container = createEl("div");
+
+  settings.forEach((setting) => {
+    const button = createEl("button", {
+      className: "settings-buttons",
+      textContent: translations.getSettingsTranslation(setting.category),
+    });
+    button.addEventListener("click", () => {
+      selectSettingCategory(setting.category);
+    });
+    container.appendChild(button);
+  });
+
+  if (isProfile) {
+    const logOutButton = createEl("button", {
+      className: "settings-buttons",
+      textContent: translations.getTranslation("log-out-button"),
+    });
+    logOutButton.addEventListener("click", logOutPrompt);
+    container.appendChild(logOutButton);
+  }
+
+  return container;
+}
+
+export function selectSettingCategory(settingCategory) {
+  console.log("Called category: ", settingCategory);
+  if (settingCategory === GuildCategoryTypes.DeleteGuild) {
+    createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
+    return;
+  }
+
+  if (settingCategory === ChannelCategoryTypes.DeleteChannel) {
+    createDeleteChannelPrompt(
+      currentGuildId,
+      guildCache.currentChannelId,
+      currentChannelName,
+    );
+    return;
+  }
+
+  const settingsContainer = getId("settings-rightcontainer");
+  currentSettingsCategory = settingCategory;
+
+  const settingType = getSettingTypeFromCategory(settingCategory);
+  console.log("Setting Type for category: ", settingCategory, settingType);
+
+  if (!settingType) {
+    console.error(
+      `ERROR: Unable to find setting type for category: ${settingCategory}`,
+    );
+    alertUser(
+      "Error",
+      `Unknown Setting: ${settingCategory} could not be found.`,
+    );
+    return;
+  }
+
+  const settingsConfig = getSettingsConfigByType(settingType);
+  console.log("Settings Config for setting type:", settingType, settingsConfig);
+
+  const settingConfig = settingsConfig[settingCategory] || {
+    title: () => "Unknown Setting",
+    html: `
+      <h3>Unknown Setting: ${settingCategory} could not be found.</h3>
+      <pre>
+        <strong>Debug Information:</strong>
+        <ul>
+          <li><strong>Setting Category:</strong> ${settingCategory}</li>
+          <li><strong>Setting Type:</strong> ${settingType || "N/A"}</li>
+          <li><strong>Available Categories:</strong></li>
+          <ul>
+            <li><strong>Guild Categories:</strong> ${JSON.stringify(
+              Object.values(GuildCategoryTypes),
+              null,
+              2,
+            )}</li>
+            <li><strong>Channel Categories:</strong> ${JSON.stringify(
+              Object.values(ChannelCategoryTypes),
+              null,
+              2,
+            )}</li>
+            <li><strong>Profile Categories:</strong> ${JSON.stringify(
+              Object.values(ProfileCategoryTypes),
+              null,
+              2,
+            )}</li>
+          </ul>
+        </ul>
+      </pre>
+    `,
+  };
+
+  settingsContainer.innerHTML =
+    settingConfig.html ||
+    `Unknown Setting: ${settingCategory} could not be found.`;
+  initialiseChatComponents(settingsContainer, settingCategory);
 }
 
 function getActivityPresenceHtml() {
@@ -163,7 +409,7 @@ function getActivityPresenceHtml() {
     `;
 }
 
-function getOverviewHtml() {
+function getGuildOverviewHtml() {
   return `
         <div id="settings-title">${translations.getSettingsTranslation(
           "Overview",
@@ -274,100 +520,35 @@ function getNotificationsHtml() {
           .join("")}
     `;
 }
-function generateSettingsHtml(settings, isGuild = false) {
-  const container = createEl("div");
 
-  settings.forEach((setting) => {
-    const button = createEl("button", {
-      className: "settings-buttons",
-      textContent: translations.getSettingsTranslation(setting.category),
-    });
-    button.addEventListener("click", () => {
-      selectSettingCategory(setting.category);
-      console.log(getSettingsHtml());
-    });
-    container.appendChild(button);
-  });
+function getOverviewHtml() {
+  return "channel overview";
+}
+function getPermissionsHtml() {
+  return "channel permissions";
+}
 
-  if (!isGuild) {
-    const logOutButton = createEl("button", {
-      className: "settings-buttons",
-      textContent: translations.getTranslation("log-out-button"),
+function initializeLanguageDropdown() {
+  const languageDropdown = getId("language-dropdown");
+  if (languageDropdown) {
+    languageDropdown.value = translations.currentLanguage;
+    languageDropdown.addEventListener("change", (event) => {
+      translations.currentLanguage = event.target.value;
+      translations.setLanguage(translations.currentLanguage);
+      setTimeout(() => {
+        reconstructSettings(currentSettingsType);
+        setSelfStatus();
+      }, 200);
     });
-    logOutButton.addEventListener("click", logOutPrompt);
-    container.appendChild(logOutButton);
   }
-
-  return container;
 }
-
-function getSettingsConfig() {
-  return {
-    SoundAndVideo: {
-      title: translations.getSettingsTranslation("SoundAndVideoSettings"),
-      html: `
-                <select class="dropdown"></select>
-                <select class="dropdown"></select>
-                <select class="dropdown"></select>
-            `,
-    },
-    MyAccount: {
-      title: translations.getSettingsTranslation("MyAccount"),
-      html: getAccountSettingsHtml(),
-    },
-    Notifications: {
-      title: translations.getSettingsTranslation("Notifications"),
-      html: getNotificationsHtml(),
-    },
-    ActivityPresence: {
-      title: translations.getSettingsTranslation("ActivityStatus"),
-      html: getActivityPresenceHtml(),
-    },
-    Appearance: {
-      title: translations.getSettingsTranslation("Appearance"),
-      html: getAppearanceHtml(),
-    },
-    Language: {
-      title: translations.getSettingsTranslation("Language"),
-      html: getLanguageHtml(),
-    },
-    Overview: {
-      title: translations.getSettingsTranslation("GuildOverview"),
-      html: getOverviewHtml(),
-    },
-  };
-}
-
-export function selectSettingCategory(settingType) {
-  const settingsContainer = getId("settings-rightcontainer");
-  currentSettingsType = settingType;
-
-  const settingConfig = getSettingsConfig()[settingType] || {
-    title: "Unknown Setting",
-    html: "<h3>Unknown Setting</h3>",
-  };
+function initialiseChatComponents(settingsContainer, settingCategory) {
   setTimeout(() => {
-    if (settingType === "MyAccount") {
+    if (settingCategory === ProfileCategoryTypes.MyAccount) {
       updateSelfProfile(currentUserId, currentUserNick, true);
     }
   }, 100);
-  settingsContainer.innerHTML = settingConfig.html;
 
-  function initializeLanguageDropdown() {
-    const languageDropdown = getId("language-dropdown");
-    if (languageDropdown) {
-      languageDropdown.value = translations.currentLanguage;
-      languageDropdown.addEventListener("change", (event) => {
-        translations.currentLanguage = event.target.value;
-        translations.setLanguage(translations.currentLanguage);
-        setTimeout(() => {
-          reconstructSettings(isGuildSettings);
-          selectSettingCategory(currentSettingsType);
-          setSelfStatus();
-        }, 200);
-      });
-    }
-  }
   initializeLanguageDropdown();
 
   const closeButton = getCloseButtonElement();
@@ -376,17 +557,12 @@ export function selectSettingCategory(settingType) {
 
   toggleManager.setupToggles();
 
-  if (settingType === "DeleteGuild") {
-    createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
-  }
-
   const settingsSelfProfile = getId("settings-self-profile");
   if (settingsSelfProfile) {
     settingsSelfProfile.addEventListener("click", triggerFileInput);
   }
 
   const newNickInput = getId("new-nickname-input");
-  console.log(newNickInput);
   if (newNickInput) {
     newNickInput.addEventListener("keydown", onEditNick);
   }
@@ -438,18 +614,14 @@ export function createToggle(id, label, description) {
         </div>
     `;
 }
-
-export function openSettings() {
-  reconstructSettings(isGuildSettings);
-  selectSettingCategory(settingTypes.MyAccount);
+export function openChannelSettings(channel) {
+  openSettings(SettingType.CHANNEL);
+}
+export function openSettings(categoryType) {
+  currentSettingsType = SettingType.PROFILE;
+  reconstructSettings(categoryType);
 
   enableElement("settings-overlay");
-
-  if (toggleManager.isSlide()) {
-    settingsMenu.style.animation = "settings-menu-slide-in 0.3s forwards";
-  } else {
-    settingsMenu.style.animation = "settings-menu-scale-appear 0.3s forwards";
-  }
 
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation = "settings-menu-slide-in 0.3s forwards";
@@ -477,7 +649,6 @@ export function closeSettings() {
     disableElement("settings-overlay");
   }, 300);
   setIsSettingsOpen(false);
-  isGuildSettings = false;
 }
 
 function getCloseButtonElement() {
@@ -498,15 +669,29 @@ function getCloseButtonElement() {
   return button;
 }
 
-export function reconstructSettings(_isGuildSettings) {
+export function reconstructSettings(categoryType) {
   const leftBar = getId("settings-leftbar");
   leftBar.innerHTML = "";
-  isGuildSettings = _isGuildSettings;
-  if (_isGuildSettings) {
-    leftBar.appendChild(getGuildSettingsHTML());
-    selectSettingCategory(Overview);
+  switch (categoryType) {
+    case SettingType.GUILD:
+      leftBar.appendChild(getGuildSettingsHTML());
+      selectSettingCategory(GuildCategoryTypes.GuildOverview);
+      break;
+    case SettingType.PROFILE:
+      leftBar.appendChild(getProfileSettingsHTML());
+      selectSettingCategory(ProfileCategoryTypes.MyAccount);
+      break;
+    case SettingType.CHANNEL:
+      leftBar.appendChild(getChannelSettingHTML());
+      selectSettingCategory(ChannelCategoryTypes.Overview);
+      break;
+
+    default:
+      console.error("Unknown settings category type: ", categoryType);
+      break;
+  }
+  if (isGuildSettings()) {
   } else {
-    leftBar.appendChild(getSettingsHtml());
   }
 }
 
@@ -577,7 +762,7 @@ export function generateConfirmationPanel() {
 function shakeScreen() {
   let SHAKE_FORCE = 1;
 
-  currentSettingsType = null;
+  currentSettingsCategory = null;
   regenerateConfirmationPanel();
 
   currentPopUp.style.backgroundColor = "#ff1717";
@@ -600,6 +785,25 @@ function shakeScreen() {
 
   return;
 }
+function createDeleteChannelPrompt(guildId, channelId, channelName) {
+  if (!guildId | !channelId) return;
+  var onClickHandler = function () {
+    apiClient.send(EventType.DELETE_CHANNEL, {
+      guildId: guildId,
+      channelId: channelId,
+    });
+  };
+  const actionText = translations.getDeleteChannelText(channelName);
+
+  askUser(
+    translations.getDeleteChannelText(channelName),
+    translations.getTranslation("cannot-be-undone"),
+    actionText,
+    onClickHandler,
+    null,
+    true,
+  );
+}
 
 function createDeleteGuildPrompt(guildId, guildName) {
   if (!guildId) {
@@ -612,7 +816,7 @@ function createDeleteGuildPrompt(guildId, guildName) {
 
   askUser(
     translations.getDeleteGuildText(guildName),
-    translations.getTranslation("delete_guild_text_2"),
+    translations.getTranslation("cannot-be-undone"),
     actionText,
     onClickHandler,
     null,
@@ -623,7 +827,9 @@ function createDeleteGuildPrompt(guildId, guildName) {
 function init() {
   const openSettingsButton = getId("settings-button");
   if (openSettingsButton) {
-    openSettingsButton.addEventListener("click", openSettings);
+    openSettingsButton.addEventListener("click", () => {
+      openSettings(SettingType.PROFILE);
+    });
   }
 
   const buttonIds = [

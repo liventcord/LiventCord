@@ -336,7 +336,7 @@ class ApiClient {
       " with data: ",
       data,
       " listeners: ",
-      this.listeners[event]
+      this.listeners[event],
     );
     if (this.listeners[event] && data !== null) {
       this.listeners[event].forEach((callback) => callback(data));

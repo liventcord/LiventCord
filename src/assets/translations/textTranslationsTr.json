@@ -41,7 +41,7 @@
   "tb-showprofile": "Kullanıcı Profilini Göster",
   "today": "Bugün saat",
   "yesterday": "Dün saat",
-  "delete_guild_text_2": "Bu işlem geri alınamaz",
+  "cannot-be-undone": "Bu işlem geri alınamaz",
   "ok": "Tamam",
   "cancel": "İptal",
   "accept": "Kabul et",

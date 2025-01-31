@@ -241,13 +241,13 @@ export function updateDmFriendList(friendId, friendNick, friendDiscriminator) {
 export function updateUserListText() {
   const userListTitleHTML = `
     <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
-      "nowonline"
+      "nowonline",
     )}</h1>
     <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
-      "activity-detail"
+      "activity-detail",
     )}</h1>
     <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
-      "activity-detail-2"
+      "activity-detail-2",
     )}</h1>
     <ul></ul>`;
 

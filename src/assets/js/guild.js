@@ -80,7 +80,7 @@ export function createGuild() {
           popup.parentNode.remove();
         }
         cacheInterface.addGuild(data.guildId, guildName, currentUserId);
-        
+
         createFireWorks();
         appendToGuildList(data);
         loadGuild(data.guildId, data.rootChannel, guildName);
@@ -121,7 +121,6 @@ export function loadGuild(
   currentGuildId = guildId;
   permissionManager.updatePermissions(guildId, initialState.permissionsMap);
   selectGuildList(guildId);
-
 
   if (guildName) {
     guildCache.currentGuildName = guildName;
@@ -300,13 +299,26 @@ export function updateGuilds(guildsJson) {
 
     wrapWhiteRod(mainLogoItem);
 
-    guildsJson.forEach(({ guildId, guildName,isGuildUploadedImg, rootChannel, guildMembers }) => {
-      const listItem = createGuildListItem(guildId, rootChannel, guildName,isGuildUploadedImg);
-      guildsList.appendChild(listItem);
+    guildsJson.forEach(
+      ({
+        guildId,
+        guildName,
+        isGuildUploadedImg,
+        rootChannel,
+        guildMembers,
+      }) => {
+        const listItem = createGuildListItem(
+          guildId,
+          rootChannel,
+          guildName,
+          isGuildUploadedImg,
+        );
+        guildsList.appendChild(listItem);
 
-      guildCache.getGuild(guildId).setName(guildName);
-      cacheInterface.setMemberIds(guildId, guildMembers);
-    });
+        guildCache.getGuild(guildId).setName(guildName);
+        cacheInterface.setMemberIds(guildId, guildMembers);
+      },
+    );
     const createGuildButton = createNewGuildButton();
     guildsList.appendChild(createGuildButton);
 
@@ -328,14 +340,14 @@ export function wrapWhiteRod(element) {
     element.appendChild(whiteRod);
   }
 }
-const createGuildListItem = (guildId, rootChannel, guildName,isUploaded) => {
+const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
     id: guildId,
     className: "guild-image",
   });
 
-  setGuildImage(guildId, imgElement,isUploaded);
+  setGuildImage(guildId, imgElement, isUploaded);
 
   imgElement.onerror = () => {
     imgElement.src = blackImage;
@@ -347,7 +359,6 @@ const createGuildListItem = (guildId, rootChannel, guildName,isUploaded) => {
     } catch (error) {
       console.error("Error while loading guild:", error);
     }
-
   });
 
   wrapWhiteRod(listItem);
@@ -362,7 +373,7 @@ export function appendToGuildList(guild) {
     guild.guildId,
     guild.rootChannel,
     guild.guildName,
-    guild.isGuildUploadedImg
+    guild.isGuildUploadedImg,
   );
   guildsList.appendChild(listItem);
 

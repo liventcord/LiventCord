@@ -104,12 +104,7 @@ namespace LiventCord.Controllers
                 );
             }
 
-            var permissions =
-                PermissionFlags.ReadMessages
-                | PermissionFlags.SendMessages
-                | PermissionFlags.MentionEveryone;
-
-            await _permissionsController.AssignPermissions(guildId, userId, permissions);
+            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.All);
 
             await _dbContext.SaveChangesAsync();
         }

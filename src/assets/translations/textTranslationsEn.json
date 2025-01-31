@@ -45,7 +45,7 @@
   "tb-showprofile": "Show User Profile",
   "today": "Today at",
   "yesterday": "Yesterday at",
-  "delete_guild_text_2": "This action cannot be undone",
+  "cannot-be-undone": "This action cannot be undone",
   "ok": "Okay",
   "cancel": "Cancel",
   "accept": "Accept",

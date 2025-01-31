@@ -30,6 +30,7 @@ import { textChanHtml } from "./ui";
 import { permissionManager } from "./guildPermissions";
 import { getUserNick } from "./user";
 import { loadGuild } from "./guild";
+import { openChannelSettings } from "./settingsui";
 
 export let channelTitle = getId("channel-info");
 export let channelList = getId("channel-list");
@@ -262,6 +263,9 @@ export function isChannelExist(channelId) {
   return existingChannelButton !== null;
 }
 export function createChannel(channelName, isTextChannel, isPrivate) {
+  if (typeof isPrivate !== "boolean") {
+    isPrivate = false;
+  }
   console.log(channelName, isTextChannel, isPrivate);
   apiClient.send(EventType.CREATE_CHANNEL, {
     channelName: channelName,
@@ -270,6 +274,7 @@ export function createChannel(channelName, isTextChannel, isPrivate) {
     isPrivate,
   });
 }
+
 export function createChannelButton(channelId, channelName, isTextChannel) {
   const htmlToSet = isTextChannel ? textChanHtml : voiceChanHtml;
   const channelButton = createEl("li", {
@@ -297,17 +302,21 @@ export function createChannelButton(channelId, channelName, isTextChannel) {
 
   return channelButton;
 }
-
-export function createContentWrapper(channel, channelName, isTextChannel) {
+function onChannelSettings(event, channel) {
+  event.stopPropagation();
+  console.log("Click to settings on:", channel);
+  openChannelSettings(channel);
+}
+function createContentWrapper(channel, channelName, isTextChannel) {
   const contentWrapper = createEl("div", { className: "content-wrapper" });
   contentWrapper.style.display = "none";
   contentWrapper.style.marginRight = "100px";
   contentWrapper.style.marginTop = "4px";
 
   const settingsSpan = createEl("span", { innerHTML: settingsHtml });
-  settingsSpan.addEventListener("click", () => {
-    console.log("Click to settings on:", channelName);
-  });
+  settingsSpan.addEventListener("click", () =>
+    onChannelSettings(event, channel),
+  );
 
   if (permissionManager.canInvite()) {
     const inviteSpan = createEl("span", { innerHTML: inviteHtml });

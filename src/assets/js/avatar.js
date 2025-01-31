@@ -16,7 +16,7 @@ import {
   setIsChangedProfile,
 } from "./settings";
 import {
-  currentSettingsType,
+  currentSettingsCategory,
   showConfirmationPanel,
   updateSettingsProfileColor,
 } from "./settingsui";
@@ -235,7 +235,7 @@ export function updateSelfProfile(
 
   updateImageSource(selfProfileImage, selfimagepath);
 
-  if (isSettingsOpen && currentSettingsType === settingTypes.MyAccount) {
+  if (isSettingsOpen && currentSettingsCategory === settingTypes.MyAccount) {
     const settingsSelfNameElement = getId("settings-self-name");
     const settingsSelfProfile = getId("settings-self-profile");
 

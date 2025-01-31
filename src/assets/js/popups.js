@@ -606,7 +606,7 @@ function handleImageUpload(guildImage, uploadText, clearButton, event) {
 
     reader.onload = function (e) {
       setTimeout(() => {
-        const svg = document.getElementById('guildImg');
+        const svg = document.getElementById("guildImg");
         if (svg) {
           const img = new Image();
           img.src = e.target.result;
@@ -632,48 +632,60 @@ function changePopUpToGuildCreation(
   popButtonContainer,
   newPopContent,
   newPopSubject,
-  closeCallback
+  closeCallback,
 ) {
-  if (popButtonContainer?.parentNode) popButtonContainer.parentNode.removeChild(popButtonContainer);
+  if (popButtonContainer?.parentNode)
+    popButtonContainer.parentNode.removeChild(popButtonContainer);
 
   newPopSubject.textContent = translations.getTranslation("customize-guild");
-  newPopContent.textContent = translations.getTranslation("customize-guild-detail");
+  newPopContent.textContent = translations.getTranslation(
+    "customize-guild-detail",
+  );
 
   const text = translations.generateGuildName(currentUserNick);
   const newInput = createEl("input", { value: text, id: "guild-name-input" });
   const createButton = createEl("button", {
     textContent: translations.getTranslation("create"),
-    className: "create-guild-verify common-button"
+    className: "create-guild-verify common-button",
   });
   const backButton = createEl("button", {
     textContent: translations.getTranslation("back"),
-    className: "create-guild-back common-button"
+    className: "create-guild-back common-button",
   });
 
-  backButton.addEventListener("click", async (event) => await clickToJoinGuildBackButton(event, closeCallback));
+  backButton.addEventListener(
+    "click",
+    async (event) => await clickToJoinGuildBackButton(event, closeCallback),
+  );
 
   const guildNameTitle = createEl("h1", {
     textContent: translations.getTranslation("guildname"),
-    className: "create-guild-title"
+    className: "create-guild-title",
   });
 
-  const guildImageForm = createEl("div", { id: "guildImageForm", accept: "image/*" });
+  const guildImageForm = createEl("div", {
+    id: "guildImageForm",
+    accept: "image/*",
+  });
   const guildImageInput = createEl("input", {
     type: "file",
     id: "guildImageInput",
     accept: "image/*",
-    style: "display: none;"
+    style: "display: none;",
   });
 
-  const guildImage = createEl("div", { id: "guildImg", className: "fas fa-camera" });
+  const guildImage = createEl("div", {
+    id: "guildImg",
+    className: "fas fa-camera",
+  });
   const uploadText = createEl("p", {
     id: "uploadText",
-    textContent: translations.getTranslation("upload")
+    textContent: translations.getTranslation("upload"),
   });
   const clearButton = createEl("button", {
     id: "clearButton",
     textContent: "X",
-    style: "display: none;"
+    style: "display: none;",
   });
 
   guildImageForm.append(uploadText, clearButton);
@@ -692,7 +704,9 @@ function changePopUpToGuildCreation(
 
   guildImage.addEventListener("click", triggerGuildInput);
   createButton.addEventListener("click", createGuild);
-  guildImageInput.addEventListener("change", (event) => handleImageUpload(guildImage, uploadText, clearButton, event));
+  guildImageInput.addEventListener("change", (event) =>
+    handleImageUpload(guildImage, uploadText, clearButton, event),
+  );
   clearButton.addEventListener("click", clearImage);
 
   document.body.addEventListener("click", (event) => {
@@ -700,8 +714,15 @@ function changePopUpToGuildCreation(
   });
 
   guildImageForm.append(guildImageInput, guildImage);
-  newPopParent.style.animation = "guild-pop-up-create-guild-animation 0.3s forwards";
-  newPopParent.append(guildImageForm, guildNameTitle, newInput, createButton, backButton);
+  newPopParent.style.animation =
+    "guild-pop-up-create-guild-animation 0.3s forwards";
+  newPopParent.append(
+    guildImageForm,
+    guildNameTitle,
+    newInput,
+    createButton,
+    backButton,
+  );
 }
 
 export function ChangePopUpToGuildJoining(

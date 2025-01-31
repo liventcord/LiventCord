@@ -3,6 +3,7 @@
   "dm_placeholder": "@{{friendNick}} kullanıcısına mesaj gönder",
   "guid_name_placeholder": "{{userNick}} kullanıcısının sunucusu",
   "delete_guild_text": "{{guildName}} sunucusunu sil",
+  "delete_channel_text": "{{channelName}} kanalını sil",
   "invites_guild_text": "Arkadaşlarını {{guildName}} sunucusuna davet et",
   "dm_start_text": "Bu {{friendNick}} kullanıcısıyla olan direkt mesaj geçmişinin başlangıcıdır.",
   "birth_of_channel": "{{channelName}} kanalının doğuşu!",

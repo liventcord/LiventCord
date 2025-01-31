@@ -53,7 +53,9 @@ class Translations {
 
     return result;
   }
-
+  getDeleteChannelText(channelName) {
+    return this.replacePlaceholder("delete_channel_text", { channelName });
+  }
   getDeleteGuildText(guildName) {
     return this.replacePlaceholder("delete_guild_text", { guildName });
   }

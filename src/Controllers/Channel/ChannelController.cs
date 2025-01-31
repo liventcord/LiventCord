@@ -56,19 +56,20 @@ namespace LiventCord.Controllers
 
             if (!await _membersController.DoesMemberExistInGuild(UserId!, guildId))
                 return BadRequest(new { Type = "error", Message = "User not in guild." });
-            if (
-                !await _permissionsController.HasPermission(
-                    UserId!,
-                    guildId,
-                    PermissionFlags.ManageChannels
-                )
-            )
-                return Forbid("User is not authorized to delete this channel.");
+
+            if (!await _permissionsController.HasPermission(UserId!, guildId, PermissionFlags.ManageChannels))
+            {
+                return new ObjectResult(new { Type = "error", Message = "User is not authorized to delete this channel." })
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                };
+            }
 
             _dbContext.Channels.Remove(channel);
             await _dbContext.SaveChangesAsync();
             return Ok();
         }
+
 
         [HttpPost("")]
         public async Task<IActionResult> CreateChannel(

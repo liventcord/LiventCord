@@ -91,14 +91,14 @@ export async function sendMessage(content, user_ids) {
     !friendCache.isFriend(friendCache.currentDmId) &&
     !hasSharedGuild(friendCache.currentDmId)
   ) {
-    displayCannotSendMessage(friendCache.currentDmId,content);
+    displayCannotSendMessage(friendCache.currentDmId, content);
     return;
   }
-  
-    let channelIdToSend = isOnDm
-      ? friendCache.currentDmId
-      : guildCache.currentChannelId;
-  displayLocalMessage(channelIdToSend,content);
+
+  let channelIdToSend = isOnDm
+    ? friendCache.currentDmId
+    : guildCache.currentChannelId;
+  displayLocalMessage(channelIdToSend, content);
 
   setTimeout(scrollToBottom, 10);
 

@@ -33,5 +33,8 @@
   "DeleteGuildButton": "Delete Guild",
   "unsavedChangesWarning": "Warning — you have unsaved changes!",
   "resetButton": "Reset",
-  "saveChanges": "Save Changes"
+  "saveChanges": "Save Changes",
+  "ChannelSettings": "Channel Settings",
+  "DeleteChannel": "Delete Channel",
+  "Permissions": "Permissions"
 }

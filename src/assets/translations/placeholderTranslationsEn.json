@@ -3,6 +3,7 @@
   "dm_placeholder": "Send message to user @{{friendNick}}",
   "guid_name_placeholder": "{{userNick}}'s server",
   "delete_guild_text": "Delete guild {{guildName}}",
+  "delete_channel_text": "Delete channel {{channelName}}",
   "invites_guild_text": "Invite your friends to guild {{guildName}}",
   "dm_start_text": "This is the beginning of the direct message history with {{friendNick}}.",
   "birth_of_channel": "Birth of channel {{channelName}}!",

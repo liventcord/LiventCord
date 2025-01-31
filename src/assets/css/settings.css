@@ -239,7 +239,7 @@ th {
   user-select: none;
 }
 #guildImg path {
-  transform: scale(0.35) translateY(-50px);;
+  transform: scale(0.35) translateY(-50px);
   transform-origin: center;
 }
 
@@ -858,12 +858,15 @@ th {
   margin-top: 20px;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
   z-index: 1;
+  overflow: hidden;
 }
+
 #close-settings-button svg {
   width: 18px;
   height: 18px;
   fill: oklab(0.786807 -0.0025776 -0.0110238);
 }
+
 #close-keybind {
   margin: 0;
   padding: 0;
