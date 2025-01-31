@@ -8,8 +8,8 @@
     "lint": "npx eslint assets/js/ --fix",
     "build": "vite build",
     "serve": "vite preview",
-    "format": "npx prettier --write . && npm run format-cs",
-    "format-cs": "npx prettier --write '**/*.cs'",
+    "format": "npx prettier --write --ignore-unknown .",
+    "format-cs": "dotnet format",
     "prepare": "husky",
     "copy-translations": "cp -r assets/translations wwwroot/translations"
   },
@@ -19,8 +19,7 @@
       "npx eslint --fix"
     ],
     "*.css": "npx prettier --write --ignore-unknown",
-    "*.json": "npx prettier --write --ignore-unknown",
-    "*.cs": "npx prettier --write --ignore-unknown"
+    "*.json": "npx prettier --write --ignore-unknown"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

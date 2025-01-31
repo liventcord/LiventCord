@@ -33,7 +33,7 @@ namespace LiventCord.Controllers
 
         [HttpGet("")]
         public async Task<IActionResult> HandleGetChannels(
-            [FromRoute] [IdLengthValidation] string guildId
+            [FromRoute][IdLengthValidation] string guildId
         )
         {
             var channels = await GetGuildChannels(UserId!, guildId);
@@ -46,7 +46,7 @@ namespace LiventCord.Controllers
 
         [HttpDelete("{channelId}")]
         public async Task<IActionResult> DeleteChannel(
-            [FromRoute] [IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string guildId,
             [IdLengthValidation] string channelId
         )
         {
@@ -73,7 +73,7 @@ namespace LiventCord.Controllers
 
         [HttpPost("")]
         public async Task<IActionResult> CreateChannel(
-            [FromRoute] [IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string guildId,
             [FromBody] CreateChannelRequest request
         )
         {
@@ -106,7 +106,7 @@ namespace LiventCord.Controllers
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new {guildId, channelId,request.IsTextChannel,request.ChannelName});
+            return Ok(new { guildId, channelId, request.IsTextChannel, request.ChannelName });
         }
 
         [NonAction]
@@ -141,5 +141,5 @@ public class CreateChannelRequest
     [Required()]
     public required bool IsTextChannel { get; set; }
     [Required()]
-    public required bool IsPrivate {get; set; }
+    public required bool IsPrivate { get; set; }
 }

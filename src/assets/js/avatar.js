@@ -1,5 +1,5 @@
 import { CLYDE_ID } from "./chat";
-import { updateGuild,currentGuildId } from "./guild";
+import { updateGuild, currentGuildId } from "./guild";
 import {
   getProfileUrl,
   defaultProfileImageUrl,
@@ -26,7 +26,6 @@ import { getId, blackImage } from "./utils";
 import { translations } from "./translations";
 import { currentUserId } from "./user";
 import { alertUser } from "./ui";
-import { guildCache } from "./cache";
 import { chatContainer } from "./chatbar";
 import { initialState } from "./app";
 
@@ -291,7 +290,9 @@ export function uploadImage(isGuild) {
       if (isGuild) {
         formData.append("guildId", uploadedGuildId);
       }
-      const imageEndpoint = isGuild ? "/api/images/guild" : "/api/images/profile";
+      const imageEndpoint = isGuild
+        ? "/api/images/guild"
+        : "/api/images/profile";
 
       console.log("Sending req...");
       let xhr = new XMLHttpRequest();

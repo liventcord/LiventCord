@@ -221,23 +221,19 @@ class ApiClient {
     let missingKeys = [];
     let requiredKeys = [];
 
-    // Extract the placeholders required by the URL template
     const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) =>
       match.replace(/[{}]/g, ""),
     );
 
-    // Populate the requiredKeys list
     requiredKeys = allPlaceholders;
 
-    // Replace placeholders with actual values from data
     Object.keys(data).forEach((key) => {
       url = url.replace(`{${key}}`, data[key]);
     });
 
-    // Check for any remaining placeholders that weren't replaced
     allPlaceholders.forEach((placeholder) => {
       if (!data.hasOwnProperty(placeholder)) {
-        missingKeys.push(placeholder); // Add missing keys to the list
+        missingKeys.push(placeholder);
       }
     });
 
@@ -265,7 +261,8 @@ class ApiClient {
   }
 
   async sendRequest(data, url, method, event, expectsResponse = true) {
-    const body = method === HttpMethod.POST ? JSON.stringify(data) : undefined;
+    const body =
+      method !== HttpMethod.GET && data ? JSON.stringify(data) : undefined;
     const headers =
       method === HttpMethod.GET
         ? undefined

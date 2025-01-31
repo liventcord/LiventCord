@@ -259,7 +259,7 @@ export function changeNickname() {
   ) {
     console.log("Changed your nickname to: " + newNickname);
     setUserNick(newNickname);
-    apiClient.send(EventType.CHANGE_NICK, { newNickname: newNickname });
+    apiClient.send(EventType.CHANGE_NICK, { newNickname });
 
     newNicknameInput.value = newNickname;
     changeNicknameTimeout = setTimeout(() => {
@@ -271,7 +271,7 @@ export function changeNickname() {
 let changeGuildNameTimeout;
 export function changeGuildName() {
   const newGuildInput = getId("guild-overview-name-input");
-  if(!newGuildInput) {
+  if (!newGuildInput) {
     console.warn("Guild input does not exist");
   }
   const newGuildName = newGuildInput.value.trim();

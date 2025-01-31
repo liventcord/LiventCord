@@ -38,7 +38,7 @@ namespace LiventCord.Controllers
 
         [HttpPost("{friendId}")]
         public async Task<IActionResult> AddDmEndpoint(
-            [FromRoute] [IdLengthValidation] string friendId
+            [FromRoute][IdLengthValidation] string friendId
         )
         {
             var result = await AddDmUser(UserId!, friendId);

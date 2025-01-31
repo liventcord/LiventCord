@@ -4,23 +4,8 @@ sidebar_position: 1
 
 # Set Enviroment Variables
 
-1. Create the `Properties/appsettings.json` file
-2. Add the following JSON configuration:
+1. Move `Properties/exampleSettingsJson` to `Properties/appsettings.json`
 
-    ```json
-    {
-      "AppSettings": {
-        "Host": "127.0.0.1",
-        "Port" : "5005",
-        "RemoteConnection": "CONNECTION_STRING",
-        "DatabaseType": "DATABASE_TYPE",
-        "SqlitePath": "Data/database.db",
-        "GifWorkerUrl": "WORKER_URL",
-        "MaxAvatarSize" : "MAX_AVATAR",
-        "MaxAttachmentsSize" : "MAX_ATTACHMENTS"
-      }
-    }
-    ```
   - **Host**:
     Hostname the server will run at.
     Defaults to 0.0.0.0

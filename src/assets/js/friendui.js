@@ -1,9 +1,4 @@
-import {
-  removeElement,
-  disableElement,
-  enableElement,
-  createRandomId,
-} from "./utils";
+import { removeElement, enableElement, createRandomId } from "./utils";
 import { openDm, removeDm } from "./app";
 import { getUserNick, addUser, isBlocked, currentUserNick } from "./user";
 import {

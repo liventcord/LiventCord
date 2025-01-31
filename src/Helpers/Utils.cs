@@ -50,7 +50,7 @@ namespace LiventCord.Helpers
                 return false;
             return input.Length == 18 && Regex.IsMatch(input, @"^\d{18}$");
         }
-        
+
         public static string SanitizeFileName(string fileName)
         {
             return new string(fileName.Where(c => c >= 32 && c <= 126).ToArray());

@@ -18,7 +18,7 @@ namespace LiventCord.Controllers
 
         [HttpGet("guilds/{guildId}/invites")]
         public async Task<IActionResult> HandleGetInvites(
-            [FromRoute] [IdLengthValidation] string guildId
+            [FromRoute][IdLengthValidation] string guildId
         )
         {
             if (!await _dbContext.DoesGuildExist(guildId))

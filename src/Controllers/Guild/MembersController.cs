@@ -33,7 +33,7 @@ namespace LiventCord.Controllers
 
         [HttpGet("/api/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGetMembers(
-            [FromRoute] [IdLengthValidation] string guildId
+            [FromRoute][IdLengthValidation] string guildId
         )
         {
             if (!await _dbContext.DoesGuildExist(guildId))

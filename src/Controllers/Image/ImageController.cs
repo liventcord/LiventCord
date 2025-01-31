@@ -32,7 +32,7 @@ namespace LiventCord.Controllers
         [Authorize]
         public async Task<IActionResult> UploadGuildImage(
             [FromForm] IFormFile photo,
-            [FromForm] [IdLengthValidation]string guildId
+            [FromForm][IdLengthValidation] string guildId
         )
         {
             return await UploadImage(photo, UserId!, guildId);
@@ -86,7 +86,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { fileId });
         }
-    
+
 
         private async Task SaveOrUpdateFile<T>(T newFile)
             where T : FileBase

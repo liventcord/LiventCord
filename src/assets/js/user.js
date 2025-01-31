@@ -8,7 +8,7 @@ import { initialState } from "./app";
 import { cacheInterface } from "./cache";
 import { currentGuildId } from "./guild";
 import { createEl } from "./utils";
-import { offline, online } from "./friends";
+import { offline } from "./friends";
 import { translations } from "./translations";
 
 export let currentUserId;

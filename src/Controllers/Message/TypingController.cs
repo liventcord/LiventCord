@@ -32,8 +32,8 @@ namespace LiventCord.Controllers
 
         [HttpPost("start")]
         public async Task<IActionResult> HandleStartWriting(
-            [FromRoute] [IdLengthValidation] string guildId,
-            [FromRoute] [IdLengthValidation] string channelId
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId
         )
         {
             if (!writingMembersState.ContainsKey(guildId))
@@ -66,8 +66,8 @@ namespace LiventCord.Controllers
 
         [HttpPost("stop")]
         public async Task<IActionResult> HandleStopWriting(
-            [FromRoute] [IdLengthValidation] string guildId,
-            [FromRoute] [IdLengthValidation] string channelId
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId
         )
         {
             if (writingMembersState.TryGetValue(guildId, out var users) && users.Contains(UserId!))

@@ -62,18 +62,22 @@ public static class ConfigHandler
     static void HandleDatabase(WebApplicationBuilder builder)
     {
         var databaseType = builder.Configuration["AppSettings:DatabaseType"];
-        var connectionString = builder.Configuration["RemoteConnection"];
-        var sqlitePath = builder.Configuration["SqlitePath"];
-        if (databaseType?.ToLower() != "sqlite" && !string.IsNullOrEmpty(connectionString))
+        var connectionString = builder.Configuration["AppSettings:RemoteConnection"]; // Ensure it's properly referenced here
+        var sqlitePath = builder.Configuration["AppSettings:SqlitePath"];
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new ArgumentNullException("RemoteConnection", "The connection string is missing or empty.");
+        }
+
+        if (databaseType?.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString))
         {
             throw new ArgumentNullException(
                 "Connection string is missing in the configuration and non-SQLite database type is selected."
             );
         }
 
-        Console.WriteLine(
-            $"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}"
-        );
+        Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");
 
         switch (databaseType?.ToLowerInvariant())
         {
@@ -124,4 +128,5 @@ public static class ConfigHandler
                 break;
         }
     }
+
 }

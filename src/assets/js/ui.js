@@ -6,7 +6,7 @@ import {
 } from "./userList";
 import { loadDmHome } from "./app";
 import { closePopUp, createPopUp, createChannelsPop } from "./popups";
-import { openSettings, selectSettingCategory, SettingType } from "./settingsui";
+import { openSettings, SettingType } from "./settingsui";
 import { leaveCurrentGuild, wrapWhiteRod } from "./guild";
 import { createEl, getId, disableElement, enableElement } from "./utils";
 import { translations } from "./translations";

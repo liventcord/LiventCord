@@ -31,6 +31,7 @@ export function renderTitle(titleText, container, headingLevel = 1) {
   container.appendChild(titleElement);
 }
 export function createUserProfile(userId, nickName, isUserOnline) {
+  isUserOnline = true;
   const profileContainer = createEl("div", {
     className: "profile-container",
     id: userId,

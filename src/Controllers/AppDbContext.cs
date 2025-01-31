@@ -143,19 +143,7 @@ namespace LiventCord.Controllers
                 .HasForeignKey(ud => ud.FriendId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
 
-            modelBuilder
-                .Entity<GuildMember>()
-                .HasOne(gu => gu.Guild)
-                .WithMany(g => g.GuildMembers)
-                .HasForeignKey(gu => gu.GuildId);
-
-            modelBuilder
-                .Entity<GuildMember>()
-                .HasOne(gu => gu.User)
-                .WithMany()
-                .HasForeignKey(gu => gu.MemberId);
 
             modelBuilder.Entity<FileBase>(entity =>
             {
@@ -191,18 +179,35 @@ namespace LiventCord.Controllers
                 entity.Property(f => f.UserId).HasColumnName("user_id");
             });
 
+            modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
+
+            modelBuilder
+                .Entity<GuildMember>()
+                .HasOne(gu => gu.Guild)
+                .WithMany(g => g.GuildMembers)
+                .HasForeignKey(gu => gu.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder
+                .Entity<GuildMember>()
+                .HasOne(gu => gu.User)
+                .WithMany()
+                .HasForeignKey(gu => gu.MemberId)
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<UserChannel>().ToTable("user_channels");
             modelBuilder.Entity<UserChannel>().HasKey(uc => new { uc.UserId, uc.ChannelId });
             modelBuilder
                 .Entity<UserChannel>()
                 .HasOne(uc => uc.User)
                 .WithMany(u => u.UserChannels)
-                .HasForeignKey(uc => uc.UserId);
+                .HasForeignKey(uc => uc.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder
                 .Entity<UserChannel>()
                 .HasOne(uc => uc.Channel)
                 .WithMany(c => c.UserChannels)
-                .HasForeignKey(uc => uc.ChannelId);
+                .HasForeignKey(uc => uc.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder
                 .Entity<GuildPermissions>()

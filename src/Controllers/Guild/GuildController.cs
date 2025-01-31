@@ -156,9 +156,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpDelete("/api/guilds/{guildId}")]
-        public async Task<IActionResult> DeleteGuildEndpoint(
-            [FromRoute] [IdLengthValidation] string guildId
-        )
+        public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
         {
             if (string.IsNullOrEmpty(guildId))
                 return BadRequest(new { Type = "error", Message = "Guild ID is required." });
@@ -170,16 +168,12 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
                 return Forbid();
 
-            _dbContext.Channels.RemoveRange(guild.Channels);
-            _dbContext.GuildMembers.RemoveRange(guild.GuildMembers);
-            _dbContext.GuildPermissions.RemoveRange(guild.GuildPermissions);
             _dbContext.Guilds.Remove(guild);
-
             await _dbContext.SaveChangesAsync();
 
             return Ok(new { guildId });
-
         }
+
     }
 }
 
