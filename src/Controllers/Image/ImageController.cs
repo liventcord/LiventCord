@@ -48,6 +48,8 @@ namespace LiventCord.Controllers
             if (!IsValidFileName(photo.FileName))
                 return BadRequest("Invalid file name.");
 
+            string sanitizedFileName = Utils.SanitizeFileName(photo.FileName);
+
             using var memoryStream = new MemoryStream();
             await photo.CopyToAsync(memoryStream);
             if (string.IsNullOrEmpty(userId))
@@ -62,13 +64,13 @@ namespace LiventCord.Controllers
             if (!string.IsNullOrEmpty(guildId))
             {
                 await SaveOrUpdateFile(
-                    new GuildFile(fileId, photo.FileName, content, extension, guildId, userId)
+                    new GuildFile(fileId, sanitizedFileName, content, extension, guildId, userId)
                 );
             }
             else
             {
                 await SaveOrUpdateFile(
-                    new ProfileFile(fileId, photo.FileName, content, extension, userId)
+                    new ProfileFile(fileId, sanitizedFileName, content, extension, userId)
                 );
             }
 

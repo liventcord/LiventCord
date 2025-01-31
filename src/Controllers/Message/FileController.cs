@@ -2,6 +2,8 @@ using System.Drawing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using LiventCord.Helpers;
+
 
 namespace LiventCord.Controllers
 {
@@ -66,7 +68,8 @@ namespace LiventCord.Controllers
             if (!_fileTypeProvider.TryGetContentType(file.FileName, out string contentType))
                 contentType = "application/octet-stream";
 
-            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{file.FileName}\"");
+            var sanitizedFileName = Utils.SanitizeFileName(file.FileName);
+            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{sanitizedFileName}\"");
             return File(file.Content, contentType);
         }
 
