@@ -42,6 +42,10 @@ namespace LiventCord.Controllers
         [HttpPost("")]
         public async Task<IActionResult> CreateGuild([FromForm] CreateGuildRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                return new BadRequestResult();
+            }
             string rootChannel = Utils.CreateRandomId();
 
             var newGuild = await CreateGuild(
@@ -87,6 +91,22 @@ namespace LiventCord.Controllers
 
             return CreatedAtAction(nameof(CreateGuild), new { id = guildDto.GuildId }, guildDto);
         }
+        [HttpPut("{guildId}")]
+        public async Task<IActionResult> ChangeGuildName([FromRoute][IdLengthValidation] string guildId, [FromBody] ChangeGuildNameRequest request)
+        {
+            var guild = await _dbContext.Guilds.FindAsync(guildId);
+            if (guild == null)
+                return NotFound();
+
+            if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
+                return Forbid();
+
+            guild.GuildName = request.GuildName;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new { guildId });
+        }
+
 
         private async Task<Guild> CreateGuild(
             string ownerId,
@@ -179,15 +199,13 @@ namespace LiventCord.Controllers
 
 public class CreateGuildRequest
 {
+    [MaxLength(32)]
     public required string GuildName { get; set; }
     public required bool IsPublic { get; set; }
     public IFormFile? Photo { get; set; }
 }
-
-public class GuildInvite
+public class ChangeGuildNameRequest
 {
-    [Key]
-    public required string InviteId { get; set; }
-    public required string GuildId { get; set; }
-    public DateTime CreatedAt { get; set; }
+    [MaxLength(32)]
+    public required string GuildName { get; set; }
 }

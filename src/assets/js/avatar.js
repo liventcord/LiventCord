@@ -1,5 +1,5 @@
 import { CLYDE_ID } from "./chat";
-import { updateGuild, currentGuildId } from "./guild";
+import { updateGuildImage, currentGuildId } from "./guild";
 import {
   getProfileUrl,
   defaultProfileImageUrl,
@@ -10,10 +10,10 @@ import {
   isSettingsOpen,
   settingTypes,
   currentPopUp,
-  isChangedProfile,
+  isChangedImage,
   setUnsaved,
   regenerateConfirmationPanel,
-  setIsChangedProfile,
+  setIsChangedImage,
 } from "./settings";
 import {
   currentSettingsCategory,
@@ -24,7 +24,7 @@ import { userList } from "./userList";
 import { createCropPop } from "./popups";
 import { getId, blackImage } from "./utils";
 import { translations } from "./translations";
-import { currentUserId } from "./user";
+import { currentUserId, currentUserNick } from "./user";
 import { alertUser } from "./ui";
 import { chatContainer } from "./chatbar";
 import { initialState } from "./app";
@@ -167,15 +167,12 @@ export function refreshUserProfile(userId, userNick = null) {
   // from user list
   const profilesList = userList.querySelectorAll(".profile-pic");
   profilesList.forEach((user) => {
-    if (userNick) {
-      if (user.id === userId) {
+    const userIdDom = user.parentNode.id;
+    if (userIdDom === userId) {
+      if (userNick) {
         user.parentNode.querySelector(".profileName").innerText = userNick;
       }
-    }
-    if (userId) {
-      if (user.id === userId) {
-        user.src = `/profiles/${userId}.png`;
-      }
+      user.src = `/profiles/${userId}.png`;
     }
   });
 
@@ -184,7 +181,9 @@ export function refreshUserProfile(userId, userNick = null) {
   usersList.forEach((user) => {
     if (userNick) {
       if (user.dataset.userId === userId) {
-        user.parentNode.querySelector(".profileName").innerText = userNick;
+        const authorAndDate = user.parentNode.querySelector(".author-and-date");
+        const nickElement = authorAndDate.querySelector(".nick-element");
+        nickElement.innerText = userNick;
       }
     }
     if (userId) {
@@ -221,10 +220,21 @@ export function updateImageSource(imageElement, imagePath) {
   imageElement.onload = updateSettingsProfileColor;
   imageElement.src = imagePath;
 }
+export function updateSelfName(nickName) {
+  if (!nickName) return;
+  const settingsNameText = getId("settings-self-name");
+  if (settingsNameText) {
+    settingsNameText.innerText = nickName;
+  }
 
+  const selfNameText = getId("self-name");
+  if (selfNameText) {
+    selfNameText.innerText = nickName;
+  }
+}
 export function updateSelfProfile(
   userId,
-  userName,
+  nickName,
   isTimestamp = false,
   isAfterUploading = false,
 ) {
@@ -235,20 +245,16 @@ export function updateSelfProfile(
   updateImageSource(selfProfileImage, selfimagepath);
 
   if (isSettingsOpen && currentSettingsCategory === settingTypes.MyAccount) {
-    const settingsSelfNameElement = getId("settings-self-name");
     const settingsSelfProfile = getId("settings-self-profile");
 
-    if (userName) {
-      settingsSelfNameElement.innerText = userName;
-      selfName.innerText = userName;
-    }
+    updateSelfName(nickName);
 
     updateImageSource(settingsSelfProfile, selfimagepath);
 
     if (isAfterUploading) {
       const base64output = getBase64Image(settingsSelfProfile);
       if (base64output) {
-        console.log("Setting self profile as ", userId, userName);
+        console.log("Setting self profile as ", userId, nickName);
         lastConfirmedProfileImg = base64output;
       }
     }
@@ -260,77 +266,84 @@ export function setUploadSize(_maxAvatarSize, _maxAttachmentSize) {
   maxAttachmentSize = initialState.maxAttachmentSize;
 }
 export function uploadImage(isGuild) {
-  if (!isChangedProfile) {
-    console.warn("isChangedProfile is false. not uploading");
+  if (!isChangedImage) {
+    console.warn("isChangedImage is false. not uploading");
     return;
   }
 
-  let formData = new FormData();
-  const uploadedGuildId = currentGuildId;
-  const file = isGuild
+  const file = getFileSrc(isGuild);
+  if (!isValidImage(file)) {
+    console.error("Invalid file format or undefined file for avatar update.");
+    return;
+  }
+
+  const blob = createBlobFromImage(file);
+  if (blob.size > getMaxAvatarBytes()) {
+    handleFileSizeError(blob.size);
+    return;
+  }
+
+  sendImageUploadRequest(isGuild, blob, file);
+}
+
+function getFileSrc(isGuild) {
+  return isGuild
     ? getId("guild-image").src
     : getId("settings-self-profile").src;
+}
 
-  if (file && file.startsWith("data:image/")) {
-    const byteString = atob(file.split(",")[1]);
-    const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
-    const ab = new Uint8Array(byteString.length);
-    const maxAvatarBytes = getMaxAvatarBytes();
+function isValidImage(file) {
+  return file && file.startsWith("data:image/");
+}
 
-    for (let i = 0; i < byteString.length; i++) {
-      ab[i] = byteString.charCodeAt(i);
-    }
+function createBlobFromImage(file) {
+  const byteString = atob(file.split(",")[1]);
+  const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
+  const ab = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) {
+    ab[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
 
-    const blob = new Blob([ab], { type: mimeString });
+function handleFileSizeError(size) {
+  console.error("Max avatar size exceeded. Uploaded file size:", size);
+  alertUser(translations.getAvatarUploadErrorMsg(getMaxAvatarBytes()));
+  getId("profileImage").value = "";
+}
 
-    if (blob.size <= maxAvatarBytes) {
-      const fileName = `profile-image.${mimeString.split("/")[1]}`;
-      formData.append("photo", blob, fileName);
+function sendImageUploadRequest(isGuild, blob, file) {
+  const formData = new FormData();
+  const fileName = `profile-image.${blob.type.split("/")[1]}`;
+  formData.append("photo", blob, fileName);
+  if (isGuild) {
+    formData.append("guildId", currentGuildId);
+  }
 
-      if (isGuild) {
-        formData.append("guildId", uploadedGuildId);
-      }
-      const imageEndpoint = isGuild
-        ? "/api/images/guild"
-        : "/api/images/profile";
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", isGuild ? "/api/images/guild" : "/api/images/profile");
+  xhr.onload = () => handleUploadResponse(xhr, isGuild, file);
+  xhr.onerror = () => revertToLastConfirmedImage(isGuild);
+  xhr.send(formData);
+}
 
-      console.log("Sending req...");
-      let xhr = new XMLHttpRequest();
-      xhr.open("POST", imageEndpoint);
-      xhr.onload = function () {
-        if (xhr.status === 200) {
-          if (isGuild) {
-            updateGuild(uploadedGuildId);
-            lastConfirmedGuildImg = file;
-          } else {
-            updateSelfProfile(currentUserId, null, true);
-            lastConfirmedProfileImg = file;
-          }
-        } else {
-          console.error("Error uploading profile pic!");
-        }
-      };
-      xhr.onerror = function () {
-        if (isGuild) {
-          getId("guild-image").src = lastConfirmedGuildImg;
-        } else {
-          getId("settings-self-profile").src = lastConfirmedProfileImg;
-        }
-      };
-      xhr.send(formData);
+function handleUploadResponse(xhr, isGuild, file) {
+  if (xhr.status === 200) {
+    if (isGuild) {
+      updateGuildImage(currentGuildId);
+      lastConfirmedGuildImg = file;
     } else {
-      console.error(
-        "Max avatar size is: ",
-        maxAvatarBytes,
-        " while uploaded file size is: ",
-        blob.size,
-      );
-      alertUser(translations.getAvatarUploadErrorMsg(maxAvatarSize));
-      getId("profileImage").value = "";
+      refreshUserProfile(currentUserId, currentUserNick);
+      lastConfirmedProfileImg = file;
     }
   } else {
-    console.error("Invalid file format or undefined file.");
+    console.error("Error uploading profile pic!");
   }
+}
+
+function revertToLastConfirmedImage(isGuild) {
+  const imgId = isGuild ? "guild-image" : "settings-self-profile";
+  getId(imgId).src = isGuild ? lastConfirmedGuildImg : lastConfirmedProfileImg;
 }
 
 export function onEditImage(isGuild) {
@@ -350,7 +363,7 @@ export function onEditImage(isGuild) {
 
       getId(isGuild ? "guild-image" : "settings-self-profile").src =
         outputBase64;
-      setIsChangedProfile(true);
+      setIsChangedImage(true);
 
       regenerateConfirmationPanel();
 

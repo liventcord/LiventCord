@@ -4,7 +4,7 @@ import {
   stopAudioAnalysis,
   sendAudioData,
 } from "./audio";
-import { uploadImage } from "./avatar";
+import { refreshUserProfile, updateSelfName, uploadImage } from "./avatar";
 import { showConfirmationPanel, isGuildSettings } from "./settingsui";
 import { alertUser, hideImagePreviewRequest } from "./ui";
 import { closeSettings } from "./settingsui";
@@ -15,7 +15,7 @@ import { generateConfirmationPanel, hideConfirmationPanel } from "./settingsui";
 import { permissionManager } from "./guildPermissions";
 import { apiClient, EventType } from "./api";
 import { currentGuildId } from "./guild";
-import { currentUserNick, setUserNick } from "./user";
+import { currentUserId, currentUserNick, setUserNick } from "./user";
 import { translations } from "./translations";
 import { guildCache } from "./cache";
 
@@ -37,9 +37,9 @@ export let isUnsaved = false;
 export function setUnsaved(val) {
   isUnsaved = val;
 }
-export let isChangedProfile = false;
-export function setIsChangedProfile(val) {
-  isChangedProfile = val;
+export let isChangedImage = false;
+export function setIsChangedImage(val) {
+  isChangedImage = val;
 }
 export let currentPopUp = null;
 
@@ -236,63 +236,60 @@ export function applySettings() {
 }
 
 export function onEditNick() {
-  console.log("On edit nick");
   isUnsaved = true;
   regenerateConfirmationPanel();
 }
-
+export function onEditGuild() {
+  isUnsaved = true;
+  regenerateConfirmationPanel();
+}
 export function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
   getId("guildImage").value = "";
   getId("guild-image").src = blackImage;
 }
 
-let changeNicknameTimeout;
+let changeNicknameTimeout, changeGuildNameTimeout;
+
 export function changeNickname() {
-  const newNicknameInput = getId("new-nickname-input");
-  const newNickname = newNicknameInput.value.trim();
-
-  if (
-    newNickname !== "" &&
-    !changeNicknameTimeout &&
-    newNickname !== currentUserNick
-  ) {
+  if (changeNicknameTimeout) return;
+  const newNicknameInput = getId("new-nickname-input"),
+    newNickname = newNicknameInput.value.trim();
+  if (newNickname && newNickname !== currentUserNick) {
     console.log("Changed your nickname to: " + newNickname);
+    refreshUserProfile(currentUserId, newNickname);
     setUserNick(newNickname);
-    apiClient.send(EventType.CHANGE_NICK, { newNickname });
-
-    newNicknameInput.value = newNickname;
-    changeNicknameTimeout = setTimeout(() => {
-      changeNicknameTimeout = null;
-    }, 1000);
-  }
-}
-
-let changeGuildNameTimeout;
-export function changeGuildName() {
-  const newGuildInput = getId("guild-overview-name-input");
-  if (!newGuildInput) {
-    console.warn("Guild input does not exist");
-  }
-  const newGuildName = newGuildInput.value.trim();
-  if (
-    newGuildName !== "" &&
-    !changeGuildNameTimeout &&
-    newGuildName !== guildCache.currentGuildName
-  ) {
-    console.log("Changed guild name to: " + newGuildName);
-    const objecttosend = { "": newGuildName, guildId: currentGuildId };
-    apiClient.send(EventType.CHANGE_GUILD_NAME, objecttosend);
     const setInfoNick = getId("set-info-nick");
-    if (setInfoNick) {
-      setInfoNick.innerText = newGuildName;
-    }
-    newGuildInput.value = newGuildName;
-    changeGuildNameTimeout = setTimeout(() => {
-      changeGuildNameTimeout = null;
-    }, 1000);
+    if (setInfoNick) setInfoNick.innerText = newNickname;
+    updateSelfName(newNickname);
+    apiClient.send(EventType.CHANGE_NICK, { newNickname });
+    newNicknameInput.value = newNickname;
+    changeNicknameTimeout = setTimeout(
+      () => (changeNicknameTimeout = null),
+      1000,
+    );
   }
 }
+
+export function changeGuildName() {
+  if (changeGuildNameTimeout) return;
+  const newGuildInput = getId("guild-overview-name-input");
+  if (!newGuildInput) return console.warn("Guild input does not exist");
+  const newGuildName = newGuildInput.value.trim();
+  if (newGuildName && newGuildName !== guildCache.currentGuildName) {
+    console.log("Changed guild name to: " + newGuildName);
+    apiClient.send(EventType.CHANGE_GUILD_NAME, {
+      guildName: newGuildName,
+      guildId: currentGuildId,
+    });
+    newGuildInput.value = newGuildName;
+    changeGuildNameTimeout = setTimeout(
+      () => (changeGuildNameTimeout = null),
+      1000,
+    );
+  }
+}
+
 export async function requestMicrophonePermissions() {
   try {
     await sendAudioData();

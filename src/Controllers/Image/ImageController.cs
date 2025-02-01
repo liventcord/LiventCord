@@ -21,21 +21,18 @@ namespace LiventCord.Controllers
 
         [HttpPost("images/profile")]
         [Authorize]
-        public async Task<IActionResult> UploadProfileImage(
-            [FromForm] IFormFile photo
-        )
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfileImage([FromForm] GuildImageUploadRequest request)
         {
-            return await UploadImage(photo, UserId!, null);
+            return await UploadImage(request.Photo, UserId!, null);
         }
 
         [HttpPost("images/guild")]
         [Authorize]
-        public async Task<IActionResult> UploadGuildImage(
-            [FromForm] IFormFile photo,
-            [FromForm][IdLengthValidation] string guildId
-        )
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadGuildImage([FromForm] GuildImageUploadRequest request)
         {
-            return await UploadImage(photo, UserId!, guildId);
+            return await UploadImage(request.Photo, UserId!, request.GuildId);
         }
 
         [NonAction]
@@ -265,4 +262,13 @@ namespace LiventCord.Controllers
                 && Path.GetInvalidFileNameChars().All(c => !fileName.Contains(c));
         }
     }
+}
+
+
+public class GuildImageUploadRequest
+{
+    public required IFormFile Photo { get; set; }
+
+    [IdLengthValidation]
+    public required string GuildId { get; set; }
 }

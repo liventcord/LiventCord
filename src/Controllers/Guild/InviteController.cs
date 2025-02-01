@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -81,4 +82,12 @@ namespace LiventCord.Controllers
             return guildInvite?.GuildId;
         }
     }
+}
+
+public class GuildInvite
+{
+    [Key]
+    public required string InviteId { get; set; }
+    public required string GuildId { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

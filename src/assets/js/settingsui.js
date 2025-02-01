@@ -7,13 +7,14 @@ import {
 } from "./ui";
 import {
   toggleManager,
-  setIsChangedProfile,
+  setIsChangedImage,
   setIsSettingsOpen,
   applySettings,
   currentPopUp,
   isUnsaved,
   setUnsaved,
   onEditNick,
+  onEditGuild,
   triggerGuildImageUpdate,
 } from "./settings";
 import { initialState } from "./app";
@@ -568,7 +569,7 @@ function initialiseChatComponents(settingsContainer, settingCategory) {
   }
   const guildNameInput = getId("guild-overview-name-input");
   if (guildNameInput) {
-    guildNameInput.addEventListener("keydown", onEditNick);
+    guildNameInput.addEventListener("keydown", onEditGuild);
   }
 
   const emailToggler = getId("set-info-email-eye");
@@ -704,7 +705,7 @@ export function showConfirmationPanel(pop) {
   pop.style.animation = "slide-up 0.5s ease-in-out forwards";
 }
 export function generateConfirmationPanel() {
-  setIsChangedProfile(true);
+  setIsChangedImage(true);
   const popupDiv = createEl("div", { id: "settings-unsaved-popup" });
 
   const textDiv = createEl("div", {
@@ -741,7 +742,7 @@ export function generateConfirmationPanel() {
     }
 
     setUnsaved(false);
-    setIsChangedProfile(false);
+    setIsChangedImage(false);
   });
   popupDiv.appendChild(resetButton);
 

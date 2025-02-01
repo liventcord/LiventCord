@@ -12,7 +12,7 @@ import { updateMemberList } from "./userList";
 import {
   loadGuild,
   removeFromGuildList,
-  updateGuild,
+  updateGuildImage,
   currentGuildId,
   guildName,
 } from "./guild";
@@ -21,7 +21,7 @@ import { loadDmHome } from "./app";
 import { alertUser } from "./ui";
 import { currentUserId, setUserNick } from "./user";
 import { updateFriendsList, handleFriendEventResponse } from "./friends";
-import { refreshUserProfile, selfName } from "./avatar";
+import { refreshUserProfile, selfName, updateSelfName } from "./avatar";
 import { apiClient, EventType } from "./api.js";
 import { permissionManager } from "./guildPermissions.js";
 import { translations } from "./translations.js";
@@ -70,7 +70,7 @@ apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
   }
 });
 apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
-  updateGuild(data);
+  updateGuildImage(data);
 });
 
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
@@ -144,15 +144,11 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
   const userId = data.userId;
   const newNickname = data.userName;
   if (userId === currentUserId) {
-    const settingsNameText = getId("settings-self-name");
     const setInfoNick = getId("set-info-nick");
 
     selfName.innerText = newNickname;
     if (setInfoNick) {
       setInfoNick.innerText = newNickname;
-    }
-    if (settingsNameText) {
-      settingsNameText.innerText = newNickname;
     }
     setUserNick(newNickname);
     return;

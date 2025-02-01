@@ -266,7 +266,7 @@ export function removeFromGuildList(guildId) {
   }
 }
 
-export function updateGuild(uploadedGuildId) {
+export function updateGuildImage(uploadedGuildId) {
   const guildList = guildsList.querySelectorAll("img");
   guildList.forEach((img) => {
     if (img.id === uploadedGuildId) {

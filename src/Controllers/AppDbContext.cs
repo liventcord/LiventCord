@@ -280,6 +280,24 @@ namespace LiventCord.Controllers
                     .IsRequired();
 
                 entity.HasIndex(g => g.OwnerId);
+
+                entity
+                    .HasMany(g => g.GuildMembers)
+                    .WithOne(gu => gu.Guild)
+                    .HasForeignKey(gu => gu.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity
+                    .HasMany(g => g.GuildPermissions)
+                    .WithOne(gp => gp.Guild)
+                    .HasForeignKey(gp => gp.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity
+                    .HasMany(g => g.Channels)
+                    .WithOne(c => c.Guild)
+                    .HasForeignKey(c => c.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Message>(entity =>
