@@ -2,9 +2,13 @@ import { CLYDE_ID } from "./chat";
 import { updateGuildImage, currentGuildId } from "./guild";
 import {
   getProfileUrl,
-  defaultProfileImageUrl,
+  defaultProfileImage,
   clydeSrc,
   getBase64Image,
+  getId,
+  blackImage,
+  STATUS_404,
+  STATUS_200,
 } from "./utils";
 import {
   isSettingsOpen,
@@ -22,7 +26,6 @@ import {
 } from "./settingsui";
 import { userList } from "./userList";
 import { createCropPop } from "./popups";
-import { getId, blackImage } from "./utils";
 import { translations } from "./translations";
 import { currentUserId, currentUserNick } from "./user";
 import { alertUser } from "./ui";
@@ -36,11 +39,12 @@ export const selfProfileImage = getId("self-profile-image");
 export const selfStatus = getId("self-status");
 
 let lastConfirmedGuildImg;
-let maxAttachmentSize; // mb
+export let maxAttachmentSize; // mb
 let maxAvatarSize; // mb
 
 function getMaxAvatarBytes() {
-  return maxAvatarSize * 1024 * 1024;
+  const MB_BYTES = 1024;
+  return maxAvatarSize * MB_BYTES * MB_BYTES;
 }
 
 const allowedAvatarTypes = [
@@ -63,7 +67,7 @@ const base64Of404 = "data:application/json;base64,W1wiNDA0XCIsNDA0XQ==";
 
 export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
   if (!srcId) {
-    imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+    imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
     return;
   }
   if (!imgToUpdate) return;
@@ -82,7 +86,7 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
 
   if (isProfile) {
     if (failedProfiles.has(srcId)) {
-      imgToUpdate.src = defaultProfileImageUrl;
+      imgToUpdate.src = defaultProfileImage;
       return;
     }
   } else {
@@ -102,9 +106,9 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
     try {
       const base64data = await requestInProgress[srcId];
       imgToUpdate.src =
-        base64data || (isProfile ? defaultProfileImageUrl : blackImage);
+        base64data || (isProfile ? defaultProfileImage : blackImage);
     } catch {
-      imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+      imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
     }
     return;
   }
@@ -112,8 +116,8 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
   requestInProgress[srcId] = (async () => {
     try {
       const response = await fetch(imageUrl);
-      if (response.status === 404) {
-        imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+      if (response.status === STATUS_404) {
+        imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
         isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
         return null;
       }
@@ -137,7 +141,7 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
 
       return base64data;
     } catch (e) {
-      imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+      imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
       isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
       console.error(e);
       return null;
@@ -149,13 +153,13 @@ export async function setPicture(imgToUpdate, srcId, isProfile, isTimestamp) {
   try {
     const base64data = await requestInProgress[srcId];
     imgToUpdate.src =
-      base64data || (isProfile ? defaultProfileImageUrl : blackImage);
+      base64data || (isProfile ? defaultProfileImage : blackImage);
   } catch {
-    imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+    imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
   }
 
   imgToUpdate.addEventListener("error", function () {
-    imgToUpdate.src = isProfile ? defaultProfileImageUrl : blackImage;
+    imgToUpdate.src = isProfile ? defaultProfileImage : blackImage;
     isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
   });
 }
@@ -213,8 +217,8 @@ export function resetImageInput(inputId, imgId) {
 
 export function updateImageSource(imageElement, imagePath) {
   imageElement.onerror = () => {
-    if (imageElement.src !== defaultProfileImageUrl) {
-      imageElement.src = defaultProfileImageUrl;
+    if (imageElement.src !== defaultProfileImage) {
+      imageElement.src = defaultProfileImage;
     }
   };
   imageElement.onload = updateSettingsProfileColor;
@@ -328,7 +332,7 @@ function sendImageUploadRequest(isGuild, blob, file) {
 }
 
 function handleUploadResponse(xhr, isGuild, file) {
-  if (xhr.status === 200) {
+  if (xhr.status === STATUS_200) {
     if (isGuild) {
       updateGuildImage(currentGuildId);
       lastConfirmedGuildImg = file;
@@ -398,10 +402,10 @@ async function init() {
   try {
     const {
       urlToBase64,
-      defaultMediaImageUrl,
-      defaultProfileImageUrl,
-      setDefaultMediaImageUrl,
-      setDefaultProfileImageUrl,
+      defaultMediaImageSrc: defaultMediaImageUrl,
+      defaultProfileImage: defaultProfileImageUrl,
+      setDefaultMediaImageSrc: setDefaultMediaImageUrl,
+      setDefaultProfileImageSrc: setDefaultProfileImageUrl,
     } = await import("./utils");
 
     const base64Profile = await urlToBase64(defaultProfileImageUrl);

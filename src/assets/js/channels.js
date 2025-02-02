@@ -1,5 +1,11 @@
 import { apiClient, EventType } from "./api";
-import { constructAppPage, disableElement, getId, createEl } from "./utils";
+import {
+  constructAppPage,
+  disableElement,
+  getId,
+  createEl,
+  MINUS_INDEX,
+} from "./utils";
 import {
   getHistoryFromOneChannel,
   setLastSenderID,
@@ -8,7 +14,7 @@ import {
 } from "./chat";
 import { translations } from "./translations";
 import { closeReplyMenu, chatInput, chatContent } from "./chatbar";
-import { joinVoiceChannel } from "./guild";
+import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild";
 import {
   selectedChanColor,
   hoveredChanColor,
@@ -17,6 +23,7 @@ import {
   muteHtml,
   inviteVoiceHtml,
   voiceChanHtml,
+  textChanHtml,
 } from "./ui";
 import {
   appendToChannelContextList,
@@ -24,18 +31,16 @@ import {
 } from "./contextMenuActions";
 import { setProfilePic } from "./avatar";
 import { guildCache, cacheInterface } from "./cache";
-import { currentGuildId } from "./guild";
 import { isOnMe, isOnDm } from "./router";
-import { textChanHtml } from "./ui";
 import { permissionManager } from "./guildPermissions";
 import { getUserNick } from "./user";
-import { loadGuild } from "./guild";
 import { openChannelSettings } from "./settingsui";
 
-export let channelTitle = getId("channel-info");
-export let channelList = getId("channel-list");
-export let channelsUl = channelList.querySelector("ul");
+export const channelTitle = getId("channel-info");
+export const channelList = getId("channel-list");
+export const channelsUl = channelList.querySelector("ul");
 export let currentChannelName = null;
+const CHANNEL_HOVER_DELAY = 50;
 
 export let currentVoiceChannelId;
 export let currentChannels;
@@ -47,7 +52,8 @@ export function setCurrentVoiceChannelId(val) {
 export function setCurrentVoiceChannelGuild(val) {
   currentVoiceChannelGuild = val;
 }
-
+let isKeyDown = false;
+let currentChannelIndex = 0;
 export function getChannels() {
   console.log("Getting channels...");
   if (guildCache.currentChannelId) {
@@ -88,11 +94,10 @@ export async function changeChannel(newChannel) {
     clearLastDate();
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
-    
   } else {
     joinVoiceChannel(channelId);
   }
-  console.log(currentChannels)
+  console.log(currentChannels);
   if (!currentChannels) {
     console.error(currentChannels);
     return;
@@ -100,7 +105,6 @@ export async function changeChannel(newChannel) {
 
   setCurrentChannel(channelId);
 }
-
 //channels
 function setCurrentChannel(channelId) {
   currentChannels.forEach((channel) => {
@@ -109,54 +113,68 @@ function setCurrentChannel(channelId) {
       `li[id="${channel.channelId}"]`,
     );
     if (channelButton) {
-      const isSelected = channel.channelId === channelId
+      const isSelected = channel.channelId === channelId;
       console.log(isSelected);
       if (isSelected) {
-        mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+        mouseLeaveChannelButton(
+          channelButton,
+          channel.isTextChannel,
+          channel.channelId,
+        );
 
         setTimeout(() => {
-          mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
-        }, 50);
-
-      }
-      else {
+          mouseLeaveChannelButton(
+            channelButton,
+            channel.isTextChannel,
+            channel.channelId,
+          );
+        }, CHANNEL_HOVER_DELAY);
+      } else {
         //unselected channels
         mouseHoverChannelButton(
           channelButton,
           channel.isTextChannel,
           channel.channelId,
         );
-        mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+        mouseLeaveChannelButton(
+          channelButton,
+          channel.isTextChannel,
+          channel.channelId,
+        );
 
         setTimeout(() => {
-          mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
-        }, 50);
-      }
-
-    }
-    if(!channel.isTextChannel) { //voice channel
-      const voiceUsersInChannel =
-          cacheInterface.getVoiceChannelMembers(channelId);
-        if (voiceUsersInChannel) {
-          let allUsersContainer = channelButton.querySelector(
-            ".channel-users-container",
+          mouseLeaveChannelButton(
+            channelButton,
+            channel.isTextChannel,
+            channel.channelId,
           );
-          if (!allUsersContainer) {
-            allUsersContainer = createEl("div", {
-              className: "channel-users-container",
-            });
-          }
-          channelButton.style.width = "100%";
-          voiceUsersInChannel.forEach((userId, index) => {
-            drawVoiceChannelUser(
-              index,
-              userId,
-              channelId,
-              channelButton,
-              allUsersContainer
-            );
+        }, CHANNEL_HOVER_DELAY);
+      }
+    }
+    if (!channel.isTextChannel) {
+      //voice channel
+      const voiceUsersInChannel =
+        cacheInterface.getVoiceChannelMembers(channelId);
+      if (voiceUsersInChannel) {
+        let allUsersContainer = channelButton.querySelector(
+          ".channel-users-container",
+        );
+        if (!allUsersContainer) {
+          allUsersContainer = createEl("div", {
+            className: "channel-users-container",
           });
         }
+        channelButton.style.width = "100%";
+        voiceUsersInChannel.forEach((userId, index) => {
+          drawVoiceChannelUser(
+            index,
+            userId,
+            channelId,
+            channelButton,
+            allUsersContainer,
+          );
+        });
+      }
     }
   });
 }
@@ -238,16 +256,22 @@ export function mouseLeaveChannelButton(
     : "rgb(148, 155, 164)";
 }
 export function handleKeydown(event) {
+  const ALPHA_KEYS_MAX = 9;
   if (isKeyDown || isOnMe) return;
   currentChannels.forEach((channel, index) => {
-    let hotkey = index < 9 ? (index + 1).toString() : index === 9 ? "0" : null;
+    const hotkey =
+      index < ALPHA_KEYS_MAX
+        ? (index + 1).toString()
+        : index === ALPHA_KEYS_MAX
+        ? "0"
+        : null;
     if (hotkey && event.key === hotkey && event.altKey) {
       changeChannel(channel);
     }
   });
   if (event.altKey) {
     if (event.key === "ArrowUp") {
-      moveChannel(-1);
+      moveChannel(MINUS_INDEX);
     } else if (event.key === "ArrowDown") {
       moveChannel(1);
     }
@@ -286,7 +310,7 @@ export function createChannel(channelName, isTextChannel, isPrivate) {
   }
   console.log(channelName, isTextChannel, isPrivate);
   apiClient.send(EventType.CREATE_CHANNEL, {
-    channelName: channelName,
+    channelName,
     guildId: currentGuildId,
     isTextChannel,
     isPrivate,
@@ -369,7 +393,7 @@ export function addEventListeners(
 
   setTimeout(() => {
     mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
-  }, 50);
+  }, CHANNEL_HOVER_DELAY);
   channelButton.addEventListener("click", function () {
     changeChannel(channel);
   });
@@ -385,8 +409,6 @@ export function resetKeydown() {
   isKeyDown = false;
 }
 
-let isKeyDown = false;
-let currentChannelIndex = 0;
 export function moveChannel(direction) {
   let newIndex = currentChannelIndex + direction;
   if (newIndex < 0) {
@@ -447,8 +469,12 @@ class Channel {
     mouseHoverChannelButton(channelButton, this.isTextChannel, this.channelId);
 
     setTimeout(() => {
-      mouseLeaveChannelButton(channelButton, this.isTextChannel, this.channelId);
-    }, 50);
+      mouseLeaveChannelButton(
+        channelButton,
+        this.isTextChannel,
+        this.channelId,
+      );
+    }, CHANNEL_HOVER_DELAY);
   }
 }
 
@@ -501,7 +527,7 @@ function refreshChannelList(channels) {
     createChannelElement,
   );
   if (currentChannels && currentChannels.length > 1) {
-    addEventListeners()
+    addEventListeners();
     addChannelEventListeners();
   }
 }
@@ -533,7 +559,7 @@ export function drawVoiceChannelUser(
   userId,
   channelId,
   channelButton,
-  allUsersContainer
+  allUsersContainer,
 ) {
   const userName = getUserNick(userId);
   const userContainer = createEl("li", {

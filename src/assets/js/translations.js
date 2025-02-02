@@ -38,21 +38,18 @@ class Translations {
     const text = languageData;
     if (!text) {
       alertUser(
-        `No translation found for key: ${templateKey} in language: ${this.currentLanguage}`,
+        `No translation found for key: ${templateKey} in language: ${this.currentLanguage}`
       );
       return "";
     }
-    const result = Object.keys(replacements).reduce((result, key) => {
+    return Object.keys(replacements).reduce((acc, key) => {
       const value = truncation[key]
         ? truncateString(replacements[key], truncation[key])
         : replacements[key];
-      if (truncation[key]) {
-      }
-      return result.replace(`{{${key}}}`, value);
+      return acc.replace(`{{${key}}}`, value);
     }, text);
-
-    return result;
   }
+
   getDeleteChannelText(channelName) {
     return this.replacePlaceholder("delete_channel_text", { channelName });
   }

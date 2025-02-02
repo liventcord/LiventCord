@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { displayImagePreview, beautifyJson, displayJsonPreview } from "./ui";
 import {
   isImageURL,
@@ -12,17 +13,16 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
+  defaultMediaImageSrc,
+  defaultProfileImage,
 } from "./utils";
-
-import DOMPurify from "dompurify";
-import { defaultMediaImageUrl, defaultProfileImageUrl } from "./utils";
 import { translations } from "./translations";
 
 const maxWidth = 512;
 const maxHeight = 384;
 
-const maxTenorWidth = 512 * 1.5;
-const maxTenorHeight = 384 * 1.5;
+const maxTenorWidth = 768;
+const maxTenorHeight = 576;
 
 export function createTenorElement(msgContentElement, inputText, url) {
   let tenorURL = "";
@@ -40,7 +40,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
   }
 
   const imgElement = createEl("img", {
-    src: defaultMediaImageUrl,
+    src: defaultMediaImageSrc,
     style: {
       cursor: "pointer",
       maxWidth: `${maxTenorWidth}px`,
@@ -60,7 +60,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultProfileImageUrl;
+    imgElement.src = defaultProfileImage;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -75,7 +75,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
 export function createImageElement(msgContentElement, inputText, url_src) {
   const imgElement = createEl("img", {
     className: "imageElement",
-    src: defaultMediaImageUrl,
+    src: defaultMediaImageSrc,
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`,
@@ -84,13 +84,13 @@ export function createImageElement(msgContentElement, inputText, url_src) {
 
   imgElement.onload = function () {
     const actualSrc = DOMPurify.sanitize(imgElement.getAttribute("data-src"));
-    if (actualSrc && imgElement.src === defaultMediaImageUrl) {
+    if (actualSrc && imgElement.src === defaultMediaImageSrc) {
       imgElement.src = actualSrc;
     }
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultProfileImageUrl;
+    imgElement.src = defaultProfileImage;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -115,7 +115,7 @@ export async function createJsonElement(url) {
     if (!response.ok) {
       throw new Error("Failed to fetch JSON data");
     }
-    let jsonData = await response.json();
+    const jsonData = await response.json();
     const beautifiedData = beautifyJson(jsonData);
     const truncatedJsonLines = beautifiedData
       .split("\n")
@@ -186,7 +186,7 @@ export async function createMediaElement(
   attachmentUrls,
   metadata,
 ) {
-  let links = extractLinks(content) || [];
+  const links = extractLinks(content) || [];
   let mediaCount = 0;
   let linksProcessed = 0;
 

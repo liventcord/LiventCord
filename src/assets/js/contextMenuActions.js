@@ -12,9 +12,9 @@ import { alertUser } from "./ui";
 import { guildCache } from "./cache";
 import { apiClient, EventType } from "./api";
 
-let isDeveloperMode = true;
-export let contextList = {};
-export let messageContextList = {};
+const isDeveloperMode = true;
+export const contextList = {};
+export const messageContextList = {};
 const ActionType = {
   COPY_ID: "COPY_ID",
   COPY_USER_ID: "COPY_USER_ID",
@@ -71,9 +71,9 @@ export function editGuildProfile() {
 
 export function deleteMessage(messageId) {
   console.log("Deleting message ", messageId);
-  let data = {
+  const data = {
     isDm: isOnDm,
-    messageId: messageId,
+    messageId,
     channelId: isOnGuild
       ? guildCache.currentChannelId
       : friendCache.currentDmId,
@@ -138,8 +138,8 @@ export function copyId(channelId) {
 
 export function deleteChannel(channelId, guildId) {
   const data = {
-    guildId: guildId,
-    channelId: channelId,
+    guildId,
+    channelId,
   };
   apiClient.send(EventType.DELETE_CHANNEL, data);
 }
@@ -158,7 +158,7 @@ export function appendToProfileContextList(userData, userId) {
 }
 
 export function createUserContext(userId) {
-  let context = {};
+  const context = {};
 
   context[VoiceActionType.OPEN_PROFILE] = {
     action: () => drawProfilePop(userId),
@@ -181,7 +181,7 @@ export function createUserContext(userId) {
 
 export function createProfileContext(userData) {
   const userId = userData.userId;
-  let context = {};
+  const context = {};
 
   context[VoiceActionType.OPEN_PROFILE] = {
     action: () => drawProfilePop(userData),
@@ -284,7 +284,7 @@ export function addContextListeners() {
 }
 
 export function createChannelsContext(channelId) {
-  let context = {};
+  const context = {};
   context[ChannelsActionType.MARK_AS_READ] = {
     action: () => readCurrentMessages(),
   };
@@ -315,7 +315,7 @@ export function createChannelsContext(channelId) {
 }
 
 export function createMessageContext(messageId, userId) {
-  let context = {};
+  const context = {};
 
   context[MessagesActionType.ADD_REACTION] = {
     label: MessagesActionType.ADD_REACTION,

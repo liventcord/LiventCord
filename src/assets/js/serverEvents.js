@@ -19,7 +19,7 @@ import {
   removeFromGuildList,
   updateGuildImage,
   currentGuildId,
-  guildName,
+  guildNameText,
 } from "./guild";
 import { closeSettings } from "./settingsui";
 import { loadDmHome } from "./app";
@@ -77,7 +77,7 @@ apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
   const guildId = data.guildId;
   if (!newGuildName || !guildId) return;
   if (guildId === currentGuildId) {
-    guildName.innerText = newGuildName;
+    guildNameText.innerText = newGuildName;
   }
 });
 apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
@@ -118,7 +118,7 @@ apiClient.on(EventType.GET_BULK_REPLY, (data) => {
     const { messageId, userId, content, attachmentUrls } = reply;
     if (!replyCache[messageId]) {
       replyCache[messageId] = {
-        messageId: messageId,
+        messageId,
         replies: [],
       };
     }

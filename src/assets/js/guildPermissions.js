@@ -66,4 +66,4 @@ export class PermissionManager {
   }
 }
 
-export let permissionManager = new PermissionManager();
+export const permissionManager = new PermissionManager();

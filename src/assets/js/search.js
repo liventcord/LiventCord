@@ -1,10 +1,9 @@
 import { getId } from "./utils";
 import { isOnGuild } from "./router";
 import { cacheInterface } from "./cache";
-import { currentGuildId } from "./guild";
+import { currentGuildId, getGuildMembers } from "./guild";
 import { getCurrentDmFriends } from "./friendui";
 import { chatInput } from "./chatbar";
-import { getGuildMembers } from "./guild";
 import { currentChannels } from "./channels";
 
 let channelSearchInputElement;
@@ -161,16 +160,16 @@ export function displayDefaultContent() {
   const dateSection2 = getId("dateSection2").querySelector(".search-content");
   const dateSection3 = getId("dateSection3").querySelector(".search-content");
 
-  userSection.innerHTML = '<div class="button">No users found</div>';
-  mentioningSection.innerHTML = '<div class="button">No mentions found</div>';
+  userSection.innerHTML = "<div class=\"button\">No users found</div>";
+  mentioningSection.innerHTML = "<div class=\"button\">No mentions found</div>";
   channelSection.innerHTML =
-    '<div class="button">Channel 1</div><div class="button">Channel 2</div><div class="button">Channel 3</div>';
+    "<div class=\"button\">Channel 1</div><div class=\"button\">Channel 2</div><div class=\"button\">Channel 3</div>";
   dateSection1.innerHTML =
-    '<div class="button">Before this date: Not Specified</div><div class="button">During this date: Not Specified</div><div class="button">After this date: Not Specified</div>';
+    "<div class=\"button\">Before this date: Not Specified</div><div class=\"button\">During this date: Not Specified</div><div class=\"button\">After this date: Not Specified</div>";
   dateSection2.innerHTML =
-    '<div class="button">Before this date: Not Specified</div><div class="button">During this date: Not Specified</div><div class="button">After this date: Not Specified</div>';
+    "<div class=\"button\">Before this date: Not Specified</div><div class=\"button\">During this date: Not Specified</div><div class=\"button\">After this date: Not Specified</div>";
   dateSection3.innerHTML =
-    '<div class="button">Before this date: Not Specified</div><div class="button">During this date: Not Specified</div><div class="button">After this date: Not Specified</div>';
+    "<div class=\"button\">Before this date: Not Specified</div><div class=\"button\">During this date: Not Specified</div><div class=\"button\">After this date: Not Specified</div>";
 }
 
 export function onFocusInput() {

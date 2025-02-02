@@ -21,15 +21,12 @@ let isAudioPlaying = false;
 let analyser = null;
 let source = null;
 let isAnalyzing = false;
-let youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
+const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
-
+const WIGGLE_DELAY = 500;
 let isInitializedAudio;
-let microphoneButton;
-let earphoneButton;
-
-microphoneButton = getId("microphone-button");
-earphoneButton = getId("earphone-button");
+const microphoneButton = getId("microphone-button");
+const earphoneButton = getId("earphone-button");
 
 if (microphoneButton) {
   microphoneButton.addEventListener("click", setMicrophone);
@@ -60,10 +57,10 @@ export async function playAudio(audioUrl) {
     playButton.addEventListener("click", () => {
       if (isAudioPlaying) {
         audioElement.pause();
-        playButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>`; // Play icon
+        playButton.innerHTML = "<svg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10 5v20l15-10L10 5z\" fill=\"black\"/></svg>"; // Play icon
       } else {
         audioElement.play();
-        playButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5h10v20H5V5zm10 0h10v20H15V5z" fill="black"/></svg>`; // Pause icon
+        playButton.innerHTML = "<svg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M5 5h10v20H5V5zm10 0h10v20H15V5z\" fill=\"black\"/></svg>"; // Pause icon
       }
       isAudioPlaying = !isAudioPlaying;
     });
@@ -105,8 +102,9 @@ export async function playAudio(audioUrl) {
       lastTime.innerText = formatTime(audioElement.currentTime);
 
       const track = document.querySelector("#player01 .track");
+      const PERCENTAGE = 100;
       track.style.width = `${
-        (audioElement.currentTime / audioElement.duration) * 100
+        (audioElement.currentTime / audioElement.duration) * PERCENTAGE
       }%`;
     });
 
@@ -121,8 +119,7 @@ export async function playAudio(audioUrl) {
 
     audioElement.addEventListener("ended", function () {
       isAudioPlaying = false;
-      const playButton = document.querySelector("#player01 .play");
-      playButton.innerHTML = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>`; // Play icon
+      playButton.innerHTML = "<svg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10 5v20l15-10L10 5z\" fill=\"black\"/></svg>"; // Play icon
     });
 
     await audioElement.play();
@@ -132,9 +129,12 @@ export async function playAudio(audioUrl) {
 }
 
 export function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${minutes}:${secs < 10 ? "0" + secs : secs}`;
+  const SECONDS_IN_MINUTE = 60;
+  const MINIMUM_SECONDS_DISPLAY = 10;
+
+  const minutes = Math.floor(seconds / SECONDS_IN_MINUTE);
+  const secs = Math.floor(seconds % SECONDS_IN_MINUTE);
+  return `${minutes}:${secs < MINIMUM_SECONDS_DISPLAY ? "0" + secs : secs}`;
 }
 
 export function initializeMp3Yt() {
@@ -193,7 +193,7 @@ export function stopAudioAnalysis() {
 
   isAnalyzing = false;
 
-  let selfProfileDisplayElementList = getSelfFromUserList();
+  const selfProfileDisplayElementList = getSelfFromUserList();
   if (selfProfileDisplayElementList) {
     selfProfileDisplayElementList.style.borderRadius = "50%";
   }
@@ -216,14 +216,14 @@ export function startAudioAnalysis() {
   }
 
   analyser = audioContext.createAnalyser();
-  const source = audioContext.createMediaElementSource(currentAudioPlayer);
-  source.connect(analyser);
+  const _source = audioContext.createMediaElementSource(currentAudioPlayer);
+  _source.connect(analyser);
   analyser.connect(audioContext.destination);
 
   isAnalyzing = true;
 
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  let recentVolumes = [];
+  const recentVolumes = [];
   const bufferSize = 10;
 
   analyzeAudio(bufferSize, dataArray, recentVolumes);
@@ -258,10 +258,17 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
   const dynamicThreshold =
     recentVolumes.reduce((acc, val) => acc + val, 0) / recentVolumes.length;
 
-  const scaleFactor = 1 + averageVolume / 128;
-  const borderColor = `rgb(${Math.min(255, averageVolume * 2)}, 0, ${Math.max(
+  const MAX_VOLUME = 128;
+  const MAX_COLOR_VALUE = 255;
+  const VOLUME_TO_COLOR_MULTIPLIER = 2;
+
+  const scaleFactor = 1 + averageVolume / MAX_VOLUME;
+  const borderColor = `rgb(${Math.min(
+    MAX_COLOR_VALUE,
+    averageVolume * VOLUME_TO_COLOR_MULTIPLIER,
+  )}, 0, ${Math.max(
     0,
-    255 - averageVolume * 2,
+    MAX_COLOR_VALUE - averageVolume * VOLUME_TO_COLOR_MULTIPLIER,
   )})`;
 
   const profileDisplayElement = getId("profile-display");
@@ -285,7 +292,7 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
       selfUserListProfileList.style.borderColor = borderColor;
     }
   } else {
-    resetStyles(profileDisplayElement, selfProfileImage);
+    resetStyles(profileDisplayElement);
   }
 
   requestAnimationFrame(() =>
@@ -293,21 +300,21 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
   );
 }
 
-export function resetStyles(profileDisplayElement, selfProfileImage) {
+export function resetStyles(profileDisplayElement) {
   if (profileDisplayElement) {
     profileDisplayElement.classList.remove("dancing-border");
-    profileDisplayElement.style.transform = `scale(1)`;
+    profileDisplayElement.style.transform = "scale(1)";
     profileDisplayElement.style.borderColor = "rgb(17, 18, 20)";
   }
   if (selfProfileImage) {
     selfProfileImage.classList.remove("dancing-border");
-    selfProfileImage.style.transform = `scale(1)`;
+    selfProfileImage.style.transform = "scale(1)";
     selfProfileImage.style.borderColor = "rgb(17, 18, 20)";
   }
   const selfUserListProfileList = getSelfFromUserList();
   if (selfUserListProfileList) {
     selfUserListProfileList.classList.remove("dancing-border");
-    selfUserListProfileList.style.transform = `scale(1)`;
+    selfUserListProfileList.style.transform = "scale(1)";
     selfUserListProfileList.style.borderColor = "rgb(17, 18, 20)";
   }
 }
@@ -418,9 +425,9 @@ export function activateSoundOutput() {
 
 let isMicrophoneOpen = true;
 export function setMicrophone() {
-  let imagePath = isMicrophoneOpen
-    ? `/images/icons/whitemic.png`
-    : `/images/icons/redmic.png`;
+  const imagePath = isMicrophoneOpen
+    ? "/images/icons/whitemic.png"
+    : "/images/icons/redmic.png";
   microphoneButton.src = imagePath;
   isMicrophoneOpen = !isMicrophoneOpen;
   console.log("Set microphone! to ", isMicrophoneOpen);
@@ -428,9 +435,9 @@ export function setMicrophone() {
 
 let isEarphonesOpen = true;
 export function setEarphones() {
-  let imagePath = isEarphonesOpen
-    ? `/images/icons/whiteearphones.png`
-    : `/images/icons/redearphones.png`;
+  const imagePath = isEarphonesOpen
+    ? "/images/icons/whiteearphones.png"
+    : "/images/icons/redearphones.png";
   earphoneButton.src = imagePath;
   isEarphonesOpen = !isEarphonesOpen;
   console.log("Set earphones! to ", isEarphonesOpen);
@@ -566,13 +573,14 @@ export function clearVoiceChannel(channelId) {
   buttons.forEach((btn, index) => {
     btn.remove();
   });
-  let channelUsersContainer = channelButton.querySelector(
+  const channelUsersContainer = channelButton.querySelector(
     ".channel-users-container",
   );
   if (channelUsersContainer) {
     channelUsersContainer.remove();
   }
-  let existingContentWrapper = channelButton.querySelector(".content-wrapper");
+  const existingContentWrapper =
+    channelButton.querySelector(".content-wrapper");
   console.log(existingContentWrapper.style.marginRight);
   existingContentWrapper.style.marginRight = "100px";
 }
@@ -654,19 +662,20 @@ export class VoiceHandler {
 
   decodeAudioDataAsync(arrayBuffer) {
     try {
-    } catch (e) {
-      console.error(e);
       return new Promise((resolve, reject) => {
         audioContext.decodeAudioData(arrayBuffer, resolve, reject);
       });
+    } catch (e) {
+      console.error(e);
+      return e;
     }
   }
 
   playAudioBuffer(audioBuffer) {
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-    source.start(0);
+    const _source = audioContext.createBufferSource();
+    _source.buffer = audioBuffer;
+    _source.connect(audioContext.destination);
+    _source.start(0);
   }
 }
 
@@ -684,7 +693,7 @@ export function applyWiggleEffect(profileElement, selfProfileElement) {
     if (selfProfileElement) {
       selfProfileElement.classList.remove("dancing-border");
     }
-  }, 500);
+  }, WIGGLE_DELAY);
 }
 
 export function resetWiggleEffect(...elements) {

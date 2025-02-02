@@ -1,7 +1,6 @@
 import { initialState } from "./app";
-import { createEl, defaultMediaImageUrl } from "./utils";
+import { createEl, defaultMediaImageSrc, getId, debounce } from "./utils";
 import { sendMessage } from "./message";
-import { getId, debounce } from "./utils";
 import { isUsersOpenGlobal } from "./userList";
 import { hideImagePreviewRequest } from "./ui";
 
@@ -19,6 +18,9 @@ const exampleTenorId = "LIVDSRZULELA"; //Example tenor apikey from tenor docs
 export const gifBtn = getId("gifbtn");
 export const gifBtnTop = getId("gifbtntop");
 export const emojiBtn = getId("emojibtn");
+const STATUS_200 = 200;
+const VIEWPORT_WIDTH_RATIO = 1.7;
+const VIEWPORT_HEIGHT_RATIO = 1.2;
 
 getId("image-preview-container").addEventListener(
   "click",
@@ -26,29 +28,34 @@ getId("image-preview-container").addEventListener(
 );
 
 export function onMouseMove(e) {
+  const MIN_WIDTH = 300;
+  const MIN_HEIGHT = 300;
+  const MIN_WIDTH_LEFT = 100;
+  const MIN_HEIGHT_TOP = 100;
+
   if (!isResizing) return;
 
-  let dx = e.clientX - initialMouseX;
-  let dy = e.clientY - initialMouseY;
+  const dx = e.clientX - initialMouseX;
+  const dy = e.clientY - initialMouseY;
 
   let newWidth = initialWidth - dx;
   let newHeight = initialHeight - dy;
 
-  let viewportWidth = window.innerWidth / 1.7;
-  let viewportHeight = window.innerHeight / 1.2;
+  const viewportWidth = window.innerWidth / VIEWPORT_WIDTH_RATIO;
+  const viewportHeight = window.innerHeight / VIEWPORT_HEIGHT_RATIO;
 
-  newWidth = Math.max(300, newWidth);
-  newHeight = Math.max(300, newHeight);
+  newWidth = Math.max(MIN_WIDTH, newWidth);
+  newHeight = Math.max(MIN_HEIGHT, newHeight);
 
   if (resizingLeft) {
-    newWidth = Math.max(100, newWidth);
+    newWidth = Math.max(MIN_WIDTH_LEFT, newWidth);
     mediaMenu.style.width = newWidth + "px";
   } else if (resizingRight) {
     mediaMenu.style.width = newWidth + "px";
   }
 
   if (resizingTop) {
-    newHeight = Math.max(100, newHeight);
+    newHeight = Math.max(MIN_HEIGHT_TOP, newHeight);
     mediaMenu.style.height = newHeight + "px";
   } else if (resizingBottom) {
     mediaMenu.style.height = newHeight + "px";
@@ -67,7 +74,7 @@ export function onMouseUp() {
   }
 }
 
-const categories = [
+const CATEGORIES = [
   { title: "Humans", class: "human", count: 245 },
   { title: "Nature", class: "nature", count: 213 },
   { title: "Food", class: "food", count: 129 },
@@ -129,25 +136,34 @@ export function getEmojiPanel() {
     },
   });
 
-  renderEmojis(emojisContainer, categories);
+  renderEmojis(emojisContainer, CATEGORIES);
   emojiPanel.appendChild(emojisContainer);
   return emojiPanel.outerHTML;
 }
 
 export function updateMediaPanelPosition() {
-  const mediaMenu = getId("media-menu");
+  mediaMenu = getId("media-menu");
   if (mediaMenu) {
     mediaMenu.className = !isUsersOpenGlobal ? "users-open" : "";
   }
 }
 export function handleMediaPanelResize() {
+  const DEFAULT_WIDTH = 480;
+  const DEFAULT_HEIGHT = 453;
+
   if (!mediaMenu) return;
-  let viewportWidth = window.innerWidth / 1.7;
-  let viewportHeight = window.innerHeight / 1.2;
+
+  const viewportWidth = window.innerWidth / VIEWPORT_WIDTH_RATIO;
+  const viewportHeight = window.innerHeight / VIEWPORT_HEIGHT_RATIO;
+
   mediaMenu.style.width =
-    Math.min(viewportWidth, parseInt(mediaMenu.style.width) || 480) + "px";
+    Math.min(viewportWidth, parseInt(mediaMenu.style.width) || DEFAULT_WIDTH) +
+    "px";
   mediaMenu.style.height =
-    Math.min(viewportHeight, parseInt(mediaMenu.style.height) || 453) + "px";
+    Math.min(
+      viewportHeight,
+      parseInt(mediaMenu.style.height) || DEFAULT_HEIGHT,
+    ) + "px";
 }
 
 export async function loadGifContent(query) {
@@ -182,21 +198,29 @@ export function toggleMediaMenu() {
 }
 export function httpGetAsync(url, callback) {
   const xmlHttp = new XMLHttpRequest();
+
+  const READY_STATE_DONE = 4;
+
   xmlHttp.onreadystatechange = () => {
-    if (xmlHttp.readyState === 4 && xmlHttp.status === 200) {
+    if (
+      xmlHttp.readyState === READY_STATE_DONE &&
+      xmlHttp.status === STATUS_200
+    ) {
       callback(xmlHttp.responseText);
     }
   };
+
   xmlHttp.open("GET", url, true);
   xmlHttp.send(null);
 }
+
 export function handleCategoryGifs(responseText) {
   const gifs = JSON.parse(responseText).results;
   mediaMenuContainer.innerHTML = "";
   gifs.forEach((gif) => {
     console.log(gif);
     const gifImg = createEl("img", { className: "gif-content" });
-    gifImg.src = defaultMediaImageUrl;
+    gifImg.src = defaultMediaImageSrc;
     mediaMenuContainer.appendChild(gifImg);
     gifImg.onload = function () {
       gifImg.src = gif.media[0].gif.url;
@@ -327,7 +351,7 @@ export function httpGetSync(url) {
   const xmlHttp = new XMLHttpRequest();
   xmlHttp.open("GET", url, false);
   xmlHttp.send(null);
-  if (xmlHttp.status === 200) {
+  if (xmlHttp.status === STATUS_200) {
     return xmlHttp.responseText;
   } else {
     throw new Error(`HTTP error! Status: ${xmlHttp.status}`);
@@ -399,7 +423,7 @@ export function initialiseEmojiPreview() {
     isHovered = false;
   });
 }
-
+const GIF_DEBOUNCE_TIME = 300;
 export function initialiseMedia() {
   initialiseEmojiPreview();
   mediaMenu = getId("media-menu");
@@ -412,7 +436,7 @@ export function initialiseMedia() {
     debounce(async () => {
       const query = getId("mediaMenuSearchbar").value;
       await loadGifContent(query);
-    }, 300),
+    }, GIF_DEBOUNCE_TIME),
   );
 
   getId("emojibtntop").addEventListener("click", (e) => {

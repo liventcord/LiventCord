@@ -2,8 +2,10 @@
 import { cacheInterface, guildCache, messages_raw_cache } from "./cache";
 import { refreshUserProfile } from "./avatar";
 import { updateUserOnlineStatus } from "./user";
-import { addChannel, removeChannel, editChannel } from "./channels";
 import {
+  addChannel,
+  removeChannel,
+  editChannel,
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
   setCurrentVoiceChannelGuild,

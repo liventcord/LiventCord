@@ -4,14 +4,22 @@ import {
   stopAudioAnalysis,
   sendAudioData,
 } from "./audio";
-import { refreshUserProfile, updateSelfName, uploadImage } from "./avatar";
-import { showConfirmationPanel, isGuildSettings } from "./settingsui";
-import { alertUser, hideImagePreviewRequest } from "./ui";
-import { closeSettings } from "./settingsui";
+import {
+  refreshUserProfile,
+  updateSelfName,
+  uploadImage,
+  onEditGuildProfile,
+  onEditProfile,
+} from "./avatar";
+import {
+  showConfirmationPanel,
+  isGuildSettings,
+  closeSettings,
+  generateConfirmationPanel,
+  hideConfirmationPanel,
+} from "./settingsui";
+import { alertUser, hideImagePreviewRequest, handleToggleClick } from "./ui";
 import { isDomLoaded } from "./app";
-import { handleToggleClick } from "./ui";
-import { onEditGuildProfile, onEditProfile } from "./avatar";
-import { generateConfirmationPanel, hideConfirmationPanel } from "./settingsui";
 import { permissionManager } from "./guildPermissions";
 import { apiClient, EventType } from "./api";
 import { currentGuildId } from "./guild";
@@ -19,9 +27,10 @@ import { currentUserId, currentUserNick, setUserNick } from "./user";
 import { translations } from "./translations";
 import { guildCache } from "./cache";
 
-let isImagePreviewOpen = false;
+const isImagePreviewOpen = false;
+const CHANGE_NICK_COOLDOWN = 1000;
 
-export let settingTypes = {
+export const settingTypes = {
   MyAccount: "MyAccount",
   SoundAndVideo: "SoundAndVideo",
   Notifications: "Notifications",
@@ -250,7 +259,6 @@ export function removeguildImage() {
 }
 
 let changeNicknameTimeout, changeGuildNameTimeout;
-
 export function changeNickname() {
   if (changeNicknameTimeout) return;
   const newNicknameInput = getId("new-nickname-input"),
@@ -266,7 +274,7 @@ export function changeNickname() {
     newNicknameInput.value = newNickname;
     changeNicknameTimeout = setTimeout(
       () => (changeNicknameTimeout = null),
-      1000,
+      CHANGE_NICK_COOLDOWN,
     );
   }
 }
@@ -274,7 +282,10 @@ export function changeNickname() {
 export function changeGuildName() {
   if (changeGuildNameTimeout) return;
   const newGuildInput = getId("guild-overview-name-input");
-  if (!newGuildInput) return console.warn("Guild input does not exist");
+  if (!newGuildInput) {
+    console.warn("Guild input does not exist");
+    return;
+  }
   const newGuildName = newGuildInput.value.trim();
   if (newGuildName && newGuildName !== guildCache.currentGuildName) {
     console.log("Changed guild name to: " + newGuildName);
@@ -285,7 +296,7 @@ export function changeGuildName() {
     newGuildInput.value = newGuildName;
     changeGuildNameTimeout = setTimeout(
       () => (changeGuildNameTimeout = null),
-      1000,
+      CHANGE_NICK_COOLDOWN,
     );
   }
 }
@@ -299,7 +310,6 @@ export async function requestMicrophonePermissions() {
       translations.getTranslation("microphone-failed"),
       translations.getTranslation("microphone-failed-2"),
     );
-    return false;
   }
 }
 

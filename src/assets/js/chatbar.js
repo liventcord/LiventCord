@@ -4,6 +4,7 @@ import {
   highlightOption,
   selectMember,
   updateUserMentionDropdown,
+  userMentionDropdown,
 } from "./search";
 import { apiClient, EventType } from "./api";
 import { currentChannelName } from "./channels";
@@ -27,12 +28,11 @@ import {
 } from "./utils";
 import { displayImagePreview } from "./ui";
 import { isOnDm } from "./router";
-import { setProfilePic } from "./avatar";
+import { maxAttachmentSize, setProfilePic } from "./avatar";
 import { cacheInterface, guildCache } from "./cache";
 import { currentGuildId } from "./guild";
 import { translations } from "./translations";
 import { currentUserId, getUserNick, getUserIdFromNick } from "./user";
-import { userMentionDropdown } from "./search";
 
 export let currentReplyingTo = "";
 
@@ -118,23 +118,23 @@ export function closeReplyMenu() {
   currentReplyingTo = "";
   chatInput.classList.remove("reply-opened");
 }
-
 export function adjustHeight() {
+  const MIN_CHAT_HEIGHT = 60;
   chatInput.style.height = "auto";
   chatInput.style.height = chatInput.scrollHeight + "px";
 
-  let chatInputHeight = chatInput.scrollHeight;
+  const chatInputHeight = chatInput.scrollHeight;
   chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight;
   const adjustChatContainerHeight = () => {
     const viewportHeight = window.innerHeight;
-    const maxAllowedHeight = viewportHeight - chatInputHeight - 60;
+    const maxAllowedHeight = viewportHeight - chatInputHeight - MIN_CHAT_HEIGHT;
     chatContainer.style.height = `${Math.max(0, maxAllowedHeight)}px`;
   };
 
   adjustChatContainerHeight();
   window.addEventListener("resize", adjustChatContainerHeight);
 
-  if (chatInputHeight === 60) {
+  if (chatInputHeight === MIN_CHAT_HEIGHT) {
     chatInput.style.paddingTop = "-5px";
     chatInput.style.height = "45px";
   }
@@ -158,7 +158,7 @@ export function extractUserIds(message) {
 
 let typingTimeout;
 let typingStarted = false;
-
+const TYPING_COOLDOWN = 2000;
 export async function handleUserKeydown(event) {
   if (chatInput.value !== "") {
     if (typingTimeout) {
@@ -185,13 +185,13 @@ export async function handleUserKeydown(event) {
         guildId: currentGuildId,
         isDm: isOnDm,
       });
-    }, 2000);
+    }, TYPING_COOLDOWN);
   }
 
   if (event.key === "Enter" && event.shiftKey) {
     event.preventDefault();
-    let startPos = chatInput.selectionStart;
-    let endPos = chatInput.selectionEnd;
+    const startPos = chatInput.selectionStart;
+    const endPos = chatInput.selectionEnd;
     chatInput.value =
       chatInput.value.substring(0, startPos) +
       "\n" +
@@ -201,7 +201,8 @@ export async function handleUserKeydown(event) {
       chatContainer.scrollHeight -
       (chatContainer.scrollTop + chatContainer.clientHeight);
     console.log(difference);
-    if (difference < 10) {
+    const SMALL_DIFF = 10;
+    if (difference < SMALL_DIFF) {
       scrollToBottom();
     }
     chatInput.dispatchEvent(new Event("input"));
@@ -235,7 +236,7 @@ export function handleFileInput(eventOrFiles = null) {
     filesToProcess = [eventOrFiles];
   }
   filesToProcess = filesToProcess.filter(
-    (file) => file instanceof Blob && file.size <= 50 * 1024 * 1024,
+    (file) => file instanceof Blob && file.size <= maxAttachmentSize * 1024 * 1024,
   );
   if (fileList.length + filesToProcess.length > maxFiles) {
     filesToProcess = filesToProcess.slice(0, maxFiles - fileList.length);
@@ -309,13 +310,13 @@ export function setDropHandler() {
   dropZone.addEventListener("drop", handleDrop, false);
 
   function handleDrop(e) {
-    let dt = e.dataTransfer;
-    let files = dt.files;
+    const dt = e.dataTransfer;
+    const files = dt.files;
     if (files.length) {
       handleFileInput(files);
     }
   }
-  let fileButton = getId("file-button");
+  const fileButton = getId("file-button");
 
   fileButton.addEventListener("click", function () {
     fileInput.click();
@@ -336,8 +337,8 @@ export function displayLocalMessage(channelId, content) {
   const preMessage = {
     messageId: failedId,
     userId: currentUserId,
-    content: content,
-    channelId: channelId,
+    content,
+    channelId,
     date: createNowDate(),
     addToTop: false,
   };
@@ -363,7 +364,7 @@ export function displayCannotSendMessage(channelId, content) {
     messageId: createRandomId(),
     userId: CLYDE_ID,
     content: translations.getTranslation("fail-message-text"),
-    channelId: channelId,
+    channelId,
     date: createNowDate(),
     lastEdited: "",
     attachmentUrls: "",
@@ -381,7 +382,7 @@ export function displayCannotSendMessage(channelId, content) {
 
 export function displayStartMessage() {
   if (!isOnDm) {
-    let isGuildBorn = cacheInterface.isRootChannel(
+    const isGuildBorn = cacheInterface.isRootChannel(
       currentGuildId,
       guildCache.currentChannelId,
     );
@@ -403,7 +404,7 @@ export function displayStartMessage() {
     const startGuildText = translations.getTranslation("start-of-guild");
     const textToWrite = isGuildBorn ? startGuildText : startChannelText;
     const channelicon = createEl("div", { className: "channelIcon" });
-    const channelHTML = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="rgb(255, 255, 255)" viewBox="0 0 24 24"><path fill="var(--white)" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>`;
+    const channelHTML = "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"42\" height=\"42\" fill=\"rgb(255, 255, 255)\" viewBox=\"0 0 24 24\"><path fill=\"var(--white)\" fill-rule=\"evenodd\" d=\"M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z\" clip-rule=\"evenodd\" class=\"\"></path></svg>";
     channelicon.innerHTML = channelHTML;
     const msgdescription = createEl("div", {
       id: isGuildBorn ? "guildBornDescription" : "msgDescription",

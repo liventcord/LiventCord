@@ -22,8 +22,9 @@ import {
   adjustHeight,
   setDropHandler,
   newMessagesBar,
+  chatContainer,
 } from "./chatbar";
-import { cacheInterface } from "./cache";
+import { cacheInterface, guildCache } from "./cache";
 import {
   updateGuilds,
   addKeybinds,
@@ -32,13 +33,16 @@ import {
   fetchMembers,
   refreshInviteId,
   currentGuildId,
-  guildName,
+  guildNameText,
   guildContainer,
 } from "./guild";
 import {
   disableDmContainers,
   friendContainerItem,
   printFriendMessage,
+  updateDmsList,
+  setupSampleUsers,
+  activateDmContainer,
 } from "./friendui";
 import {
   closeDropdown,
@@ -52,6 +56,7 @@ import {
   getUserDiscriminator,
   initializeProfile,
   getUserNick,
+  currentUserId,
 } from "./user";
 import { addContextListeners } from "./contextMenuActions";
 import {
@@ -67,6 +72,8 @@ import {
   toggleUsersList,
   userList,
   setUserListLine,
+  setUsersList,
+  updateDmFriendList,
 } from "./userList";
 import {
   sendNotify,
@@ -77,19 +84,11 @@ import {
   disableElement,
   constructDmPage,
 } from "./utils";
-import { guildCache } from "./cache";
-import {
-  updateDmsList,
-  setupSampleUsers,
-  activateDmContainer,
-} from "./friendui";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar";
-import { currentUserId } from "./user";
+
 import { friendCache } from "./friends";
 import { addChannelSearchListeners, userMentionDropdown } from "./search";
-import { chatContainer } from "./chatbar";
 import { loadBooleanCookie, initializeCookies } from "./settings";
-import { setUsersList, updateDmFriendList } from "./userList";
 import {
   isOnMe,
   router,
@@ -166,9 +165,9 @@ export function initialiseState(data) {
     ownerId,
     permissionsMap,
     guilds: guildsJson || [],
-    gifWorkerUrl: gifWorkerUrl,
-    maxAvatarSize: maxAvatarSize,
-    maxAttachmentSize: maxAttachmentSize,
+    gifWorkerUrl,
+    maxAvatarSize,
+    maxAttachmentSize,
   };
   window.initialState = initialState;
 
@@ -181,12 +180,13 @@ export function initialiseState(data) {
   updateGuilds(guildsJson);
   addKeybinds();
 }
+const STATUS_401 = 401;
 async function loadInitialData() {
   await translations.translationsLoaded;
   try {
     const response = await fetch("/api/init");
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === STATUS_401) {
         await router.changeToLogin();
         return;
       }
@@ -286,7 +286,7 @@ export function isDefined(variable) {
 }
 export function initializeGuild() {
   initialiseMe();
-  let { isValid, initialGuildId, initialChannelId, initialFriendId } =
+  const { isValid, initialGuildId, initialChannelId, initialFriendId } =
     router.validateRoute();
 
   if (isValid) {
@@ -305,7 +305,7 @@ export function initializeGuild() {
     initialState.guilds.forEach((data) => {
       console.log(data);
       cacheInterface.addChannel(data.guildId, data.guildChannels);
-      cacheInterface.setRootChannel(initialGuildId,data.rootChannel)
+      cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
       if (data.guildId === currentGuildId) {
         updateChannels(data.guildChannels);
       }
@@ -405,7 +405,7 @@ export function openDm(friendId) {
   }
   if (!friendCache.userExistsDm(friendId)) {
     try {
-      apiClient.send(EventType.ADD_DM, { friendId: friendId });
+      apiClient.send(EventType.ADD_DM, { friendId });
     } catch (e) {
       printFriendMessage(e);
     }
@@ -477,7 +477,7 @@ export function loadDmHome(isChangingUrl = true) {
   }
 
   enableElement("friend-container-item");
-  guildName.innerText = "";
+  guildNameText.innerText = "";
   disableElement("guild-settings-button");
   enableElement("global-search-input", false, true);
   enableElement("friends-container-item");
@@ -505,7 +505,7 @@ export function changecurrentGuild() {
   refreshInviteId();
   closeDropdown();
   channelTitle.textContent = currentChannelName;
-  guildName.innerText = guildCache.currentGuildName;
+  guildNameText.innerText = guildCache.currentGuildName;
   hideGuildSettingsDropdown();
 
   isChangingPage = false;
@@ -543,7 +543,7 @@ export function loadApp(friendId = null, isInitial = false) {
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
     enableElement("hash-sign");
-    guildName.innerText = guildCache.currentGuildName;
+    guildNameText.innerText = guildCache.currentGuildName;
     disableElement("global-search-input");
     disableElement("dm-profile-sign-bubble");
     disableElement("dm-profile-sign");
@@ -608,4 +608,5 @@ window.onerror = (event, url, line, column, error) => {
   console.error(msg);
   sendNotify(msg);
 };
-setTimeout(() => window.scrollTo(0, 0), 20);
+const SCROLL_DELAY = 20;
+setTimeout(() => window.scrollTo(0, 0), SCROLL_DELAY);

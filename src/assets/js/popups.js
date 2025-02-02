@@ -8,18 +8,21 @@ import { currentUserId, getUserNick, currentUserNick } from "./user";
 import { loadDmHome, openDm } from "./app";
 import { createBubble } from "./userList";
 import { isOnGuild } from "./router";
-import { showContextMenu, contextList } from "./contextMenuActions";
+import {
+  showContextMenu,
+  contextList,
+  appendToProfileContextList,
+} from "./contextMenuActions";
 import { textChanHtml, fillDropDownContent } from "./ui";
 import { setProfilePic } from "./avatar";
-import { appendToProfileContextList } from "./contextMenuActions";
 import { translations } from "./translations";
 import { createToggle, updateSettingsProfileColor } from "./settingsui";
 import { toggleManager } from "./settings";
 
 let isDropdownOpen = false;
 export let closeCurrentJoinPop;
-const hashText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>`;
-const voiceText = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z" class="foreground_b545d5"></path><path fill="currentColor" d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z" class="foreground_b545d5"></path></svg>`;
+const hashText = "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z\" clip-rule=\"evenodd\" class=\"foreground_b545d5\"></path></svg>";
+const voiceText = "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z\" class=\"foreground_b545d5\"></path><path fill=\"currentColor\" d=\"M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z\" class=\"foreground_b545d5\"></path></svg>";
 
 const radioStates = {};
 
@@ -42,7 +45,7 @@ function createRadioBar() {
   return radioBar;
 }
 
-const privateChannelHTML = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="lightgray" fill-rule="evenodd" d="M6 9h1V6a5 5 0 0 1 10 0v3h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Zm9-3v3H9V6a3 3 0 1 1 6 0Zm-1 8a2 2 0 0 1-1 1.73V18a1 1 0 1 1-2 0v-2.27A2 2 0 1 1 14 14Z" clip-rule="evenodd" class=""></path></svg>`;
+const privateChannelHTML = "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"lightgray\" fill-rule=\"evenodd\" d=\"M6 9h1V6a5 5 0 0 1 10 0v3h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Zm9-3v3H9V6a3 3 0 1 1 6 0Zm-1 8a2 2 0 0 1-1 1.73V18a1 1 0 1 1-2 0v-2.27A2 2 0 1 1 14 14Z\" clip-rule=\"evenodd\" class=\"\"></path></svg>";
 function createPrivateChannelToggle() {
   toggleManager.updateState("private-channel-toggle", 0);
   const toggleHtml = createToggle(
@@ -361,7 +364,7 @@ export function drawProfilePop(userData) {
     popBottomContainer,
   ];
   createPopUp({
-    contentElements: contentElements,
+    contentElements,
     id: "profilePopContainer",
   });
   appendToProfileContextList(userData, userId);
@@ -369,7 +372,7 @@ export function drawProfilePop(userData) {
 
 export function createPopUp({ contentElements, id, closeBtnId = null }) {
   const popOuterParent = createEl("div", { className: "outer-parent" });
-  const parentContainer = createEl("div", { className: "pop-up", id: id });
+  const parentContainer = createEl("div", { className: "pop-up", id });
   popOuterParent.style.display = "flex";
 
   contentElements.forEach((element) => parentContainer.appendChild(element));
@@ -446,7 +449,7 @@ export function createInviteUsersPop() {
   ];
 
   createPopUp({
-    contentElements: contentElements,
+    contentElements,
     id: "inviteUsersPopContainer",
     closeBtnId: "invite-close-button",
   });
@@ -457,7 +460,7 @@ export function hideGuildSettingsDropdown() {
 }
 
 export function closeDropdown() {
-  let guildSettingsDropdown = getId("guild-settings-dropdown");
+  const guildSettingsDropdown = getId("guild-settings-dropdown");
 
   if (guildSettingsDropdown && isDropdownOpen) {
     guildSettingsDropdown.style.animation = "fadeOut 0.3s forwards";
@@ -473,7 +476,7 @@ export function toggleDropdown() {
     return;
   }
 
-  let guildSettingsDropdown = getId("guild-settings-dropdown");
+  const guildSettingsDropdown = getId("guild-settings-dropdown");
 
   if (!isDropdownOpen) {
     isDropdownOpen = true;
@@ -492,7 +495,7 @@ function createPopUpCloseButton(
 ) {
   const closeButton = createEl("button", { className });
   if (id) closeButton.id = id;
-  closeButton.innerHTML = `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path></svg>`;
+  closeButton.innerHTML = "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z\"></path></svg>";
   closeButton.addEventListener("click", function () {
     closePopUp(popOuterParent, parentContainer);
   });
@@ -502,7 +505,6 @@ function createPopUpCloseButton(
 export function openSearchPop() {}
 
 export async function showGuildPop() {
-  const { createEl } = await import("./utils");
   const subject = translations.getTranslation("create-your-guild");
   const content = translations.getTranslation("create-your-guild-detail");
 
@@ -605,15 +607,13 @@ function handleImageUpload(guildImage, uploadText, clearButton, event) {
     const reader = new FileReader();
 
     reader.onload = function (e) {
-      setTimeout(() => {
-        const svg = document.getElementById("guildImg");
-        if (svg) {
-          const img = new Image();
-          img.src = e.target.result;
-          img.id = "guildImg";
-          svg.replaceWith(img);
-        }
-      }, 100);
+      const svg = document.getElementById("guildImg");
+      if (svg) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.id = "guildImg";
+        svg.replaceWith(img);
+      }
 
       guildImage.style.backgroundImage = `url(${e.target.result})`;
       guildImage.style.backgroundSize = "cover";
@@ -626,6 +626,7 @@ function handleImageUpload(guildImage, uploadText, clearButton, event) {
     reader.readAsDataURL(file);
   }
 }
+
 
 function changePopUpToGuildCreation(
   newPopParent,
@@ -754,7 +755,11 @@ export function ChangePopUpToGuildJoining(
   joinButton.style.whiteSpace = "nowrap";
   joinButton.style.padding = "0px";
   joinButton.style.width = "120px";
-
+  const guildNameTitle = createEl("h1", {
+    textContent: translations.getTranslation("invite-link"),
+    className: "create-guild-title",
+    id: "create-guild-title",
+  });
   joinButton.addEventListener("click", function () {
     if (newInput.value === "") {
       guildNameTitle.textContent = "guild-join-invite-title";
@@ -773,11 +778,7 @@ export function ChangePopUpToGuildJoining(
   backButton.addEventListener("click", async function (event) {
     await clickToJoinGuildBackButton(event, closeCallback);
   });
-  const guildNameTitle = createEl("h1", {
-    textContent: translations.getTranslation("invite-link"),
-    className: "create-guild-title",
-    id: "create-guild-title",
-  });
+
   guildNameTitle.style.top = "25%";
   const guildNameDescription = createEl("h1", {
     textContent: translations.getTranslation("invites-look-like"),
@@ -841,9 +842,13 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
     className: "pop-up-append",
     textContent: translations.getTranslation("append"),
   });
-  let parentContainer;
+  const parentContainer = createPopUp({
+    id: "cropPopContainer",
+    closeBtnId: "invite-close-button",
+  });
 
   appendButton.addEventListener("click", () => {
+    // eslint-disable-next-line no-use-before-define
     croppie
       .result({
         type: "base64",
@@ -886,11 +891,7 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
     popBottomContainer,
   ];
 
-  parentContainer = createPopUp({
-    contentElements: contentElements,
-    id: "cropPopContainer",
-    closeBtnId: "invite-close-button",
-  });
+  parentContainer.contentElements = contentElements;
 
   const imageElement = createEl("img");
   imageElement.src = inputSrc;

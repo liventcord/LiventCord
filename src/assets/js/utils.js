@@ -1,27 +1,32 @@
-import { friendsContainer } from "./friendui";
+import { friendsContainer, getFriendsTranslation } from "./friendui";
 import { translations } from "./translations";
-import { getFriendsTranslation } from "./friendui";
 import { chatContent } from "./chatbar";
 
+export const MINUS_INDEX = -1;
 export const createEl = (tag, options) =>
   Object.assign(document.createElement(tag), options);
 
-export let clydeSrc = "/images/clyde.png";
+export const clydeSrc = "/images/clyde.png";
 
-export let defaultProfileImageUrl = `/images/guest.png`;
-export let defaultMediaImageUrl = "/images/defaultmediaimage.png";
+const defaultProfileImageUrl = "/images/guest.png";
+
+export const defaultProfileImage = defaultProfileImageUrl;
+const defaultMediaImageUrl = "/images/defaultmediaimage.png";
+export let defaultMediaImageSrc = defaultMediaImageUrl;
+const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const isMobile = getMobile();
-
+export const STATUS_404 = 404;
+export const STATUS_200 = 200;
 export const blackImage =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAk0lEQVRoQ+2S0QkAIBCFrv2HrmYQhAKDPp+QtmZm3/v9WT3ksYYVeSzIVKQikoG+liQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjK4LVScOKSGIxtiJYnTSsiCQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjD62iMgGPECk2AAAAAElFTkSuQmCC";
 
-export function setDefaultMediaImageUrl(blob) {
-  defaultMediaImageUrl = blob;
+export function setDefaultMediaImageSrc(blob) {
+  defaultMediaImageSrc = blob;
 }
 
-export function setDefaultProfileImageUrl(blob) {
-  defaultProfileImageUrl = blob;
+export function setDefaultProfileImageSrc(blob) {
+  defaultProfileImage = blob;
 }
 
 export function getMobile() {
@@ -95,16 +100,16 @@ export function areJsonsEqual(existingData, newData) {
   return existingJson === newJson;
 }
 export function parseUsernameDiscriminator(input) {
-  let parts = input.split("#");
-  if (parts.length !== 2) {
-    return;
+  const parts = input.split("#");
+  if (parts.length !== DISCRIMINATOR_PARTS_LENGHT) {
+    return [];
   }
-  let nickName = parts[0];
-  let discriminator = parts[1];
+  const nickName = parts[0];
+  const discriminator = parts[1];
 
   return {
-    nickName: nickName,
-    discriminator: discriminator,
+    nickName,
+    discriminator,
   };
 }
 export function extractLinks(message) {
@@ -112,6 +117,7 @@ export function extractLinks(message) {
     const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
     return message.match(urlRegex) || [];
   }
+  return null;
 }
 
 export function constructAppPage(guildId, channelId) {
@@ -224,7 +230,7 @@ export function isVideoUrl(url) {
     /\.wmv/i,
     /\.mkv/i,
     /\.flv/i,
-    /\.webm/i, // Video file extensions
+    /\.webm/i,
   ];
 
   return videoPatterns.some((pattern) => pattern.test(url));
@@ -233,18 +239,23 @@ export function isVideoUrl(url) {
 const rgbCache = {};
 
 export function rgbToHex(r, g, b) {
-  return (
-    "#" +
-    ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()
-  );
-}
+  const COLOR_MASK = 0xffffff;
+  const SHIFT_RED = 16;
+  const SHIFT_GREEN = 8;
+  const SHIFT_BLUE = 0;
+  const BITS = 24;
 
+  const color =
+    (1 << BITS) | (r << SHIFT_RED) | (g << SHIFT_GREEN) | (b << SHIFT_BLUE);
+  return "#" + (color & COLOR_MASK).toString(SHIFT_RED).slice(1).toUpperCase();
+}
 export function getAverageRGB(imgEl) {
-  if (imgEl.src === defaultProfileImageUrl) {
+  if (imgEl.src === defaultProfileImage) {
     return "#e7e7e7";
   }
 
   const blockSize = 5;
+  const RGBA_COMPONENTS = 4;
   const defaultRGB = { r: 0, g: 0, b: 0 };
   const canvas = createEl("canvas");
   const context = canvas.getContext && canvas.getContext("2d");
@@ -276,7 +287,7 @@ export function getAverageRGB(imgEl) {
   const rgb = { r: 0, g: 0, b: 0 };
   let count = 0;
 
-  for (let i = 0; i < length; i += blockSize * 4) {
+  for (let i = 0; i < length; i += blockSize * RGBA_COMPONENTS) {
     count++;
     rgb.r += data.data[i];
     rgb.g += data.data[i + 1];
@@ -335,26 +346,29 @@ export function formatDate(date) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}+00:00`;
 }
 
+
 export function truncateString(str, maxLength) {
   if (str.length <= maxLength) {
     return str;
   }
   return str.slice(0, maxLength) + "...";
 }
+
 export function createNowDate() {
-  let date = new Date();
-  let year = date.getUTCFullYear();
-  let month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  let day = String(date.getUTCDate()).padStart(2, "0");
-  let hours = String(date.getUTCHours()).padStart(2, "0");
-  let minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  let seconds = String(date.getUTCSeconds()).padStart(2, "0");
-  let milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
-  let microseconds = "534260";
+  const date = new Date();
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+  const milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
+  const microseconds = "534260";
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${microseconds}+00:00`;
 }
 
-export function createRandomId(length = 18) {
+export function createRandomId() {
+  const length = 18;
   const digits = "0123456789";
   let result = "";
   const digitsLength = digits.length;
@@ -369,7 +383,7 @@ export function openExternalUrl(url) {
 }
 
 export function sanitizeHTML(html) {
-  if (typeof html !== "string") return;
+  if (typeof html !== "string") return "";
   function isValidForColoring(content) {
     return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());
   }
@@ -540,7 +554,7 @@ export function reloadCSS() {
       const domain = getDomain(href);
       if (approvedDomains.includes(domain)) {
         const newHref =
-          href.indexOf("?") !== -1
+          href.indexOf("?") !== MINUS_INDEX
             ? `${href}&_=${new Date().getTime()}`
             : `${href}?_=${new Date().getTime()}`;
         link.href = newHref;

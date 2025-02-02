@@ -1,6 +1,6 @@
 import { getId, disableElement, enableElement, createEl } from "./utils";
 import { guildCache } from "./cache";
-import { isOnGuild } from "./router";
+import { isOnGuild, isOnMe } from "./router";
 import { saveBooleanCookie } from "./settings";
 import { crownEmojibase64 } from "./extras";
 import { updateChatWidth } from "./chat";
@@ -15,12 +15,11 @@ import {
   currentDiscriminator,
   deletedUser,
 } from "./user";
-import { isOnMe } from "./router";
 import { currentGuildId } from "./guild";
 import { handleResize } from "./ui";
 
 export const userLine = document.querySelector(".horizontal-line");
-export let userList = getId("user-list");
+export const userList = getId("user-list");
 export let isUsersOpenGlobal;
 
 export function renderTitle(titleText, container, headingLevel = 1) {

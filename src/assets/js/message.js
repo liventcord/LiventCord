@@ -3,8 +3,9 @@ import {
   setHasJustFetchedMessagesFalse,
   setLastSenderID,
   createProfileImageChat,
+  getMessageFromChat,
 } from "./chat";
-import { hasSharedGuild } from "./cache";
+import { hasSharedGuild, guildCache } from "./cache";
 import {
   displayCannotSendMessage,
   closeReplyMenu,
@@ -22,15 +23,12 @@ import {
   getEmojiPath,
   getFormattedDate,
   getBeforeElement,
+  formatDate,
 } from "./utils";
 import { getUserNick } from "./user";
-import { isOnDm } from "./router";
+import { isOnDm, isOnGuild } from "./router";
 import { friendCache } from "./friends";
-import { guildCache } from "./cache";
 import { currentGuildId } from "./guild";
-import { isOnGuild } from "./router";
-import { formatDate } from "./utils";
-import { getMessageFromChat } from "./chat";
 
 export class Message {
   constructor({
@@ -95,7 +93,7 @@ export async function sendMessage(content, user_ids) {
     return;
   }
 
-  let channelIdToSend = isOnDm
+  const channelIdToSend = isOnDm
     ? friendCache.currentDmId
     : guildCache.currentChannelId;
   displayLocalMessage(channelIdToSend, content);
@@ -106,7 +104,7 @@ export async function sendMessage(content, user_ids) {
     const message = {
       guildId: currentGuildId,
       channelId: channelIdToSend,
-      content: content,
+      content,
       attachmentUrls: null,
       replyToId: null,
       reactionEmojisIds: null,
@@ -136,7 +134,7 @@ export async function sendMessage(content, user_ids) {
       const messageData = {
         guildId: currentGuildId,
         channelId: channelIdToSend,
-        content: content,
+        content,
         attachmentUrls: uploadData.attachmentUrls,
         attachmentId: uploadData.attachmentId,
         fileName: uploadData.fileName,
@@ -166,10 +164,10 @@ export async function sendMessage(content, user_ids) {
 }
 
 export function replaceCustomEmojis(message) {
-  let currentCustomEmojis = {};
+  const currentCustomEmojis = {};
   if (message) {
     const regex = /<:([^:>]+):(\d+)>/g;
-    let message1 = message.replace(regex, (match, emojiName, emojiId) => {
+    const message1 = message.replace(regex, (match, emojiName, emojiId) => {
       if (currentCustomEmojis.hasOwnProperty(emojiName)) {
         return `<img src="${getEmojiPath(
           currentCustomEmojis[emojiName],
@@ -202,7 +200,7 @@ export function displayWelcomeMessage(userName, date) {
 }
 
 export function getOldMessages(date, messageId = null) {
-  let data = {
+  const data = {
     date: date.toString(),
     isDm: isOnDm,
   };
@@ -242,7 +240,7 @@ export function getMessageDate(top = true) {
   const messages = chatContent.children;
   if (messages.length === 0) return null;
 
-  let targetElement = getMessageFromChat(top);
+  const targetElement = getMessageFromChat(top);
   if (targetElement) {
     const dateGathered = targetElement.getAttribute("data-date");
     const parsedDate = new Date(dateGathered);
@@ -271,7 +269,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
   const messages = Array.from(chatContent.children);
 
   for (let i = 0; i < messages.length; i++) {
-    let element = messages[i];
+    const element = messages[i];
     if (!element.classList || !element.classList.contains("message")) {
       continue;
     }

@@ -1,10 +1,17 @@
-import { getMessageDate, getOldMessages, replaceCustomEmojis } from "./message";
+import {
+  getMessageDate,
+  getOldMessages,
+  replaceCustomEmojis,
+  Message,
+} from "./message";
 import {
   chatInput,
   displayStartMessage,
   newMessagesBar,
   replyInfo,
   showReplyMenu,
+  chatContainer,
+  chatContent,
 } from "./chatbar";
 import {
   messages_raw_cache,
@@ -27,15 +34,15 @@ import { getUserNick, currentUserId, setLastTopSenderId } from "./user";
 import { createMediaElement } from "./mediaElements";
 import { apiClient, EventType } from "./api";
 import { isOnGuild, isOnMe } from "./router";
-import { appendToProfileContextList } from "./contextMenuActions";
+import {
+  appendToProfileContextList,
+  appendToMessageContextList,
+} from "./contextMenuActions";
 import { setProfilePic } from "./avatar";
-import { chatContainer, chatContent } from "./chatbar";
 import { currentGuildId } from "./guild";
 import { isChangingPage, createReplyBar } from "./app";
 import { loadingScreen, setActiveIcon } from "./ui";
-import { Message } from "./message";
 import { translations } from "./translations";
-import { appendToMessageContextList } from "./contextMenuActions";
 import { friendCache } from "./friends";
 import { playNotification } from "./audio";
 import { userList } from "./userList";
@@ -54,9 +61,9 @@ export let lastSenderID = "";
 export function setLastSenderID(id) {
   lastSenderID = id;
 }
-export let messageDates = {};
+export const messageDates = {};
 
-let unknownReplies = [];
+const unknownReplies = [];
 
 export let isLastMessageStart = false;
 export function setIsLastMessageStart(val) {
@@ -71,11 +78,11 @@ export function setReachedChannelEnd(val) {
 export const CLYDE_ID = "1";
 
 export function createChatScrollButton() {
-  let scrollButton = getId("scroll-to-bottom");
+  const scrollButton = getId("scroll-to-bottom");
 
   chatContainer.addEventListener("scroll", function () {
-    let threshold = window.innerHeight;
-    let hiddenContent =
+    const threshold = window.innerHeight;
+    const hiddenContent =
       chatContainer.scrollHeight -
       (chatContainer.scrollTop + chatContainer.clientHeight);
     if (hiddenContent > threshold) {
@@ -149,7 +156,7 @@ export async function handleScroll() {
   if (loadingScreen && loadingScreen.style.display === "flex") {
     return;
   }
-
+  const SCROLL_DELAY = 500;
   const buffer = 10;
   const scrollPosition = chatContainer.scrollTop;
   const isAtTop = scrollPosition <= buffer;
@@ -175,7 +182,7 @@ export async function handleScroll() {
           console.log("Scroll position exceeded threshold.");
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, SCROLL_DELAY));
       }
     } catch (error) {
       console.error("Error fetching old messages:", error);
@@ -188,7 +195,7 @@ export async function handleScroll() {
 }
 
 const observer = new IntersectionObserver(
-  (entries, observer) => {
+  (entries, _observer) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         loadObservedContent(entry.target);
@@ -325,11 +332,10 @@ export function handleHistoryResponse(data) {
     }
   });
 
-  fetchReplies(messages, repliesList);
+  let isUserInteracted = false;
 
-  const scrollToBottom = () => {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-  };
+  const userScrollEvents = ["mousedown", "touchstart", "wheel"];
+  fetchReplies(messages, repliesList);
 
   if (wasAtBottom) {
     scrollToBottom();
@@ -337,15 +343,15 @@ export function handleHistoryResponse(data) {
 
   const ensureScrollAtBottom = () => {
     if (wasAtBottom && !isUserInteracted) {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      scrollToBottom();
     }
   };
 
-  const observer = new MutationObserver(() => {
+  const _observer = new MutationObserver(() => {
     ensureScrollAtBottom();
   });
 
-  observer.observe(chatContainer, {
+  _observer.observe(chatContainer, {
     childList: true,
     subtree: true,
   });
@@ -363,7 +369,6 @@ export function handleHistoryResponse(data) {
   });
 
   const checkAllMediaLoaded = () => {
-    const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
     return Array.from(mediaElements).every((media) => media.complete);
   };
 
@@ -371,7 +376,10 @@ export function handleHistoryResponse(data) {
     chatContainer.style.overflow = "";
     observer.disconnect();
   });
-
+  let lastHeight = chatContainer.scrollHeight;
+  const MONITOR_CHANGES_DELAY = 50;
+  const PREVENT_SCROLL_JUMP_DELAY = 20;
+  const HISTORY_SCROLL_DELAY = 200;
   const monitorContentSizeChanges = () => {
     const currentHeight = chatContainer.scrollHeight;
 
@@ -387,11 +395,10 @@ export function handleHistoryResponse(data) {
       chatContainer.style.overflow = "";
       observer.disconnect();
     } else {
-      setTimeout(monitorContentSizeChanges, 50);
+      setTimeout(monitorContentSizeChanges, MONITOR_CHANGES_DELAY);
     }
   };
 
-  let lastHeight = chatContainer.scrollHeight;
   monitorContentSizeChanges();
 
   if (
@@ -400,10 +407,6 @@ export function handleHistoryResponse(data) {
   ) {
     displayStartMessage();
   }
-
-  let isUserInteracted = false;
-
-  const userScrollEvents = ["mousedown", "touchstart", "wheel"];
 
   const releaseScrollLock = () => {
     isUserInteracted = true;
@@ -434,10 +437,10 @@ export function handleHistoryResponse(data) {
     }
   };
 
-  setInterval(preventScrollJump, 50);
+  setInterval(preventScrollJump, PREVENT_SCROLL_JUMP_DELAY);
   setTimeout(() => {
     scrollToBottom();
-  }, 200);
+  }, HISTORY_SCROLL_DELAY);
 }
 
 export function createDateBar(currentDate) {
@@ -542,7 +545,7 @@ export function createOptions3Button(message, messageId, userId) {
   appendToMessageContextList(messageId, userId);
 }
 export function displayChatMessage(data) {
-  if (!data) return;
+  if (!data) return null;
 
   const messageId = data.messageId;
   const userId = data.userId;
@@ -561,13 +564,13 @@ export function displayChatMessage(data) {
 
   if (currentMessagesCache[messageId]) {
     //console.log("Skipping adding message:", content);
-    return;
+    return null;
   }
   if (!channelId || !date) {
-    return;
+    return null;
   }
   if (!attachmentUrls && content === "") {
-    return;
+    return null;
   }
 
   const nick = getUserNick(userId);
@@ -595,16 +598,21 @@ export function displayChatMessage(data) {
       createNonProfileImage(newMessage, date);
     }
   } else {
+    const MILLISECONDS_IN_A_SECOND = 1000;
+    const MINIMUM_TIME_GAP_IN_SECONDS = 300;
+
     const currentDate = new Date(date).setHours(0, 0, 0, 0);
     if (lastMessageDate === null || lastMessageDate !== currentDate) {
       createDateBar(currentDate);
       lastMessageDate = currentDate;
     }
+
     let difference =
       new Date(bottomestChatDateStr).getTime() - new Date(date).getTime();
-    difference = Math.abs(difference) / 1000;
+    difference = Math.abs(difference) / MILLISECONDS_IN_A_SECOND;
+
     let isTimeGap = false;
-    if (bottomestChatDateStr && difference > 300) {
+    if (bottomestChatDateStr && difference > MINIMUM_TIME_GAP_IN_SECONDS) {
       isTimeGap = true;
     }
 
@@ -699,23 +707,7 @@ export function displayChatMessage(data) {
   }
 
   if (userId === CLYDE_ID) {
-    const youCanSeeText = createEl("p", {
-      textContent: translations.getTranslation("you-can-see-text"),
-    });
-    youCanSeeText.style.fontSize = "12px";
-    youCanSeeText.style.color = "rgb(148, 155, 164)";
-
-    const parentElement = createEl("div", {
-      display: "flex",
-      flexDirection: "column",
-      zIndex: 1,
-    });
-    parentElement.style.height = "100%";
-
-    parentElement.appendChild(messageContentElement);
-
-    parentElement.appendChild(youCanSeeText);
-    newMessage.appendChild(parentElement);
+    handleClyde(newMessage, messageContentElement);
   }
 
   if (replyOf === messageId) {
@@ -738,8 +730,27 @@ export function displayChatMessage(data) {
     }
     return foundReply;
   }
+  return null;
 }
+function handleClyde(newMessage, messageContentElement) {
+  const youCanSeeText = createEl("p", {
+    textContent: translations.getTranslation("you-can-see-text"),
+  });
+  youCanSeeText.style.fontSize = "12px";
+  youCanSeeText.style.color = "rgb(148, 155, 164)";
 
+  const parentElement = createEl("div", {
+    display: "flex",
+    flexDirection: "column",
+    zIndex: 1,
+  });
+  parentElement.style.height = "100%";
+
+  parentElement.appendChild(messageContentElement);
+
+  parentElement.appendChild(youCanSeeText);
+  newMessage.appendChild(parentElement);
+}
 export function fetchReplies(messages, repliesList = null, goToOld = false) {
   if (!repliesList) {
     repliesList = new Set();
@@ -755,7 +766,7 @@ export function fetchReplies(messages, repliesList = null, goToOld = false) {
       return;
     }
     const data = {
-      messageId: messageId,
+      messageId,
       guildId: currentGuildId,
       channelId: guildCache.currentChannelId,
     };
@@ -826,7 +837,7 @@ export function getHistoryFromOneChannel(channelId, isDm = false) {
   const messages = cacheInterface.getMessages(currentGuildId, channelId);
 
   if (!isDm && messages && Array.isArray(messages)) {
-    let repliesList = new Set();
+    const repliesList = new Set();
 
     if (messages.length > 0) {
       clearMessagesCache();
@@ -846,9 +857,11 @@ export function getHistoryFromOneChannel(channelId, isDm = false) {
   fetchMessagesFromServer(channelId, isDm);
 }
 export function fetchMessagesFromServer(channelId, isDm = false) {
-  let requestData = {
-    channelId: channelId,
-    isDm: isDm,
+  const FETCH_MESSAGES_COOLDOWN = 5000;
+
+  const requestData = {
+    channelId,
+    isDm,
   };
   if (isOnGuild) {
     requestData["guildId"] = currentGuildId;
@@ -856,7 +869,7 @@ export function fetchMessagesFromServer(channelId, isDm = false) {
 
   hasJustFetchedMessages = setTimeout(() => {
     hasJustFetchedMessages = null;
-  }, 5000);
+  }, FETCH_MESSAGES_COOLDOWN);
   const typeToUse = isOnGuild
     ? EventType.GET_HISTORY_GUILD
     : EventType.GET_HISTORY_DM;

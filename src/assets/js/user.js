@@ -15,7 +15,7 @@ export let currentUserId;
 
 export let currentDiscriminator = null;
 export let currentUserNick;
-export let userNames = {};
+export const userNames = {};
 export const deletedUser = "Deleted User";
 // eslint-disable-next-line no-unused-vars
 let lastTopSenderId = null;
@@ -98,7 +98,7 @@ export function getUserIdFromNick(nick) {
   return null;
 }
 
-export function isBlocked(userId) {
+export function isUserBlocked(userId) {
   if (!userNames.hasOwnProperty(userId)) {
     return false;
   }
@@ -107,8 +107,8 @@ export function isBlocked(userId) {
 
 export function addUser(userId, nick, discriminator, isBlocked) {
   userNames[userId] = {
-    nick: nick,
-    discriminator: discriminator,
+    nick,
+    discriminator,
     is_blocked: Boolean(isBlocked),
   };
 }
@@ -121,7 +121,7 @@ export function updateUserOnlineStatus(userId, isOnline) {
   for (const guildId in guildMembers) {
     const users = guildMembers[guildId];
 
-    const user = users.find((user) => user.userId === userId);
+    const user = users.find((_user) => _user.userId === userId);
     if (user) {
       user.is_online = isOnline;
       console.log(

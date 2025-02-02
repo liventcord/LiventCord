@@ -1,6 +1,12 @@
-import { removeElement, enableElement, createRandomId } from "./utils";
+import {
+  removeElement,
+  enableElement,
+  createRandomId,
+  createEl,
+  getId,
+} from "./utils";
 import { openDm, removeDm } from "./app";
-import { getUserNick, addUser, isBlocked, currentUserNick } from "./user";
+import { getUserNick, addUser, isUserBlocked, currentUserNick } from "./user";
 import {
   submitAddFriend,
   filterFriends,
@@ -9,14 +15,16 @@ import {
   all,
   blocked,
   pending,
+  friendCache,
 } from "./friends";
-import { appendToProfileContextList } from "./contextMenuActions";
+import {
+  appendToProfileContextList,
+  contextList,
+  showContextMenu,
+} from "./contextMenuActions";
 import { setProfilePic } from "./avatar";
-import { friendCache as friendsCache } from "./friends";
-import { createEl, getId } from "./utils";
 import { translations } from "./translations";
 import { userList } from "./userList";
-import { contextList, showContextMenu } from "./contextMenuActions";
 
 const addfriendhighlightedcolor = "#248046";
 const highlightedColor = "#43444b";
@@ -26,24 +34,26 @@ const grayColor = "#c2c2c2";
 let currentSelectedStatus = null;
 const dmContainerParent = getId("dm-container-parent");
 export const friendContainerItem = getId("friend-container-item");
-export let friendsContainer = getId("friends-container");
+export const friendsContainer = getId("friends-container");
 export let isAddFriendsOpen = false;
 
 export const ButtonTypes = {
-  SendMsgBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>`,
-  TickBtn: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z" class=""></path></svg>`,
-  CloseBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>`,
-  OptionsBtn: `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm2 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" clip-rule="evenodd" class=""></path></svg>`,
+  SendMsgBtn: "<svg role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z\" class=\"\"></path></svg>",
+  TickBtn: "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z\" class=\"\"></path></svg>",
+  CloseBtn: "<svg role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z\" class=\"\"></path></svg>",
+  OptionsBtn: "<svg role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm2 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z\" clip-rule=\"evenodd\" class=\"\"></path></svg>",
 };
+const HOVER_BUBBLE_TIME = 500;
 
-let buttonElements = {
+const buttonElements = {
   online: getId("online-button"),
   all: getId("all-button"),
   pending: getId("pending-button"),
   blocked: getId("blocked-button"),
 };
 let ButtonsList = Object.values(buttonElements);
-
+const existingFriendsDmContainers = new Set();
+const existingFriendsIds = new Set();
 initializeButtonsList(ButtonsList);
 
 export function activateDmContainer(friendId) {
@@ -85,7 +95,7 @@ class DmUser {
       className: "dm-container",
       id: this.friendId,
     });
-    if (this.friendId === friendsCache.currentDmId) {
+    if (this.friendId === friendCache.currentDmId) {
       dmContainer.classList.add("dm-selected");
     }
 
@@ -104,7 +114,7 @@ class DmUser {
         bubble.style.opacity = "0";
         hoverTimeout = setTimeout(() => {
           bubble.style.display = "none";
-        }, 500);
+        }, HOVER_BUBBLE_TIME);
       }
     });
 
@@ -147,12 +157,9 @@ class DmUser {
   }
 }
 
-let existingFriendsDmContainers = new Set();
-let existingFriendsIds = new Set();
-
 export function appendToDmList(user) {
   if (existingFriendsIds.has(user.userId)) {
-    return;
+    return null;
   }
 
   const dmUser = new DmUser(user);
@@ -160,6 +167,7 @@ export function appendToDmList(user) {
   dmContainerParent.appendChild(dmUser.dmContainer);
   existingFriendsDmContainers.add(dmUser.dmContainer);
   existingFriendsIds.add(user.userId);
+
   return dmUser.dmContainer;
 }
 
@@ -189,7 +197,7 @@ export function updateDmsList(friends) {
     existingFriendsDmContainers.add(dmUser.dmContainer);
     existingFriendsIds.add(userId);
   });
-  friendsCache.setupDmFriends(friends);
+  friendCache.setupDmFriends(friends);
 }
 
 export function addToDmList(userData) {
@@ -230,12 +238,12 @@ export function setupSampleUsers() {
 export function getCurrentDmFriends() {
   return {
     currentUserId: { nick: currentUserNick },
-    currentDmId: { nick: getUserNick(friendsCache.currentDmId) },
+    currentDmId: { nick: getUserNick(friendCache.currentDmId) },
   };
 }
 
 let notifyTimeout;
-
+const NOTIFY_LENGTH = 10000;
 export function printFriendMessage(message) {
   const messagetext = createEl("div");
   messagetext.className = "messagetext";
@@ -250,7 +258,7 @@ export function printFriendMessage(message) {
   notifyTimeout = setTimeout(() => {
     messagetext.remove();
     notifyTimeout = null;
-  }, 10000);
+  }, NOTIFY_LENGTH);
 }
 
 export function selectFriendMenuStatus(status) {
@@ -274,7 +282,7 @@ export function selectFriendMenu(clickedButton) {
   console.log("Selected: ", currentSelectedStatus);
 
   populateFriendsContainer(
-    friendsCache.friendsCache,
+    friendCache.friendCache,
     clickedButton === buttonElements.pending,
   );
 
@@ -299,7 +307,7 @@ export function getRequestType(btn) {
   );
 }
 
-export function initializeButtonsList(ButtonsList) {
+export function initializeButtonsList() {
   ButtonsList.forEach((element) => {
     const reqType = getRequestType(element);
 
@@ -320,7 +328,7 @@ export function initializeButtonsList(ButtonsList) {
 }
 
 export function resetButtons() {
-  for (let element of ButtonsList) {
+  for (const element of ButtonsList) {
     if (element) {
       element.style.backgroundColor = defaultColor;
       element.style.color = grayColor;
@@ -411,7 +419,7 @@ export function openAddFriend() {
 }
 
 function updateFriendButton() {
-  let friendsBtn = getId("open-friends-button");
+  const friendsBtn = getId("open-friends-button");
   friendsBtn.style.color = "#2fc770";
   friendsBtn.style.backgroundColor = "transparent";
 }
@@ -531,7 +539,6 @@ export function populateFriendsContainer(friends, isPending) {
     addUser(userId, nickName, discriminator);
   });
 
-  const friendsContainer = getId("friends-container");
   try {
     if (currentSelectedStatus === online) {
       friends = friends.filter(
@@ -539,7 +546,9 @@ export function populateFriendsContainer(friends, isPending) {
       );
     } else if (currentSelectedStatus === all) {
     } else if (currentSelectedStatus === blocked) {
-      friends = friends.filter((friend) => isBlocked(friend.publicUser.userId));
+      friends = friends.filter((friend) =>
+        isUserBlocked(friend.publicUser.userId),
+      );
     } else if (currentSelectedStatus === pending) {
     } else {
       console.warn("Unhandled status:" + currentSelectedStatus);
@@ -582,7 +591,6 @@ export function populateFriendsContainer(friends, isPending) {
           isOnline,
           isPending,
           isFriendsRequestToUser,
-          friendsContainer,
         );
         if (friend.activity) {
           updateUsersStatus(friend);
@@ -601,7 +609,6 @@ export function createFriendCard(
   isOnline,
   isPending,
   isFriendsRequestToUser,
-  friendsContainer,
 ) {
   const friendCard = createEl("div", { className: "friend-card", id: userId });
   const img = createEl("img");

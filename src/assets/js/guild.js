@@ -15,20 +15,20 @@ import {
 import { isOnGuild, isOnMe, isOnDm } from "./router";
 import { updateMemberList } from "./userList";
 import { showGuildPop } from "./popups";
-import { validateAvatar } from "./avatar";
+import { validateAvatar, resetImageInput } from "./avatar";
 import { guildCache, cacheInterface } from "./cache";
 import { permissionManager } from "./guildPermissions";
 import { apiClient, EventType } from "./api";
 import { currentVoiceChannelId } from "./channels";
-import { resetImageInput } from "./avatar";
 import { createFireWorks } from "./extras";
 import { currentUserId } from "./user";
 
 export let currentGuildId;
-export const guildName = getId("guild-name");
+export const guildNameText = getId("guild-name");
 export const guildContainer = getId("guild-container");
 const guildsList = getId("guilds-list");
 
+// eslint-disable-next-line consistent-return
 export function getManageableGuilds() {
   try {
     const permissionsMap = permissionManager.permissionsMap;
@@ -58,7 +58,7 @@ export function createGuild() {
     return;
   }
 
-  let formData = new FormData();
+  const formData = new FormData();
   if (guildPhotoFile) {
     formData.append("Photo", guildPhotoFile);
   }
@@ -148,7 +148,7 @@ export function joinVoiceChannel(channelId) {
   if (currentVoiceChannelId === channelId) {
     return;
   }
-  const data = { guildId: currentGuildId, channelId: channelId };
+  const data = { guildId: currentGuildId, channelId };
   apiClient.send(EventType.JOIN_VOICE_CHANNEL, data);
   return;
 }
@@ -178,15 +178,15 @@ export function fetchMembers() {
 
 export function getGuildMembers() {
   if (!cacheInterface.isMembersEmpty(currentGuildId) || !currentGuildId) {
-    return;
+    return [];
   }
 
   const guildMembers = cacheInterface.getMembers(currentGuildId);
   if (!guildMembers) {
-    return;
+    return [];
   }
 
-  let usersToReturn = [];
+  const usersToReturn = [];
 
   for (const userId in guildMembers) {
     const user = guildMembers[userId];
@@ -291,7 +291,31 @@ export function selectGuildList(guildId) {
     }
   });
 }
+const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
+  const listItem = createEl("li");
+  const imgElement = createEl("img", {
+    id: guildId,
+    className: "guild-image",
+  });
 
+  setGuildImage(guildId, imgElement, isUploaded);
+
+  imgElement.onerror = () => {
+    imgElement.src = blackImage;
+  };
+
+  imgElement.addEventListener("click", () => {
+    try {
+      loadGuild(guildId, rootChannel, guildName);
+    } catch (error) {
+      console.error("Error while loading guild:", error);
+    }
+  });
+
+  wrapWhiteRod(listItem);
+  listItem.appendChild(imgElement);
+  return listItem;
+};
 export function updateGuilds(guildsJson) {
   if (Array.isArray(guildsJson)) {
     guildsList.innerHTML = "";
@@ -348,31 +372,6 @@ function removeWhiteRod(element) {
   if (!whiteRod) return;
   whiteRod.remove();
 }
-const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
-  const listItem = createEl("li");
-  const imgElement = createEl("img", {
-    id: guildId,
-    className: "guild-image",
-  });
-
-  setGuildImage(guildId, imgElement, isUploaded);
-
-  imgElement.onerror = () => {
-    imgElement.src = blackImage;
-  };
-
-  imgElement.addEventListener("click", () => {
-    try {
-      loadGuild(guildId, rootChannel, guildName);
-    } catch (error) {
-      console.error("Error while loading guild:", error);
-    }
-  });
-
-  wrapWhiteRod(listItem);
-  listItem.appendChild(imgElement);
-  return listItem;
-};
 
 export function appendToGuildList(guild) {
   if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
@@ -406,7 +405,7 @@ function createNewGuildButton() {
     createGuildImage.classList.remove("create-guild-hover");
   });
   const newElement = createEl("div", {
-    innerHTML: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z"></path></svg>`,
+    innerHTML: "<svg aria-hidden=\"true\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" fill=\"none\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z\"></path></svg>",
   });
   newElement.style.marginTop = "5px";
   newElement.style.marginLeft = "13px";

@@ -1,3 +1,4 @@
+import { MINUS_INDEX } from "./utils";
 class BaseCache {
   constructor() {
     this.data = {};
@@ -25,7 +26,7 @@ class ChannelCache extends BaseCache {
     this.rootChannel = null;
   }
   setRootChannel(rootChannel) {
-    console.log("Set root channel: ",rootChannel);
+    console.log("Set root channel: ", rootChannel);
     this.rootChannel = rootChannel;
   }
   setChannels(guildId, channels) {
@@ -34,9 +35,9 @@ class ChannelCache extends BaseCache {
   addChannel(guildId, channel) {
     const channels = this.getChannels(guildId);
     const index = channels.findIndex(
-      (channel) => channel.channelId === channel.channelId,
+      (_channel) => _channel.channelId === channel.channelId,
     );
-    if (index === -1) {
+    if (index === MINUS_INDEX) {
       channels.push(channel);
       this.setChannels(guildId, channels);
     }
@@ -63,16 +64,17 @@ class ChannelCache extends BaseCache {
         return channel;
       }
     }
+    return null;
   }
-  
+
   updateChannel(guildId, channel, add = true) {
     const channels = this.getChannels(guildId);
     const index = channels.findIndex(
-      (channel) => channel.channelId === channel.channelId,
+      (_channel) => _channel.channelId === channel.channelId,
     );
-    if (add && index === -1) {
+    if (add && index === MINUS_INDEX) {
       channels.push(channel);
-    } else if (!add && index !== -1) {
+    } else if (!add && index !== MINUS_INDEX) {
       channels.splice(index, 1);
     }
     this.setChannels(guildId, channels);
@@ -119,15 +121,15 @@ class GuildMembersCache extends BaseCache {
   updateMemberId(guildId, memberId, add = true) {
     const memberIds = this.getMemberIds(guildId);
     const index = memberIds.indexOf(memberId);
-    if (add && index === -1) memberIds.push(memberId);
-    else if (!add && index !== -1) memberIds.splice(index, 1);
+    if (add && index === MINUS_INDEX) memberIds.push(memberId);
+    else if (!add && index !== MINUS_INDEX) memberIds.splice(index, 1);
     this.setMemberIds(guildId, memberIds);
   }
   updateMember(guildId, member, add = true) {
     const members = this.getMembers(guildId);
     const index = members.findIndex((m) => m.id === member.id);
-    if (add && index === -1) members.push(member);
-    else if (!add && index !== -1) members.splice(index, 1);
+    if (add && index === MINUS_INDEX) members.push(member);
+    else if (!add && index !== MINUS_INDEX) members.splice(index, 1);
     this.setMembers(guildId, members);
   }
   updateMemberIds(guildId, newMemberIds, add = true) {
@@ -222,7 +224,7 @@ class GuildCache {
   }
 
   getGuild(guildId) {
-    if (!guildId) return;
+    if (!guildId) return null;
     if (!this.guilds[guildId]) {
       this.guilds[guildId] = new Guild(guildId);
     }
@@ -276,13 +278,15 @@ class GuildCacheInterface {
   }
   //voice
   getVoiceChannelMembers(channelId) {
-    if (!channelId) return;
-    this.guildCache.guilds.forEach((guild) => {
+    if (!channelId) return null;
+    for (const guild of this.guildCache.guilds) {
       if (guild.channelId === channelId && guild.voiceChannels) {
         return guild.voiceChannels.getUsersInVoiceChannel();
       }
-    });
+    }
+    return null;
   }
+
   setVoiceChannelMembers(channelId, usersArray) {
     if (!channelId) return;
     this.guildCache.guilds.forEach((guild) => {
@@ -326,7 +330,7 @@ class GuildCacheInterface {
   getRootChannel(guildId) {
     return this.getGuild(guildId)?.channels.getRootChannel(guildId);
   }
-  setRootChannel(guildId,channelId) {
+  setRootChannel(guildId, channelId) {
     this.getGuild(guildId)?.channels.setRootChannel(channelId);
   }
   setChannels(guildId, channelsData) {
@@ -360,9 +364,9 @@ export function clearMessagesCache() {
   currentMessagesCache = {};
 }
 
-export let replyCache = {}; //<messageId> <replies>
-export let guildChatMessages = {}; //<channelId> <messageObjects>
-export let messages_raw_cache = {}; //<channelId> <messageRawJsons>
+export const replyCache = {}; //<messageId> <replies>
+export const guildChatMessages = {}; //<channelId> <messageObjects>
+export const messages_raw_cache = {}; //<channelId> <messageRawJsons>
 export function hasSharedGuild(friend_id) {
   //return shared_guilds_map.hasOwnProperty(friend_id);
 }

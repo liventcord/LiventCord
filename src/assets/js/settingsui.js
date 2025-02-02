@@ -16,9 +16,11 @@ import {
   onEditNick,
   onEditGuild,
   triggerGuildImageUpdate,
+  regenerateConfirmationPanel,
+  triggerFileInput,
 } from "./settings";
 import { initialState } from "./app";
-import { updateSelfProfile } from "./avatar";
+import { updateSelfProfile, lastConfirmedProfileImg } from "./avatar";
 import { apiClient, EventType } from "./api";
 import { translations } from "./translations";
 import {
@@ -29,13 +31,10 @@ import {
   enableElement,
   blackImage,
 } from "./utils";
-import { currentUserNick, currentUserId } from "./user";
+import { currentUserNick, currentUserId, setSelfStatus } from "./user";
 import { guildCache } from "./cache";
 import { permissionManager } from "./guildPermissions";
 import { currentGuildId } from "./guild";
-import { regenerateConfirmationPanel, triggerFileInput } from "./settings";
-import { lastConfirmedProfileImg } from "./avatar";
-import { setSelfStatus } from "./user";
 import { currentChannelName } from "./channels";
 
 export const SettingType = Object.freeze({
@@ -120,7 +119,7 @@ const getProfileSettingsConfig = () => {
   return createSettingsConfig(ProfileCategoryTypes, (category) => {
     switch (category) {
       case ProfileCategoryTypes.SoundAndVideo:
-        return `<select class="dropdown"></select><select class="dropdown"></select><select class="dropdown"></select>`;
+        return "<select class=\"dropdown\"></select><select class=\"dropdown\"></select><select class=\"dropdown\"></select>";
       case ProfileCategoryTypes.MyAccount:
         return getAccountSettingsHtml();
       case ProfileCategoryTypes.Notifications:
@@ -235,7 +234,7 @@ function loadSettings() {
   return { userSettings, guildSettings, channelSettings };
 }
 function getGuildSettings() {
-  let setToReturn = [...currentSettings.guildSettings];
+  const setToReturn = [...currentSettings.guildSettings];
   if (permissionManager.canManageGuild()) {
     setToReturn.push({
       category: "Invites",
@@ -759,6 +758,7 @@ export function generateConfirmationPanel() {
 
 function shakeScreen() {
   let SHAKE_FORCE = 1;
+  const RESET_TIMEOUT_DURATION = 5000;
 
   currentSettingsCategory = null;
   regenerateConfirmationPanel();
@@ -779,7 +779,8 @@ function shakeScreen() {
     SHAKE_FORCE = 1;
     document.body.classList.remove("shake-screen");
     currentPopUp.style.backgroundColor = "#0f0f0f";
-  }, 5000);
+  }, RESET_TIMEOUT_DURATION);
+
 
   return;
 }
@@ -787,8 +788,8 @@ function createDeleteChannelPrompt(guildId, channelId, channelName) {
   if (!guildId | !channelId) return;
   var onClickHandler = function () {
     apiClient.send(EventType.DELETE_CHANNEL, {
-      guildId: guildId,
-      channelId: channelId,
+      guildId,
+      channelId,
     });
   };
   const actionText = translations.getDeleteChannelText(channelName);
@@ -808,7 +809,7 @@ function createDeleteGuildPrompt(guildId, guildName) {
     return;
   }
   var onClickHandler = function () {
-    apiClient.send(EventType.DELETE_GUILD, { guildId: guildId });
+    apiClient.send(EventType.DELETE_GUILD, { guildId });
   };
   const actionText = translations.getDeleteGuildText(guildName);
 

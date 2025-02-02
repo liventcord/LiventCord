@@ -218,7 +218,7 @@ class ApiClient {
     }
 
     let url = urlTemplate;
-    let missingKeys = [];
+    const missingKeys = [];
     let requiredKeys = [];
 
     const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) =>
@@ -250,7 +250,7 @@ class ApiClient {
 
   async handleError(response, event) {
     if (event in friendEvents) {
-      let predefinedMessage =
+      const predefinedMessage =
         translations.getFriendErrorMessage(response.status)?.[event] ||
         translations.getFriendErrorMessage("default");
       printFriendMessage(predefinedMessage);

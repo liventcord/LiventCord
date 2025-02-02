@@ -1,26 +1,27 @@
-import { populateFriendsContainer, friendsContainer } from "./friendui";
 import {
   disableElement,
   reCalculateFriTitle,
   enableElement,
   setWindowName,
   parseUsernameDiscriminator,
+  getId,
+  isValidFriendName,
 } from "./utils";
-import { getSelfFullDisplay } from "./user";
+import { getSelfFullDisplay, currentUserId } from "./user";
 import { handleResize } from "./ui";
-import { getId, isValidFriendName } from "./utils";
 import {
+  populateFriendsContainer,
+  friendsContainer,
   isAddFriendsOpen,
   openAddFriend,
   printFriendMessage,
   ButtonTypes,
   createButtonWithBubblesImg,
 } from "./friendui";
-import { currentUserId } from "./user";
 import { translations } from "./translations";
 import { apiClient, EventType } from "./api";
 
-let friends_cache = {};
+const friends_cache = {};
 
 const pendingAlertRight = getId("pendingAlertRight");
 const pendingAlertLeft = getId("pendingAlertLeft");
@@ -222,7 +223,7 @@ export function updateFriendsList(friends, isPending) {
 
 export function addPendingButtons(friendButton, friend) {
   //TODO: fix isFriendsRequestsToUser
-  let isFriendsRequestsToUser = true;
+  const isFriendsRequestsToUser = true;
   if (isFriendsRequestsToUser) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
