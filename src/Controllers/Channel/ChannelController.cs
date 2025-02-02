@@ -67,7 +67,7 @@ namespace LiventCord.Controllers
 
             _dbContext.Channels.Remove(channel);
             await _dbContext.SaveChangesAsync();
-            return Ok();
+            return Ok(new { guildId, channelId} );
         }
 
 

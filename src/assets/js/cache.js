@@ -21,26 +21,55 @@ class BaseCache {
   }
 }
 class ChannelCache extends BaseCache {
+  contructor() {
+    this.rootChannel = null;
+  }
+  setRootChannel(rootChannel) {
+    console.log("Set root channel: ",rootChannel);
+    this.rootChannel = rootChannel;
+  }
   setChannels(guildId, channels) {
     this.setArray(guildId, channels);
   }
   addChannel(guildId, channel) {
     const channels = this.getChannels(guildId);
-    const index = channels.findIndex((channel) => channel.id === channel.id);
+    const index = channels.findIndex(
+      (channel) => channel.channelId === channel.channelId,
+    );
     if (index === -1) {
       channels.push(channel);
       this.setChannels(guildId, channels);
     }
   }
+  removeChannel(guildId, channelId) {
+    const channels = this.getChannels(guildId).filter(
+      (ch) => ch.id !== channelId,
+    );
+    this.setChannels(guildId, channels);
+  }
   getChannels(guildId) {
     return this.get(guildId) || [];
   }
   isRootChannel(guildId, channelId) {
+    console.log();
     console.log("Root channel unhandled");
   }
+  getRootChannel(guildId) {
+    console.log(this, this.rootChannel);
+    const channels = this.getChannels(guildId)[0];
+    for (const channel of channels) {
+      console.log(channel);
+      if (channel.channelId === this.rootChannel) {
+        return channel;
+      }
+    }
+  }
+  
   updateChannel(guildId, channel, add = true) {
     const channels = this.getChannels(guildId);
-    const index = channels.findIndex((channel) => channel.id === channel.id);
+    const index = channels.findIndex(
+      (channel) => channel.channelId === channel.channelId,
+    );
     if (add && index === -1) {
       channels.push(channel);
     } else if (!add && index !== -1) {
@@ -119,7 +148,7 @@ class MessagesCache extends BaseCache {
     return this.get(channelId) || [];
   }
   removeMessage(messageId, channelId) {
-    const messages = this.getChannelMessages(channelId).filter(
+    const messages = this.getMessages(channelId).filter(
       (msg) => msg.id !== messageId,
     );
     this.setMessages(channelId, messages);
@@ -178,7 +207,7 @@ class Guild {
     return this.ownerId === userId;
   }
   hasMembers() {
-    return this.members.getGuildMembers(this.guildId).length > 0;
+    return this.members.getMembers(this.guildId).length > 0;
   }
 }
 class GuildCache {
@@ -234,7 +263,12 @@ class GuildCacheInterface {
   getGuildName(guildId) {
     return this.guildCache.getGuild(guildId).guildName;
   }
-
+  //invite
+  addInvites(guildId, inviteIds) {
+    this.guildCache
+      .getGuild(guildId)
+      .invites.assignInviteIds(guildId, inviteIds);
+  }
   isInvitesEmpty(guildId) {
     return (
       this.guildCache.getGuild(guildId).invites.getInviteIds(guildId) !== null
@@ -243,7 +277,7 @@ class GuildCacheInterface {
   //voice
   getVoiceChannelMembers(channelId) {
     if (!channelId) return;
-    this.guildCache.forEach((guild) => {
+    this.guildCache.guilds.forEach((guild) => {
       if (guild.channelId === channelId && guild.voiceChannels) {
         return guild.voiceChannels.getUsersInVoiceChannel();
       }
@@ -251,7 +285,7 @@ class GuildCacheInterface {
   }
   setVoiceChannelMembers(channelId, usersArray) {
     if (!channelId) return;
-    this.guildCache.forEach((guild) => {
+    this.guildCache.guilds.forEach((guild) => {
       if (guild.channelId === channelId && guild.voiceChannels) {
         usersArray.forEach((userId) => {
           guild.voiceChannels.addUserToVoiceChannel(userId);
@@ -283,8 +317,17 @@ class GuildCacheInterface {
   getChannels(guildId) {
     return this.getGuild(guildId)?.channels.getChannels() || [];
   }
+  removeChannel(guildId, channelId) {
+    this.getGuild(guildId)?.channels.removeChannel(guildId, channelId);
+  }
   isRootChannel(guildId, channelId) {
-    this.getGuild(guildId)?.channels.isRootChannel(guildId, channelId);
+    return this.getGuild(guildId)?.channels.isRootChannel(guildId, channelId);
+  }
+  getRootChannel(guildId) {
+    return this.getGuild(guildId)?.channels.getRootChannel(guildId);
+  }
+  setRootChannel(guildId,channelId) {
+    this.getGuild(guildId)?.channels.setRootChannel(channelId);
   }
   setChannels(guildId, channelsData) {
     this.getGuild(guildId)?.channels.setChannels(channelsData);

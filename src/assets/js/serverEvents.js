@@ -6,7 +6,12 @@ import {
   handleHistoryResponse,
 } from "./chat";
 import { guildCache, replyCache, cacheInterface } from "./cache";
-import { addChannel, changeChannel, updateChannels } from "./channels";
+import {
+  addChannel,
+  changeChannel,
+  removeChannel,
+  updateChannels,
+} from "./channels";
 import { getId } from "./utils";
 import { updateMemberList } from "./userList";
 import {
@@ -21,7 +26,7 @@ import { loadDmHome } from "./app";
 import { alertUser } from "./ui";
 import { currentUserId, setUserNick } from "./user";
 import { updateFriendsList, handleFriendEventResponse } from "./friends";
-import { refreshUserProfile, selfName, updateSelfName } from "./avatar";
+import { refreshUserProfile, selfName } from "./avatar";
 import { apiClient, EventType } from "./api.js";
 import { permissionManager } from "./guildPermissions.js";
 import { translations } from "./translations.js";
@@ -57,16 +62,22 @@ apiClient.on(EventType.DELETE_GUILD, (data) => {
   }
 });
 apiClient.on(EventType.GET_INVITES, (data) => {
-  if (data && data.invite_ids) {
-    guildCache.addInvites(data.guildId, data.invite_ids);
+  const inviteIds = data.inviteIds;
+  const guildId = data.guildId;
+  if (!guildId || !inviteIds) return;
+  if (data && inviteIds) {
+    cacheInterface.addInvites(guildId, inviteIds);
   } else {
     console.warn("Invite ids do not exist. ", data);
   }
 });
 
 apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
-  if (data.guildId === currentGuildId) {
-    guildName.innerText = guildCache.currentGuildName;
+  const newGuildName = data.newGuildName;
+  const guildId = data.guildId;
+  if (!newGuildName || !guildId) return;
+  if (guildId === currentGuildId) {
+    guildName.innerText = newGuildName;
   }
 });
 apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
@@ -77,12 +88,28 @@ apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   const guildId = data.guildId;
   const channelId = data.channelId;
   const isTextChannel = data.isTextChannel;
-  if (!guildId | !channelId) return;
+  if (!guildId || !channelId) return;
   addChannel(data);
   if (isTextChannel) {
     changeChannel(data);
   }
   createFireWorks();
+});
+apiClient.on(EventType.DELETE_CHANNEL, (data) => {
+  const guildId = data.guildId;
+  const channelId = data.channelId;
+  if (!guildId || !channelId) return;
+  if (guildCache.currentChannelId === channelId) {
+    const rootChannel = cacheInterface.getRootChannel(guildId);
+    console.log(rootChannel);
+    closeSettings();
+    if (rootChannel) {
+      changeChannel(rootChannel);
+    } else {
+      loadDmHome();
+    }
+  }
+  removeChannel(data);
 });
 
 apiClient.on(EventType.GET_BULK_REPLY, (data) => {

@@ -88,32 +88,54 @@ export async function changeChannel(newChannel) {
     clearLastDate();
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
+    
   } else {
     joinVoiceChannel(channelId);
   }
-
+  console.log(currentChannels)
   if (!currentChannels) {
+    console.error(currentChannels);
     return;
   }
 
-  currentChannels.forEach((channel, index) => {
+  setCurrentChannel(channelId);
+}
+
+//channels
+function setCurrentChannel(channelId) {
+  currentChannels.forEach((channel) => {
+    console.log(channel);
     const channelButton = channelsUl.querySelector(
       `li[id="${channel.channelId}"]`,
     );
     if (channelButton) {
-      if (channel.channelId !== channelId) {
+      const isSelected = channel.channelId === channelId
+      console.log(isSelected);
+      if (isSelected) {
+        mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+
+        setTimeout(() => {
+          mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+        }, 50);
+
+      }
+      else {
+        //unselected channels
         mouseHoverChannelButton(
           channelButton,
           channel.isTextChannel,
           channel.channelId,
         );
-        mouseLeaveChannelButton(
-          channelButton,
-          channel.isTextChannel,
-          channel.channelId,
-        );
-      } else if (!isTextChannel) {
-        const voiceUsersInChannel =
+        mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+
+        setTimeout(() => {
+          mouseLeaveChannelButton(channelButton, channel.isTextChannel, channel.channelId);
+        }, 50);
+      }
+
+    }
+    if(!channel.isTextChannel) { //voice channel
+      const voiceUsersInChannel =
           cacheInterface.getVoiceChannelMembers(channelId);
         if (voiceUsersInChannel) {
           let allUsersContainer = channelButton.querySelector(
@@ -131,17 +153,13 @@ export async function changeChannel(newChannel) {
               userId,
               channelId,
               channelButton,
-              allUsersContainer,
-              isTextChannel,
+              allUsersContainer
             );
           });
         }
-      }
     }
   });
 }
-
-//channels
 export function isChannelMatching(channelId, isTextChannel) {
   const currentChannel = isTextChannel
     ? guildCache.currentChannelId
@@ -426,6 +444,11 @@ class Channel {
 
     addEventListeners(channelButton, this.channelId, this.isTextChannel, this);
     handleChannelChangeOnLoad(this, this.channelId);
+    mouseHoverChannelButton(channelButton, this.isTextChannel, this.channelId);
+
+    setTimeout(() => {
+      mouseLeaveChannelButton(channelButton, this.isTextChannel, this.channelId);
+    }, 50);
   }
 }
 
@@ -477,12 +500,15 @@ function refreshChannelList(channels) {
   (Array.isArray(channels) ? channels : [channels]).forEach(
     createChannelElement,
   );
-  if (currentChannels && currentChannels.length > 1) addChannelEventListeners();
+  if (currentChannels && currentChannels.length > 1) {
+    addEventListeners()
+    addChannelEventListeners();
+  }
 }
 
 export function removeChannel(data) {
   const { guildId, channelId } = data;
-  guildCache.removeChannel(guildId, channelId);
+  cacheInterface.removeChannel(guildId, channelId);
 
   const channelsArray = cacheInterface.getChannels(guildId);
   currentChannels = channelsArray;
@@ -507,8 +533,7 @@ export function drawVoiceChannelUser(
   userId,
   channelId,
   channelButton,
-  allUsersContainer,
-  isTextChannel,
+  allUsersContainer
 ) {
   const userName = getUserNick(userId);
   const userContainer = createEl("li", {

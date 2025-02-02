@@ -104,7 +104,7 @@ namespace LiventCord.Controllers
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new { guildId });
+            return Ok(new { guildId, request.GuildName});
         }
 
 

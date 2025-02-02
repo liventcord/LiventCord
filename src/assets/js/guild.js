@@ -281,11 +281,13 @@ export function selectGuildList(guildId) {
   const foundGuilds = guildsList.querySelectorAll("img");
 
   foundGuilds.forEach((guild) => {
+    const guildParent = guild.parentNode;
     if (guild.id === guildId) {
-      wrapWhiteRod(guild.parentNode);
-      guild.parentNode.classList.add("selected-guild");
+      wrapWhiteRod(guildParent);
+      guildParent.classList.add("selected-guild");
     } else {
-      guild.parentNode.classList.remove("selected-guild");
+      guildParent.classList.remove("selected-guild");
+      removeWhiteRod(guildParent);
     }
   });
 }
@@ -339,6 +341,12 @@ export function wrapWhiteRod(element) {
     const whiteRod = createEl("div", { className: "white-rod" });
     element.appendChild(whiteRod);
   }
+}
+function removeWhiteRod(element) {
+  if (!element) return;
+  const whiteRod = element.querySelector(".white-rod");
+  if (!whiteRod) return;
+  whiteRod.remove();
 }
 const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
   const listItem = createEl("li");

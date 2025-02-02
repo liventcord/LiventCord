@@ -303,8 +303,10 @@ export function initializeGuild() {
   console.log(initialState.guilds);
   if (isOnGuild && initialState.guilds && initialState.guilds.length > 0) {
     initialState.guilds.forEach((data) => {
+      console.log(data);
+      cacheInterface.addChannel(data.guildId, data.guildChannels);
+      cacheInterface.setRootChannel(initialGuildId,data.rootChannel)
       if (data.guildId === currentGuildId) {
-        cacheInterface.addChannel(data.guildId, data.guildChannels);
         updateChannels(data.guildChannels);
       }
     });
@@ -453,6 +455,7 @@ export function loadDmHome(isChangingUrl = true) {
     }
     setIsOnMe(true);
     setIsOnGuild(false);
+    selectGuildList("main-logo");
   }
 
   function handleDm() {

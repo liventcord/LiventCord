@@ -992,13 +992,14 @@ th {
   text-overflow: ellipsis;
 }
 .white-rod {
-  position: fixed;
+  position: absolute;
   width: 5px;
   height: 50px;
   margin-left: -40px;
+  margin-top: -55px;
   border-radius: 50px;
   background-color: white;
-  display: none;
+  display: block;
 }
 #settings-rightcontainer {
   color: white;
