@@ -14,9 +14,9 @@ async function handleRequest(event) {
         status: 400,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      },
+          "Access-Control-Allow-Origin": "*"
+        }
+      }
     );
   }
 
@@ -42,8 +42,8 @@ async function handleRequest(event) {
     response = new Response(JSON.stringify(data), {
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+        "Access-Control-Allow-Origin": "*"
+      }
     });
 
     event.waitUntil(cache.put(cacheKey, response.clone()));
@@ -54,8 +54,8 @@ async function handleRequest(event) {
       status: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+        "Access-Control-Allow-Origin": "*"
+      }
     });
   }
 }

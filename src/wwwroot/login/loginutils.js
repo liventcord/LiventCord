@@ -18,7 +18,7 @@ const translations = {
     emailExists: "Email is already registered",
     maxNickReached:
       "This nickname has exceeded the maximum number of available discriminators.",
-    successRegister: "Succesfully registered!",
+    successRegister: "Succesfully registered!"
   },
   tr: {
     emailInvalid: "Geçerli bir e-posta adresi girin.",
@@ -36,8 +36,8 @@ const translations = {
     maxNickReached:
       "Bu takma ad, mevcut tanımlayıcı sayısının maksimum sınırını aşmış durumda",
     emailExists: "Bu e posta adresi zaten kayıtlı",
-    successRegister: "Başarıyla kayıt olundu!",
-  },
+    successRegister: "Başarıyla kayıt olundu!"
+  }
 };
 function updateDOM() {
   const elements = document.querySelectorAll("[data-i18n]");
@@ -101,7 +101,7 @@ function alertUser(text, isSuccess = false) {
   const container = document.createElement("div");
   container.classList.add(
     isSuccess ? "info-container" : "error-container",
-    "swipe-in",
+    "swipe-in"
   );
 
   setTimeout(() => {
@@ -165,7 +165,7 @@ function submitForm(event, isRegister) {
   fetch(isRegister ? "/auth/register" : "/auth/login", {
     method: "POST",
     body: formData,
-    credentials: "same-origin",
+    credentials: "same-origin"
   })
     .then((response) => {
       if (!response.ok) {
@@ -181,7 +181,7 @@ function submitForm(event, isRegister) {
         }
         alertUser(errorMsg);
         throw new Error(
-          response.status === 401 ? "Unauthorized" : "Error occurred",
+          response.status === 401 ? "Unauthorized" : "Error occurred"
         );
       }
     })

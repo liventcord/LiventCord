@@ -1011,6 +1011,7 @@ textarea::-webkit-scrollbar-track {
   color: #dcddde;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  z-index: 0;
 }
 .replier {
   max-height: 200px;

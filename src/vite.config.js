@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const commonProxyConfig = {
     target: proxyTarget,
     changeOrigin: true,
-    secure: false,
+    secure: false
   };
 
   const proxyPaths = [
@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     "/images",
     "/guilds",
     "/auth",
-    "/sounds",
+    "/sounds"
   ];
 
   const proxyConfig = proxyPaths.reduce((acc, path) => {
@@ -33,29 +33,30 @@ export default defineConfig(({ mode }) => {
     base: isDev ? "/" : "/app",
     build: {
       outDir: "../wwwroot/app",
-      assetsDir: "js",
+      assetsDir: "ts",
       emptyOutDir: true,
       minify: isDev ? false : "terser",
       terserOptions: {
         compress: { drop_console: !isDev },
-        mangle: { toplevel: true },
+        mangle: { toplevel: true }
       },
       sourcemap: isDev,
       chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
+          // eslint-disable-next-line consistent-return
           manualChunks(id) {
             if (id.includes("node_modules")) {
               return "vendor";
             }
-          },
-        },
-      },
+          }
+        }
+      }
     },
     css: {
       postcss: {
-        plugins: [autoprefixer, cssnano({ preset: "default" })],
-      },
+        plugins: [autoprefixer, cssnano({ preset: "default" })]
+      }
     },
     plugins: [eslintPlugin({ emitWarning: false })],
     server: {
@@ -66,9 +67,9 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
           secure: false,
-          ws: true,
-        },
-      },
-    },
+          ws: true
+        }
+      }
+    }
   };
 });

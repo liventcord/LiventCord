@@ -63,7 +63,7 @@ $(document).ready(function () {
           var newX = Math.min(Math.max(rect.left, 0), screenWidth - rect.width);
           var newY = Math.min(
             Math.max(rect.top, 0),
-            screenHeight - rect.height,
+            screenHeight - rect.height
           );
 
           offsetX = newX - rect.left + offsetX;
@@ -101,11 +101,11 @@ $(document).ready(function () {
           } else if (ui.position.top + ui.helper.height() > screenHeight) {
             ui.position.top = screenHeight - ui.helper.height();
           }
-        },
+        }
       })
       .css({
         left: $(window).width() - $("#local_vid").width(),
-        top: $(window).height() - $("#local_vid").height(),
+        top: $(window).height() - $("#local_vid").height()
       });
   }
 

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "target": "ESNext",
+    "allowJs": false,
+    "checkJs": false,
+    "noEmit": true,
+    "lib": ["dom", "es2019"],
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"]
+  },
+  "include": ["assets/ts/**/*"]
+}

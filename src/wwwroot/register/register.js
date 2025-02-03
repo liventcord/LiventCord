@@ -31,8 +31,8 @@ function setInputListeners() {
             `/api/discriminators?nick=${encodeURIComponent(currentInputValue)}`,
             {
               method: "GET",
-              credentials: "same-origin",
-            },
+              credentials: "same-origin"
+            }
           );
 
           if (response.ok) {

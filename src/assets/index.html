@@ -13,39 +13,39 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@5.0.8/dist/browser/signalr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script type="module" defer src="/js/utils.js"></script>
-    <script type="module" defer src="/js/app.js" defer></script>
-    <script type="module" defer src="/js/translations.js"></script>
-    <script type="module" defer src="/js/api.js"></script>
-    <script type="module" defer src="/js/audio.js"></script>
-    <script type="module" defer src="/js/avatar.js"></script>
-    <script type="module" defer src="/js/cache.js"></script>
-    <script type="module" defer src="/js/channels.js"></script>
-    <script type="module" defer src="/js/chat.js"></script>
-    <script type="module" defer src="/js/chatbar.js"></script>
-    <script type="module" defer src="/js/contextMenuActions.js"></script>
-    <script type="module" defer src="/js/extras.js"></script>
-    <script type="module" defer src="/js/friends.js"></script>
-    <script type="module" defer src="/js/friendui.js"></script>
-    <script type="module" defer src="/js/guild.js"></script>
-    <script type="module" defer src="/js/guildPermissions.js"></script>
-    <script type="module" defer src="/js/mediaElements.js"></script>
-    <script type="module" defer src="/js/mediaPanel.js"></script>
-    <script type="module" defer src="/js/message.js"></script>
-    <script type="module" defer src="/js/popups.js"></script>
-    <script type="module" defer src="/js/router.js"></script>
-    <script type="module" defer src="/js/search.js"></script>
-    <script type="module" defer src="/js/serverEvents.js"></script>
-    <script type="module" defer src="/js/settings.js"></script>
-    <script type="module" defer src="/js/settingsui.js"></script>
-    <script type="module" defer src="/js/socketEvents.js"></script>
-    <script type="module" defer src="/js/ui.js"></script>
-    <script type="module" defer src="/js/user.js"></script>
-    <script type="module" defer src="/js/userList.js"></script>
+    <script type="module" defer src="/ts/utils.ts"></script>
+    <script type="module" defer src="/ts/app.ts" defer></script>
+    <script type="module" defer src="/ts/translations.ts"></script>
+    <script type="module" defer src="/ts/api.ts"></script>
+    <script type="module" defer src="/ts/audio.ts"></script>
+    <script type="module" defer src="/ts/avatar.ts"></script>
+    <script type="module" defer src="/ts/cache.ts"></script>
+    <script type="module" defer src="/ts/channels.ts"></script>
+    <script type="module" defer src="/ts/chat.ts"></script>
+    <script type="module" defer src="/ts/chatbar.ts"></script>
+    <script type="module" defer src="/ts/contextMenuActions.ts"></script>
+    <script type="module" defer src="/ts/extras.ts"></script>
+    <script type="module" defer src="/ts/friends.ts"></script>
+    <script type="module" defer src="/ts/friendui.ts"></script>
+    <script type="module" defer src="/ts/guild.ts"></script>
+    <script type="module" defer src="/ts/guildPermissions.ts"></script>
+    <script type="module" defer src="/ts/mediaElements.ts"></script>
+    <script type="module" defer src="/ts/mediaPanel.ts"></script>
+    <script type="module" defer src="/ts/message.ts"></script>
+    <script type="module" defer src="/ts/popups.ts"></script>
+    <script type="module" defer src="/ts/router.ts"></script>
+    <script type="module" defer src="/ts/search.ts"></script>
+    <script type="module" defer src="/ts/serverEvents.ts"></script>
+    <script type="module" defer src="/ts/settings.ts"></script>
+    <script type="module" defer src="/ts/settingsui.ts"></script>
+    <script type="module" defer src="/ts/socketEvents.ts"></script>
+    <script type="module" defer src="/ts/ui.ts"></script>
+    <script type="module" defer src="/ts/user.ts"></script>
+    <script type="module" defer src="/ts/userList.ts"></script>
 
     
     <style>
-        .croppie-container{width:100%;height:100%}.croppie-container .cr-image{z-index:-1;position:absolute;top:0;left:0;transform-origin:0 0;max-height:none;max-width:none}.croppie-container .cr-boundary{position:relative;overflow:hidden;margin:0 auto;z-index:1;width:100%;height:100%}.croppie-container .cr-resizer,.croppie-container .cr-viewport{position:absolute;border:2px solid #fff;margin:auto;top:0;bottom:0;right:0;left:0;box-shadow:0 0 2000px 2000px rgba(0,0,0,.5);z-index:0}.croppie-container .cr-resizer{z-index:2;box-shadow:none;pointer-events:none}.croppie-container .cr-resizer-horisontal,.croppie-container .cr-resizer-vertical{position:absolute;pointer-events:all}.croppie-container .cr-resizer-horisontal::after,.croppie-container .cr-resizer-vertical::after{display:block;position:absolute;box-sizing:border-box;border:1px solid #000;background:#fff;width:10px;height:10px;content:''}.croppie-container .cr-resizer-vertical{bottom:-5px;cursor:row-resize;width:100%;height:10px}.croppie-container .cr-resizer-vertical::after{left:50%;margin-left:-5px}.croppie-container .cr-resizer-horisontal{right:-5px;cursor:col-resize;width:10px;height:100%}.croppie-container .cr-resizer-horisontal::after{top:50%;margin-top:-5px}.croppie-container .cr-original-image{display:none}.croppie-container .cr-vp-circle{border-radius:50%}.croppie-container .cr-overlay{z-index:1;position:absolute;cursor:move;touch-action:none}.croppie-container .cr-slider-wrap{width:75%;margin:15px auto;text-align:center}.croppie-result{position:relative;overflow:hidden}.croppie-result img{position:absolute}.croppie-container .cr-image,.croppie-container .cr-overlay,.croppie-container .cr-viewport{-webkit-transform:translateZ(0);-moz-transform:translateZ(0);-ms-transform:translateZ(0);transform:translateZ(0)}.cr-slider{-webkit-appearance:none;width:300px;max-width:100%;padding-top:8px;padding-bottom:8px;background-color:transparent}.cr-slider::-webkit-slider-runnable-track{width:100%;height:3px;background:rgba(0,0,0,.5);border:0;border-radius:3px}.cr-slider::-webkit-slider-thumb{-webkit-appearance:none;border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:-6px}.cr-slider:focus{outline:0}.cr-slider::-moz-range-track{width:100%;height:3px;background:rgba(0,0,0,.5);border:0;border-radius:3px}.cr-slider::-moz-range-thumb{border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:-6px}.cr-slider:-moz-focusring{outline:1px solid #fff;outline-offset:-1px}.cr-slider::-ms-track{width:100%;height:5px;background:0 0;border-color:transparent;border-width:6px 0;color:transparent}.cr-slider::-ms-fill-lower{background:rgba(0,0,0,.5);border-radius:10px}.cr-slider::-ms-fill-upper{background:rgba(0,0,0,.5);border-radius:10px}.cr-slider::-ms-thumb{border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:1px}.cr-slider:focus::-ms-fill-lower{background:rgba(0,0,0,.5)}.cr-slider:focus::-ms-fill-upper{background:rgba(0,0,0,.5)}.cr-rotate-controls{position:absolute;bottom:5px;left:5px;z-index:1}.cr-rotate-controls button{border:0;background:0 0}.cr-rotate-controls i:before{display:inline-block;font-style:normal;font-weight:900;font-size:22px}.cr-rotate-l i:before{content:'↺'}.cr-rotate-r i:before{content:'↻'}
+        .croppie-container{width:100%;height:100%}.croppie-container .cr-image{z-index:-1;position:absolute;top:0;left:0;transform-origin:0 0;max-height:none;max-width:none}.croppie-container .cr-boundary{position:relative;overflow:hidden;margin:0 auto;z-index:1;width:100%;height:100%}.croppie-container .cr-resizer,.croppie-container .cr-viewport{position:absolute;border:2px solid #fff;margin:auto;top:0;bottom:0;right:0;left:0;box-shadow:0 0 2000px 2000px rgba(0,0,0,.5);z-index:0}.croppie-container .cr-resizer{z-index:2;box-shadow:none;pointer-events:none}.croppie-container .cr-resizer-horisontal,.croppie-container .cr-resizer-vertical{position:absolute;pointer-events:all}.croppie-container .cr-resizer-horisontal::after,.croppie-container .cr-resizer-vertical::after{display:block;position:absolute;box-sizing:border-box;border:1px solid #000;background:#fff;width:10px;height:10px;content:''}.croppie-container .cr-resizer-vertical{bottom:-5px;cursor:row-resize;width:100%;height:10px}.croppie-container .cr-resizer-vertical::after{left:50%;margin-left:-5px}.croppie-container .cr-resizer-horisontal{right:-5px;cursor:col-resize;width:10px;height:100%}.croppie-container .cr-resizer-horisontal::after{top:50%;margin-top:-5px}.croppie-container .cr-original-image{display:none}.croppie-container .cr-vp-circle{border-radius:50%}.croppie-container .cr-overlay{z-index:1;position:absolute;cursor:move;touch-action:none}.croppie-container .cr-slider-wrap{width:75%;margin:15px auto;text-align:center}.croppie-result{position:relative;overflow:hidden}.croppie-result img{position:absolute}.croppie-container .cr-image,.croppie-container .cr-overlay,.croppie-container .cr-viewport{-webkit-transform:translateZ(0);-moz-transform:translateZ(0);-ms-transform:translateZ(0);transform:translateZ(0)}.cr-slider{appearance:none;-webkit-appearance:none;width:300px;max-width:100%;padding-top:8px;padding-bottom:8px;background-color:transparent}.cr-slider::-webkit-slider-runnable-track{width:100%;height:3px;background:rgba(0,0,0,.5);border:0;border-radius:3px}.cr-slider::-webkit-slider-thumb{-webkit-appearance:none;border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:-6px}.cr-slider:focus{outline:0}.cr-slider::-moz-range-track{width:100%;height:3px;background:rgba(0,0,0,.5);border:0;border-radius:3px}.cr-slider::-moz-range-thumb{border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:-6px}.cr-slider:-moz-focusring{outline:1px solid #fff;outline-offset:-1px}.cr-slider::-ms-track{width:100%;height:5px;background:0 0;border-color:transparent;border-width:6px 0;color:transparent}.cr-slider::-ms-fill-lower{background:rgba(0,0,0,.5);border-radius:10px}.cr-slider::-ms-fill-upper{background:rgba(0,0,0,.5);border-radius:10px}.cr-slider::-ms-thumb{border:none;height:16px;width:16px;border-radius:50%;background:#ddd;margin-top:1px}.cr-slider:focus::-ms-fill-lower{background:rgba(0,0,0,.5)}.cr-slider:focus::-ms-fill-upper{background:rgba(0,0,0,.5)}.cr-rotate-controls{position:absolute;bottom:5px;left:5px;z-index:1}.cr-rotate-controls button{border:0;background:0 0}.cr-rotate-controls i:before{display:inline-block;font-style:normal;font-weight:900;font-size:22px}.cr-rotate-l i:before{content:'↺'}.cr-rotate-r i:before{content:'↻'}
     </style>
 </head>
 
@@ -261,7 +261,7 @@
     </div>
 
     <div id="json-preview-container" >
-        <pre id="json-preview-element"  class="jsonContainer" style="whiteSpace: pre-wrap; user-select: text;">...</pre>
+        <pre id="json-preview-element"  class="jsonContainer" style="white-space: pre-wrap; user-select: text;">...</pre>
     </div>
     
     <div id="drop-zone">

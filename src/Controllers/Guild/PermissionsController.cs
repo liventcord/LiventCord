@@ -78,27 +78,6 @@ namespace LiventCord.Controllers
 
             return userPermissions.Permissions.HasFlag(permission);
         }
-
-        private Dictionary<string, int> GetPermissionsDictionary(int permissions)
-        {
-            var permissionsDict = new Dictionary<string, int>();
-            foreach (PermissionFlags permissionFlag in Enum.GetValues(typeof(PermissionFlags)))
-            {
-                if (
-                    permissionFlag != PermissionFlags.None
-                    && (permissions & (int)permissionFlag) != 0
-                )
-                {
-                    permissionsDict[permissionFlag.ToString()] = 1;
-                }
-                else
-                {
-                    permissionsDict[permissionFlag.ToString()] = 0;
-                }
-            }
-            return permissionsDict;
-        }
-
         private Dictionary<string, int> GetPermissionsDictionary(PermissionFlags permissions)
         {
             var permissionsDict = new Dictionary<string, int>();
@@ -179,6 +158,8 @@ public enum PermissionFlags
     AddReaction = 1 << 7,
     IsAdmin = 1 << 8,
     CanInvite = 1 << 9,
+    MANAGE_GUILD = 1 << 11,
+    MANAGE_MESSAGES = 1 << 12,
     All =
         ReadMessages
         | SendMessages
@@ -189,5 +170,7 @@ public enum PermissionFlags
         | ManageChannels
         | AddReaction
         | IsAdmin
-        | CanInvite,
+        | CanInvite
+        | MANAGE_GUILD
+        | MANAGE_MESSAGES
 }

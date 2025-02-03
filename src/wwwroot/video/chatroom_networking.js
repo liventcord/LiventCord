@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
 var camera_allowed = false;
 var mediaConstraints = {
   audio: true,
-  video: {},
+  video: {}
 };
 
 function startCamera() {
@@ -88,7 +88,7 @@ function log_user_list() {
 
 async function pingServer(serverUrl) {
   const pcConfig = {
-    iceServers: [{ urls: serverUrl }],
+    iceServers: [{ urls: serverUrl }]
   };
   const peerConnection = new RTCPeerConnection(pcConfig);
 
@@ -100,7 +100,7 @@ async function pingServer(serverUrl) {
       endTime = performance.now();
       const latency = endTime - startTime;
       console.log(
-        `Ping to ${serverUrl} successful. Latency: ${latency.toFixed(2)} ms`,
+        `Ping to ${serverUrl} successful. Latency: ${latency.toFixed(2)} ms`
       );
       peerConnection.close();
     }
@@ -126,7 +126,7 @@ const servers = [
   "stun:stun5.l.google.com:19302",
   "stun:stun6.l.google.com:19302",
   "stun:stun7.l.google.com:19302",
-  "stun:stun8.l.google.com:19302",
+  "stun:stun8.l.google.com:19302"
 ];
 
 async function checkServers() {
@@ -147,10 +147,10 @@ var PC_CONFIG = {
         "stun:stun5.l.google.com:19302",
         "stun:stun6.l.google.com:19302",
         "stun:stun7.l.google.com:19302",
-        "stun:stun8.l.google.com:19302",
-      ],
-    },
-  ],
+        "stun:stun8.l.google.com:19302"
+      ]
+    }
+  ]
 };
 
 function log_error(e) {
@@ -208,12 +208,12 @@ function createBlackStream(fps = 1) {
 
 async function invite(peer_id) {
   console.log(
-    `Invite function called with peer_id: ${peer_id} and myID: ${myID}`,
+    `Invite function called with peer_id: ${peer_id} and myID: ${myID}`
   );
 
   if (_peer_list[peer_id]) {
     console.log(
-      "[Not supposed to happen!] Attempting to start a connection that already exists!",
+      "[Not supposed to happen!] Attempting to start a connection that already exists!"
     );
   } else if (peer_id === myID) {
     console.log("[Not supposed to happen!] Trying to connect to self!");
@@ -272,7 +272,7 @@ function handleNegotiationNeededEvent(peer_id) {
         sender_id: myID,
         target_id: peer_id,
         type: "offer",
-        sdp: _peer_list[peer_id].localDescription,
+        sdp: _peer_list[peer_id].localDescription
       });
     })
     .catch(log_error);
@@ -315,7 +315,7 @@ function handleOfferMsg(msg) {
         sender_id: myID,
         target_id: peer_id,
         type: "answer",
-        sdp: _peer_list[peer_id].localDescription,
+        sdp: _peer_list[peer_id].localDescription
       });
     })
     .catch(log_error);
@@ -334,7 +334,7 @@ function handleICECandidateEvent(event, peer_id) {
       sender_id: myID,
       target_id: peer_id,
       type: "new-ice-candidate",
-      candidate: event.candidate,
+      candidate: event.candidate
     });
   }
 }

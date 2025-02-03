@@ -1,0 +1,153 @@
+/*global signalR */
+declare var signalR: any;
+
+import { cacheInterface, guildCache, messages_raw_cache } from "./cache.ts";
+import { refreshUserProfile } from "./avatar.ts";
+import { updateUserOnlineStatus } from "./user.ts";
+import {
+  addChannel,
+  removeChannel,
+  editChannel,
+  currentVoiceChannelId,
+  setCurrentVoiceChannelId,
+  setCurrentVoiceChannelGuild,
+  currentChannelName,
+  channelsUl
+} from "./channels.ts";
+import { getId, enableElement } from "./utils.ts";
+import { deleteLocalMessage, getLastSecondMessageDate } from "./message.ts";
+import {
+  bottomestChatDateStr,
+  setBottomestChatDateStr,
+  setLastMessageDate,
+  lastMessageDate,
+  handleMessage
+} from "./chat.ts";
+import { isOnGuild } from "./router.ts";
+import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
+
+const socketClient = new signalR.HubConnectionBuilder()
+  .withUrl("/socket")
+  .configureLogging(signalR.LogLevel.Information)
+  .build();
+
+const SocketEvent = Object.freeze({
+  GUILD_MESSAGE: "GUILD_MESSAGE",
+  DM_MESSAGE: "DM_MESSAGE",
+  UPDATE_USER: "UPDATE_USER",
+  USER_STATUS: "USER_STATUS",
+  UPDATE_CHANNEL: "UPDATE_CHANNEL",
+  DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
+  DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
+  JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
+  INCOMING_AUDIO: "INCOMING_AUDIO"
+});
+
+socketClient.on(SocketEvent.GUILD_MESSAGE),
+  (data) => {
+    handleMessage(data);
+  };
+socketClient.on(SocketEvent.DM_MESSAGE),
+  (data) => {
+    handleMessage(data);
+  };
+socketClient.on(SocketEvent.UPDATE_USER, (data) => {
+  refreshUserProfile(data.userId);
+});
+
+socketClient.on(SocketEvent.USER_STATUS, (data) => {
+  const userId = data.userId;
+  const isOnline = data.isOnline;
+  updateUserOnlineStatus(userId, isOnline);
+});
+socketClient.on(SocketEvent.UPDATE_CHANNEL, (data) => {
+  if (!data) return;
+  const updateType = data.type;
+  const removeType = "remove";
+  const editType = "edit";
+  const createType = "create";
+
+  if (updateType === createType) {
+    const channel = {
+      guildId: data.guildId,
+      channelId: data.channelId,
+      channelName: data.channelName,
+      isTextChannel: data.isTextChannel
+    };
+
+    addChannel(channel);
+  } else if (updateType === removeType) {
+    removeChannel(data);
+  } else if (updateType === editType) {
+    editChannel(data);
+  }
+});
+function handleDelete(data, isDm) {
+  deleteLocalMessage(data.messageId, data.guildId, data.channelId, isDm);
+  cacheInterface.removeMessage(data.messageId, data.channelId, data.guildId);
+  const msgdate = messages_raw_cache[data.messageId].date;
+  if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
+    setLastMessageDate(
+      new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0)
+    );
+  }
+  if (bottomestChatDateStr === msgdate) {
+    setBottomestChatDateStr(getLastSecondMessageDate());
+  }
+  delete messages_raw_cache[data.messageId];
+}
+socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data) => {
+  handleDelete(data, true);
+});
+socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data) => {
+  handleDelete(data, false);
+});
+//audio
+
+socketClient.on(SocketEvent.JOIN_VOICE_CHANNEL, function (data) {
+  const channelId = data.channelId;
+  const guildId = data.guildId;
+  const voiceUsers = data.usersList;
+  if (!channelId) {
+    console.error("Channel id is null on voice users response");
+    return;
+  }
+  if (!guildId) {
+    console.error("Guild id is null on voice users response");
+    return;
+  }
+  playAudio("/sounds/joinvoice.mp3");
+  clearVoiceChannel(currentVoiceChannelId);
+  enableElement("sound-panel");
+
+  setCurrentVoiceChannelId(channelId);
+  if (isOnGuild) {
+    setCurrentVoiceChannelGuild(guildId);
+  }
+  cacheInterface.setVoiceChannelMembers(channelId, voiceUsers);
+  const soundInfoIcon = getId("sound-info-icon");
+  soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
+
+  const buttonContainer = channelsUl.querySelector(
+    `li[id="${currentVoiceChannelId}"]`
+  );
+  const channelSpan = buttonContainer.querySelector(
+    ".channelSpan"
+  ) as HTMLElement;
+  channelSpan.style.marginRight = "30px";
+});
+
+const voiceHandler = new VoiceHandler();
+
+socketClient.on(SocketEvent.INCOMING_AUDIO, async (data) => {
+  await voiceHandler.handleAudio(data);
+});
+
+socketClient
+  .start()
+  .then(() => {
+    console.log("SignalR connection established.");
+  })
+  .catch((err) => {
+    console.error("Error while establishing connection: ", err);
+  });
