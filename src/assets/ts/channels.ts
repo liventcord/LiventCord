@@ -107,13 +107,11 @@ export async function changeChannel(newChannel) {
 //channels
 function setCurrentChannel(channelId) {
   currentChannels.forEach((channel) => {
-    console.log(channel);
     const channelButton = channelsUl.querySelector(
       `li[id="${channel.channelId}"]`
     ) as HTMLElement;
     if (channelButton) {
       const isSelected = channel.channelId === channelId;
-      console.log(isSelected);
       if (isSelected) {
         mouseLeaveChannelButton(
           channelButton,
@@ -336,7 +334,7 @@ export function createChannelButton(channelId, channelName, isTextChannel) {
 function onChannelSettings(event, channel) {
   event.stopPropagation();
   console.log("Click to settings on:", channel);
-  openChannelSettings(channel);
+  openChannelSettings();
 }
 function createContentWrapper(channel, channelName, isTextChannel) {
   const contentWrapper = createEl("div", { className: "content-wrapper" });

@@ -22,7 +22,7 @@ namespace LiventCord.Controllers
         [HttpPost("images/profile")]
         [Authorize]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadProfileImage([FromForm] GuildImageUploadRequest request)
+        public async Task<IActionResult> UploadProfileImage([FromForm] ProfileImageUploadRequest request)
         {
             return await UploadImage(request.Photo, UserId!, null);
         }
@@ -264,7 +264,11 @@ namespace LiventCord.Controllers
     }
 }
 
+public class ProfileImageUploadRequest
+{
+    public required IFormFile Photo { get; set; }
 
+}
 public class GuildImageUploadRequest
 {
     public required IFormFile Photo { get; set; }

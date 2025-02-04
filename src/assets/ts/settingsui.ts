@@ -14,10 +14,10 @@ import {
   isUnsaved,
   setUnsaved,
   onEditNick,
-  onEditGuild,
   triggerGuildImageUpdate,
   regenerateConfirmationPanel,
-  triggerFileInput
+  triggerFileInput,
+  onEditGuildName
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -51,6 +51,7 @@ export const SettingType = Object.freeze({
 
 export let currentSettingsCategory;
 export let currentSettingsType: SettingType = SettingType.PROFILE;
+(window as any).currentSettingsType = currentSettingsType;
 
 export function isGuildSettings() {
   return currentSettingsType === SettingType.GUILD;
@@ -371,7 +372,7 @@ export function selectSettingCategory(settingCategory) {
   settingsContainer.innerHTML =
     settingConfig.html ||
     `Unknown Setting: ${settingCategory} could not be found.`;
-  initialiseChatComponents(settingsContainer, settingCategory);
+  initialiseSettingComponents(settingsContainer, settingCategory);
 }
 
 function getActivityPresenceHtml() {
@@ -554,7 +555,10 @@ function initializeLanguageDropdown() {
   });
 }
 
-function initialiseChatComponents(settingsContainer, settingCategory) {
+function initialiseSettingComponents(
+  settingsContainer: HTMLElement,
+  settingCategory
+) {
   setTimeout(() => {
     if (settingCategory === ProfileCategoryTypes.MyAccount) {
       updateSelfProfile(currentUserId, currentUserNick, true);
@@ -578,21 +582,28 @@ function initialiseChatComponents(settingsContainer, settingCategory) {
   if (newNickInput) {
     newNickInput.addEventListener("keydown", onEditNick);
   }
-  const guildNameInput = getId("guild-overview-name-input");
-  if (guildNameInput) {
-    guildNameInput.addEventListener("keydown", onEditGuild);
+  const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
+  const guildImage = getGuildImage();
+
+  if (permissionManager.canManageGuild()) {
+    if (guildNameInput) {
+      guildNameInput.addEventListener("keydown", onEditGuildName);
+    }
+    if (guildImage) {
+      guildImage.addEventListener("click", triggerGuildImageUpdate);
+      if (!guildImage.src) {
+        guildImage.src = blackImage;
+      }
+    }
+  } else {
+    if (guildNameInput) {
+      guildNameInput.disabled = true;
+    }
   }
 
   const emailToggler = getId("set-info-email-eye");
   if (emailToggler) {
     emailToggler.addEventListener("click", toggleEmail);
-  }
-  const guildImage = getGuildImage();
-  if (guildImage) {
-    guildImage.addEventListener("click", triggerGuildImageUpdate);
-    if (!guildImage.src) {
-      guildImage.src = blackImage;
-    }
   }
 }
 
@@ -626,7 +637,7 @@ export function createToggle(id, label, description) {
         </div>
     `;
 }
-export function openChannelSettings(channel) {
+export function openChannelSettings() {
   openSettings(SettingType.CHANNEL);
 }
 export function openSettings(settingType) {

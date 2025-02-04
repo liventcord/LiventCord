@@ -479,7 +479,7 @@ export function getBeforeElement(element: HTMLElement): HTMLElement | null {
   const elements = Array.from(chatContent.children);
   const index = elements.indexOf(element);
   if (index > 0) {
-    const prevElement = elements[index - 1] as HTMLElement; // Ensure it's an HTMLElement
+    const prevElement = elements[index - 1] as HTMLElement;
     return prevElement;
   } else {
     return null;
@@ -510,7 +510,8 @@ export function applyCustomStyles(html) {
   return styledHTML.replace(/&lt;br&gt;/g, "<br>");
 }
 
-export function getBase64Image(imgElement) {
+export function getBase64Image(imgElement): string {
+  console.log(imgElement);
   const canvas = createEl("canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = imgElement.naturalWidth;

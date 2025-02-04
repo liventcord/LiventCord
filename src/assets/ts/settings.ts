@@ -209,13 +209,18 @@ export function triggerFileInput() {
 }
 
 export function triggerGuildImageUpdate() {
-  if (!permissionManager.canManageGuild()) {
-    console.log("Cant manage guild");
-    return;
-  }
+  if (!permissionManager.canManageGuild()) return;
   const guildImageInput = getGuildImageFile();
   guildImageInput.click();
   guildImageInput.addEventListener("change", onEditGuildProfile);
+}
+export function onEditNick() {
+  isUnsaved = true;
+  regenerateConfirmationPanel();
+}
+export function onEditGuildName() {
+  isUnsaved = true;
+  regenerateConfirmationPanel();
 }
 
 export function regenerateConfirmationPanel() {
@@ -252,14 +257,6 @@ export function applySettings() {
   }
 }
 
-export function onEditNick() {
-  isUnsaved = true;
-  regenerateConfirmationPanel();
-}
-export function onEditGuild() {
-  isUnsaved = true;
-  regenerateConfirmationPanel();
-}
 export function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
   getGuildImageFile().value = "";

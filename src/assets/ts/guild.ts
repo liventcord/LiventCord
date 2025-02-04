@@ -324,8 +324,8 @@ const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
     }
   });
 
-  wrapWhiteRod(listItem);
   listItem.appendChild(imgElement);
+  wrapWhiteRod(listItem);
   return listItem;
 };
 export function updateGuilds(guildsJson) {

@@ -8,7 +8,11 @@ import {
   getId,
   blackImage,
   STATUS_404,
-  STATUS_200
+  STATUS_200,
+  urlToBase64,
+  setDefaultProfileImageSrc,
+  setDefaultMediaImageSrc,
+  defaultMediaImageSrc
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -30,17 +34,16 @@ import { translations } from "./translations.ts";
 import { currentUserId, currentUserNick } from "./user.ts";
 import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
-import { initialState } from "./app.ts";
 
 export const selfName = getId("self-name");
 export const selfDiscriminator = getId("self-discriminator");
-export let lastConfirmedProfileImg;
-export const selfProfileImage = getId("self-profile-image");
+export let lastConfirmedProfileImg: string;
+export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
 export const selfStatus = getId("self-status");
 
-let lastConfirmedGuildImg;
-export let maxAttachmentSize; // mb
-let maxAvatarSize; // mb
+let lastConfirmedGuildImg: string;
+export let maxAttachmentSize: number; // mb
+let maxAvatarSize: number; // mb
 
 const profileCache = {};
 const guildImageCache = {};
@@ -226,7 +229,7 @@ export function refreshUserProfile(
   });
 }
 
-export function validateAvatar(file) {
+export function validateAvatar(file: File) {
   if (!allowedAvatarTypes.includes(file.type)) {
     alertUser(translations.getTranslation("avatar-upload-error-message"));
     return false;
@@ -238,14 +241,17 @@ export function validateAvatar(file) {
   return true;
 }
 
-export function resetImageInput(inputId, imgId) {
+export function resetImageInput(inputId: string, imgId: string) {
   const input = getId(inputId) as HTMLInputElement;
   input.value = "";
   const img = getId(imgId) as HTMLImageElement;
   img.style.backgroundImage = "";
 }
 
-export function updateImageSource(imageElement, imagePath) {
+export function updateImageSource(
+  imageElement: HTMLImageElement,
+  imagePath: string
+) {
   imageElement.onerror = () => {
     if (imageElement.src !== defaultProfileImageSrc) {
       imageElement.src = defaultProfileImageSrc;
@@ -254,7 +260,7 @@ export function updateImageSource(imageElement, imagePath) {
   imageElement.onload = updateSettingsProfileColor;
   imageElement.src = imagePath;
 }
-export function updateSelfName(nickName) {
+export function updateSelfName(nickName: string) {
   if (!nickName) return;
   const settingsNameText = getId("settings-self-name");
   if (settingsNameText) {
@@ -267,10 +273,10 @@ export function updateSelfName(nickName) {
   }
 }
 export function updateSelfProfile(
-  userId,
-  nickName,
-  isTimestamp = false,
-  isAfterUploading = false
+  userId: string,
+  nickName: string,
+  isTimestamp?: boolean,
+  isAfterUploading?: boolean
 ) {
   if (!userId) return;
   const timestamp = isTimestamp ? `?ts=${new Date().getTime()}` : "";
@@ -295,18 +301,22 @@ export function updateSelfProfile(
   }
 }
 
-export function setUploadSize(_maxAvatarSize, _maxAttachmentSize) {
-  maxAvatarSize = initialState.maxAvatarSize;
-  maxAttachmentSize = initialState.maxAttachmentSize;
+export function setUploadSize(
+  _maxAvatarSize: number,
+  _maxAttachmentSize: number
+): void {
+  maxAvatarSize = _maxAvatarSize;
+  maxAttachmentSize = _maxAttachmentSize;
 }
-export function uploadImage(isGuild) {
+
+export function uploadImage(isGuild: boolean): void {
   if (!isChangedImage) {
     console.warn("isChangedImage is false. not uploading");
     return;
   }
 
   const file = getFileSrc(isGuild);
-  if (!isValidImage(file)) {
+  if (!isValidBase64(file)) {
     console.error("Invalid file format or undefined file for avatar update.");
     return;
   }
@@ -320,15 +330,15 @@ export function uploadImage(isGuild) {
   sendImageUploadRequest(isGuild, blob, file);
 }
 
-function getFileSrc(isGuild) {
+function getFileSrc(isGuild: boolean): string {
   return isGuild ? getGuildImage().src : getProfileImage().src;
 }
 
-function isValidImage(file) {
+function isValidBase64(file: string): boolean {
   return file && file.startsWith("data:image/");
 }
 
-function createBlobFromImage(file) {
+function createBlobFromImage(file: string): Blob {
   const byteString = atob(file.split(",")[1]);
   const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
   const ab = new Uint8Array(byteString.length);
@@ -354,19 +364,19 @@ function sendImageUploadRequest(isGuild, blob, file) {
 
   const xhr = new XMLHttpRequest();
   xhr.open("POST", isGuild ? "/api/images/guild" : "/api/images/profile");
-  xhr.onload = () => handleUploadResponse(xhr, isGuild, file);
+  xhr.onload = () => handleUploadResponse(xhr, isGuild, file, blob);
   xhr.onerror = () => revertToLastConfirmedImage(isGuild);
   xhr.send(formData);
 }
 
-function handleUploadResponse(xhr, isGuild, file) {
+function handleUploadResponse(xhr, isGuild, file, blob) {
   if (xhr.status === STATUS_200) {
     if (isGuild) {
       updateGuildImage(currentGuildId);
-      lastConfirmedGuildImg = file;
+      lastConfirmedGuildImg = blob;
     } else {
       refreshUserProfile(currentUserId, currentUserNick);
-      lastConfirmedProfileImg = file;
+      lastConfirmedProfileImg = blob;
     }
   } else {
     console.error("Error uploading profile pic!");
@@ -422,24 +432,27 @@ export function getProfileImageFile() {
 
 function clearAvatarInput(isGuild) {
   if (isGuild) {
-    getGuildImageFile().src = lastConfirmedGuildImg;
+    getGuildImageFile().value = "";
   } else {
-    getProfileImageFile().src = lastConfirmedProfileImg;
+    getProfileImageFile().value = "";
   }
 }
-function revertToLastConfirmedImage(isGuild) {
+function revertToLastConfirmedImage(isGuild: boolean) {
   if (isGuild) {
-    getGuildImage().src = lastConfirmedGuildImg;
+    if (lastConfirmedGuildImg) {
+      getGuildImage().src = lastConfirmedGuildImg;
+    }
   } else {
-    getProfileImage().src = lastConfirmedProfileImg;
+    if (lastConfirmedProfileImg) {
+      getProfileImage().src = lastConfirmedProfileImg;
+    }
   }
 }
 
-export function onEditImage(isGuild) {
+export function onEditImage(isGuild: boolean) {
   const filedata = isGuild
     ? getGuildImageFile().files[0]
     : getProfileImageFile().files[0];
-  if (!filedata) return;
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -447,7 +460,7 @@ export function onEditImage(isGuild) {
       if (isGuild) {
         lastConfirmedGuildImg = getBase64Image(getGuildImage());
       } else {
-        lastConfirmedProfileImg = getBase64Image(getProfileImage);
+        lastConfirmedProfileImg = getBase64Image(getProfileImage());
       }
       if (isGuild) {
         getGuildImage().src = outputBase64;
@@ -487,19 +500,11 @@ export async function setProfilePic(profileImg, userId, isTimestamp = false) {
 
 async function init() {
   try {
-    const {
-      urlToBase64,
-      defaultMediaImageSrc: defaultMediaImageUrl,
-      defaultProfileImageSrc: defaultProfileImageUrl,
-      setDefaultMediaImageSrc: setDefaultMediaImageUrl,
-      setDefaultProfileImageSrc: setDefaultProfileImageUrl
-    } = await import("./utils.ts");
+    const base64Profile = await urlToBase64(defaultProfileImageSrc);
+    setDefaultProfileImageSrc(base64Profile);
 
-    const base64Profile = await urlToBase64(defaultProfileImageUrl);
-    setDefaultProfileImageUrl(base64Profile);
-
-    const base64Media = await urlToBase64(defaultMediaImageUrl);
-    setDefaultMediaImageUrl(base64Media);
+    const base64Media = await urlToBase64(defaultMediaImageSrc);
+    setDefaultMediaImageSrc(base64Media);
 
     selfProfileImage.addEventListener("mouseover", function () {
       this.style.borderRadius = "0px";

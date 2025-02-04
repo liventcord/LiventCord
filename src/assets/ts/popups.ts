@@ -1,5 +1,5 @@
-/* global Croppie */
-declare var Croppie: any;
+import Croppie from "croppie";
+import "croppie/croppie.css";
 
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId, createGuild, joinToGuild } from "./guild.ts";
@@ -386,7 +386,6 @@ export function createPopUp({
   popOuterParent.style.display = "flex";
 
   contentElements.forEach((element) => parentContainer.appendChild(element));
-
   if (closeBtnId) {
     const closeBtn = createPopUpCloseButton(
       popOuterParent,
@@ -416,7 +415,6 @@ export function createPopUp({
   document.body.appendChild(popOuterParent);
   return popOuterParent;
 }
-
 export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
@@ -546,7 +544,7 @@ export async function showGuildPop() {
     className: "guild-pop-up-accept",
     textContent: translations.getTranslation("create-myself")
   });
-  const closeCallback = function () {
+  const closeCallback = function (event) {
     closePopUp(newPopOuterParent, newPopParent);
   };
 
@@ -601,7 +599,7 @@ export async function showGuildPop() {
 
   newPopOuterParent.addEventListener("click", function () {
     if (event.target === newPopOuterParent) {
-      closeCallback();
+      closeCallback(event);
     }
   });
 
@@ -856,11 +854,33 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
   });
 
   const imageContainer = createEl("div", { id: "image-container" });
+
+  const popBottomContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "invite-popup-bottom-container"
+  });
+  popBottomContainer.style.bottom = "-5%";
+  popBottomContainer.style.top = "auto";
+  popBottomContainer.style.height = "10%";
+  popBottomContainer.style.zIndex = "-1";
+  const backButton = createEl("button", {
+    textContent: translations.getTranslation("cancel"),
+    className: "create-guild-back common-button"
+  });
   const appendButton = createEl("button", {
     className: "pop-up-append",
     textContent: translations.getTranslation("append")
   });
+  const contentElements = [
+    inviteTitle,
+    imageContainer,
+    backButton,
+    appendButton,
+    popBottomContainer
+  ];
+
   const parentContainer = createPopUp({
+    contentElements,
     id: "cropPopContainer",
     closeBtnId: "invite-close-button"
   });
@@ -881,34 +901,11 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
       });
   });
 
-  const backButton = createEl("button", {
-    textContent: translations.getTranslation("cancel"),
-    className: "create-guild-back common-button"
-  });
+  backButton.style.left = "20px";
 
   backButton.addEventListener("click", () => {
     parentContainer.remove();
   });
-
-  const popBottomContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "invite-popup-bottom-container"
-  });
-  popBottomContainer.style.bottom = "-5%";
-  popBottomContainer.style.top = "auto";
-  popBottomContainer.style.height = "10%";
-  popBottomContainer.style.zIndex = "-1";
-  backButton.style.left = "20px";
-
-  const contentElements = [
-    inviteTitle,
-    imageContainer,
-    backButton,
-    appendButton,
-    popBottomContainer
-  ];
-
-  parentContainer.contentElements = contentElements;
 
   const imageElement = createEl("img");
   imageElement.src = inputSrc;

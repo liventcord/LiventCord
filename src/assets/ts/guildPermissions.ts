@@ -2,18 +2,19 @@
 import { currentGuildId } from "./guild.ts";
 
 export enum Permission {
-  READ_MESSAGES = "READ_MESSAGES",
-  SEND_MESSAGES = "SEND_MESSAGES",
-  MENTION_EVERYONE = "MENTION_EVERYONE",
-  MANAGE_ROLES = "MANAGE_ROLES",
-  KICK_MEMBERS = "KICK_MEMBERS",
-  BAN_MEMBERS = "BAN_MEMBERS",
-  MANAGE_CHANNELS = "MANAGE_CHANNELS",
-  ADD_REACTION = "ADD_REACTION",
-  IS_ADMIN = "IS_ADMIN",
-  CAN_INVITE = "CAN_INVITE",
-  MANAGE_MESSAGES = "MANAGE_MESSAGES",
-  MANAGE_GUILD = "MANAGE_GUILD"
+  READ_MESSAGES,
+  SEND_MESSAGES,
+  MENTION_EVERYONE,
+  MANAGE_ROLES,
+  KICK_MEMBERS,
+  BAN_MEMBERS,
+  MANAGE_CHANNELS,
+  ADD_REACTION,
+  IS_ADMIN,
+  CAN_INVITE,
+  MANAGE_MESSAGES,
+  MANAGE_GUILD,
+  ALL
 }
 
 export class PermissionManager {
@@ -42,10 +43,10 @@ export class PermissionManager {
         if (value === 1) {
           const normalizedKey = key
             .replace(/([a-z])([A-Z])/g, "$1_$2")
-            .toUpperCase() as Permission;
+            .toUpperCase();
 
           if (Permission[normalizedKey]) {
-            permissionSet.add(normalizedKey);
+            permissionSet.add(Permission[normalizedKey]);
           } else {
             console.log(`Skipping invalid permission: ${key}`);
           }

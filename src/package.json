@@ -48,7 +48,9 @@
     "vitest": "^3.0.2"
   },
   "dependencies": {
+    "@types/croppie": "^2.6.4",
     "antlr4": "^4.9.0",
+    "croppie": "^2.6.5",
     "terser": "^5.37.0"
   }
 }
