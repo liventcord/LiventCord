@@ -41,13 +41,6 @@ let lastConfirmedGuildImg: string;
 export let maxAttachmentSize: number; // mb
 let maxAvatarSize: number; // mb
 
-const profileCache = {};
-const guildImageCache = {};
-const failedProfiles = new Set();
-const failedGuilds = new Set();
-const requestInProgress = {};
-const base64Of404 = "data:application/json;base64,W1wiNDA0XCIsNDA0XQ==";
-
 function getMaxAvatarBytes() {
   const MB_BYTES = 1024;
   return maxAvatarSize * MB_BYTES * MB_BYTES;
@@ -63,6 +56,8 @@ const allowedAvatarTypes = [
   "image/tiff",
   "image/svg+xml"
 ];
+const imageCache = new Map();
+const failedImages = new Set();
 
 export async function setPicture(
   imgToUpdate: HTMLImageElement,
@@ -81,90 +76,41 @@ export async function setPicture(
     return;
   }
 
+  srcId = String(srcId);
+
+  if (failedImages.has(srcId)) {
+    imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    return;
+  }
+
+  if (imageCache.has(srcId)) {
+    imgToUpdate.src = imageCache.get(srcId);
+    return;
+  }
+
   const timestamp = new Date().getTime();
   const imageUrl = !isProfile
     ? `/guilds/${srcId}.png${isTimestamp ? `?ts=${timestamp}` : ""}`
     : `${getProfileUrl(srcId)}${isTimestamp ? `?ts=${timestamp}` : ""}`;
 
-  srcId = String(srcId);
-
-  if (isProfile) {
-    if (failedProfiles.has(srcId)) {
-      imgToUpdate.src = defaultProfileImageSrc;
-      return;
-    }
-  } else {
-    if (failedGuilds.has(srcId)) {
-      imgToUpdate.src = blackImage;
-      return;
-    }
-  }
-
-  const cachedBase64 = isProfile ? profileCache[srcId] : guildImageCache[srcId];
-  if (cachedBase64 && cachedBase64 !== base64Of404) {
-    imgToUpdate.src = cachedBase64;
-    return;
-  }
-
-  if (requestInProgress[srcId]) {
-    try {
-      const base64data = await requestInProgress[srcId];
-      imgToUpdate.src =
-        base64data || (isProfile ? defaultProfileImageSrc : blackImage);
-    } catch {
-      imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
-    }
-    return;
-  }
-
-  requestInProgress[srcId] = (async () => {
-    try {
-      const response = await fetch(imageUrl);
-      if (response.status === STATUS_404) {
-        imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
-        isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
-        return null;
-      }
-
-      const blob = await response.blob();
-      const base64data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = function () {
-          const data = reader.result;
-          if (data !== base64Of404) {
-            (isProfile ? profileCache : guildImageCache)[srcId] = data;
-            resolve(data);
-          } else {
-            (isProfile ? profileCache : guildImageCache)[srcId] = base64Of404;
-            reject(new Error("Image is 404"));
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      return base64data;
-    } catch (e) {
-      imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
-      isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
-      console.error(e);
-      return null;
-    } finally {
-      delete requestInProgress[srcId];
-    }
-  })();
-
   try {
-    const base64data = await requestInProgress[srcId];
-    imgToUpdate.src =
-      base64data || (isProfile ? defaultProfileImageSrc : blackImage);
-  } catch {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+      failedImages.add(srcId);
+      return;
+    }
+    imageCache.set(srcId, imageUrl);
+    imgToUpdate.src = imageUrl;
+  } catch (e) {
     imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    failedImages.add(srcId);
+    console.error(e);
   }
 
   imgToUpdate.addEventListener("error", function () {
     imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
-    isProfile ? failedProfiles.add(srcId) : failedGuilds.add(srcId);
+    failedImages.add(srcId);
   });
 }
 
@@ -493,7 +439,6 @@ export async function setGuildPic(guildImg, guildId) {
 export async function setProfilePic(profileImg, userId, isTimestamp = false) {
   setPicture(profileImg, userId, true, isTimestamp);
 }
-
 
 async function init() {
   try {

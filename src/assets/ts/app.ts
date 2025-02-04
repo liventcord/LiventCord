@@ -219,7 +219,6 @@ async function loadInitialData() {
   initializeApp();
 }
 
-
 export function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);

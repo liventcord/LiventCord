@@ -95,27 +95,33 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.EnsureCreated();
 }
-
 if (isDevelopment)
 {
     Console.WriteLine("Is running development: " + isDevelopment);
 
-    app.Use(
-        async (context, next) =>
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/profiles") || 
+            context.Request.Path.StartsWithSegments("/guilds"))
         {
-            context.Response.Headers["Cache-Control"] =
-                "no-store, no-cache, must-revalidate, proxy-revalidate";
-            context.Response.Headers["Pragma"] = "no-cache";
-            context.Response.Headers["Expires"] = "0";
             await next();
+            return;
         }
-    );
+
+        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
+        context.Response.Headers["Pragma"] = "no-cache";
+        context.Response.Headers["Expires"] = "0";
+
+        await next();
+    });
+
     app.UseDeveloperExceptionPage();
 }
 else
 {
     app.UseExceptionHandler("/error");
 }
+
 
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();

@@ -1,4 +1,3 @@
-using System.Drawing;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -70,8 +69,13 @@ namespace LiventCord.Controllers
 
             var sanitizedFileName = Utils.SanitizeFileName(file.FileName);
             Response.Headers.Append("Content-Disposition", $"inline; filename=\"{sanitizedFileName}\"");
+
+            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            Response.Headers["Expires"] = DateTime.UtcNow.AddYears(1).ToString("R");
+
             return File(file.Content, contentType);
         }
+
 
         [HttpGet("/api/list_files")]
         public async Task<IActionResult> ListFiles()
