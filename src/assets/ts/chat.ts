@@ -159,6 +159,7 @@ export function getOldMessagesOnScroll() {
   if (oldestDate === "1970-01-01 00:00:00.000000+00:00") {
     return;
   }
+  hasJustFetchedMessages = true;
   getOldMessages(oldestDate);
 }
 
@@ -185,8 +186,7 @@ export async function handleScroll() {
         const updatedScrollPosition = chatContainer.scrollTop;
 
         if (updatedScrollPosition <= buffer) {
-          stopFetching = false;
-          await getOldMessagesOnScroll();
+          await getOldMessagesOnScroll(); // This will now set `hasJustFetchedMessages` to true
         } else {
           continueLoop = false;
           console.log("Scroll position exceeded threshold.");
@@ -200,6 +200,7 @@ export async function handleScroll() {
       isFetchingOldMessages = false;
       stopFetching = true;
       console.log("Fetching complete. Resetting flag.");
+      setHasJustFetchedMessagesFalse(); // Reset the flag when fetching is done
     }
   }
 }
@@ -207,7 +208,6 @@ export async function handleScroll() {
 const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
-      console.log(entry, entry.isIntersecting);
       const target = entry.target as HTMLElement;
       if (entry.isIntersecting && target.dataset.contentLoaded !== "true") {
         loadObservedContent(entry.target);
