@@ -206,49 +206,19 @@ export function initialiseState(data: InitialStateData): void {
   addKeybinds();
 }
 
-const STATUS_401 = 401;
 async function loadInitialData() {
   await translations.translationsLoaded;
-  try {
-    const response = await fetch("/api/init");
-    if (!response.ok) {
-      if (response.status === STATUS_401) {
-        await router.changeToLogin();
-        return;
-      }
-      alertUser("Cant communicate with api");
-      return;
-    }
 
-    const rawResponse = await response.text();
+  const initData = await apiClient.fetchData("/api/init");
 
-    try {
-      const initData = JSON.parse(rawResponse);
-      if (
-        initData.message ===
-        "User session is no longer valid. Please log in again."
-      ) {
-        if (import.meta.env.MODE === "development") {
-          alertUser(
-            "User session is not valid. Please log in at localhost:5005/login."
-          );
-          return;
-        }
-        await router.changeToLogin();
-
-        return;
-      }
-      initialiseState(initData);
-      initializeApp();
-    } catch (e) {
-      alertUser(e.message);
-      console.error(e);
-      return;
-    }
-  } catch (error) {
-    console.error("Error loading initial data:", error);
+  if (!initData) {
+    return;
   }
+
+  initialiseState(initData);
+  initializeApp();
 }
+
 
 export function initializeElements() {
   createChatScrollButton();

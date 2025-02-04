@@ -1,6 +1,8 @@
+/* eslint-disable no-unused-vars */
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
+import { router } from "./router.ts";
 
 export const EventType = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -204,6 +206,41 @@ class ApiClient {
         console.log(`${resource} has full CRUD`);
       }
     });
+  }
+  async fetchData(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        if (response.status === 401) {
+          await router.changeToLogin();
+          return null;
+        }
+        alertUser("Can't communicate with API");
+        return null;
+      }
+
+      const rawResponse = await response.text();
+
+      try {
+        const initData = JSON.parse(rawResponse);
+        if (initData.message === "User session is no longer valid. Please log in again.") {
+          if (import.meta.env.MODE === "development") {
+            alertUser("User session is not valid. Please log in at localhost:5005/login.");
+            return null;
+          }
+          await router.changeToLogin();
+          return null;
+        }
+        return initData;
+      } catch (e) {
+        alertUser(e.message);
+        console.error(e);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      return null;
+    }
   }
 
   getHttpMethod(event) {

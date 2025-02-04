@@ -2,17 +2,13 @@ import { CLYDE_ID } from "./chat.ts";
 import { updateGuildImage, currentGuildId } from "./guild.ts";
 import {
   getProfileUrl,
-  defaultProfileImageSrc,
   clydeSrc,
   getBase64Image,
   getId,
   blackImage,
   STATUS_404,
   STATUS_200,
-  urlToBase64,
-  setDefaultProfileImageSrc,
-  setDefaultMediaImageSrc,
-  defaultMediaImageSrc
+  defaultProfileImageSrc
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -498,13 +494,22 @@ export async function setProfilePic(profileImg, userId, isTimestamp = false) {
   setPicture(profileImg, userId, true, isTimestamp);
 }
 
+
 async function init() {
   try {
-    const base64Profile = await urlToBase64(defaultProfileImageSrc);
-    setDefaultProfileImageSrc(base64Profile);
+    const {
+      urlToBase64,
+      defaultMediaImageSrc: defaultMediaImageUrl,
+      defaultProfileImageSrc: defaultProfileImageUrl,
+      setDefaultMediaImageSrc: setDefaultMediaImageUrl,
+      setDefaultProfileImageSrc: setDefaultProfileImageUrl
+    } = await import("./utils.ts");
 
-    const base64Media = await urlToBase64(defaultMediaImageSrc);
-    setDefaultMediaImageSrc(base64Media);
+    const base64Profile = await urlToBase64(defaultProfileImageUrl);
+    setDefaultProfileImageUrl(base64Profile);
+
+    const base64Media = await urlToBase64(defaultMediaImageUrl);
+    setDefaultMediaImageUrl(base64Media);
 
     selfProfileImage.addEventListener("mouseover", function () {
       this.style.borderRadius = "0px";
