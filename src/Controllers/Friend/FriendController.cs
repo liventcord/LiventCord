@@ -2,6 +2,22 @@ using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+public enum FRIEND_EVENTS
+{
+    ADD_FRIEND,ACCEPT_FRIEND
+}
+
+public static class FriendEventExtensions
+{
+    private static readonly Dictionary<FRIEND_EVENTS, string> eventStrings = new()
+    {
+        { FRIEND_EVENTS.ADD_FRIEND, "add_friend" },
+        { FRIEND_EVENTS.ACCEPT_FRIEND, "accept_friend" }
+    };
+
+    public static string ToString(FRIEND_EVENTS eventType) => eventStrings.GetValueOrDefault(eventType, string.Empty);
+}
+
 
 namespace LiventCord.Controllers
 {
@@ -28,7 +44,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> SendFriendRequest([FromRoute] SendFriendRequest request)
+        public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequest request)
         {
             var friend = await FindUserByFriendDetails(
                 request.FriendName,
@@ -47,7 +63,7 @@ namespace LiventCord.Controllers
 
             await CreateFriendship(friend.UserId, FriendStatus.Pending);
 
-            return Ok("Friend request sent.");
+            return Ok(FRIEND_EVENTS.ADD_FRIEND);
         }
 
         [HttpPut("accept/{friendId}")]
@@ -81,7 +97,7 @@ namespace LiventCord.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            return Ok("Friend request accepted.");
+            return Ok(FRIEND_EVENTS.ACCEPT_FRIEND);
         }
 
         [HttpDelete("{friendId}")]
@@ -185,12 +201,6 @@ namespace LiventCord.Controllers
             public bool IsFriendsRequestToUser { get; set; }
         }
     }
-}
-
-public class FriendRequest
-{
-    [IdLengthValidation]
-    public required string FriendId { get; set; }
 }
 
 public class SendFriendRequest

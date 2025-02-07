@@ -62,7 +62,7 @@ public static class ConfigHandler
     static void HandleDatabase(WebApplicationBuilder builder)
     {
         var databaseType = builder.Configuration["AppSettings:DatabaseType"];
-        var connectionString = builder.Configuration["AppSettings:RemoteConnection"]; // Ensure it's properly referenced here
+        var connectionString = builder.Configuration["AppSettings:RemoteConnection"]; 
         var sqlitePath = builder.Configuration["AppSettings:SqlitePath"];
 
         if (string.IsNullOrWhiteSpace(connectionString))

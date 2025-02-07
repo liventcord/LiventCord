@@ -706,9 +706,9 @@ export function createFriendCard(
   const friendButton = createEl("div", { className: "friend-button" });
 
   if (isPending) {
-    addPendingButtons(friendButton, { userId });
+    addPendingButtons(friendButton, { userId, isFriendsRequestToUser });
   } else {
-    addFriendButtons(friendButton, { userId });
+    addFriendButtons(friendButton, { userId, isFriendsRequestToUser });
   }
 
   friendCard.appendChild(img);

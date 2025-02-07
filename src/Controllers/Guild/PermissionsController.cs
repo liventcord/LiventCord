@@ -158,8 +158,8 @@ public enum PermissionFlags
     AddReaction = 1 << 7,
     IsAdmin = 1 << 8,
     CanInvite = 1 << 9,
-    MANAGE_GUILD = 1 << 11,
-    MANAGE_MESSAGES = 1 << 12,
+    ManageGuild = 1 << 11,
+    ManageMessages = 1 << 12,
     All =
         ReadMessages
         | SendMessages
@@ -171,6 +171,6 @@ public enum PermissionFlags
         | AddReaction
         | IsAdmin
         | CanInvite
-        | MANAGE_GUILD
-        | MANAGE_MESSAGES
+        | ManageGuild
+        | ManageMessages
 }

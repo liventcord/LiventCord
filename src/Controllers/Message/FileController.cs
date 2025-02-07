@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using LiventCord.Helpers;
-
+using System.Security.Cryptography;
+using System.Text;
 
 namespace LiventCord.Controllers
 {
@@ -75,69 +76,16 @@ namespace LiventCord.Controllers
 
             return File(file.Content, contentType);
         }
+        
 
-
-        [HttpGet("/api/list_files")]
-        public async Task<IActionResult> ListFiles()
-        {
-            if (!_env.IsDevelopment())
-            {
-                return NotFound();
-            }
-
-            var profileFiles = await _context.ProfileFiles.ToListAsync();
-            var attachmentFiles = await _context.AttachmentFiles.ToListAsync();
-            var emojiFiles = await _context.EmojiFiles.ToListAsync();
-            var guildFiles = await _context.GuildFiles.ToListAsync();
-
-            var allFiles = profileFiles
-                .Cast<FileBase>()
-                .Concat(attachmentFiles.Cast<FileBase>())
-                .Concat(emojiFiles.Cast<FileBase>())
-                .Concat(guildFiles.Cast<FileBase>())
-                .Select(f => new
-                {
-                    f.FileId,
-                    f.FileName,
-                    FileSize = f.Content.Length,
-                    f.Extension,
-                    f.GuildId,
-                    UserId = (f is GuildFile || f is AttachmentFile || f is ProfileFile)
-                        ? ((dynamic)f).UserId
-                        : null,
-                    MessageId = (f is AttachmentFile attachmentFile)
-                        ? attachmentFile.MessageId
-                        : null,
-                })
-                .ToList();
-
-            var html = "<html><body style=\"background-color:black\">";
-
-            foreach (var file in allFiles)
-            {
-                var fileUrl =
-                    Url.Action("GetProfileFile", "File", new { userId = file.UserId }) ?? "";
-
-                if (
-                    file.Extension == ".jpg"
-                    || file.Extension == ".png"
-                    || file.Extension == ".jpeg"
-                    || file.Extension == ".gif"
-                )
-                {
-                    html +=
-                        $"<div><h3>{file.FileName}</h3><img src={fileUrl} alt={file.FileName} width=200 /></div>";
-                }
-                else
-                {
-                    html +=
-                        $"<div><h3>{file.FileName}</h3><p>File size: {file.FileSize} bytes</p></div>";
-                }
-            }
-
-            html += "</body></html>";
-
-            return Content(html, "text/html");
-        }
     }
+
+
+
+
 }
+
+
+
+
+

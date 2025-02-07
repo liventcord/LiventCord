@@ -253,9 +253,7 @@ export function updateFriendsList(friends, isPending?: boolean) {
 }
 
 export function addPendingButtons(friendButton, friend) {
-  //TODO: fix isFriendsRequestsToUser
-  const isFriendsRequestsToUser = true;
-  if (isFriendsRequestsToUser) {
+  if (friend.isFriendsRequestsToUser) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.TickBtn,

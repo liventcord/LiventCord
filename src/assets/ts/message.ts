@@ -134,8 +134,7 @@ export async function sendMessage(content, user_ids?) {
       content,
       attachmentUrls: null,
       replyToId: null,
-      reactionEmojisIds: null,
-      lastEdited: null
+      reactionEmojisIds: null
     };
     apiClient.send(EventType.SEND_MESSAGE_GUILD, message);
     chatInput.value = "";
