@@ -34,5 +34,7 @@ namespace LiventCord.Models
 
         [JsonIgnore]
         public virtual Channel Channel { get; set; } = null!;
+        public Embed? Embed { get; set; } 
     }
 }
+

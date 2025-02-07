@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace LiventCord.Controllers
 {
@@ -300,65 +301,122 @@ namespace LiventCord.Controllers
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<Message>(entity =>
-            {
-                entity.ToTable("messages");
-                entity.HasKey(m => m.MessageId);
-                entity.Property(m => m.MessageId).HasColumnName("message_id").IsRequired();
-                entity.Property(m => m.UserId).HasColumnName("user_id").IsRequired();
-                entity.Property(m => m.ChannelId).HasColumnName("channel_id").IsRequired();
-                entity
-                    .Property(m => m.Content)
-                    .HasColumnName("content")
-                    .IsRequired()
-                    .HasMaxLength(2000);
-                entity.Property(m => m.Date).HasColumnName("date").IsRequired();
-                entity.Property(m => m.LastEdited).HasColumnName("last_edited");
-                entity
-                    .Property(m => m.AttachmentUrls)
-                    .HasColumnName("attachment_urls")
-                    .HasMaxLength(2048);
-                entity.Property(m => m.ReplyToId).HasColumnName("reply_to_id");
-                entity
-                    .Property(m => m.ReactionEmojisIds)
-                    .HasColumnName("reaction_emojis_ids")
-                    .HasMaxLength(512);
 
-                entity.HasIndex(m => new
-                {
-                    m.ChannelId,
-                    m.Date,
-                    m.MessageId,
-                });
-                entity
-                    .HasOne(m => m.User)
-                    .WithMany()
-                    .HasForeignKey(m => m.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity
-                    .HasOne(m => m.Channel)
-                    .WithMany()
-                    .HasForeignKey(m => m.ChannelId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity
-                    .Property(e => e.Metadata)
-                    .HasConversion(
-                        v =>
-                            JsonSerializer.Serialize(
-                                v,
-                                new JsonSerializerOptions
-                                {
-                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                                }
-                            ),
-                        v =>
-                            JsonSerializer.Deserialize<Metadata>(
-                                v,
-                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                            )
-                    )
-                    .HasColumnType("json");
+                  modelBuilder.Entity<Message>(entity =>
+        {
+            entity.ToTable("messages");
+            entity.HasKey(m => m.MessageId);
+            entity.Property(m => m.MessageId).IsRequired();
+            entity.Property(m => m.UserId).IsRequired();
+            entity.Property(m => m.ChannelId).IsRequired();
+            entity
+                .Property(m => m.Content)
+                .IsRequired()
+                .HasMaxLength(2000);
+            entity.Property(m => m.Date).IsRequired();
+            entity.Property(m => m.LastEdited);
+            entity
+                .Property(m => m.AttachmentUrls)
+                .HasMaxLength(2048);
+            entity.Property(m => m.ReplyToId);
+            entity
+                .Property(m => m.ReactionEmojisIds)
+                .HasMaxLength(512);
+
+            
+            entity.HasIndex(m => new
+            {
+                m.ChannelId,
+                m.Date,
+                m.MessageId,
             });
+
+            
+            entity
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(m => m.Channel)
+                .WithMany()
+                .HasForeignKey(m => m.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
+            entity
+                .Property(m => m.Metadata)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }),
+                    v => JsonSerializer.Deserialize<Metadata>(v, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                )
+                .HasColumnType("json");
+
+            
+            entity.OwnsOne(m => m.Embed, embed =>
+            {
+                
+                embed.Property(e => e.Title);
+                embed.Property(e => e.Type);
+                embed.Property(e => e.Description);
+                embed.Property(e => e.Url);
+                embed.Property(e => e.Color);
+
+                
+                embed.OwnsOne(e => e.Author, author =>
+                {
+                    author.Property(a => a.Name);
+                    author.Property(a => a.Url);
+                    author.Property(a => a.IconUrl);
+                });
+
+                
+                embed.OwnsOne(e => e.Thumbnail, thumbnail =>
+                {
+                    thumbnail.Property(t => t.Url);
+                });
+
+                
+                embed.OwnsOne(e => e.Video, video =>
+                {
+                    video.Property(v => v.Url);
+                    video.Property(v => v.Width);
+                    video.Property(v => v.Height);
+                });
+
+                
+                embed.OwnsOne(e => e.Image, image =>
+                {
+                    image.Property(i => i.Url);
+                });
+
+                
+                embed.OwnsOne(e => e.Footer, footer =>
+                {
+                    footer.Property(f => f.Text);
+                    footer.Property(f => f.IconUrl);
+                });
+
+                
+                embed.Property(e => e.Fields)
+                    .HasColumnType("json")
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }),
+                        v => JsonSerializer.Deserialize<List<EmbedField>>(v, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<EmbedField>()
+                    );
+            });
+        });
         }
     }
+
+        
+
+      
+
+
+
+
+        
 }
+
