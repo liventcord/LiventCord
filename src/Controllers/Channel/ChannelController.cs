@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -7,34 +6,35 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-    [Route("api/guilds/{guildId}/channels")]
+    [Route("")]
     [ApiController]
-    [Authorize]
     public class ChannelController : BaseController
     {
         private readonly AppDbContext _dbContext;
-        private readonly ImageController _uploadController;
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
+        private readonly ITokenValidationService _tokenValidationService;
 
         public ChannelController(
             AppDbContext dbContext,
             ImageController uploadController,
-            MessageController messageController,
             MembersController membersController,
-            PermissionsController permissionsController
+            PermissionsController permissionsController,
+            ITokenValidationService tokenValidationService
         )
         {
             _dbContext = dbContext;
-            _uploadController = uploadController;
             _permissionsController = permissionsController;
             _membersController = membersController;
-        }
+            _tokenValidationService = tokenValidationService;
 
-        [HttpGet("")]
+        }
+        [Authorize]
+
+        [HttpGet("/api/guilds/{guildId}/channels")]
         public async Task<IActionResult> HandleGetChannels(
-            [FromRoute][IdLengthValidation] string guildId
-        )
+                [FromRoute][IdLengthValidation] string guildId
+            )
         {
             var channels = await GetGuildChannels(UserId!, guildId);
 
@@ -44,11 +44,12 @@ namespace LiventCord.Controllers
             return Ok(new { guildId, channels });
         }
 
-        [HttpDelete("{channelId}")]
+        [Authorize]
+        [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
-            [FromRoute][IdLengthValidation] string guildId,
-            [IdLengthValidation] string channelId
-        )
+                [FromRoute][IdLengthValidation] string guildId,
+                [IdLengthValidation] string channelId
+            )
         {
             var channel = _dbContext.Channels.Find(channelId);
             if (channel == null)
@@ -67,47 +68,57 @@ namespace LiventCord.Controllers
 
             _dbContext.Channels.Remove(channel);
             await _dbContext.SaveChangesAsync();
-            return Ok(new { guildId, channelId} );
+            return Ok(new { guildId, channelId });
         }
 
 
-        [HttpPost("")]
-        public async Task<IActionResult> CreateChannel(
-            [FromRoute][IdLengthValidation] string guildId,
-            [FromBody] CreateChannelRequest request
-        )
+        [HttpPost("/api/guilds/{guildId}")]
+        public async Task<IActionResult> CreateChannel([FromRoute][IdLengthValidation] string guildId, [FromBody] CreateChannelRequest request)
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
-                return Unauthorized(
-                    new
-                    {
-                        Type = "error",
-                        Message = "User does not have permission to manage channels.",
-                    }
-                );
+                return Unauthorized(new { Type = "error", Message = "User does not have permission to manage channels." });
 
-            var guild = await _dbContext
-                .Guilds.Include(g => g.Channels)
-                .FirstOrDefaultAsync(g => g.GuildId == guildId);
+            return await CreateChannelInternal(guildId, Utils.CreateRandomId(), request.ChannelName, request.IsTextChannel, request.IsPrivate, returnResponse: true);
+        }
+
+        [HttpPost("/api/discord/bot/guilds/{guildId}/channels/")]
+        public async Task<IActionResult> CreateChannelBot([FromRoute] string guildId, [FromBody] CreateChannelRequestBot request)
+        {
+            string? token = Request.Headers["Authorization"];
+            if (token == null || !_tokenValidationService.ValidateToken(token))
+                return Forbid();
+
+            return await CreateChannelInternal(guildId, request.ChannelId, request.ChannelName, isTextChannel: true, isPrivate: false, returnResponse: false);
+        }
+
+        private async Task<IActionResult> CreateChannelInternal(string guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
+        {
+            var guild = await _dbContext.Guilds.Include(g => g.Channels).FirstOrDefaultAsync(g => g.GuildId == guildId);
+            var dbguilds = await _dbContext.Guilds.Select(g => g.GuildId).ToListAsync();
 
             if (guild == null)
-                return NotFound(new { Type = "error", Message = "Guild does not exist." });
-            string channelId = Utils.CreateRandomId();
+                return NotFound(new { Type = "error", Message = "Guild does not exist. Available guilds: " + string.Join(", ", dbguilds) });
+
+            if (guild.Channels.Any(c => c.ChannelId == channelId))
+                return Conflict(new { Type = "error", Message = "Channel with the same ID already exists." });
+
             var newChannel = new Channel
             {
                 ChannelId = channelId,
-                ChannelName = request.ChannelName,
-                IsTextChannel = request.IsTextChannel,
-                IsPrivate = request.IsPrivate,
+                ChannelName = channelName,
+                IsTextChannel = isTextChannel,
+                IsPrivate = isPrivate,
                 GuildId = guildId,
-                Order = guild.Channels.Count,
+                Order = guild.Channels.Count
             };
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new { guildId, channelId, request.IsTextChannel, request.ChannelName });
+            return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
+
+
 
         [NonAction]
         public async Task<List<ChannelWithLastRead>> GetGuildChannels(string userId, string guildId)
@@ -136,10 +147,13 @@ namespace LiventCord.Controllers
 
 public class CreateChannelRequest
 {
-    [Required()]
     public required string ChannelName { get; set; }
-    [Required()]
     public required bool IsTextChannel { get; set; }
-    [Required()]
     public required bool IsPrivate { get; set; }
+}
+
+public class CreateChannelRequestBot
+{
+    public required string ChannelId { get; set; }
+    public required string ChannelName { get; set; }
 }

@@ -59,6 +59,21 @@ namespace LiventCord.Controllers
             return await Guilds.AnyAsync(g => g.GuildId == guildId && g.IsPublic);
         }
 
+        public User CreateDummyUser(string userId)
+        {
+            var newUser = new User
+            {
+                UserId = userId,
+                Nickname = "BotCreatedUser_" + userId[..6],
+                CreatedAt = DateTime.UtcNow,
+                Email = Utils.CreateRandomId(),
+                Discriminator = "0000",
+                Password = Utils.CreateRandomIdSecure()
+            };
+
+            return newUser;
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(entity =>

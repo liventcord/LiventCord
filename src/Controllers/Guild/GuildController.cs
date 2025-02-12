@@ -7,9 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-    [Route("/api/guilds")]
+    [Route("")]
     [ApiController]
-    [Authorize]
     public class GuildController : BaseController
     {
         private string DEFAULT_CHANNEL_NAME = "general";
@@ -18,80 +17,35 @@ namespace LiventCord.Controllers
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
 
+        private readonly ITokenValidationService _tokenValidationService;
+        private readonly ILogger<GuildController> _logger;
         public GuildController(
             AppDbContext dbContext,
             ImageController uploadController,
             MessageController messageController,
             MembersController membersController,
-            PermissionsController permissionsController
+            PermissionsController permissionsController, ITokenValidationService tokenValidationService, ILogger<GuildController> logger
         )
         {
             _dbContext = dbContext;
             _uploadController = uploadController;
             _permissionsController = permissionsController;
             _membersController = membersController;
+            _tokenValidationService = tokenValidationService;
+            _logger = logger;
         }
+        [Authorize]
 
-        [HttpGet("")]
+        [HttpGet("/api/guilds")]
         public async Task<IActionResult> HandleGetGuilds()
         {
             var guilds = await _membersController.GetUserGuilds(UserId!) ?? new List<GuildDto>();
             return Ok(guilds);
         }
 
-        [HttpPost("")]
-        public async Task<IActionResult> CreateGuild([FromForm] CreateGuildRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return new BadRequestResult();
-            }
-            string rootChannel = Utils.CreateRandomId();
 
-            var newGuild = await CreateGuild(
-                UserId!,
-                request.GuildName,
-                rootChannel,
-                request.Photo,
-                request.IsPublic
-            );
 
-            if (request.Photo != null)
-            {
-                var uploadResult = await _uploadController.UploadImage(
-                    request.Photo,
-                    UserId!,
-                    newGuild.GuildId
-                );
-
-                if (uploadResult is not OkObjectResult uploadResultOk)
-                    return uploadResult;
-
-                var value = uploadResultOk.Value;
-
-                if (value == null)
-                    return new BadRequestResult();
-                dynamic dynamicValue = value;
-                var fileId = dynamicValue?.fileId;
-
-                if (fileId == null)
-                    return new BadRequestResult();
-            }
-
-            var guildDto = new GuildDto
-            {
-                GuildId = newGuild.GuildId,
-                OwnerId = newGuild.OwnerId,
-                GuildName = newGuild.GuildName,
-                RootChannel = newGuild.RootChannel,
-                Region = newGuild.Region,
-                IsGuildUploadedImg = newGuild.IsGuildUploadedImg,
-                GuildMembers = newGuild.GuildMembers.Select(gu => gu.MemberId).ToList(),
-            };
-
-            return CreatedAtAction(nameof(CreateGuild), new { id = guildDto.GuildId }, guildDto);
-        }
-        [HttpPut("{guildId}")]
+        [HttpPut("/{guildId}")]
         public async Task<IActionResult> ChangeGuildName([FromRoute][IdLengthValidation] string guildId, [FromBody] ChangeGuildNameRequest request)
         {
             var guild = await _dbContext.Guilds.FindAsync(guildId);
@@ -104,20 +58,19 @@ namespace LiventCord.Controllers
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new { guildId, request.GuildName});
+            return Ok(new { guildId, request.GuildName });
         }
 
-
-        private async Task<Guild> CreateGuild(
+        [NonAction]
+        public async Task<Guild?> CreateGuild(
             string ownerId,
             string guildName,
             string rootChannel,
-            IFormFile? formFile,
-            bool isPublic
+            string guildId,
+            IFormFile? formFile = null,
+            bool? isPublic = false
         )
         {
-            var guildId = Utils.CreateRandomId();
-
             var guild = new Guild(
                 guildId,
                 ownerId,
@@ -125,62 +78,96 @@ namespace LiventCord.Controllers
                 rootChannel,
                 null,
                 formFile != null,
-                isPublic
+                isPublic != false
             );
 
-            guild.Channels.Add(
-                new Channel
-                {
-                    ChannelId = rootChannel,
-                    GuildId = guildId,
-                    ChannelName = DEFAULT_CHANNEL_NAME,
-                    ChannelDescription = "",
-                    IsPrivate = false,
-                    IsTextChannel = true,
-                    Order = 0,
-                }
-            );
+            guild.Channels.Add(new Channel
+            {
+                ChannelId = rootChannel,
+                GuildId = guildId,
+                ChannelName = DEFAULT_CHANNEL_NAME,
+                ChannelDescription = "",
+                IsPrivate = false,
+                IsTextChannel = true,
+                Order = 0,
+            });
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == ownerId);
             if (user == null)
-                throw new Exception("User not found. " + ownerId);
+            {
+                _logger.LogCritical("User not found when creating guild: " + ownerId);
+                return null;
+            }
 
             if (guild.GuildMembers.Any(gu => gu.MemberId == ownerId))
                 throw new Exception("User already in guild");
 
-            var guildMember = new GuildMember
+            guild.GuildMembers.Add(new GuildMember
             {
                 MemberId = ownerId,
                 GuildId = guildId,
                 Guild = guild,
                 User = user,
-            };
-
-            Console.WriteLine(
-                $"Adding GuildUser: GuildId = {guildMember.GuildId}, MemberId = {guildMember.MemberId}, UserId = {guildMember.User.UserId}"
-            );
-
-            guild.GuildMembers.Add(guildMember);
-
-            Console.WriteLine(
-                $"Guild Details: GuildId = {guild.GuildId}, OwnerId = {guild.OwnerId}, GuildName = {guild.GuildName}"
-            );
+            });
 
             _dbContext.Guilds.Add(guild);
 
             await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
-
             await _dbContext.SaveChangesAsync();
 
             return guild;
         }
 
+        private GuildDto MapToGuildDto(Guild guild)
+        {
+            return new GuildDto
+            {
+                GuildId = guild.GuildId,
+                OwnerId = guild.OwnerId,
+                GuildName = guild.GuildName,
+                RootChannel = guild.RootChannel,
+                Region = guild.Region,
+                IsGuildUploadedImg = guild.IsGuildUploadedImg,
+                GuildMembers = guild.GuildMembers.Select(gu => gu.MemberId).ToList(),
+            };
+        }
+
+
+        private async Task<IActionResult> HandleGuildCreation(string userId, string guildName, IFormFile? photo, bool? isPublic)
+        {
+            string rootChannel = Utils.CreateRandomId();
+            string guildId = Utils.CreateRandomId();
+
+            var newGuild = await CreateGuild(userId, guildName, rootChannel, guildId, photo, isPublic);
+            if (newGuild == null)
+                return Problem("Guild creation failed");
+
+            if (photo != null)
+            {
+                var uploadResult = await _uploadController.UploadImage(photo, userId, newGuild.GuildId);
+                if (uploadResult is not OkObjectResult uploadResultOk)
+                    return uploadResult;
+            }
+
+            return StatusCode(201, MapToGuildDto(newGuild));
+        }
+
+
+        [Authorize]
+        [HttpPost("/api/guilds")]
+        public async Task<IActionResult> CreateGuildEndpoint([FromForm] CreateGuildRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            return await HandleGuildCreation(UserId!, request.GuildName, request.Photo, request.IsPublic);
+        }
+
+
+
         [HttpDelete("/api/guilds/{guildId}")]
         public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
         {
-            if (string.IsNullOrEmpty(guildId))
-                return BadRequest(new { Type = "error", Message = "Guild ID is required." });
-
             var guild = await _dbContext.Guilds.FindAsync(guildId);
             if (guild == null)
                 return NotFound();
@@ -201,7 +188,7 @@ public class CreateGuildRequest
 {
     [MaxLength(32)]
     public required string GuildName { get; set; }
-    public required bool IsPublic { get; set; }
+    public bool? IsPublic { get; set; }
     public IFormFile? Photo { get; set; }
 }
 public class ChangeGuildNameRequest

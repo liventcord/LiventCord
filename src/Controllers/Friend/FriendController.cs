@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 public enum FRIEND_EVENTS
 {
-    ADD_FRIEND,ACCEPT_FRIEND
+    ADD_FRIEND, ACCEPT_FRIEND
 }
 
 public static class FriendEventExtensions

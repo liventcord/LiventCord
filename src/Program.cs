@@ -15,6 +15,9 @@ builder.Services.AddSignalR();
 
 ConfigHandler.HandleConfig(builder);
 
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
 builder.Services.AddScoped<MessageController>();
@@ -30,9 +33,7 @@ builder.Services.AddScoped<PermissionsController>();
 builder.Services.AddScoped<ImageController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<MetadataService>();
-builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
