@@ -164,8 +164,7 @@ function submitForm(event, isRegister) {
 
   fetch(isRegister ? "/auth/register" : "/auth/login", {
     method: "POST",
-    body: formData,
-    credentials: "same-origin"
+    body: formData
   })
     .then((response) => {
       if (!response.ok) {
@@ -187,8 +186,8 @@ function submitForm(event, isRegister) {
     })
     .then(() => {
       if (isRegister) {
+        alertUser(getTranslation("successRegister"),true);
         setTimeout(() => {
-          alertUser(getTranslation("successRegister"));
           window.location.href = "/app";
         }, 5000);
       } else {
