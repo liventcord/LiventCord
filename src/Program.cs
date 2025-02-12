@@ -149,7 +149,7 @@ app.UseSwaggerUI(c =>
 app.MapHub<Hub>("/socket");
 app.MapControllers();
 
-Task.Run(() => StartFrontendBuild());
+await Task.Run(() => StartFrontendBuild());
 
 app.Run();
 

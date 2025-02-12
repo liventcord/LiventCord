@@ -307,7 +307,7 @@ namespace LiventCord.Controllers
                 AttachmentUrls = attachmentUrls,
                 ReplyToId = replyToId,
                 ReactionEmojisIds = reactionEmojisIds,
-                Embeds = embeds,
+                Embeds = embeds ?? new(),
                 Metadata = metadata
             };
 

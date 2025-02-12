@@ -42,6 +42,11 @@ namespace LiventCord.Controllers
             string? guildId = null
         )
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("UserId is null for this request");
+                return Unauthorized("User not authorized.");
+            }
             if (photo == null || photo.Length == 0)
                 return BadRequest("No file uploaded.");
 
@@ -59,11 +64,6 @@ namespace LiventCord.Controllers
 
             using var memoryStream = new MemoryStream();
             await photo.CopyToAsync(memoryStream);
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("UserId is null for this request");
-                return Unauthorized("User not authorized.");
-            }
 
             var content = memoryStream.ToArray();
             var fileId = Utils.CreateRandomId();
@@ -73,6 +73,7 @@ namespace LiventCord.Controllers
                 await SaveOrUpdateFile(
                     new GuildFile(fileId, sanitizedFileName, content, extension, guildId, userId)
                 );
+                await SetIsUploadedGuildImg(guildId);
             }
             else
             {
@@ -82,6 +83,20 @@ namespace LiventCord.Controllers
             }
 
             return Ok(new { fileId });
+        }
+
+        private async Task SetIsUploadedGuildImg(string guildId)
+        {
+            var guild = await _context.Guilds
+                .Where(g => g.GuildId == guildId)
+                .FirstOrDefaultAsync();
+
+            if (guild != null)
+            {
+                guild.IsGuildUploadedImg = true;
+                
+                await _context.SaveChangesAsync();
+            }
         }
 
 

@@ -13,7 +13,7 @@ namespace LiventCord.Controllers
     {
         private string DEFAULT_CHANNEL_NAME = "general";
         private readonly AppDbContext _dbContext;
-        private readonly ImageController _uploadController;
+        private readonly ImageController _imageController;
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
 
@@ -28,7 +28,7 @@ namespace LiventCord.Controllers
         )
         {
             _dbContext = dbContext;
-            _uploadController = uploadController;
+            _imageController = uploadController;
             _permissionsController = permissionsController;
             _membersController = membersController;
             _tokenValidationService = tokenValidationService;
@@ -67,7 +67,7 @@ namespace LiventCord.Controllers
             string guildName,
             string rootChannel,
             string guildId,
-            IFormFile? formFile = null,
+            IFormFile? photo = null,
             bool? isPublic = false
         )
         {
@@ -77,7 +77,7 @@ namespace LiventCord.Controllers
                 guildName,
                 rootChannel,
                 null,
-                formFile != null,
+                photo != null,
                 isPublic != false
             );
 
@@ -144,7 +144,7 @@ namespace LiventCord.Controllers
 
             if (photo != null)
             {
-                var uploadResult = await _uploadController.UploadImage(photo, userId, newGuild.GuildId);
+                var uploadResult = await _imageController.UploadImage(photo, userId, newGuild.GuildId);
                 if (uploadResult is not OkObjectResult uploadResultOk)
                     return uploadResult;
             }
