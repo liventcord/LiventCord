@@ -15,6 +15,8 @@
     "SqlitePath": "Data/liventcord.db",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",
     "MaxAvatarSize": "3",
-    "MaxAttachmentsSize": "30"
+    "MaxAttachmentsSize": "30",
+    "EnableMetadataIndexing": true,
+    "MetadataDomainLimit" : "100"
   }
 }

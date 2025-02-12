@@ -1,40 +1,51 @@
 using System.Text.RegularExpressions;
 using LiventCord.Controllers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using HtmlAgilityPack;
 
 public class Metadata
 {
     public string? Title { get; set; }
     public string? Description { get; set; }
     public string? SiteName { get; set; }
+    public string? Image { get; set; }
+    public string? Url { get; set; }
+    public string? Type { get; set; }
+    public string? Keywords { get; set; }
+    public string? Author { get; set; }
 }
 
-public class UrlMetadata
+public class UrlMetadata : Metadata
 {
     public int Id { get; set; }
     public required string Domain { get; set; }
     public required string RoutePath { get; set; }
-    public string? Title { get; set; }
-    public string? Description { get; set; }
-    public string? SiteName { get; set; }
+    public DateTime CreatedAt { get; set; } 
 }
 
 public class MetadataService
 {
-    private readonly int PER_DOMAIN_LIMIT = 100;
+    private readonly int MetadataDomainLimit;
     private readonly HttpClient _httpClient;
     private readonly AppDbContext _dbContext;
+    private readonly bool _isMetadataEnabled;
 
-    public MetadataService(HttpClient httpClient, AppDbContext dbContext)
+    public MetadataService(HttpClient httpClient, AppDbContext dbContext, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _dbContext = dbContext;
+        _isMetadataEnabled = configuration.GetValue<bool>("AppSettings:EnableMetadataIndexing");
+        MetadataDomainLimit = configuration.GetValue<int>("AppSettings:MetadataDomainLimit",100);
     }
 
-    public async Task<(string? Title, string? Description, string? SiteName)> ExtractMetadataAsync(
-        string url
-    )
+    public async Task<Metadata> ExtractMetadataAsync(string url)
     {
+        if (!_isMetadataEnabled)
+        {
+            return new Metadata { Title = "Metadata indexing is disabled" };
+        }
+
         var (domain, routePath) = ParseUrl(url);
 
         var existingMetadata = await _dbContext.UrlMetadata.FirstOrDefaultAsync(u =>
@@ -43,72 +54,69 @@ public class MetadataService
 
         if (existingMetadata != null)
         {
-            return (
-                existingMetadata.Title,
-                existingMetadata.Description,
-                existingMetadata.SiteName
-            );
+            return MapToMetadata(existingMetadata);
         }
 
-        var urlCountForDomain = await _dbContext.UrlMetadata.CountAsync(u => u.Domain == domain);
+        var currentTime = DateTime.UtcNow;
+        var twentyFourHoursAgo = currentTime.AddHours(-24);
 
-        if (urlCountForDomain >= PER_DOMAIN_LIMIT)
+        var urlCountForDomain = await _dbContext.UrlMetadata.CountAsync(u =>
+            u.Domain == domain && u.CreatedAt >= twentyFourHoursAgo
+        );
+
+        if (urlCountForDomain >= MetadataDomainLimit)
         {
-            return ("Domain limit reached", null, null);
+            return new Metadata { Title = "Domain limit reached" };
         }
 
         try
         {
             var html = await FetchHtmlAsync(url);
-
-            var title = ExtractFirstMatch(
-                html,
-                new[]
-                {
-                    @"<title>([^<]*)<\/title>",
-                    @"<meta\s+property=[""']og:title[""']\s+content=[""']([^""']*)[""']",
-                    @"<meta\s+name=[""']twitter:title[""']\s+content=[""']([^""']*)[""']",
-                    @"<meta\s+itemprop=[""']name[""']\s+content=[""']([^""']*)[""']",
-                }
-            );
-
-            var description = ExtractFirstMatch(
-                html,
-                new[]
-                {
-                    @"<meta\s+name=[""']description[""']\s+content=[""']([^""']*)[""']",
-                    @"<meta\s+property=[""']og:description[""']\s+content=[""']([^""']*)[""']",
-                    @"<meta\s+name=[""']twitter:description[""']\s+content=[""']([^""']*)[""']",
-                    @"<meta\s+itemprop=[""']description[""']\s+content=[""']([^""']*)[""']",
-                }
-            );
-
-            var siteName =
-                ExtractFirstMatch(
-                    html,
-                    new[]
-                    {
-                        @"<meta\s+property=[""']og:site_name[""']\s+content=[""']([^""']*)[""']",
-                    }
-                ) ?? url;
+            var htmlDocument = new HtmlDocument();
+            htmlDocument.LoadHtml(html);
 
             var newMetadata = new UrlMetadata
             {
                 Domain = domain,
                 RoutePath = routePath,
-                Title = title,
-                Description = description,
-                SiteName = siteName,
+                Title = htmlDocument.DocumentNode.SelectSingleNode("//title")?.InnerText ??
+                        htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:title']")?.GetAttributeValue("content", null),
+                Description = htmlDocument.DocumentNode.SelectSingleNode("//meta[@name='description']")?.GetAttributeValue("content", null) ??
+                            htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:description']")?.GetAttributeValue("content", null),
+                SiteName = htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:site_name']")?.GetAttributeValue("content", null) ?? url,
+                Image = htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:image']")?.GetAttributeValue("content", null) ??
+                        htmlDocument.DocumentNode.SelectSingleNode("//meta[@name='twitter:image']")?.GetAttributeValue("content", null),
+                Url = htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:url']")?.GetAttributeValue("content", null) ?? url,
+                Type = htmlDocument.DocumentNode.SelectSingleNode("//meta[@property='og:type']")?.GetAttributeValue("content", null),
+                Keywords = htmlDocument.DocumentNode.SelectSingleNode("//meta[@name='keywords']")?.GetAttributeValue("content", null),
+                Author = htmlDocument.DocumentNode.SelectSingleNode("//meta[@name='author']")?.GetAttributeValue("content", null),
+                CreatedAt = currentTime
             };
+
             _dbContext.UrlMetadata.Add(newMetadata);
             await _dbContext.SaveChangesAsync();
 
-            return (title, description, siteName);
+            return MapToMetadata(newMetadata);
         }
-        catch
+        catch (Exception)
         {
-            return ("Metadata Extraction Failed", null, null);
+            return new Metadata { Title = "Metadata Extraction Failed" };
         }
+    }
+
+    private Metadata MapToMetadata(UrlMetadata urlMetadata)
+    {
+        return new Metadata
+        {
+            Title = urlMetadata.Title,
+            Description = urlMetadata.Description,
+            SiteName = urlMetadata.SiteName,
+            Image = urlMetadata.Image,
+            Url = urlMetadata.Url,
+            Type = urlMetadata.Type,
+            Keywords = urlMetadata.Keywords,
+            Author = urlMetadata.Author
+        };
     }
 
     private async Task<string> FetchHtmlAsync(string url)
