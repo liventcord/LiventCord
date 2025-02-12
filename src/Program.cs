@@ -101,7 +101,7 @@ if (isDevelopment)
 
     app.Use(async (context, next) =>
     {
-        if (context.Request.Path.StartsWithSegments("/profiles") || 
+        if (context.Request.Path.StartsWithSegments("/profiles") ||
             context.Request.Path.StartsWithSegments("/guilds"))
         {
             await next();

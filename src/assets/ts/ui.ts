@@ -309,7 +309,7 @@ export function displayImagePreview(sourceimage: string): void {
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = sanitizedSourceImage;
 
-  const previewBtn = getId("preview-image-button") as HTMLAnchorElement;
+  const previewBtn = getId("preview-image-open") as HTMLAnchorElement;
   if (!sanitizedSourceImage.startsWith("data:")) {
     previewBtn.href = sanitizedSourceImage;
     previewBtn.target = "_blank";

@@ -21,7 +21,7 @@ const hasNotifications = false;
 class Router {
   ID_LENGTH: number;
   constructor() {
-    this.ID_LENGTH = 18;
+    this.ID_LENGTH = 19;
     this.init();
   }
 

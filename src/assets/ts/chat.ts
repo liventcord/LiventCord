@@ -186,7 +186,7 @@ export async function handleScroll() {
         const updatedScrollPosition = chatContainer.scrollTop;
 
         if (updatedScrollPosition <= buffer) {
-          await getOldMessagesOnScroll(); // This will now set `hasJustFetchedMessages` to true
+          await getOldMessagesOnScroll();
         } else {
           continueLoop = false;
           console.log("Scroll position exceeded threshold.");
@@ -200,7 +200,7 @@ export async function handleScroll() {
       isFetchingOldMessages = false;
       stopFetching = true;
       console.log("Fetching complete. Resetting flag.");
-      setHasJustFetchedMessagesFalse(); // Reset the flag when fetching is done
+      setHasJustFetchedMessagesFalse();
     }
   }
 }
@@ -606,12 +606,13 @@ export function displayChatMessage(data): HTMLElement {
     isBot,
     replyOf,
     metadata,
-    willDisplayProfile
+    willDisplayProfile,
+    embeds
   } = data;
 
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
-  if (!attachmentUrls && content === "") return null;
+  if (!attachmentUrls && content === "" && embeds.length === 0) return null;
 
   const nick = getUserNick(userId);
   const newMessage = createMessageElement(
@@ -657,12 +658,14 @@ export function displayChatMessage(data): HTMLElement {
   messageContentElement.dataset.content_observe = formattedMessage;
   requestAnimationFrame(() => observe(messageContentElement));
 
-  appendMessageContent(
-    newMessage,
-    messageContentElement,
+  newMessage.appendChild(messageContentElement);
+  createMediaElement(
     content,
+    messageContentElement,
+    newMessage,
     attachmentUrls,
-    metadata
+    metadata,
+    embeds
   );
 
   if (!currentLastDate) {
@@ -794,23 +797,6 @@ function handleRegularMessage(
   }
   bottomestChatDateStr = date;
   return true;
-}
-
-function appendMessageContent(
-  newMessage,
-  messageContentElement,
-  content,
-  attachmentUrls,
-  metadata
-) {
-  newMessage.appendChild(messageContentElement);
-  createMediaElement(
-    content,
-    messageContentElement,
-    newMessage,
-    attachmentUrls,
-    metadata
-  );
 }
 
 function updateSenderAndButtons(newMessage, userId, addToTop) {
@@ -976,7 +962,7 @@ export function getMessageFromChat(top = true): HTMLElement | null {
 export function getHistoryFromOneChannel(channelId, isDm = false) {
   console.log("Retrieving history...");
   const messages = cacheInterface.getMessages(currentGuildId, channelId);
-
+  console.log(messages);
   if (!isDm && messages && Array.isArray(messages)) {
     const repliesList = new Set();
 

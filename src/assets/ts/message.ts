@@ -42,6 +42,7 @@ interface MessageData {
   isBot: boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
+  embeds?: any;
 }
 
 export class Message {
@@ -57,6 +58,7 @@ export class Message {
   reactionEmojisIds: string[] | undefined;
   addToTop: boolean;
   metadata: any;
+  embeds: any;
 
   constructor({
     messageId,
@@ -69,7 +71,8 @@ export class Message {
     replyToId,
     isBot,
     reactionEmojisIds,
-    metadata
+    metadata,
+    embeds
   }: MessageData) {
     this.messageId = messageId;
     this.userId = userId;
@@ -83,6 +86,7 @@ export class Message {
     this.reactionEmojisIds = reactionEmojisIds;
     this.addToTop = false;
     this.metadata = metadata;
+    this.embeds = embeds;
   }
 
   toDisplayData(replyOf: string | null) {
@@ -100,7 +104,8 @@ export class Message {
       replyToId: this.replyToId,
       isBot: this.isBot,
       reactionEmojisIds: this.reactionEmojisIds,
-      metadata: this.metadata
+      metadata: this.metadata,
+      embeds: this.embeds
     };
   }
 }

@@ -257,7 +257,34 @@
     
     <div id="image-preview-container" >
         <img id="preview-image" src="/images/defaultmediaimage.png">
-        <a id="preview-image-button"></a>
+        <div class="actions-container">
+            <button id="preview-image-zoom" aria-label="Zoom In" type="button">
+                <div >
+                    <svg aria-hidden="true" role="img"
+                     xmlns="http://www.w3.org/2000/svg"
+                      width="24" height="24" fill="none" 
+                      viewBox="0 0 24 24"><path fill="var(--interactive-normal)" fill-rule="evenodd" 
+                      d="M15.62 17.03a9 9 0 1 1 1.41-1.41l4.68 4.67a1 1 0 0 1-1.42 1.42l-4.67-4.68ZM17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" 
+                      clip-rule="evenodd" class=""></path><path fill="var(--interactive-normal)"
+                       d="M11 7a1 1 0 1 0-2 0v2H7a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V7Z" >
+                    </path>
+                </svg>
+            </div>
+        </button>
+        <button aria-label="Forward" type="button" ><div ><svg aria-hidden="true" role="img"  xmlns="http://www.w3.org/2000/svg"
+             width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)" 
+             d="M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z" >
+            </path></svg></div></button>
+            <button  id="preview-image-open" aria-label="Open in Browser" type="button"><div ><svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" 
+                height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)"
+                 d="M15 2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V4.41l-4.3 4.3a1 1 0 1 1-1.4-1.42L19.58 3H16a1 1 0 0 1-1-1Z"
+                  ></path><path fill="var(--interactive-normal)" 
+                  d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 1 0-2 0v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 1 0 0-2H5Z" 
+                  ></path></svg></div></button><button aria-label="More" type="button"><div ><svg aria-hidden="true" role="img" 
+                    xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)"
+                     fill-rule="evenodd" d="M4 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm10-2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm8 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"
+                      clip-rule="evenodd" class=""></path></svg></div></button></div>
+
     </div>
 
     <div id="json-preview-container" >

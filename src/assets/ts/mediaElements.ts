@@ -18,6 +18,52 @@ import {
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 
+interface Embed {
+  id: string;
+  title: string;
+  type: number;
+  description: string | null;
+  url: string | null;
+  color: number;
+  fields: any[];
+  thumbnail: { url?: string } | null;
+  video: { url?: string } | null;
+  author: { name?: string } | null;
+  image: {
+    url: string;
+    proxyUrl?: string;
+    width?: number;
+    height?: number;
+  } | null;
+  footer: { text?: string } | null;
+}
+
+interface EmbedType {
+  Article: number;
+  GIFV: number;
+  Image: number;
+  Link: number;
+  PollResult: number;
+  Rich: number;
+  Video: number;
+}
+
+const embedTypes: EmbedType = {
+  Article: 0,
+  GIFV: 1,
+  Image: 5,
+  Link: 3,
+  PollResult: 4,
+  Rich: 2,
+  Video: 6
+};
+
+class MetaData {
+  siteName: string;
+  title: string;
+  description: string;
+}
+
 const maxWidth = 512;
 const maxHeight = 384;
 
@@ -74,7 +120,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
 
 export function createImageElement(msgContentElement, inputText, url_src) {
   const imgElement = createEl("img", {
-    className: "imageElement",
+    className: "chat-image",
     src: defaultMediaImageSrc,
     style: {
       maxWidth: `${maxWidth}px`,
@@ -82,16 +128,19 @@ export function createImageElement(msgContentElement, inputText, url_src) {
     }
   });
 
+  imgElement.setAttribute("data-src", url_src);
+
   imgElement.onload = function () {
     const actualSrc = DOMPurify.sanitize(imgElement.getAttribute("data-src"));
-    if (actualSrc && imgElement.src === defaultMediaImageSrc) {
+
+    if (imgElement.src === defaultMediaImageSrc) {
       imgElement.src = actualSrc;
     }
   };
 
   imgElement.onerror = function () {
+    imgElement.onerror = null;
     imgElement.src = defaultProfileImageSrc;
-    imgElement.remove();
     msgContentElement.textContent = inputText;
   };
 
@@ -179,35 +228,56 @@ export function createVideoElement(url) {
 
   return videoElement;
 }
+export function createRegularText(content) {
+  const spanElement = createEl("p", { id: "message-content-element" });
+  spanElement.textContent = content;
+  spanElement.style.marginLeft = "0px";
+  return spanElement;
+}
+
 export async function createMediaElement(
   content,
   messageContentElement,
   newMessage,
   attachmentUrls,
-  metadata
+  metadata,
+  embeds
 ) {
   const links = extractLinks(content) || [];
   let mediaCount = 0;
   let linksProcessed = 0;
+  const maxLinks = 4;
 
-  if (
-    attachmentUrls &&
-    typeof attachmentUrls === "string" &&
-    attachmentUrls.trim() !== ""
-  ) {
-    attachmentUrls = JSON.parse(attachmentUrls.replace(/\\/g, ""));
+  if (typeof attachmentUrls === "string" && attachmentUrls.trim() !== "") {
+    try {
+      attachmentUrls = JSON.parse(attachmentUrls);
+    } catch (e) {
+      attachmentUrls = attachmentUrls.split(",").map((url) => url.trim());
+    }
+
     if (
       attachmentUrls.length > 0 &&
-      !attachmentUrls[0].startsWith(`${location.origin}`)
+      !attachmentUrls[0].startsWith("http://") &&
+      !attachmentUrls[0].startsWith("https://")
     ) {
       attachmentUrls[0] = `${location.origin}${attachmentUrls[0]}`;
     }
     links.push(...attachmentUrls);
   }
 
-  const maxLinks = 4;
+  if (embeds.length > 0) {
+    try {
+      displayEmbeds(messageContentElement, "", embeds, metadata);
+    } catch (embedError) {
+      console.error("Error displaying embeds:", embedError);
+    }
+  }
 
-  const processLinks = async () => {
+  if (links.length > 0) {
+    await processLinks();
+  }
+
+  async function processLinks() {
     while (linksProcessed < links.length && mediaCount < maxLinks) {
       try {
         const isError = await processMediaLink(
@@ -215,102 +285,61 @@ export async function createMediaElement(
           newMessage,
           messageContentElement,
           content,
-          metadata
+          metadata,
+          embeds
         );
+
         if (!isError) {
           mediaCount++;
         }
-        linksProcessed++;
       } catch (error) {
         console.error("Error processing media link:", error);
-        linksProcessed++;
       }
+      linksProcessed++;
     }
-  };
+  }
+}
 
-  await processLinks();
-}
-export function createRegularText(content) {
-  const spanElement = createEl("p", { id: "message-content-element" });
-  spanElement.textContent = content;
-  spanElement.style.marginLeft = "0px";
-  return spanElement;
-}
 export function processMediaLink(
   link,
   newMessage,
   messageContentElement,
   content,
-  metadata
+  metadata,
+  embeds
 ) {
-  return new Promise<boolean>((resolve, reject) => {
+  return new Promise((resolve) => {
     let mediaElement = null;
     newMessage.setAttribute("data-attachment_url", link);
 
-    const handleMediaElement = () => {
-      if (mediaElement) {
-        const handleLoad = () => {
-          const dummyElement = messageContentElement.querySelector(
-            `img[data-dummy="${link}"]`
-          );
-          if (dummyElement) {
-            messageContentElement.replaceChild(mediaElement, dummyElement);
-          }
-          resolve(false);
-        };
-
-        const handleError = (error) => {
-          console.error("Error loading media element:", error);
-          const spanElement = createEl("span", {
-            textContent: translations.getTranslation("failed-media"),
-            style: {
-              display: "inline-block",
-              maxWidth: "100%",
-              maxHeight: "100%",
-              color: "red"
-            }
-          });
-          if (mediaElement.parentNode) {
-            mediaElement.parentNode.replaceChild(spanElement, mediaElement);
-          }
-          resolve(true);
-        };
-
-        if (
-          mediaElement instanceof HTMLImageElement ||
-          mediaElement instanceof HTMLAudioElement ||
-          mediaElement instanceof HTMLVideoElement
-        ) {
-          mediaElement.addEventListener("load", handleLoad);
-          mediaElement.addEventListener("error", handleError);
-        } else {
-          messageContentElement.appendChild(mediaElement);
-          resolve(true);
-        }
-      } else {
-        resolve(true);
-      }
+    const handleLoad = () => {
+      resolve(false);
     };
 
-    //if (!isJson && !isYt) {
-    //    if (String(userId) === String(lastSenderID)) {
-    //        mediaElement.style.marginLeft = "55px";
-    //    } else {
-    //        mediaElement.style.marginLeft = "55px";
-    //    }
-    //    mediaElement.style.paddingTop = "50px";
-    //}
+    const handleError = () => {
+      console.error("Error loading media element");
+      const spanElement = createEl("span", {
+        textContent: translations.getTranslation("failed-media"),
+        style: {
+          display: "inline-block",
+          maxWidth: "100%",
+          maxHeight: "100%",
+          color: "red"
+        }
+      });
+      if (mediaElement.parentNode) {
+        mediaElement.parentNode.replaceChild(spanElement, mediaElement);
+      }
+      resolve(true);
+    };
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      mediaElement = createEl("img", {
-        className: "chat-image",
-        src: DOMPurify.sanitize(link)
-      });
+      mediaElement = createImageElement(
+        messageContentElement,
+        null,
+        DOMPurify.sanitize(link)
+      );
       mediaElement.dataset.dummy = link;
-      mediaElement.addEventListener("click", function () {
-        displayImagePreview(mediaElement.src);
-      });
-      messageContentElement.appendChild(mediaElement);
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(messageContentElement, content, link);
     } else if (isYouTubeURL(link)) {
@@ -322,66 +351,130 @@ export function processMediaLink(
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
-      const urlPattern = /https?:\/\/[^\s]+/g;
-      const parts = content.split(urlPattern);
-      const urls = content.match(urlPattern) || [];
-
-      parts.forEach((part, index) => {
-        if (part) {
-          const normalSpan = createEl("span", { textContent: part });
-          messageContentElement.appendChild(normalSpan);
-        }
-
-        if (index < urls.length) {
-          const urlSpan = createEl("a", { textContent: urls[index] });
-          urlSpan.classList.add("url-link");
-          urlSpan.addEventListener("click", () => {
-            openExternalUrl(urls[index]);
-          });
-          messageContentElement.appendChild(urlSpan);
-        }
-      });
-      displayWebPreview(messageContentElement, link, metadata);
+      handleLink(messageContentElement, content);
     } else {
-      const spanElement = createRegularText(content);
-      messageContentElement.appendChild(spanElement);
-
+      messageContentElement.appendChild(createRegularText(content));
       resolve(true);
+      return;
     }
-
-    handleMediaElement();
+    try {
+      displayEmbeds(messageContentElement, link, embeds, metadata);
+    } catch (embedError) {
+      console.error("Error displaying embeds:", embedError);
+    }
+    if (
+      mediaElement instanceof HTMLImageElement ||
+      mediaElement instanceof HTMLAudioElement ||
+      mediaElement instanceof HTMLVideoElement
+    ) {
+      mediaElement.addEventListener("load", handleLoad, { once: true });
+      mediaElement.addEventListener("error", handleError, { once: true });
+    }
+    if (mediaElement) {
+      messageContentElement.appendChild(mediaElement);
+    }
   });
 }
 
-export function appendEmbedToMessage(messageElement, url, data) {
-  const embedContainer = createEl("div", { className: "embed-container" });
-  const siteName = data.siteName;
-  if (siteName) {
-    const headerElement = createEl("p", { textContent: siteName });
-    embedContainer.appendChild(headerElement);
-  }
-  const titleElement = createEl("a", {
-    textContent: data.title,
-    className: "url-link",
-    href: url,
-    target: "_blank"
-  });
-  const descriptionElement = createEl("p", { textContent: data.description });
+function handleLink(messageContentElement, content) {
+  const urlPattern = /https?:\/\/[^\s]+/g;
+  const parts = content.split(urlPattern);
+  const urls = content.match(urlPattern) || [];
 
-  embedContainer.appendChild(titleElement);
-  embedContainer.appendChild(descriptionElement);
+  parts.forEach((part, index) => {
+    if (part) {
+      const normalSpan = createEl("span", { textContent: part });
+      messageContentElement.appendChild(normalSpan);
+    }
+
+    if (index < urls.length) {
+      const urlSpan = createEl("a", { textContent: urls[index] });
+      urlSpan.classList.add("url-link");
+      urlSpan.addEventListener("click", () => {
+        openExternalUrl(urls[index]);
+      });
+      messageContentElement.appendChild(urlSpan);
+    }
+  });
+}
+
+function applyBorderColor(element, decimalColor) {
+  if (
+    !Number.isInteger(decimalColor) ||
+    decimalColor < 0 ||
+    decimalColor > 0xffffff
+  ) {
+    console.error("Invalid color value");
+    return;
+  }
+
+  const hexColor = `#${decimalColor.toString(16).padStart(6, "0")}`;
+  element.style.borderLeft = `4px solid ${hexColor}`;
+}
+function appendEmbedToMessage(
+  messageElement: HTMLElement,
+  embed: Embed,
+  link: string,
+  metaData: MetaData
+) {
+  const embedContainer = createEl("div", { className: "embed-container" });
+  if (embed.color) {
+    applyBorderColor(embedContainer, embed.color);
+  }
+
+  if (embed.type === embedTypes.Image) {
+    if (embed.image && embed.image.url) {
+      const imageContainer = createEl("div", {
+        className: "embed-image-container"
+      });
+
+      const imgElement = createImageElement(
+        imageContainer,
+        embed.title || "",
+        embed.image.url
+      );
+      imgElement.setAttribute("data-src", embed.image.url);
+      const textElement = createRegularText(embed.title);
+      textElement.style.fontSize = "1.2em";
+      imageContainer.appendChild(textElement);
+      imageContainer.appendChild(imgElement);
+      embedContainer.appendChild(imageContainer);
+    }
+  } else {
+    console.warn("Unsupported embed type: ", embed.type);
+  }
+
+  if (metaData) {
+    const siteName = metaData.siteName;
+    if (siteName) {
+      const headerElement = createEl("p", { textContent: siteName });
+      embedContainer.appendChild(headerElement);
+    }
+    if (link) {
+      const titleElement = createEl("a", {
+        textContent: metaData.title,
+        className: "url-link",
+        href: link,
+        target: "_blank"
+      });
+
+      embedContainer.appendChild(titleElement);
+    }
+    const descriptionElement = createEl("p", {
+      textContent: metaData.description || metaData.title
+    });
+
+    embedContainer.appendChild(descriptionElement);
+  }
+
   messageElement.appendChild(embedContainer);
 }
 
-export function displayWebPreview(messageElement, url, data) {
+function displayEmbeds(messageElement, link, embeds, metaData) {
   try {
-    if (data) {
-      appendEmbedToMessage(messageElement, url, {
-        title: data.title,
-        description: data.description || data.title,
-        siteName: data.siteName
-      });
-    }
+    embeds.forEach((embed) => {
+      appendEmbedToMessage(messageElement, embed, link, metaData);
+    });
   } catch (error) {
     console.error("Error displaying web preview:", error);
   }

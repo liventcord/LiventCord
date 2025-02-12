@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-
+using System.Text.Json;
 namespace LiventCord.Models
 {
     public class Message
@@ -16,7 +16,7 @@ namespace LiventCord.Models
         [ForeignKey("Channel")]
         public required string ChannelId { get; set; }
 
-        public required string Content { get; set; }
+        public string? Content { get; set; }
 
         public required DateTime Date { get; set; }
 
@@ -27,6 +27,7 @@ namespace LiventCord.Models
         public string? ReplyToId { get; set; }
 
         public string? ReactionEmojisIds { get; set; }
+
         public Metadata? Metadata { get; set; }
 
         [JsonIgnore]
@@ -34,7 +35,8 @@ namespace LiventCord.Models
 
         [JsonIgnore]
         public virtual Channel Channel { get; set; } = null!;
-        public Embed? Embed { get; set; } 
+
+        public List<Embed> Embeds { get; set; } = new();
+
     }
 }
-

@@ -223,9 +223,14 @@ class ApiClient {
 
       try {
         const initData = JSON.parse(rawResponse);
-        if (initData.message === "User session is no longer valid. Please log in again.") {
+        if (
+          initData.message ===
+          "User session is no longer valid. Please log in again."
+        ) {
           if (import.meta.env.MODE === "development") {
-            alertUser("User session is not valid. Please log in at localhost:5005/login.");
+            alertUser(
+              "User session is not valid. Please log in at localhost:5005/login."
+            );
             return null;
           }
           await router.changeToLogin();

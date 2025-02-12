@@ -35,7 +35,6 @@ namespace LiventCord.Models
         [Column("bot")]
         public int Bot { get; set; }
 
-        [Required]
         [StringLength(128)]
         [Column("status")]
         public string? Status { get; set; }

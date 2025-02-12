@@ -40,7 +40,7 @@ namespace LiventCord.Controllers
             await _context.Users.AddAsync(
                 new User
                 {
-                    UserId = Utils.CreateRandomId(),
+                    UserId = Utils.CreateRandomUserId(),
                     Email = request.Email,
                     Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
                     Nickname = request.Nickname,
