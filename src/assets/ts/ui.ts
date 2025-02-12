@@ -1,3 +1,4 @@
+//ui.js
 import DOMPurify from "dompurify";
 import {
   enableUserList,
@@ -21,6 +22,7 @@ import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMe, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { observe } from "./chat.ts";
+import { chatContainer } from "./chatbar.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -301,23 +303,150 @@ export function beautifyJson(jsonData) {
     return null;
   }
 }
-
+getId("image-preview-container").addEventListener(
+  "click",
+  hideImagePreviewRequest
+);
 export function displayImagePreview(sourceimage: string): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = sanitizedSourceImage;
+  updateCurrentIndex(sanitizedSourceImage);
 
-  const previewBtn = getId("preview-image-open") as HTMLAnchorElement;
-  if (!sanitizedSourceImage.startsWith("data:")) {
-    previewBtn.href = sanitizedSourceImage;
-    previewBtn.target = "_blank";
-  } else {
-    previewBtn.href = sanitizedSourceImage;
-    previewBtn.target = "_blank";
+  let isPreviewZoomed = false;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  const container = getId("image-preview-container") as HTMLElement;
+
+  function toggleZoom() {
+    isPreviewZoomed = !isPreviewZoomed;
+    if (isPreviewZoomed) {
+      previewImage.classList.add("zoomed");
+      previewImage.style.left = "50%";
+      previewImage.style.top = "50%";
+      previewImage.style.transform = "translate(-50%, -50%)";
+      previewImage.style.width = "auto";
+      previewImage.style.height = "auto";
+    } else {
+      previewImage.classList.remove("zoomed");
+      previewImage.style.left = "50%";
+      previewImage.style.top = "50%";
+      previewImage.style.transform = "translate(-50%, -50%)";
+      previewImage.style.width = "";
+      previewImage.style.height = "";
+    }
+  }
+
+  previewImage.addEventListener("click", () => {
+    toggleZoom();
+  });
+
+  const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
+  if (previewOpenButton) {
+    previewOpenButton.replaceWith(previewOpenButton.cloneNode(true));
+    const newPreviewOpenButton = getId(
+      "preview-image-open"
+    ) as HTMLButtonElement;
+
+    newPreviewOpenButton.addEventListener("click", () => {
+      if (sanitizedSourceImage) {
+        window.open(sanitizedSourceImage, "_blank");
+      }
+    });
+  }
+
+  const previewZoomButton = getId("preview-image-zoom") as HTMLButtonElement;
+  if (previewZoomButton) {
+    previewZoomButton.addEventListener("click", () => {
+      toggleZoom();
+    });
+  }
+
+  previewImage.addEventListener("mousedown", (event) => {
+    if (event.button === 1 && isPreviewZoomed) {
+      event.preventDefault();
+      isDragging = true;
+      startX = event.clientX - previewImage.offsetLeft;
+      startY = event.clientY - previewImage.offsetTop;
+    }
+  });
+
+  document.addEventListener("mousemove", (event) => {
+    if (isDragging) {
+      const newX = event.clientX - startX;
+      const newY = event.clientY - startY;
+
+      const maxX = container.clientWidth - previewImage.width;
+      const maxY = container.clientHeight - previewImage.height;
+
+      const clampedX = Math.min(Math.max(newX, 0), maxX);
+      const clampedY = Math.min(Math.max(newY, 0), maxY);
+
+      previewImage.style.left = `${clampedX}px`;
+      previewImage.style.top = `${clampedY}px`;
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+}
+
+function isImagePreviewOpen() {
+  return getId("image-preview-container").style.display === "flex";
+}
+let currentPreviewIndex = 0;
+
+function addNavigationListeners() {
+  document.addEventListener("keydown", (event) => {
+    if (isImagePreviewOpen()) {
+      const chatImages = Array.from(
+        chatContainer.querySelectorAll(".chat-image")
+      ).filter(
+        (img) => (img as HTMLImageElement).src !== ""
+      ) as HTMLImageElement[];
+
+      if (event.key === "ArrowRight") {
+        moveToNextImage(chatImages);
+      } else if (event.key === "ArrowLeft") {
+        moveToPreviousImage(chatImages);
+      }
+    }
+  });
+}
+
+function movePreviewImg(chatImages: HTMLImageElement[]) {
+  if (chatImages[currentPreviewIndex]) {
+    displayImagePreview(chatImages[currentPreviewIndex].src);
   }
 }
+
+function moveToNextImage(chatImages: HTMLImageElement[]) {
+  currentPreviewIndex = (currentPreviewIndex + 1) % chatImages.length;
+  movePreviewImg(chatImages);
+}
+
+function moveToPreviousImage(chatImages: HTMLImageElement[]) {
+  currentPreviewIndex =
+    (currentPreviewIndex - 1 + chatImages.length) % chatImages.length;
+  movePreviewImg(chatImages);
+}
+function updateCurrentIndex(sourceimg: string) {
+  const chatImages = Array.from(
+    chatContainer.querySelectorAll(".chat-image")
+  ).filter((img) => (img as HTMLImageElement).src !== "") as HTMLImageElement[];
+
+  const newIndex = chatImages.findIndex((img) => img.src === sourceimg);
+  if (newIndex !== -1) {
+    currentPreviewIndex = newIndex;
+  }
+}
+
+addNavigationListeners();
 
 export function displayJsonPreview(sourceJson) {
   const jsonPreviewContainer = getId("json-preview-container");
