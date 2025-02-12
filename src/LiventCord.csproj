@@ -6,10 +6,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-  <Target Name="BuildFrontend" BeforeTargets="Build">
-    <Exec Command="npm run build" />
-    <Exec Command="npm run copy-translations" />
-  </Target>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />

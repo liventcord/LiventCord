@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -147,4 +148,38 @@ app.UseSwaggerUI(c =>
 
 app.MapHub<Hub>("/socket");
 app.MapControllers();
+
+Task.Run(() => StartFrontendBuild());
+
 app.Run();
+
+void StartFrontendBuild()
+{
+    try
+    {
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "npm",
+                Arguments = "run build",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.OutputDataReceived += (sender, data) => Console.WriteLine(data.Data);
+        process.ErrorDataReceived += (sender, data) => Console.WriteLine(data.Data);
+        
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error running frontend build: {ex.Message}");
+    }
+}
