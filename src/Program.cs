@@ -157,29 +157,36 @@ void StartFrontendBuild()
 {
     try
     {
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "npm",
-                Arguments = "run build",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        process.OutputDataReceived += (sender, data) => Console.WriteLine(data.Data);
-        process.ErrorDataReceived += (sender, data) => Console.WriteLine(data.Data);
-        
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        process.WaitForExit();
+        RunNpmCommand("run build");
+        RunNpmCommand("run copy-translations");
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error running frontend build: {ex.Message}");
     }
+}
+
+void RunNpmCommand(string arguments)
+{
+    var process = new Process
+    {
+        StartInfo = new ProcessStartInfo
+        {
+            FileName = "npm",
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }
+    };
+
+    process.OutputDataReceived += (sender, data) => Console.WriteLine(data.Data);
+    process.ErrorDataReceived += (sender, data) => Console.WriteLine(data.Data);
+
+    process.Start();
+    process.BeginOutputReadLine();
+    process.BeginErrorReadLine();
+    process.WaitForExit();
+    process.Close();
 }

@@ -21,7 +21,7 @@ public class UrlMetadata : Metadata
     public int Id { get; set; }
     public required string Domain { get; set; }
     public required string RoutePath { get; set; }
-    public DateTime CreatedAt { get; set; } 
+    public DateTime CreatedAt { get; set; }
 }
 
 public class MetadataService
@@ -36,7 +36,7 @@ public class MetadataService
         _httpClient = httpClient;
         _dbContext = dbContext;
         _isMetadataEnabled = configuration.GetValue<bool>("AppSettings:EnableMetadataIndexing");
-        MetadataDomainLimit = configuration.GetValue<int>("AppSettings:MetadataDomainLimit",100);
+        MetadataDomainLimit = configuration.GetValue<int>("AppSettings:MetadataDomainLimit", 100);
     }
 
     public async Task<Metadata> ExtractMetadataAsync(string url)

@@ -74,162 +74,121 @@ namespace LiventCord.Controllers
             return newUser;
         }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("users");
+                entity.ToTable(nameof(User));
                 entity.HasKey(u => u.UserId);
-                entity.Property(u => u.UserId).HasColumnName("user_id").IsRequired();
-                entity.Property(u => u.Email).HasColumnName("email").IsRequired().HasMaxLength(128);
-                entity
-                    .Property(u => u.Password)
-                    .HasColumnName("password")
-                    .IsRequired()
-                    .HasMaxLength(128);
-                entity.Property(u => u.Nickname).HasColumnName("nickname").HasMaxLength(128);
-
+                entity.Property(u => u.UserId).HasColumnName(nameof(User.UserId)).IsRequired();
+                entity.Property(u => u.Email).HasColumnName(nameof(User.Email)).IsRequired().HasMaxLength(128);
+                entity.Property(u => u.Password).HasColumnName(nameof(User.Password)).IsRequired().HasMaxLength(128);
+                entity.Property(u => u.Nickname).HasColumnName(nameof(User.Nickname)).HasMaxLength(128);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
-            modelBuilder.Entity<Discriminator>().ToTable("discriminators");
-            modelBuilder.Entity<Discriminator>().HasKey(d => d.Id);
-            modelBuilder
-                .Entity<Discriminator>()
-                .Property(d => d.Nickname)
-                .HasColumnName("nickname")
-                .IsRequired()
-                .HasMaxLength(128);
-            modelBuilder
-                .Entity<Discriminator>()
-                .Property(d => d.Value)
-                .HasColumnName("value")
-                .IsRequired()
-                .HasMaxLength(128);
-            modelBuilder
-                .Entity<Discriminator>()
-                .HasIndex(d => new { d.Nickname, d.Value })
-                .IsUnique();
+            modelBuilder.Entity<Discriminator>(entity =>
+            {
+                entity.ToTable(nameof(Discriminator));
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Nickname).HasColumnName(nameof(Discriminator.Nickname)).IsRequired().HasMaxLength(128);
+                entity.Property(d => d.Value).HasColumnName(nameof(Discriminator.Value)).IsRequired().HasMaxLength(128);
+                entity.HasIndex(d => new { d.Nickname, d.Value }).IsUnique();
+            });
 
-            modelBuilder.Entity<Friend>().ToTable("friends");
-            modelBuilder.Entity<Friend>().HasKey(f => new { f.UserId, f.FriendId });
-            modelBuilder
-                .Entity<Friend>()
-                .Property(f => f.UserId)
-                .HasColumnName("user_id")
-                .IsRequired();
-            modelBuilder
-                .Entity<Friend>()
-                .Property(f => f.FriendId)
-                .HasColumnName("friend_id")
-                .IsRequired();
-            modelBuilder
-                .Entity<Friend>()
-                .Property(f => f.Status)
-                .HasColumnName("status")
-                .IsRequired()
-                .HasMaxLength(20);
+            modelBuilder.Entity<Friend>(entity =>
+            {
+                entity.ToTable(nameof(Friend));
+                entity.HasKey(f => new { f.UserId, f.FriendId });
+                entity.Property(f => f.UserId).HasColumnName(nameof(Friend.UserId)).IsRequired();
+                entity.Property(f => f.FriendId).HasColumnName(nameof(Friend.FriendId)).IsRequired();
+                entity.Property(f => f.Status).HasColumnName(nameof(Friend.Status)).IsRequired().HasMaxLength(20);
+                entity.Property(f => f.Status).HasConversion<int>();
+            });
 
-            modelBuilder.Entity<Friend>().Property(f => f.Status).HasConversion<int>();
+            modelBuilder.Entity<TypingStatus>(entity =>
+            {
+                entity.ToTable(nameof(TypingStatus));
+                entity.HasKey(ts => new { ts.UserId, ts.GuildId, ts.ChannelId });
+                entity.Property(ts => ts.UserId).IsRequired();
+                entity.Property(ts => ts.GuildId).IsRequired();
+                entity.Property(ts => ts.ChannelId).IsRequired();
+            });
 
-            modelBuilder.Entity<TypingStatus>().ToTable("typing_statuses");
-            modelBuilder
-                .Entity<TypingStatus>()
-                .HasKey(ts => new
-                {
-                    ts.UserId,
-                    ts.GuildId,
-                    ts.ChannelId,
-                });
-            modelBuilder.Entity<TypingStatus>().Property(ts => ts.UserId).IsRequired();
-            modelBuilder.Entity<TypingStatus>().Property(ts => ts.GuildId).IsRequired();
-            modelBuilder.Entity<TypingStatus>().Property(ts => ts.ChannelId).IsRequired();
-
-            modelBuilder.Entity<UserDm>().ToTable("user_dms");
+            modelBuilder.Entity<UserDm>().ToTable(nameof(UserDm));
             modelBuilder.Entity<UserDm>().HasKey(ud => new { ud.UserId, ud.FriendId });
-            modelBuilder
-                .Entity<UserDm>()
+            modelBuilder.Entity<UserDm>()
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(ud => ud.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder
-                .Entity<UserDm>()
+            modelBuilder.Entity<UserDm>()
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(ud => ud.FriendId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
-
             modelBuilder.Entity<FileBase>(entity =>
             {
                 entity.HasKey(f => f.FileId);
-                entity.Property(f => f.FileId).HasColumnName("file_id").IsRequired();
-                entity.Property(f => f.FileName).HasColumnName("file_name");
-                entity.Property(f => f.GuildId).HasColumnName("guild_id");
-                entity.Property(f => f.Content).HasColumnName("content").IsRequired();
-                entity.Property(f => f.Extension).HasColumnName("extension").IsRequired();
+                entity.Property(f => f.FileId).HasColumnName(nameof(FileBase.FileId)).IsRequired();
+                entity.Property(f => f.FileName).HasColumnName(nameof(FileBase.FileName));
+                entity.Property(f => f.GuildId).HasColumnName(nameof(FileBase.GuildId));
+                entity.Property(f => f.Content).HasColumnName(nameof(FileBase.Content)).IsRequired();
+                entity.Property(f => f.Extension).HasColumnName(nameof(FileBase.Extension)).IsRequired();
             });
 
             modelBuilder.Entity<AttachmentFile>(entity =>
             {
-                entity.ToTable("attachment_files");
-                entity.Property(f => f.ChannelId).HasColumnName("channel_id");
-                entity.Property(f => f.UserId).HasColumnName("user_id");
+                entity.ToTable(nameof(AttachmentFile));
+                entity.Property(f => f.ChannelId).HasColumnName(nameof(AttachmentFile.ChannelId));
+                entity.Property(f => f.UserId).HasColumnName(nameof(AttachmentFile.UserId));
             });
 
-            modelBuilder.Entity<EmojiFile>(entity =>
-            {
-                entity.ToTable("emoji_files");
-            });
+            modelBuilder.Entity<EmojiFile>().ToTable(nameof(EmojiFile));
+            modelBuilder.Entity<GuildFile>().ToTable(nameof(GuildFile));
+            modelBuilder.Entity<ProfileFile>().ToTable(nameof(ProfileFile));
 
             modelBuilder.Entity<GuildFile>(entity =>
             {
-                entity.ToTable("guild_files");
-                entity.Property(f => f.UserId).HasColumnName("user_id");
+                entity.Property(f => f.UserId).HasColumnName(nameof(GuildFile.UserId));
             });
 
             modelBuilder.Entity<ProfileFile>(entity =>
             {
-                entity.ToTable("profile_files");
-                entity.Property(f => f.UserId).HasColumnName("user_id");
+                entity.Property(f => f.UserId).HasColumnName(nameof(ProfileFile.UserId));
             });
 
             modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
-
-            modelBuilder
-                .Entity<GuildMember>()
+            modelBuilder.Entity<GuildMember>()
                 .HasOne(gu => gu.Guild)
                 .WithMany(g => g.GuildMembers)
                 .HasForeignKey(gu => gu.GuildId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder
-                .Entity<GuildMember>()
+            modelBuilder.Entity<GuildMember>()
                 .HasOne(gu => gu.User)
                 .WithMany()
                 .HasForeignKey(gu => gu.MemberId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<UserChannel>().ToTable("user_channels");
+
+            modelBuilder.Entity<UserChannel>().ToTable(nameof(UserChannel));
             modelBuilder.Entity<UserChannel>().HasKey(uc => new { uc.UserId, uc.ChannelId });
-            modelBuilder
-                .Entity<UserChannel>()
+            modelBuilder.Entity<UserChannel>()
                 .HasOne(uc => uc.User)
                 .WithMany(u => u.UserChannels)
                 .HasForeignKey(uc => uc.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder
-                .Entity<UserChannel>()
+            modelBuilder.Entity<UserChannel>()
                 .HasOne(uc => uc.Channel)
                 .WithMany(c => c.UserChannels)
                 .HasForeignKey(uc => uc.ChannelId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder
-                .Entity<GuildPermissions>()
-                .ToTable("guild_permissions")
+            modelBuilder.Entity<GuildPermissions>()
+                .ToTable(nameof(GuildPermissions))
                 .HasKey(gp => new { gp.GuildId, gp.UserId });
+
 
             modelBuilder.Entity<GuildPermissions>().Property(gp => gp.GuildId).IsRequired();
 
@@ -251,76 +210,42 @@ namespace LiventCord.Controllers
 
             modelBuilder.Entity<Channel>(entity =>
             {
-                entity.ToTable("channels");
+                entity.ToTable(nameof(Channel));
                 entity.HasKey(c => c.ChannelId);
-                entity.Property(c => c.ChannelId).HasColumnName("channel_id").IsRequired();
-                entity
-                    .Property(c => c.ChannelName)
-                    .HasColumnName("channel_name")
-                    .IsRequired()
-                    .HasMaxLength(128);
-                entity
-                    .Property(c => c.ChannelDescription)
-                    .HasColumnName("channel_description")
-                    .HasMaxLength(256);
-                entity.Property(c => c.IsTextChannel).HasColumnName("is_text_channel").IsRequired();
-                entity.Property(c => c.LastReadDateTime).HasColumnName("last_read_datetime");
-                entity.Property(c => c.GuildId).HasColumnName("guild_id").IsRequired();
-                entity.Property(c => c.Order).HasColumnName("order").IsRequired();
-
+                entity.Property(c => c.ChannelId).HasColumnName(nameof(Channel.ChannelId)).IsRequired();
+                entity.Property(c => c.ChannelName).HasColumnName(nameof(Channel.ChannelName)).IsRequired().HasMaxLength(128);
+                entity.Property(c => c.ChannelDescription).HasColumnName(nameof(Channel.ChannelDescription)).HasMaxLength(256);
+                entity.Property(c => c.IsTextChannel).HasColumnName(nameof(Channel.IsTextChannel)).IsRequired();
+                entity.Property(c => c.LastReadDateTime).HasColumnName(nameof(Channel.LastReadDateTime));
+                entity.Property(c => c.GuildId).HasColumnName(nameof(Channel.GuildId)).IsRequired();
+                entity.Property(c => c.Order).HasColumnName(nameof(Channel.Order)).IsRequired();
                 entity.HasIndex(c => c.GuildId);
-                entity
-                    .HasOne(c => c.Guild)
-                    .WithMany(g => g.Channels)
-                    .HasForeignKey(c => c.GuildId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(c => c.Guild).WithMany(g => g.Channels).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Guild>(entity =>
             {
-                entity.ToTable("guilds");
+                entity.ToTable(nameof(Guild));
                 entity.HasKey(g => g.GuildId);
-                entity.Property(g => g.GuildId).HasColumnName("guild_id").IsRequired();
-                entity.Property(g => g.OwnerId).HasColumnName("owner_id").IsRequired();
-                entity
-                    .Property(g => g.GuildName)
-                    .HasColumnName("guild_name")
-                    .IsRequired()
-                    .HasMaxLength(128);
-                entity.Property(g => g.CreatedAt).HasColumnName("created_at").IsRequired();
-                entity.Property(g => g.RootChannel).HasColumnName("root_channel").IsRequired();
-                entity.Property(g => g.Region).HasColumnName("region").HasMaxLength(64);
-                entity.Property(g => g.Settings).HasColumnName("settings").HasMaxLength(1024);
-                entity
-                    .Property(g => g.IsGuildUploadedImg)
-                    .HasColumnName("is_guild_uploaded_img")
-                    .IsRequired();
-
+                entity.Property(g => g.GuildId).HasColumnName(nameof(Guild.GuildId)).IsRequired();
+                entity.Property(g => g.OwnerId).HasColumnName(nameof(Guild.OwnerId)).IsRequired();
+                entity.Property(g => g.GuildName).HasColumnName(nameof(Guild.GuildName)).IsRequired().HasMaxLength(128);
+                entity.Property(g => g.CreatedAt).HasColumnName(nameof(Guild.CreatedAt)).IsRequired();
+                entity.Property(g => g.RootChannel).HasColumnName(nameof(Guild.RootChannel)).IsRequired();
+                entity.Property(g => g.Region).HasColumnName(nameof(Guild.Region)).HasMaxLength(64);
+                entity.Property(g => g.Settings).HasColumnName(nameof(Guild.Settings)).HasMaxLength(1024);
+                entity.Property(g => g.IsGuildUploadedImg).HasColumnName(nameof(Guild.IsGuildUploadedImg)).IsRequired();
                 entity.HasIndex(g => g.OwnerId);
-
-                entity
-                    .HasMany(g => g.GuildMembers)
-                    .WithOne(gu => gu.Guild)
-                    .HasForeignKey(gu => gu.GuildId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity
-                    .HasMany(g => g.GuildPermissions)
-                    .WithOne(gp => gp.Guild)
-                    .HasForeignKey(gp => gp.GuildId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity
-                    .HasMany(g => g.Channels)
-                    .WithOne(c => c.Guild)
-                    .HasForeignKey(c => c.GuildId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(g => g.GuildMembers).WithOne(gu => gu.Guild).HasForeignKey(gu => gu.GuildId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(g => g.GuildPermissions).WithOne(gp => gp.Guild).HasForeignKey(gp => gp.GuildId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(g => g.Channels).WithOne(c => c.Guild).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
             });
+
 
 
             modelBuilder.Entity<Message>(entity =>
             {
-                entity.ToTable("messages");
+                entity.ToTable(typeof(Message).Name.ToLower());
                 entity.HasKey(m => m.MessageId);
                 entity.Property(m => m.MessageId).IsRequired();
                 entity.Property(m => m.UserId).IsRequired();
@@ -413,16 +338,10 @@ namespace LiventCord.Controllers
 
 
 
+
         }
 
     }
-
-
-
-
-
-
-
 
 }
 
