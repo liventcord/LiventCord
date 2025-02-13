@@ -17,6 +17,6 @@
     "MaxAvatarSize": "3",
     "MaxAttachmentsSize": "30",
     "EnableMetadataIndexing": true,
-    "MetadataDomainLimit" : "100"
+    "MetadataDomainLimit": "100"
   }
 }

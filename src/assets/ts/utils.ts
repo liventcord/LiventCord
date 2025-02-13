@@ -136,9 +136,6 @@ export function constructAbsoluteAppPage(guildId, channelId) {
   return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
 }
 
-export function isPathnameCorrect(url) {
-  return /^\/channels\/\d{18}\/\d{18}$/.test(url);
-}
 export function getEmojiPath(emojiId) {
   return `/emojis/${emojiId}.png`;
 }

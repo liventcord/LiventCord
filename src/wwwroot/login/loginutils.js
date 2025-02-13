@@ -186,7 +186,7 @@ function submitForm(event, isRegister) {
     })
     .then(() => {
       if (isRegister) {
-        alertUser(getTranslation("successRegister"),true);
+        alertUser(getTranslation("successRegister"), true);
         setTimeout(() => {
           window.location.href = "/app";
         }, 5000);

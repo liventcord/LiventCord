@@ -63,7 +63,7 @@ function setInputListeners() {
   passInput.addEventListener("keypress", function (event) {
     if (event.key === "Enter") {
       event.preventDefault();
-      submitForm(event,true);
+      submitForm(event, true);
     }
   });
 }

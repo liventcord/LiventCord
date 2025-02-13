@@ -1,7 +1,6 @@
 import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
 import { loadDmHome, openDm } from "./app.ts";
-import { isPathnameCorrect } from "./utils.ts";
 import { loadGuild, selectGuildList } from "./guild.ts";
 export let isOnMe = true;
 export let isOnDm = false;
@@ -23,6 +22,12 @@ class Router {
   constructor() {
     this.ID_LENGTH = 19;
     this.init();
+  }
+  isPathnameCorrect(url) {
+    const regex = new RegExp(
+      `^/channels/\\d{${this.ID_LENGTH}}/\\d{${this.ID_LENGTH}}$`
+    );
+    return regex.test(url);
   }
 
   init() {
@@ -77,10 +82,6 @@ class Router {
       });
   }
 
-  changePageToMe() {
-    window.location.href = "/channels/@me";
-  }
-
   changePageToGuild() {
     window.location.href = "/";
   }
@@ -98,13 +99,14 @@ class Router {
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
     const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts);
+    console.log(guildId, channelId, friendId);
 
     if (!this.isIdDefined(guildId) || !this.isIdDefined(channelId)) {
       this.resetRoute();
       return { isValid: false };
     }
 
-    const isPathnameCorrectValue = isPathnameCorrect(pathStr);
+    const isPathnameCorrectValue = this.isPathnameCorrect(pathStr);
 
     if (this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
       this.resetRoute();
