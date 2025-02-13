@@ -255,7 +255,7 @@ namespace LiventCord.Controllers
                     .HasMaxLength(2000);
                 entity.Property(m => m.Date).IsRequired();
                 entity.Property(m => m.LastEdited);
-                entity.Property(m => m.AttachmentUrls).HasMaxLength(2048);
+                entity.Property(m => m.AttachmentUrls);
                 entity.Property(m => m.ReplyToId);
                 entity.Property(m => m.ReactionEmojisIds).HasMaxLength(512);
 

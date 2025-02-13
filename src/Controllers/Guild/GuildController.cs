@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-    [Route("")]
+    [Route("/api/guilds")]
     [ApiController]
     public class GuildController : BaseController
     {
@@ -34,9 +34,9 @@ namespace LiventCord.Controllers
             _tokenValidationService = tokenValidationService;
             _logger = logger;
         }
-        [Authorize]
 
-        [HttpGet("/api/guilds")]
+        [HttpGet("")]
+        [Authorize]
         public async Task<IActionResult> HandleGetGuilds()
         {
             var guilds = await _membersController.GetUserGuilds(UserId!) ?? new List<GuildDto>();
@@ -45,7 +45,8 @@ namespace LiventCord.Controllers
 
 
 
-        [HttpPut("/{guildId}")]
+        [HttpPut("{guildId}")]
+        [Authorize]
         public async Task<IActionResult> ChangeGuildName([FromRoute][IdLengthValidation] string guildId, [FromBody] ChangeGuildNameRequest request)
         {
             var guild = await _dbContext.Guilds.FindAsync(guildId);
@@ -153,8 +154,7 @@ namespace LiventCord.Controllers
         }
 
 
-        [Authorize]
-        [HttpPost("/api/guilds")]
+        [HttpPost("")]
         public async Task<IActionResult> CreateGuildEndpoint([FromForm] CreateGuildRequest request)
         {
             if (!ModelState.IsValid)
@@ -163,9 +163,8 @@ namespace LiventCord.Controllers
             return await HandleGuildCreation(UserId!, request.GuildName, request.Photo, request.IsPublic);
         }
 
-
-
-        [HttpDelete("/api/guilds/{guildId}")]
+        [Authorize]
+        [HttpDelete("{guildId}")]
         public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
         {
             var guild = await _dbContext.Guilds.FindAsync(guildId);

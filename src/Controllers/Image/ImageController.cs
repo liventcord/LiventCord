@@ -94,7 +94,7 @@ namespace LiventCord.Controllers
             if (guild != null)
             {
                 guild.IsGuildUploadedImg = true;
-                
+
                 await _context.SaveChangesAsync();
             }
         }

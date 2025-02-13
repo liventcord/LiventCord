@@ -31,10 +31,15 @@ namespace LiventCord.Controllers
 
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetGuildMessages(
-            [FromRoute] string guildId,
-            [FromRoute] string channelId
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId
         )
         {
+            bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
             var messages = await GetMessages(channelId, guildId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
             return Ok(new { messages, channelId, guildId, oldestMessageDate });
@@ -50,8 +55,8 @@ namespace LiventCord.Controllers
 
         [HttpPost("/api/discord/bot/messages/{guildId}/{channelId}")]
         public async Task<IActionResult> HandleNewBotMessage(
-            [FromRoute] string guildId,
-            [FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
             [FromBody] NewBotMessageRequest request,
             [FromHeader(Name = "Authorization")] string token
         )
@@ -70,8 +75,8 @@ namespace LiventCord.Controllers
 
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleNewGuildMessage(
-            [FromRoute] string guildId,
-            [FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
             [FromBody] NewMessageRequest request
         )
         {
@@ -80,7 +85,7 @@ namespace LiventCord.Controllers
 
         [HttpPost("/api/dms/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleNewDmMessage(
-            [FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string channelId,
             [FromBody] NewMessageRequest request
         )
         {
@@ -88,15 +93,11 @@ namespace LiventCord.Controllers
         }
         private async Task<IActionResult> HandleBotMessage(
             string guildId,
-            [IdLengthValidation] string channelId,
+            string channelId,
             NewBotMessageRequest request
         )
         {
 
-            if (string.IsNullOrWhiteSpace(guildId))
-            {
-                return BadRequest(new { Type = "error", Message = "Missing guildId" });
-            }
             bool messageExists = await MessageExists(request.MessageId, channelId);
             if (messageExists)
             {
@@ -135,8 +136,8 @@ namespace LiventCord.Controllers
 
         [HttpPut("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditDMMessage(
-            [FromRoute] string channelId,
-            [FromRoute] string messageId,
+            [IdLengthValidation][FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string messageId,
             [FromBody] EditMessageRequest request
         )
         {
@@ -151,9 +152,9 @@ namespace LiventCord.Controllers
 
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleDeleteGuildMessage(
-            [FromRoute] string guildId,
-            [FromRoute] string channelId,
-            [FromRoute] string messageId
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string messageId
         )
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
@@ -167,8 +168,8 @@ namespace LiventCord.Controllers
 
         [HttpDelete("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleDeleteDMMessage(
-            [FromRoute] string channelId,
-            [FromRoute] string messageId
+            [IdLengthValidation][FromRoute] string channelId,
+            [IdLengthValidation][FromRoute] string messageId
         )
         {
             await DeleteMessage(channelId, messageId);
@@ -178,7 +179,7 @@ namespace LiventCord.Controllers
         [HttpGet("/api/{type}/{id}/search")]
         public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
             [FromRoute] string type,
-            [FromRoute] string id,
+            [IdLengthValidation][FromRoute] string id,
             [FromBody] string query
         )
         {
@@ -264,16 +265,16 @@ namespace LiventCord.Controllers
 
         [NonAction]
         private async Task NewMessage(
-            string messageId,
-            string userId,
-            string channelId,
-            string? content,
-            DateTime date,
-            DateTime? lastEdited,
-            string? attachmentUrls,
-            string? replyToId,
-            string? reactionEmojisIds,
-            List<Embed>? embeds)
+             string messageId,
+             string userId,
+             string channelId,
+             string? content,
+             DateTime date,
+             DateTime? lastEdited,
+             string? attachmentUrls,
+             string? replyToId,
+             string? reactionEmojisIds,
+             List<Embed>? embeds)
         {
             var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
             if (!userExists)
@@ -294,7 +295,11 @@ namespace LiventCord.Controllers
                 return;
             }
 
-            var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
+            await Task.Run(async () =>
+            {
+                var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
+                await SaveMetadataAsync(messageId, metadata);
+            });
 
             var message = new Message
             {
@@ -308,12 +313,21 @@ namespace LiventCord.Controllers
                 ReplyToId = replyToId,
                 ReactionEmojisIds = reactionEmojisIds,
                 Embeds = embeds ?? new(),
-                Metadata = metadata
+                Metadata = new Metadata()
             };
-
 
             await _context.Messages.AddAsync(message).ConfigureAwait(false);
             await _context.SaveChangesAsync().ConfigureAwait(false);
+        }
+
+        private async Task SaveMetadataAsync(string messageId, Metadata metadata)
+        {
+            var message = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+            if (message != null)
+            {
+                message.Metadata = metadata;
+                await _context.SaveChangesAsync();
+            }
         }
 
         [NonAction]
@@ -440,6 +454,7 @@ namespace LiventCord.Controllers
 }
 public class NewBotMessageRequest
 {
+    [IdLengthValidation]
     public required string MessageId { get; set; }
     public required string UserId { get; set; }
     public string? Content { get; set; }
@@ -464,18 +479,18 @@ public class NewMessageRequest
 public class EditMessageRequest
 {
     [IdLengthValidation]
-    [Required(ErrorMessage = "GuildId is required.")]
+    [Required]
     public required string GuildId { get; set; }
 
     [IdLengthValidation]
-    [Required(ErrorMessage = "MessageId is required.")]
+    [Required]
     public required string MessageId { get; set; }
 
     [IdLengthValidation]
-    [Required(ErrorMessage = "ChannelId is required.")]
+    [Required]
     public required string ChannelId { get; set; }
 
-    [Required(ErrorMessage = "Content is required.")]
+    [Required]
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public required string Content { get; set; }
 

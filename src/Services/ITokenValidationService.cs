@@ -13,7 +13,7 @@ public class TokenValidationService : ITokenValidationService
     public TokenValidationService(IConfiguration configuration, ILogger<TokenValidationService> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
+
         _botToken = configuration["AppSettings:BotToken"] ?? Utils.CreateRandomId();
 
         if (string.IsNullOrEmpty(_botToken))
