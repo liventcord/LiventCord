@@ -97,17 +97,39 @@ namespace LiventCord.Controllers
             NewBotMessageRequest request
         )
         {
-
-            bool messageExists = await MessageExists(request.MessageId, channelId);
-            if (messageExists)
+            var message = await _context.Messages
+                .Include(m => m.Embeds) 
+                .FirstOrDefaultAsync(m => m.MessageId == request.MessageId);
+            
+            if (message != null)
             {
-                return Conflict();
-            }
-            await NewBotMessage(
-                request, channelId, guildId
-            );
+                _context.Entry(message).Collection(m => m.Embeds).Load();
+                
+                message.Content = request.Content;
+                message.LastEdited = DateTime.UtcNow;
+                message.AttachmentUrls = request.AttachmentUrls;
+                message.ReplyToId = request.ReplyToId;
+                message.ReactionEmojisIds = request.ReactionEmojisIds;
+                
+                if (request.Embeds != null && request.Embeds.Any())
+                {
+                    message.Embeds.Clear();
+                    var newEmbeds = request.Embeds.Select(embed =>
+                    {
+                        embed.Id ??= Utils.CreateRandomId();
+                        return embed;
+                    }).ToList();
+                    
+                    message.Embeds.AddRange(newEmbeds);
+                }
 
-            return Ok(new { Type = "success", Message = $"Message inserted to guild." });
+                
+                await _context.SaveChangesAsync();
+                return Ok(new { Type = "success", Message = "Message updated in guild." });
+            }
+            
+            await NewBotMessage(request, channelId, guildId);
+            return Ok(new { Type = "success", Message = "Message inserted to guild." });
         }
 
 
