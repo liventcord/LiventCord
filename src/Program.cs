@@ -35,6 +35,9 @@ builder.Services.AddScoped<ImageController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
 builder.Services.AddScoped<MetadataService>();
+builder.Services.AddScoped<MediaProxyController>();
+builder.Services.AddSingleton<MediaStorageInitializer>();
+builder.Services.AddSingleton<MediaCacheSettings>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
@@ -104,7 +107,8 @@ if (isDevelopment)
     app.Use(async (context, next) =>
     {
         if (context.Request.Path.StartsWithSegments("/profiles") ||
-            context.Request.Path.StartsWithSegments("/guilds"))
+            context.Request.Path.StartsWithSegments("/guilds") ||
+            context.Request.Path.StartsWithSegments("/api/proxy"))
         {
             await next();
             return;

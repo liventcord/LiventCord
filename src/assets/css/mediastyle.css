@@ -367,3 +367,19 @@
   user-select: "text";
   white-space: "pre-wrap";
 }
+
+.embed-video {
+  max-width: 500px;
+}
+.embed-container {
+  border-radius: 5px;
+  padding: 15px;
+  font-size: 14px;
+  margin-top: 10px;
+  border-left: 4px solid rgb(30, 31, 34);
+  background-color: rgb(43, 45, 49);
+}
+.url-link {
+  color: #02a8fc;
+  cursor: pointer;
+}

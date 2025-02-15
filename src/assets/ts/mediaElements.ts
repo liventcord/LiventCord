@@ -13,8 +13,7 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
-  defaultMediaImageSrc,
-  defaultProfileImageSrc
+  defaultMediaImageSrc
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 
@@ -106,7 +105,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultProfileImageSrc;
+    imgElement.src = defaultMediaImageSrc;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -117,31 +116,49 @@ export function createTenorElement(msgContentElement, inputText, url) {
 
   return imgElement;
 }
+function getProxy(url: string): string {
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.hostname === "cdn.discordapp.com") {
+      // Ignore proxy for discord media
+      return url;
+    }
+    return `/api/proxy/media?url=${encodeURIComponent(url)}`;
+  } catch {
+    return "";
+  }
+}
 
-export function createImageElement(msgContentElement, inputText, url_src) {
+export function createImageElement(inputText, url_src) {
   const imgElement = createEl("img", {
     className: "chat-image",
-    src: defaultMediaImageSrc,
+    src: getProxy(url_src),
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
     }
   });
 
-  imgElement.setAttribute("data-src", url_src);
-
-  imgElement.onload = function () {
-    const actualSrc = DOMPurify.sanitize(imgElement.getAttribute("data-src"));
-
-    if (imgElement.src === defaultMediaImageSrc) {
-      imgElement.src = actualSrc;
-    }
-  };
+  imgElement.crossOrigin = "anonymous";
+  imgElement.setAttribute("data-src", getProxy(url_src));
+  imgElement.setAttribute("data-original-src", url_src);
+  imgElement.alt = inputText ?? "Image";
 
   imgElement.onerror = function () {
     imgElement.onerror = null;
-    imgElement.src = defaultProfileImageSrc;
-    msgContentElement.textContent = inputText;
+    imgElement.src = defaultMediaImageSrc;
+
+    const preloader = new Image();
+    preloader.crossOrigin = "anonymous";
+    preloader.src = getProxy(url_src);
+
+    preloader.onload = function () {
+      imgElement.src = preloader.src;
+    };
+
+    preloader.onerror = function () {
+      imgElement.src = defaultMediaImageSrc;
+    };
   };
 
   imgElement.addEventListener("click", function () {
@@ -212,16 +229,8 @@ export function createVideoElement(url) {
   if (!isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
-  let sanitizedUrl;
-  try {
-    sanitizedUrl = DOMPurify.sanitize(url);
-  } catch (e) {
-    console.error("Error sanitizing URL", e);
-    throw new Error("Failed to sanitize URL");
-  }
-
   const videoElement = createEl("video");
-  videoElement.src = sanitizedUrl;
+  videoElement.src = getProxy(url);
   videoElement.width = "560";
   videoElement.height = "315";
   videoElement.controls = true;
@@ -318,28 +327,25 @@ export function processMediaLink(
 
     const handleError = () => {
       console.error("Error loading media element");
-      const spanElement = createEl("span", {
-        textContent: translations.getTranslation("failed-media"),
-        style: {
-          display: "inline-block",
-          maxWidth: "100%",
-          maxHeight: "100%",
-          color: "red"
-        }
-      });
-      if (mediaElement.parentNode) {
-        mediaElement.parentNode.replaceChild(spanElement, mediaElement);
-      }
-      resolve(true);
+      ///const spanElement = createEl("span", {
+      ///  textContent: translations.getTranslation("failed-media"),
+      ///  style: {
+      ///    display: "inline-block",
+      ///    maxWidth: "100%",
+      ///    maxHeight: "100%",
+      ///    color: "red"
+      ///  }
+      ///});
+      ///if (mediaElement.parentNode) {
+      ///  mediaElement.parentNode.replaceChild(spanElement, mediaElement);
+      ///}
+      //resolve(true);
     };
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      mediaElement = createImageElement(
-        messageContentElement,
-        null,
-        DOMPurify.sanitize(link)
-      );
-      mediaElement.dataset.dummy = link;
+      if (!embeds || embeds.length <= 0) {
+        mediaElement = createImageElement(null, link);
+      }
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(messageContentElement, content, link);
     } else if (isYouTubeURL(link)) {
@@ -347,7 +353,9 @@ export function processMediaLink(
     } else if (isAudioURL(link)) {
       mediaElement = createAudioElement(link);
     } else if (isVideoUrl(link)) {
-      mediaElement = createVideoElement(link);
+      if (!embeds || embeds.length <= 0) {
+        mediaElement = createVideoElement(link);
+      }
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
@@ -357,11 +365,7 @@ export function processMediaLink(
       resolve(true);
       return;
     }
-    try {
-      displayEmbeds(messageContentElement, link, embeds, metadata);
-    } catch (embedError) {
-      console.error("Error displaying embeds:", embedError);
-    }
+
     if (
       mediaElement instanceof HTMLImageElement ||
       mediaElement instanceof HTMLAudioElement ||
@@ -411,60 +415,66 @@ function applyBorderColor(element, decimalColor) {
   const hexColor = `#${decimalColor.toString(16).padStart(6, "0")}`;
   element.style.borderLeft = `4px solid ${hexColor}`;
 }
-function appendEmbedToMessage(
-  messageElement: HTMLElement,
-  embed: Embed,
-  link: string,
-  metaData: MetaData
-) {
+async function appendEmbedToMessage(messageElement, embed, link, metaData) {
   const embedContainer = createEl("div", { className: "embed-container" });
+
   if (embed.color) {
     applyBorderColor(embedContainer, embed.color);
   }
 
-  if (embed.type === embedTypes.Image) {
-    if (embed.image && embed.image.url) {
-      const imageContainer = createEl("div", {
-        className: "embed-image-container"
-      });
+  if (embed.type === embedTypes.Image && embed.image && embed.image.url) {
+    const imgUrl = embed.image.url.split("?")[0];
+    const imageContainer = createEl("div", {
+      className: "embed-image-container"
+    });
+    const imgElement = createImageElement(embed.title || "", imgUrl);
+    const textElement = createRegularText(embed.title);
+    textElement.style.fontSize = "1.2em";
 
-      const imgElement = createImageElement(
-        imageContainer,
-        embed.title || "",
-        embed.image.url
-      );
-      imgElement.setAttribute("data-src", embed.image.url);
-      const textElement = createRegularText(embed.title);
-      textElement.style.fontSize = "1.2em";
-      imageContainer.appendChild(textElement);
-      imageContainer.appendChild(imgElement);
-      embedContainer.appendChild(imageContainer);
-    }
+    imageContainer.appendChild(textElement);
+    imageContainer.appendChild(imgElement);
+    embedContainer.appendChild(imageContainer);
+  } else if (
+    embed.type === embedTypes.Video &&
+    embed.video &&
+    embed.video.url
+  ) {
+    const videoContainer = createEl("div", {
+      className: "embed-video-container"
+    });
+    const videoElement = createEl("video", {
+      src: getProxy(embed.video.url),
+      controls: true,
+      className: "embed-video"
+    });
+
+    videoContainer.appendChild(videoElement);
+    embedContainer.appendChild(videoContainer);
   } else {
     console.warn("Unsupported embed type: ", embed.type);
   }
 
   if (metaData) {
-    const siteName = metaData.siteName;
-    if (siteName) {
-      const headerElement = createEl("p", { textContent: siteName });
-      embedContainer.appendChild(headerElement);
+    if (metaData.siteName) {
+      embedContainer.appendChild(
+        createEl("p", { textContent: metaData.siteName })
+      );
     }
+
     if (link) {
-      const titleElement = createEl("a", {
-        textContent: metaData.title,
-        className: "url-link",
-        href: link,
-        target: "_blank"
-      });
-
-      embedContainer.appendChild(titleElement);
+      embedContainer.appendChild(
+        createEl("a", {
+          textContent: metaData.title,
+          className: "url-link",
+          href: link,
+          target: "_blank"
+        })
+      );
     }
-    const descriptionElement = createEl("p", {
-      textContent: metaData.description || metaData.title
-    });
 
-    embedContainer.appendChild(descriptionElement);
+    embedContainer.appendChild(
+      createEl("p", { textContent: metaData.description || metaData.title })
+    );
   }
 
   messageElement.appendChild(embedContainer);

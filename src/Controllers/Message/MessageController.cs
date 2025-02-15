@@ -98,19 +98,19 @@ namespace LiventCord.Controllers
         )
         {
             var message = await _context.Messages
-                .Include(m => m.Embeds) 
+                .Include(m => m.Embeds)
                 .FirstOrDefaultAsync(m => m.MessageId == request.MessageId);
-            
+
             if (message != null)
             {
                 _context.Entry(message).Collection(m => m.Embeds).Load();
-                
+
                 message.Content = request.Content;
                 message.LastEdited = DateTime.UtcNow;
                 message.AttachmentUrls = request.AttachmentUrls;
                 message.ReplyToId = request.ReplyToId;
                 message.ReactionEmojisIds = request.ReactionEmojisIds;
-                
+
                 if (request.Embeds != null && request.Embeds.Any())
                 {
                     message.Embeds.Clear();
@@ -119,15 +119,15 @@ namespace LiventCord.Controllers
                         embed.Id ??= Utils.CreateRandomId();
                         return embed;
                     }).ToList();
-                    
+
                     message.Embeds.AddRange(newEmbeds);
                 }
 
-                
+
                 await _context.SaveChangesAsync();
                 return Ok(new { Type = "success", Message = "Message updated in guild." });
             }
-            
+
             await NewBotMessage(request, channelId, guildId);
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
         }
