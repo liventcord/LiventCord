@@ -1,18 +1,12 @@
-
 public class MediaStorageInitializer
 {
-    private readonly long _storageLimitBytes;
-
+    private readonly IConfiguration _configuration;
     private readonly MediaCacheSettings _mediaCacheSettings;
 
     public MediaStorageInitializer(MediaCacheSettings mediaCacheSettings, IConfiguration configuration)
     {
         _mediaCacheSettings = mediaCacheSettings;
-
-
-        _storageLimitBytes = long.TryParse(configuration["AppSettings:ExternalMediaLimit"], out var limit)
-            ? limit * 1024 * 1024 * 1024
-            : 10L * 1024 * 1024 * 1024;
+        _configuration = configuration;
     }
 
     public void Initialize()
@@ -22,7 +16,6 @@ public class MediaStorageInitializer
 
         ReportStorageStatus();
     }
-
 
     private long GetFolderSize(string folderPath)
     {
@@ -36,11 +29,10 @@ public class MediaStorageInitializer
         return totalSize;
     }
 
-
     private void ReportStorageStatus()
     {
         var folderSize = GetFolderSize(_mediaCacheSettings.CacheDirectory);
-        var limitInGB = _storageLimitBytes / (1024 * 1024 * 1024);
+        var limitInGB = _mediaCacheSettings.StorageLimitBytes / (1024 * 1024 * 1024);
         var folderSizeInGB = folderSize / (1024 * 1024 * 1024);
 
         var limitReached = folderSizeInGB >= limitInGB;
@@ -62,10 +54,15 @@ public class MediaStorageInitializer
 public class MediaCacheSettings
 {
     public string CacheDirectory { get; }
+    public string MediaProxy { get; }
+    public long StorageLimitBytes { get; }
 
-    public MediaCacheSettings()
+    public MediaCacheSettings(IConfiguration configuration)
     {
         CacheDirectory = Path.Combine(Directory.GetCurrentDirectory(), "MediaCache");
+        StorageLimitBytes = long.TryParse(configuration["AppSettings:ExternalMediaLimit"], out var limit)
+            ? limit * 1024 * 1024 * 1024
+            : 10L * 1024 * 1024 * 1024;
+        MediaProxy = configuration["AppSettings:MediaProxy"] ?? "";
     }
 }
-

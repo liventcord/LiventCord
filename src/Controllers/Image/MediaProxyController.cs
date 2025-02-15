@@ -19,11 +19,13 @@ namespace LiventCord.Controllers
 
         private readonly long _storageLimitBytes;
 
-        public MediaProxyController(AppDbContext dbContext, IConfiguration configuration)
+        public MediaProxyController(AppDbContext dbContext, IConfiguration configuration, MediaCacheSettings mediaCacheSettings)
         {
             _dbContext = dbContext;
+            _cacheDirectory = mediaCacheSettings.CacheDirectory;
+            _storageLimitBytes = mediaCacheSettings.StorageLimitBytes;
 
-            var proxyUrl = configuration["AppSettings:MediaProxy"];
+            var proxyUrl = mediaCacheSettings.MediaProxy;
             var handler = new HttpClientHandler();
             if (!string.IsNullOrEmpty(proxyUrl))
             {
@@ -39,14 +41,7 @@ namespace LiventCord.Controllers
             _httpClient.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
             _httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate, br");
             _httpClient.DefaultRequestHeaders.Connection.ParseAdd("keep-alive");
-
-            _storageLimitBytes = long.TryParse(configuration["AppSettings:ExternalMediaLimit"], out var limit)
-                ? limit * 1024 * 1024 * 1024
-                : 10L * 1024 * 1024 * 1024;
-
-
         }
-
 
 
 
