@@ -132,7 +132,7 @@ function getProxy(url: string): string {
 export function createImageElement(inputText, url_src) {
   const imgElement = createEl("img", {
     className: "chat-image",
-    src: getProxy(url_src),
+    src: defaultMediaImageSrc,
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
@@ -144,21 +144,16 @@ export function createImageElement(inputText, url_src) {
   imgElement.setAttribute("data-original-src", url_src);
   imgElement.alt = inputText ?? "Image";
 
-  imgElement.onerror = function () {
-    imgElement.onerror = null;
-    imgElement.src = defaultMediaImageSrc;
+  const preloader = new Image();
+  preloader.crossOrigin = "anonymous";
+  preloader.src = getProxy(url_src);
 
-    const preloader = new Image();
-    preloader.crossOrigin = "anonymous";
-    preloader.src = getProxy(url_src);
+  preloader.onload = function () {
+    imgElement.src = preloader.src; 
+  };
 
-    preloader.onload = function () {
-      imgElement.src = preloader.src;
-    };
-
-    preloader.onerror = function () {
-      imgElement.src = defaultMediaImageSrc;
-    };
+  preloader.onerror = function () {
+    imgElement.src = defaultMediaImageSrc; 
   };
 
   imgElement.addEventListener("click", function () {
