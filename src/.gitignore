@@ -21,6 +21,7 @@ LiventCord.sln
 *.pdb
 node_modules/
 
+MediaCache
 # Exclude build-copied files
 wwwroot/app/* 
 wwwroot/translations/*

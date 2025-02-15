@@ -55,3 +55,12 @@ sidebar_position: 1
   -**MetadataDomainLimit**:
     The maximum number of metadata records that can be indexed or stored per domain within a day.
     Defaults to 100.
+  
+  -**MediaProxy**:
+    Proxy adress for media previews.
+    Defaults to none.
+
+  -**ExternalMediaLimit**:
+    Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
+    Defaults to 10.
+    
