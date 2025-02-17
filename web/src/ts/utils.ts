@@ -11,14 +11,19 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
   }
 ): HTMLElement => {
   const element = document.createElement(tag);
+
   if (options) {
-    if (typeof options.style === "string") {
-      element.style.cssText = options.style;
-    } else if (typeof options.style === "object") {
-      Object.assign(element.style, options.style);
+    const { style, ...rest } = options;
+
+    if (typeof style === "string") {
+      element.style.cssText = style;
+    } else if (typeof style === "object") {
+      Object.assign(element.style, style);
     }
-    Object.assign(element, options);
+
+    Object.assign(element, rest);
   }
+
   return element;
 };
 

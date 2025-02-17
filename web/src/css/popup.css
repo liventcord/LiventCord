@@ -207,7 +207,7 @@
   cursor: pointer;
 }
 .pop-up-accept {
-  font-size: 14px;
+  font-size: 16px;
   width: 25%;
   height: 40px;
   white-space: nowrap;
@@ -218,7 +218,7 @@
   cursor: pointer;
   position: fixed;
   z-index: 1;
-  top: 93%;
+  top: 80%;
   left: 84%;
   transition: background-color 0.3s ease;
   transform: translate(-50%, -50%);

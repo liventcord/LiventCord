@@ -4,11 +4,25 @@ import { alertUser } from "./ui.ts";
 import enTranslations from "./../translations/en.json";
 import trTranslations from "./../translations/tr.json";
 
-const translationsMap = {
-  English: enTranslations,
-  Turkish: trTranslations
+export const availableLanguages = {
+  english: "en",
+  turkish: "tr",
 };
 
+
+interface TranslationsStructure {
+  textTranslations: Record<string, string>;
+  friendErrorTranslations: Record<string, { [key: string]: string } | string>;
+  errorTranslations: Record<string, string>;
+  placeholderTranslations: Record<string, string>;
+  contextTranslations: Record<string, string>;
+  settingTranslations: Record<string, string>;
+}
+
+const translationsMap: Record<string, TranslationsStructure> = {
+  English: enTranslations,
+  Turkish: trTranslations,
+};
 type Replacements = Record<string, string>;
 type Truncation = Record<string, number>;
 
@@ -26,7 +40,7 @@ class Translations {
   rejectTranslations?: () => void;
 
   constructor() {
-    this.currentLanguage = "en";
+    this.currentLanguage = "English";
     this.languages = {
       en: "en-us",
       tr: "tr-TR"
@@ -217,8 +231,7 @@ class Translations {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
 
     const selectedTranslations =
-      translationsMap[language as keyof typeof translationsMap] ||
-      translationsMap["English"];
+      translationsMap[language as keyof typeof translationsMap];
 
     this.textTranslations = selectedTranslations.textTranslations;
     this.friendErrorTranslations = selectedTranslations.friendErrorTranslations;
@@ -259,7 +272,7 @@ class Translations {
 
 export const translations = new Translations();
 
-translations.setLanguage("en");
+translations.setLanguage("English");
 
 setTimeout(() => {
   translations.initializeTranslations();
