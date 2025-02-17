@@ -23,23 +23,20 @@ jobs:
         with:
           node-version: '22'
 
-
-      - name: Set Working Directory to src
-        run: cd src
-
       - name: Install Node.js Dependencies
         run: npm install
-        working-directory: src
+        working-directory: server/src
         
       - name: Test
         run: dotnet test --no-build --verbosity normal
-        working-directory: src
+        working-directory: server/src
 
       - name: Publish the Application
         run: dotnet publish -c Release -o ./publish
-        working-directory: src
+        working-directory: server/src
 
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         with:
           tag_name: v${{ github.event.inputs.version }}
@@ -52,6 +49,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src/publish
+          asset_path: ./server/src/publish
           asset_name: liventcord-${{ github.event.inputs.version }}.zip
           asset_content_type: application/zip
