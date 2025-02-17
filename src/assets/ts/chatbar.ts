@@ -307,6 +307,8 @@ export function setDropHandler() {
     }
     dropZone.classList.add("hover");
   };
+  dropZone.addEventListener("dragenter", (e: Event) => handleDragEnterOrOver(e as DragEvent), false);
+  dropZone.addEventListener("dragover", (e: Event) => handleDragEnterOrOver(e as DragEvent), false);
 
   const handleDragLeaveOrDrop = (e: DragEvent) => {
     if (e.type === "drop") {
