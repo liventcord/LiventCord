@@ -16,21 +16,9 @@ jobs:
           repository: liventcord/LiventCord
       #    token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      - name: Set Working Directory to src
-        run: cd src
-
-      - name: Install Node.js Dependencies
-        run: npm install
-        working-directory: src
-
       - name: Test
         run: dotnet test --no-build --verbosity normal
-        working-directory: src
+        working-directory: server/src
 
       #- name: Publish the Application
       #  run: dotnet publish -c Release -o ./publish
