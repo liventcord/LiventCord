@@ -9,9 +9,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "format": "npx prettier --write --ignore-unknown .",
-    "format-cs": "dotnet format",
-    "prepare": "husky",
-    "copy-translations": "cp -r assets/translations wwwroot/translations"
+    "prepare": "husky"
   },
   "type": "module",
   "lint-staged": {

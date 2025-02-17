@@ -1,13 +1,21 @@
 import { kebapToSentence, getId, truncateString } from "./utils.ts";
 import { alertUser } from "./ui.ts";
 
+import enTranslations from "./../translations/en.json";
+import trTranslations from "./../translations/tr.json";
+
+const translationsMap = {
+  English: enTranslations,
+  Turkish: trTranslations
+};
+
 type Replacements = Record<string, string>;
 type Truncation = Record<string, number>;
 
 class Translations {
   currentLanguage: string;
   languages: { [key: string]: string };
-  friendErrorTranslations: Record<string, string>;
+  friendErrorTranslations: Record<string, { [key: string]: string } | string>;
   contextTranslations: Record<string, string>;
   settingTranslations: Record<string, string>;
   placeholderTranslations: Record<string, string>;
@@ -208,56 +216,22 @@ class Translations {
   async loadTranslations(language: string) {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
 
-    try {
-      const textTranslationsResponse = await fetch(
-        `/translations/textTranslations${language}.json`
-      );
-      const textTranslations = await textTranslationsResponse.json();
+    const selectedTranslations =
+      translationsMap[language as keyof typeof translationsMap] ||
+      translationsMap["English"];
 
-      const friendErrorTranslationsResponse = await fetch(
-        `/translations/friendErrorTranslations${language}.json`
-      );
-      const friendErrorTranslations =
-        await friendErrorTranslationsResponse.json();
-      const errorTranslationsResponse = await fetch(
-        `/translations/errorTranslations${language}.json`
-      );
+    this.textTranslations = selectedTranslations.textTranslations;
+    this.friendErrorTranslations = selectedTranslations.friendErrorTranslations;
+    this.errorTranslations = selectedTranslations.errorTranslations;
+    this.placeholderTranslations = selectedTranslations.placeholderTranslations;
+    this.contextTranslations = selectedTranslations.contextTranslations;
+    this.settingTranslations = selectedTranslations.settingTranslations;
 
-      const errorTranslations = await errorTranslationsResponse.json();
-
-      const placeholderTranslationsResponse = await fetch(
-        `/translations/placeholderTranslations${language}.json`
-      );
-      const placeholderTranslations =
-        await placeholderTranslationsResponse.json();
-
-      const contextTranslationsResponse = await fetch(
-        `/translations/contextTranslations${language}.json`
-      );
-      const contextTranslations = await contextTranslationsResponse.json();
-
-      const settingTranslationsResponse = await fetch(
-        `/translations/settingTranslations${language}.json`
-      );
-      const settingTranslations = await settingTranslationsResponse.json();
-
-      this.textTranslations = textTranslations;
-      this.friendErrorTranslations = friendErrorTranslations;
-      this.errorTranslations = errorTranslations;
-      this.placeholderTranslations = placeholderTranslations;
-      this.contextTranslations = contextTranslations;
-      this.settingTranslations = settingTranslations;
-      if (this.resolveTranslations) {
-        this.resolveTranslations();
-      }
-
-      this.initializeTranslations();
-    } catch (error) {
-      console.error("Error loading translations:", error);
-      if (this.rejectTranslations) {
-        this.rejectTranslations();
-      }
+    if (this.resolveTranslations) {
+      this.resolveTranslations();
     }
+
+    this.initializeTranslations();
   }
 
   getContextTranslation(key: string) {

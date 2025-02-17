@@ -10,6 +10,8 @@ appsettings.json
 *.suo
 *.user
 *.userprefs
+src/wwwroot/404/bodyend.js
+src/wwwroot/app
 LiventCord.sln
 .vs/
 .vscode/
@@ -19,7 +21,6 @@ LiventCord.sln
 *.dSYM/
 *.db
 *.pdb
-node_modules/
 
 MediaCache
 # Exclude build-copied files

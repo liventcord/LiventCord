@@ -10,20 +10,18 @@ Run a LiventCord backend server
 ## Clone the repository:
 ```bash
 git clone https://github.com/liventcord/Liventcord
-cd LiventCord/src
-```
-## Install dependencies
-```bash
-npm install
+cd Liventcord/server/src
 ```
 ### Run the Server (API)
 ```bash
 dotnet run
 ```
+
 ### Run Vite for Development (SPA)
 ```bash
+cd Liventcord/web
+npm install
 npm run dev
-```
 ---
 
 ## Website
