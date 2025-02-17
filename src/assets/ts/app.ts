@@ -294,26 +294,25 @@ export function initializeGuild() {
 
   if (isValid && initialGuildId) {
     loadGuild(initialGuildId, initialChannelId || "", "", false, true);
+    fetchMembers();
   } else {
     console.log("Route is not a guild");
-    return;
+    if (initialFriendId && isDefined(initialFriendId)) {
+      addUser(initialFriendId);
+    }
   }
 
-  if (initialFriendId && isDefined(initialFriendId)) {
-    addUser(initialFriendId);
-  }
 
-  fetchMembers();
   console.log(initialState.guilds);
 
-  if (isOnGuild && initialState.guilds && initialState.guilds.length > 0) {
+  if (initialState.guilds && initialState.guilds.length > 0) {
     initialState.guilds.forEach((data) => {
       console.log(data);
       data.guildChannels.forEach((channel: CachedChannel) => {
         cacheInterface.addChannel(data.guildId, channel);
       });
       //cacheInterface.setChannels(data.guildId,data.guildChannels);
-      cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
+      if(initialGuildId)cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
       if (data.guildId === currentGuildId) {
         updateChannels(data.guildChannels);
       }
