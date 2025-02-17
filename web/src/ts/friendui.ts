@@ -3,7 +3,8 @@ import {
   enableElement,
   createRandomId,
   createEl,
-  getId
+  getId,
+  disableElementHTML
 } from "./utils.ts";
 import { openDm, removeDm } from "./app.ts";
 import {
@@ -62,6 +63,8 @@ const buttonElements = {
 
 let ButtonsList = Object.values(buttonElements);
 initializeButtonsList();
+
+disableElementHTML(buttonElements.blocked);
 interface ExistingDmContainer {
   remove(): void;
   dmContainer: HTMLElement;

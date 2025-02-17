@@ -27,7 +27,7 @@ import {
   getGuildImage
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { translations } from "./translations.ts";
+import { availableLanguages, translations } from "./translations.ts";
 import {
   getId,
   createEl,
@@ -396,7 +396,6 @@ export function selectSettingCategory(
 
   if (settingCategory === "MyAccount") {
     updateSelfProfile(currentUserId, currentUserNick, true);
-    return;
   }
 
   const settingsContainer = getId("settings-rightcontainer");
@@ -489,7 +488,7 @@ function getGuildOverviewHtml() {
       "GuildName"
     )}</div>
     <input type="text" id="guild-overview-name-input" autocomplete="off" 
-           value="${escapeHtml(guildCache.currentGuildName)}" maxlength="32">
+           value="${escapeHtml(guildCache.currentGuildName || "")}" maxlength="32">
     <img id="guild-image" style="user-select: none;">
     <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
       "Remove"
@@ -530,18 +529,32 @@ function getAccountSettingsHtml() {
 }
 
 function getLanguageHtml() {
+  const currentLanguage = translations.currentLanguage.toLowerCase();
+
+  const optionsHtml = Object.entries(availableLanguages)
+    .map(
+      ([key, value]) => `
+        <option value="${key}">
+            ${translations.getSettingsTranslation(value)}
+        </option>`
+    )
+    .join("");
+
+  setTimeout(() => {
+    const dropdown = document.getElementById("language-dropdown") as HTMLSelectElement;
+    if (dropdown) {
+      dropdown.value = currentLanguage;
+    }
+  }, 0);
+
   return `
         <h3>${translations.getSettingsTranslation("Language")}</h3>
         <select class="dropdown" id="language-dropdown">
-            <option value="en">${translations.getSettingsTranslation(
-              "en"
-            )}</option>
-            <option value="tr">${translations.getSettingsTranslation(
-              "tr"
-            )}</option>
+            ${optionsHtml}
         </select>
     `;
 }
+
 
 function getAppearanceHtml() {
   const toggles = [
@@ -606,6 +619,7 @@ function initializeLanguageDropdown() {
     const target = event.target as HTMLSelectElement;
 
     if (target.value) {
+      console.log("Selected language: ",target.value);
       translations.currentLanguage = target.value;
       translations.setLanguage(translations.currentLanguage);
 
@@ -905,7 +919,7 @@ function createDeleteGuildPrompt(guildId: string, guildName: string) {
   const actionText = translations.getDeleteGuildText(guildName);
 
   askUser(
-    translations.getDeleteGuildText(guildName),
+    translations.getSettingsTranslation("DeleteGuild"),
     translations.getTranslation("cannot-be-undone"),
     actionText,
     onClickHandler,
