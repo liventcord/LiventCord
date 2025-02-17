@@ -1,7 +1,7 @@
 import { openDm, readCurrentMessages } from "./app.ts";
-import { drawProfilePop } from "./popups.ts";
+import { drawProfilePop, drawProfilePopId } from "./popups.ts";
 import { showReplyMenu, chatInput } from "./chatbar.ts";
-import { currentUserId, getUserNick, userNames } from "./user.ts";
+import { currentUserId, getUserNick, UserInfo, userNames } from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
 import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
@@ -13,8 +13,9 @@ import { cacheInterface, guildCache } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
 
 const isDeveloperMode = true;
-export const contextList = {};
-export const messageContextList = {};
+export const contextList: { [key: string]: any } = {};
+export const messageContextList: { [key: string]: any } = {};
+
 const ActionType = {
   COPY_ID: "COPY_ID",
   COPY_USER_ID: "COPY_USER_ID",
@@ -50,33 +51,36 @@ const MessagesActionType = {
   DELETE_MESSAGE: "DELETE_MESSAGE"
 };
 
-export function openReactionMenu(messageId) {
+let contextMenu: HTMLElement | null;
+
+export function openReactionMenu(messageId: string) {
   alertUser("Not implemented: React menu for message ");
 }
 
-export function openEditMessage(messageId) {
+export function openEditMessage(messageId: string) {
   alertUser("Not implemented: Editing message ");
 }
 
-export function pinMessage(messageId) {
+export function pinMessage(messageId: string) {
   alertUser("Not implemented: Pinning message ");
 }
 
-export function markAsUnread(messageId) {
+export function markAsUnread(messageId: string) {
   alertUser("Not implemented: Marking message as unread ");
 }
 export function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
 
-export function deleteMessage(messageId) {
+export function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
   const data = {
     isDm: isOnDm,
     messageId,
     channelId: isOnGuild
       ? guildCache.currentChannelId
-      : friendsCache.currentDmId
+      : friendsCache.currentDmId,
+    guildId: ""
   };
   if (isOnGuild) {
     data["guildId"] = currentGuildId;
@@ -87,35 +91,35 @@ export function deleteMessage(messageId) {
   apiClient.send(_eventType, data);
 }
 
-export function inviteToGuild(userId) {
+export function inviteToGuild(userId: string) {
   alertUser("Not implemented: Inviting user ");
 }
 
-export function blockUser(userId) {
+export function blockUser(userId: string) {
   alertUser("Not implemented: Blocking user ");
 }
 
-export function muteChannel(channelId) {
+export function muteChannel(channelId: string) {
   alertUser("Mute channel is not implemented!");
 }
-export function showNotifyMenu(channelId) {
+export function showNotifyMenu(channelId: string) {
   alertUser("Notify menu is not implemented!");
 }
-export function onChangeChannel(channelId) {
+export function onChangeChannel(channelId: string) {
   alertUser("Channel editing is not implemented!");
 }
-function muteUser(userId) {}
-function deafenUser(userId) {}
+function muteUser(userId: string) {}
+function deafenUser(userId: string) {}
 
 export function togglePin() {
   console.log("Toggle pin!");
 }
-export function mentionUser(userId) {
+export function mentionUser(userId: string) {
   const userNick = getUserNick(userId);
   chatInput.value += `@${userNick}`;
 }
 
-export function inviteUser(userId, guildId) {
+export function inviteUser(userId: string, guildId: string) {
   if (!userId || !guildId) {
     return;
   }
@@ -124,19 +128,19 @@ export function inviteUser(userId, guildId) {
   //TODO: add invitation prompt to here
 }
 
-export function removeFriend(userId) {
+export function removeFriend(userId: string) {
   apiClient.send(EventType.REMOVE_FRIEND, { friend_id: userId });
 }
 
-export function copyChannelLink(guildId, channelId) {
+export function copyChannelLink(guildId: string, channelId: string) {
   const content = constructAbsoluteAppPage(guildId, channelId);
   navigator.clipboard.writeText(content);
 }
-export function copyId(channelId) {
+export function copyId(channelId: string) {
   navigator.clipboard.writeText(channelId);
 }
 
-export function deleteChannel(channelId, guildId) {
+export function deleteChannel(channelId: string, guildId: string) {
   const data = {
     guildId,
     channelId
@@ -144,14 +148,14 @@ export function deleteChannel(channelId, guildId) {
   apiClient.send(EventType.DELETE_CHANNEL, data);
 }
 
-export function appendToChannelContextList(channelId) {
+export function appendToChannelContextList(channelId: string) {
   contextList[channelId] = createChannelsContext(channelId);
 }
 
-export function appendToMessageContextList(messageId, userId: string) {
+export function appendToMessageContextList(messageId: string, userId: string) {
   messageContextList[messageId] = createMessageContext(messageId, userId);
 }
-export function appendToProfileContextList(userData, userId: string) {
+export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userNames[userId];
   }
@@ -161,10 +165,10 @@ export function appendToProfileContextList(userData, userId: string) {
 }
 
 export function createUserContext(userId: string) {
-  const context = {};
+  const context: { [key: string]: any } = {};
 
   context[VoiceActionType.OPEN_PROFILE] = {
-    action: () => drawProfilePop(userId)
+    action: () => drawProfilePopId(userId)
   };
 
   (context[VoiceActionType.MENTION_USER] = () => mentionUser(userId)),
@@ -182,9 +186,9 @@ export function createUserContext(userId: string) {
   return context;
 }
 
-export function createProfileContext(userData) {
+export function createProfileContext(userData: UserInfo) {
   const userId = userData.userId;
-  const context = {};
+  const context: { [key: string]: any } = {};
 
   context[VoiceActionType.OPEN_PROFILE] = {
     action: () => drawProfilePop(userData)
@@ -288,8 +292,8 @@ export function addContextListeners() {
   });
 }
 
-export function createChannelsContext(channelId) {
-  const context = {};
+export function createChannelsContext(channelId: string) {
+  const context: { [key: string]: any } = {};
   context[ChannelsActionType.MARK_AS_READ] = {
     action: () => readCurrentMessages()
   };
@@ -319,8 +323,8 @@ export function createChannelsContext(channelId) {
   return context;
 }
 
-export function createMessageContext(messageId, userId) {
-  const context = {};
+export function createMessageContext(messageId: string, userId: string) {
+  const context: { [key: string]: any } = {};
 
   context[MessagesActionType.ADD_REACTION] = {
     label: MessagesActionType.ADD_REACTION,
@@ -375,8 +379,17 @@ export function createMessageContext(messageId, userId) {
 
   return context;
 }
+type ItemOption = {
+  action: CallableFunction;
+};
 
-export function createMenuItem(labelKey, itemOptions) {
+type ItemOptions = {
+  action: CallableFunction;
+  subOptions?: ItemOption[];
+  [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
+};
+
+export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
   const translatedLabel = translations.getContextTranslation(labelKey);
   const li = createEl("li", { textContent: translatedLabel });
 
@@ -391,13 +404,15 @@ export function createMenuItem(labelKey, itemOptions) {
   if (itemOptions.subOptions) {
     const subUl = createEl("ul");
     itemOptions.subOptions.forEach((subOption) => {
-      const subLi = createMenuItem(subOption.label, subOption);
+      const subLi = createMenuItem(translatedLabel, subOption);
       subUl.appendChild(subLi);
     });
     li.appendChild(subUl);
+  }
 
-    li.addEventListener("mouseenter", function () {
-      const subMenu = li.querySelector("ul");
+  li.addEventListener("mouseenter", function () {
+    const subMenu = li.querySelector("ul");
+    if (subMenu) {
       subMenu.style.display = "block";
       subMenu.style.left = "100%";
       subMenu.style.right = "auto";
@@ -412,20 +427,24 @@ export function createMenuItem(labelKey, itemOptions) {
         subMenu.style.left = "0";
         subMenu.style.right = "auto";
       }
-    });
+    }
+  });
 
-    li.addEventListener("mouseleave", function () {
-      const subMenu = li.querySelector("ul");
+  li.addEventListener("mouseleave", function () {
+    const subMenu = li.querySelector("ul");
+    if (subMenu) {
       subMenu.style.display = "none";
-    });
-  }
+    }
+  });
 
   return li;
 }
 
-let contextMenu = null;
+function isItemOptions(item: any): item is ItemOptions {
+  return item && typeof item.action === "function";
+}
 
-export function showContextMenu(x, y, options) {
+export function showContextMenu(x: number, y: number, options: ItemOptions) {
   hideContextMenu();
   const tempContextMenu = createEl("div", {
     id: "contextMenu",
@@ -436,8 +455,10 @@ export function showContextMenu(x, y, options) {
   for (const key in options) {
     if (options.hasOwnProperty(key)) {
       const itemOptions = options[key];
-      const li = createMenuItem(key, itemOptions);
-      ul.appendChild(li);
+      if (isItemOptions(itemOptions)) {
+        const li = createMenuItem(key, itemOptions);
+        ul.appendChild(li);
+      }
     }
   }
 
@@ -460,11 +481,14 @@ export function showContextMenu(x, y, options) {
   document.addEventListener("click", clickOutsideContextMenu);
 }
 
-export function clickOutsideContextMenu(event) {
+export function clickOutsideContextMenu(event: Event) {
+  const target = event.target as HTMLElement | null;
+
   if (
     contextMenu &&
-    !contextMenu.contains(event.target) &&
-    !contextList[event.target.id]
+    target &&
+    !contextMenu.contains(target) &&
+    !contextList[target.id]
   ) {
     hideContextMenu();
   }

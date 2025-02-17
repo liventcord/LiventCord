@@ -1,4 +1,4 @@
-import { getOldMessages } from "./message.ts";
+import { getOldMessages, Message } from "./message.ts";
 import {
   currentLastDate,
   handleReplies,
@@ -6,12 +6,7 @@ import {
   handleHistoryResponse
 } from "./chat.ts";
 import { guildCache, replyCache, cacheInterface } from "./cache.ts";
-import {
-  addChannel,
-  changeChannel,
-  removeChannel,
-  updateChannels
-} from "./channels.ts";
+import { addChannel, changeChannel, removeChannel } from "./channels.ts";
 import { getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
 import {
@@ -24,27 +19,41 @@ import {
 import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
-import { currentUserId, setUserNick } from "./user.ts";
+import { currentUserId, Member, setUserNick, UserInfo } from "./user.ts";
 import { updateFriendsList, handleFriendEventResponse } from "./friends.ts";
 import { refreshUserProfile, selfName } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { permissionManager } from "./guildPermissions.ts";
+import { Permission, permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { createFireWorks } from "./extras.ts";
 
-apiClient.on(EventType.JOIN_GUILD, (data) => {
+interface JoinGuildData {
+  success: boolean;
+  guildId: string;
+  permissionsMap: Set<Permission>;
+  joinedGuildId: string;
+  joinedChannelId: string;
+  joinedGuildName: string;
+}
+
+apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
   if (!data.success) {
     const errormsg = translations.getTranslation("join-error-response");
-    getId("create-guild-title").textContent = errormsg;
-    getId("create-guild-title").style.color = "red";
+    const createGuildTitle = getId("create-guild-title") as HTMLElement;
+    createGuildTitle.textContent = errormsg;
+    createGuildTitle.style.color = "red";
     return;
   }
-  if (!permissionManager.permissionsMap[data.guildId]) {
-    permissionManager.permissionsMap[data.guildId] = [];
+
+  const permissionsMap = permissionManager.permissionsMap;
+
+  if (!permissionsMap.has(data.guildId)) {
+    permissionsMap.set(data.guildId, new Set<Permission>());
   }
 
-  permissionManager.permissionsMap[data.guildId] = data.permissionsMap;
+  permissionsMap.set(data.guildId, data.permissionsMap);
+
   loadGuild(data.joinedGuildId, data.joinedChannelId, data.joinedGuildName);
 
   if (closeCurrentJoinPop) {
@@ -112,56 +121,116 @@ apiClient.on(EventType.DELETE_CHANNEL, (data) => {
   removeChannel(data);
 });
 
-apiClient.on(EventType.GET_BULK_REPLY, (data) => {
-  const replies = data.bulk_replies;
+interface BulkReplies {
+  replies: Message[];
+}
+
+apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
+  const replies: Message[] = data.replies;
+
   replies.forEach((reply) => {
     const { messageId, userId, content, attachmentUrls } = reply;
+
     if (!replyCache[messageId]) {
       replyCache[messageId] = {
         messageId,
         replies: []
       };
     }
-    replyCache[messageId].replies.push({ userId, content, attachmentUrls });
+
+    replyCache[messageId].replies.push({
+      messageId,
+      userId,
+      content,
+      attachmentUrls,
+      channelId: "defaultChannel",
+      date: new Date(),
+      lastEdited: null,
+      replyToId: null,
+      isBot: false,
+      reactionEmojisIds: [],
+      addToTop: false,
+      metadata: reply.metadata || {},
+      embeds: reply.embeds || [],
+      willDisplayProfile: reply.willDisplayProfile || false,
+      replyOf: reply.replyOf || undefined,
+      replies: reply.replies || []
+    });
   });
+
   setTimeout(() => {
     handleReplies();
   }, 100);
 });
 
-apiClient.on(EventType.GET_CHANNELS, (data) => {
-  const guildId = data.guildId;
-  if (data && data.channels && guildId) {
-    cacheInterface.addChannel(guildId, data.channels);
-    updateChannels(data.channels);
-  }
-});
-
-apiClient.on(EventType.GET_MEMBERS, (data) => {
+interface GuildMembersResponse {
+  members: Member[];
+  guildId: string;
+}
+apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
   const members = data.members;
   const guildId = data.guildId;
+
   if (!data || !members || !guildId) {
     console.error("Malformed members data: ", data);
     return;
   }
 
+  const userInfoList: UserInfo[] = members.map((member) => ({
+    userId: member.userId,
+    nickName: member.nickName,
+    discriminator: "0000"
+  }));
+
   cacheInterface.updateMembers(guildId, members);
-  updateMemberList(members);
+  updateMemberList(userInfoList);
 });
 
-apiClient.on(EventType.GET_HISTORY_GUILD, (data) => {
-  handleHistoryResponse(data);
-});
-apiClient.on(EventType.GET_HISTORY_DM, (data) => {
+interface MessageResponse {
+  isOldMessages: boolean;
+  isDm: boolean;
+  history: Message[];
+}
+
+interface GuildHistoryResponse extends MessageResponse {
+  messages: Message[];
+  channelId: string;
+  guildId: string;
+  oldestMessageDate: string | null;
+  isOldMessages: boolean;
+  isDm: false;
+  history: Message[];
+}
+
+interface DMHistoryResponse extends MessageResponse {
+  messages: Message[];
+  channelId: string;
+  oldestMessageDate: string | null;
+  isOldMessages: boolean;
+  isDm: true;
+  history: Message[];
+}
+apiClient.on(EventType.GET_HISTORY_GUILD, (data: GuildHistoryResponse) => {
   handleHistoryResponse(data);
 });
 
-apiClient.on(EventType.GET_MESSAGE_DATES, (data) => {
-  const message_date = data.message_date;
-  messageDates[data.messageId] = message_date;
+apiClient.on(EventType.GET_HISTORY_DM, (data: DMHistoryResponse) => {
+  handleHistoryResponse(data);
+});
+
+interface MessageDatesResponse {
+  messageId: string;
+  messageDate: Date;
+}
+
+apiClient.on(EventType.GET_MESSAGE_DATES, (data: MessageDatesResponse) => {
+  const message_date = data.messageDate;
+  const messageId = data.messageId;
+  messageDates[messageId] = message_date;
   console.log(currentLastDate, message_date);
+
   if (currentLastDate && currentLastDate > message_date) {
-    getOldMessages(message_date, data.messageId);
+    getOldMessages(message_date, messageId);
   } else {
     console.log("Is less than!", currentLastDate, message_date);
   }

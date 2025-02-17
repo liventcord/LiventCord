@@ -7,7 +7,7 @@ import {
   getId,
   isValidFriendName
 } from "./utils.ts";
-import { getSelfFullDisplay, currentUserId } from "./user.ts";
+import { getSelfFullDisplay, currentUserId, UserInfo } from "./user.ts";
 import { handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
@@ -21,14 +21,8 @@ import {
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
 
-const pendingAlertRight = getId("pendingAlertRight");
-const pendingAlertLeft = getId("pendingAlertLeft");
-
-export const offline = "offline";
-export const online = "online";
-export const all = "all";
-export const pending = "pending";
-export const blocked = "blocked";
+const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
+const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
 
 const FriendErrorType = {
   ERR_INVALID_EVENT: "ERR_INVALID_EVENT",
@@ -52,24 +46,25 @@ interface FriendData {
   createdAt?: string;
   lastLogin?: string;
   socialMediaLinks?: string[];
-  isFriendRequestToUser: boolean;
+  isFriendsRequestToUser: boolean;
 }
 
-export class Friend {
+export class Friend implements UserInfo {
   userId: string;
-  name: string;
+  nickName: string;
   discriminator: string;
-  status: string;
-  isOnline: boolean;
+  status?: string;
+  isOnline?: boolean;
   description?: string;
   createdAt?: string;
   lastLogin?: string;
   socialMediaLinks?: string[];
-  isFriendRequestToUser: boolean;
+  isFriendsRequestToUser: boolean;
+  isPending: boolean;
 
   constructor(friend: FriendData) {
     this.userId = friend.userId;
-    this.name = friend.nickName;
+    this.nickName = friend.nickName;
     this.discriminator = friend.discriminator;
     this.status = friend.status;
     this.isOnline = friend.isOnline;
@@ -77,11 +72,8 @@ export class Friend {
     this.createdAt = friend.createdAt;
     this.lastLogin = friend.lastLogin;
     this.socialMediaLinks = friend.socialMediaLinks;
-    this.isFriendRequestToUser = friend.isFriendRequestToUser;
-  }
-
-  isPending(): boolean {
-    return this.isFriendRequestToUser;
+    this.isFriendsRequestToUser = friend.isFriendsRequestToUser;
+    this.isPending = friend.isFriendsRequestToUser;
   }
 }
 
@@ -102,7 +94,7 @@ class FriendsCache {
 
   initialiseFriends(initData: Record<string, Friend>) {
     this.friendsCache = initData;
-    populateFriendsContainer(this.friendsCache);
+    populateFriendsContainer(Object.values(initData));
   }
 
   addFriend(friend: Friend) {
@@ -118,19 +110,23 @@ class FriendsCache {
   }
 
   getFriendDiscriminator(friendId: string): string | undefined {
-    const friend = this.friendsCache[friendId];
-    return friend ? friend.discriminator : undefined;
+    return this.friendsCache[friendId]?.discriminator;
   }
 
   isOnline(userId: string): boolean {
     return !!this.friendsCache[userId]?.isOnline;
   }
 }
+
 export const friendsCache = new FriendsCache();
 
 //actions
 
-export function getFriendMessage(userNick, isSuccess, errorType) {
+function getFriendMessage(
+  userNick: string,
+  isSuccess: boolean,
+  errorType: string
+): string {
   if (isSuccess) {
     return translations.replacePlaceholder(errorType, { userNick });
   } else {
@@ -138,16 +134,27 @@ export function getFriendMessage(userNick, isSuccess, errorType) {
   }
 }
 
-export function displayFriendActionMessage(userNick, isSuccess, errorType) {
+function displayFriendActionMessage(
+  userNick: string,
+  isSuccess: boolean,
+  errorType: string
+): void {
   const text = isSuccess
     ? getFriendMessage(userNick, isSuccess, errorType)
     : getFriendMessage(userNick, false, errorType);
 
   printFriendMessage(text);
 }
+interface FriendMessage {
+  userId: string;
+  userNick: string;
+  userData?: UserInfo;
+  isSuccess: boolean;
+  type: string;
+}
 
-export function handleAddFriendResponse(message) {
-  const { userId, userNick, user_data, isSuccess } = message;
+function handleAddFriendResponse(message: FriendMessage): void {
+  const { userNick, isSuccess } = message; //userId , userData
   displayFriendActionMessage(
     userNick,
     isSuccess,
@@ -155,23 +162,40 @@ export function handleAddFriendResponse(message) {
   );
 }
 
-export function handleAcceptFriendRequestResponse(message) {
-  const { userId, userNick, user_data, isSuccess } = message;
+function handleAcceptFriendRequestResponse(message: FriendMessage): void {
+  const { userId, userNick, userData, isSuccess } = message;
+
   displayFriendActionMessage(
     userNick,
     isSuccess,
     FriendErrorType.ERR_REQUEST_ALREADY_ACCEPTED
   );
 
-  if (isSuccess) {
-    friendsCache[userId] = user_data;
+  if (isSuccess && userData) {
+    const updatedUserData: FriendData = {
+      userId: userData.userId,
+      nickName: userData.nickName,
+      discriminator: userData.discriminator,
+      status: userData.status ?? "",
+      isOnline: userData.isOnline ?? false,
+      description: userData.description,
+      isFriendsRequestToUser: userData.isFriendsRequestToUser ?? false,
+      createdAt: userData.createdAt,
+      lastLogin: userData.lastLogin,
+      socialMediaLinks: userData.socialMediaLinks
+    };
+
+    const newFriend = new Friend(updatedUserData);
+
+    friendsCache.friendsCache[userId] = newFriend;
+
     disableElement(pendingAlertRight);
     disableElement(pendingAlertLeft);
     document.title = "LiventCord";
   }
 }
 
-export function handleRemoveFriendResponse(message) {
+function handleRemoveFriendResponse(message: FriendMessage): void {
   const { userId, userNick, isSuccess } = message;
   displayFriendActionMessage(
     userNick,
@@ -188,8 +212,8 @@ export function handleRemoveFriendResponse(message) {
   }
 }
 
-export function handleDenyFriendRequestResponse(message) {
-  const { userId, userNick, isSuccess } = message;
+function handleDenyFriendRequestResponse(message: FriendMessage): void {
+  const { userNick, isSuccess } = message;
   displayFriendActionMessage(
     userNick,
     isSuccess,
@@ -197,7 +221,7 @@ export function handleDenyFriendRequestResponse(message) {
   );
 }
 
-export function handleFriendEventResponse(message) {
+export function handleFriendEventResponse(message: FriendMessage): void {
   const { type } = message;
 
   switch (type) {
@@ -220,29 +244,48 @@ export function handleFriendEventResponse(message) {
   }
 }
 
-export function updateFriendsList(friends, isPending?: boolean) {
-  if (!friends) {
+interface FriendData {
+  userId: string;
+  nickName: string;
+  status: string;
+}
+
+interface UpdateFriendsListOptions {
+  friends: FriendData[];
+  isPending?: boolean;
+}
+export function updateFriendsList({
+  friends,
+  isPending
+}: UpdateFriendsListOptions): void {
+  if (!friends || friends.length === 0) {
     console.warn("Empty friend list data.");
     return;
   }
 
   if (isAddFriendsOpen) return;
 
-  const friendInstances = friends.map((friend) => new Friend(friend));
+  const friendInstances = friends.map((friendData) => new Friend(friendData));
 
   if (isPending) {
     let pendingCounter = 0;
+
     friendInstances.forEach((friend) => {
-      if (friend.isPending()) {
+      if (friend.isPending) {
         pendingCounter += 1;
       }
     });
 
     if (pendingCounter > 0) {
-      getId(pendingAlertLeft).textContent = String(pendingCounter);
-      enableElement(pendingAlertLeft);
-      getId(pendingAlertRight).textContent = String(pendingCounter);
-      enableElement(pendingAlertRight);
+      if (pendingAlertLeft) {
+        pendingAlertLeft.textContent = String(pendingCounter);
+        enableElement(pendingAlertLeft);
+      }
+      if (pendingAlertRight) {
+        pendingAlertRight.textContent = String(pendingCounter);
+        enableElement(pendingAlertRight);
+      }
+
       setWindowName(pendingCounter);
     }
 
@@ -252,15 +295,15 @@ export function updateFriendsList(friends, isPending?: boolean) {
   populateFriendsContainer(friendInstances, isPending);
 }
 
-export function addPendingButtons(friendButton, friend) {
-  if (friend.isFriendsRequestsToUser) {
+export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
+  if (friend.isFriendsRequestToUser) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
       ButtonTypes.TickBtn,
       translations.getTranslation("accept")
     );
     acceptButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.ADD_FRIEND, friend)
+      handleButtonClick(event, EventType.ADD_FRIEND, friend.userId)
     );
   } else {
     const closeButton = createButtonWithBubblesImg(
@@ -269,17 +312,21 @@ export function addPendingButtons(friendButton, friend) {
       translations.getTranslation("cancel")
     );
     closeButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.REMOVE_FRIEND, friend)
+      handleButtonClick(event, EventType.REMOVE_FRIEND, friend.userId)
     );
   }
 }
 
-export function handleButtonClick(event, action, friend) {
+export function handleButtonClick(
+  event: Event,
+  action: EventType,
+  userId: string
+) {
   event.stopPropagation();
-  apiClient.send(action, { friendId: friend.userId });
+  apiClient.send(action, { friendId: userId });
 }
 
-export function addFriend(userId) {
+export function addFriend(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
 }
 
@@ -314,23 +361,29 @@ export function submitAddFriend() {
   });
 }
 
-export function filterFriends() {
+export function filterFriends(): void {
   const friendsSearchInput = getId("friendsSearchInput") as HTMLInputElement;
   if (!friendsSearchInput) return;
+
   const input = friendsSearchInput.value.toLowerCase();
   const friends = document.getElementsByClassName("friend-card");
 
   for (let i = 0; i < friends.length; i++) {
-    const friendName = friends[i].getAttribute("data-name").toLowerCase();
-    if (friendName.includes(input)) {
-      friends[i].classList.add("visible");
-    } else {
-      friends[i].classList.remove("visible");
+    const friend = friends[i] as HTMLElement;
+    const dataName = friend.getAttribute("data-name");
+
+    if (dataName) {
+      const friendName = dataName.toLowerCase();
+      if (friendName.includes(input)) {
+        friend.classList.add("visible");
+      } else {
+        friend.classList.remove("visible");
+      }
     }
   }
 }
 
-export function toggleButtonState(booleanstate) {
+export function toggleButtonState(booleanstate: boolean) {
   const addButton = getId("profile-add-friend-button");
   if (!addButton) return;
   if (booleanstate) {

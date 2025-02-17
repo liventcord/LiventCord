@@ -4,30 +4,34 @@ import { sendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
 
-let initialMouseX;
-let initialMouseY;
+let initialMouseX: number;
+let initialMouseY: number;
 let isResizing = false;
-let initialWidth, initialHeight;
-let resizingTop, resizingBottom, resizingLeft, resizingRight;
+let initialWidth: number, initialHeight: number;
+let resizingTop: boolean,
+  resizingBottom: boolean,
+  resizingLeft: boolean,
+  resizingRight: boolean;
 let isMediaMenuOpen = false;
 let currentMenuType = "";
-let mediaMenu, mediaMenuContainer;
-const gifsBackBtn = getId("gifsBackBtn");
+let mediaMenu: HTMLElement, mediaMenuContainer: HTMLElement;
+const gifsBackBtn = getId("gifsBackBtn") as HTMLElement;
 const exampleTenorId = "LIVDSRZULELA"; //Example tenor apikey from tenor docs
 
-export const gifBtn = getId("gifbtn");
-export const gifBtnTop = getId("gifbtntop");
-export const emojiBtn = getId("emojibtn");
+export const gifBtn = getId("gifbtn") as HTMLElement;
+export const gifBtnTop = getId("gifbtntop") as HTMLElement;
+export const emojiBtn = getId("emojibtn") as HTMLElement;
+const emojiBtnTop = getId("emojibtntop") as HTMLElement;
 const STATUS_200 = 200;
 const VIEWPORT_WIDTH_RATIO = 1.7;
 const VIEWPORT_HEIGHT_RATIO = 1.2;
 
-getId("image-preview-container").addEventListener(
-  "click",
-  hideImagePreviewRequest
-);
+const imgPreviewContainer = getId("image-preview-container");
+if (imgPreviewContainer) {
+  imgPreviewContainer.addEventListener("click", hideImagePreviewRequest);
+}
 
-export function onMouseMove(e) {
+export function onMouseMove(e: MouseEvent) {
   const MIN_WIDTH = 300;
   const MIN_HEIGHT = 300;
   const MIN_WIDTH_LEFT = 100;
@@ -84,8 +88,28 @@ const CATEGORIES = [
   { title: "Symbols", class: "symbols", count: 328 },
   { title: "Flags", class: "flags", count: 269 }
 ];
+interface Category {
+  title: string;
+  class: string;
+  count: number;
+}
 
-export function renderEmojis(container, categories) {
+interface EmojiCategory {
+  title: string;
+  class: string;
+  count: number;
+}
+
+interface MediaCategory {
+  name: string;
+  path: string;
+  image: string;
+}
+
+export function renderEmojis(
+  container: HTMLElement,
+  categories: EmojiCategory[]
+): void {
   const spriteWidth = 40;
   const spriteHeight = 40;
   const sheetWidth = 1680;
@@ -125,7 +149,118 @@ export function renderEmojis(container, categories) {
   });
 }
 
-export function getEmojiPanel() {
+interface GifResponse {
+  error?: string;
+  results: Array<{
+    media_formats: {
+      gif: { url: string };
+      tinygif: { url: string };
+    };
+  }>;
+}
+
+interface Category {
+  name: string;
+  path: string;
+  image: string;
+}
+
+interface MediaData {
+  preview: string;
+  [key: string]: any;
+}
+
+export function displayContent(
+  contentData: (MediaData | EmojiCategory | MediaCategory)[],
+  type: string,
+  isCategory: boolean = false
+): void {
+  console.log(type, contentData);
+  mediaMenuContainer.innerHTML = "";
+
+  if (type === "emoji") {
+    mediaMenuContainer.innerHTML = getEmojiPanel();
+    return;
+  }
+
+  if (type !== "gif") return;
+
+  if (isCategory) {
+    contentData.forEach((data) => {
+      if (isEmojiCategory(data)) {
+        const box = createCategoryBox(
+          data.title,
+          data.class,
+          data.count.toString()
+        );
+        mediaMenuContainer.appendChild(box);
+      } else if (isMediaCategory(data)) {
+        const box = createCategoryBox(data.name, data.path, data.image);
+        mediaMenuContainer.appendChild(box);
+      }
+    });
+    return;
+  }
+
+  if (contentData.length === 0) {
+    const baseGif = createEl("img", {
+      className: "gif-content",
+      textContent: "No gifs found"
+    });
+    mediaMenuContainer.appendChild(baseGif);
+  } else {
+    contentData.forEach((data) => {
+      if (isMediaData(data)) {
+        const img = createEl("img", {
+          className: `${type}-content`,
+          src: data.preview
+        });
+        img.addEventListener("click", () => {
+          toggleMediaMenu();
+          sendMessage(data[type]);
+        });
+        mediaMenuContainer.appendChild(img);
+      }
+    });
+  }
+}
+
+function isEmojiCategory(
+  data: MediaData | EmojiCategory | MediaCategory
+): data is EmojiCategory {
+  return (
+    (data as EmojiCategory).title !== undefined &&
+    (data as EmojiCategory).count !== undefined
+  );
+}
+
+function isMediaCategory(
+  data: MediaData | EmojiCategory | MediaCategory
+): data is MediaCategory {
+  return (data as MediaCategory).name !== undefined;
+}
+
+function isMediaData(
+  data: MediaData | EmojiCategory | MediaCategory
+): data is MediaData {
+  return (data as MediaData).preview !== undefined;
+}
+
+export async function loadMenuGifContent(): Promise<void> {
+  console.log("Loading GIF content...");
+
+  const categoryUrls = await fetchCategoryUrls();
+
+  if (categoryUrls.length > 0) {
+    // Pass Category[] here and mark isCategory as true
+    displayContent(categoryUrls, "gif", true);
+  } else {
+    console.log("No categories available.");
+    displayContent([], "gif");
+  }
+}
+
+export function getEmojiPanel(): string {
   const emojiPanel = createEl("div", { id: "emoji-panel" });
   const emojisContainer = createEl("div", {
     className: "emojis-container",
@@ -141,8 +276,51 @@ export function getEmojiPanel() {
   return emojiPanel.outerHTML;
 }
 
+export async function fetchCategoryUrls(): Promise<Category[]> {
+  const url = `https://g.tenor.com/v1/categories?key=${exampleTenorId}`;
+  try {
+    const response = await fetch(url);
+    const responseData = await response.json();
+    const categories = responseData.tags || [];
+
+    if (categories.length === 0) {
+      console.error("No categories found.");
+      return [];
+    }
+
+    return categories;
+  } catch (error) {
+    console.error("Error fetching category GIFs:", error);
+    return [];
+  }
+}
+
+export async function loadGifContent(query: string): Promise<void> {
+  if (!query) {
+    mediaMenuContainer.innerHTML = "";
+    showCategoriesList();
+    return;
+  }
+
+  const gifUrl = `${initialState.gifWorkerUrl}?q=${encodeURIComponent(query)}`;
+  const response = await fetch(gifUrl);
+
+  if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+  const data: GifResponse = await response.json();
+
+  if (data.error) throw new Error(`API error: ${data.error}`);
+
+  const gifElements = data.results.map((result) => ({
+    gif: result.media_formats.gif.url,
+    preview: result.media_formats.tinygif.url
+  }));
+
+  displayContent(gifElements, "gif");
+}
+
 export function updateMediaPanelPosition() {
-  mediaMenu = getId("media-menu");
+  mediaMenu = getId("media-menu") as HTMLElement;
   if (mediaMenu) {
     mediaMenu.className = !isUsersOpenGlobal ? "users-open" : "";
   }
@@ -166,23 +344,16 @@ export function handleMediaPanelResize() {
     ) + "px";
 }
 
-export async function loadGifContent(query) {
-  if (!query) {
-    mediaMenuContainer.innerHTML = "";
-    showCategoriesList();
-    return;
-  }
-  const gifUrl = `${initialState.gifWorkerUrl}?q=${encodeURIComponent(query)}`;
-  const response = await fetch(gifUrl);
-  if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-  const data = await response.json();
-  if (data.error) throw new Error(`API error: ${data.error}`);
+interface GifResult {
+  media_formats: {
+    gif: { url: string };
+    tinygif: { url: string };
+  };
+}
 
-  const gifElements = data.results.map((result) => ({
-    gif: result.media_formats.gif.url,
-    preview: result.media_formats.tinygif.url
-  }));
-  displayContent(gifElements, "gif");
+interface GifResponse {
+  error?: string;
+  results: GifResult[];
 }
 
 export function toggleMediaMenu() {
@@ -196,7 +367,7 @@ export function toggleMediaMenu() {
     isMediaMenuOpen = true;
   }
 }
-export function httpGetAsync(url, callback) {
+export function httpGetAsync(url: string, callback: CallableFunction) {
   const xmlHttp = new XMLHttpRequest();
 
   const READY_STATE_DONE = 4;
@@ -214,21 +385,50 @@ export function httpGetAsync(url, callback) {
   xmlHttp.send(null);
 }
 
-export function handleCategoryGifs(responseText) {
-  const gifs = JSON.parse(responseText).results;
+interface GifMedia {
+  gif: { url: string };
+  tinygif: { url: string };
+}
+
+interface GifData {
+  media: GifMedia[];
+}
+
+class Gif {
+  gifUrl: string;
+  previewUrl: string;
+
+  constructor(gifUrl: string, previewUrl: string) {
+    this.gifUrl = gifUrl;
+    this.previewUrl = previewUrl;
+  }
+
+  loadGif(gifImg: HTMLImageElement) {
+    gifImg.src = this.previewUrl;
+    gifImg.onload = () => {
+      gifImg.src = this.gifUrl;
+    };
+  }
+}
+
+export function handleCategoryGifs(responseText: string) {
+  const gifs = JSON.parse(responseText).results as GifData[];
   mediaMenuContainer.innerHTML = "";
-  gifs.forEach((gif) => {
-    console.log(gif);
-    const gifImg = createEl("img", { className: "gif-content" });
+
+  gifs.forEach((gifData) => {
+    const gif = new Gif(gifData.media[0].gif.url, gifData.media[0].tinygif.url);
+
+    const gifImg = createEl("img", {
+      className: "gif-content"
+    }) as HTMLImageElement;
     gifImg.src = defaultMediaImageSrc;
     mediaMenuContainer.appendChild(gifImg);
-    gifImg.onload = function () {
-      gifImg.src = gif.media[0].gif.url;
-    };
+
+    gif.loadGif(gifImg);
   });
 }
 
-export async function fetchCategoryGifs(categoryPath) {
+export async function fetchCategoryGifs(categoryPath: string) {
   const url = `https://g.tenor.com/v1/search?key=${exampleTenorId}&q=${categoryPath}&limit=50`;
   httpGetAsync(url, handleCategoryGifs);
 }
@@ -237,23 +437,45 @@ export async function fetchCategoryGifs(categoryPath) {
 export function showCategoriesList() {
   console.log("Show categories list");
   const categoryNameText = getId("categoryName");
-  categoryNameText.style.display = "none";
-  gifsBackBtn.style.display = "none";
-  getId("mediaMenuSearchbar").style.display = "flex";
+  if (categoryNameText) {
+    categoryNameText.style.display = "none";
+  }
+  if (gifsBackBtn) {
+    gifsBackBtn.style.display = "none";
+  }
+  const mediaMenuSearchbar = getId("mediaMenuSearchbar");
+  if (mediaMenuSearchbar) {
+    mediaMenuSearchbar.style.display = "flex";
+  }
   loadMenuGifContent();
-  categoryNameText.textContent = "";
+  if (categoryNameText) {
+    categoryNameText.textContent = "";
+  }
 }
-export function showCategoryView(categoryName) {
+
+export function showCategoryView(categoryName: string) {
   const categoryNameText = getId("categoryName");
-  categoryNameText.style.display = "block";
-  categoryNameText.textContent = categoryName;
-  gifsBackBtn.style.display = "block";
-  getId("mediaMenuSearchbar").style.display = "none";
+  if (categoryNameText) {
+    categoryNameText.style.display = "block";
+    categoryNameText.textContent = categoryName;
+  }
+  if (gifsBackBtn) {
+    gifsBackBtn.style.display = "block";
+  }
+  const mediaMenuSearchbar = getId("mediaMenuSearchbar");
+  if (mediaMenuSearchbar) {
+    mediaMenuSearchbar.style.display = "none";
+  }
 }
+
 function fetchTrendingGifs() {
   throw new Error("Trending gifs not implemented");
 }
-export function createCategoryBox(name, categoryPath, previewImage) {
+export function createCategoryBox(
+  name: string,
+  categoryPath: string,
+  previewImage: string
+) {
   const box = createEl("div", { className: "categoryBox" });
   const gifImg = createEl("img", {
     className: "gifCategoryImage",
@@ -278,52 +500,7 @@ export function createCategoryBox(name, categoryPath, previewImage) {
   return box;
 }
 
-export function displayContent(contentData, type, isCategory = false) {
-  console.log(type, contentData);
-  mediaMenuContainer.innerHTML = "";
-
-  // If it"s emoji type, just set the emoji panel
-  if (type === "emoji") {
-    mediaMenuContainer.innerHTML = getEmojiPanel();
-    return;
-  }
-
-  if (type !== "gif") return;
-
-  if (isCategory) {
-    contentData.forEach((category) => {
-      const box = createCategoryBox(
-        category.name,
-        category.path,
-        category.image
-      );
-      mediaMenuContainer.appendChild(box);
-    });
-    return;
-  }
-
-  if (contentData.length === 0) {
-    const baseGif = createEl("img", {
-      className: "gif-content",
-      textContent: "No gifs found"
-    });
-    mediaMenuContainer.appendChild(baseGif);
-  } else {
-    contentData.forEach((data) => {
-      const img = createEl("img", {
-        className: `${type}-content`,
-        src: data.preview
-      });
-      img.addEventListener("click", () => {
-        toggleMediaMenu();
-        sendMessage(data[type]);
-      });
-      mediaMenuContainer.appendChild(img);
-    });
-  }
-}
-
-export function toggleGifs(isTop) {
+export function toggleGifs(isTop?: boolean) {
   if (currentMenuType === "gif") {
     toggleMediaMenu();
   } else {
@@ -335,7 +512,7 @@ export function toggleGifs(isTop) {
   }
 }
 
-export function toggleEmojis(isTop) {
+export function toggleEmojis(isTop?: boolean) {
   if (currentMenuType === "emoji") {
     toggleMediaMenu();
   } else {
@@ -348,7 +525,7 @@ export function toggleEmojis(isTop) {
   }
 }
 
-export function httpGetSync(url) {
+export function httpGetSync(url: string) {
   const xmlHttp = new XMLHttpRequest();
   xmlHttp.open("GET", url, false);
   xmlHttp.send(null);
@@ -360,39 +537,9 @@ export function httpGetSync(url) {
 }
 
 //TODO: add favourite gifs and popular gifs here
-export async function fetchCategoryUrls() {
-  const url = `https://g.tenor.com/v1/categories?key=${exampleTenorId}`;
-  try {
-    const response = await fetch(url);
-    const responseData = await response.json();
-    const categories = responseData.tags || [];
 
-    if (categories.length === 0) {
-      console.error("No categories found.");
-      return [];
-    }
-
-    return categories;
-  } catch (error) {
-    console.error("Error fetching category GIFs:", error.message);
-    return [];
-  }
-}
-
-export async function loadMenuGifContent() {
-  console.log("Loading GIF content...");
-
-  const categoryUrls = await fetchCategoryUrls();
-
-  if (categoryUrls.length > 0) {
-    displayContent(categoryUrls, "gif", true);
-  } else {
-    console.log("No categories available.");
-    displayContent([], "gif");
-  }
-}
 export function initialiseEmojiPreview() {
-  const emoji = getId("emojibtn");
+  const emoji = getId("emojibtn") as HTMLElement;
   const totalEmojis = 73;
   const emojiWidth = 48;
   const emojiHeight = 48;
@@ -427,8 +574,8 @@ export function initialiseEmojiPreview() {
 const GIF_DEBOUNCE_TIME = 300;
 export function initialiseMedia() {
   initialiseEmojiPreview();
-  mediaMenu = getId("media-menu");
-  mediaMenuContainer = getId("media-menu-container");
+  mediaMenu = getId("media-menu") as HTMLElement;
+  mediaMenuContainer = getId("media-menu-container") as HTMLElement;
   mediaMenu.style.display = "none";
   const searchBar = getId("mediaMenuSearchbar") as HTMLInputElement;
 
@@ -440,7 +587,7 @@ export function initialiseMedia() {
     }, GIF_DEBOUNCE_TIME)
   );
 
-  getId("emojibtntop").addEventListener("click", (e) => {
+  emojiBtnTop.addEventListener("click", (e) => {
     toggleEmojis(false);
     e.stopPropagation();
   });

@@ -6,9 +6,9 @@ import {
   getBase64Image,
   getId,
   blackImage,
-  STATUS_404,
   STATUS_200,
-  defaultProfileImageSrc
+  defaultProfileImageSrc,
+  base64ToBlob
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -31,13 +31,13 @@ import { currentUserId, currentUserNick } from "./user.ts";
 import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
 
-export const selfName = getId("self-name");
-export const selfDiscriminator = getId("self-discriminator");
-export let lastConfirmedProfileImg: string;
+export const selfName = getId("self-name") as HTMLElement;
+export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
-export const selfStatus = getId("self-status");
+export const selfStatus = getId("self-status") as HTMLElement;
 
-let lastConfirmedGuildImg: string;
+export let lastConfirmedProfileImg: Blob;
+let lastConfirmedGuildImg: Blob;
 export let maxAttachmentSize: number; // mb
 let maxAvatarSize: number; // mb
 
@@ -119,7 +119,7 @@ export function refreshUserProfile(
   userNick: string | null = null
 ): void {
   if (userId === currentUserId) {
-    updateSelfProfile(userId, null, true, true);
+    updateSelfProfile(userId, "", true, true);
   }
 
   // from user list
@@ -229,6 +229,7 @@ export function updateSelfProfile(
   if (isSettingsOpen && currentSettingsCategory === settingTypes.MyAccount) {
     const settingsSelfProfile = getProfileImage();
 
+    if (!settingsSelfProfile) return;
     updateSelfName(nickName);
 
     updateImageSource(settingsSelfProfile, selfimagepath);
@@ -237,7 +238,7 @@ export function updateSelfProfile(
       const base64output = getBase64Image(settingsSelfProfile);
       if (base64output) {
         console.log("Setting self profile as ", userId, nickName);
-        lastConfirmedProfileImg = base64output;
+        lastConfirmedProfileImg = base64ToBlob(base64output);
       }
     }
   }
@@ -257,27 +258,35 @@ export function uploadImage(isGuild: boolean): void {
     return;
   }
 
-  const file = getFileSrc(isGuild);
-  if (!isValidBase64(file)) {
+  const fileSrc = getFileSrc(isGuild);
+  if (!isValidBase64(fileSrc)) {
     console.error("Invalid file format or undefined file for avatar update.");
     return;
   }
 
-  const blob = createBlobFromImage(file);
+  const blob = createBlobFromImage(fileSrc);
   if (blob.size > getMaxAvatarBytes()) {
     handleFileSizeError(blob.size);
     return;
   }
 
+  const file = new File([blob], `profile-image.${blob.type.split("/")[1]}`, {
+    type: blob.type
+  });
+
   sendImageUploadRequest(isGuild, blob, file);
 }
 
+function resetProfileImageFile() {
+  const profileImgFile = getProfileImageFile();
+  if (profileImgFile) profileImgFile.files = null;
+}
 function getFileSrc(isGuild: boolean): string {
-  return isGuild ? getGuildImage().src : getProfileImage().src;
+  return isGuild ? getGuildImage()?.src ?? "" : getProfileImage()?.src ?? "";
 }
 
 function isValidBase64(file: string): boolean {
-  return file && file.startsWith("data:image/");
+  return typeof file === "string" && file.startsWith("data:image/");
 }
 
 function createBlobFromImage(file: string): Blob {
@@ -290,13 +299,13 @@ function createBlobFromImage(file: string): Blob {
   return new Blob([ab], { type: mimeString });
 }
 
-function handleFileSizeError(size) {
+function handleFileSizeError(size: number) {
   console.error("Max avatar size exceeded. Uploaded file size:", size);
   alertUser(translations.getAvatarUploadErrorMsg(getMaxAvatarBytes()));
-  getProfileImageFile().value = "";
+  resetProfileImageFile();
 }
 
-function sendImageUploadRequest(isGuild, blob, file) {
+function sendImageUploadRequest(isGuild: boolean, blob: Blob, file: File) {
   const formData = new FormData();
   const fileName = `profile-image.${blob.type.split("/")[1]}`;
   formData.append("photo", blob, fileName);
@@ -311,7 +320,12 @@ function sendImageUploadRequest(isGuild, blob, file) {
   xhr.send(formData);
 }
 
-function handleUploadResponse(xhr, isGuild, file, blob) {
+function handleUploadResponse(
+  xhr: XMLHttpRequest,
+  isGuild: boolean,
+  file: File,
+  blob: Blob
+) {
   if (xhr.status === STATUS_200) {
     if (isGuild) {
       updateGuildImage(currentGuildId);
@@ -372,57 +386,65 @@ export function getProfileImageFile() {
   return null;
 }
 
-function clearAvatarInput(isGuild) {
-  if (isGuild) {
-    getGuildImageFile().value = "";
-  } else {
-    getProfileImageFile().value = "";
-  }
+export function clearAvatarInput(isGuild: boolean) {
+  const fileInput = isGuild ? getGuildImageFile() : getProfileImageFile();
+  if (fileInput) fileInput.value = "";
 }
+
 function revertToLastConfirmedImage(isGuild: boolean) {
   if (isGuild) {
     if (lastConfirmedGuildImg) {
-      getGuildImage().src = lastConfirmedGuildImg;
+      const guildImage = getGuildImage();
+      if (guildImage)
+        guildImage.src = URL.createObjectURL(lastConfirmedGuildImg);
     }
   } else {
     if (lastConfirmedProfileImg) {
-      getProfileImage().src = lastConfirmedProfileImg;
+      const profileImage = getProfileImage();
+      if (profileImage)
+        profileImage.src = URL.createObjectURL(lastConfirmedProfileImg);
     }
   }
 }
 
 export function onEditImage(isGuild: boolean) {
-  const filedata = isGuild
-    ? getGuildImageFile().files[0]
-    : getProfileImageFile().files[0];
+  const fileInput = isGuild ? getGuildImageFile() : getProfileImageFile();
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
 
+  const filedata = fileInput.files[0];
   const reader = new FileReader();
+
   reader.onload = (e) => {
-    function callbackAfterAccept(outputBase64) {
-      if (isGuild) {
-        lastConfirmedGuildImg = getBase64Image(getGuildImage());
-      } else {
-        lastConfirmedProfileImg = getBase64Image(getProfileImage());
-      }
-      if (isGuild) {
-        getGuildImage().src = outputBase64;
-      } else {
-        getProfileImage().src = outputBase64;
+    function callbackAfterAccept(outputBase64: string) {
+      const targetImage = isGuild ? getGuildImage() : getProfileImage();
+      if (targetImage) {
+        fetch(outputBase64)
+          .then((res) => res.blob())
+          .then((blob) => {
+            if (isGuild) {
+              lastConfirmedGuildImg = blob;
+            } else {
+              lastConfirmedProfileImg = blob;
+            }
+            targetImage.src = outputBase64;
+          })
+          .catch((err) =>
+            console.error("Error converting base64 to Blob:", err)
+          );
       }
       setIsChangedImage(true);
-
       regenerateConfirmationPanel();
-
-      showConfirmationPanel(currentPopUp);
+      if (currentPopUp) showConfirmationPanel(currentPopUp);
     }
-    createCropPop(e.target.result, callbackAfterAccept);
+    if (e.target && typeof e.target.result === "string") {
+      createCropPop(e.target.result as string, callbackAfterAccept);
+    }
   };
-  reader.onerror = (error) => {
-    console.error("Error reading file:", error);
-  };
-  reader.readAsDataURL(filedata);
-  clearAvatarInput(isGuild);
 
+  reader.onerror = (error) => console.error("Error reading file:", error);
+  reader.readAsDataURL(filedata);
+
+  clearAvatarInput(isGuild);
   setUnsaved(true);
 }
 
@@ -433,10 +455,14 @@ export function onEditProfile() {
 export function onEditGuildProfile() {
   onEditImage(true);
 }
-export async function setGuildPic(guildImg, guildId) {
+export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
   setPicture(guildImg, guildId, false);
 }
-export async function setProfilePic(profileImg, userId, isTimestamp = false) {
+export async function setProfilePic(
+  profileImg: HTMLImageElement,
+  userId: string,
+  isTimestamp = false
+) {
   setPicture(profileImg, userId, true, isTimestamp);
 }
 
@@ -451,10 +477,12 @@ async function init() {
     } = await import("./utils.ts");
 
     const base64Profile = await urlToBase64(defaultProfileImageUrl);
-    setDefaultProfileImageUrl(base64Profile);
+    const blobProfile = base64ToBlob(base64Profile);
+    setDefaultProfileImageUrl(blobProfile);
 
     const base64Media = await urlToBase64(defaultMediaImageUrl);
-    setDefaultMediaImageUrl(base64Media);
+    const blobMedia = base64ToBlob(base64Media);
+    setDefaultMediaImageUrl(blobMedia);
 
     selfProfileImage.addEventListener("mouseover", function () {
       this.style.borderRadius = "0px";

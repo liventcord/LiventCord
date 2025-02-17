@@ -207,9 +207,10 @@
   cursor: pointer;
 }
 .pop-up-accept {
-  font-size: 18px;
-  width: 40%;
-  height: 23%;
+  font-size: 14px;
+  width: 25%;
+  height: 40px;
+  white-space: nowrap;
   background-color: #5865f2;
   color: wheat;
   border: none;
@@ -217,8 +218,8 @@
   cursor: pointer;
   position: fixed;
   z-index: 1;
-  top: 80%;
-  left: 75%;
+  top: 93%;
+  left: 84%;
   transition: background-color 0.3s ease;
   transform: translate(-50%, -50%);
 }

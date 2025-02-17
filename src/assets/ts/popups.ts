@@ -6,7 +6,13 @@ import { currentGuildId, createGuild, joinToGuild } from "./guild.ts";
 import { getId, getAverageRGB, createEl } from "./utils.ts";
 import { friendsCache, addFriend } from "./friends.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
-import { currentUserId, getUserNick, currentUserNick } from "./user.ts";
+import {
+  currentUserId,
+  getUserNick,
+  currentUserNick,
+  UserInfo,
+  deletedUser
+} from "./user.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
 import { isOnGuild } from "./router.ts";
@@ -22,7 +28,7 @@ import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
 import { toggleManager } from "./settings.ts";
 
 let isDropdownOpen = false;
-export let closeCurrentJoinPop;
+export let closeCurrentJoinPop: CallableFunction;
 const hashText =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>';
 const voiceText =
@@ -36,53 +42,65 @@ const addFriSvg = `
 const sendMsgIconSvg = `
             <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>
         `;
-const radioStates = {};
+const radioStates = new WeakMap<HTMLElement, boolean>();
 
-function toggleRadio(radio, newValue) {
-  const innerCircle = radio.querySelectorAll("circle")[1];
-  innerCircle.setAttribute("fill", newValue ? "white" : "none");
-  radioStates[radio] = newValue;
+function toggleRadio(radio: HTMLElement, newValue: boolean) {
+  const innerCircle = radio.querySelector("circle:nth-of-type(2)");
+  if (innerCircle) {
+    innerCircle.setAttribute("fill", newValue ? "white" : "none");
+  }
+  radioStates.set(radio, newValue);
 }
 
 function createRadioBar() {
   const radioSvg = `<svg aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"></circle>
-    <circle cx="12" cy="12" r="6" fill="none" stroke="none"></circle>
-  </svg>`;
-  const radioBar = createEl("div", {
-    className: "radio-bar",
-    innerHTML: radioSvg
-  });
-  radioStates[radioBar] = false;
+            <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"></circle>
+            <circle cx="12" cy="12" r="6" fill="none" stroke="none"></circle>
+          </svg>`;
+
+  const radioBar = document.createElement("div");
+  radioBar.className = "radio-bar";
+  radioBar.innerHTML = radioSvg;
+
+  radioStates.set(radioBar, false);
   return radioBar;
 }
 
 const privateChannelHTML =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="lightgray" fill-rule="evenodd" d="M6 9h1V6a5 5 0 0 1 10 0v3h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Zm9-3v3H9V6a3 3 0 1 1 6 0Zm-1 8a2 2 0 0 1-1 1.73V18a1 1 0 1 1-2 0v-2.27A2 2 0 1 1 14 14Z" clip-rule="evenodd" class=""></path></svg>';
 function createPrivateChannelToggle() {
-  toggleManager.updateState("private-channel-toggle", 0);
+  toggleManager.updateState("private-channel-toggle", false);
   const toggleHtml = createToggle(
     "private-channel-toggle",
     translations.getTranslation("private-channel-text"),
     translations.getTranslation("private-channel-description")
   );
   const toggleElement = createEl("div", { innerHTML: toggleHtml });
+
   toggleElement.style.marginTop = "50px";
-  const label1 = toggleElement.querySelectorAll("label")[0];
-  label1.style.marginTop = "-10px";
-  label1.style.marginLeft = "30px";
-  const label2 = toggleElement.querySelectorAll("label")[1];
-  label2.style.fontSize = "14px";
-  label2.style.marginTop = "10px";
+
+  const labels = toggleElement.querySelectorAll("label");
+  if (labels.length > 0) {
+    labels[0].style.marginTop = "-10px";
+    labels[0].style.marginLeft = "30px";
+  }
+  if (labels.length > 1) {
+    labels[1].style.fontSize = "14px";
+    labels[1].style.marginTop = "10px";
+  }
+
   const toggleBox = toggleElement
     .querySelector(".toggle-card")
-    .querySelector(".toggle-box");
-  toggleBox.style.bottom = "40px";
-  toggleBox.style.right = "20px";
+    ?.querySelector(".toggle-box") as HTMLElement;
+  if (toggleBox) {
+    toggleBox.style.bottom = "40px";
+    toggleBox.style.right = "20px";
+  }
 
   return toggleElement;
 }
-function createChannelType(isVoice) {
+
+function createChannelType(isVoice: boolean) {
   const channelData = {
     text: {
       id: "create-channel-text-type",
@@ -143,18 +161,23 @@ export function createChannelsPop() {
     id: "private-channel-icon"
   });
   const privateChanToggle = createPrivateChannelToggle();
-
   const popAcceptButton = createEl("button", {
     className: "pop-up-accept",
     textContent: translations.getTranslation("channel-dropdown-button"),
-    style:
-      "height:40px; width: 25%; top:93%; left: 84%; font-size:14px; disabled=1; white-space:nowrap;"
+    style: {
+      height: "40px",
+      width: "25%",
+      top: "93%",
+      left: "84%",
+      fontSize: "14px",
+      whiteSpace: "nowrap"
+    }
   });
 
   const inviteUsersSendInput = createEl("input", {
     id: "create-channel-send-input",
     placeholder: translations.getTranslation("new-channel-placeholder")
-  });
+  }) as HTMLInputElement;
   inviteUsersSendInput.addEventListener("input", () =>
     toggleButtonState(inviteUsersSendInput.value.trim() !== "", popAcceptButton)
   );
@@ -183,15 +206,25 @@ export function createChannelsPop() {
   const textChannelContainer = createChannelType(false);
   const voiceChannelContainer = createChannelType(true);
 
-  function updateChannelState(selectedContainer, isText) {
+  function updateChannelState(selectedContainer: HTMLElement, isText: boolean) {
     const otherContainer =
       selectedContainer === textChannelContainer
         ? voiceChannelContainer
         : textChannelContainer;
     selectedContainer.style.filter = "brightness(1.5)";
     otherContainer.style.filter = "brightness(1)";
-    toggleRadio(selectedContainer.querySelector(".radio-bar"), true);
-    toggleRadio(otherContainer.querySelector(".radio-bar"), false);
+    const selectedRadio = selectedContainer.querySelector(
+      ".radio-bar"
+    ) as HTMLElement;
+    const otherRadio = otherContainer.querySelector(
+      ".radio-bar"
+    ) as HTMLElement;
+    if (otherRadio) {
+      toggleRadio(otherRadio, false);
+    }
+    if (selectedRadio) {
+      toggleRadio(selectedRadio, true);
+    }
     isTextChannel = isText;
   }
 
@@ -239,7 +272,7 @@ export function createChannelsPop() {
   });
 }
 
-function toggleButtonState(isActive, popAcceptButton) {
+function toggleButtonState(isActive: boolean, popAcceptButton: HTMLElement) {
   if (isActive) {
     popAcceptButton.classList.remove("inactive");
     popAcceptButton.classList.add("active");
@@ -248,8 +281,19 @@ function toggleButtonState(isActive, popAcceptButton) {
     popAcceptButton.classList.add("inactive");
   }
 }
+export function constructUserData(userId: string): UserInfo {
+  return {
+    userId,
+    discriminator: "0000",
+    nickName: deletedUser
+  };
+}
 
-export function drawProfilePop(userData) {
+export function drawProfilePopId(id: string) {
+  const userData: UserInfo = constructUserData(id);
+  drawProfilePop(userData);
+}
+export function drawProfilePop(userData: UserInfo) {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
     return;
@@ -299,7 +343,9 @@ export function drawProfilePop(userData) {
   });
   profileOptions.appendChild(profileOptionsText);
   popTopContainer.appendChild(profileOptions);
-  const profileImg = createEl("img", { id: "profile-display" });
+  const profileImg = createEl("img", {
+    id: "profile-display"
+  }) as HTMLImageElement;
   profileImg.addEventListener("mouseover", function () {
     this.style.borderRadius = "0px";
   });
@@ -348,15 +394,20 @@ export function drawProfilePop(userData) {
   profileContainer.appendChild(profileOptionsContainer);
   setProfilePic(profileImg, userId);
 
-  const bubble = createBubble(isOnline, true);
+  const bubble = createBubble(isOnline ?? false, true);
   profileImg.appendChild(bubble);
 
   profileOptions.addEventListener("click", function (event) {
-    showContextMenu(event.pageX, event.pageY, contextList[userId]);
+    if (contextList[userId]) {
+      showContextMenu(event.pageX, event.pageY, contextList[userId]);
+    } else {
+      console.warn(`No context found for userId: ${userId}`);
+    }
   });
   profileImg.onload = function () {
-    console.log(getAverageRGB(profileImg));
-    popTopContainer.style.backgroundColor = getAverageRGB(profileImg);
+    if (popTopContainer) {
+      popTopContainer.style.backgroundColor = getAverageRGB(profileImg);
+    }
   };
 
   const contentElements = [
@@ -488,7 +539,7 @@ export function toggleDropdown() {
 
   const guildSettingsDropdown = getId("guild-settings-dropdown");
 
-  if (!isDropdownOpen) {
+  if (guildSettingsDropdown && !isDropdownOpen) {
     isDropdownOpen = true;
     guildSettingsDropdown.style.display = "flex";
     guildSettingsDropdown.style.animation = "fadeIn 0.3s forwards";
@@ -544,7 +595,7 @@ export async function showGuildPop() {
     className: "guild-pop-up-accept",
     textContent: translations.getTranslation("create-myself")
   });
-  const closeCallback = function (event) {
+  const closeCallback = function () {
     closePopUp(newPopOuterParent, newPopParent);
   };
 
@@ -597,58 +648,73 @@ export async function showGuildPop() {
   newPopOuterParent.appendChild(newPopParent);
   newPopOuterParent.style.display = "flex";
 
-  newPopOuterParent.addEventListener("click", function () {
+  newPopOuterParent.addEventListener("click", function (event: Event) {
     if (event.target === newPopOuterParent) {
-      closeCallback(event);
+      closeCallback();
     }
   });
 
   document.body.appendChild(newPopOuterParent);
 }
 
-async function clickToJoinGuildBackButton(event, closeCallback) {
+async function clickToJoinGuildBackButton(
+  event: Event,
+  closeCallback: CallableFunction
+) {
   closeCallback(event);
   await showGuildPop();
 }
-function handleImageUpload(guildImage, uploadText, clearButton, event) {
-  console.log(event);
-  const file = event.target.files[0];
+function handleImageUpload(
+  guildImage: HTMLImageElement | null,
+  uploadText: HTMLElement | null,
+  clearButton: HTMLElement | null,
+  event: Event
+) {
+  const inputTarget = event.target as HTMLInputElement | null;
+  if (inputTarget && inputTarget.files) {
+    const file = inputTarget.files[0];
 
-  if (file) {
-    const reader = new FileReader();
+    if (file) {
+      const reader = new FileReader();
 
-    reader.onload = function (e) {
-      const result = e.target.result;
-      if (typeof result === "string") {
-        const svg = getId("guildImg");
-        if (svg) {
-          const img = new Image();
-          img.src = result;
-          img.id = "guildImg";
-          svg.replaceWith(img);
+      reader.onload = function (e) {
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          const svg = document.getElementById("guildImg");
+
+          if (svg) {
+            const img = new Image();
+            img.src = result;
+            img.id = "guildImg";
+            svg.replaceWith(img);
+          }
+
+          if (guildImage && uploadText && clearButton) {
+            guildImage.style.backgroundImage = `url(${result})`;
+            guildImage.style.backgroundSize = "cover";
+            guildImage.style.backgroundPosition = "center";
+            uploadText.style.display = "none";
+            clearButton.style.display = "flex";
+            guildImage.className = "guildImage";
+          } else {
+            console.error("One or more elements are missing or null.");
+          }
+        } else {
+          console.error("Error: Loaded file is not a valid image string.");
         }
+      };
 
-        guildImage.style.backgroundImage = `url(${result})`;
-        guildImage.style.backgroundSize = "cover";
-        guildImage.style.backgroundPosition = "center";
-        uploadText.style.display = "none";
-        clearButton.style.display = "flex";
-        guildImage.className = "guildImage";
-      } else {
-        console.error("Error: Loaded file is not a valid image string.");
-      }
-    };
-
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    }
   }
 }
 
 function changePopUpToGuildCreation(
-  newPopParent,
-  popButtonContainer,
-  newPopContent,
-  newPopSubject,
-  closeCallback
+  newPopParent: HTMLElement,
+  popButtonContainer: HTMLElement,
+  newPopContent: HTMLElement,
+  newPopSubject: HTMLElement,
+  closeCallback: CallableFunction
 ) {
   if (popButtonContainer?.parentNode)
     popButtonContainer.parentNode.removeChild(popButtonContainer);
@@ -687,13 +753,13 @@ function changePopUpToGuildCreation(
     type: "file",
     id: "guildImageInput",
     accept: "image/*",
-    style: "display: none;"
-  });
+    style: { display: "none" }
+  }) as HTMLInputElement;
 
   const guildImage = createEl("div", {
     id: "guildImg",
     className: "fas fa-camera"
-  });
+  }) as HTMLImageElement;
   const uploadText = createEl("p", {
     id: "uploadText",
     textContent: translations.getTranslation("upload")
@@ -701,7 +767,7 @@ function changePopUpToGuildCreation(
   const clearButton = createEl("button", {
     id: "clearButton",
     textContent: "X",
-    style: "display: none;"
+    style: { display: "none" }
   });
 
   guildImageForm.append(uploadText, clearButton);
@@ -709,13 +775,16 @@ function changePopUpToGuildCreation(
   function triggerGuildInput() {
     guildImageInput.click();
   }
+  function clearGuildInput() {
+    guildImageInput.value = "";
+  }
 
-  function clearImage(event) {
+  function clearImage(event: Event) {
     event.stopPropagation();
     guildImage.style.backgroundImage = "";
     uploadText.style.display = "block";
     clearButton.style.display = "none";
-    guildImageInput.value = "";
+    clearGuildInput();
   }
 
   guildImage.addEventListener("click", triggerGuildInput);
@@ -743,11 +812,11 @@ function changePopUpToGuildCreation(
 }
 
 export function ChangePopUpToGuildJoining(
-  newPopParent,
-  popButtonContainer,
-  newPopContent,
-  newPopSubject,
-  closeCallback
+  newPopParent: HTMLElement,
+  popButtonContainer: HTMLElement,
+  newPopContent: HTMLElement,
+  newPopSubject: HTMLElement,
+  closeCallback: CallableFunction
 ) {
   if (popButtonContainer) {
     popButtonContainer.remove();
@@ -761,7 +830,7 @@ export function ChangePopUpToGuildJoining(
   const newInput = createEl("input", {
     placeholder: text,
     id: "guild-name-input"
-  });
+  }) as HTMLInputElement;
 
   const joinButton = createEl("button", {
     textContent: translations.getTranslation("join-guild"),
@@ -779,7 +848,7 @@ export function ChangePopUpToGuildJoining(
   joinButton.addEventListener("click", function () {
     if (newInput.value === "") {
       guildNameTitle.textContent = "guild-join-invite-title";
-      guildNameTitle.textAlign = "left";
+      guildNameTitle.style.textAlign = "left";
       guildNameTitle.style.color = "red";
       return;
     }
@@ -837,7 +906,7 @@ export function ChangePopUpToGuildJoining(
   newPopParent.appendChild(backButton);
 }
 
-export function closePopUp(outerParent, popParent) {
+export function closePopUp(outerParent: HTMLElement, popParent: HTMLElement) {
   popParent.style.animation = "pop-up-shrink-animation 0.2s forwards";
   popParent.style.overflow = "hidden";
 
@@ -846,7 +915,10 @@ export function closePopUp(outerParent, popParent) {
   }, 200);
 }
 
-export function createCropPop(inputSrc, callbackAfterAccept) {
+export function createCropPop(
+  inputSrc: string,
+  callbackAfterAccept: CallableFunction
+) {
   const cropTitle = translations.getTranslation("crop-title");
   const inviteTitle = createEl("p", {
     id: "invite-users-title",
@@ -907,7 +979,7 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
     parentContainer.remove();
   });
 
-  const imageElement = createEl("img");
+  const imageElement = createEl("img") as HTMLImageElement;
   imageElement.src = inputSrc;
 
   const croppie = new Croppie(imageContainer, {
@@ -921,10 +993,21 @@ export function createCropPop(inputSrc, callbackAfterAccept) {
     url: inputSrc
   });
 
-  getId("cropPopContainer").style.setProperty("height", "600px", "important");
-  getId("cropPopContainer").style.setProperty("width", "600px", "important");
+  const cropPopContainer = getId("cropPopContainer");
+  if (cropPopContainer) {
+    cropPopContainer.style.setProperty("height", "600px", "important");
+    cropPopContainer.style.setProperty("width", "600px", "important");
+  }
 
-  imageContainer
-    .querySelector(".cr-slider-wrap")
-    .querySelector(".cr-slider").style.transform = "scale(1.5);";
+  const sliderWrap = imageContainer.querySelector(".cr-slider-wrap");
+  if (sliderWrap) {
+    const slider = sliderWrap.querySelector(".cr-slider") as HTMLElement;
+    if (slider) {
+      slider.style.transform = "scale(1.5)";
+    } else {
+      console.error("Slider element not found.");
+    }
+  } else {
+    console.error("Slider wrap element not found.");
+  }
 }

@@ -34,7 +34,7 @@ export default [
       "no-trailing-spaces": "warn",
       quotes: "off",
       curly: "off",
-      "consistent-return": "error",
+      "consistent-return": "off",
       "prefer-const": "error",
       "no-use-before-define": "off",
       "object-shorthand": ["error", "always"],

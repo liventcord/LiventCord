@@ -32,15 +32,16 @@ if (window.AudioContext) {
   );
 }
 
-let currentAudioPlayer;
+let currentAudioPlayer: HTMLAudioElement;
 let isAudioPlaying = false;
-let analyser = null;
-let source = null;
+let analyser: AnalyserNode | null;
+let source: MediaElementAudioSourceNode | null;
+
 let isAnalyzing = false;
 const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 const WIGGLE_DELAY = 500;
-let isInitializedAudio;
+let isInitializedAudio: boolean;
 const microphoneButton = getId("microphone-button") as HTMLImageElement;
 const earphoneButton = getId("earphone-button") as HTMLImageElement;
 
@@ -62,7 +63,7 @@ const playIconSvg =
   '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>';
 const stopIconSvg =
   '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5h10v20H5V5zm10 0h10v20H15V5z" fill="black"/></svg>';
-export async function playAudio(audioUrl) {
+export async function playAudio(audioUrl: string) {
   try {
     if (currentAudioPlayer) {
       currentAudioPlayer.pause();
@@ -73,7 +74,7 @@ export async function playAudio(audioUrl) {
     audioElement.crossOrigin = "anonymous";
     currentAudioPlayer = audioElement;
 
-    const playButton = document.querySelector("#player01 .play");
+    const playButton = document.querySelector("#player01 .play") as HTMLElement;
     playButton.addEventListener("click", () => {
       if (isAudioPlaying) {
         audioElement.pause();
@@ -85,7 +86,7 @@ export async function playAudio(audioUrl) {
       isAudioPlaying = !isAudioPlaying;
     });
 
-    const nextButton = document.querySelector("#player01 .next");
+    const nextButton = document.querySelector("#player01 .next") as HTMLElement;
     nextButton.addEventListener("click", async () => {
       if (youtubeIndex < youtubeIds.length - 1) {
         youtubeIndex++;
@@ -99,7 +100,7 @@ export async function playAudio(audioUrl) {
       }
     });
 
-    const prevButton = document.querySelector("#player01 .prev");
+    const prevButton = document.querySelector("#player01 .prev") as HTMLElement;
     prevButton.addEventListener("click", async () => {
       if (youtubeIndex > 0) {
         youtubeIndex--;
@@ -132,7 +133,7 @@ export async function playAudio(audioUrl) {
       }%`;
     });
 
-    const track = document.querySelector("#player01 .track");
+    const track = document.querySelector("#player01 .track") as HTMLElement;
     track.addEventListener("click", (e: MouseEvent) => {
       const rect = track.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -153,7 +154,7 @@ export async function playAudio(audioUrl) {
   }
 }
 
-export function formatTime(seconds) {
+export function formatTime(seconds: number) {
   const SECONDS_IN_MINUTE = 60;
   const MINIMUM_SECONDS_DISPLAY = 10;
 
@@ -188,7 +189,7 @@ export function initializeMp3Yt() {
 
   document.addEventListener("click", handleClick);
 }
-export async function fetchAudioStreamUrl(videoId) {
+export async function fetchAudioStreamUrl(videoId: string) {
   try {
     const response = await fetch(
       `/ytstream/?videoId=${encodeURIComponent(videoId)}`
@@ -218,12 +219,12 @@ export function stopAudioAnalysis() {
 
   isAnalyzing = false;
 
-  const selfProfileDisplayElementList = getSelfFromUserList();
+  const selfProfileDisplayElementList = getSelfFromUserList() as HTMLElement;
   if (selfProfileDisplayElementList) {
     selfProfileDisplayElementList.style.borderRadius = "50%";
   }
 
-  const profileDisplayElement = getId("profile-display");
+  const profileDisplayElement = getId("profile-display") as HTMLElement;
 
   resetWiggleEffect(
     profileDisplayElement,
@@ -233,7 +234,8 @@ export function stopAudioAnalysis() {
 }
 
 export function startAudioAnalysis() {
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContext = new (window.AudioContext ||
+    (window as any).webkitAudioContext)();
 
   if (!(currentAudioPlayer instanceof HTMLMediaElement)) {
     console.error("currentAudioPlayer is not a valid HTMLMediaElement.");
@@ -248,14 +250,18 @@ export function startAudioAnalysis() {
   isAnalyzing = true;
 
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  const recentVolumes = [];
+  const recentVolumes: number[] = [];
   const bufferSize = 10;
 
   analyzeAudio(bufferSize, dataArray, recentVolumes);
 }
-export function getSelfFromUserList() {
+
+export function getSelfFromUserList(): HTMLImageElement | null {
+  if (!userList) return null;
+
   const userProfiles = userList.querySelectorAll(".profile-container");
-  if (!userList || !userProfiles.length) return null;
+  if (!userProfiles.length) return null;
+
   for (const profile of Array.from(userProfiles)) {
     if (profile.id === currentUserId) {
       return profile.querySelector(".profile-pic") as HTMLImageElement;
@@ -264,7 +270,11 @@ export function getSelfFromUserList() {
   return null;
 }
 
-export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
+export function analyzeAudio(
+  bufferSize: number,
+  dataArray: Uint8Array,
+  recentVolumes: number[]
+) {
   if (!isAnalyzing || !analyser) return;
 
   analyser.getByteFrequencyData(dataArray);
@@ -283,7 +293,6 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
 
   const dynamicThreshold =
     recentVolumes.reduce((acc, val) => acc + val, 0) / recentVolumes.length;
-
   const MAX_VOLUME = 128;
   const MAX_COLOR_VALUE = 255;
   const VOLUME_TO_COLOR_MULTIPLIER = 2;
@@ -297,28 +306,29 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
     MAX_COLOR_VALUE - averageVolume * VOLUME_TO_COLOR_MULTIPLIER
   )})`;
 
-  const profileDisplayElement = getId("profile-display");
+  const profileDisplayElement = getId("profile-display") as HTMLElement;
+  if (profileDisplayElement) {
+    if (averageVolume > dynamicThreshold) {
+      if (profileDisplayElement) {
+        profileDisplayElement.classList.add("dancing-border");
+        profileDisplayElement.style.transform = `scale(${scaleFactor})`;
+        profileDisplayElement.style.borderColor = borderColor;
+      }
+      if (selfProfileImage) {
+        selfProfileImage.classList.add("dancing-border");
+        selfProfileImage.style.transform = `scale(${scaleFactor})`;
+        selfProfileImage.style.borderColor = borderColor;
+      }
 
-  if (averageVolume > dynamicThreshold) {
-    if (profileDisplayElement) {
-      profileDisplayElement.classList.add("dancing-border");
-      profileDisplayElement.style.transform = `scale(${scaleFactor})`;
-      profileDisplayElement.style.borderColor = borderColor;
+      const selfUserListProfileList = getSelfFromUserList();
+      if (selfUserListProfileList) {
+        selfUserListProfileList.classList.add("dancing-border");
+        selfUserListProfileList.style.transform = `scale(${scaleFactor})`;
+        selfUserListProfileList.style.borderColor = borderColor;
+      }
+    } else {
+      resetStyles(profileDisplayElement);
     }
-    if (selfProfileImage) {
-      selfProfileImage.classList.add("dancing-border");
-      selfProfileImage.style.transform = `scale(${scaleFactor})`;
-      selfProfileImage.style.borderColor = borderColor;
-    }
-
-    const selfUserListProfileList = getSelfFromUserList();
-    if (selfUserListProfileList) {
-      selfUserListProfileList.classList.add("dancing-border");
-      selfUserListProfileList.style.transform = `scale(${scaleFactor})`;
-      selfUserListProfileList.style.borderColor = borderColor;
-    }
-  } else {
-    resetStyles(profileDisplayElement);
   }
 
   requestAnimationFrame(() =>
@@ -326,7 +336,7 @@ export function analyzeAudio(bufferSize, dataArray, recentVolumes) {
   );
 }
 
-export function resetStyles(profileDisplayElement) {
+export function resetStyles(profileDisplayElement: HTMLElement) {
   if (profileDisplayElement) {
     profileDisplayElement.classList.remove("dancing-border");
     profileDisplayElement.style.transform = "scale(1)";
@@ -408,7 +418,7 @@ export function activateSoundOutput() {
   }
 
   async function updateSoundOutputOptions() {
-    const dropdown = getId("sound-output-dropdown");
+    const dropdown = getId("sound-output-dropdown") as HTMLElement;
     dropdown.innerHTML = "";
 
     try {
@@ -426,7 +436,7 @@ export function activateSoundOutput() {
         });
       }
 
-      const defaultOption = createEl("option");
+      const defaultOption = createEl("option") as HTMLOptionElement;
       defaultOption.style.fontSize = "12px";
       defaultOption.value = "default";
       defaultOption.textContent = "Default Sound Output";
@@ -434,7 +444,7 @@ export function activateSoundOutput() {
     } catch (error) {
       console.error("Error updating sound output options:", error);
 
-      const defaultOption = createEl("option");
+      const defaultOption = createEl("option") as HTMLOptionElement;
       defaultOption.style.fontSize = "12px";
       defaultOption.value = "default";
       defaultOption.textContent = "Default Sound Output";
@@ -506,7 +516,7 @@ export function activateMicAndCamera() {
       );
   }
 
-  function createDropdownOption(label, value) {
+  function createDropdownOption(label: string, value: string) {
     return createEl("option", {
       textContent: label,
       value,
@@ -515,8 +525,8 @@ export function activateMicAndCamera() {
   }
 
   async function updateMediaOptions() {
-    const micDropdown = getId("sound-mic-dropdown");
-    const cameraDropdown = getId("camera-dropdown");
+    const micDropdown = getId("sound-mic-dropdown") as HTMLElement;
+    const cameraDropdown = getId("camera-dropdown") as HTMLElement;
     micDropdown.innerHTML = "";
     cameraDropdown.innerHTML = "";
 
@@ -569,10 +579,10 @@ export function activateMicAndCamera() {
 }
 
 export function closeCurrentCall() {
-  currentAudioPlayer = getId("audio-player");
+  currentAudioPlayer = getId("audio-player") as HTMLAudioElement;
   playAudio("/sounds/leavevoice.mp3");
 
-  const sp = getId("sound-panel");
+  const sp = getId("sound-panel") as HTMLElement;
   const oldVoiceId = currentVoiceChannelId;
   sp.style.display = "none";
   clearVoiceChannel(oldVoiceId);
@@ -580,7 +590,9 @@ export function closeCurrentCall() {
   if (isOnGuild) {
     setCurrentVoiceChannelGuild("");
   }
-  const buttonContainer = channelsUl.querySelector(`li[id="${oldVoiceId}"]`);
+  const buttonContainer = channelsUl.querySelector(
+    `li[id="${oldVoiceId}"]`
+  ) as HTMLElement;
 
   mouseLeaveChannelButton(buttonContainer, false, oldVoiceId);
 
@@ -590,7 +602,7 @@ export function closeCurrentCall() {
   };
   apiClient.send(EventType.LEAVE_VOICE_CHANNEL, data);
 }
-export function clearVoiceChannel(channelId) {
+export function clearVoiceChannel(channelId: string) {
   const channelButton = channelsUl.querySelector(`li[id="${channelId}"]`);
   if (!channelButton) {
     return;
@@ -612,7 +624,7 @@ export function clearVoiceChannel(channelId) {
   existingContentWrapper.style.marginRight = "100px";
 }
 
-let cachedAudioNotify = null;
+let cachedAudioNotify: HTMLAudioElement;
 
 export function playNotification() {
   try {
@@ -660,8 +672,13 @@ export function initializeMusic() {
   });
 }
 export class VoiceHandler {
-  async handleAudio(data) {
-    if (data && data.byteLength > 0) {
+  async handleAudio(
+    data: ArrayBuffer | { buffer: ArrayBuffer } | null
+  ): Promise<void> {
+    if (
+      data &&
+      ("byteLength" in data ? data.byteLength : data.buffer.byteLength) > 0
+    ) {
       try {
         const arrayBuffer = this.convertToArrayBuffer(data);
         const decodedData = await this.decodeAudioDataAsync(arrayBuffer);
@@ -677,7 +694,10 @@ export class VoiceHandler {
       console.log("Received silent or invalid audio data");
     }
   }
-  convertToArrayBuffer(data) {
+
+  convertToArrayBuffer(
+    data: ArrayBuffer | { buffer: ArrayBuffer }
+  ): ArrayBuffer {
     if (data instanceof ArrayBuffer) {
       return data;
     } else if (data.buffer instanceof ArrayBuffer) {
@@ -687,18 +707,13 @@ export class VoiceHandler {
     }
   }
 
-  decodeAudioDataAsync(arrayBuffer) {
-    try {
-      return new Promise((resolve, reject) => {
-        audioContext.decodeAudioData(arrayBuffer, resolve, reject);
-      });
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
+  decodeAudioDataAsync(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
+    return new Promise((resolve, reject) => {
+      audioContext.decodeAudioData(arrayBuffer, resolve, reject);
+    });
   }
 
-  playAudioBuffer(audioBuffer) {
+  playAudioBuffer(audioBuffer: AudioBuffer): void {
     const _source = audioContext.createBufferSource();
     _source.buffer = audioBuffer;
     _source.connect(audioContext.destination);
@@ -706,7 +721,10 @@ export class VoiceHandler {
   }
 }
 
-export function applyWiggleEffect(profileElement, selfProfileElement) {
+export function applyWiggleEffect(
+  profileElement: HTMLElement,
+  selfProfileElement: HTMLElement
+) {
   if (profileElement) {
     profileElement.classList.add("dancing-border");
   }
@@ -723,7 +741,7 @@ export function applyWiggleEffect(profileElement, selfProfileElement) {
   }, WIGGLE_DELAY);
 }
 
-export function resetWiggleEffect(...elements) {
+export function resetWiggleEffect(...elements: HTMLElement[]) {
   elements.forEach((element) => {
     if (element) {
       element.style.transition = "none";

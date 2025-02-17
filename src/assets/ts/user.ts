@@ -8,46 +8,55 @@ import { initialState } from "./app.ts";
 import { cacheInterface } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { createEl } from "./utils.ts";
-import { offline } from "./friends.ts";
 import { translations } from "./translations.ts";
 
-export let currentUserId;
+export interface Member {
+  userId: string;
+  nickName: string;
+}
 
-export let currentDiscriminator = null;
-export let currentUserNick;
+export let currentUserId: string;
+
+export let currentDiscriminator: string;
+export let currentUserNick: string;
 export interface UserInfo {
   userId: string;
-  nick: string;
+  nickName: string;
   discriminator: string;
-  isBlocked?: boolean;
+  status?: string;
   isOnline?: boolean;
   description?: string;
+  isFriendsRequestToUser?: boolean;
+  createdAt?: string;
+  lastLogin?: string;
+  socialMediaLinks?: string[];
+  isBlocked?: boolean;
 }
 
 export const userNames: { [userId: string]: UserInfo } = {};
 export const deletedUser = "Deleted User";
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 let lastTopSenderId = null;
 
-export function setLastTopSenderId(id) {
+export function setLastTopSenderId(id: string) {
   if (!id) return;
   lastTopSenderId = id;
 }
 userNames["1"] = {
   userId: "1",
-  nick: "Clyde",
+  nickName: "Clyde",
   discriminator: "0000",
   isBlocked: false,
   isOnline: false,
   description: ""
 };
-export function setUserNick(newNickname) {
+export function setUserNick(newNickname: string) {
   currentUserNick = newNickname;
 }
-function setCurrentUserId(id) {
+function setCurrentUserId(id: string) {
   currentUserId = id;
 }
-const statusTypes = {
+export const statusTypes = {
   offline: "offline",
   online: "online",
   "dont-disturb": "dont-disturb",
@@ -56,10 +65,11 @@ const statusTypes = {
 
 export function setSelfStatus() {
   let status = "";
-
   status =
-    translations.getTranslation(statusTypes[initialState.user.status]) ||
-    translations.getTranslation(statusTypes[offline]);
+    translations.getTranslation(
+      statusTypes[initialState.user.status as keyof typeof statusTypes]
+    ) || translations.getTranslation(statusTypes.offline);
+
   selfStatus.textContent = status;
 }
 
@@ -99,7 +109,7 @@ export function getUserNick(userId: string): string {
   if (userId && currentUserId && currentUserId === userId) {
     return currentUserNick;
   }
-  return userId in userNames ? userNames[userId].nick : deletedUser;
+  return userId in userNames ? userNames[userId].nickName : deletedUser;
 }
 export function getUserDiscriminator(userId: string): string {
   return userId in userNames ? userNames[userId].discriminator : "0000";
@@ -107,13 +117,13 @@ export function getUserDiscriminator(userId: string): string {
 
 export function getUserIdFromNick(nick: string): string | null {
   for (const [userId, userInfo] of Object.entries(userNames)) {
-    if (userInfo.nick === nick) {
+    if (userInfo.nickName === nick) {
       return userId;
     }
   }
   return null;
 }
-export function isUserBlocked(userId) {
+export function isUserBlocked(userId: string) {
   if (!userNames.hasOwnProperty(userId)) {
     return false;
   }
@@ -121,30 +131,28 @@ export function isUserBlocked(userId) {
 }
 
 export function addUser(
-  userId,
-  nick?: string,
-  discriminator?: string,
+  userId: string,
+  nick: string = "",
+  discriminator: string = "",
   isBlocked?: boolean
 ) {
   userNames[userId] = {
-    nick,
+    nickName: nick,
     discriminator,
     isBlocked: Boolean(isBlocked),
     userId
   };
 }
 
-export function updateUserOnlineStatus(userId, isOnline) {
+export function updateUserOnlineStatus(userId: string, isOnline: boolean) {
   if (userId === currentUserId) return;
 
   const guildMembers = cacheInterface.getMembers(currentGuildId);
 
   for (const guildId in guildMembers) {
-    const users = guildMembers[guildId];
+    const user = guildMembers[guildId];
 
-    const user = users.find((_user) => _user.userId === userId);
-    if (user) {
-      user.is_online = isOnline;
+    if (user.userId === userId) {
       console.log(
         `User ${userId} online status updated to ${isOnline} in guild ${guildId}`
       );

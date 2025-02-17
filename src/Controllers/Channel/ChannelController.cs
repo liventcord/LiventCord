@@ -72,7 +72,7 @@ namespace LiventCord.Controllers
         }
 
 
-        [HttpPost("/api/guilds/{guildId}")]
+        [HttpPost("/api/guilds/{guildId}/channels")]
         public async Task<IActionResult> CreateChannel([FromRoute][IdLengthValidation] string guildId, [FromBody] CreateChannelRequest request)
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))

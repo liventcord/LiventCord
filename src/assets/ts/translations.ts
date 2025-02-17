@@ -1,6 +1,9 @@
 import { kebapToSentence, getId, truncateString } from "./utils.ts";
 import { alertUser } from "./ui.ts";
 
+type Replacements = Record<string, string>;
+type Truncation = Record<string, number>;
+
 class Translations {
   currentLanguage: string;
   languages: { [key: string]: string };
@@ -23,14 +26,16 @@ class Translations {
     this.friendErrorTranslations = {};
     this.contextTranslations = {};
     this.settingTranslations = {};
+    this.placeholderTranslations = {};
     this.textTranslations = {};
+    this.errorTranslations = {};
     this.translationsLoaded = new Promise((resolve, reject) => {
       this.resolveTranslations = resolve;
       this.rejectTranslations = reject;
     });
   }
 
-  formatTime(date) {
+  formatTime(date: Date) {
     return date.toLocaleTimeString(this.languages[this.currentLanguage], {
       hour: "2-digit",
       minute: "2-digit",
@@ -38,16 +43,21 @@ class Translations {
     });
   }
 
-  formatDate(date) {
+  formatDate(date: Date) {
     return date.toLocaleDateString(this.languages[this.currentLanguage]);
   }
 
-  replacePlaceholder(templateKey, replacements, truncation = {}) {
+  replacePlaceholder(
+    templateKey: string,
+    replacements: Replacements,
+    truncation: Truncation = {}
+  ): string {
     const languageData = this.placeholderTranslations[templateKey];
     if (!languageData) {
       console.log(`No template found for key: ${templateKey}`);
       return "";
     }
+
     const text = languageData;
     if (!text) {
       alertUser(
@@ -55,6 +65,7 @@ class Translations {
       );
       return "";
     }
+
     return Object.keys(replacements).reduce((acc, key) => {
       const value = truncation[key]
         ? truncateString(replacements[key], truncation[key])
@@ -63,18 +74,19 @@ class Translations {
     }, text);
   }
 
-  getDeleteChannelText(channelName) {
+  getDeleteChannelText(channelName: string): string {
     return this.replacePlaceholder("delete_channel_text", { channelName });
   }
-  getDeleteGuildText(guildName) {
+
+  getDeleteGuildText(guildName: string): string {
     return this.replacePlaceholder("delete_guild_text", { guildName });
   }
 
-  getInviteGuildText(guildName) {
+  getInviteGuildText(guildName: string): string {
     return this.replacePlaceholder("invites_guild_text", { guildName });
   }
 
-  getMessagePlaceholder(channelName) {
+  getMessagePlaceholder(channelName: string): string {
     return this.replacePlaceholder(
       "message_placeholder",
       { channelName },
@@ -82,7 +94,7 @@ class Translations {
     );
   }
 
-  generateGuildName(currentUserNick) {
+  generateGuildName(currentUserNick: string): string {
     return this.replacePlaceholder(
       "guid_name_placeholder",
       { userNick: currentUserNick },
@@ -90,7 +102,7 @@ class Translations {
     );
   }
 
-  getDmPlaceHolder(friendNick) {
+  getDmPlaceHolder(friendNick: string): string {
     return this.replacePlaceholder(
       "dm_placeholder",
       { friendNick },
@@ -98,40 +110,50 @@ class Translations {
     );
   }
 
-  getDmStartText(friendNick) {
+  getDmStartText(friendNick: string): string {
     return this.replacePlaceholder(
       "dm_start_text",
       { friendNick },
       { friendNick: 15 }
     );
   }
-  getBirthChannel(channelName) {
+
+  getBirthChannel(channelName: string): string {
     return this.replacePlaceholder(
       "birth_of_channel",
       { channelName },
       { channelName: 15 }
     );
   }
-  getWelcomeChannel(channelName) {
+
+  getWelcomeChannel(channelName: string): string {
     return this.replacePlaceholder(
       "welcome_channel",
       { channelName },
       { channelName: 15 }
     );
   }
-  getAvatarUploadErrorMsg(maxAvatarSize) {
+
+  getAvatarUploadErrorMsg(maxAvatarSize: number): string {
     return this.replacePlaceholder("avatar-upload-size-error-message", {
-      avatarLimit: maxAvatarSize
+      avatarLimit: maxAvatarSize.toString()
     });
   }
-  getReplyingTo(userName) {
+
+  getReplyingTo(userName: string): string {
     return this.replacePlaceholder("replying_to", { userName });
   }
-  getReadText(date, time, count) {
+
+  getReadText(date: string, time: string, count: number): string {
     count = Math.max(count, 50);
-    return this.replacePlaceholder("readen-chat", { date, time, count });
+    return this.replacePlaceholder("readen-chat", {
+      date,
+      time,
+      count: count.toString()
+    });
   }
-  getChannelManageFailText(name) {
+
+  getChannelManageFailText(name: string): string {
     return this.replacePlaceholder("channel-manage-fail", { guildName: name });
   }
 
@@ -163,7 +185,7 @@ class Translations {
     });
   }
 
-  getTranslation(key, list = this.textTranslations) {
+  getTranslation(key: string, list = this.textTranslations) {
     const result = list?.[key] ?? null;
     if (key && !result) {
       console.error("Cant find translation for:", key, list);
@@ -171,11 +193,11 @@ class Translations {
     }
     return result;
   }
-  getSettingsTranslation(key) {
+  getSettingsTranslation(key: string) {
     return this.getTranslation(key, this.settingTranslations);
   }
 
-  setLanguage(language) {
+  setLanguage(language: string) {
     if (!language) return;
 
     console.log(`Selected Language: ${language}`);
@@ -183,7 +205,7 @@ class Translations {
     this.loadTranslations(language);
   }
 
-  async loadTranslations(language) {
+  async loadTranslations(language: string) {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
 
     try {
@@ -225,16 +247,20 @@ class Translations {
       this.placeholderTranslations = placeholderTranslations;
       this.contextTranslations = contextTranslations;
       this.settingTranslations = settingTranslations;
-      this.resolveTranslations();
+      if (this.resolveTranslations) {
+        this.resolveTranslations();
+      }
 
       this.initializeTranslations();
     } catch (error) {
       console.error("Error loading translations:", error);
-      this.rejectTranslations();
+      if (this.rejectTranslations) {
+        this.rejectTranslations();
+      }
     }
   }
 
-  getContextTranslation(key) {
+  getContextTranslation(key: string) {
     const translation = this.contextTranslations[key];
 
     if (!translation) {
@@ -244,7 +270,7 @@ class Translations {
     return translation || key;
   }
 
-  getFriendErrorMessage(key) {
+  getFriendErrorMessage(key: string) {
     const result = this.friendErrorTranslations[key];
     if (key && !result) {
       console.error("Cant find translation for:", key);

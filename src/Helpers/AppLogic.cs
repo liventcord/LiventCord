@@ -103,7 +103,7 @@ namespace LiventCord.Helpers
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
-                    guildsJson = guilds,
+                    guilds = guilds,
                     gifWorkerUrl = _gifWorkerUrl,
                     maxAvatarSize = _maxAvatarSize,
                     maxUploadsize = _maxAttachmentSize,
