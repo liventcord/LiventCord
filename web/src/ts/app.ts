@@ -302,7 +302,6 @@ export function initializeGuild() {
     }
   }
 
-
   console.log(initialState.guilds);
 
   if (initialState.guilds && initialState.guilds.length > 0) {
@@ -312,7 +311,8 @@ export function initializeGuild() {
         cacheInterface.addChannel(data.guildId, channel);
       });
       //cacheInterface.setChannels(data.guildId,data.guildChannels);
-      if(initialGuildId)cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
+      if (initialGuildId)
+        cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
       if (data.guildId === currentGuildId) {
         updateChannels(data.guildChannels);
       }

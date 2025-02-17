@@ -29,10 +29,10 @@ export default defineConfig(({ mode }) => {
   }, {});
 
   return {
-    root: "./assets",
+    root: "./src",
     base: isDev ? "/" : "/app",
     build: {
-      outDir: "../wwwroot/app",
+      outDir: "output",
       assetsDir: "ts",
       emptyOutDir: true,
       minify: isDev ? false : "terser",
@@ -44,7 +44,6 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
-          // eslint-disable-next-line consistent-return
           manualChunks(id) {
             if (id.includes("node_modules")) {
               return "vendor";

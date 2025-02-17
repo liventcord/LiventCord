@@ -10,7 +10,9 @@
     "lib": ["dom", "es2019"],
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "types": ["vite/client"]
   },
-  "include": ["assets/ts/**/*", "tsconfig.context.json"]
+  "include": ["src/ts/**/*", "tsconfig.context.json"],
+  "exclude": ["node_modules"]
 }
