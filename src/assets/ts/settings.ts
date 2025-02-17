@@ -1,5 +1,5 @@
 declare var confetti: any;
-import { blackImage, getId } from "./utils.ts";
+import { blackImage, getId, randomInRange } from "./utils.ts";
 import {
   enableBorderMovement,
   stopAudioAnalysis,
@@ -13,7 +13,8 @@ import {
   onEditProfile,
   getProfileImageFile,
   getGuildImageFile,
-  getGuildImage
+  getGuildImage,
+  clearAvatarInput
 } from "./avatar.ts";
 import {
   showConfirmationPanel,
@@ -42,18 +43,19 @@ export const settingTypes = {
   Appearance: "Appearance"
 };
 
-let changeNicknameTimeout, changeGuildNameTimeout;
+let changeNicknameTimeout: number;
+let changeGuildNameTimeout: number;
 export let isSettingsOpen = false;
-export let currentPopUp = null;
-export function setIsSettingsOpen(val) {
+export let currentPopUp: HTMLElement | null;
+export function setIsSettingsOpen(val: boolean) {
   isSettingsOpen = val;
 }
 export let isUnsaved = false;
-export function setUnsaved(val) {
+export function setUnsaved(val: boolean) {
   isUnsaved = val;
 }
 export let isChangedImage = false;
-export function setIsChangedImage(val) {
+export function setIsChangedImage(val: boolean) {
   isChangedImage = val;
 }
 
@@ -65,7 +67,7 @@ export function clearCookies() {
   }
 }
 
-export function saveBooleanCookie(name, value) {
+export function saveBooleanCookie(name: string, value: number) {
   value = value ? 1 : 0;
   const expires = new Date();
   expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000);
@@ -76,7 +78,7 @@ export function saveBooleanCookie(name, value) {
   )}=${cookieValue}; ${expiresStr}; path=/`;
 }
 
-export function loadBooleanCookie(name) {
+export function loadBooleanCookie(name: string) {
   const cookieName = encodeURIComponent(name) + "=";
   const cookies = document.cookie.split("; ");
   for (const cookie of cookies) {
@@ -88,29 +90,57 @@ export function loadBooleanCookie(name) {
   return false;
 }
 
-export const toggleManager = {
-  states: {
-    "notify-toggle": loadBooleanCookie("notify-toggle") ?? false,
-    "snow-toggle": loadBooleanCookie("snow-toggle") ?? false,
-    "party-toggle": loadBooleanCookie("party-toggle") ?? false,
-    "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
-    "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
-    "private-channel-toggle": false
-  },
-  updateState(toggleId, newValue) {
+type ToggleState = {
+  "notify-toggle": boolean;
+  "snow-toggle": boolean;
+  "party-toggle": boolean;
+  "activity-toggle": boolean;
+  "slide-toggle": boolean;
+  "private-channel-toggle": boolean;
+};
+
+export class ToggleManager {
+  private static instance: ToggleManager;
+  states: ToggleState;
+
+  private constructor() {
+    this.states = {
+      "notify-toggle": loadBooleanCookie("notify-toggle") ?? false,
+      "snow-toggle": loadBooleanCookie("snow-toggle") ?? false,
+      "party-toggle": loadBooleanCookie("party-toggle") ?? false,
+      "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
+      "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
+      "private-channel-toggle": false
+    };
+
+    if (this.states["snow-toggle"]) {
+      this.startSnowEffect();
+    }
+  }
+
+  static getInstance(): ToggleManager {
+    if (!ToggleManager.instance) {
+      ToggleManager.instance = new ToggleManager();
+    }
+    return ToggleManager.instance;
+  }
+
+  updateState(toggleId: keyof ToggleState, newValue: boolean) {
     this.states[toggleId] = newValue;
     if (toggleId !== "private-channel-toggle") {
-      saveBooleanCookie(toggleId, newValue);
+      saveBooleanCookie(toggleId, newValue ? 1 : 0);
     }
     this.updateToggleDisplay(toggleId, newValue);
     this.triggerActions(toggleId, newValue);
-  },
+  }
+
   setupToggles() {
     Object.keys(this.states).forEach((id) => {
-      this.setupToggle(id);
+      this.setupToggle(id as keyof ToggleState);
     });
-  },
-  setupToggle(id) {
+  }
+
+  setupToggle(id: keyof ToggleState) {
     const toggleElement = getId(id);
     if (toggleElement) {
       this.updateToggleDisplay(id, this.states[id]);
@@ -119,45 +149,48 @@ export const toggleManager = {
         this.updateState(id, newValue);
       });
     }
-  },
-  updateToggleDisplay(toggleId, newValue) {
+  }
+
+  updateToggleDisplay(toggleId: keyof ToggleState, newValue: boolean) {
     const toggleElement = getId(toggleId);
     if (toggleElement) {
-      toggleElement
-        .querySelector(".toggle-switch")
-        .classList.toggle("active", newValue);
+      const switchElement = toggleElement.querySelector(".toggle-switch");
+      if (switchElement) {
+        switchElement.classList.toggle("active", newValue);
+      }
       toggleElement.classList.toggle("active", newValue);
     }
-  },
-  triggerActions(toggleId, newValue) {
-    const toggleActions = {
+  }
+
+  triggerActions(toggleId: keyof ToggleState, newValue: boolean) {
+    const toggleActions: Record<string, () => void> = {
       "snow-toggle": this.toggleEffect.bind(this, "snow", newValue),
       "party-toggle": this.toggleEffect.bind(this, "party", newValue)
     };
     if (toggleActions[toggleId]) {
       toggleActions[toggleId]();
     }
-  },
-  toggleEffect(effect, enable) {
+  }
+
+  toggleEffect(effect: string, enable: boolean) {
     if (effect === "snow") {
       enable ? this.startSnowEffect() : this.stopSnowEffect();
     } else if (effect === "party") {
       enable ? this.startPartyEffect() : this.stopPartyEffect();
     }
-  },
+  }
+
   isSlide() {
     return this.states["slide-toggle"];
-  },
+  }
+
   startSnowEffect() {
-    const particeContainer = getId("confetti-container");
+    const particleContainer = getId("confetti-container");
     let skew = 1;
 
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    (function frame() {
-      if (!toggleManager.states["snow-toggle"] || !isDomLoaded) return;
+    const frame = () => {
+      if (!ToggleManager.getInstance().states["snow-toggle"] || !isDomLoaded)
+        return;
 
       skew = Math.max(0.8, skew - 0.001);
 
@@ -174,24 +207,32 @@ export const toggleManager = {
         gravity: randomInRange(0.4, 0.6),
         scalar: randomInRange(0.4, 1),
         drift: randomInRange(-0.4, 0.4),
-        particleContainer: particeContainer
+        particleContainer
       });
 
-      requestAnimationFrame(frame);
-    })();
-  },
-  stopSnowEffect() {},
+      if (ToggleManager.getInstance().states["snow-toggle"]) {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    requestAnimationFrame(frame);
+  }
+
+  stopSnowEffect() {}
+
   startPartyEffect() {
     enableBorderMovement();
-  },
+  }
+
   stopPartyEffect() {
     stopAudioAnalysis();
   }
-};
+}
+export const toggleManager = ToggleManager.getInstance();
 
 export function initializeCookies() {
   Object.entries(toggleManager.states).forEach(([key, value]) => {
-    toggleManager.setupToggle(key);
+    toggleManager.setupToggle(key as keyof ToggleState);
   });
 
   console.log("init cookies", toggleManager.states);
@@ -204,15 +245,19 @@ export function initializeCookies() {
 
 export function triggerFileInput() {
   const profileImageInput = getProfileImageFile();
-  profileImageInput.click();
-  profileImageInput.addEventListener("change", onEditProfile);
+  if (profileImageInput) {
+    profileImageInput.click();
+    profileImageInput.addEventListener("change", onEditProfile);
+  }
 }
 
 export function triggerGuildImageUpdate() {
   if (!permissionManager.canManageGuild()) return;
   const guildImageInput = getGuildImageFile();
-  guildImageInput.click();
-  guildImageInput.addEventListener("change", onEditGuildProfile);
+  if (guildImageInput) {
+    guildImageInput.click();
+    guildImageInput.addEventListener("change", onEditGuildProfile);
+  }
 }
 export function onEditNick() {
   isUnsaved = true;
@@ -259,8 +304,9 @@ export function applySettings() {
 
 export function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
-  getGuildImageFile().value = "";
-  getGuildImage().src = blackImage;
+  clearAvatarInput(true);
+  const guildImg = getGuildImage();
+  if (guildImg) guildImg.src = blackImage;
 }
 
 export function changeNickname() {
@@ -280,7 +326,7 @@ export function changeNickname() {
     newNicknameInput.value = newNickname;
 
     changeNicknameTimeout = setTimeout(() => {
-      changeNicknameTimeout = null;
+      changeNicknameTimeout = 0;
     }, CHANGE_NICK_COOLDOWN);
   }
 }
@@ -301,7 +347,7 @@ export function changeGuildName() {
     });
     newGuildInput.value = newGuildName;
     changeGuildNameTimeout = setTimeout(
-      () => (changeGuildNameTimeout = null),
+      () => (changeGuildNameTimeout = 0),
       CHANGE_NICK_COOLDOWN
     );
   }
@@ -319,7 +365,7 @@ export async function requestMicrophonePermissions() {
   }
 }
 
-export function keydownHandler(event) {
+export function keydownHandler(event: KeyboardEvent) {
   if (event.key === "Escape") {
     event.preventDefault();
     if (isSettingsOpen) {

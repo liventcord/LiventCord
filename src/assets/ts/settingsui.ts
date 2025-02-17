@@ -2,7 +2,7 @@ import {
   alertUser,
   askUser,
   logOutPrompt,
-  openGuildSettingsDd,
+  openGuildSettingsDropdown,
   toggleEmail
 } from "./ui.ts";
 import {
@@ -49,7 +49,34 @@ export const SettingType = Object.freeze({
   CHANNEL: "CHANNEL"
 });
 
-export let currentSettingsCategory;
+type SettingCategory =
+  | "MyAccount"
+  | "SoundAndVideo"
+  | "Notifications"
+  | "ActivityPresence"
+  | "Appearance"
+  | "Language"
+  | "GuildOverview"
+  | "Emoji"
+  | "Overview"
+  | "Permissions"
+  | "DeleteChannel"
+  | "Invites"
+  | "Roles"
+  | "DeleteGuild";
+
+interface Setting {
+  category: SettingCategory;
+  label: string;
+}
+
+interface Settings {
+  userSettings: Setting[];
+  guildSettings: Setting[];
+  channelSettings: Setting[];
+}
+
+export let currentSettingsCategory: string;
 export let currentSettingsType: SettingType = SettingType.PROFILE;
 (window as any).currentSettingsType = currentSettingsType;
 
@@ -57,10 +84,10 @@ export function isGuildSettings() {
   return currentSettingsType === SettingType.GUILD;
 }
 
-let currentSettings;
+let currentSettings: Settings;
 
 const settingsMenu = getId("settings-menu");
-let resetTimeout;
+let resetTimeout: number;
 
 export const GuildCategoryTypes = Object.freeze({
   GuildOverview: "GuildOverview",
@@ -106,11 +133,14 @@ const CategoryTypeMapping = Object.freeze({
   )
 });
 
-function getSettingTypeFromCategory(category) {
+function getSettingTypeFromCategory(category: string) {
   return CategoryTypeMapping[category] || null;
 }
 
-const createSettingsConfig = (categoryTypes, htmlGenerator) => {
+const createSettingsConfig = (
+  categoryTypes: { [key: string]: string },
+  htmlGenerator: (name: string) => string
+) => {
   return Object.fromEntries(
     Object.entries(categoryTypes).map(([category, name]) => [
       name,
@@ -123,7 +153,7 @@ const createSettingsConfig = (categoryTypes, htmlGenerator) => {
 };
 
 const getProfileSettingsConfig = () => {
-  return createSettingsConfig(ProfileCategoryTypes, (category) => {
+  return createSettingsConfig(ProfileCategoryTypes, (category: string) => {
     switch (category) {
       case ProfileCategoryTypes.SoundAndVideo:
         return '<select class="dropdown"></select><select class="dropdown"></select><select class="dropdown"></select>';
@@ -144,7 +174,7 @@ const getProfileSettingsConfig = () => {
 };
 
 const getGuildSettingsConfig = () => {
-  return createSettingsConfig(GuildCategoryTypes, (category) => {
+  return createSettingsConfig(GuildCategoryTypes, (category: string) => {
     switch (category) {
       case GuildCategoryTypes.GuildOverview:
         return getGuildOverviewHtml();
@@ -155,7 +185,7 @@ const getGuildSettingsConfig = () => {
 };
 
 const getChannelSettingsConfig = () => {
-  return createSettingsConfig(ChannelCategoryTypes, (category) => {
+  return createSettingsConfig(ChannelCategoryTypes, (category: string) => {
     switch (category) {
       case ChannelCategoryTypes.Overview:
         return getOverviewHtml();
@@ -166,8 +196,7 @@ const getChannelSettingsConfig = () => {
     }
   });
 };
-
-const getSettingsConfigByType = (settingType) => {
+const getSettingsConfigByType = (settingType: keyof typeof SettingType) => {
   const configMap = {
     [SettingType.GUILD]: getGuildSettingsConfig(),
     [SettingType.PROFILE]: getProfileSettingsConfig(),
@@ -177,92 +206,31 @@ const getSettingsConfigByType = (settingType) => {
   return configMap[settingType] || {};
 };
 
-export function updateSettingsProfileColor() {
-  const settingsProfileImg = getProfileImage();
-  const rightBarTop = getId("settings-rightbartop");
-  if (rightBarTop) {
-    rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
-  }
-}
-
-function loadSettings() {
-  const userSettings = [
-    {
-      category: "MyAccount",
-      label: translations.getSettingsTranslation("MyAccount")
-    },
-    {
-      category: "SoundAndVideo",
-      label: translations.getSettingsTranslation("SoundAndVideo")
-    },
-    {
-      category: "Notifications",
-      label: translations.getSettingsTranslation("Notifications")
-    },
-    {
-      category: "ActivityPresence",
-      label: translations.getSettingsTranslation("ActivityPresence")
-    },
-    {
-      category: "Appearance",
-      label: translations.getSettingsTranslation("Appearance")
-    },
-    {
-      category: "Language",
-      label: translations.getSettingsTranslation("Language")
-    }
-  ];
-
-  const guildSettings = [
-    {
-      category: "GuildOverview",
-      label: translations.getSettingsTranslation("GeneralOverview")
-    },
-    {
-      category: "Emoji",
-      label: translations.getSettingsTranslation("Emoji")
-    }
-  ];
-  const channelSettings = [
-    {
-      category: "Overview",
-      label: translations.getSettingsTranslation("ChannelSettings")
-    },
-    {
-      category: "Permissions",
-      label: translations.getSettingsTranslation("Permissions")
-    },
-    {
-      category: "DeleteChannel",
-      label: translations.getSettingsTranslation("DeleteChannel")
-    }
-  ];
-
-  return { userSettings, guildSettings, channelSettings };
-}
-function getGuildSettings() {
-  const setToReturn = [...currentSettings.guildSettings];
+function getGuildSettings(): Setting[] {
+  const setToReturn: Setting[] = [...currentSettings.guildSettings];
   if (permissionManager.canManageGuild()) {
     setToReturn.push({
-      category: "Invites",
+      category: "Invites" as SettingCategory,
       label: translations.getSettingsTranslation("Invites")
     });
     setToReturn.push({
-      category: "Roles",
+      category: "Roles" as SettingCategory,
       label: translations.getSettingsTranslation("Roles")
     });
     setToReturn.push({
-      category: "DeleteGuild",
+      category: "DeleteGuild" as SettingCategory,
       label: translations.getSettingsTranslation("DeleteGuild")
     });
   }
   return setToReturn;
 }
+
 function getChannelSettingHTML() {
   const settings = loadSettings();
   currentSettings = settings;
   return generateSettingsHtml(settings.channelSettings);
 }
+
 function getProfileSettingsHTML() {
   const settings = loadSettings();
   currentSettings = settings;
@@ -275,7 +243,7 @@ function getGuildSettingsHTML() {
   return generateSettingsHtml(getGuildSettings());
 }
 
-function generateSettingsHtml(settings, isProfile = false) {
+function generateSettingsHtml(settings: Setting[], isProfile = false) {
   const container = createEl("div");
 
   settings.forEach((setting) => {
@@ -301,43 +269,77 @@ function generateSettingsHtml(settings, isProfile = false) {
   return container;
 }
 
-export function selectSettingCategory(settingCategory) {
-  console.log("Called category: ", settingCategory);
-  if (settingCategory === GuildCategoryTypes.DeleteGuild) {
-    createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
-    return;
+export function updateSettingsProfileColor() {
+  const settingsProfileImg = getProfileImage();
+  const rightBarTop = getId("settings-rightbartop");
+  if (settingsProfileImg && rightBarTop) {
+    rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
   }
+}
+function loadSettings(): Settings {
+  const userSettings: Setting[] = [
+    {
+      category: "MyAccount" as SettingCategory,
+      label: translations.getSettingsTranslation("MyAccount")
+    },
+    {
+      category: "SoundAndVideo" as SettingCategory,
+      label: translations.getSettingsTranslation("SoundAndVideo")
+    },
+    {
+      category: "Notifications" as SettingCategory,
+      label: translations.getSettingsTranslation("Notifications")
+    },
+    {
+      category: "ActivityPresence" as SettingCategory,
+      label: translations.getSettingsTranslation("ActivityPresence")
+    },
+    {
+      category: "Appearance" as SettingCategory,
+      label: translations.getSettingsTranslation("Appearance")
+    },
+    {
+      category: "Language" as SettingCategory,
+      label: translations.getSettingsTranslation("Language")
+    }
+  ];
 
-  if (settingCategory === ChannelCategoryTypes.DeleteChannel) {
-    createDeleteChannelPrompt(
-      currentGuildId,
-      guildCache.currentChannelId,
-      currentChannelName
-    );
-    return;
-  }
+  const guildSettings: Setting[] = [
+    {
+      category: "GuildOverview" as SettingCategory,
+      label: translations.getSettingsTranslation("GeneralOverview")
+    },
+    {
+      category: "Emoji" as SettingCategory,
+      label: translations.getSettingsTranslation("Emoji")
+    }
+  ];
 
-  const settingsContainer = getId("settings-rightcontainer");
-  currentSettingsCategory = settingCategory;
+  const channelSettings: Setting[] = [
+    {
+      category: "Overview" as SettingCategory,
+      label: translations.getSettingsTranslation("ChannelSettings")
+    },
+    {
+      category: "Permissions" as SettingCategory,
+      label: translations.getSettingsTranslation("Permissions")
+    },
+    {
+      category: "DeleteChannel" as SettingCategory,
+      label: translations.getSettingsTranslation("DeleteChannel")
+    }
+  ];
 
-  const settingType = getSettingTypeFromCategory(settingCategory);
-  console.log("Setting Type for category: ", settingCategory, settingType);
-
-  if (!settingType) {
-    console.error(
-      `ERROR: Unable to find setting type for category: ${settingCategory}`
-    );
-    alertUser(
-      "Error",
-      `Unknown Setting: ${settingCategory} could not be found.`
-    );
-    return;
-  }
-
-  const settingsConfig = getSettingsConfigByType(settingType);
-  console.log("Settings Config for setting type:", settingType, settingsConfig);
-
-  const settingConfig = settingsConfig[settingCategory] || {
+  return { userSettings, guildSettings, channelSettings };
+}
+function getUnknownSettings(
+  settingType: string,
+  settingCategory:
+    | keyof typeof ProfileCategoryTypes
+    | keyof typeof GuildCategoryTypes
+    | keyof typeof ChannelCategoryTypes
+) {
+  return {
     title: () => "Unknown Setting",
     html: `
       <h3>Unknown Setting: ${settingCategory} could not be found.</h3>
@@ -368,11 +370,67 @@ export function selectSettingCategory(settingCategory) {
       </pre>
     `
   };
+}
 
-  settingsContainer.innerHTML =
-    settingConfig.html ||
-    `Unknown Setting: ${settingCategory} could not be found.`;
-  initialiseSettingComponents(settingsContainer, settingCategory);
+export function selectSettingCategory(
+  settingCategory:
+    | keyof typeof ProfileCategoryTypes
+    | keyof typeof GuildCategoryTypes
+    | keyof typeof ChannelCategoryTypes
+) {
+  console.log("Called category: ", settingCategory);
+
+  if (settingCategory === GuildCategoryTypes.DeleteGuild) {
+    createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
+    return;
+  }
+
+  if (settingCategory === ChannelCategoryTypes.DeleteChannel) {
+    createDeleteChannelPrompt(
+      currentGuildId,
+      guildCache.currentChannelId,
+      currentChannelName
+    );
+    return;
+  }
+
+  if (settingCategory === "MyAccount") {
+    updateSelfProfile(currentUserId, currentUserNick, true);
+    return;
+  }
+
+  const settingsContainer = getId("settings-rightcontainer");
+  if (!settingsContainer) return;
+
+  currentSettingsCategory = settingCategory;
+
+  const settingType = getSettingTypeFromCategory(settingCategory);
+  console.log("Setting Type for category: ", settingCategory, settingType);
+
+  if (!settingType) {
+    console.error(
+      `ERROR: Unable to find setting type for category: ${settingCategory}`
+    );
+    alertUser(
+      "Error",
+      `Unknown Setting: ${settingCategory} could not be found.`
+    );
+    return;
+  }
+
+  const settingsConfig = getSettingsConfigByType(settingType);
+  console.log("Settings Config for setting type:", settingType, settingsConfig);
+
+  const settingConfig =
+    settingsConfig[settingCategory] ||
+    getUnknownSettings(settingType, settingCategory);
+
+  settingsContainer.innerHTML = settingConfig.html;
+
+  initialiseSettingComponents(
+    settingsContainer,
+    settingCategory as keyof typeof ProfileCategoryTypes
+  );
 }
 
 function getActivityPresenceHtml() {
@@ -415,28 +473,32 @@ function getActivityPresenceHtml() {
         </div>
     `;
 }
+function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function getGuildOverviewHtml() {
   return `
-        <div id="settings-title">${translations.getSettingsTranslation(
-          "Overview"
-        )}</div>
-        <div id="guild-settings-rightbar">
-            <div id="set-info-title-guild-name">${translations.getSettingsTranslation(
-              "GuildName"
-            )}</div>
-            <input type="text" id="guild-overview-name-input" autocomplete="off" value="${
-              guildCache.currentGuildName
-            }"  maxlength="32">
-            <img id="guild-image" style="user-select: none;">
-            <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
-              "Remove"
-            )}</p>
-            <form id="guildImageForm" enctype="multipart/form-data">
-                <input type="file" name="guildImage" id="guildImage" accept="image/*" style="display: none;">
-            </form>
-        </div>
-    `;
+  <div id="guild-settings-rightbar">
+    <div id="set-info-title-guild-name">${translations.getSettingsTranslation(
+      "GuildName"
+    )}</div>
+    <input type="text" id="guild-overview-name-input" autocomplete="off" 
+           value="${escapeHtml(guildCache.currentGuildName)}" maxlength="32">
+    <img id="guild-image" style="user-select: none;">
+    <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
+      "Remove"
+    )}</p>
+    <form id="guildImageForm" enctype="multipart/form-data">
+      <input type="file" name="guildImage" id="guildImage" accept="image/*" style="display: none;">
+    </form>
+  </div>
+`;
 }
 
 function getAccountSettingsHtml() {
@@ -557,7 +619,7 @@ function initializeLanguageDropdown() {
 
 function initialiseSettingComponents(
   settingsContainer: HTMLElement,
-  settingCategory
+  settingCategory: keyof typeof ProfileCategoryTypes
 ) {
   setTimeout(() => {
     if (settingCategory === ProfileCategoryTypes.MyAccount) {
@@ -607,7 +669,7 @@ function initialiseSettingComponents(
   }
 }
 
-export function createToggle(id, label, description) {
+export function createToggle(id: string, label: string, description: string) {
   return `
         <div class="toggle-card">
             <label for="${id}">${label}</label>
@@ -640,7 +702,8 @@ export function createToggle(id, label, description) {
 export function openChannelSettings() {
   openSettings(SettingType.CHANNEL);
 }
-export function openSettings(settingType) {
+export function openSettings(settingType: SettingType) {
+  if (!settingsMenu) return;
   currentSettingsType = settingType;
   reconstructSettings(settingType);
 
@@ -660,6 +723,7 @@ export function closeSettings() {
     shakeScreen();
     return;
   }
+  if (!settingsMenu) return;
 
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation = "settings-menu-slide-out 0.3s forwards";
@@ -692,8 +756,9 @@ function getCloseButtonElement() {
   return button;
 }
 
-export function reconstructSettings(categoryType) {
+export function reconstructSettings(categoryType: SettingType) {
   const leftBar = getId("settings-leftbar");
+  if (!leftBar) return;
   leftBar.innerHTML = "";
   switch (categoryType) {
     case SettingType.GUILD:
@@ -715,18 +780,19 @@ export function reconstructSettings(categoryType) {
   }
 }
 
-export function hideConfirmationPanel(pop) {
+export function hideConfirmationPanel(pop: HTMLElement) {
   pop.style.animation = "slide-down 0.15s ease-in-out forwards";
   setTimeout(() => {
     pop.style.display = "none";
   }, 1500);
 }
 
-export function showConfirmationPanel(pop) {
+export function showConfirmationPanel(pop: HTMLElement) {
   pop.style.display = "block";
   pop.style.animation = "slide-up 0.5s ease-in-out forwards";
 }
 export function generateConfirmationPanel() {
+  if (!settingsMenu) return;
   setIsChangedImage(true);
   const popupDiv = createEl("div", { id: "settings-unsaved-popup" });
 
@@ -753,8 +819,8 @@ export function generateConfirmationPanel() {
     }
     const settingsSelfProfile = getProfileImage();
 
-    if (lastConfirmedProfileImg) {
-      settingsSelfProfile.src = lastConfirmedProfileImg;
+    if (settingsSelfProfile && lastConfirmedProfileImg) {
+      settingsSelfProfile.src = URL.createObjectURL(lastConfirmedProfileImg);
     } else {
     }
 
@@ -785,10 +851,8 @@ function shakeScreen() {
   let SHAKE_FORCE = 1;
   const RESET_TIMEOUT_DURATION = 5000;
 
-  currentSettingsCategory = null;
   regenerateConfirmationPanel();
-
-  currentPopUp.style.backgroundColor = "#ff1717";
+  if (currentPopUp) currentPopUp.style.backgroundColor = "#ff1717";
 
   SHAKE_FORCE += 0.5;
   if (SHAKE_FORCE > 5) {
@@ -803,7 +867,7 @@ function shakeScreen() {
   resetTimeout = setTimeout(() => {
     SHAKE_FORCE = 1;
     document.body.classList.remove("shake-screen");
-    currentPopUp.style.backgroundColor = "#0f0f0f";
+    if (currentPopUp) currentPopUp.style.backgroundColor = "#0f0f0f";
   }, RESET_TIMEOUT_DURATION);
 
   return;
@@ -831,7 +895,7 @@ function createDeleteChannelPrompt(
   );
 }
 
-function createDeleteGuildPrompt(guildId, guildName) {
+function createDeleteGuildPrompt(guildId: string, guildName: string) {
   if (!guildId) {
     return;
   }
@@ -867,7 +931,9 @@ function init() {
 
   buttonIds.forEach((id) => {
     const button = getId(id);
-    button.addEventListener("click", openGuildSettingsDd);
+    if (button) {
+      button.addEventListener("click", openGuildSettingsDropdown);
+    }
   });
 }
 init();

@@ -99,6 +99,9 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.EnsureCreated();
+
+    var mediaStorageInitializer = scope.ServiceProvider.GetRequiredService<MediaStorageInitializer>();
+    mediaStorageInitializer.Initialize();
 }
 if (isDevelopment)
 {
@@ -172,6 +175,7 @@ void StartFrontendBuild()
 
 void RunNpmCommand(string arguments)
 {
+    var workingDirectory = Directory.GetCurrentDirectory();
     var process = new Process
     {
         StartInfo = new ProcessStartInfo
@@ -181,7 +185,8 @@ void RunNpmCommand(string arguments)
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory
         }
     };
 

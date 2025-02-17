@@ -3,6 +3,7 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "target": "ESNext",
+    "strict": true,
     "allowJs": false,
     "checkJs": false,
     "noEmit": true,
@@ -11,5 +12,5 @@
     "allowImportingTsExtensions": true,
     "types": ["vite/client"]
   },
-  "include": ["assets/ts/**/*"]
+  "include": ["assets/ts/**/*", "tsconfig.context.json"]
 }

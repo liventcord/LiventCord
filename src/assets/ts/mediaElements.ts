@@ -15,7 +15,6 @@ import {
   getYouTubeEmbedURL,
   defaultMediaImageSrc
 } from "./utils.ts";
-import { translations } from "./translations.ts";
 
 interface Embed {
   id: string;
@@ -61,6 +60,12 @@ class MetaData {
   siteName: string;
   title: string;
   description: string;
+
+  constructor(siteName: string, title: string, description: string) {
+    this.siteName = siteName;
+    this.title = title;
+    this.description = description;
+  }
 }
 
 const maxWidth = 512;
@@ -69,7 +74,11 @@ const maxHeight = 384;
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
 
-export function createTenorElement(msgContentElement, inputText, url) {
+export function createTenorElement(
+  msgContentElement: HTMLElement,
+  inputText: string,
+  url: string
+) {
   let tenorURL = "";
   try {
     const parsedUrl = new URL(url);
@@ -93,7 +102,7 @@ export function createTenorElement(msgContentElement, inputText, url) {
     },
     loading: "lazy",
     className: "tenor-image"
-  });
+  }) as HTMLImageElement;
 
   imgElement.setAttribute("data-src", tenorURL);
 
@@ -129,7 +138,7 @@ function getProxy(url: string): string {
   }
 }
 
-export function createImageElement(inputText, url_src) {
+export function createImageElement(inputText: string, url_src: string) {
   const imgElement = createEl("img", {
     className: "chat-image",
     src: defaultMediaImageSrc,
@@ -137,7 +146,7 @@ export function createImageElement(inputText, url_src) {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
     }
-  });
+  }) as HTMLImageElement;
 
   imgElement.crossOrigin = "anonymous";
   imgElement.setAttribute("data-src", getProxy(url_src));
@@ -149,11 +158,11 @@ export function createImageElement(inputText, url_src) {
   preloader.src = getProxy(url_src);
 
   preloader.onload = function () {
-    imgElement.src = preloader.src; 
+    imgElement.src = preloader.src;
   };
 
   preloader.onerror = function () {
-    imgElement.src = defaultMediaImageSrc; 
+    imgElement.src = defaultMediaImageSrc;
   };
 
   imgElement.addEventListener("click", function () {
@@ -163,14 +172,14 @@ export function createImageElement(inputText, url_src) {
   return imgElement;
 }
 
-export function createAudioElement(audioURL) {
+export function createAudioElement(audioURL: string) {
   const audioElement = createEl("audio", {
     src: DOMPurify.sanitize(audioURL),
     controls: true
   });
   return audioElement;
 }
-export async function createJsonElement(url) {
+export async function createJsonElement(url: string) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -178,19 +187,17 @@ export async function createJsonElement(url) {
     }
     const jsonData = await response.json();
     const beautifiedData = beautifyJson(jsonData);
-    const truncatedJsonLines = beautifiedData
-      .split("\n")
-      .slice(0, 15)
-      .join("\n");
+    const truncatedJsonLines =
+      beautifiedData ?? "".split("\n").slice(0, 15).join("\n");
     const jsonContainer = createEl("div", { className: "json-container" });
     const jsonElement = createEl("pre", {
       className: "json-element",
-      textContent: truncatedJsonLines
+      textContent: truncatedJsonLines ?? jsonData
     });
 
     jsonContainer.appendChild(jsonElement);
     jsonContainer.addEventListener("click", function () {
-      displayJsonPreview(beautifiedData);
+      displayJsonPreview(beautifiedData ?? jsonData);
     });
     return jsonContainer;
   } catch (error) {
@@ -199,8 +206,9 @@ export async function createJsonElement(url) {
   }
 }
 
-export function createYouTubeElement(url) {
+export function createYouTubeElement(url: string): HTMLElement | undefined {
   const youtubeURL = getYouTubeEmbedURL(url);
+  if (!youtubeURL) return undefined;
 
   const iframeElement = createEl("iframe", {
     src: DOMPurify.sanitize(youtubeURL),
@@ -220,19 +228,19 @@ export function createYouTubeElement(url) {
   return iframeElement;
 }
 
-export function createVideoElement(url) {
+export function createVideoElement(url: string) {
   if (!isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
-  const videoElement = createEl("video");
+  const videoElement = createEl("video") as HTMLVideoElement;
   videoElement.src = getProxy(url);
-  videoElement.width = "560";
-  videoElement.height = "315";
+  videoElement.width = 560;
+  videoElement.height = 315;
   videoElement.controls = true;
 
   return videoElement;
 }
-export function createRegularText(content) {
+export function createRegularText(content: string) {
   const spanElement = createEl("p", { id: "message-content-element" });
   spanElement.textContent = content;
   spanElement.style.marginLeft = "0px";
@@ -240,25 +248,29 @@ export function createRegularText(content) {
 }
 
 export async function createMediaElement(
-  content,
-  messageContentElement,
-  newMessage,
-  attachmentUrls,
-  metadata,
-  embeds
+  content: string,
+  messageContentElement: HTMLElement,
+  newMessage: HTMLElement,
+  metadata: MetaData,
+  embeds: Embed[],
+  attachmentUrls?: string | string[]
 ) {
-  const links = extractLinks(content) || [];
+  const links: string[] = extractLinks(content) || [];
   let mediaCount = 0;
   let linksProcessed = 0;
   const maxLinks = 4;
 
   if (typeof attachmentUrls === "string" && attachmentUrls.trim() !== "") {
     try {
-      attachmentUrls = JSON.parse(attachmentUrls);
+      attachmentUrls = JSON.parse(attachmentUrls) as string[];
     } catch (e) {
-      attachmentUrls = attachmentUrls.split(",").map((url) => url.trim());
+      if (typeof attachmentUrls === "string") {
+        attachmentUrls = attachmentUrls.split(",").map((url) => url.trim());
+      }
     }
+  }
 
+  if (Array.isArray(attachmentUrls)) {
     if (
       attachmentUrls.length > 0 &&
       !attachmentUrls[0].startsWith("http://") &&
@@ -266,7 +278,7 @@ export async function createMediaElement(
     ) {
       attachmentUrls[0] = `${location.origin}${attachmentUrls[0]}`;
     }
-    links.push(...attachmentUrls);
+    links.push(...(attachmentUrls as string[]));
   }
 
   if (embeds.length > 0) {
@@ -284,7 +296,7 @@ export async function createMediaElement(
   async function processLinks() {
     while (linksProcessed < links.length && mediaCount < maxLinks) {
       try {
-        const isError = await processMediaLink(
+        const isError: boolean = await processMediaLink(
           links[linksProcessed],
           newMessage,
           messageContentElement,
@@ -305,15 +317,15 @@ export async function createMediaElement(
 }
 
 export function processMediaLink(
-  link,
-  newMessage,
-  messageContentElement,
-  content,
-  metadata,
-  embeds
-) {
-  return new Promise((resolve) => {
-    let mediaElement = null;
+  link: string,
+  newMessage: HTMLElement,
+  messageContentElement: HTMLElement,
+  content: string,
+  metadata: MetaData,
+  embeds: Embed[]
+): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
     newMessage.setAttribute("data-attachment_url", link);
 
     const handleLoad = () => {
@@ -322,29 +334,20 @@ export function processMediaLink(
 
     const handleError = () => {
       console.error("Error loading media element");
-      ///const spanElement = createEl("span", {
-      ///  textContent: translations.getTranslation("failed-media"),
-      ///  style: {
-      ///    display: "inline-block",
-      ///    maxWidth: "100%",
-      ///    maxHeight: "100%",
-      ///    color: "red"
-      ///  }
-      ///});
-      ///if (mediaElement.parentNode) {
-      ///  mediaElement.parentNode.replaceChild(spanElement, mediaElement);
-      ///}
-      //resolve(true);
+      resolve(true);
     };
 
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        mediaElement = createImageElement(null, link);
+        mediaElement = createImageElement("", link);
       }
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(messageContentElement, content, link);
     } else if (isYouTubeURL(link)) {
-      mediaElement = createYouTubeElement(link);
+      const ytElement = createYouTubeElement(link);
+      if (ytElement) {
+        mediaElement = ytElement;
+      }
     } else if (isAudioURL(link)) {
       mediaElement = createAudioElement(link);
     } else if (isVideoUrl(link)) {
@@ -357,25 +360,57 @@ export function processMediaLink(
       handleLink(messageContentElement, content);
     } else {
       messageContentElement.appendChild(createRegularText(content));
-      resolve(true);
+      resolve(false);
       return;
     }
 
-    if (
-      mediaElement instanceof HTMLImageElement ||
-      mediaElement instanceof HTMLAudioElement ||
-      mediaElement instanceof HTMLVideoElement
-    ) {
-      mediaElement.addEventListener("load", handleLoad, { once: true });
-      mediaElement.addEventListener("error", handleError, { once: true });
-    }
-    if (mediaElement) {
-      messageContentElement.appendChild(mediaElement);
+    if (mediaElement instanceof Promise) {
+      mediaElement
+        .then((resolvedElement) => {
+          if (resolvedElement) {
+            attachMediaElement(
+              resolvedElement,
+              messageContentElement,
+              handleLoad,
+              handleError
+            );
+          } else {
+            resolve(true);
+          }
+        })
+        .catch((error) => {
+          console.error("Error resolving media element:", error);
+          resolve(true);
+        });
+    } else if (mediaElement) {
+      attachMediaElement(
+        mediaElement,
+        messageContentElement,
+        handleLoad,
+        handleError
+      );
     }
   });
 }
 
-function handleLink(messageContentElement, content) {
+function attachMediaElement(
+  mediaElement: HTMLElement,
+  messageContentElement: HTMLElement,
+  handleLoad: () => void,
+  handleError: () => void
+) {
+  if (
+    mediaElement instanceof HTMLImageElement ||
+    mediaElement instanceof HTMLAudioElement ||
+    mediaElement instanceof HTMLVideoElement
+  ) {
+    mediaElement.addEventListener("load", handleLoad, { once: true });
+    mediaElement.addEventListener("error", handleError, { once: true });
+  }
+  messageContentElement.appendChild(mediaElement);
+}
+
+function handleLink(messageContentElement: HTMLElement, content: string) {
   const urlPattern = /https?:\/\/[^\s]+/g;
   const parts = content.split(urlPattern);
   const urls = content.match(urlPattern) || [];
@@ -397,7 +432,7 @@ function handleLink(messageContentElement, content) {
   });
 }
 
-function applyBorderColor(element, decimalColor) {
+function applyBorderColor(element: HTMLElement, decimalColor: number) {
   if (
     !Number.isInteger(decimalColor) ||
     decimalColor < 0 ||
@@ -410,7 +445,12 @@ function applyBorderColor(element, decimalColor) {
   const hexColor = `#${decimalColor.toString(16).padStart(6, "0")}`;
   element.style.borderLeft = `4px solid ${hexColor}`;
 }
-async function appendEmbedToMessage(messageElement, embed, link, metaData) {
+async function appendEmbedToMessage(
+  messageElement: HTMLElement,
+  embed: Embed,
+  link: string,
+  metaData: MetaData
+) {
   const embedContainer = createEl("div", { className: "embed-container" });
 
   if (embed.color) {
@@ -475,7 +515,12 @@ async function appendEmbedToMessage(messageElement, embed, link, metaData) {
   messageElement.appendChild(embedContainer);
 }
 
-function displayEmbeds(messageElement, link, embeds, metaData) {
+function displayEmbeds(
+  messageElement: HTMLElement,
+  link: string,
+  embeds: Embed[],
+  metaData: MetaData
+) {
   try {
     embeds.forEach((embed) => {
       appendEmbedToMessage(messageElement, embed, link, metaData);

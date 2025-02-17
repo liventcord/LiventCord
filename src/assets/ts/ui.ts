@@ -43,11 +43,13 @@ const activeIconHref = "/images/icons/iconactive.png";
 const inactiveIconHref = "/images/icons/icon.png";
 const favicon = getId("favicon") as HTMLAnchorElement;
 
-export let loadingScreen;
+export let loadingScreen: HTMLElement;
 export function enableLoadingScreen() {
   loadingScreen = createEl("div", { id: "loading-screen" });
   document.body.appendChild(loadingScreen);
-  const loadingElement = createEl("img", { id: "loading-element" });
+  const loadingElement = createEl("img", {
+    id: "loading-element"
+  }) as HTMLImageElement;
   loadingScreen.appendChild(loadingElement);
   loadingElement.src = "/images/icons/icon.png";
 }
@@ -60,9 +62,10 @@ export function isLoadingScreen() {
 
 let isEmailToggled = false;
 export function toggleEmail() {
-  const eyeIcon = getId("set-info-email-eye");
+  const eyeIcon = getId("set-info-email-eye") as HTMLElement;
+  const emailIcon = getId("set-info-email") as HTMLElement;
   isEmailToggled = !isEmailToggled;
-  getId("set-info-email").textContent = isEmailToggled
+  emailIcon.textContent = isEmailToggled
     ? initialState.user.email
     : initialState.user.maskedEmail;
   if (isEmailToggled) {
@@ -74,10 +77,14 @@ export function toggleEmail() {
   }
 }
 
-export function handleToggleClick(toggleElement, toggleClickCallback) {
+export function handleToggleClick(
+  toggleElement: HTMLElement,
+  toggleClickCallback: CallableFunction
+) {
   toggleElement.addEventListener("click", function () {
     this.classList.toggle("active");
-    this.querySelector(".toggle-switch").classList.toggle("active");
+    const toggleSwitch = this.querySelector(".toggle-switch") as HTMLElement;
+    toggleSwitch.classList.toggle("active");
     toggleClickCallback();
   });
 }
@@ -173,10 +180,10 @@ let errorCount = 0;
 
 function createPopupContent(
   includeCancel = false,
-  subject,
-  content,
-  buttonText,
-  acceptCallback?: () => void,
+  subject: string,
+  content: string,
+  buttonText: string,
+  acceptCallback?: CallableFunction,
   isRed?: boolean
 ) {
   const popUpSubject = createEl("h1", {
@@ -202,7 +209,7 @@ function createPopupContent(
 
   const outerParent = createPopUp({
     contentElements,
-    id: null
+    id: ""
   });
 
   if (includeCancel) {
@@ -213,14 +220,18 @@ function createPopupContent(
 
     buttonContainer.appendChild(popRefuseButton);
     popRefuseButton.addEventListener("click", function () {
-      closePopUp(outerParent, outerParent.firstChild);
+      if (outerParent && outerParent.firstChild) {
+        closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      }
     });
   }
   buttonContainer.appendChild(popAcceptButton);
 
   popAcceptButton.addEventListener("click", function () {
     if (acceptCallback) acceptCallback();
-    closePopUp(outerParent, outerParent.firstChild);
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+    }
   });
 
   return outerParent;
@@ -239,26 +250,26 @@ export function alertUser(subject: string, content?: string): void {
   const outerParent = createPopupContent(
     false,
     subject,
-    content,
+    content ?? "",
     translations.getTranslation("ok")
   );
 
-  outerParent.style.zIndex = 1000 + errorCount;
+  outerParent.style.zIndex = "1000" + errorCount;
   errorCount++;
 }
 
 export function askUser(
-  subject,
-  content,
-  actionText,
-  acceptCallback,
+  subject: string,
+  content: string,
+  actionText: string,
+  acceptCallback: CallableFunction,
   isRed = false
 ) {
   createPopupContent(true, subject, content, actionText, acceptCallback, isRed);
 }
 let logoClicked = 0;
 
-export function clickMainLogo(logo) {
+export function clickMainLogo(logo: HTMLElement) {
   logoClicked++;
   if (logoClicked >= 14) {
     logoClicked = 0;
@@ -273,8 +284,7 @@ export function clickMainLogo(logo) {
   loadDmHome();
 }
 
-export const preventDrag = (elementId) => {
-  const element = getId(elementId);
+export const preventDrag = (element: HTMLElement) => {
   if (element) {
     element.addEventListener("dragstart", function (event) {
       event.preventDefault();
@@ -294,7 +304,7 @@ export function logOutPrompt() {
 }
 
 // media preview
-export function beautifyJson(jsonData) {
+export function beautifyJson(jsonData: string) {
   try {
     const beautifiedJson = JSON.stringify(jsonData, null, "\t");
     return beautifiedJson;
@@ -303,10 +313,7 @@ export function beautifyJson(jsonData) {
     return null;
   }
 }
-getId("image-preview-container").addEventListener(
-  "click",
-  hideImagePreviewRequest
-);
+
 export function displayImagePreview(sourceimage: string): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
@@ -319,8 +326,6 @@ export function displayImagePreview(sourceimage: string): void {
   let isDragging = false;
   let startX = 0;
   let startY = 0;
-
-  const container = getId("image-preview-container") as HTMLElement;
 
   function toggleZoom() {
     isPreviewZoomed = !isPreviewZoomed;
@@ -380,8 +385,8 @@ export function displayImagePreview(sourceimage: string): void {
       const newX = event.clientX - startX;
       const newY = event.clientY - startY;
 
-      const maxX = container.clientWidth - previewImage.width;
-      const maxY = container.clientHeight - previewImage.height;
+      const maxX = imagePreviewContainer.clientWidth - previewImage.width;
+      const maxY = imagePreviewContainer.clientHeight - previewImage.height;
 
       const clampedX = Math.min(Math.max(newX, 0), maxX);
       const clampedY = Math.min(Math.max(newY, 0), maxY);
@@ -397,7 +402,7 @@ export function displayImagePreview(sourceimage: string): void {
 }
 
 function isImagePreviewOpen() {
-  return getId("image-preview-container").style.display === "flex";
+  return imagePreviewContainer.style.display === "flex";
 }
 let currentPreviewIndex = 0;
 
@@ -448,11 +453,8 @@ function updateCurrentIndex(sourceimg: string) {
 
 addNavigationListeners();
 
-export function displayJsonPreview(sourceJson) {
-  const jsonPreviewContainer = getId("json-preview-container");
-
+export function displayJsonPreview(sourceJson: string) {
   jsonPreviewContainer.style.display = "flex";
-  const jsonPreviewElement = getId("json-preview-element");
 
   jsonPreviewElement.dataset.content_observe = sourceJson;
   jsonPreviewElement.style.userSelect = "text";
@@ -460,11 +462,14 @@ export function displayJsonPreview(sourceJson) {
   observe(jsonPreviewElement);
 }
 
-export function hideImagePreviewRequest(event) {
-  if (event.target.id === "image-preview-container") {
+export function hideImagePreviewRequest(event: Event) {
+  const target = event.target as HTMLElement;
+
+  if (target.id === "image-preview-container") {
     hideImagePreview();
   }
 }
+
 export function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
@@ -475,16 +480,18 @@ export function hideImagePreview() {
     previewImage.src = "";
   }, 150);
 }
+const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
+const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
+export function hideJsonPreview(event: Event) {
+  const target = event.target as HTMLElement;
 
-export function hideJsonPreview(event) {
-  if (event.target.id === "json-preview-container") {
-    const jsonPreviewContainer = getId("json-preview-container");
+  if (target && target.id === "json-preview-container") {
     jsonPreviewContainer.style.display = "none";
   }
 }
 
-export function openGuildSettingsDd(event) {
-  const handlers = {
+export function openGuildSettingsDropdown(event: Event) {
+  const handlers: Record<string, () => void> = {
     "invite-dropdown-button": createInviteUsersPop,
     "settings-dropdown-button": () => {
       openSettings(SettingType.GUILD);
@@ -500,38 +507,51 @@ export function openGuildSettingsDd(event) {
     }
   };
 
-  const clicked_id = event.target.id;
+  const clicked_id = (event.target as HTMLElement).id;
+
   toggleDropdown();
 
-  if (handlers[clicked_id]) {
-    handlers[clicked_id]();
+  if (clicked_id in handlers) {
+    handlers[clicked_id as keyof typeof handlers]();
   }
+}
+
+const imagePreviewContainer = getId(
+  "image-preview-container"
+) as HTMLImageElement;
+if (imagePreviewContainer) {
+  imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
 }
 function setDynamicAnimations() {
   const dynamicAnimElements =
     "#tb-inbox, #tb-pin, #tb-showprofile, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
 
   document.querySelectorAll(dynamicAnimElements).forEach(function (element) {
-    element.addEventListener("mousemove", function (event: MouseEvent) {
-      const rect = (element as HTMLElement).getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
+    if (element instanceof HTMLElement) {
+      element.addEventListener("mousemove", function (event: MouseEvent) {
+        const rect = element.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
 
-      const distanceX = (mouseX - centerX) / centerX;
-      const distanceY = (mouseY - centerY) / centerY;
+        const distanceX = (mouseX - centerX) / centerX;
+        const distanceY = (mouseY - centerY) / centerY;
 
-      const shakeIntensity = Math.max(Math.abs(distanceX), Math.abs(distanceY));
+        const shakeIntensity = Math.max(
+          Math.abs(distanceX),
+          Math.abs(distanceY)
+        );
 
-      (element as HTMLElement).style.transform = `rotate(${
-        shakeIntensity * (distanceX < 0 ? -1 : 1)
-      }deg) translate(${distanceX * 3}px, ${distanceY * 3}px)`;
-    });
+        element.style.transform = `rotate(${
+          shakeIntensity * (distanceX < 0 ? -1 : 1)
+        }deg) translate(${distanceX * 3}px, ${distanceY * 3}px)`;
+      });
 
-    element.addEventListener("mouseleave", function () {
-      (element as HTMLElement).style.transform = "rotate(0deg) translate(0, 0)";
-    });
+      element.addEventListener("mouseleave", function () {
+        element.style.transform = "rotate(0deg) translate(0, 0)";
+      });
+    }
   });
 }
 

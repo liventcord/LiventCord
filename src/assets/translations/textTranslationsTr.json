@@ -89,5 +89,6 @@
   "voice-channel": "Ses",
   "create-channel-type": "KANAL TÜRÜ",
   "private-channel-text": "Özel Kanal",
-  "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir."
+  "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir.",
+  "click-to-attachment": "Eki görüntülemek için tıkla"
 }

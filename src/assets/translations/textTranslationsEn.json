@@ -93,5 +93,6 @@
   "voice-channel": "Voice",
   "create-channel-type": "CHANNEL TYPE",
   "private-channel-text": "Private Channel",
-  "private-channel-description": "Only selected members and roles will be able to view this channel"
+  "private-channel-description": "Only selected members and roles will be able to view this channel",
+  "click-to-attachment": "Click to see attachment"
 }

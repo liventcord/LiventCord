@@ -5,13 +5,13 @@ import { loadGuild, selectGuildList } from "./guild.ts";
 export let isOnMe = true;
 export let isOnDm = false;
 export let isOnGuild = false;
-export function setIsOnMe(val) {
+export function setIsOnMe(val: boolean) {
   isOnMe = val;
 }
-export function setIsOnDm(val) {
+export function setIsOnDm(val: boolean) {
   isOnDm = val;
 }
-export function setIsOnGuild(val) {
+export function setIsOnGuild(val: boolean) {
   isOnGuild = val;
 }
 
@@ -23,7 +23,7 @@ class Router {
     this.ID_LENGTH = 19;
     this.init();
   }
-  isPathnameCorrect(url) {
+  isPathnameCorrect(url: string) {
     const regex = new RegExp(
       `^/channels/\\d{${this.ID_LENGTH}}/\\d{${this.ID_LENGTH}}$`
     );
@@ -53,7 +53,7 @@ class Router {
       } else if (pathStr.startsWith("/channels/@me/")) {
         openDm(parts[3]);
       } else if (pathStr.startsWith("/channels/") && parts.length === 4) {
-        loadGuild(parts[2], parts[3], null, false);
+        loadGuild(parts[2], parts[3], "", false);
       }
     } catch (error) {
       console.error(error);
@@ -86,7 +86,7 @@ class Router {
     window.location.href = "/";
   }
 
-  isIdDefined(id) {
+  isIdDefined(id: string) {
     return id && id.length === this.ID_LENGTH;
   }
 
@@ -98,17 +98,23 @@ class Router {
 
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
-    const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts);
+    const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts)
+      .concat([undefined, undefined, undefined])
+      .slice(0, 3);
+
     console.log(guildId, channelId, friendId);
 
-    if (!this.isIdDefined(guildId) || !this.isIdDefined(channelId)) {
+    if (
+      (guildId && !this.isIdDefined(guildId)) ||
+      (channelId && !this.isIdDefined(channelId))
+    ) {
       this.resetRoute();
       return { isValid: false };
     }
 
     const isPathnameCorrectValue = this.isPathnameCorrect(pathStr);
 
-    if (this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
+    if (guildId && this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
       this.resetRoute();
       return { isValid: false };
     }
@@ -121,7 +127,7 @@ class Router {
     };
   }
 
-  getRouteIds(pathStr, parts) {
+  getRouteIds(pathStr: string, parts: string[]) {
     let guildId, channelId, friendId;
 
     if (pathStr.startsWith("/channels/@me/")) friendId = parts[3];
@@ -133,7 +139,7 @@ class Router {
     return [guildId, channelId, friendId];
   }
 
-  shouldResetRoute(isPathnameCorrectValue, guildId) {
+  shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string) {
     return (
       (isOnMe && !isPathnameCorrectValue) ||
       (isOnGuild && cacheInterface.doesGuildExist(guildId))
@@ -141,7 +147,7 @@ class Router {
   }
 
   resetRoute() {
-    window.history.pushState(null, null, "/channels/@me");
+    window.history.pushState(null, "", "/channels/@me");
     selectGuildList("a");
   }
 }

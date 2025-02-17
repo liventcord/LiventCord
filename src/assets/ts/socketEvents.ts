@@ -1,7 +1,6 @@
-/*global signalR */
 declare var signalR: any;
 
-import { cacheInterface, guildCache, messages_raw_cache } from "./cache.ts";
+import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
 import { updateUserOnlineStatus } from "./user.ts";
 import {
@@ -15,13 +14,18 @@ import {
   channelsUl
 } from "./channels.ts";
 import { getId, enableElement } from "./utils.ts";
-import { deleteLocalMessage, getLastSecondMessageDate } from "./message.ts";
+import {
+  deleteLocalMessage,
+  getLastSecondMessageDate,
+  Message
+} from "./message.ts";
 import {
   bottomestChatDateStr,
   setBottomestChatDateStr,
   setLastMessageDate,
   lastMessageDate,
-  handleMessage
+  handleMessage,
+  MessageResponse
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
 import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
@@ -43,111 +47,191 @@ const SocketEvent = Object.freeze({
   INCOMING_AUDIO: "INCOMING_AUDIO"
 });
 
-socketClient.on(SocketEvent.GUILD_MESSAGE),
-  (data) => {
-    handleMessage(data);
+interface UpdateUserData {
+  userId: string;
+  username?: string;
+  avatarUrl?: string;
+  status?: string;
+}
+
+interface UserStatusData {
+  userId: string;
+  isOnline: boolean;
+}
+export interface UpdateChannelData extends CachedChannel {
+  type: "create" | "edit" | "remove";
+  guildId: string;
+  channelId: string;
+  channelName: string; // No longer optional
+  isTextChannel: boolean;
+}
+
+interface GuildMessageData {
+  message: Message;
+  guildId: string;
+  channelId: string;
+}
+
+interface DMMessageData {
+  message: Message;
+  channelId: string;
+}
+
+socketClient.on(SocketEvent.GUILD_MESSAGE, (data: GuildMessageData) => {
+  const messageData: MessageResponse = {
+    guildId: data.guildId,
+    isOldMessages: false,
+    messages: [],
+    isDm: false,
+    ...data.message
   };
-socketClient.on(SocketEvent.DM_MESSAGE),
-  (data) => {
-    handleMessage(data);
+
+  handleMessage(messageData);
+});
+
+socketClient.on(SocketEvent.DM_MESSAGE, (data: DMMessageData) => {
+  const messageData: MessageResponse = {
+    isOldMessages: false,
+    messages: [],
+    isDm: true,
+    ...data.message
   };
-socketClient.on(SocketEvent.UPDATE_USER, (data) => {
+
+  handleMessage(messageData);
+});
+
+socketClient.on(SocketEvent.UPDATE_USER, (data: UpdateUserData) => {
   refreshUserProfile(data.userId);
 });
 
-socketClient.on(SocketEvent.USER_STATUS, (data) => {
+socketClient.on(SocketEvent.USER_STATUS, (data: UserStatusData) => {
   const userId = data.userId;
   const isOnline = data.isOnline;
   updateUserOnlineStatus(userId, isOnline);
 });
-socketClient.on(SocketEvent.UPDATE_CHANNEL, (data) => {
+
+socketClient.on(SocketEvent.UPDATE_CHANNEL, (data: UpdateChannelData) => {
   if (!data) return;
-  const updateType = data.type;
+  const { type, guildId, channelId, channelName = "", isTextChannel } = data;
+
   const removeType = "remove";
   const editType = "edit";
   const createType = "create";
 
-  if (updateType === createType) {
+  if (type === createType) {
     const channel = {
-      guildId: data.guildId,
-      channelId: data.channelId,
-      channelName: data.channelName,
-      isTextChannel: data.isTextChannel
+      guildId,
+      channelId,
+      channelName,
+      isTextChannel
     };
 
     addChannel(channel);
-  } else if (updateType === removeType) {
+  } else if (type === removeType) {
     removeChannel(data);
-  } else if (updateType === editType) {
+  } else if (type === editType) {
     editChannel(data);
   }
 });
-function handleDelete(data, isDm) {
+
+interface DeleteMessageResponse {
+  messageId: string;
+  guildId: string;
+  channelId: string;
+  msgdate: string;
+}
+
+function handleDelete(data: DeleteMessageResponse, isDm: boolean) {
   deleteLocalMessage(data.messageId, data.guildId, data.channelId, isDm);
   cacheInterface.removeMessage(data.messageId, data.channelId, data.guildId);
-  const msgdate = messages_raw_cache[data.messageId].date;
-  if (lastMessageDate === new Date(msgdate).setHours(0, 0, 0, 0)) {
-    setLastMessageDate(
-      new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0)
-    );
+
+  if (typeof lastMessageDate === "number") {
+    const msgDateTimestamp = new Date(data.msgdate).setHours(0, 0, 0, 0);
+    if (lastMessageDate === msgDateTimestamp) {
+      setLastMessageDate(
+        new Date(new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0))
+      );
+    }
   }
-  if (bottomestChatDateStr === msgdate) {
+
+  if (bottomestChatDateStr === data.msgdate) {
     setBottomestChatDateStr(getLastSecondMessageDate());
   }
-  delete messages_raw_cache[data.messageId];
 }
-socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data) => {
-  handleDelete(data, true);
-});
-socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data) => {
-  handleDelete(data, false);
-});
+
+socketClient.on(
+  SocketEvent.DELETE_MESSAGE_DM,
+  (data: DeleteMessageResponse) => {
+    handleDelete(data, true);
+  }
+);
+
+socketClient.on(
+  SocketEvent.DELETE_MESSAGE_GUILD,
+  (data: DeleteMessageResponse) => {
+    handleDelete(data, false);
+  }
+);
+
 //audio
+interface JoinVoiceResponse {
+  channelId: string;
+  guildId: string;
+  usersList: string[];
+}
+socketClient.on(
+  SocketEvent.JOIN_VOICE_CHANNEL,
+  function (data: JoinVoiceResponse) {
+    const channelId = data.channelId;
+    const guildId = data.guildId;
+    const voiceUsers = data.usersList;
+    if (!channelId) {
+      console.error("Channel id is null on voice users response");
+      return;
+    }
+    if (!guildId) {
+      console.error("Guild id is null on voice users response");
+      return;
+    }
+    playAudio("/sounds/joinvoice.mp3");
+    clearVoiceChannel(currentVoiceChannelId);
+    enableElement("sound-panel");
 
-socketClient.on(SocketEvent.JOIN_VOICE_CHANNEL, function (data) {
-  const channelId = data.channelId;
-  const guildId = data.guildId;
-  const voiceUsers = data.usersList;
-  if (!channelId) {
-    console.error("Channel id is null on voice users response");
-    return;
+    setCurrentVoiceChannelId(channelId);
+    if (isOnGuild) {
+      setCurrentVoiceChannelGuild(guildId);
+    }
+    cacheInterface.setVoiceChannelMembers(channelId, voiceUsers);
+    const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
+    soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
+
+    const buttonContainer = channelsUl.querySelector(
+      `li[id="${currentVoiceChannelId}"]`
+    ) as HTMLElement;
+    const channelSpan = buttonContainer.querySelector(
+      ".channelSpan"
+    ) as HTMLElement;
+    channelSpan.style.marginRight = "30px";
   }
-  if (!guildId) {
-    console.error("Guild id is null on voice users response");
-    return;
+);
+interface IncomingAudioResponse {
+  buffer: ArrayBuffer;
+}
+
+export const voiceHandler = new VoiceHandler();
+
+socketClient.on(
+  SocketEvent.INCOMING_AUDIO,
+  async (data: IncomingAudioResponse) => {
+    await voiceHandler.handleAudio(data);
   }
-  playAudio("/sounds/joinvoice.mp3");
-  clearVoiceChannel(currentVoiceChannelId);
-  enableElement("sound-panel");
-
-  setCurrentVoiceChannelId(channelId);
-  if (isOnGuild) {
-    setCurrentVoiceChannelGuild(guildId);
-  }
-  cacheInterface.setVoiceChannelMembers(channelId, voiceUsers);
-  const soundInfoIcon = getId("sound-info-icon");
-  soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
-
-  const buttonContainer = channelsUl.querySelector(
-    `li[id="${currentVoiceChannelId}"]`
-  );
-  const channelSpan = buttonContainer.querySelector(
-    ".channelSpan"
-  ) as HTMLElement;
-  channelSpan.style.marginRight = "30px";
-});
-
-const voiceHandler = new VoiceHandler();
-
-socketClient.on(SocketEvent.INCOMING_AUDIO, async (data) => {
-  await voiceHandler.handleAudio(data);
-});
+);
 
 socketClient
   .start()
   .then(() => {
     console.log("SignalR connection established.");
   })
-  .catch((err) => {
-    console.error("Error while establishing connection: ", err);
+  .catch((err: Error) => {
+    console.error("Error while establishing connection: ", err.message);
   });

@@ -16,6 +16,9 @@ export enum Permission {
   MANAGE_GUILD,
   ALL
 }
+export interface PermissionsRecord {
+  [guildId: string]: Record<string, number>;
+}
 
 export class PermissionManager {
   permissionsMap: Map<string, Set<Permission>>;
@@ -24,7 +27,7 @@ export class PermissionManager {
     this.permissionsMap = permissionsMap;
   }
 
-  updatePermissions(guildId: string, newPermissions: Record<string, any>) {
+  updatePermissions(guildId: string, newPermissions: PermissionsRecord) {
     console.log("updatePermissions called with:", { guildId, newPermissions });
 
     if (!guildId || typeof newPermissions !== "object") {
@@ -45,8 +48,12 @@ export class PermissionManager {
             .replace(/([a-z])([A-Z])/g, "$1_$2")
             .toUpperCase();
 
-          if (Permission[normalizedKey]) {
-            permissionSet.add(Permission[normalizedKey]);
+          if (
+            Permission[normalizedKey as keyof typeof Permission] !== undefined
+          ) {
+            permissionSet.add(
+              Permission[normalizedKey as keyof typeof Permission]
+            );
           } else {
             console.log(`Skipping invalid permission: ${key}`);
           }

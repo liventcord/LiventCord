@@ -15,7 +15,7 @@ import {
   CLYDE_ID,
   setIsLastMessageStart
 } from "./chat.ts";
-import { sendMessage } from "./message.ts";
+import { Message, sendMessage } from "./message.ts";
 import { isDomLoaded, readCurrentMessages } from "./app.ts";
 import { toggleManager } from "./settings.ts";
 import { popKeyboardConfetti } from "./extras.ts";
@@ -37,16 +37,16 @@ import { currentUserId, getUserNick, getUserIdFromNick } from "./user.ts";
 export let currentReplyingTo = "";
 
 export const chatInput = getId("user-input") as HTMLInputElement;
-export const chatContainer = getId("chat-container");
-export const chatContent = getId("chat-content");
-export const replyInfo = getId("reply-info");
+export const chatContainer = getId("chat-container") as HTMLElement;
+export const chatContent = getId("chat-content") as HTMLElement;
+export const replyInfo = getId("reply-info") as HTMLElement;
 
 export const fileInput = getId("fileInput") as HTMLInputElement;
-export const fileImagePreview = getId("image-preview");
-export const newMessagesBar = getId("newMessagesBar");
+export const fileImagePreview = getId("image-preview") as HTMLElement;
+export const newMessagesBar = getId("newMessagesBar") as HTMLElement;
 
-const newMessagesText = getId("newMessagesText");
-const replyCloseButton = getId("reply-close-button");
+const newMessagesText = getId("newMessagesText") as HTMLSpanElement;
+const replyCloseButton = getId("reply-close-button") as HTMLButtonElement;
 
 const channelHTML =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="rgb(255, 255, 255)" viewBox="0 0 24 24"><path fill="var(--white)" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -103,8 +103,8 @@ export function initialiseChatInput() {
         const selectedUserElement = options[
           currentSearchUiIndex
         ] as HTMLElement;
-        const selectedUserId = selectedUserElement.dataset.userid;
-        const selectedUserNick = selectedUserElement.textContent;
+        const selectedUserId = selectedUserElement.dataset.userid as string;
+        const selectedUserNick = selectedUserElement.textContent as string;
         selectMember(selectedUserId, selectedUserNick);
       }
     } else if (event.key === "Escape") {
@@ -112,7 +112,7 @@ export function initialiseChatInput() {
     }
   });
 }
-export function showReplyMenu(replyToMsgId, replyToUserId) {
+export function showReplyMenu(replyToMsgId: string, replyToUserId: string) {
   replyCloseButton.style.display = "flex";
   replyInfo.textContent = translations.getReplyingTo(
     getUserNick(replyToUserId)
@@ -153,7 +153,7 @@ export function adjustHeight() {
   const topPosition = elementHeight;
   if (replyInfo) replyInfo.style.bottom = `${topPosition}px`;
 }
-export function extractUserIds(message) {
+export function extractUserIds(message: string) {
   const userIds = [];
   const regex = /@(\w+)/g;
   let match;
@@ -166,10 +166,10 @@ export function extractUserIds(message) {
   return userIds;
 }
 
-let typingTimeout;
+let typingTimeout: number;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
-export async function handleUserKeydown(event) {
+export async function handleUserKeydown(event: KeyboardEvent) {
   if (chatInput.value !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
@@ -200,8 +200,8 @@ export async function handleUserKeydown(event) {
 
   if (event.key === "Enter" && event.shiftKey) {
     event.preventDefault();
-    const startPos = chatInput.selectionStart;
-    const endPos = chatInput.selectionEnd;
+    const startPos = chatInput.selectionStart as number;
+    const endPos = chatInput.selectionEnd as number;
     chatInput.value =
       chatInput.value.substring(0, startPos) +
       "\n" +
@@ -232,8 +232,11 @@ export async function handleUserKeydown(event) {
 // upload media
 
 const maxFiles = 8;
-let fileList = [];
-export function handleFileInput(eventOrFiles = null) {
+let fileList: File[] = [];
+
+export function handleFileInput(
+  eventOrFiles: Event | FileList | File[] | null = null
+): void {
   let filesToProcess: File[];
 
   if (eventOrFiles instanceof Event) {
@@ -249,7 +252,7 @@ export function handleFileInput(eventOrFiles = null) {
   ) {
     filesToProcess = Array.from(eventOrFiles);
   } else {
-    filesToProcess = [eventOrFiles];
+    filesToProcess = [];
   }
 
   filesToProcess = filesToProcess.filter(
@@ -267,8 +270,8 @@ export function handleFileInput(eventOrFiles = null) {
     reader.onload = function (e) {
       const img = createEl("img", {
         style: "max-width: 256px; max-height: 256px; margin-right: 10px;",
-        src: e.target.result
-      });
+        src: e.target?.result as string
+      }) as HTMLImageElement;
       fileImagePreview.appendChild(img);
       enableElement("image-preview");
       img.addEventListener("click", function () {
@@ -277,14 +280,20 @@ export function handleFileInput(eventOrFiles = null) {
     };
     reader.readAsDataURL(file);
   });
+
   if (fileList.length > maxFiles) {
     fileList = fileList.slice(0, maxFiles);
   }
+
   updateFileImageBorder();
 }
+
 export function setDropHandler() {
   const dropZone = getId("drop-zone");
   const fileButton = getId("file-button");
+  if (!dropZone) return;
+
+  if (!fileButton) return;
 
   const dragEvents = ["dragenter", "dragover", "dragleave", "drop"];
   dragEvents.forEach((eventName) => {
@@ -310,14 +319,11 @@ export function setDropHandler() {
     }
     dropZone.classList.remove("hover");
   };
-
-  ["dragenter", "dragover"].forEach((eventName) => {
-    dropZone.addEventListener(eventName, handleDragEnterOrOver, false);
-  });
-
-  ["dragleave", "drop"].forEach((eventName) => {
-    dropZone.addEventListener(eventName, handleDragLeaveOrDrop, false);
-  });
+  dropZone.addEventListener(
+    "dragleave",
+    (e: Event) => handleDragLeaveOrDrop(e as DragEvent),
+    false
+  );
 
   dropZone.addEventListener("drop", handleDrop, false);
 
@@ -348,21 +354,31 @@ export function updateFileImageBorder() {
     fileImagePreview.style.border = "20px solid #2b2d31";
   }
 }
-export function displayLocalMessage(channelId, content) {
+export function displayLocalMessage(channelId: string, content: string) {
   const failedId = createRandomId();
 
-  const preMessage = {
+  const preMessage = new Message({
     messageId: failedId,
     userId: currentUserId,
     content,
     channelId,
     date: createNowDate(),
-    addToTop: false
-  };
+    lastEdited: null,
+    attachmentUrls: [],
+    replyToId: null,
+    isBot: false,
+    reactionEmojisIds: [],
+    metadata: {},
+    embeds: [],
+    willDisplayProfile: false,
+    replyOf: undefined,
+    replies: []
+  });
 
   displayChatMessage(preMessage);
 }
-export function displayCannotSendMessage(channelId, content) {
+
+export function displayCannotSendMessage(channelId: string, content: string) {
   if (!isOnDm) {
     return;
   }
@@ -377,7 +393,7 @@ export function displayCannotSendMessage(channelId, content) {
       foundMsgContent.classList.add("failed");
     }
   }
-  const cannotSendMsg = {
+  const cannotSendMsg = new Message({
     messageId: createRandomId(),
     userId: CLYDE_ID,
     content: translations.getTranslation("fail-message-text"),
@@ -385,15 +401,18 @@ export function displayCannotSendMessage(channelId, content) {
     date: createNowDate(),
     lastEdited: "",
     attachmentUrls: "",
-    addToTop: false,
     replyToId: "",
-    reactionEmojisIds: "",
-    replyOf: "",
     isBot: true,
-    willDisplayProfile: true
-  };
+    reactionEmojisIds: [],
+    metadata: {},
+    embeds: [],
+    willDisplayProfile: true,
+    replyOf: "",
+    replies: []
+  });
 
   displayChatMessage(cannotSendMsg);
+
   scrollToBottom();
 }
 
@@ -459,7 +478,9 @@ export function displayStartMessage() {
     const startChannelText = translations.getDmStartText(
       getUserNick(friendsCache.currentDmId)
     );
-    const profileImg = createEl("img", { className: "channelIcon" });
+    const profileImg = createEl("img", {
+      className: "channelIcon"
+    }) as HTMLImageElement;
     setProfilePic(profileImg, friendsCache.currentDmId);
     const msgdescription = createEl("div", {
       id: "msgDescription",

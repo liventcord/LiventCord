@@ -6,7 +6,6 @@ import {
   loadDmToolbar
 } from "./ui.ts";
 import {
-  fetchReplies,
   getHistoryFromOneChannel,
   createChatScrollButton,
   handleScroll,
@@ -24,7 +23,7 @@ import {
   newMessagesBar,
   chatContainer
 } from "./chatbar.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import {
   updateGuilds,
   addKeybinds,
@@ -58,7 +57,7 @@ import {
   currentUserId,
   currentUserNick
 } from "./user.ts";
-import { addContextListeners } from "./contextMenuActions.ts";
+import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
 import {
   updateChannels,
   channelTitle,
@@ -100,23 +99,6 @@ import {
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 
-export let isDomLoaded = false;
-let cachedFriMenuContent;
-let userListFriActiveHtml;
-
-export function initializeApp() {
-  window.scrollTo(0, 0);
-  addChannelSearchListeners();
-  initializeElements();
-  initializeSettings();
-  initializeListeners();
-  initializeGuild();
-  initializeProfile();
-  initialiseAudio();
-  initializeCookies();
-  isDomLoaded = true;
-}
-
 interface InitialStateData {
   email: string;
   userId: string;
@@ -129,7 +111,7 @@ interface InitialStateData {
   permissionsMap: Map<string, any>;
   friendsStatus: any;
   dmFriends?: any[];
-  guildsJson: any[];
+  guilds: any[];
   gifWorkerUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
@@ -154,7 +136,22 @@ interface InitialState {
   maxAvatarSize: number;
   maxAttachmentSize: number;
 }
+export function initializeApp() {
+  window.scrollTo(0, 0);
+  addChannelSearchListeners();
+  initializeElements();
+  initializeSettings();
+  initializeListeners();
+  initializeGuild();
+  initializeProfile();
+  initialiseAudio();
+  initializeCookies();
+  isDomLoaded = true;
+}
 
+export let isDomLoaded = false;
+let cachedFriMenuContent;
+let userListFriActiveHtml: string;
 export let initialState: InitialState;
 
 export function initialiseState(data: InitialStateData): void {
@@ -170,7 +167,7 @@ export function initialiseState(data: InitialStateData): void {
     permissionsMap,
     friendsStatus,
     dmFriends = [],
-    guildsJson,
+    guilds,
     gifWorkerUrl,
     maxAvatarSize,
     maxAttachmentSize
@@ -190,7 +187,7 @@ export function initialiseState(data: InitialStateData): void {
     },
     ownerId,
     permissionsMap,
-    guilds: guildsJson || [],
+    guilds,
     gifWorkerUrl,
     maxAvatarSize,
     maxAttachmentSize
@@ -201,8 +198,7 @@ export function initialiseState(data: InitialStateData): void {
   setupSampleUsers();
   friendsCache.initialiseFriends(friendsStatus);
   setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
-
-  updateGuilds(guildsJson);
+  updateGuilds(guilds);
   addKeybinds();
 }
 
@@ -238,8 +234,13 @@ export function initializeElements() {
   );
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
+  const tbShowProfile = getId("tb-showprofile");
+  tbShowProfile?.addEventListener("click", toggleUsersList);
 
-  getId("tb-showprofile").addEventListener("click", toggleUsersList);
+  const tbPinMessage = getId("tb-pin");
+  tbPinMessage?.addEventListener("click", () => {
+    pinMessage;
+  });
 }
 
 export function initializeSettings() {
@@ -262,25 +263,28 @@ export function initializeListeners() {
     }
   });
 
-  getId("global-search-input").addEventListener("click", function () {
-    openSearchPop();
-  });
+  getId("global-search-input")?.addEventListener("click", () =>
+    openSearchPop()
+  );
 
   guildContainer.addEventListener("click", handleGuildClick);
 
-  getId("avatar-wrapper").addEventListener("click", copySelfName);
+  const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
+  avatarWrapper.addEventListener("click", copySelfName);
   addContextListeners();
 }
 
-export function handleGuildClick(event) {
+export function handleGuildClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
   if (
-    event.target.id === "guild-container" ||
-    event.target.id === "guild-name"
+    target &&
+    (target.id === "guild-container" || target.id === "guild-name")
   ) {
     toggleDropdown();
   }
 }
-export function isDefined(variable) {
+
+export function isDefined(variable: any) {
   return typeof variable !== "undefined" && variable !== null;
 }
 export function initializeGuild() {
@@ -288,22 +292,27 @@ export function initializeGuild() {
   const { isValid, initialGuildId, initialChannelId, initialFriendId } =
     router.validateRoute();
 
-  if (isValid) {
-    loadGuild(initialGuildId, initialChannelId, null, false, true);
+  if (isValid && initialGuildId) {
+    loadGuild(initialGuildId, initialChannelId || "", "", false, true);
   } else {
     console.log("Route is not a guild");
     return;
   }
-  if (isDefined(initialFriendId)) {
+
+  if (initialFriendId && isDefined(initialFriendId)) {
     addUser(initialFriendId);
   }
 
   fetchMembers();
   console.log(initialState.guilds);
+
   if (isOnGuild && initialState.guilds && initialState.guilds.length > 0) {
     initialState.guilds.forEach((data) => {
       console.log(data);
-      cacheInterface.addChannel(data.guildId, data.guildChannels);
+      data.guildChannels.forEach((channel: CachedChannel) => {
+        cacheInterface.addChannel(data.guildId, channel);
+      });
+      //cacheInterface.setChannels(data.guildId,data.guildChannels);
       cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
       if (data.guildId === currentGuildId) {
         updateChannels(data.guildChannels);
@@ -324,11 +333,11 @@ export function readCurrentMessages() {
 }
 
 export function createReplyBar(
-  newMessage,
-  messageId,
-  userId,
-  content,
-  attachmentUrls
+  newMessage: HTMLElement,
+  messageId: string,
+  userId: string,
+  attachmentUrls: string | string[] | undefined,
+  content?: string
 ) {
   if (newMessage.querySelector(".replyBar")) {
     return;
@@ -344,7 +353,10 @@ export function createReplyBar(
 
   const nick = getUserNick(userId);
   replyBar.style.height = "100px";
-  const replyAvatar = createEl("img", { className: "profile-pic", id: userId });
+  const replyAvatar = createEl("img", {
+    className: "profile-pic",
+    id: userId
+  }) as HTMLImageElement;
   replyAvatar.classList.add("reply-avatar");
   replyAvatar.style.width = "15px";
   replyAvatar.style.height = "15px";
@@ -358,7 +370,7 @@ export function createReplyBar(
     ? content
     : attachmentUrls
     ? attachmentUrls
-    : "Eki görüntülemek için tıkla";
+    : translations.getTranslation("click-to-attachment");
   const replyContent = createEl("span", {
     className: "replyContent",
     textContent: textToWrite
@@ -369,7 +381,11 @@ export function createReplyBar(
     if (originalMsg) {
       scrollToMessage(originalMsg);
     } else {
-      fetchReplies(newMessage.dataset.replyToId, null, true);
+      //const replyToId = newMessage.dataset.replyToId;
+      //const message = cacheInterface.getMessage(replyToId);
+      //if(message) {
+      //  fetchReplies(message, null, true);
+      //}
     }
   };
   replyBar.appendChild(replyAvatar);
@@ -377,7 +393,7 @@ export function createReplyBar(
   replyBar.appendChild(replyContent);
 }
 
-export function removeDm(userId) {}
+export function removeDm(userId: string) {}
 
 export function initialiseMe() {
   if (!isOnMe) {
@@ -392,7 +408,7 @@ export function initialiseMe() {
 
 export let isChangingPage = false;
 
-export function openDm(friendId) {
+export function openDm(friendId: string) {
   const wasOnDm = isOnDm;
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
@@ -400,13 +416,15 @@ export function openDm(friendId) {
   activateDmContainer(friendId);
   const url = constructDmPage(friendId);
   if (url !== window.location.pathname) {
-    window.history.pushState(null, null, url);
+    window.history.pushState(null, "", url);
   }
   if (!friendsCache.userExistsDm(friendId)) {
     try {
       apiClient.send(EventType.ADD_DM, { friendId });
     } catch (e) {
-      printFriendMessage(e);
+      if (e instanceof Error) {
+        printFriendMessage(e.message);
+      }
     }
   }
   loadApp(friendId);
@@ -416,11 +434,15 @@ export function openDm(friendId) {
   try {
     getHistoryFromOneChannel(friendId, true);
   } catch (e) {
-    printFriendMessage(e);
+    if (e instanceof Error) {
+      printFriendMessage(e.message);
+    } else {
+      printFriendMessage("An unknown error occurred.");
+    }
   }
 }
 
-let lastDmId;
+let lastDmId: string;
 export function loadDmHome(isChangingUrl?: boolean): void {
   if (isChangingUrl === undefined) {
     isChangingUrl = true;
@@ -431,7 +453,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   function handleMenu() {
     selectGuildList("main-logo");
     if (isChangingUrl) {
-      window.history.pushState(null, null, "/channels/@me");
+      window.history.pushState(null, "", "/channels/@me");
     }
     enableElement("friends-container", false, true);
     friendContainerItem.classList.add("dm-selected");
@@ -492,8 +514,8 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
   enableElement("guild-container", false, true);
 
-  const chanList = getId("channel-list");
-  if (cachedFriMenuContent) {
+  const chanList = getId("channel-list") as HTMLElement;
+  if (cachedFriMenuContent && chanList) {
     chanList.innerHTML = cachedFriMenuContent;
   }
 
@@ -515,7 +537,7 @@ export function changecurrentGuild() {
   isChangingPage = false;
 }
 
-export function loadApp(friendId = null, isInitial = false) {
+export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
   }
@@ -567,9 +589,11 @@ export function loadApp(friendId = null, isInitial = false) {
     channelTitle.textContent = friendNick;
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
-    const dmProfSign = getId("dm-profile-sign");
-    setProfilePic(dmProfSign, friendId);
-    dmProfSign.dataset.cid = friendId;
+    const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
+    if (dmProfSign) {
+      setProfilePic(dmProfSign, friendId);
+      dmProfSign.dataset.cid = friendId;
+    }
 
     updateDmFriendList(friendId, friendNick);
   }
@@ -587,7 +611,7 @@ export function loadApp(friendId = null, isInitial = false) {
   isChangingPage = false;
 }
 
-export function changeCurrentDm(friendId) {
+export function changeCurrentDm(friendId: string) {
   isChangingPage = true;
   setIsOnMe(false);
   setIsOnGuild(false);
@@ -597,9 +621,11 @@ export function changeCurrentDm(friendId) {
   const friendNick = getUserNick(friendId);
   channelTitle.textContent = friendNick;
   chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
-  const dmProfSign = getId("dm-profile-sign");
-  setProfilePic(dmProfSign, friendId);
-  dmProfSign.dataset.cid = friendId;
+  const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
+  if (dmProfSign) {
+    setProfilePic(dmProfSign, friendId);
+    dmProfSign.dataset.cid = friendId;
+  }
   updateDmFriendList(friendId, friendNick);
 
   isChangingPage = false;
@@ -612,5 +638,4 @@ window.onerror = (message, source, lineno, colno, error) => {
   alertUser("Error", msg);
 };
 
-const SCROLL_DELAY = 20;
-setTimeout(() => window.scrollTo(0, 0), SCROLL_DELAY);
+setTimeout(() => window.scrollTo(0, 0), 20);

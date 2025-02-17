@@ -17,15 +17,20 @@ import { updateMemberList } from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
 import { validateAvatar, resetImageInput } from "./avatar.ts";
 import { guildCache, cacheInterface } from "./cache.ts";
-import { permissionManager } from "./guildPermissions.ts";
+import {
+  Permission,
+  permissionManager,
+  PermissionsRecord
+} from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentVoiceChannelId } from "./channels.ts";
+import { currentVoiceChannelId, getRootChannel } from "./channels.ts";
 import { createFireWorks } from "./extras.ts";
+import { UserInfo } from "./user.ts";
 
 export let currentGuildId: string;
-export const guildNameText = getId("guild-name");
-export const guildContainer = getId("guild-container");
-const guildsList = getId("guilds-list");
+export const guildNameText = getId("guild-name") as HTMLElement;
+export const guildContainer = getId("guild-container") as HTMLElement;
+const guildsList = getId("guilds-list") as HTMLElement;
 
 const createGuildCross =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z"></path></svg>';
@@ -33,21 +38,24 @@ const createGuildCross =
 export function setGuildNameText(guildName: string) {
   guildNameText.innerText = guildName;
 }
-// eslint-disable-next-line consistent-return
+
 export function getManageableGuilds() {
   try {
     const permissionsMap = permissionManager.permissionsMap;
     if (!permissionsMap) {
       return [];
     }
-    const guildsWeAreAdminOn = [];
+
+    const guildsWeAreAdminOn: string[] = []; // Explicitly type as string[]
     let isFoundAny = false;
-    for (const key in permissionsMap) {
-      if (permissionsMap[key].IS_ADMIN) {
-        guildsWeAreAdminOn.push(key);
+
+    permissionsMap.forEach((permissionsSet, guildId) => {
+      if (permissionsSet.has(Permission.IS_ADMIN)) {
+        guildsWeAreAdminOn.push(guildId);
         isFoundAny = true;
       }
-    }
+    });
+
     return isFoundAny ? guildsWeAreAdminOn : null;
   } catch (e) {
     console.error(e);
@@ -57,7 +65,10 @@ export function getManageableGuilds() {
 export function createGuild() {
   const guildNameInput = getId("guild-name-input") as HTMLInputElement;
   const guildPhotoInput = getId("guildImageInput") as HTMLInputElement;
-  const guildPhotoFile = guildPhotoInput.files[0];
+
+  const guildPhotoFile = guildPhotoInput.files
+    ? guildPhotoInput.files[0]
+    : null;
   const guildName = guildNameInput.value;
 
   if (guildPhotoFile && !validateAvatar(guildPhotoFile)) {
@@ -120,7 +131,7 @@ export function loadGuild(
   if (isChangingUrl) {
     const state = constructAppPage(guildId, channelId);
     if (window.location.pathname !== state) {
-      window.history.pushState(null, null, state);
+      window.history.pushState(null, "", state);
     }
   }
   if (isChangingPage) {
@@ -131,7 +142,14 @@ export function loadGuild(
 
   currentGuildId = guildId;
   console.log(initialState.permissionsMap);
-  permissionManager.updatePermissions(guildId, initialState.permissionsMap);
+  const permissionsObject: PermissionsRecord = Object.fromEntries(
+    Object.entries(initialState.permissionsMap).map(
+      ([_guildId, permissions]) => [_guildId, permissions]
+    )
+  );
+
+  permissionManager.updatePermissions(guildId, permissionsObject);
+
   selectGuildList(guildId);
 
   if (guildName) {
@@ -148,15 +166,15 @@ export function loadGuild(
   guildCache.currentChannelId = channelId;
 
   if (isOnMe) {
-    loadApp(null, isInitial);
+    loadApp("", isInitial);
   } else if (isOnDm) {
-    loadApp(null, isInitial);
+    loadApp("", isInitial);
   } else if (isOnGuild) {
     changecurrentGuild();
   }
 }
 
-export function joinVoiceChannel(channelId) {
+export function joinVoiceChannel(channelId: string) {
   if (currentVoiceChannelId === channelId) {
     return;
   }
@@ -174,14 +192,22 @@ export function refreshInviteId() {
 
 export function fetchMembers() {
   if (!currentGuildId) {
-    console.warn("Current guild id is null! cant fetch members");
+    console.warn("Current guild id is null! can't fetch members");
     return;
   }
+
   const members = cacheInterface.getMembers(currentGuildId);
 
   if (members.length > 0) {
     console.log("Using cached members...");
-    updateMemberList(members);
+
+    const userInfoList: UserInfo[] = members.map((member) => ({
+      userId: member.userId,
+      nickName: member.nickName,
+      discriminator: "0000"
+    }));
+
+    updateMemberList(userInfoList);
   } else {
     console.log("Fetching members...");
     apiClient.send(EventType.GET_MEMBERS, { guildId: currentGuildId });
@@ -203,7 +229,7 @@ export function getGuildMembers() {
   for (const userId in guildMembers) {
     const user = guildMembers[userId];
     usersToReturn.push({
-      name: user.Nickname,
+      name: user.nickName,
       image: getProfileUrl(user.userId)
     });
   }
@@ -213,7 +239,7 @@ export function getGuildMembers() {
   return usersToReturn;
 }
 
-export function joinToGuild(inviteId) {
+export function joinToGuild(inviteId: string) {
   apiClient.send(EventType.JOIN_GUILD, { invite_id: inviteId });
 }
 
@@ -223,7 +249,7 @@ export function leaveCurrentGuild() {
 
 //ui
 
-let keybindHandlers = {};
+let keybindHandlers: { [key: string]: (event: KeyboardEvent) => void } = {};
 let isGuildKeyDown = false;
 let currentGuildIndex = 1;
 
@@ -238,7 +264,7 @@ export function addKeybinds() {
   clearKeybinds();
   const guilds = Array.from(document.querySelectorAll("#guilds-list img"));
 
-  const handler = (event) => {
+  const handler = (event: KeyboardEvent) => {
     if (!event.shiftKey) return;
 
     const key = event.key;
@@ -270,7 +296,7 @@ export function addKeybinds() {
   keybindHandlers["shift"] = handler;
 }
 
-export function removeFromGuildList(guildId) {
+export function removeFromGuildList(guildId: string) {
   const guildImg = getId(guildId);
   if (guildImg) {
     const parentLi = guildImg.closest("li");
@@ -278,7 +304,7 @@ export function removeFromGuildList(guildId) {
   }
 }
 
-export function updateGuildImage(uploadedGuildId) {
+export function updateGuildImage(uploadedGuildId: string) {
   const guildList = guildsList.querySelectorAll("img");
   guildList.forEach((img) => {
     if (img.id === uploadedGuildId) {
@@ -287,28 +313,38 @@ export function updateGuildImage(uploadedGuildId) {
   });
 }
 
-export function selectGuildList(guildId) {
+export function selectGuildList(guildId: string): void {
   if (!guildsList) return;
 
-  const foundGuilds = guildsList.querySelectorAll("img");
+  const foundGuilds = Array.from(
+    guildsList.querySelectorAll("img")
+  ) as HTMLImageElement[];
 
-  foundGuilds.forEach((guild) => {
-    const guildParent = guild.parentNode;
+  for (const guild of foundGuilds) {
+    const guildParent = guild.parentElement;
+    if (!guildParent) continue;
+
     if (guild.id === guildId) {
       wrapWhiteRod(guildParent);
-      (guildParent as HTMLElement).classList.add("selected-guild");
+      guildParent.classList.add("selected-guild");
     } else {
-      (guildParent as HTMLElement).classList.remove("selected-guild");
+      guildParent.classList.remove("selected-guild");
       removeWhiteRod(guildParent);
     }
-  });
+  }
 }
-const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
+
+const createGuildListItem = (
+  guildId: string,
+  rootChannel: string,
+  guildName: string,
+  isUploaded: boolean
+) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
     id: guildId,
     className: "guild-image"
-  });
+  }) as HTMLImageElement;
 
   setGuildImage(guildId, imgElement, isUploaded);
 
@@ -318,17 +354,18 @@ const createGuildListItem = (guildId, rootChannel, guildName, isUploaded) => {
 
   imgElement.addEventListener("click", () => {
     try {
-      loadGuild(guildId, rootChannel, guildName);
+      loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
     } catch (error) {
       console.error("Error while loading guild:", error);
     }
   });
 
   listItem.appendChild(imgElement);
-  wrapWhiteRod(listItem);
   return listItem;
 };
-export function updateGuilds(guildsJson) {
+export function updateGuilds(guildsJson: Array<any>) {
+  console.log(guildsJson);
+  if (!guildsJson) return;
   if (Array.isArray(guildsJson)) {
     guildsList.innerHTML = "";
 
@@ -353,7 +390,7 @@ export function updateGuilds(guildsJson) {
         );
         guildsList.appendChild(listItem);
 
-        guildCache.getGuild(guildId).setName(guildName);
+        cacheInterface.setName(guildId, guildName);
         cacheInterface.setMemberIds(guildId, guildMembers);
       }
     );
@@ -371,21 +408,27 @@ export function updateGuilds(guildsJson) {
   }
 }
 
-export function wrapWhiteRod(element) {
+export function wrapWhiteRod(element: HTMLElement) {
   if (!element) return;
   if (!element.querySelector(".white-rod")) {
     const whiteRod = createEl("div", { className: "white-rod" });
     element.appendChild(whiteRod);
   }
 }
-function removeWhiteRod(element) {
+function removeWhiteRod(element: HTMLElement) {
   if (!element) return;
   const whiteRod = element.querySelector(".white-rod");
   if (!whiteRod) return;
   whiteRod.remove();
 }
-
-export function appendToGuildList(guild) {
+interface Guild {
+  guildId: string;
+  rootChannel: string;
+  guildName: string;
+  isGuildUploadedImg: boolean;
+  guildMembers: string[];
+}
+export function appendToGuildList(guild: Guild) {
   if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
 
   const listItem = createGuildListItem(
@@ -396,7 +439,7 @@ export function appendToGuildList(guild) {
   );
   guildsList.appendChild(listItem);
 
-  guildCache.getGuild(guild.guildId).setName(guild.guildName);
+  cacheInterface.setName(guild.guildId, guild.guildName);
   cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
 }
 function createNewGuildButton() {
@@ -454,8 +497,10 @@ function createMainLogo() {
     document
       .querySelectorAll(".guild")
       .forEach((item) => item.classList.remove("selected-guild"));
-    mainLogoImg.parentElement.classList.add("selected-guild");
-    clickMainLogo(mainLogoImg.parentElement);
+    if (mainLogoImg.parentElement) {
+      mainLogoImg.parentElement.classList.add("selected-guild");
+      clickMainLogo(mainLogoImg.parentElement);
+    }
   });
 
   mainLogo.appendChild(mainLogoImg);
@@ -463,10 +508,14 @@ function createMainLogo() {
   return mainLogo;
 }
 
-export function setGuildImage(guildId, imageElement, isUploaded) {
+export function setGuildImage(
+  guildId: string,
+  imageElement: HTMLImageElement,
+  isUploaded: boolean
+) {
   imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
 }
 
-export function doesGuildExistInBar(guildId) {
+export function doesGuildExistInBar(guildId: string) {
   return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
 }

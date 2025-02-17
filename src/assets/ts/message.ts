@@ -18,17 +18,12 @@ import {
   displayLocalMessage
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
-import {
-  createEl,
-  getEmojiPath,
-  getFormattedDate,
-  getBeforeElement,
-  formatDate
-} from "./utils.ts";
+import { getEmojiPath, getBeforeElement, formatDate } from "./utils.ts";
 import { getUserNick } from "./user.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
+import { constructUserData } from "./popups.ts";
 
 interface MessageData {
   messageId: string;
@@ -37,14 +32,21 @@ interface MessageData {
   channelId?: string | null;
   date: string | Date;
   lastEdited?: string | null;
-  attachmentUrls?: string[];
+  attachmentUrls?: string | string[];
   replyToId?: string | null;
   isBot: boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
   embeds?: any;
+  willDisplayProfile?: boolean;
+  replyOf?: string | null;
+  replies?: Message[];
 }
 
+export interface MessageReply {
+  messageId: string;
+  replies: Message[];
+}
 export class Message {
   messageId: string;
   userId: string;
@@ -52,13 +54,16 @@ export class Message {
   channelId: string | null;
   date: Date;
   lastEdited: string | null;
-  attachmentUrls: string[] | undefined;
+  attachmentUrls: string | string[] | undefined;
   replyToId: string | null | undefined;
   isBot: boolean;
   reactionEmojisIds: string[] | undefined;
   addToTop: boolean;
   metadata: any;
   embeds: any;
+  willDisplayProfile: boolean;
+  replyOf: string | undefined;
+  replies: Message[];
 
   constructor({
     messageId,
@@ -72,7 +77,10 @@ export class Message {
     isBot,
     reactionEmojisIds,
     metadata,
-    embeds
+    embeds,
+    willDisplayProfile,
+    replyOf,
+    replies = []
   }: MessageData) {
     this.messageId = messageId;
     this.userId = userId;
@@ -87,30 +95,13 @@ export class Message {
     this.addToTop = false;
     this.metadata = metadata;
     this.embeds = embeds;
-  }
-
-  toDisplayData(replyOf: string | null) {
-    return {
-      messageId: this.messageId,
-      userId: this.userId,
-      content: this.content,
-      channelId: this.channelId,
-      date: this.date,
-      lastEdited: this.lastEdited,
-      attachmentUrls: this.attachmentUrls,
-      addToTop: true,
-      replyOf,
-      willDisplayProfile: true,
-      replyToId: this.replyToId,
-      isBot: this.isBot,
-      reactionEmojisIds: this.reactionEmojisIds,
-      metadata: this.metadata,
-      embeds: this.embeds
-    };
+    this.willDisplayProfile = willDisplayProfile || false;
+    this.replyOf = replyOf || undefined;
+    this.replies = replies;
   }
 }
 
-export async function sendMessage(content, user_ids?) {
+export async function sendMessage(content: string, user_ids?: string[]) {
   if (content === "") {
     return;
   }
@@ -131,8 +122,8 @@ export async function sendMessage(content, user_ids?) {
   displayLocalMessage(channelIdToSend, content);
 
   setTimeout(scrollToBottom, 10);
-
-  if (fileInput.files.length < 1) {
+  const files = fileInput.files;
+  if (files && files.length < 1) {
     const message = {
       guildId: currentGuildId,
       channelId: channelIdToSend,
@@ -146,9 +137,10 @@ export async function sendMessage(content, user_ids?) {
     closeReplyMenu();
     return;
   }
+  if (!files) return;
 
   try {
-    const file = fileInput.files[0];
+    const file = files[0];
     fileInput.value = "";
     const formData = new FormData();
     formData.append("file", file);
@@ -194,11 +186,12 @@ export async function sendMessage(content, user_ids?) {
   }
 }
 
-export function replaceCustomEmojis(message) {
-  const currentCustomEmojis = {};
-  if (message) {
+export function replaceCustomEmojis(content: string) {
+  const currentCustomEmojis: { [emojiName: string]: string } = {};
+
+  if (content) {
     const regex = /<:([^:>]+):(\d+)>/g;
-    const message1 = message.replace(regex, (match, emojiName, emojiId) => {
+    const message1 = content.replace(regex, (match, emojiName, emojiId) => {
       if (currentCustomEmojis.hasOwnProperty(emojiName)) {
         return `<img src="${getEmojiPath(
           currentCustomEmojis[emojiName]
@@ -209,43 +202,43 @@ export function replaceCustomEmojis(message) {
     });
     return message1;
   }
-  return message;
+  return content;
 }
-export function displayWelcomeMessage(userName, date) {
-  const newMessage = createEl("div", { className: "message" });
-  const messageContentElement = createEl("div", {
-    id: "message-content-element"
-  });
-  const authorAndDate = createEl("div", { className: "author-and-date" });
-  const nickElement = createEl("span", { textContent: userName });
-  nickElement.classList.add("nick-element");
-  authorAndDate.appendChild(nickElement);
-  const dateElement = createEl("span", {
-    className: "date-element",
-    textContent: getFormattedDate(new Date(date))
-  });
-  authorAndDate.appendChild(dateElement);
-  newMessage.appendChild(authorAndDate);
-  newMessage.appendChild(messageContentElement);
-  chatContent.appendChild(newMessage);
+class GetMessagesRequest {
+  date: string;
+  isDm: boolean;
+  channelId: string;
+  messageId?: string;
+  isBot: boolean;
+  guildId?: string;
+
+  constructor(
+    date: Date,
+    isDm: boolean,
+    channelId: string,
+    messageId?: string,
+    guildId?: string
+  ) {
+    this.date = date.toString();
+    this.isDm = isDm;
+    this.channelId = channelId;
+    this.messageId = messageId;
+    this.isBot = false;
+    this.guildId = guildId;
+  }
 }
 
-export function getOldMessages(date, messageId = null) {
-  const data = {
-    date: date.toString(),
-    isDm: isOnDm
-  };
-  if (messageId) {
-    data["messageId"] = messageId;
-  }
+export function getOldMessages(date: Date, messageId?: string) {
+  const request = new GetMessagesRequest(
+    date,
+    isOnDm,
+    isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId,
+    messageId,
+    isOnGuild ? currentGuildId : undefined
+  );
 
-  data["channelId"] = isOnDm
-    ? friendsCache.currentDmId
-    : guildCache.currentChannelId;
-  if (isOnGuild) {
-    data["guildId"] = currentGuildId;
-  }
-  apiClient.send(EventType.GET_SCROLL_HISTORY, data);
+  apiClient.send(EventType.GET_SCROLL_HISTORY, request);
+
   setTimeout(() => {
     setHasJustFetchedMessagesFalse();
   }, 1000);
@@ -273,7 +266,7 @@ export function getMessageDate(top = true) {
 
   const targetElement = getMessageFromChat(top);
   if (targetElement) {
-    const dateGathered = targetElement.getAttribute("data-date");
+    const dateGathered = targetElement.getAttribute("data-date") as string;
     const parsedDate = new Date(dateGathered);
     const formattedDate = formatDate(parsedDate);
     return formattedDate;
@@ -282,7 +275,12 @@ export function getMessageDate(top = true) {
   }
 }
 
-export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
+export function deleteLocalMessage(
+  messageId: string,
+  guildId: string,
+  channelId: string,
+  isDm: boolean
+) {
   if (
     (isOnGuild && channelId !== guildCache.currentChannelId) ||
     (isOnDm && isDm && channelId !== friendsCache.currentDmId)
@@ -297,6 +295,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
     );
     return;
   }
+
   const messages = Array.from(chatContent.children);
 
   for (let i = 0; i < messages.length; i++) {
@@ -304,35 +303,38 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
     if (!element.classList || !element.classList.contains("message")) {
       continue;
     }
-    const userId = element.dataset.userId;
+    const userId = element.dataset.userId as string;
 
     if (String(element.id) === String(messageId)) {
       console.log("Removing element:", messageId);
       element.remove();
       const foundMsg = getMessageFromChat(false);
       if (foundMsg) {
-        setLastSenderID(foundMsg.dataset.userId);
+        setLastSenderID(foundMsg.dataset.userId as string);
       }
-    } // Check if the element matches the currentSenderOfMsg and it doesn"t have a profile picture already
-    else if (
+    } else if (
+      // Check if the element matches the currentSenderOfMsg and it doesn"t have a profile picture already
       !element.querySelector(".profile-pic") &&
-      getBeforeElement(element).dataset.userId !== element.dataset.userId
+      getBeforeElement(element) &&
+      getBeforeElement(element)!.dataset.userId !== element.dataset.userId
     ) {
       console.log("Creating profile img...");
       const messageContentElement = element.querySelector(
         "#message-content-element"
       ) as HTMLElement;
-      const date = element.dataset.date;
+      const date = element.dataset.date as string;
       const smallDate = element.querySelector(".small-date-element");
       if (smallDate) {
         smallDate.remove();
       }
       const nick = getUserNick(userId);
+      const userInfo = constructUserData(userId);
 
       createProfileImageChat(
         element,
         messageContentElement,
         nick,
+        userInfo,
         userId,
         date,
         true
@@ -340,6 +342,7 @@ export function deleteLocalMessage(messageId, guildId, channelId, isDm) {
       break;
     }
   }
+
   const dateBars = chatContent.querySelectorAll(".dateBar");
 
   dateBars.forEach((bar) => {
