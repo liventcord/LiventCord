@@ -480,7 +480,7 @@ export function updateUsersStatus(friend: Friend) {
 
   const iconImg = createEl("img", {
     className: "activity-card-icon",
-    src: "/images/defaultmediaimage.png"
+    src: "/defaultmediaimage.png"
   });
 
   activityCard.appendChild(contentDiv);

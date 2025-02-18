@@ -19,7 +19,7 @@ public class BuilderService
             RunCommand("npm", "run build", workingDirectory);
 
             string sourcePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "web", "src", "output");
-            string destinationPath = Path.Combine("wwwroot", "app");
+            string destinationPath = Path.Combine("wwwroot");
             CopyDirectoryContents(sourcePath, destinationPath);
         }
         catch (Exception ex)

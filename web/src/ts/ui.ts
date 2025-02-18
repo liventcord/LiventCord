@@ -39,8 +39,8 @@ export const inviteVoiceHtml =
 export const selectedChanColor = "rgb(64, 66, 73)";
 export const hoveredChanColor = "rgb(53, 55, 60";
 
-const activeIconHref = "/images/icons/iconactive.png";
-const inactiveIconHref = "/images/icons/icon.png";
+const activeIconHref = "/icons/iconactive.png";
+const inactiveIconHref = "/icons/icon.png";
 const favicon = getId("favicon") as HTMLAnchorElement;
 
 export let loadingScreen: HTMLElement;
@@ -51,7 +51,7 @@ export function enableLoadingScreen() {
     id: "loading-element"
   }) as HTMLImageElement;
   loadingScreen.appendChild(loadingElement);
-  loadingElement.src = "/images/icons/icon.png";
+  loadingElement.src = "/icons/icon.png";
 }
 export function isLoadingScreen() {
   if (!loadingScreen) {

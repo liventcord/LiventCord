@@ -27,12 +27,12 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
   return element;
 };
 
-export const clydeSrc = "/images/clyde.png";
+export const clydeSrc = "/clyde.png";
 
-const defaultProfileImageUrl = "/images/guest.png";
+const defaultProfileImageUrl = "/guest.png";
 
 export let defaultProfileImageSrc = defaultProfileImageUrl;
-const defaultMediaImageUrl = "/images/defaultmediaimage.png";
+const defaultMediaImageUrl = "/defaultmediaimage.png";
 export let defaultMediaImageSrc = defaultMediaImageUrl;
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 

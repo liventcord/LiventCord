@@ -24,5 +24,9 @@ LiventCord.sln
 
 MediaCache
 # Exclude build-copied files
-wwwroot/app/* 
-wwwroot/translations/*
+src/wwwroot/app/*
+src/wwwroot/ts/
+src/wwwroot/vendor/
+src/wwwroot/*.png
+src/wwwroot/images/
+src/wwwroot/index.html
