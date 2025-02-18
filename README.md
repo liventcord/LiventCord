@@ -1,3 +1,11 @@
+![MainPage](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-02-18-174630_hyprshot.png)
+![Emojis](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-01-31-172631_hyprshot.png)
+![Gifs](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-01-31-172422_hyprshot.png)
+
+
+
+
+
 # Server Setup
 
 Run a LiventCord backend server
@@ -22,6 +30,9 @@ dotnet run
 cd Liventcord/web
 npm install
 npm run dev
+```
+
+
 ---
 
 ## Website
