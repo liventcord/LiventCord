@@ -15,12 +15,9 @@ export default defineConfig(({ mode }) => {
 
   const proxyPaths = [
     "/api",
-    "/vendor",
     "/profiles",
-    "/images",
     "/guilds",
     "/auth",
-    "/sounds"
   ];
 
   const proxyConfig = proxyPaths.reduce((acc, path) => {
@@ -29,8 +26,10 @@ export default defineConfig(({ mode }) => {
   }, {});
 
   return {
-    root: "./src",
+    root: "./src", 
+    publicDir: "../public", 
     base: isDev ? "/" : "/app",
+
     build: {
       outDir: "output",
       assetsDir: "ts",
