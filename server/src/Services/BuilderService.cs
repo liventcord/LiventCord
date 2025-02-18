@@ -8,7 +8,7 @@ public class BuilderService
 
             if (!IsNpmInstallRequired(workingDirectory))
             {
-                Console.WriteLine("Dependencies are already installed. Skipping npm install.");
+                Console.WriteLine("Node modules already exist. Skipping npm install.");
             }
             else
             {
