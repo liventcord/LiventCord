@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: "./src", 
     publicDir: "../public", 
-    base: isDev ? "/" : "/app",
+    base: "/",
 
     build: {
       outDir: "output",

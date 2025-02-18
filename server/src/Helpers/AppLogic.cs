@@ -140,7 +140,6 @@ namespace LiventCord.Helpers
 
                 var filePath = Path.Combine(
                     context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath,
-                    "app",
                     "index.html"
                 );
                 var htmlContent = await File.ReadAllTextAsync(filePath);
