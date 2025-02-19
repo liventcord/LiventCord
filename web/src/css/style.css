@@ -1457,3 +1457,16 @@ textarea::-webkit-scrollbar-track {
     padding-block: 60px;
   }
 }
+
+.tooltip {
+  position: absolute;
+  background: #111214;
+  color: white;
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  white-space: nowrap;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}

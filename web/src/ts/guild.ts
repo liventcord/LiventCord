@@ -462,6 +462,7 @@ function createNewGuildButton() {
   const newElement = createEl("div", {
     innerHTML: createGuildCross
   });
+  newElement.style.pointerEvents = "none";
   newElement.style.marginTop = "5px";
   newElement.style.marginLeft = "13px";
 

@@ -109,7 +109,8 @@ export function getRootChannel(guildId: string, rootChannel: string) {
   return rootChannel;
 }
 
-export async function changeChannel(newChannel: ChannelData) {
+export async function changeChannel(newChannel?: ChannelData) {
+  if (!newChannel) return;
   console.log("Changed channel: ", newChannel);
   if (isOnMe || isOnDm) {
     return;

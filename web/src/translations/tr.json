@@ -145,11 +145,6 @@
     "channel-type-description": "Mesajlar, resimler, GIF'ler, emojiler, fikirler ve şakalar gönder",
     "channel-type-voice-description": "Birlikte sesli veya görüntülü konuşun veya ekran paylaşın",
     "special-chan-text": "Özel Kanal",
-    "tb-call": "Sesli Arama Başlat",
-    "tb-video-call": "Görüntülü Arama Başlat",
-    "tb-pin": "Sabitlenmiş Mesajlar",
-    "tb-createdm": "DM'ye Arkadaş Ekle",
-    "tb-showprofile": "Kullanıcı Profilini Göster",
     "today": "Bugün saat",
     "yesterday": "Dün saat",
     "cannot-be-undone": "Bu işlem geri alınamaz",
@@ -186,7 +181,6 @@
     "addfrienddetailtext": "Arkadaşlarını LiventCord kullanıcı adı ile ekleyebilirsin.",
     "addfriendinputbutton": "Arkadaşlık İsteği Gönder",
     "send-message": "Mesaj Gönder",
-    "more": "Daha fazla",
     "addFriendDiscriminatorErrorText": "Tanımlayıcı geçersiz! (#0000)",
     "friendAddYourselfErrorText": "Kendini arkadaş ekleyemezsin!",
     "upload-error-message": "Yalnızca resim dosyaları yükleyebilirsiniz (JPG, PNG veya GIF)!",
@@ -203,5 +197,20 @@
     "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir.",
     "click-to-attachment": "Eki görüntülemek için tıkla"
   },
-  "errorTranslations": {}
+  "errorTranslations": {},
+  "tooltipTranslations": {
+    "settings-button": "Kullanıcı Ayarları",
+    "microphone-button": "Mikrofonu aç",
+    "earphone-button": "Sağırlığı Kaldır",
+    "channel-settings-button": "Kanalı Düzenle",
+    "invite-channel-button": "Davet Oluştur",
+    "tb-call": "Sesli Arama Başlat",
+    "tb-video-call": "Görüntülü Arama Başlat",
+    "tb-pin": "Sabitlenmiş Mesajlar",
+    "tb-createdm": "DM'ye Arkadaş Ekle",
+    "tb-showprofile": "Kullanıcı Profilini Göster",
+    "more": "Daha fazla",
+    "create-guild-button": "Bir sunucu ekle",
+    "main-logo": "Direkt Mesajlar"
+  }
 }

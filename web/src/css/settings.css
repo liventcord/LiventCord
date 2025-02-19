@@ -33,7 +33,7 @@ th {
 }
 .context-menu {
   position: fixed;
-  background-color: rgb(17, 18, 20);
+  background-color: #111214;
   font-family: Arial, Helvetica, sans-serif !important;
   color: rgb(169, 173, 180);
   white-space: nowrap;
@@ -66,7 +66,7 @@ th {
   position: absolute;
   left: 100%;
   top: 0;
-  background-color: rgb(17, 18, 20);
+  background-color: #111214;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
   border-radius: 5px;
   z-index: 1;

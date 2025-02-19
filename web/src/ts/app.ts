@@ -50,14 +50,17 @@ import {
   toggleDropdown
 } from "./popups.ts";
 import {
-  copySelfName,
   addUser,
   initializeProfile,
   getUserNick,
   currentUserId,
   currentUserNick
 } from "./user.ts";
-import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
+import {
+  addContextListeners,
+  copySelfName,
+  pinMessage
+} from "./contextMenuActions.ts";
 import {
   updateChannels,
   channelTitle,
@@ -203,8 +206,6 @@ export function initialiseState(data: InitialStateData): void {
 }
 
 async function loadInitialData() {
-  await translations.translationsLoaded;
-
   const initData = await apiClient.fetchData("/api/init");
 
   if (!initData) {
