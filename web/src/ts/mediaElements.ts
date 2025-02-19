@@ -15,6 +15,7 @@ import {
   getYouTubeEmbedURL,
   defaultMediaImageSrc
 } from "./utils.ts";
+import { initialState } from "./app.ts";
 
 interface Embed {
   id: string;
@@ -74,6 +75,8 @@ const maxHeight = 384;
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
 
+const IgnoreProxies = ["cdn.discordapp.com", "i.redd.it"];
+
 export function createTenorElement(
   msgContentElement: HTMLElement,
   inputText: string,
@@ -104,10 +107,8 @@ export function createTenorElement(
     className: "tenor-image"
   }) as HTMLImageElement;
 
-  imgElement.setAttribute("data-src", tenorURL);
-
   imgElement.onload = function () {
-    const actualSrc = imgElement.getAttribute("data-src");
+    const actualSrc = tenorURL;
     if (actualSrc) {
       imgElement.src = DOMPurify.sanitize(actualSrc);
     }
@@ -120,24 +121,28 @@ export function createTenorElement(
   };
 
   imgElement.addEventListener("click", function () {
-    displayImagePreview(imgElement.src);
+    displayImagePreview(imgElement);
   });
 
   return imgElement;
 }
-function getProxy(url: string): string {
+
+function getProxy(url: string, useBackendProxy = false): string {
   try {
     const parsedUrl = new URL(url);
-    if (parsedUrl.hostname === "cdn.discordapp.com") {
-      // Ignore proxy for discord media
+    if (IgnoreProxies.includes(parsedUrl.hostname)) {
       return url;
     }
-    return `/api/proxy/media?url=${encodeURIComponent(url)}`;
+
+    if (useBackendProxy) {
+      return `/api/proxy/media?url=${encodeURIComponent(url)}`;
+    }
+
+    return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
   } catch {
     return "";
   }
 }
-
 export function createImageElement(inputText: string, url_src: string) {
   const imgElement = createEl("img", {
     className: "chat-image",
@@ -149,24 +154,30 @@ export function createImageElement(inputText: string, url_src: string) {
   }) as HTMLImageElement;
 
   imgElement.crossOrigin = "anonymous";
-  imgElement.setAttribute("data-src", getProxy(url_src));
   imgElement.setAttribute("data-original-src", url_src);
   imgElement.alt = inputText ?? "Image";
 
+  const proxyUrl = getProxy(url_src);
+  const fallbackUrl = getProxy(url_src, true);
+
   const preloader = new Image();
   preloader.crossOrigin = "anonymous";
-  preloader.src = getProxy(url_src);
+  preloader.src = proxyUrl;
 
   preloader.onload = function () {
     imgElement.src = preloader.src;
   };
 
   preloader.onerror = function () {
-    imgElement.src = defaultMediaImageSrc;
+    if (preloader.src !== fallbackUrl) {
+      preloader.src = fallbackUrl;
+    } else {
+      imgElement.src = defaultMediaImageSrc;
+    }
   };
 
   imgElement.addEventListener("click", function () {
-    displayImagePreview(imgElement.src);
+    displayImagePreview(imgElement);
   });
 
   return imgElement;
@@ -477,11 +488,8 @@ async function appendEmbedToMessage(
     const videoContainer = createEl("div", {
       className: "embed-video-container"
     });
-    const videoElement = createEl("video", {
-      src: getProxy(embed.video.url),
-      controls: true,
-      className: "embed-video"
-    });
+    const videoElement = createVideoElement(embed.video.url);
+    videoElement.className = "embed-video";
 
     videoContainer.appendChild(videoElement);
     embedContainer.appendChild(videoContainer);

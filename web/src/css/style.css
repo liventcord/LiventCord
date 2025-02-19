@@ -981,7 +981,6 @@ input[type="file"] {
   cursor: pointer;
 }
 .chat-image {
-  width: 35%;
   height: auto;
 }
 #change-nick-button {
