@@ -314,13 +314,21 @@ export function beautifyJson(jsonData: string) {
   }
 }
 
-export function displayImagePreview(sourceimage: string): void {
+export function displayImagePreview(imageElement: HTMLImageElement): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
+  const sourceimage =
+    (imageElement.dataset.originalSrc ||
+      imageElement.getAttribute("data-original-src") ||
+      imageElement.getAttribute("src")) ??
+    "";
+
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
-  previewImage.src = sanitizedSourceImage;
+  previewImage.src = imageElement.src;
   updateCurrentIndex(sanitizedSourceImage);
+
+  console.log(imageElement, sanitizedSourceImage);
 
   let isPreviewZoomed = false;
   let isDragging = false;
@@ -359,6 +367,7 @@ export function displayImagePreview(sourceimage: string): void {
 
     newPreviewOpenButton.addEventListener("click", () => {
       if (sanitizedSourceImage) {
+        console.log("Going to: ", sanitizedSourceImage);
         window.open(sanitizedSourceImage, "_blank");
       }
     });
@@ -425,8 +434,9 @@ function addNavigationListeners() {
 }
 
 function movePreviewImg(chatImages: HTMLImageElement[]) {
-  if (chatImages[currentPreviewIndex]) {
-    displayImagePreview(chatImages[currentPreviewIndex].src);
+  const img = chatImages[currentPreviewIndex] ?? null;
+  if (img) {
+    displayImagePreview(img);
   }
 }
 

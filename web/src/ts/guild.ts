@@ -478,8 +478,7 @@ function createNewGuildButton() {
 function createMainLogo() {
   const mainLogoImg = createEl("img", {
     id: "main-logo",
-    src: "/images/icons/icon.png",
-    "data-src": "/images/icons/icon.png"
+    src: "/images/icons/icon.png"
   });
 
   const mainLogo = createEl("li");

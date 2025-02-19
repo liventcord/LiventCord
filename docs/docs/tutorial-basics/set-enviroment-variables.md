@@ -34,8 +34,12 @@ sidebar_position: 1
   
   - **GifWorkerUrl**: 
     URL of the Cloudflare Worker for querying Tenor GIFs.
-    Defaults to "liventcord-gif-worker.efekantunc0.workers.dev".
+    Defaults to "gif-worker.liventcord-a60.workers.dev".
 
+  -**ProxyWorkerUrl**:
+    Url of the Cloudflare Worker for proxying external resources.
+    Defaults to "proxy.liventcord-a60.workers.dev"
+    
   - **MaxAvatarSize**:
     Maximum upload size(in MB) for avatar on guilds and profiles.
     Defaults to 3.

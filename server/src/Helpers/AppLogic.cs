@@ -16,12 +16,15 @@ namespace LiventCord.Helpers
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly string? _gifWorkerUrl;
+        private readonly string? _proxyWorkerUrl;
         private readonly float? _maxAvatarSize;
         private readonly float? _maxAttachmentSize;
         private readonly float defaultAvatarSize = 3; //megabytes
         private readonly float defaultAttachmentSize = 30; //megabytes
         private readonly string defaultGifWorkerUrl =
-            "https://liventcord-gif-worker.efekantunc0.workers.dev";
+            "https://gif-worker.liventcord-a60.workers.dev";
+        private readonly string defaultProxyWorkerUrl =
+            "https://proxy.liventcord-a60.workers.dev";
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -47,6 +50,10 @@ namespace LiventCord.Helpers
                 configuration["AppSettings:GifWorkerUrl"] != null
                     ? configuration["AppSettings:GifWorkerUrl"]
                     : defaultGifWorkerUrl;
+
+            _proxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] != null
+                    ? configuration["AppSettings:ProxyWorkerUrl"]
+                    : defaultProxyWorkerUrl;
 
             _maxAvatarSize = float.TryParse(
                 configuration["AppSettings:MaxAvatarSize"],
@@ -103,8 +110,9 @@ namespace LiventCord.Helpers
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
-                    guilds = guilds,
+                    guilds,
                     gifWorkerUrl = _gifWorkerUrl,
+                    proxyWorkerUrl = _proxyWorkerUrl,
                     maxAvatarSize = _maxAvatarSize,
                     maxUploadsize = _maxAttachmentSize,
                 };

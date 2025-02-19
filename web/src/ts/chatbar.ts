@@ -275,7 +275,7 @@ export function handleFileInput(
       fileImagePreview.appendChild(img);
       enableElement("image-preview");
       img.addEventListener("click", function () {
-        displayImagePreview(img.src);
+        displayImagePreview(img);
       });
     };
     reader.readAsDataURL(file);
