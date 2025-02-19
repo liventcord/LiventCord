@@ -6,9 +6,8 @@ import trTranslations from "./../translations/tr.json";
 
 export const availableLanguages = {
   english: "en",
-  turkish: "tr",
+  turkish: "tr"
 };
-
 
 interface TranslationsStructure {
   textTranslations: Record<string, string>;
@@ -17,11 +16,12 @@ interface TranslationsStructure {
   placeholderTranslations: Record<string, string>;
   contextTranslations: Record<string, string>;
   settingTranslations: Record<string, string>;
+  tooltipTranslations: Record<string, string>;
 }
 
 const translationsMap: Record<string, TranslationsStructure> = {
   English: enTranslations,
-  Turkish: trTranslations,
+  Turkish: trTranslations
 };
 type Replacements = Record<string, string>;
 type Truncation = Record<string, number>;
@@ -35,9 +35,7 @@ class Translations {
   placeholderTranslations: Record<string, string>;
   textTranslations: Record<string, string>;
   errorTranslations: Record<string, string>;
-  translationsLoaded: Promise<void>;
-  resolveTranslations?: () => void;
-  rejectTranslations?: () => void;
+  tooltipTranslations: Record<string, string>;
 
   constructor() {
     this.currentLanguage = "English";
@@ -51,10 +49,7 @@ class Translations {
     this.placeholderTranslations = {};
     this.textTranslations = {};
     this.errorTranslations = {};
-    this.translationsLoaded = new Promise((resolve, reject) => {
-      this.resolveTranslations = resolve;
-      this.rejectTranslations = reject;
-    });
+    this.tooltipTranslations = {};
   }
 
   formatTime(date: Date) {
@@ -207,9 +202,16 @@ class Translations {
     });
   }
 
-  getTranslation(key: string, list = this.textTranslations) {
+  getTranslation(
+    key: string,
+    list = this.textTranslations,
+    ignoreIdFallback?: boolean
+  ) {
     const result = list?.[key] ?? null;
     if (key && !result) {
+      if (ignoreIdFallback) {
+        return "";
+      }
       console.error("Cant find translation for:", key, list);
       return kebapToSentence(key);
     }
@@ -217,6 +219,9 @@ class Translations {
   }
   getSettingsTranslation(key: string) {
     return this.getTranslation(key, this.settingTranslations);
+  }
+  getTooltipTranslation(key: string) {
+    return this.getTranslation(key, this.tooltipTranslations, true);
   }
 
   setLanguage(language: string) {
@@ -239,10 +244,7 @@ class Translations {
     this.placeholderTranslations = selectedTranslations.placeholderTranslations;
     this.contextTranslations = selectedTranslations.contextTranslations;
     this.settingTranslations = selectedTranslations.settingTranslations;
-
-    if (this.resolveTranslations) {
-      this.resolveTranslations();
-    }
+    this.tooltipTranslations = selectedTranslations.tooltipTranslations;
 
     this.initializeTranslations();
   }

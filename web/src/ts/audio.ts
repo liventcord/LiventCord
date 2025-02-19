@@ -189,7 +189,8 @@ export function initializeMp3Yt() {
 
   document.addEventListener("click", handleClick);
 }
-export async function fetchAudioStreamUrl(videoId: string) {
+export async function fetchAudioStreamUrl(videoId?: string) {
+  if (!videoId) return null;
   try {
     const response = await fetch(
       `/ytstream/?videoId=${encodeURIComponent(videoId)}`
@@ -281,7 +282,8 @@ export function analyzeAudio(
 
   let sum = 0;
   for (let i = 0; i < dataArray.length; i++) {
-    sum += dataArray[i];
+    const dataIndex = dataArray[i];
+    if (dataIndex) sum += dataIndex;
   }
 
   const averageVolume = sum / dataArray.length;
@@ -608,7 +610,7 @@ export function clearVoiceChannel(channelId: string) {
     return;
   }
   const buttons = channelButton.querySelectorAll(".channel-button");
-  buttons.forEach((btn, index) => {
+  buttons.forEach((btn) => {
     btn.remove();
   });
   const channelUsersContainer = channelButton.querySelector(
@@ -653,7 +655,7 @@ export function initializeMusic() {
   function playCurrentSong() {
     const currentSong = songs[currentSongIndex];
 
-    playAudio(currentSong);
+    if (currentSong) playAudio(currentSong);
 
     const audio = new Audio(currentSong);
     audio.onended = function () {

@@ -1,7 +1,14 @@
 import { openDm, readCurrentMessages } from "./app.ts";
 import { drawProfilePop, drawProfilePopId } from "./popups.ts";
 import { showReplyMenu, chatInput } from "./chatbar.ts";
-import { currentUserId, getUserNick, UserInfo, userNames } from "./user.ts";
+import {
+  currentDiscriminator,
+  currentUserId,
+  currentUserNick,
+  getUserNick,
+  UserInfo,
+  userNames
+} from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
 import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
@@ -11,10 +18,21 @@ import { translations } from "./translations.ts";
 import { alertUser } from "./ui.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
+import { copyText } from "./tooltip.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};
+
+type ItemOption = {
+  action: CallableFunction;
+};
+
+type ItemOptions = {
+  action: CallableFunction;
+  subOptions?: ItemOption[];
+  [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
+};
 
 const ActionType = {
   COPY_ID: "COPY_ID",
@@ -132,12 +150,23 @@ export function removeFriend(userId: string) {
   apiClient.send(EventType.REMOVE_FRIEND, { friend_id: userId });
 }
 
-export function copyChannelLink(guildId: string, channelId: string) {
+export function copyChannelLink(
+  guildId: string,
+  channelId: string,
+  event: MouseEvent
+) {
   const content = constructAbsoluteAppPage(guildId, channelId);
-  navigator.clipboard.writeText(content);
+  copyText(event, content);
 }
-export function copyId(channelId: string) {
-  navigator.clipboard.writeText(channelId);
+export function copySelfName(event: MouseEvent) {
+  if (!currentUserNick || !currentDiscriminator) return;
+  const text = `${currentUserNick}#${currentDiscriminator}`;
+  copyText(event, text);
+}
+export function copyId(id: string, event: MouseEvent) {
+  if (!currentUserNick || !currentDiscriminator) return;
+
+  copyText(event, id);
 }
 
 export function deleteChannel(channelId: string, guildId: string) {
@@ -180,7 +209,7 @@ export function createUserContext(userId: string) {
   }
 
   if (isDeveloperMode) {
-    context[ActionType.COPY_ID] = () => copyId(userId);
+    context[ActionType.COPY_ID] = (event: MouseEvent) => copyId(userId, event);
   }
 
   return context;
@@ -231,7 +260,7 @@ export function createProfileContext(userData: UserInfo) {
 
   if (isDeveloperMode) {
     context[ActionType.COPY_USER_ID] = {
-      action: () => copyId(userId)
+      action: (event: MouseEvent) => copyId(userId, event)
     };
   }
 
@@ -298,7 +327,8 @@ export function createChannelsContext(channelId: string) {
     action: () => readCurrentMessages()
   };
   context[ChannelsActionType.COPY_LINK] = {
-    action: () => copyChannelLink(currentGuildId, channelId)
+    action: (event: MouseEvent) =>
+      copyChannelLink(currentGuildId, channelId, event)
   };
   context[ChannelsActionType.MUTE_CHANNEL] = {
     action: () => muteChannel(channelId)
@@ -317,7 +347,9 @@ export function createChannelsContext(channelId: string) {
   }
 
   if (isDeveloperMode) {
-    context[ActionType.COPY_ID] = { action: () => copyId(channelId) };
+    context[ActionType.COPY_ID] = {
+      action: (event: MouseEvent) => copyId(channelId, event)
+    };
   }
 
   return context;
@@ -374,20 +406,13 @@ export function createMessageContext(messageId: string, userId: string) {
   }
 
   if (isDeveloperMode) {
-    context[ActionType.COPY_ID] = { action: () => copyId(messageId) };
+    context[ActionType.COPY_ID] = {
+      action: (event: MouseEvent) => copyId(messageId, event)
+    };
   }
 
   return context;
 }
-type ItemOption = {
-  action: CallableFunction;
-};
-
-type ItemOptions = {
-  action: CallableFunction;
-  subOptions?: ItemOption[];
-  [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
-};
 
 export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
   const translatedLabel = translations.getContextTranslation(labelKey);
@@ -397,7 +422,7 @@ export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
     event.stopPropagation();
     hideContextMenu();
     if (itemOptions.action) {
-      itemOptions.action();
+      itemOptions.action(event);
     }
   });
 

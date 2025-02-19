@@ -145,11 +145,6 @@
     "channel-type-description": "Send messages, images, GIFs, emojis, ideas, and jokes",
     "channel-type-voice-description": "Talk or video chat together, or share your screen",
     "special-chan-text": "Private Channel",
-    "tb-call": "Start Voice Call",
-    "tb-video-call": "Start Video Call",
-    "tb-pin": "Pinned Messages",
-    "tb-createdm": "Add Friend to DM",
-    "tb-showprofile": "Show User Profile",
     "today": "Today at",
     "yesterday": "Yesterday at",
     "cannot-be-undone": "This action cannot be undone",
@@ -186,7 +181,6 @@
     "addfrienddetailtext": "You can add your friends with their LiventCord name.",
     "addfriendinputbutton": "Send Friend Request",
     "send-message": "Send Message",
-    "more": "More",
     "addFriendDiscriminatorErrorText": "Invalid discriminator! (#0000)",
     "friendAddYourselfErrorText": "You cant be friends with yourself!",
     "upload-error-message": "You can only upload image files! (JPG, PNG or GIF)!",
@@ -203,5 +197,20 @@
     "private-channel-description": "Only selected members and roles will be able to view this channel",
     "click-to-attachment": "Click to see attachment"
   },
-  "errorTranslations": {}
+  "errorTranslations": {},
+  "tooltipTranslations": {
+    "settings-button": "User Setting",
+    "microphone-button": "Open Microphone",
+    "earphone-button": "Undeafen",
+    "channel-settings-button": "Edit Channel",
+    "invite-channel-button": "Create Invite",
+    "tb-call": "Start Voice Call",
+    "tb-video-call": "Start Video Call",
+    "tb-pin": "Pinned Messages",
+    "tb-createdm": "Add Friend to DM",
+    "tb-showprofile": "Show User Profile",
+    "more": "More",
+    "create-guild-button": "Add a server",
+    "main-logo": "Direct Messages"
+  }
 }

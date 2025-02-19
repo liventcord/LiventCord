@@ -91,7 +91,7 @@
             },
             function (a) {
               d || ((d = !0), c(a));
-            },
+            }
           );
         } catch (e) {
           if (d) return;
@@ -120,9 +120,7 @@
         }),
         (c.all = function () {
           var a = Array.prototype.slice.call(
-            1 === arguments.length && l(arguments[0])
-              ? arguments[0]
-              : arguments,
+            1 === arguments.length && l(arguments[0]) ? arguments[0] : arguments
           );
           return new c(function (b, c) {
             function d(f, g) {
@@ -135,7 +133,7 @@
                       function (a) {
                         d(f, a);
                       },
-                      c,
+                      c
                     );
                 }
                 (a[f] = g), 0 === --e && b(a);
@@ -182,14 +180,14 @@
         params = params || {
           bubbles: false,
           cancelable: false,
-          detail: undefined,
+          detail: undefined
         };
         var evt = document.createEvent("CustomEvent");
         evt.initCustomEvent(
           event,
           params.bubbles,
           params.cancelable,
-          params.detail,
+          params.detail
         );
         return evt;
       }
@@ -213,7 +211,7 @@
         }
 
         callback(new Blob([arr], { type: type || "image/png" }));
-      },
+      }
     });
   }
   /* End Polyfills */
@@ -399,11 +397,11 @@
   /* CSS Transform Prototype */
   var TRANSLATE_OPTS = {
     translate3d: {
-      suffix: ", 0px",
+      suffix: ", 0px"
     },
     translate: {
-      suffix: "",
-    },
+      suffix: ""
+    }
   };
   var Transform = function (x, y, scale) {
     this.x = parseFloat(x);
@@ -575,7 +573,7 @@
     bh = self.options.boundary.height;
     css(boundary, {
       width: bw + (isNaN(bw) ? "" : "px"),
-      height: bh + (isNaN(bh) ? "" : "px"),
+      height: bh + (isNaN(bh) ? "" : "px")
     });
 
     addClass(viewport, "cr-viewport");
@@ -584,14 +582,14 @@
     }
     css(viewport, {
       width: self.options.viewport.width + "px",
-      height: self.options.viewport.height + "px",
+      height: self.options.viewport.height + "px"
     });
     viewport.setAttribute("tabindex", 0);
 
     addClass(self.elements.preview, "cr-image");
     setAttributes(self.elements.preview, {
       alt: "preview",
-      "aria-grabbed": "false",
+      "aria-grabbed": "false"
     });
     addClass(overlay, "cr-overlay");
 
@@ -670,7 +668,7 @@
     addClass(wrap, "cr-resizer");
     css(wrap, {
       width: this.options.viewport.width + "px",
-      height: this.options.viewport.height + "px",
+      height: this.options.viewport.height + "px"
     });
 
     if (this.options.resizeControls.height) {
@@ -735,17 +733,17 @@
 
       if (direction === "v" && newHeight >= minSize && newHeight <= maxHeight) {
         css(wrap, {
-          height: newHeight + "px",
+          height: newHeight + "px"
         });
 
         self.options.boundary.height += deltaY;
         css(self.elements.boundary, {
-          height: self.options.boundary.height + "px",
+          height: self.options.boundary.height + "px"
         });
 
         self.options.viewport.height += deltaY;
         css(self.elements.viewport, {
-          height: self.options.viewport.height + "px",
+          height: self.options.viewport.height + "px"
         });
       } else if (
         direction === "h" &&
@@ -753,17 +751,17 @@
         newWidth <= maxWidth
       ) {
         css(wrap, {
-          width: newWidth + "px",
+          width: newWidth + "px"
         });
 
         self.options.boundary.width += deltaX;
         css(self.elements.boundary, {
-          width: self.options.boundary.width + "px",
+          width: self.options.boundary.width + "px"
         });
 
         self.options.viewport.width += deltaX;
         css(self.elements.viewport, {
-          width: self.options.viewport.width + "px",
+          width: self.options.viewport.width + "px"
         });
       }
 
@@ -804,7 +802,7 @@
 
       z.value = Math.max(
         parseFloat(z.min),
-        Math.min(parseFloat(z.max), val),
+        Math.min(parseFloat(z.max), val)
       ).toString();
     }
   }
@@ -832,7 +830,7 @@
         value: parseFloat(zoomer.value),
         origin: new TransformOrigin(self.elements.preview),
         viewportRect: self.elements.viewport.getBoundingClientRect(),
-        transform: Transform.parse(self.elements.preview),
+        transform: Transform.parse(self.elements.preview)
       });
     }
 
@@ -947,14 +945,14 @@
         maxX: maxX,
         minX: minX,
         maxY: maxY,
-        minY: minY,
+        minY: minY
       },
       origin: {
         maxX: originMaxX,
         minX: originMinX,
         maxY: originMaxY,
-        minY: originMinY,
-      },
+        minY: originMinY
+      }
     };
   }
 
@@ -1035,7 +1033,7 @@
       self.elements.preview.setAttribute("aria-grabbed", isDragging);
       self.elements.boundary.setAttribute(
         "aria-dropeffect",
-        isDragging ? "move" : "none",
+        isDragging ? "move" : "none"
       );
     }
 
@@ -1149,7 +1147,7 @@
           var touch2 = ev.touches[1];
           var dist = Math.sqrt(
             (touch1.pageX - touch2.pageX) * (touch1.pageX - touch2.pageX) +
-              (touch1.pageY - touch2.pageY) * (touch1.pageY - touch2.pageY),
+              (touch1.pageY - touch2.pageY) * (touch1.pageY - touch2.pageY)
           );
 
           if (!originalDistance) {
@@ -1201,7 +1199,7 @@
       width: imgData.width + "px",
       height: imgData.height + "px",
       top: imgData.top - boundRect.top + "px",
-      left: imgData.left - boundRect.left + "px",
+      left: imgData.left - boundRect.left + "px"
     });
   }
   var _debouncedOverlay = debounce(_updateOverlay, 500);
@@ -1297,7 +1295,7 @@
       boundaryData = self.elements.boundary.getBoundingClientRect(),
       imgData = naturalImageDimensions(
         self.elements.img,
-        self.data.orientation,
+        self.data.orientation
       ),
       vpData = self.elements.viewport.getBoundingClientRect(),
       minW,
@@ -1320,7 +1318,7 @@
     } else if (initial) {
       defaultInitialZoom = Math.max(
         boundaryData.width / imgData.width,
-        boundaryData.height / imgData.height,
+        boundaryData.height / imgData.height
       );
       initialZoom =
         self.data.boundZoom !== null ? self.data.boundZoom : defaultInitialZoom;
@@ -1341,7 +1339,7 @@
       boundRect = self.elements.boundary.getBoundingClientRect(),
       vpOffset = {
         left: vpData.left - boundRect.left,
-        top: vpData.top - boundRect.top,
+        top: vpData.top - boundRect.top
       },
       scale = vpData.width / pointsWidth,
       originTop = points[1],
@@ -1354,7 +1352,7 @@
     newCss[CSS_TRANSFORM] = new Transform(
       transformLeft,
       transformTop,
-      scale,
+      scale
     ).toString();
     css(self.elements.preview, newCss);
 
@@ -1472,7 +1470,7 @@
       dx,
       dy,
       dWidth,
-      dHeight,
+      dHeight
     );
     if (circle) {
       ctx.fillStyle = "#fff";
@@ -1484,7 +1482,7 @@
         canvas.width / 2,
         0,
         Math.PI * 2,
-        true,
+        true
       );
       ctx.closePath();
       ctx.fill();
@@ -1503,12 +1501,12 @@
     div.appendChild(img);
     css(img, {
       left: -1 * points[0] + "px",
-      top: -1 * points[1] + "px",
+      top: -1 * points[1] + "px"
     });
     img.src = data.url;
     css(div, {
       width: width + "px",
-      height: height + "px",
+      height: height + "px"
     });
 
     return div;
@@ -1526,7 +1524,7 @@
           resolve(blob);
         },
         data.format,
-        data.quality,
+        data.quality
       );
     });
   }
@@ -1596,7 +1594,7 @@
           (points[0] * img.naturalWidth) / 100,
           (points[1] * img.naturalHeight) / 100,
           (points[2] * img.naturalWidth) / 100,
-          (points[3] * img.naturalHeight) / 100,
+          (points[3] * img.naturalHeight) / 100
         ];
       }
 
@@ -1642,14 +1640,14 @@
     return {
       points: [fix(x1), fix(y1), fix(x2), fix(y2)],
       zoom: scale,
-      orientation: self.data.orientation,
+      orientation: self.data.orientation
     };
   }
 
   var RESULT_DEFAULTS = {
       type: "canvas",
       format: "png",
-      quality: 1,
+      quality: 1
     },
     RESULT_FORMATS = ["jpeg", "webp", "png"];
 
@@ -1815,7 +1813,7 @@
     if (this.options.url) {
       var bindOpts = {
         url: this.options.url,
-        points: this.options.points,
+        points: this.options.points
       };
       delete this.options["url"];
       delete this.options["points"];
@@ -1827,17 +1825,17 @@
     viewport: {
       width: 100,
       height: 100,
-      type: "square",
+      type: "square"
     },
     boundary: {},
     orientationControls: {
       enabled: true,
       leftClass: "",
-      rightClass: "",
+      rightClass: ""
     },
     resizeControls: {
       width: true,
-      height: true,
+      height: true
     },
     customClass: "",
     showZoomer: true,
@@ -1848,11 +1846,11 @@
     enforceBoundary: true,
     enableOrientation: false,
     enableKeyMovement: true,
-    update: function () {},
+    update: function () {}
   };
 
   Croppie.globals = {
-    translate: "translate3d",
+    translate: "translate3d"
   };
 
   deepExtend(Croppie.prototype, {
@@ -1885,7 +1883,7 @@
     },
     destroy: function () {
       return _destroy.call(this);
-    },
+    }
   });
   return Croppie;
 });

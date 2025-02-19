@@ -488,7 +488,9 @@ function getGuildOverviewHtml() {
       "GuildName"
     )}</div>
     <input type="text" id="guild-overview-name-input" autocomplete="off" 
-           value="${escapeHtml(guildCache.currentGuildName || "")}" maxlength="32">
+           value="${escapeHtml(
+             guildCache.currentGuildName || ""
+           )}" maxlength="32">
     <img id="guild-image" style="user-select: none;">
     <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
       "Remove"
@@ -541,7 +543,9 @@ function getLanguageHtml() {
     .join("");
 
   setTimeout(() => {
-    const dropdown = document.getElementById("language-dropdown") as HTMLSelectElement;
+    const dropdown = document.getElementById(
+      "language-dropdown"
+    ) as HTMLSelectElement;
     if (dropdown) {
       dropdown.value = currentLanguage;
     }
@@ -554,7 +558,6 @@ function getLanguageHtml() {
         </select>
     `;
 }
-
 
 function getAppearanceHtml() {
   const toggles = [
@@ -619,7 +622,7 @@ function initializeLanguageDropdown() {
     const target = event.target as HTMLSelectElement;
 
     if (target.value) {
-      console.log("Selected language: ",target.value);
+      console.log("Selected language: ", target.value);
       translations.currentLanguage = target.value;
       translations.setLanguage(translations.currentLanguage);
 

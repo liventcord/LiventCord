@@ -7,7 +7,6 @@ import {
 import { initialState } from "./app.ts";
 import { cacheInterface } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
-import { createEl } from "./utils.ts";
 import { translations } from "./translations.ts";
 
 export interface Member {
@@ -64,11 +63,12 @@ export const statusTypes = {
 };
 
 export function setSelfStatus() {
-  let status = "";
-  status =
+  const status =
     translations.getTranslation(
       statusTypes[initialState.user.status as keyof typeof statusTypes]
-    ) || translations.getTranslation(statusTypes.offline);
+    ) ??
+    translations.getTranslation(statusTypes.offline) ??
+    "Unknown";
 
   selfStatus.textContent = status;
 }
@@ -87,32 +87,15 @@ export function getSelfFullDisplay() {
   return initialState.user.nickname + "#" + initialState.user.discriminator;
 }
 
-export function copySelfName(event: MouseEvent) {
-  if (!currentUserNick || !currentDiscriminator) return;
-
-  navigator.clipboard.writeText(`${currentUserNick}#${currentDiscriminator}`);
-
-  const copiedTextBox = createEl("div", {
-    textContent: "Copied",
-    className: "copied-pop"
-  });
-
-  document.body.appendChild(copiedTextBox);
-
-  copiedTextBox.style.left = `${event.clientX}px`;
-  copiedTextBox.style.top = `${event.clientY - 30}px`;
-
-  setTimeout(() => copiedTextBox.remove(), 2500);
-}
-
 export function getUserNick(userId: string): string {
   if (userId && currentUserId && currentUserId === userId) {
     return currentUserNick;
   }
-  return userId in userNames ? userNames[userId].nickName : deletedUser;
+  return userNames[userId]?.nickName ?? deletedUser;
 }
+
 export function getUserDiscriminator(userId: string): string {
-  return userId in userNames ? userNames[userId].discriminator : "0000";
+  return userNames[userId]?.discriminator ?? "0000";
 }
 
 export function getUserIdFromNick(nick: string): string | null {
@@ -123,11 +106,8 @@ export function getUserIdFromNick(nick: string): string | null {
   }
   return null;
 }
-export function isUserBlocked(userId: string) {
-  if (!userNames.hasOwnProperty(userId)) {
-    return false;
-  }
-  return userNames[userId].isBlocked;
+export function isUserBlocked(userId: string): boolean {
+  return userNames[userId]?.isBlocked ?? false;
 }
 
 export function addUser(
@@ -152,7 +132,7 @@ export function updateUserOnlineStatus(userId: string, isOnline: boolean) {
   for (const guildId in guildMembers) {
     const user = guildMembers[guildId];
 
-    if (user.userId === userId) {
+    if (user && user.userId === userId) {
       console.log(
         `User ${userId} online status updated to ${isOnline} in guild ${guildId}`
       );

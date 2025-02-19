@@ -454,14 +454,14 @@ export function handleHistoryResponse(data: MessageResponse) {
   mediaElements.forEach((media) => {
     if (media instanceof HTMLImageElement && !media.complete) {
       const mediaPromise = new Promise<void>((resolve) => {
-        media.addEventListener("load", (event: Event) => {
+        media.addEventListener("load", () => {
           resolve();
         });
       });
       mediaLoadedPromises.push(mediaPromise);
     } else if (media instanceof HTMLVideoElement && media.readyState < 4) {
       const mediaPromise = new Promise<void>((resolve) => {
-        media.addEventListener("loadeddata", (event: Event) => {
+        media.addEventListener("loadeddata", () => {
           resolve();
         });
       });
