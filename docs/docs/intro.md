@@ -11,7 +11,7 @@ Get started with LiventCord in just a few steps.
 
 **Jump in now:** **[liventcord.onrender.com](https://liventcord.onrender.com)**.
 ### Or:
-## **Run Locally**
+# **Run Locally**
 
 ## Requirements
 ### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
@@ -21,20 +21,20 @@ Get started with LiventCord in just a few steps.
 ### Clone the repository:
 ```bash
 git clone https://github.com/liventcord/Liventcord
-cd LiventCord/src
-```
-### Install dependencies
-```bash
-npm install
+cd Liventcord/server/src
 ```
 ### Run the Server (API)
 ```bash
 dotnet run
 ```
+
 ### Run Vite for Development (SPA)
 ```bash
+cd Liventcord/web
+npm install
 npm run dev
 ```
+
 
 Server runs at `http://localhost:5005`, while vite runs at `http://localhost:5173`.
 
