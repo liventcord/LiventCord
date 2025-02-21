@@ -4,13 +4,14 @@ WORKDIR /source
 
 RUN apk add --no-cache nodejs npm
 
-COPY --link src/*.csproj .
+COPY --link server/src/*.csproj .
 RUN dotnet restore --runtime linux-musl-x64
 
-COPY --link src/. .
+COPY --link server/src/. .
+COPY --link web/src/. .
+COPY --link server/src/Properties/appsettings.json server/src/Properties/
 
 WORKDIR /source/src
-RUN npm install
 
 WORKDIR /source
 
