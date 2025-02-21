@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using LiventCord.Helpers;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace LiventCord.Controllers
 {
@@ -33,7 +31,7 @@ namespace LiventCord.Controllers
 
             var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
             if (file == null)
-                return NotFound(new { Error = "Guild file not found." });
+                return NotFound();
 
             return GetFileResult(file);
         }
@@ -45,10 +43,27 @@ namespace LiventCord.Controllers
 
             var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
             if (file == null)
-                return NotFound(new { Error = "Profile file not found." });
+                return NotFound();
 
             return GetFileResult(file);
         }
+
+        [HttpGet("attachments/{attachmentId}")]
+        public async Task<IActionResult> GetAttachmentFile(string attachmentId)
+        {
+            var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
+            if (file == null)
+            {
+                var allAttachmentIds = await _context.AttachmentFiles
+                    .Select(f => f.FileId)
+                    .ToListAsync();
+
+                return Ok(allAttachmentIds);
+            }
+
+            return GetFileResult(file);
+        }
+
 
         private string RemoveFileExtension(string userId)
         {

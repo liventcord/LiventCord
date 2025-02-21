@@ -17,7 +17,6 @@ namespace LiventCord.Controllers
 
         public ChannelController(
             AppDbContext dbContext,
-            ImageController uploadController,
             MembersController membersController,
             PermissionsController permissionsController,
             ITokenValidationService tokenValidationService
@@ -116,6 +115,11 @@ namespace LiventCord.Controllers
             await _dbContext.SaveChangesAsync();
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
+        }
+        [NonAction]
+        public async Task<bool> DoesChannelExists(string guildId, string channelId)
+        {
+            return await _dbContext.Channels.AnyAsync(c => c.ChannelId == channelId && c.GuildId == guildId);
         }
 
 

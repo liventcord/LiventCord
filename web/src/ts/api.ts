@@ -294,46 +294,6 @@ class ApiClient {
     return { method: this.getHttpMethod(event), url: basePath + url };
   }
 
-  async send(event: EventType, data: any = {}) {
-    if (!event) {
-      console.error("Event is required");
-      return;
-    }
-
-    const expectsResponse = !this.nonResponseEvents.includes(event);
-
-    try {
-      const { url, method } = this.getUrlForEvent(event, data);
-      const response = await this.sendRequest(
-        data,
-        url,
-        method,
-        event,
-        expectsResponse
-      );
-
-      if (response) {
-        this.handleMessage(event, response);
-      }
-    } catch (error: any) {
-      console.error(error);
-
-      if (
-        error.message.includes("NetworkError") ||
-        error.message.includes("Failed to fetch")
-      ) {
-        console.error(`Network error when trying to request event: ${event}`);
-      } else {
-        console.error(`Error during request for event "${event}"`);
-      }
-
-      alertUser(
-        `Error during request for event "${event}"`,
-        `${error} ${event} ${JSON.stringify(data)}`
-      );
-    }
-  }
-
   handleMessage(event: EventType, data: any): void {
     if (this.nonResponseEvents.includes(event)) {
       return;
@@ -362,7 +322,6 @@ class ApiClient {
     }
     this.listeners[event].push(callback);
   }
-
   async sendRequest(
     data: Record<string, any>,
     url: string,
@@ -400,6 +359,78 @@ class ApiClient {
     } catch (error) {
       console.error(`Failed to send request for event "${event}":`, error);
       throw error;
+    }
+  }
+
+  async sendForm(
+    event: EventType,
+    formData: FormData,
+    additionalData: Record<string, any>
+  ) {
+    if (!event) {
+      console.error("Event is required");
+      return;
+    }
+
+    try {
+      const { url, method } = this.getUrlForEvent(event, additionalData);
+
+      const response = await fetch(url, {
+        method,
+        body: formData,
+        credentials: "same-origin"
+      });
+
+      if (!response.ok) {
+        await this.handleError(response, event);
+        return null;
+      }
+
+      const responseBody = await response.text();
+      return responseBody ? JSON.parse(responseBody) : null;
+    } catch (error) {
+      console.error(`Failed to send form request for event "${event}":`, error);
+      throw error;
+    }
+  }
+
+  async send(event: EventType, data: any = {}) {
+    if (!event) {
+      console.error("Event is required");
+      return;
+    }
+
+    const expectsResponse = !this.nonResponseEvents.includes(event);
+
+    try {
+      const { url, method } = this.getUrlForEvent(event, data);
+      const response = await this.sendRequest(
+        data,
+        url,
+        method,
+        event,
+        expectsResponse
+      );
+
+      if (response) {
+        this.handleMessage(event, response);
+      }
+    } catch (error: any) {
+      console.error(error);
+
+      if (
+        error.message.includes("NetworkError") ||
+        error.message.includes("Failed to fetch")
+      ) {
+        console.error(`Network error when trying to request event: ${event}`);
+      } else {
+        console.error(`Error during request for event "${event}"`);
+      }
+
+      alertUser(
+        `Error during request for event "${event}"`,
+        `${error} ${event} ${JSON.stringify(data)}`
+      );
     }
   }
 

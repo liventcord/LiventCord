@@ -270,15 +270,13 @@ function loadObservedContent(targetElement: HTMLElement) {
   const jsonData = targetElement.dataset.content_observe;
   if (jsonData) {
     const sanitizedHTML = sanitizeHTML(jsonData);
-
     const tempDiv = createEl("div");
     tempDiv.innerHTML = sanitizedHTML;
-
-    while (tempDiv.firstChild) {
-      targetElement.appendChild(tempDiv.firstChild);
+    const nodes = Array.from(tempDiv.childNodes);
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      targetElement.insertBefore(nodes[i], targetElement.firstChild);
     }
   }
-
   observer.unobserve(targetElement);
 }
 
@@ -921,7 +919,8 @@ function appendMessageToChat(
       if (
         isCreatedProfile &&
         previousMsgContent &&
-        previousMsgContent.classList.contains("onsmallprofile")
+        previousMsgContent.classList.contains("onsmallprofile") &&
+        newMessage.classList.contains("onsmallprofile")
       ) {
         newMessage.classList.add("profile-after-profile");
       }

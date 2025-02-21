@@ -346,8 +346,8 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
       previewImage.style.height = "auto";
     } else {
       previewImage.classList.remove("zoomed");
-      previewImage.style.left = "50%";
-      previewImage.style.top = "50%";
+      previewImage.style.left = "0%";
+      previewImage.style.top = "0%";
       previewImage.style.transform = "translate(-50%, -50%)";
       previewImage.style.width = "";
       previewImage.style.height = "";

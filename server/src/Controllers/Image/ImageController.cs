@@ -7,83 +7,132 @@ using Microsoft.EntityFrameworkCore;
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("api")]
+    [Route("api/images")]
+    [Authorize]
     public class ImageController : BaseController
     {
         private readonly AppDbContext _context;
+        private readonly ChannelController _channelController;
+        private readonly PermissionsController _permissionsController;
         private readonly ILogger<ImageController> _logger;
 
-        public ImageController(AppDbContext context, ILogger<ImageController> logger)
+        public ImageController(AppDbContext context, ILogger<ImageController> logger, PermissionsController permissionsController, ChannelController channelController)
         {
             _context = context;
             _logger = logger;
+            _permissionsController = permissionsController;
+            _channelController = channelController;
         }
 
-        [HttpPost("images/profile")]
-        [Authorize]
+
+        [HttpPost("profile")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadProfileImage([FromForm] ProfileImageUploadRequest request)
         {
-            return await UploadImage(request.Photo, UserId!, null);
+            try
+            {
+                var fileId = await UploadFileInternal(request.Photo, UserId!, null, null);
+                return Ok(new { fileId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Type = "error", Message = ex.Message });
+            }
         }
 
-        [HttpPost("images/guild")]
-        [Authorize]
+        [HttpPost("guild")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadGuildImage([FromForm] GuildImageUploadRequest request)
         {
-            return await UploadImage(request.Photo, UserId!, request.GuildId);
+            if (!await _permissionsController.IsUserAdmin(request.GuildId, UserId!))
+                return Forbid();
+
+            try
+            {
+                var fileId = await UploadFileInternal(request.Photo, UserId!, request.GuildId, null);
+                return Ok(new { fileId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Type = "error", Message = ex.Message });
+            }
+        }
+        public async Task<IActionResult> UploadImage(IFormFile photo, string userId, string? guildId = null)
+        {
+            try
+            {
+                string fileId = await UploadFileInternal(photo, userId, guildId, null);
+                return Ok(new { fileId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Type = "error", Message = ex.Message });
+            }
         }
 
         [NonAction]
-        public async Task<IActionResult> UploadImage(
-            IFormFile photo,
+        public async Task<string> UploadFileInternal(
+            IFormFile file,
             string userId,
-            string? guildId = null
+            string? guildId = null,
+            string? channelId = null
         )
         {
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogWarning("UserId is null for this request");
-                return Unauthorized("User not authorized.");
+                throw new UnauthorizedAccessException("User not authorized.");
             }
-            if (photo == null || photo.Length == 0)
-                return BadRequest("No file uploaded.");
 
-            var extension = Path.GetExtension(photo.FileName).ToLowerInvariant();
-            if (
-                !FileExtensions.IsValidImageExtension(extension)
-                || !photo.ContentType.StartsWith("image/")
-            )
-                return BadRequest("Invalid file type. Only images are allowed.");
+            if (file == null || file.Length == 0)
+            {
+                _logger.LogWarning("No file uploaded.");
+                throw new ArgumentException("No file uploaded.");
+            }
 
-            if (!IsValidFileName(photo.FileName))
-                return BadRequest("Invalid file name.");
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!FileExtensions.IsValidImageExtension(extension) || !file.ContentType.StartsWith("image/"))
+            {
+                _logger.LogWarning("Invalid file type uploaded. File name: {FileName}, Content type: {ContentType}", file.FileName, file.ContentType);
+                throw new ArgumentException("Invalid file type. Only images are allowed.");
+            }
 
-            string sanitizedFileName = Utils.SanitizeFileName(photo.FileName);
+            _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId, guildId, channelId);
+
+            string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
             using var memoryStream = new MemoryStream();
-            await photo.CopyToAsync(memoryStream);
-
+            await file.CopyToAsync(memoryStream);
             var content = memoryStream.ToArray();
             var fileId = Utils.CreateRandomId();
 
             if (!string.IsNullOrEmpty(guildId))
             {
-                await SaveOrUpdateFile(
-                    new GuildFile(fileId, sanitizedFileName, content, extension, guildId, userId)
-                );
-                await SetIsUploadedGuildImg(guildId);
+                if (!string.IsNullOrEmpty(channelId))
+                {
+                    _logger.LogInformation("Uploading attachment for ChannelId: {ChannelId} in GuildId: {GuildId}", channelId, guildId);
+                    await SaveOrUpdateFile(new AttachmentFile(fileId, sanitizedFileName, content, extension, channelId, guildId, userId));
+                }
+                else
+                {
+                    _logger.LogInformation("Uploading guild file for GuildId: {GuildId}", guildId);
+                    await SaveOrUpdateFile(new GuildFile(fileId, sanitizedFileName, content, extension, guildId, userId));
+                    await SetIsUploadedGuildImg(guildId);
+                }
             }
             else
             {
-                await SaveOrUpdateFile(
-                    new ProfileFile(fileId, sanitizedFileName, content, extension, userId)
-                );
+                _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId);
+                await SaveOrUpdateFile(new ProfileFile(fileId, sanitizedFileName, content, extension, userId));
             }
 
-            return Ok(new { fileId });
+            _logger.LogInformation("File uploaded successfully. FileId: {FileId}", fileId);
+            return fileId;
         }
+
+
+
+
 
         private async Task SetIsUploadedGuildImg(string guildId)
         {
@@ -110,22 +159,31 @@ namespace LiventCord.Controllers
                 existingFile.FileName = newFile.FileName;
                 existingFile.Content = newFile.Content;
                 existingFile.Extension = newFile.Extension;
+
+                _logger.LogInformation("Updated existing file: {FileId}, Content Length: {ContentLength}", existingFile.FileId, existingFile.Content.Length);
             }
             else
             {
                 await _context.Set<T>().AddAsync(newFile);
+
+                _logger.LogInformation("Added new file: {FileId}, Content Length: {ContentLength}", newFile.FileId, newFile.Content.Length);
             }
 
             await _context.SaveChangesAsync();
         }
 
+
         private async Task<T?> GetExistingFile<T>(T newFile)
             where T : FileBase
         {
-            string? userId = (newFile as ProfileFile)?.UserId ?? (newFile as GuildFile)?.UserId;
+            string? userId = (newFile as ProfileFile)?.UserId
+                            ?? (newFile as GuildFile)?.UserId
+                            ?? (newFile as AttachmentFile)?.UserId;
             string? guildId = newFile.GuildId;
 
             var query = _context.Set<T>().AsQueryable();
+
+            query = query.Where(file => file.FileId == newFile.FileId);
 
             if (typeof(T) == typeof(ProfileFile))
             {
@@ -138,147 +196,27 @@ namespace LiventCord.Controllers
                     && ((GuildFile)(object)file).GuildId == guildId
                 );
             }
+            else if (typeof(T) == typeof(AttachmentFile))
+            {
+                query = query.Where(file =>
+                    ((AttachmentFile)(object)file).UserId == userId
+                    && ((AttachmentFile)(object)file).GuildId == guildId
+                );
+            }
 
             return await query.FirstOrDefaultAsync();
         }
 
-        private bool CheckFileMatch<T>(T file, string? userId, string? guildId)
-            where T : FileBase
-        {
-            switch (file)
-            {
-                case ProfileFile profileFile:
-                    return profileFile.UserId == userId;
-                case GuildFile guildFile:
-                    return guildFile.GuildId == guildId;
-                case EmojiFile emojiFile:
-                    return emojiFile.GuildId == guildId;
-                case AttachmentFile attachmentFile:
-                    return attachmentFile.GuildId == guildId;
-                default:
-                    return false;
-            }
-        }
 
-        private async Task UpdateFile<T>(
-            T existingFile,
-            string fileName,
-            byte[] content,
-            string extension,
-            string? userId,
-            string? guildId
-        )
-            where T : FileBase
-        {
-            existingFile.FileName = fileName;
-            existingFile.Content = content;
-            existingFile.Extension = extension;
 
-            SetFileIds(existingFile, userId, guildId);
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation(
-                "Updated file: {FileId}, {FileName}, {UserId}, {GuildId}, {Extension}",
-                existingFile.FileId,
-                fileName,
-                userId,
-                guildId,
-                extension
-            );
-        }
-
-        private T CreateFile<T>(
-            string fileId,
-            string fileName,
-            byte[] content,
-            string extension,
-            string? userId = null,
-            string? guildId = null,
-            string? channelId = null,
-            string? messageId = null
-        )
-            where T : FileBase
-        {
-            if (typeof(T) == typeof(ProfileFile))
-            {
-                if (userId == null)
-                    throw new ArgumentNullException(nameof(userId));
-                return (T)(object)new ProfileFile(fileId, fileName, content, extension, userId);
-            }
-
-            if (typeof(T) == typeof(GuildFile))
-            {
-                if (userId == null)
-                    throw new ArgumentNullException(nameof(userId));
-                return (T)
-                    (object)
-                        new GuildFile(fileId, fileName, content, extension, guildId, userId)
-                        {
-                            UserId = userId,
-                        };
-            }
-
-            if (typeof(T) == typeof(AttachmentFile))
-            {
-                if (channelId == null || userId == null || messageId == null)
-                    throw new ArgumentNullException(
-                        $"ChannelId, UserId, and MessageId are required for {nameof(AttachmentFile)}."
-                    );
-                return (T)
-                    (object)
-                        new AttachmentFile(
-                            fileId,
-                            fileName,
-                            content,
-                            extension,
-                            channelId,
-                            userId,
-                            messageId
-                        );
-            }
-
-            if (typeof(T) == typeof(EmojiFile))
-            {
-                return (T)(object)new EmojiFile(fileId, fileName, content, extension, guildId);
-            }
-
-            throw new InvalidOperationException($"Unknown file type: {typeof(T).Name}");
-        }
-
-        private void SetFileIds<T>(T file, string? userId, string? guildId)
-            where T : FileBase
-        {
-            switch (file)
-            {
-                case ProfileFile profileFile when userId != null:
-                    profileFile.UserId = userId;
-                    break;
-
-                case GuildFile guildFile when userId != null && guildId != null:
-                    guildFile.UserId = userId;
-                    guildFile.GuildId = guildId;
-                    break;
-
-                case EmojiFile emojiFile when guildId != null:
-                    emojiFile.GuildId = guildId;
-                    break;
-
-                case AttachmentFile attachmentFile when userId != null && guildId != null:
-                    attachmentFile.UserId = userId;
-                    attachmentFile.GuildId = guildId;
-                    break;
-            }
-        }
-
-        private bool IsValidFileName(string fileName)
-        {
-            return !string.IsNullOrEmpty(fileName)
-                && Path.GetInvalidFileNameChars().All(c => !fileName.Contains(c));
-        }
     }
 }
 
+public class AttachmentUploadRequest
+{
+    public required IFormFile File { get; set; }
+
+}
 public class ProfileImageUploadRequest
 {
     public required IFormFile Photo { get; set; }

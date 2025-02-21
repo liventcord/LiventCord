@@ -5,12 +5,14 @@ public abstract class FileBase
     public string? GuildId { get; set; }
     public byte[] Content { get; set; }
     public string Extension { get; set; }
+    public string FileType { get; set; }
 
     protected FileBase(
         string fileId,
         string fileName,
         byte[] content,
         string extension,
+        string fileType,
         string? guildId = null
     )
     {
@@ -18,6 +20,7 @@ public abstract class FileBase
         FileName = fileName;
         Content = content;
         Extension = extension;
+        FileType = fileType;
         GuildId = guildId;
     }
 
@@ -28,7 +31,6 @@ public class AttachmentFile : FileBase
 {
     public string ChannelId { get; set; }
     public string UserId { get; set; }
-    public string MessageId { get; set; }
 
     public AttachmentFile(
         string fileId,
@@ -36,19 +38,35 @@ public class AttachmentFile : FileBase
         byte[] content,
         string extension,
         string channelId,
-        string userId,
-        string messageId
+        string guildId,
+        string userId
     )
-        : base(fileId, fileName, content, extension)
+        : base(fileId, fileName, content, extension, "attachments", guildId)
     {
         ChannelId = channelId;
         UserId = userId;
-        MessageId = messageId;
+        GuildId = guildId;
     }
 
     public override bool Matches(string? userId, string? guildId) =>
         UserId == userId && GuildId == guildId;
+
+    public string GetAllPropertiesAsString()
+    {
+        var properties = new List<string>
+        {
+            $"FileId: {FileId}",
+            $"FileName: {FileName}",
+            $"Extension: {Extension}",
+            $"ChannelId: {ChannelId}",
+            $"UserId: {UserId}",
+            $"GuildId: {GuildId}"
+        };
+
+        return string.Join(", ", properties);
+    }
 }
+
 
 public class EmojiFile : FileBase
 {
@@ -59,7 +77,7 @@ public class EmojiFile : FileBase
         string extension,
         string? guildId
     )
-        : base(fileId, fileName, content, extension, guildId) { }
+        : base(fileId, fileName, content, extension, "emoji", guildId) { }
 
     public override bool Matches(string? userId, string? guildId) => GuildId == guildId;
 }
@@ -76,7 +94,7 @@ public class GuildFile : FileBase
         string? guildId,
         string userId
     )
-        : base(fileId, fileName, content, extension, guildId)
+        : base(fileId, fileName, content, extension, "guild", guildId)
     {
         UserId = userId;
     }
@@ -96,7 +114,7 @@ public class ProfileFile : FileBase
         string extension,
         string userId
     )
-        : base(fileId, fileName, content, extension)
+        : base(fileId, fileName, content, "profile", extension)
     {
         UserId = userId;
     }
