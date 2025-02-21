@@ -105,7 +105,7 @@ export function createGuild() {
 
         createFireWorks();
         appendToGuildList(data);
-        loadGuild(data.guildId, data.rootChannel, guildName);
+        loadGuild(data.guildId, data.rootChannel, guildName,true);
       } else {
         alertUser(data);
       }
