@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     secure: false
   };
 
-  const proxyPaths = ["/api", "/profiles", "/guilds", "/auth"];
+  const proxyPaths = ["/api", "/profiles", "/guilds", "/attachments", "/auth"];
 
   const proxyConfig = proxyPaths.reduce((acc, path) => {
     acc[path] = commonProxyConfig;

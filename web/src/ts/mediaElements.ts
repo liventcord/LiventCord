@@ -16,6 +16,7 @@ import {
   defaultMediaImageSrc
 } from "./utils.ts";
 import { initialState } from "./app.ts";
+import { router } from "./router.ts";
 
 interface Embed {
   id: string;
@@ -75,7 +76,7 @@ const maxHeight = 384;
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
 
-const IgnoreProxies = ["cdn.discordapp.com", "i.redd.it"];
+const IgnoreProxies = ["i.redd.it"];
 
 export function createTenorElement(
   msgContentElement: HTMLElement,
@@ -128,8 +129,13 @@ export function createTenorElement(
 }
 
 function getProxy(url: string, useBackendProxy = false): string {
+  if (url.startsWith("/")) {
+    return `${location.origin}${url}`;
+  }
+
   try {
     const parsedUrl = new URL(url);
+
     if (IgnoreProxies.includes(parsedUrl.hostname)) {
       return url;
     }
@@ -139,11 +145,27 @@ function getProxy(url: string, useBackendProxy = false): string {
     }
 
     return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
-  } catch {
-    return "";
+  } catch (e) {
+    console.error("Invalid URL:", url, e);
+    return url;
   }
 }
-export function createImageElement(inputText: string, url_src: string) {
+
+function preloadImage(src: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = src;
+
+    img.onload = () => resolve(img.src);
+    img.onerror = () => reject();
+  });
+}
+
+export function createImageElement(
+  inputText: string,
+  urlSrc: string
+): HTMLImageElement {
   const imgElement = createEl("img", {
     className: "chat-image",
     src: defaultMediaImageSrc,
@@ -154,31 +176,14 @@ export function createImageElement(inputText: string, url_src: string) {
   }) as HTMLImageElement;
 
   imgElement.crossOrigin = "anonymous";
-  imgElement.setAttribute("data-original-src", url_src);
   imgElement.alt = inputText ?? "Image";
+  imgElement.setAttribute("data-original-src", urlSrc);
+  imgElement.addEventListener("click", () => displayImagePreview(imgElement));
 
-  const proxyUrl = getProxy(url_src);
-  const fallbackUrl = getProxy(url_src, true);
-
-  const preloader = new Image();
-  preloader.crossOrigin = "anonymous";
-  preloader.src = proxyUrl;
-
-  preloader.onload = function () {
-    imgElement.src = preloader.src;
-  };
-
-  preloader.onerror = function () {
-    if (preloader.src !== fallbackUrl) {
-      preloader.src = fallbackUrl;
-    } else {
-      imgElement.src = defaultMediaImageSrc;
-    }
-  };
-
-  imgElement.addEventListener("click", function () {
-    displayImagePreview(imgElement);
-  });
+  preloadImage(getProxy(urlSrc))
+    .catch(() => preloadImage(getProxy(urlSrc, true)))
+    .then((loadedSrc) => (imgElement.src = loadedSrc))
+    .catch(() => {});
 
   return imgElement;
 }
@@ -266,33 +271,15 @@ export async function createMediaElement(
   embeds: Embed[],
   attachmentUrls?: string | string[]
 ) {
-  const links: string[] = extractLinks(content) || [];
+  const links: string[] = [
+    ...extractLinks(content),
+    ...processAttachments(attachmentUrls)
+  ];
   let mediaCount = 0;
   let linksProcessed = 0;
   const maxLinks = 4;
 
-  if (typeof attachmentUrls === "string" && attachmentUrls.trim() !== "") {
-    try {
-      attachmentUrls = JSON.parse(attachmentUrls) as string[];
-    } catch (e) {
-      if (typeof attachmentUrls === "string") {
-        attachmentUrls = attachmentUrls.split(",").map((url) => url.trim());
-      }
-    }
-  }
-
-  if (Array.isArray(attachmentUrls)) {
-    if (
-      attachmentUrls.length > 0 &&
-      !attachmentUrls[0].startsWith("http://") &&
-      !attachmentUrls[0].startsWith("https://")
-    ) {
-      attachmentUrls[0] = `${location.origin}${attachmentUrls[0]}`;
-    }
-    links.push(...(attachmentUrls as string[]));
-  }
-
-  if (embeds.length > 0) {
+  if (embeds.length) {
     try {
       displayEmbeds(messageContentElement, "", embeds, metadata);
     } catch (embedError) {
@@ -300,14 +287,14 @@ export async function createMediaElement(
     }
   }
 
-  if (links.length > 0) {
+  if (links.length) {
     await processLinks();
   }
 
   async function processLinks() {
     while (linksProcessed < links.length && mediaCount < maxLinks) {
       try {
-        const isError: boolean = await processMediaLink(
+        const isError = await processMediaLink(
           links[linksProcessed],
           newMessage,
           messageContentElement,
@@ -325,6 +312,36 @@ export async function createMediaElement(
       linksProcessed++;
     }
   }
+}
+
+function processAttachments(attachmentUrls?: string | string[]): string[] {
+  if (!attachmentUrls) return [];
+
+  const toUrl = (url: string) =>
+    url.startsWith("http") ? url : `${location.origin}${url}`;
+
+  if (typeof attachmentUrls === "string") {
+    if (
+      attachmentUrls.length === router.ID_LENGTH &&
+      !isNaN(Number(attachmentUrls))
+    ) {
+      return [`/attachments/${attachmentUrls}`];
+    }
+    try {
+      return JSON.parse(attachmentUrls) as string[];
+    } catch {
+      return attachmentUrls
+        .split(",")
+        .map((url) => url.trim())
+        .map(toUrl);
+    }
+  }
+
+  if (Array.isArray(attachmentUrls)) {
+    return attachmentUrls.map(toUrl);
+  }
+
+  return [];
 }
 
 export function processMediaLink(
@@ -370,7 +387,7 @@ export function processMediaLink(
     } else if (isURL(link)) {
       handleLink(messageContentElement, content);
     } else {
-      messageContentElement.appendChild(createRegularText(content));
+      messageContentElement.innerHTML = content;
       resolve(false);
       return;
     }
@@ -379,6 +396,7 @@ export function processMediaLink(
       mediaElement
         .then((resolvedElement) => {
           if (resolvedElement) {
+            messageContentElement.appendChild(resolvedElement);
             attachMediaElement(
               resolvedElement,
               messageContentElement,
@@ -394,6 +412,7 @@ export function processMediaLink(
           resolve(true);
         });
     } else if (mediaElement) {
+      messageContentElement.appendChild(mediaElement);
       attachMediaElement(
         mediaElement,
         messageContentElement,

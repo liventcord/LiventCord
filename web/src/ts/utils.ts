@@ -1,6 +1,7 @@
 import { friendsContainer, getFriendsTranslation } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
+import { router } from "./router.ts";
 
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
@@ -144,12 +145,9 @@ export function parseUsernameDiscriminator(
   };
 }
 
-export function extractLinks(content: string) {
-  if (content) {
-    const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
-    return content.match(urlRegex) || [];
-  }
-  return null;
+export function extractLinks(content: string): string[] {
+  const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/g;
+  return content.match(urlRegex) || [];
 }
 
 export function constructAppPage(guildId: string, channelId: string) {
@@ -166,6 +164,13 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
 export function getEmojiPath(emojiId: string) {
   return `/emojis/${emojiId}.png`;
 }
+export function isId(url: string) {
+  return url.length === router.ID_LENGTH && /^\d+$/.test(url);
+}
+export function constructAttachmentUrl(id: string) {
+  return `/attachments/${id}`;
+}
+
 export function kebapToSentence(text: string) {
   return text
     .replace(/-/g, " ")

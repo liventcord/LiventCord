@@ -100,7 +100,6 @@ export class Message {
     this.replies = replies;
   }
 }
-
 export async function sendMessage(content: string, user_ids?: string[]) {
   if (content === "") {
     return;
@@ -116,71 +115,45 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     return;
   }
 
-  const channelIdToSend = isOnDm
+  const channelId = isOnDm
     ? friendsCache.currentDmId
     : guildCache.currentChannelId;
-  displayLocalMessage(channelIdToSend, content);
+  displayLocalMessage(channelId, content);
 
   setTimeout(scrollToBottom, 10);
   const files = fileInput.files;
-  if (files && files.length < 1) {
-    const message = {
-      guildId: currentGuildId,
-      channelId: channelIdToSend,
-      content,
-      attachmentUrls: null,
-      replyToId: null,
-      reactionEmojisIds: null
-    };
-    apiClient.send(EventType.SEND_MESSAGE_GUILD, message);
-    chatInput.value = "";
-    closeReplyMenu();
-    return;
+
+  const formData = new FormData();
+  formData.append("content", content);
+
+  if (currentReplyingTo) {
+    formData.append("replyToId", currentReplyingTo);
   }
-  if (!files) return;
+
+  if (files && files.length > 0) {
+    const file = files[0];
+    formData.append("file", file);
+  }
+
+  const additionalData = {
+    guildId: currentGuildId,
+    channelId
+  };
 
   try {
-    const file = files[0];
-    fileInput.value = "";
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("guildId", currentGuildId);
-    formData.append("channelId", channelIdToSend);
-
-    const uploadResponse = await fetch("/upload", {
-      method: "POST",
-      body: formData
-    });
-
-    if (uploadResponse.ok) {
-      const uploadData = await uploadResponse.json();
-      const messageData = {
-        guildId: currentGuildId,
-        channelId: channelIdToSend,
-        content,
-        attachmentUrls: uploadData.attachmentUrls,
-        attachmentId: uploadData.attachmentId,
-        fileName: uploadData.fileName,
-        type: uploadData.type,
-        replyToId: currentReplyingTo,
-        reactionEmojisIds: null,
-        lastEdited: null
-      };
-
-      console.log("File uploaded successfully:", uploadData.fileName);
-
-      if (isOnGuild) {
-        apiClient.send(EventType.SEND_MESSAGE_GUILD, messageData);
-      } else {
-        apiClient.send(EventType.SEND_MESSAGE_DM, messageData);
-      }
-
-      chatInput.value = "";
-      closeReplyMenu();
-      fileImagePreview.innerHTML = "";
+    if (isOnGuild) {
+      apiClient.sendForm(
+        EventType.SEND_MESSAGE_GUILD,
+        formData,
+        additionalData
+      );
     } else {
-      console.error("Failed to upload file:", uploadResponse.statusText);
+      apiClient.sendForm(EventType.SEND_MESSAGE_DM, formData, additionalData);
     }
+
+    chatInput.value = "";
+    closeReplyMenu();
+    fileImagePreview.innerHTML = "";
   } catch (error) {
     console.error("Error Sending File Message:", error);
   }

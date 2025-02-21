@@ -15,17 +15,20 @@ namespace LiventCord.Controllers
         private readonly MetadataService _metadataService;
         private readonly ITokenValidationService _tokenValidationService;
 
+        private readonly ImageController _imageController;
+
 
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService
+            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController
         )
         {
             _tokenValidationService = tokenValidationService;
             _permissionsController = permissionsController;
             _context = context;
             _metadataService = metadataService;
+            _imageController = imageController;
 
         }
 
@@ -77,11 +80,12 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> HandleNewGuildMessage(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
-            [FromBody] NewMessageRequest request
+            [FromForm] NewMessageRequest request
         )
         {
             return await HandleMessage("guilds", guildId, channelId, request);
         }
+
 
         [HttpPost("/api/dms/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleNewDmMessage(
@@ -393,6 +397,12 @@ namespace LiventCord.Controllers
                     return Forbid();
                 }
             }
+            string attachmentUrls = "";
+            if (request.File != null)
+            {
+                string fileId = await _imageController.UploadFileInternal(request.File, UserId!, guildId, channelId);
+                attachmentUrls = fileId;
+            }
 
             await NewMessage(
                 Utils.CreateRandomId(),
@@ -401,7 +411,7 @@ namespace LiventCord.Controllers
                 request.Content,
                 DateTime.UtcNow,
                 null,
-                request.AttachmentUrls,
+                attachmentUrls,
                 request.ReplyToId,
                 null,
                 null
@@ -491,13 +501,17 @@ public class NewBotMessageRequest
 
 public class NewMessageRequest
 {
+    [BindProperty(Name = "content")]
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public required string Content { get; set; }
-    [StringLength(300)]
-    public string? AttachmentUrls { get; set; }
-    public string? ReplyToId { get; set; }
 
+    [BindProperty(Name = "file")]
+    public IFormFile? File { get; set; }
+
+    [BindProperty(Name = "replyToId")]
+    public string? ReplyToId { get; set; }
 }
+
 public class EditMessageRequest
 {
     [IdLengthValidation]

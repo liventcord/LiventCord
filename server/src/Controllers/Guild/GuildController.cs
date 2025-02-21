@@ -133,7 +133,6 @@ namespace LiventCord.Controllers
             };
         }
 
-
         private async Task<IActionResult> HandleGuildCreation(string userId, string guildName, IFormFile? photo, bool? isPublic)
         {
             string rootChannel = Utils.CreateRandomId();
