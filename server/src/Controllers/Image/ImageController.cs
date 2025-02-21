@@ -12,7 +12,6 @@ namespace LiventCord.Controllers
     public class ImageController : BaseController
     {
         private readonly AppDbContext _context;
-        private readonly ChannelController _channelController;
         private readonly PermissionsController _permissionsController;
         private readonly ILogger<ImageController> _logger;
 
@@ -21,14 +20,19 @@ namespace LiventCord.Controllers
             _context = context;
             _logger = logger;
             _permissionsController = permissionsController;
-            _channelController = channelController;
         }
+
 
 
         [HttpPost("profile")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadProfileImage([FromForm] ProfileImageUploadRequest request)
         {
+            if (!IsFileSizeValid(request.Photo))
+            {
+                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
+            }
+
             try
             {
                 var fileId = await UploadFileInternal(request.Photo, UserId!, null, null);
@@ -47,6 +51,11 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.IsUserAdmin(request.GuildId, UserId!))
                 return Forbid();
 
+            if (!IsFileSizeValid(request.Photo))
+            {
+                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
+            }
+
             try
             {
                 var fileId = await UploadFileInternal(request.Photo, UserId!, request.GuildId, null);
@@ -57,8 +66,14 @@ namespace LiventCord.Controllers
                 return BadRequest(new { Type = "error", Message = ex.Message });
             }
         }
+
         public async Task<IActionResult> UploadImage(IFormFile photo, string userId, string? guildId = null)
         {
+            if (!IsFileSizeValid(photo))
+            {
+                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
+            }
+
             try
             {
                 string fileId = await UploadFileInternal(photo, userId, guildId, null);
@@ -70,6 +85,11 @@ namespace LiventCord.Controllers
             }
         }
 
+        private bool IsFileSizeValid(IFormFile file)
+        {
+            long maxSize = SharedAppConfig.GetMaxAttachmentSize();
+            return file.Length <= maxSize;
+        }
         [NonAction]
         public async Task<string> UploadFileInternal(
             IFormFile file,
@@ -212,11 +232,7 @@ namespace LiventCord.Controllers
     }
 }
 
-public class AttachmentUploadRequest
-{
-    public required IFormFile File { get; set; }
 
-}
 public class ProfileImageUploadRequest
 {
     public required IFormFile Photo { get; set; }

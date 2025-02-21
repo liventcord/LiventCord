@@ -356,6 +356,7 @@ namespace LiventCord.Controllers
             }
         }
 
+
         [NonAction]
         private async Task<IActionResult> HandleMessage(
             string mode,
@@ -366,24 +367,12 @@ namespace LiventCord.Controllers
         {
             if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
             {
-                return BadRequest(
-                    new
-                    {
-                        Type = "error",
-                        Message = "Required properties (channelId, content) are missing.",
-                    }
-                );
+                return BadRequest(new { Type = "error", Message = "Required properties (channelId, content) are missing." });
             }
 
             if (!string.IsNullOrEmpty(request.ReplyToId) && request.ReplyToId.Length != Utils.ID_LENGTH)
             {
-                return BadRequest(
-                    new
-                    {
-                        Type = "error",
-                        Message = $"Reply id should be {Utils.ID_LENGTH} characters long",
-                    }
-                );
+                return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
             }
 
             if (mode == "guilds")
@@ -397,11 +386,31 @@ namespace LiventCord.Controllers
                     return Forbid();
                 }
             }
+
+            long MAX_TOTAL_SIZE = SharedAppConfig.GetMaxAttachmentSize();
+            long totalSize = 0;
             string attachmentUrls = "";
-            if (request.File != null)
+
+            if (request.Files != null && request.Files.Any())
             {
-                string fileId = await _imageController.UploadFileInternal(request.File, UserId!, guildId, channelId);
-                attachmentUrls = fileId;
+                foreach (var file in request.Files)
+                {
+                    if (file.Length > MAX_TOTAL_SIZE)
+                    {
+                        return BadRequest(new { Type = "error", Message = "One of the files exceeds the size limit." });
+                    }
+                    totalSize += file.Length;
+
+                    if (totalSize > MAX_TOTAL_SIZE)
+                    {
+                        return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
+                    }
+
+                    string fileId = await _imageController.UploadFileInternal(file, UserId!, guildId, channelId);
+                    attachmentUrls += fileId + ",";
+                }
+
+                attachmentUrls = attachmentUrls.TrimEnd(',');
             }
 
             await NewMessage(
@@ -419,6 +428,8 @@ namespace LiventCord.Controllers
 
             return Ok(new { Type = "success", Message = $"Message sent to {mode}." });
         }
+
+
 
         [NonAction]
         private async Task<bool> MessageExists(string messageId, string channelId)
@@ -505,12 +516,14 @@ public class NewMessageRequest
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public required string Content { get; set; }
 
-    [BindProperty(Name = "file")]
-    public IFormFile? File { get; set; }
+    [BindProperty(Name = "files[]")]
+    public IEnumerable<IFormFile>? Files { get; set; }
 
     [BindProperty(Name = "replyToId")]
     public string? ReplyToId { get; set; }
 }
+
+
 
 public class EditMessageRequest
 {

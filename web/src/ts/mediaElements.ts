@@ -136,6 +136,10 @@ function getProxy(url: string, useBackendProxy = false): string {
   try {
     const parsedUrl = new URL(url);
 
+    if (parsedUrl.hostname === location.hostname) {
+      return url;
+    }
+
     if (IgnoreProxies.includes(parsedUrl.hostname)) {
       return url;
     }
@@ -275,6 +279,7 @@ export async function createMediaElement(
     ...extractLinks(content),
     ...processAttachments(attachmentUrls)
   ];
+  console.log(links);
   let mediaCount = 0;
   let linksProcessed = 0;
   const maxLinks = 4;
@@ -318,7 +323,7 @@ function processAttachments(attachmentUrls?: string | string[]): string[] {
   if (!attachmentUrls) return [];
 
   const toUrl = (url: string) =>
-    url.startsWith("http") ? url : `${location.origin}${url}`;
+    url.startsWith("http") ? url : `${location.origin}/attachments/${url}`;
 
   if (typeof attachmentUrls === "string") {
     if (

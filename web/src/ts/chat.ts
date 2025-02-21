@@ -12,7 +12,8 @@ import {
   replyInfo,
   showReplyMenu,
   chatContainer,
-  chatContent
+  chatContent,
+  attachmentsTray
 } from "./chatbar.ts";
 import {
   cacheInterface,
@@ -1007,12 +1008,14 @@ export function updateChatWidth() {
     gifBtn.classList.add("gifbtn-user-list-open");
     emojiBtn.classList.add("emojibtn-user-list-open");
     newMessagesBar.classList.add("new-messages-bar-user-list-open");
+    attachmentsTray.classList.add("attachments-tray-user-list-open");
   } else {
     chatInput.classList.remove("user-list-hidden");
     replyInfo.classList.remove("reply-user-list-open");
     gifBtn.classList.remove("gifbtn-user-list-open");
     emojiBtn.classList.remove("emojibtn-user-list-open");
     newMessagesBar.classList.remove("new-messages-bar-user-list-open");
+    attachmentsTray.classList.remove("attachments-tray-user-list-open");
   }
 }
 
