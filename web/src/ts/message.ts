@@ -12,7 +12,7 @@ import {
   displayStartMessage,
   chatInput,
   chatContent,
-  fileImagePreview,
+  attachmentsTray,
   fileInput,
   currentReplyingTo,
   displayLocalMessage
@@ -131,8 +131,10 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   }
 
   if (files && files.length > 0) {
-    const file = files[0];
-    formData.append("file", file);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      formData.append("files[]", file);
+    }
   }
 
   const additionalData = {
@@ -142,18 +144,22 @@ export async function sendMessage(content: string, user_ids?: string[]) {
 
   try {
     if (isOnGuild) {
-      apiClient.sendForm(
+      await apiClient.sendForm(
         EventType.SEND_MESSAGE_GUILD,
         formData,
         additionalData
       );
     } else {
-      apiClient.sendForm(EventType.SEND_MESSAGE_DM, formData, additionalData);
+      await apiClient.sendForm(
+        EventType.SEND_MESSAGE_DM,
+        formData,
+        additionalData
+      );
     }
 
     chatInput.value = "";
     closeReplyMenu();
-    fileImagePreview.innerHTML = "";
+    attachmentsTray.innerHTML = "";
   } catch (error) {
     console.error("Error Sending File Message:", error);
   }

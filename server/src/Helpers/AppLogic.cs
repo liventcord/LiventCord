@@ -1,10 +1,49 @@
 using System.Security.Claims;
 using LiventCord.Controllers;
-using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Helpers
 {
+    public static class SharedAppConfig
+    {
+        public static string GifWorkerUrl { get; private set; }
+        public static string ProxyWorkerUrl { get; private set; }
+        public static float MaxAvatarSize { get; private set; }
+        public static float MaxAttachmentSize { get; private set; }
+
+        static SharedAppConfig()
+        {
+            GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
+            ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
+            MaxAvatarSize = 3; // MB
+            MaxAttachmentSize = 30; // MB
+        }
+
+        public static void Initialize(IConfiguration configuration)
+        {
+            GifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] ?? GifWorkerUrl;
+            ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
+
+            MaxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize)
+                ? avatarSize
+                : MaxAvatarSize;
+
+            MaxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var attachmentSize)
+                ? attachmentSize
+                : MaxAttachmentSize;
+        }
+        public static long GetMaxAttachmentSize()
+        {
+            return (long)(MaxAttachmentSize * 1024 * 1024);
+        }
+
+        public static long GetMaxAvatarsSize()
+        {
+            return (long)(MaxAttachmentSize * 1024 * 1024);
+        }
+
+    }
+
     public class AppLogicService
     {
         private readonly AppDbContext _dbContext;
@@ -15,16 +54,7 @@ namespace LiventCord.Helpers
         private readonly LoginController _loginController;
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
-        private readonly string? _gifWorkerUrl;
-        private readonly string? _proxyWorkerUrl;
-        private readonly float? _maxAvatarSize;
-        private readonly float? _maxAttachmentSize;
-        private readonly float defaultAvatarSize = 3; //megabytes
-        private readonly float defaultAttachmentSize = 30; //megabytes
-        private readonly string defaultGifWorkerUrl =
-            "https://gif-worker.liventcord-a60.workers.dev";
-        private readonly string defaultProxyWorkerUrl =
-            "https://proxy.liventcord-a60.workers.dev";
+
 
         public AppLogicService(
             AppDbContext dbContext,
@@ -46,28 +76,12 @@ namespace LiventCord.Helpers
             _permissionsController = permissionsController;
             _membersController = membersController;
             _logger = logger;
-            _gifWorkerUrl =
-                configuration["AppSettings:GifWorkerUrl"] != null
-                    ? configuration["AppSettings:GifWorkerUrl"]
-                    : defaultGifWorkerUrl;
 
-            _proxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] != null
-                    ? configuration["AppSettings:ProxyWorkerUrl"]
-                    : defaultProxyWorkerUrl;
-
-            _maxAvatarSize = float.TryParse(
-                configuration["AppSettings:MaxAvatarSize"],
-                out var avatarSize
-            )
-                ? avatarSize
-                : defaultAvatarSize;
-            _maxAttachmentSize = float.TryParse(
-                configuration["AppSettings:MaxAttachmentSize"],
-                out var uploadSize
-            )
-                ? uploadSize
-                : defaultAttachmentSize;
+            SharedAppConfig.Initialize(configuration);
         }
+
+
+
 
         public async Task HandleInitRequest(HttpContext context)
         {
@@ -111,10 +125,10 @@ namespace LiventCord.Helpers
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
                     dmFriends = new List<string>(),
                     guilds,
-                    gifWorkerUrl = _gifWorkerUrl,
-                    proxyWorkerUrl = _proxyWorkerUrl,
-                    maxAvatarSize = _maxAvatarSize,
-                    maxUploadsize = _maxAttachmentSize,
+                    gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
+                    proxyWorkerUrl = SharedAppConfig.ProxyWorkerUrl,
+                    maxAvatarSize = SharedAppConfig.MaxAvatarSize,
+                    maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                 };
 
                 context.Response.ContentType = "application/json";
