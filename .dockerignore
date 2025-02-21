@@ -4,3 +4,4 @@ obj/
 .git/
 *.log
 Dockerfile
+server/src/MediaCache/

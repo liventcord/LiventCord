@@ -61,25 +61,23 @@ public static class ConfigHandler
 
     static void HandleDatabase(WebApplicationBuilder builder)
     {
-        var databaseType = builder.Configuration["AppSettings:DatabaseType"];
+        var databaseType = builder.Configuration["AppSettings:DatabaseType"]?.ToLower();
         var connectionString = builder.Configuration["AppSettings:RemoteConnection"];
         var sqlitePath = builder.Configuration["AppSettings:SqlitePath"];
 
-        if (string.IsNullOrWhiteSpace(connectionString))
+        if (string.IsNullOrWhiteSpace(databaseType))
+        {
+            databaseType = "sqlite";
+        }
+
+        if (databaseType != "sqlite" && string.IsNullOrWhiteSpace(connectionString))
         {
             throw new ArgumentNullException("RemoteConnection", "The connection string is missing or empty.");
         }
 
-        if (databaseType?.ToLower() != "sqlite" && string.IsNullOrEmpty(connectionString))
-        {
-            throw new ArgumentNullException(
-                "Connection string is missing in the configuration and non-SQLite database type is selected."
-            );
-        }
-
         Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");
 
-        switch (databaseType?.ToLowerInvariant())
+        switch (databaseType)
         {
             case "postgresql":
                 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -110,7 +108,7 @@ public static class ConfigHandler
                 break;
             case "sqlite":
             default:
-                if (sqlitePath == null)
+                if (string.IsNullOrWhiteSpace(sqlitePath))
                 {
                     sqlitePath = "Data/liventcord.db";
                 }
@@ -128,5 +126,4 @@ public static class ConfigHandler
                 break;
         }
     }
-
 }
