@@ -9,7 +9,7 @@ RUN dotnet restore --runtime linux-musl-x64
 
 COPY --link server/src/. .
 COPY --link web/src/. .
-COPY --link server/src/Properties/appsettings.json server/src/Properties/
+COPY --link server/src/Properties/appsettings.json server/src/Properties/ || true
 
 WORKDIR /source/src
 
