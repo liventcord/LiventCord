@@ -27,12 +27,17 @@ sidebar_position: 1
       - **Firebird**
       - **SqlServer**
       - **SQLite**
-    **Defaults to** `sqlite`
+    
+    Defaults to `sqlite`
 
   - **SqlitePath**:
     File path where SQLite will store data.
     **Defaults to** `Data/liventcord.db`
-  
+
+  - **FrontendUrl**:
+    Url to add cors headers at.
+    **Defaults to** `none`
+
   - **GifWorkerUrl**: 
     URL of the Cloudflare Worker for querying Tenor GIFs.
     **Defaults to** `"gif-worker.liventcord-a60.workers.dev"`
@@ -54,7 +59,7 @@ sidebar_position: 1
     **Defaults to** `random generated number`
     
   - **EnableMetadataIndexing**:
-    Index urls in message content urls for metadata display.
+    Index urls in message content for metadata display.
     **Defaults to** `true`
 
   - **MetadataDomainLimit**:

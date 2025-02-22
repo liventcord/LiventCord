@@ -213,7 +213,7 @@ class ApiClient {
 
   async fetchData(url: string) {
     try {
-      const apiUrl = `${import.meta.env.VITE_BACKEND_URL}${url}`;
+      const apiUrl = `${import.meta.env.VITE_API_URL}${url}`;
       const response = await fetch(apiUrl);
       if (!response.ok) {
         if (response.status === 401) {
@@ -292,7 +292,7 @@ class ApiClient {
       );
     }
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const backendUrl = import.meta.env.VITE_API_URL;
 
     if (!backendUrl) {
       throw new Error(
