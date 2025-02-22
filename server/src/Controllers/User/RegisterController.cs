@@ -1,7 +1,7 @@
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace LiventCord.Controllers
 {
@@ -10,48 +10,40 @@ namespace LiventCord.Controllers
     public class RegisterController : BaseController
     {
         private readonly AppDbContext _context;
-
         private readonly NickDiscriminatorController _nickDiscriminatorController;
+        private readonly PasswordHasher<User> _passwordHasher;
 
-        public RegisterController(
-            AppDbContext context,
-            NickDiscriminatorController nickDiscriminatorController
-        )
+        public RegisterController(AppDbContext context, NickDiscriminatorController nickDiscriminatorController)
         {
             _context = context;
             _nickDiscriminatorController = nickDiscriminatorController;
+            _passwordHasher = new PasswordHasher<User>();
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterAuth([FromForm] RegisterRequest request)
+        public IActionResult RegisterAuth([FromForm] RegisterRequest request)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
                 return BadRequest(ModelState);
 
-            if (await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower()))
-                return Conflict();
+            Task.Run(async () =>
+            {
+                var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(request.Nickname);
+                if (discriminator == null)
+                    return;
 
-            var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(
-                request.Nickname
-            );
-            if (discriminator == null)
-                return BadRequest(new { error = "No available discriminators." });
+                var userId = Utils.CreateRandomUserId();
+                var user = Models.User.Create(userId, request.Email, request.Nickname, discriminator, request.Password, _passwordHasher);
 
-            await _context.Users.AddAsync(
-                new User
-                {
-                    UserId = Utils.CreateRandomUserId(),
-                    Email = request.Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                    Nickname = request.Nickname,
-                    Discriminator = discriminator,
-                    Bot = 0,
-                    Status = "offline",
-                }
-            );
-            await _context.SaveChangesAsync();
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+            });
 
             return Ok();
         }
+
+
+
+
     }
 }
