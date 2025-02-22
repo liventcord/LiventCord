@@ -254,7 +254,7 @@ namespace LiventCord.Controllers
         {
             return await _context.Messages
                 .Where(m => m.ChannelId == channelId && (guildId == null || m.Channel.GuildId == guildId))
-                .OrderBy(m => m.Date)
+                .OrderByDescending(m => m.Date)
                 .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
