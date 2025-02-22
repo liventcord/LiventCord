@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace LiventCord.Controllers
 {
@@ -28,10 +29,13 @@ namespace LiventCord.Controllers
     public class LoginController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly PasswordHasher<User> _passwordHasher;
 
         public LoginController(AppDbContext context)
         {
             _context = context;
+            _passwordHasher = new PasswordHasher<User>();
+
         }
 
         [HttpPost("login")]
@@ -67,11 +71,16 @@ namespace LiventCord.Controllers
 
         private async Task<User?> AuthenticateUser(string email, string password)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u =>
-                u.Email.ToLower() == email.ToLower()
-            );
-            return user != null && BCrypt.Net.BCrypt.Verify(password, user.Password) ? user : null;
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+            if (user == null) return null;
+
+            if (string.IsNullOrEmpty(user.Password))
+                return null;
+
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+            return result == PasswordVerificationResult.Success ? user : null;
         }
+
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()

@@ -1,5 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
+
+
 
 namespace LiventCord.Models
 {
@@ -66,6 +69,41 @@ namespace LiventCord.Models
         [StringLength(512)]
         [Column("social_media_links")]
         public string? SocialMediaLinks { get; set; }
+
+        public static User Create(
+            string userId,
+            string email,
+            string nickname,
+            string discriminator,
+            string plainPassword,
+            IPasswordHasher<User> hasher)
+        {
+            var dummyUser = new User
+            {
+                UserId = userId,
+                Email = email,
+                Nickname = nickname,
+                Discriminator = discriminator,
+                Bot = 0,
+                Status = "offline",
+                Password = ""
+            };
+
+            var hashedPassword = hasher.HashPassword(dummyUser, plainPassword);
+
+            return new User
+            {
+                UserId = userId,
+                Email = email,
+                Nickname = nickname,
+                Discriminator = discriminator,
+                Bot = 0,
+                Status = "offline",
+                Password = hashedPassword
+            };
+        }
+
+
 
         public PublicUser GetPublicUser()
         {
