@@ -90,6 +90,19 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
+string FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins(FRONTEND_URL) 
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+
 var app = builder.Build();
 
 bool isDevelopment = app.Environment.IsDevelopment();
@@ -131,7 +144,7 @@ else
     app.UseExceptionHandler("/error");
 }
 
-
+app.UseCors("AllowSpecificOrigin");
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 app.UseRouting();

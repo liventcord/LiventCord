@@ -1,14 +1,16 @@
-import { defineConfig } from "vite";
+import { defineConfig,loadEnv } from "vite";
 import eslintPlugin from "vite-plugin-eslint";
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
+  
 
-  const proxyTarget =
-    import.meta.env.VITE_PROXY_TARGET || "http://localhost:5005";
+  const env = loadEnv(mode, process.cwd());
 
+  const proxyTarget = env.VITE_API_URL ?? 'http://localhost:5005';
+  console.log('VITE_API_URL:', proxyTarget); 
   const commonProxyConfig = {
     target: proxyTarget,
     changeOrigin: true,
@@ -65,6 +67,9 @@ export default defineConfig(({ mode }) => {
           ws: true
         }
       }
-    }
+    },
+    define: {
+      'import.meta.env.VITE_API_URL': JSON.stringify(proxyTarget),
+    },
   };
 });
