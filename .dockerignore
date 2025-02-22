@@ -7,4 +7,5 @@ obj/
 Dockerfile
 server/src/Properties/*
 server/src/MediaCache/
+server/src/wwwroot/ts
 web/*

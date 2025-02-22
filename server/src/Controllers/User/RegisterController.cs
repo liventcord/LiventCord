@@ -21,23 +21,20 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult RegisterAuth([FromForm] RegisterRequest request)
+        public async Task<IActionResult> RegisterAuth([FromForm] RegisterRequest request)
         {
             if (!ModelState.IsValid || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
                 return BadRequest(ModelState);
 
-            Task.Run(async () =>
-            {
-                var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(request.Nickname);
-                if (discriminator == null)
-                    return;
+            var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(request.Nickname);
+            if (discriminator == null)
+                return BadRequest("Could not generate discriminator");
 
-                var userId = Utils.CreateRandomUserId();
-                var user = Models.User.Create(userId, request.Email, request.Nickname, discriminator, request.Password, _passwordHasher);
+            var userId = Utils.CreateRandomUserId();
+            var user = Models.User.Create(userId, request.Email, request.Nickname, discriminator, request.Password, _passwordHasher);
 
-                await _context.Users.AddAsync(user);
-                await _context.SaveChangesAsync();
-            });
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
 
             return Ok();
         }
