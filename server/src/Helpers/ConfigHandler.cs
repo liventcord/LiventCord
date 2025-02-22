@@ -109,6 +109,9 @@ public static class ConfigHandler
                 break;
             case "sqlite":
             default:
+                Console.WriteLine("Defaulting to Sqlite!");
+                Console.WriteLine("Database type is: " + databaseType);
+                Console.WriteLine("Connection string is: " + connectionString);
                 if (string.IsNullOrWhiteSpace(sqlitePath))
                 {
                     sqlitePath = "Data/liventcord.db";

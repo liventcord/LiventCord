@@ -54,11 +54,7 @@ namespace LiventCord.Controllers
             var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
             if (file == null)
             {
-                var allAttachmentIds = await _context.AttachmentFiles
-                    .Select(f => f.FileId)
-                    .ToListAsync();
-
-                return Ok(allAttachmentIds);
+                return NotFound();
             }
 
             return GetFileResult(file);
