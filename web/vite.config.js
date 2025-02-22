@@ -9,8 +9,7 @@ export default defineConfig(({ mode }) => {
 
   const env = loadEnv(mode, process.cwd());
 
-  const proxyTarget = env.VITE_API_URL ?? 'http://localhost:5005';
-  console.log('VITE_API_URL:', proxyTarget); 
+  const proxyTarget = 'http://localhost:5005';
   const commonProxyConfig = {
     target: proxyTarget,
     changeOrigin: true,
@@ -67,9 +66,6 @@ export default defineConfig(({ mode }) => {
           ws: true
         }
       }
-    },
-    define: {
-      'import.meta.env.VITE_API_URL': JSON.stringify(proxyTarget),
     },
   };
 });

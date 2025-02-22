@@ -213,8 +213,7 @@ class ApiClient {
 
   async fetchData(url: string) {
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}${url}`;
-      const response = await fetch(apiUrl);
+      const response = await fetch(url);
       if (!response.ok) {
         if (response.status === 401) {
           await router.changeToLogin();
@@ -291,16 +290,7 @@ class ApiClient {
         `Missing data for URL placeholders: ${missingKeys.join(", ")}.`
       );
     }
-
-    const backendUrl = import.meta.env.VITE_API_URL;
-
-    if (!backendUrl) {
-      throw new Error(
-        "Backend URL is not defined in the environment variables."
-      );
-    }
-
-    const fullUrl = `${backendUrl}${basePath}${url}`;
+    const fullUrl = `${basePath}${url}`;
 
     return { method: this.getHttpMethod(event), url: fullUrl };
   }
