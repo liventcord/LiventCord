@@ -6,7 +6,8 @@ import cssnano from "cssnano";
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
 
-  const proxyTarget = import.meta.env.VITE_PROXY_TARGET || "http://localhost:5005";
+  const proxyTarget =
+    import.meta.env.VITE_PROXY_TARGET || "http://localhost:5005";
 
   const commonProxyConfig = {
     target: proxyTarget,
