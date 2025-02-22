@@ -92,15 +92,19 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
 
 string FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
 
-builder.Services.AddCors(options =>
+if (FRONTEND_URL != null)
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
+    builder.Services.AddCors(options =>
     {
-        policy.WithOrigins(FRONTEND_URL) 
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        options.AddPolicy("AllowSpecificOrigin", policy =>
+        {
+            policy.WithOrigins(FRONTEND_URL)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
     });
-});
+
+}
 
 
 var app = builder.Build();
@@ -171,7 +175,12 @@ app.MapControllers();
 
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    Task.Run(() => BuilderService.StartFrontendBuild());
+    var env = app.Services.GetRequiredService<IHostEnvironment>();
+
+    if (env.IsDevelopment())
+    {
+        Task.Run(() => BuilderService.StartFrontendBuild());
+    }
 });
 
 app.Run();

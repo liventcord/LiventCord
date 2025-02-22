@@ -79,6 +79,7 @@ public static class ConfigHandler
 
         switch (databaseType)
         {
+            case "postgres":
             case "postgresql":
                 builder.Services.AddDbContext<AppDbContext>(options =>
                     options.UseNpgsql(connectionString)
