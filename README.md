@@ -50,7 +50,7 @@ docker-compose up --build
 ### Docker Run
 Run directly with Docker
 ```bash
-docker run -p 5005:5005 -v appsettings.json TheLp281/liventcord:latest
+docker run -p 5005:5005 -v appsettings.json thelp281/liventcord:latest
 ```
 
 ### Contributing

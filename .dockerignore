@@ -2,6 +2,9 @@ Properties/*
 bin/
 obj/
 .git/
+.gitignore
 *.log
 Dockerfile
+server/src/Properties/*
 server/src/MediaCache/
+web/*
