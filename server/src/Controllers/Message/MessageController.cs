@@ -189,7 +189,7 @@ namespace LiventCord.Controllers
             }
 
             await DeleteMessage(channelId, messageId);
-            return Ok(new { Type = "success", Message = "Message deleted in guild." });
+            return Ok(new {messageId});
         }
 
         [HttpDelete("/api/dms/channels/{channelId}/messages/{messageId}")]
@@ -199,7 +199,7 @@ namespace LiventCord.Controllers
         )
         {
             await DeleteMessage(channelId, messageId);
-            return Ok(new { Type = "success", Message = "Message deleted in DM." });
+            return Ok(new {messageId});
         }
 
         [HttpGet("/api/{type}/{id}/search")]
