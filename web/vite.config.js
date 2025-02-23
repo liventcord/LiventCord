@@ -5,7 +5,6 @@ import cssnano from "cssnano";
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
-
   const env = loadEnv(mode, process.cwd());
 
   const proxyTarget = "http://localhost:5005";
@@ -33,7 +32,9 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       minify: isDev ? false : "terser",
       terserOptions: {
-        compress: { drop_console: !isDev },
+        compress: { 
+          passes: 3 
+        },
         mangle: { toplevel: true }
       },
       sourcemap: isDev,
@@ -44,16 +45,27 @@ export default defineConfig(({ mode }) => {
             if (id.includes("node_modules")) {
               return "vendor";
             }
+            if (id.includes("someSpecificFeature")) {
+              return "feature";
+            }
           }
         }
       }
     },
+
     css: {
       postcss: {
-        plugins: [autoprefixer, cssnano({ preset: "default" })]
+        plugins: [
+          autoprefixer,
+          cssnano({ preset: "default" })
+        ]
       }
     },
-    plugins: [eslintPlugin({ emitWarning: false })],
+
+    plugins: [
+      eslintPlugin({ emitWarning: false }),
+    ],
+
     server: {
       hmr: true,
       proxy: {

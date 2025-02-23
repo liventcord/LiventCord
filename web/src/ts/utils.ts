@@ -41,8 +41,7 @@ export const DEFAULT_DISCRIMINATOR = "0000";
 export const isMobile = getMobile();
 export const STATUS_404 = 404;
 export const STATUS_200 = 200;
-export const blackImage =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAk0lEQVRoQ+2S0QkAIBCFrv2HrmYQhAKDPp+QtmZm3/v9WT3ksYYVeSzIVKQikoG+liQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjK4LVScOKSGIxtiJYnTSsiCQWYyuC1UnDikhiMbYiWJ00rIgkFmMrgtVJw4pIYjG2IlidNKyIJBZjD62iMgGPECk2AAAAAElFTkSuQmCC";
+export const blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
 export function setDefaultMediaImageSrc(blob: Blob) {
   defaultMediaImageSrc = URL.createObjectURL(blob);
 }
