@@ -788,7 +788,14 @@ function changePopUpToGuildCreation(
   }
 
   guildImage.addEventListener("click", triggerGuildInput);
-  createButton.addEventListener("click", createGuild);
+  let isGuildCreated = false;
+  function tryCreateGuild() {
+    if (!isGuildCreated) {
+      createGuild();
+      isGuildCreated = true;
+    }
+  }
+  createButton.addEventListener("click", tryCreateGuild);
   guildImageInput.addEventListener("change", (event) =>
     handleImageUpload(guildImage, uploadText, clearButton, event)
   );

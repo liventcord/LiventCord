@@ -279,7 +279,6 @@ export async function createMediaElement(
     ...extractLinks(content),
     ...processAttachments(attachmentUrls)
   ];
-  console.log(links);
   let mediaCount = 0;
   let linksProcessed = 0;
   const maxLinks = 4;
