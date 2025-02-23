@@ -4,6 +4,7 @@ import { alertUser } from "./ui.ts";
 import { router } from "./router.ts";
 
 export const EventType = Object.freeze({
+  GET_INIT_DATA: "GET_INIT_DATA",
   CREATE_CHANNEL: "CREATE_CHANNEL",
   JOIN_GUILD: "JOIN_GUILD",
   LEAVE_GUILD: "LEAVE_GUILD",
@@ -59,6 +60,7 @@ export const HttpMethod = Object.freeze({
 type HttpMethod = (typeof HttpMethod)[keyof typeof HttpMethod];
 
 const EventHttpMethodMap: Record<EventType, HttpMethod> = {
+  GET_INIT_DATA: HttpMethod.GET,
   CREATE_CHANNEL: HttpMethod.POST,
   JOIN_GUILD: HttpMethod.POST,
   LEAVE_GUILD: HttpMethod.POST,
@@ -99,6 +101,7 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
 };
 
 const EventUrlMap: Record<EventType, string> = {
+  GET_INIT_DATA: "/init",
   CREATE_GUILD: "/guilds",
   CREATE_CHANNEL: "/guilds/{guildId}/channels",
   DELETE_GUILD: "/guilds/{guildId}",
@@ -156,8 +159,11 @@ class ApiClient {
   constructor() {
     this.listeners = {};
     this.nonResponseEvents = [EventType.JOIN_GUILD, EventType.LEAVE_GUILD];
-    this.validateEventMaps();
-    this.checkFullCrud();
+
+    if (import.meta.env.DEV) {
+      this.validateEventMaps();
+      this.checkFullCrud();
+    }
   }
 
   private validateEventMaps() {
@@ -209,47 +215,6 @@ class ApiClient {
         console.log(`${resource} has full CRUD`);
       }
     });
-  }
-
-  async fetchData(url: string) {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        if (response.status === 401) {
-          await router.changeToLogin();
-          return null;
-        }
-        alertUser("Can't communicate with API");
-        return null;
-      }
-
-      const rawResponse = await response.text();
-
-      try {
-        const initData = JSON.parse(rawResponse);
-        if (
-          initData.message ===
-          "User session is no longer valid. Please log in again."
-        ) {
-          if (import.meta.env.MODE === "development") {
-            alertUser(
-              "User session is not valid. Please log in at localhost:5005/login."
-            );
-            return null;
-          }
-          await router.changeToLogin();
-          return null;
-        }
-        return initData;
-      } catch (e: any) {
-        alertUser(e.message);
-        console.error(e);
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      return null;
-    }
   }
 
   getHttpMethod(event: EventType): HttpMethod {
