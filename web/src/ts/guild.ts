@@ -105,7 +105,7 @@ export function createGuild() {
 
         createFireWorks();
         appendToGuildList(data);
-        loadGuild(data.guildId, data.rootChannel, guildName,true);
+        loadGuild(data.guildId, data.rootChannel, guildName, true);
       } else {
         alertUser(data);
       }
@@ -364,7 +364,6 @@ const createGuildListItem = (
   return listItem;
 };
 export function updateGuilds(guildsJson: Array<any>) {
-  console.log(guildsJson);
   if (!guildsJson) return;
   if (Array.isArray(guildsJson)) {
     guildsList.innerHTML = "";
@@ -437,11 +436,18 @@ export function appendToGuildList(guild: Guild) {
     guild.guildName,
     guild.isGuildUploadedImg
   );
+
   guildsList.appendChild(listItem);
+
+  const createGuildButton = guildsList.querySelector("#create-guild-button");
+  if (createGuildButton) {
+    guildsList.appendChild(createGuildButton);
+  }
 
   cacheInterface.setName(guild.guildId, guild.guildName);
   cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
 }
+
 function createNewGuildButton() {
   const createGuildImage = createEl("div", {
     id: "create-guild-button",

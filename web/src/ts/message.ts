@@ -18,7 +18,12 @@ import {
   displayLocalMessage
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { getEmojiPath, getBeforeElement, formatDate } from "./utils.ts";
+import {
+  getEmojiPath,
+  getBeforeElement,
+  formatDate,
+  disableElement
+} from "./utils.ts";
 import { getUserNick } from "./user.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -101,9 +106,7 @@ export class Message {
   }
 }
 export async function sendMessage(content: string, user_ids?: string[]) {
-  if (content === "") {
-    return;
-  }
+  if (content === "") return;
 
   if (
     isOnDm &&
@@ -118,10 +121,11 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   const channelId = isOnDm
     ? friendsCache.currentDmId
     : guildCache.currentChannelId;
-  displayLocalMessage(channelId, content);
-
   setTimeout(scrollToBottom, 10);
-  const files = fileInput.files;
+
+  chatInput.value = "";
+  attachmentsTray.innerHTML = "";
+  disableElement(attachmentsTray);
 
   const formData = new FormData();
   formData.append("content", content);
@@ -130,6 +134,7 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     formData.append("replyToId", currentReplyingTo);
   }
 
+  const files = fileInput.files;
   if (files && files.length > 0) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -137,32 +142,19 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     }
   }
 
-  const additionalData = {
-    guildId: currentGuildId,
-    channelId
-  };
+  const additionalData = { guildId: currentGuildId, channelId };
 
   try {
-    if (isOnGuild) {
-      await apiClient.sendForm(
-        EventType.SEND_MESSAGE_GUILD,
-        formData,
-        additionalData
-      );
-    } else {
-      await apiClient.sendForm(
-        EventType.SEND_MESSAGE_DM,
-        formData,
-        additionalData
-      );
-    }
-
-    chatInput.value = "";
+    await apiClient.sendForm(
+      isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
+      formData,
+      additionalData
+    );
     closeReplyMenu();
-    attachmentsTray.innerHTML = "";
   } catch (error) {
     console.error("Error Sending File Message:", error);
   }
+  displayLocalMessage(channelId, content);
 }
 
 export function replaceCustomEmojis(content: string) {

@@ -1,15 +1,14 @@
-import { defineConfig,loadEnv } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import eslintPlugin from "vite-plugin-eslint";
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
-  
 
   const env = loadEnv(mode, process.cwd());
 
-  const proxyTarget = 'http://localhost:5005';
+  const proxyTarget = "http://localhost:5005";
   const commonProxyConfig = {
     target: proxyTarget,
     changeOrigin: true,
@@ -66,6 +65,6 @@ export default defineConfig(({ mode }) => {
           ws: true
         }
       }
-    },
+    }
   };
 });

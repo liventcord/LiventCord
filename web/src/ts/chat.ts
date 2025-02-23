@@ -205,11 +205,11 @@ export function getOldMessagesOnScroll() {
   hasJustFetchedMessages = true;
   getOldMessages(new Date(oldestDate));
 }
-
 export async function handleScroll() {
   if (loadingScreen && loadingScreen.style.display === "flex") {
     return;
   }
+
   const SCROLL_DELAY = 500;
   const buffer = 10;
   const scrollPosition = chatContainer.scrollTop;
@@ -218,24 +218,15 @@ export async function handleScroll() {
   if (isAtTop && !isFetchingOldMessages && chatContent.children.length > 0) {
     isFetchingOldMessages = true;
     console.log("Fetching old messages...");
-    try {
-      let continueLoop = true;
 
+    try {
       if (hasJustFetchedMessages || stopFetching) {
         return;
       }
 
-      while (continueLoop) {
-        const updatedScrollPosition = chatContainer.scrollTop;
-
-        if (updatedScrollPosition <= buffer) {
-          await getOldMessagesOnScroll();
-        } else {
-          continueLoop = false;
-          console.log("Scroll position exceeded threshold.");
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, SCROLL_DELAY));
+      const updatedScrollPosition = chatContainer.scrollTop;
+      if (updatedScrollPosition <= buffer) {
+        await getOldMessagesOnScroll();
       }
     } catch (error) {
       console.error("Error fetching old messages:", error);
@@ -411,7 +402,11 @@ export function handleHistoryResponse(data: MessageResponse) {
 
   chatContainer.style.overflow = "hidden";
 
-  data.messages.forEach((msgData) => {
+  history.sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  history.forEach((msgData) => {
     const msg = new Message(msgData);
     const foundReply = displayChatMessage(msg);
     if (foundReply) {
@@ -855,7 +850,7 @@ function handleRegularMessage(
       new Date(bottomestChatDateStr).getTime() - new Date(date).getTime()
     ) / MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
-  const dateString = new Date().toISOString();
+  const dateString = new Date(date).toISOString();
 
   if (!lastSenderID || isTimeGap || replyToId) {
     createProfileImageChat(
