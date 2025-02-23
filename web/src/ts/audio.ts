@@ -464,8 +464,8 @@ export function activateSoundOutput() {
 let isMicrophoneOpen = true;
 export function setMicrophone() {
   const imagePath = isMicrophoneOpen
-    ? "/images/icons/whitemic.png"
-    : "/images/icons/redmic.png";
+    ? "/images/icons/whitemic.webp"
+    : "/images/icons/redmic.webp";
   microphoneButton.src = imagePath;
   isMicrophoneOpen = !isMicrophoneOpen;
   console.log("Set microphone! to ", isMicrophoneOpen);
@@ -474,8 +474,8 @@ export function setMicrophone() {
 let isEarphonesOpen = true;
 export function setEarphones() {
   const imagePath = isEarphonesOpen
-    ? "/images/icons/whiteearphones.png"
-    : "/images/icons/redearphones.png";
+    ? "/images/icons/whiteearphones.webp"
+    : "/images/icons/redearphones.webp";
   earphoneButton.src = imagePath;
   isEarphonesOpen = !isEarphonesOpen;
   console.log("Set earphones! to ", isEarphonesOpen);

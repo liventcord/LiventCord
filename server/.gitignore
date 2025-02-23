@@ -27,6 +27,6 @@ MediaCache
 src/wwwroot/app/*
 src/wwwroot/ts/
 src/wwwroot/vendor/
-src/wwwroot/*.png
+src/wwwroot/*.webp
 src/wwwroot/images/
 src/wwwroot/index.html

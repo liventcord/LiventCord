@@ -484,7 +484,7 @@ function createNewGuildButton() {
 function createMainLogo() {
   const mainLogoImg = createEl("img", {
     id: "main-logo",
-    src: "/images/icons/icon.png"
+    src: "/images/icons/icon.webp"
   });
 
   const mainLogo = createEl("li");
