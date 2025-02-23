@@ -28,12 +28,12 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
   return element;
 };
 
-export const clydeSrc = "/clyde.png";
+export const clydeSrc = "/clyde.webp";
 
-const defaultProfileImageUrl = "/guest.png";
+const defaultProfileImageUrl = "/guest.webp";
 
 export let defaultProfileImageSrc = defaultProfileImageUrl;
-const defaultMediaImageUrl = "/defaultmediaimage.png";
+const defaultMediaImageUrl = "/defaultmediaimage.webp";
 export let defaultMediaImageSrc = defaultMediaImageUrl;
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
@@ -161,7 +161,7 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
 }
 
 export function getEmojiPath(emojiId: string) {
-  return `/emojis/${emojiId}.png`;
+  return `/emojis/${emojiId}.webp`;
 }
 export function isId(url: string) {
   return url.length === router.ID_LENGTH && /^\d+$/.test(url);
@@ -355,7 +355,7 @@ export function isURL(str: string) {
 }
 
 export function getProfileUrl(userId: string) {
-  return `/profiles/${userId}.png`;
+  return `/profiles/${userId}.webp`;
 }
 
 export function pad(number: number, length: number) {

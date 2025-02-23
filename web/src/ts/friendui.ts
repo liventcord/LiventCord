@@ -480,7 +480,7 @@ export function updateUsersStatus(friend: Friend) {
 
   const iconImg = createEl("img", {
     className: "activity-card-icon",
-    src: "/defaultmediaimage.png"
+    src: "/defaultmediaimage.webp"
   });
 
   activityCard.appendChild(contentDiv);
@@ -606,7 +606,7 @@ export function displayWumpus() {
   friendsContainer.innerHTML = "";
   const imgElement = createEl("img", {
     id: "wumpusalone",
-    src: "/images/wumpusalone.png"
+    src: "/images/wumpusalone.webp"
   });
   imgElement.style.userSelect = "none";
   friendsContainer.appendChild(imgElement);

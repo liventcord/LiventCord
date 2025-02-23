@@ -90,7 +90,7 @@ export async function setPicture(
 
   const timestamp = new Date().getTime();
   const imageUrl = !isProfile
-    ? `/guilds/${srcId}.png${isTimestamp ? `?ts=${timestamp}` : ""}`
+    ? `/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
     : `${getProfileUrl(srcId)}${isTimestamp ? `?ts=${timestamp}` : ""}`;
 
   try {
@@ -138,7 +138,7 @@ export function refreshUserProfile(
         }
       }
       if (user instanceof HTMLImageElement) {
-        user.src = `/profiles/${userId}.png`;
+        user.src = `/profiles/${userId}.webp`;
       }
     }
   });
@@ -164,7 +164,7 @@ export function refreshUserProfile(
       const datasetUserId = (user as HTMLElement).dataset.userId;
       if (datasetUserId === userId) {
         if (user instanceof HTMLImageElement) {
-          user.src = `/profiles/${userId}.png`;
+          user.src = `/profiles/${userId}.webp`;
         }
       }
     }
@@ -222,7 +222,7 @@ export function updateSelfProfile(
 ) {
   if (!userId) return;
   const timestamp = isTimestamp ? `?ts=${new Date().getTime()}` : "";
-  const selfimagepath = `/profiles/${userId}.png${timestamp}`;
+  const selfimagepath = `/profiles/${userId}.webp${timestamp}`;
 
   updateImageSource(selfProfileImage, selfimagepath);
 
