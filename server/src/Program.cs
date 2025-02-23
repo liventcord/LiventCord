@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
-using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -154,8 +153,8 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseStaticFiles();
 app.UseResponseCompression();
+app.UseStaticFiles();
 
 RouteConfig.ConfigureRoutes(app);
 
