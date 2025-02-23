@@ -82,31 +82,44 @@ public static class ConfigHandler
             case "postgres":
             case "postgresql":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseNpgsql(connectionString)
+                    options.UseNpgsql(connectionString, npgsqlOptions =>
+                    {
+                        npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                    })
                 );
                 break;
 
             case "mysql":
             case "mariadb":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mySqlOptions =>
+                    {
+                        mySqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                    })
                 );
                 break;
+
             case "oracle":
                 builder.Services.AddDbContext<AppDbContext>(options =>
                     options.UseOracle(connectionString)
                 );
                 break;
+
             case "firebird":
                 builder.Services.AddDbContext<AppDbContext>(options =>
                     options.UseFirebird(connectionString)
                 );
                 break;
+
             case "sqlserver":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseSqlServer(connectionString)
+                    options.UseSqlServer(connectionString, sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                    })
                 );
                 break;
+
             case "sqlite":
             default:
                 Console.WriteLine("Defaulting to Sqlite!");
