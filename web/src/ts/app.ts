@@ -209,17 +209,6 @@ export function initialiseState(data: InitialStateData): void {
   addKeybinds();
 }
 
-async function loadInitialData() {
-  const initData = await apiClient.fetchData("/api/init");
-
-  if (!initData) {
-    return;
-  }
-
-  initialiseState(initData);
-  initializeApp();
-}
-
 export function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
@@ -635,7 +624,8 @@ export function changeCurrentDm(friendId: string) {
   isChangingPage = false;
 }
 
-loadInitialData();
+apiClient.send(EventType.GET_INIT_DATA);
+
 window.onerror = (message, source, lineno, colno, error) => {
   const msg = `Error: ${message} at ${source}:${lineno}:${colno}`;
   console.error(msg);

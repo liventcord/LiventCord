@@ -17,7 +17,7 @@ import {
   setGuildNameText
 } from "./guild.ts";
 import { closeSettings } from "./settingsui.ts";
-import { loadDmHome } from "./app.ts";
+import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
 import { currentUserId, Member, setUserNick, UserInfo } from "./user.ts";
 import { updateFriendsList, handleFriendEventResponse } from "./friends.ts";
@@ -27,6 +27,7 @@ import { Permission, permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { createFireWorks } from "./extras.ts";
+import { router } from "./router.ts";
 
 interface JoinGuildData {
   success: boolean;
@@ -36,7 +37,22 @@ interface JoinGuildData {
   joinedChannelId: string;
   joinedGuildName: string;
 }
-
+apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
+  if (
+    initData.message === "User session is no longer valid. Please log in again."
+  ) {
+    if (import.meta.env.MODE === "development") {
+      alertUser(
+        "User session is not valid. Please log in at localhost:5005/login."
+      );
+      return;
+    }
+    await router.changeToLogin();
+    return;
+  }
+  initialiseState(initData);
+  initializeApp();
+});
 apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
   if (!data.success) {
     const errormsg = translations.getTranslation("join-error-response");

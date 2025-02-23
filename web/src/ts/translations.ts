@@ -264,7 +264,7 @@ class Translations {
     if (key && !result) {
       console.error("Cant find translation for:", key);
     }
-    return result;
+    return result as string;
   }
 
   getLocale() {
