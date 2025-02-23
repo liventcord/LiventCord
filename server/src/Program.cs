@@ -127,6 +127,7 @@ if (isDevelopment)
     {
         if (context.Request.Path.StartsWithSegments("/profiles") ||
             context.Request.Path.StartsWithSegments("/guilds") ||
+            context.Request.Path.StartsWithSegments("/attachments") ||
             context.Request.Path.StartsWithSegments("/api/proxy"))
         {
             await next();
