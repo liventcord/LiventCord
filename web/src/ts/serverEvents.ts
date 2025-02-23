@@ -28,6 +28,7 @@ import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { createFireWorks } from "./extras.ts";
 import { router } from "./router.ts";
+import { handleDeleteMessageEmit } from "./socketEvents.ts";
 
 interface JoinGuildData {
   success: boolean;
@@ -135,6 +136,10 @@ apiClient.on(EventType.DELETE_CHANNEL, (data) => {
     }
   }
   removeChannel(data);
+});
+
+apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data) => {
+  handleDeleteMessageEmit(data, false);
 });
 
 interface BulkReplies {

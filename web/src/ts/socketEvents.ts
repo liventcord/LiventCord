@@ -29,6 +29,8 @@ import {
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
 import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
+import { currentGuildId } from "./guild.ts";
+import { chatContainer } from "./chatbar.ts";
 
 const socketClient = new signalR.HubConnectionBuilder()
   .withUrl("/socket")
@@ -134,19 +136,40 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL, (data: UpdateChannelData) => {
   }
 });
 
-interface DeleteMessageResponse {
+interface DeleteMessageEmit {
   messageId: string;
   guildId: string;
   channelId: string;
-  msgdate: string;
+  msgDate: string;
 }
 
-function handleDelete(data: DeleteMessageResponse, isDm: boolean) {
-  deleteLocalMessage(data.messageId, data.guildId, data.channelId, isDm);
-  cacheInterface.removeMessage(data.messageId, data.channelId, data.guildId);
+interface DeleteMessageResponse {
+  messageId: string;
+}
 
-  if (typeof lastMessageDate === "number") {
-    const msgDateTimestamp = new Date(data.msgdate).setHours(0, 0, 0, 0);
+function processDeleteMessage(
+  msgDate: string,
+  messageId: string,
+  isDm: boolean
+) {
+  const messageElement = chatContainer.querySelector(
+    `[data-message-id="${messageId}"]`
+  ) as HTMLElement;
+  const msgDateElement = messageElement?.dataset.date;
+  deleteLocalMessage(
+    messageId,
+    currentGuildId,
+    guildCache.currentChannelId,
+    isDm
+  );
+  cacheInterface.removeMessage(
+    messageId,
+    guildCache.currentChannelId,
+    currentGuildId
+  );
+
+  if (msgDateElement && typeof lastMessageDate === "number") {
+    const msgDateTimestamp = new Date(msgDateElement).setHours(0, 0, 0, 0);
     if (lastMessageDate === msgDateTimestamp) {
       setLastMessageDate(
         new Date(new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0))
@@ -154,24 +177,32 @@ function handleDelete(data: DeleteMessageResponse, isDm: boolean) {
     }
   }
 
-  if (bottomestChatDateStr === data.msgdate) {
+  if (bottomestChatDateStr === msgDateElement) {
     setBottomestChatDateStr(getLastSecondMessageDate());
   }
 }
 
-socketClient.on(
-  SocketEvent.DELETE_MESSAGE_DM,
-  (data: DeleteMessageResponse) => {
-    handleDelete(data, true);
-  }
-);
+export function handleDeleteMessageResponse(
+  data: DeleteMessageResponse,
+  isDm: boolean
+) {
+  processDeleteMessage(data.messageId, data.messageId, isDm);
+}
 
-socketClient.on(
-  SocketEvent.DELETE_MESSAGE_GUILD,
-  (data: DeleteMessageResponse) => {
-    handleDelete(data, false);
-  }
-);
+export function handleDeleteMessageEmit(
+  data: DeleteMessageEmit,
+  isDm: boolean
+) {
+  processDeleteMessage(data.msgDate, data.messageId, isDm);
+}
+
+socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
+  handleDeleteMessageEmit(data, true);
+});
+
+socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data: DeleteMessageEmit) => {
+  handleDeleteMessageEmit(data, false);
+});
 
 //audio
 interface JoinVoiceResponse {
