@@ -1,3 +1,5 @@
+import imageCompression from "browser-image-compression";
+
 import {
   scrollToBottom,
   setHasJustFetchedMessagesFalse,
@@ -29,6 +31,9 @@ import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
 import { constructUserData } from "./popups.ts";
+import { maxAttachmentSize } from "./avatar.ts";
+
+const DEFAULT_IMAGE_FORMAT = "image/webp";
 
 interface MessageData {
   messageId: string;
@@ -105,28 +110,8 @@ export class Message {
     this.replies = replies;
   }
 }
-export async function sendMessage(content: string, user_ids?: string[]) {
-  if (content === "") return;
 
-  if (
-    isOnDm &&
-    friendsCache.currentDmId &&
-    !friendsCache.isFriend(friendsCache.currentDmId) &&
-    !hasSharedGuild(friendsCache.currentDmId)
-  ) {
-    displayCannotSendMessage(friendsCache.currentDmId, content);
-    return;
-  }
-
-  const channelId = isOnDm
-    ? friendsCache.currentDmId
-    : guildCache.currentChannelId;
-  setTimeout(scrollToBottom, 10);
-
-  chatInput.value = "";
-  attachmentsTray.innerHTML = "";
-  disableElement(attachmentsTray);
-
+function createFormData(content: string, user_ids?: string[]): FormData {
   const formData = new FormData();
   formData.append("content", content);
 
@@ -134,16 +119,63 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     formData.append("replyToId", currentReplyingTo);
   }
 
-  const files = fileInput.files;
-  if (files && files.length > 0) {
+  return formData;
+}
+
+function handleFileProcessing(file: File, formData: FormData): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (file.type === "image/webp") {
+      formData.append("files[]", file, file.name);
+      resolve();
+    } else {
+      tryCompressAndConvert(file)
+        .then((convertedFile: File) => {
+          formData.append("files[]", convertedFile, convertedFile.name);
+          resolve();
+        })
+        .catch((error) => {
+          console.error(`Failed to process file: ${file.name}`, error);
+          formData.append("files[]", file, file.name);
+          resolve();
+        });
+    }
+  });
+}
+
+async function processFiles(
+  files: FileList | null,
+  formData: FormData
+): Promise<void> {
+  if (files) {
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      formData.append("files[]", file);
+      await handleFileProcessing(files[i], formData);
     }
   }
+}
+
+export async function sendMessage(content: string, user_ids?: string[]) {
+  if (content === "") return;
+
+  if (isOnDm && !canSendMessageToDm(friendsCache.currentDmId)) {
+    displayCannotSendMessage(friendsCache.currentDmId, content);
+    return;
+  }
+
+  const channelId = getChannelId();
+  setTimeout(scrollToBottom, 10);
+
+  chatInput.value = "";
+  attachmentsTray.innerHTML = "";
+  disableElement(attachmentsTray);
+
+  const formData = createFormData(content, user_ids);
+  await processFiles(fileInput.files, formData);
+
+  fileInput.files = null;
 
   const additionalData = { guildId: currentGuildId, channelId };
 
+  displayLocalMessage(channelId, content);
   try {
     await apiClient.sendForm(
       isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
@@ -154,7 +186,84 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   } catch (error) {
     console.error("Error Sending File Message:", error);
   }
-  displayLocalMessage(channelId, content);
+}
+
+function canSendMessageToDm(dmId: string): boolean {
+  return friendsCache.isFriend(dmId) || hasSharedGuild(dmId);
+}
+
+function getChannelId(): string {
+  return isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId;
+}
+
+function tryCompressAndConvert(
+  file: File,
+  targetFormat: string = DEFAULT_IMAGE_FORMAT,
+  quality: number = 0.8
+): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDimension = Math.max(img.width, img.height);
+      const options = {
+        maxSizeMB: maxAttachmentSize,
+        maxWidthOrHeight: maxDimension,
+        useWebWorker: true
+      };
+      imageCompression(file, options)
+        .then((compressedFile) =>
+          tryConvertToFormat(compressedFile, targetFormat, quality)
+        )
+        .then(resolve)
+        .catch(() => resolve(file));
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function tryConvertToFormat(
+  file: File,
+  targetFormat: string,
+  quality: number = 1
+): Promise<File> {
+  return new Promise((resolve) => {
+    if (file.type === targetFormat) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const fileName = file.name.replace(/\.[^/.]+$/, "");
+            resolve(
+              new File([blob], `${fileName}.${targetFormat.split("/")[1]}`, {
+                type: targetFormat,
+                lastModified: Date.now()
+              })
+            );
+          } else {
+            resolve(file);
+          }
+        },
+        targetFormat,
+        quality
+      );
+    };
+    img.onerror = () => resolve(file);
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 export function replaceCustomEmojis(content: string) {
