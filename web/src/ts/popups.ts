@@ -26,9 +26,10 @@ import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
 import { toggleManager } from "./settings.ts";
+import { copyText } from "./tooltip.ts";
 
 let isDropdownOpen = false;
-export let closeCurrentJoinPop: CallableFunction;
+export let closeCurrentJoinPop: CallableFunction | null = null;
 const hashText =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>';
 const voiceText =
@@ -469,8 +470,8 @@ export function createPopUp({
 export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
-  const invitelink = `${window.location.protocol}//${
-    window.location.hostname
+  const invitelink = `${window.location.protocol}//${window.location.hostname}${
+    window.location.port ? `:${window.location.port}` : ""
   }/join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
 
   const inviteTitle = createEl("p", {
@@ -490,17 +491,42 @@ export function createInviteUsersPop() {
     id: "invite-users-send-text",
     textContent: sendText
   });
+
+  const inputContainer = createEl("div", {
+    className: "input-container"
+  });
+
   const inviteUsersSendInput = createEl("input", {
     id: "invite-users-send-input",
-    value: invitelink
+    value: invitelink,
+    readonly: true
+  }) as HTMLInputElement;
+
+  const copyButton = createEl("button", {
+    className: "copy-button",
+    textContent: "Copy"
   });
+
+  copyButton.addEventListener("click", (event: MouseEvent) => {
+    inviteUsersSendInput.select();
+    inviteUsersSendInput.setSelectionRange(
+      0,
+      inviteUsersSendInput.value.length
+    );
+
+    copyText(event, invitelink);
+  });
+
+  inputContainer.appendChild(inviteUsersSendInput);
+  inputContainer.appendChild(copyButton);
 
   const popBottomContainer = createEl("div", {
     className: "popup-bottom-container",
     id: "invite-popup-bottom-container"
   });
+
   popBottomContainer.appendChild(sendInvText);
-  popBottomContainer.appendChild(inviteUsersSendInput);
+  popBottomContainer.appendChild(inputContainer);
 
   const contentElements = [
     inviteTitle,
@@ -566,7 +592,7 @@ function createPopUpCloseButton(
 
 export function openSearchPop() {}
 
-export async function showGuildPop() {
+export async function showGuildPop(inviteId?: string) {
   const subject = translations.getTranslation("create-your-guild");
   const content = translations.getTranslation("create-your-guild-detail");
 
@@ -653,6 +679,17 @@ export async function showGuildPop() {
       closeCallback();
     }
   });
+
+  if (inviteId) {
+    ChangePopUpToGuildJoining(
+      newPopParent,
+      guildPopButtonContainer,
+      guildPopContent,
+      guildPopSubject,
+      closeCallback,
+      inviteId
+    );
+  }
 
   document.body.appendChild(newPopOuterParent);
 }
@@ -823,7 +860,8 @@ export function ChangePopUpToGuildJoining(
   popButtonContainer: HTMLElement,
   newPopContent: HTMLElement,
   newPopSubject: HTMLElement,
-  closeCallback: CallableFunction
+  closeCallback: CallableFunction,
+  inviteId?: string
 ) {
   if (popButtonContainer) {
     popButtonContainer.remove();
@@ -838,25 +876,39 @@ export function ChangePopUpToGuildJoining(
     placeholder: text,
     id: "guild-name-input"
   }) as HTMLInputElement;
+  if (inviteId) {
+    newInput.value = inviteId;
+  }
 
   const joinButton = createEl("button", {
     textContent: translations.getTranslation("join-guild"),
-    className: "create-guild-verify common-button"
+    className: "create-guild-verify common-button",
+    style: {
+      fontSize: "14px",
+      whiteSpace: "nowrap",
+      padding: "0px",
+      width: "120px"
+    }
   });
-  joinButton.style.fontSize = "14px";
-  joinButton.style.whiteSpace = "nowrap";
-  joinButton.style.padding = "0px";
-  joinButton.style.width = "120px";
   const guildNameTitle = createEl("h1", {
     textContent: translations.getTranslation("invite-link"),
     className: "create-guild-title",
-    id: "create-guild-title"
+    id: "create-guild-title",
+    style: {
+      top: "25%"
+    }
   });
   joinButton.addEventListener("click", function () {
     if (newInput.value === "") {
-      guildNameTitle.textContent = "guild-join-invite-title";
-      guildNameTitle.style.textAlign = "left";
+      guildNameTitle.textContent = translations.getTranslation(
+        "guild-join-invite-title"
+      );
       guildNameTitle.style.color = "red";
+      setTimeout(() => {
+        guildNameTitle.textContent = translations.getTranslation("invite-link");
+        guildNameTitle.style.color = "white";
+      }, 5000);
+
       return;
     }
     joinToGuild(newInput.value);
@@ -871,21 +923,23 @@ export function ChangePopUpToGuildJoining(
     await clickToJoinGuildBackButton(event, closeCallback);
   });
 
-  guildNameTitle.style.top = "25%";
   const guildNameDescription = createEl("h1", {
     textContent: translations.getTranslation("invites-look-like"),
     className: "create-guild-title"
   });
   const descriptionText = `
     hTKzmak<br>
-    ${window.location.protocol}//${window.location.hostname}/hTKzmak<br>
-    ${window.location.protocol}//${window.location.hostname}/cool-people
+    ${window.location.protocol}//${window.location.hostname}${
+    window.location.port ? `:${window.location.port}` : ""
+  }/join-guild/hTKzmak<br>
+    ${window.location.protocol}//${window.location.hostname}${
+    window.location.port ? `:${window.location.port}` : ""
+  }/join-guild/cool-people
     `;
   const guildNameDescriptionContent = createEl("h1", {
     innerHTML: descriptionText,
     className: "create-guild-title"
   });
-  guildNameDescriptionContent.style.width = "55%";
   guildNameDescriptionContent.style.textAlign = "left";
 
   guildNameDescriptionContent.style.color = "white";

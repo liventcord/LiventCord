@@ -153,7 +153,7 @@ namespace LiventCord.Controllers
 
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
             {
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden);
             }
 
             await EditMessage(channelId, messageId, request.Content);
@@ -185,11 +185,11 @@ namespace LiventCord.Controllers
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
             {
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden);
             }
 
             await DeleteMessage(channelId, messageId);
-            return Ok(new {messageId});
+            return Ok(new { messageId });
         }
 
         [HttpDelete("/api/dms/channels/{channelId}/messages/{messageId}")]
@@ -199,7 +199,7 @@ namespace LiventCord.Controllers
         )
         {
             await DeleteMessage(channelId, messageId);
-            return Ok(new {messageId});
+            return Ok(new { messageId });
         }
 
         [HttpGet("/api/{type}/{id}/search")]
@@ -365,6 +365,17 @@ namespace LiventCord.Controllers
             NewMessageRequest request
         )
         {
+            if (mode == "guilds")
+            {
+                if (string.IsNullOrWhiteSpace(guildId))
+                {
+                    return BadRequest(new { Type = "error", Message = "Missing guildId" });
+                }
+                if (!await _permissionsController.CanSendMessages(UserId!, guildId))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden);
+                }
+            }
             if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
             {
                 return BadRequest(new { Type = "error", Message = "Required properties (channelId, content) are missing." });
@@ -375,17 +386,6 @@ namespace LiventCord.Controllers
                 return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
             }
 
-            if (mode == "guilds")
-            {
-                if (string.IsNullOrWhiteSpace(guildId))
-                {
-                    return BadRequest(new { Type = "error", Message = "Missing guildId" });
-                }
-                if (!await _permissionsController.CanSendMessages(UserId!, guildId))
-                {
-                    return Forbid();
-                }
-            }
 
             long MAX_TOTAL_SIZE = SharedAppConfig.GetMaxAttachmentSize();
             long totalSize = 0;

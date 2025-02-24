@@ -41,7 +41,8 @@ export const DEFAULT_DISCRIMINATOR = "0000";
 export const isMobile = getMobile();
 export const STATUS_404 = 404;
 export const STATUS_200 = 200;
-export const blackImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
+export const blackImage =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
 export function setDefaultMediaImageSrc(blob: Blob) {
   defaultMediaImageSrc = URL.createObjectURL(blob);
 }

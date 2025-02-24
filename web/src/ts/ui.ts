@@ -15,7 +15,7 @@ import {
   createInviteUsersPop
 } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
-import { leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
+import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
 import { createEl, getId, disableElement, enableElement } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -23,6 +23,8 @@ import { isOnMe, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { observe } from "./chat.ts";
 import { chatContainer } from "./chatbar.ts";
+import { apiClient, EventType } from "./api.ts";
+import { guildCache } from "./cache.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -501,8 +503,16 @@ export function hideJsonPreview(event: Event) {
 }
 
 export function openGuildSettingsDropdown(event: Event) {
+  async function createInvitePop() {
+    await apiClient.send(EventType.GET_INVITES, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
+    createInviteUsersPop();
+  }
+
   const handlers: Record<string, () => void> = {
-    "invite-dropdown-button": createInviteUsersPop,
+    "invite-dropdown-button": createInvitePop,
     "settings-dropdown-button": () => {
       openSettings(SettingType.GUILD);
     },

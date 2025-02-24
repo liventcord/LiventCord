@@ -381,19 +381,43 @@ th {
   top: 4%;
   left: 4%;
 }
-#invite-users-send-input {
-  border: none;
-  padding-left: 10px;
-  color: lightgray;
-  font-size: 16px;
-  width: 90%;
-  left: 50%;
-  top: 52%;
+.input-container {
   position: fixed;
-  height: 35px;
+  left: 50%;
+  top: 60%;
   transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  background-color: rgb(30, 31, 34);
+  padding: 5px;
+  width: 90%;
+  border-radius: 5px;
+}
+
+#invite-users-send-input,
+.input-container button {
+  border: none;
+  font-size: 16px;
+  height: 35px;
   background-color: rgb(30, 31, 34);
 }
+
+#invite-users-send-input {
+  padding-left: 10px;
+  color: lightgray;
+  width: 90%;
+  outline: none;
+}
+
+.input-container button {
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin-left: 5px;
+  font-size: 14px;
+}
+
 #create-channel-send-text {
   color: rgb(181, 186, 193);
   font-size: 13px;

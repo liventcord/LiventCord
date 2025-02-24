@@ -16,22 +16,21 @@ namespace LiventCord.Controllers
         private readonly ImageController _imageController;
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
-
-        private readonly ITokenValidationService _tokenValidationService;
+        private readonly InviteController _inviteController;
         private readonly ILogger<GuildController> _logger;
         public GuildController(
             AppDbContext dbContext,
             ImageController uploadController,
             MessageController messageController,
             MembersController membersController,
-            PermissionsController permissionsController, ITokenValidationService tokenValidationService, ILogger<GuildController> logger
+            PermissionsController permissionsController, InviteController inviteController, ILogger<GuildController> logger
         )
         {
             _dbContext = dbContext;
             _imageController = uploadController;
             _permissionsController = permissionsController;
             _membersController = membersController;
-            _tokenValidationService = tokenValidationService;
+            _inviteController = inviteController;
             _logger = logger;
         }
 
@@ -54,7 +53,7 @@ namespace LiventCord.Controllers
                 return NotFound();
 
             if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden);
 
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
@@ -114,6 +113,7 @@ namespace LiventCord.Controllers
             _dbContext.Guilds.Add(guild);
 
             await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
+
             await _dbContext.SaveChangesAsync();
 
             return guild;
@@ -171,7 +171,7 @@ namespace LiventCord.Controllers
                 return NotFound();
 
             if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden);
 
             _dbContext.Guilds.Remove(guild);
             await _dbContext.SaveChangesAsync();

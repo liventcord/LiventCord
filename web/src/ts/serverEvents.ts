@@ -14,9 +14,10 @@ import {
   removeFromGuildList,
   updateGuildImage,
   currentGuildId,
-  setGuildNameText
+  setGuildNameText,
+  Guild
 } from "./guild.ts";
-import { closeSettings } from "./settingsui.ts";
+import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
 import { currentUserId, Member, setUserNick, UserInfo } from "./user.ts";
@@ -32,11 +33,8 @@ import { handleDeleteMessageEmit } from "./socketEvents.ts";
 
 interface JoinGuildData {
   success: boolean;
-  guildId: string;
-  permissionsMap: Set<Permission>;
-  joinedGuildId: string;
   joinedChannelId: string;
-  joinedGuildName: string;
+  guild: Guild;
 }
 apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   if (
@@ -55,27 +53,38 @@ apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   initializeApp();
 });
 apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
+  const guild = data.guild;
   if (!data.success) {
     const errormsg = translations.getTranslation("join-error-response");
     const createGuildTitle = getId("create-guild-title") as HTMLElement;
     createGuildTitle.textContent = errormsg;
     createGuildTitle.style.color = "red";
+    shakeScreen();
     return;
   }
 
   const permissionsMap = permissionManager.permissionsMap;
 
-  if (!permissionsMap.has(data.guildId)) {
-    permissionsMap.set(data.guildId, new Set<Permission>());
+  if (!permissionsMap.has(guild.guildId)) {
+    permissionsMap.set(guild.guildId, new Set<Permission>());
   }
 
-  permissionsMap.set(data.guildId, data.permissionsMap);
+  //permissionsMap.set(guild.guildId, data.permissionsMap);
 
-  loadGuild(data.joinedGuildId, data.joinedChannelId, data.joinedGuildName);
+  loadGuild(data.guild.guildId, data.joinedChannelId, data.guild.guildName);
+
+  location.reload();
 
   if (closeCurrentJoinPop) {
     closeCurrentJoinPop();
   }
+});
+
+apiClient.on(EventType.LEAVE_GUILD, (guildId: string) => {
+  closeSettings();
+  removeFromGuildList(guildId);
+  cacheInterface.removeGuild(guildId);
+  loadDmHome();
 });
 
 apiClient.on(EventType.DELETE_GUILD, (data) => {
@@ -88,11 +97,11 @@ apiClient.on(EventType.DELETE_GUILD, (data) => {
   }
 });
 apiClient.on(EventType.GET_INVITES, (data) => {
-  const inviteIds = data.inviteIds;
-  const guildId = data.guildId;
-  if (!guildId || !inviteIds) return;
-  if (data && inviteIds) {
-    cacheInterface.addInvites(guildId, inviteIds);
+  const inviteId = data.inviteId;
+  const guildId = currentGuildId;
+  if (!guildId || !inviteId) return;
+  if (data && inviteId) {
+    cacheInterface.addInvite(guildId, inviteId);
   } else {
     console.warn("Invite ids do not exist. ", data);
   }
