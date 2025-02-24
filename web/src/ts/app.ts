@@ -287,6 +287,10 @@ export function initializeGuild() {
     router.validateRoute();
 
   if (isValid && initialGuildId) {
+    if (!cacheInterface.doesGuildExist(initialGuildId)) {
+      loadDmHome();
+      return;
+    }
     loadGuild(initialGuildId, initialChannelId || "", "", false, true);
     fetchMembers();
   } else {

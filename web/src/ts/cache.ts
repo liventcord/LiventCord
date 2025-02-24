@@ -255,13 +255,13 @@ class MessagesCache extends BaseCache {
 }
 
 class InviteIdsCache extends BaseCache {
-  assignInviteIds(guildId: string, inviteId: string[]): void {
+  assignInviteId(guildId: string, inviteId: string): void {
     this.setObject(guildId, { inviteId });
   }
 
-  getInviteId(guildId: string): string | [] {
+  getInviteId(guildId: string): string | null {
     const inviteData = this.get(guildId);
-    return inviteData?.inviteId || [];
+    return inviteData?.inviteId || null;
   }
 
   isInvitesEmpty(guildId: string): boolean {
@@ -383,6 +383,10 @@ class GuildCache {
     }
   }
 
+  removeGuild(guildId: string) {
+    delete this.guilds[guildId];
+  }
+
   doesGuildExist(guildId: string): boolean {
     return Boolean(this.guilds[guildId]);
   }
@@ -398,6 +402,9 @@ class GuildCacheInterface {
   // Guild
   addGuild(guildData: { guildId: string; guildName: string }): void {
     this.guildCache.addGuild(guildData);
+  }
+  removeGuild(guildId: string) {
+    this.guildCache.removeGuild(guildId);
   }
 
   getGuild(guildId: string): Guild | null {
@@ -422,21 +429,20 @@ class GuildCacheInterface {
   }
 
   // Invite
-  addInvites(guildId: string, inviteIds: string[]): void {
+  addInvite(guildId: string, inviteId: string): void {
+    console.log("Adding invites: ", guildId, inviteId);
     this.guildCache
       .getGuild(guildId)
-      ?.invites.assignInviteIds(guildId, inviteIds);
+      ?.invites.assignInviteId(guildId, inviteId);
   }
 
-  getInviteId(guildId: string): string[] | null {
+  getInviteId(guildId: string): string | null {
+    guildId;
     const result = this.guildCache
       .getGuild(guildId)
       ?.invites.getInviteId(guildId);
-    if (Array.isArray(result)) {
-      return result;
-    } else {
-      return null;
-    }
+    console.log("Invites for guild  ", Array.isArray(result), result);
+    return result ?? null;
   }
 
   isInvitesEmpty(guildId: string): boolean {

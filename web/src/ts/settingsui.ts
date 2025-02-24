@@ -864,9 +864,9 @@ export function generateConfirmationPanel() {
   return popupDiv;
 }
 
-function shakeScreen() {
+export function shakeScreen() {
   let SHAKE_FORCE = 1;
-  const RESET_TIMEOUT_DURATION = 5000;
+  const RESET_TIMEOUT_DURATION = 800;
 
   regenerateConfirmationPanel();
   if (currentPopUp) currentPopUp.style.backgroundColor = "#ff1717";

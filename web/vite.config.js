@@ -32,8 +32,8 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       minify: isDev ? false : "terser",
       terserOptions: {
-        compress: { 
-          passes: 3 
+        compress: {
+          passes: 3
         },
         mangle: { toplevel: true }
       },
@@ -55,16 +55,11 @@ export default defineConfig(({ mode }) => {
 
     css: {
       postcss: {
-        plugins: [
-          autoprefixer,
-          cssnano({ preset: "default" })
-        ]
+        plugins: [autoprefixer, cssnano({ preset: "default" })]
       }
     },
 
-    plugins: [
-      eslintPlugin({ emitWarning: false }),
-    ],
+    plugins: [eslintPlugin({ emitWarning: false })],
 
     server: {
       hmr: true,

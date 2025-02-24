@@ -1,7 +1,6 @@
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
-import { router } from "./router.ts";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -63,7 +62,7 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_INIT_DATA: HttpMethod.GET,
   CREATE_CHANNEL: HttpMethod.POST,
   JOIN_GUILD: HttpMethod.POST,
-  LEAVE_GUILD: HttpMethod.POST,
+  LEAVE_GUILD: HttpMethod.DELETE,
   CREATE_GUILD: HttpMethod.POST,
   DELETE_GUILD: HttpMethod.DELETE,
   DELETE_GUILD_IMAGE: HttpMethod.DELETE,
@@ -110,7 +109,7 @@ const EventUrlMap: Record<EventType, string> = {
   GET_CHANNELS: "/guilds/{guildId}/channels/",
   DELETE_CHANNEL: "/guilds/{guildId}/channels/{channelId}",
   GET_MEMBERS: "/guilds/{guildId}/members",
-  GET_INVITES: "/guilds/{guildId}/invites",
+  GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
 
   GET_HISTORY_DM: "/dms/channels/{channelId}/messages",
   GET_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
@@ -122,7 +121,7 @@ const EventUrlMap: Record<EventType, string> = {
   STOP_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/stop",
   CHANGE_GUILD_NAME: "/guilds/{guildId}",
 
-  JOIN_GUILD: "/guilds/{guildId}/members",
+  JOIN_GUILD: "/guilds/{inviteId}/members",
   LEAVE_GUILD: "/guilds/{guildId}/members",
 
   GET_FRIENDS: "/friends",
@@ -158,7 +157,7 @@ class ApiClient {
 
   constructor() {
     this.listeners = {};
-    this.nonResponseEvents = [EventType.JOIN_GUILD, EventType.LEAVE_GUILD];
+    this.nonResponseEvents = [];
 
     if (import.meta.env.DEV) {
       this.validateEventMaps();
@@ -361,6 +360,7 @@ class ApiClient {
   }
 
   async send(event: EventType, data: any = {}) {
+    console.log(data);
     if (!event) {
       console.error("Event is required");
       return;

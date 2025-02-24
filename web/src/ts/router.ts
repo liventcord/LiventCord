@@ -2,6 +2,8 @@ import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { loadGuild, selectGuildList } from "./guild.ts";
+import { apiClient, EventType } from "./api.ts";
+import { showGuildPop } from "./popups.ts";
 export let isOnMe = true;
 export let isOnDm = false;
 export let isOnGuild = false;
@@ -49,6 +51,8 @@ class Router {
       const { pathStr, parts } = this.parsePath();
 
       if (pathStr === "/channels/@me") {
+        loadDmHome(false);
+      } else if (pathStr === "/join-guild") {
         loadDmHome(false);
       } else if (pathStr.startsWith("/channels/@me/")) {
         openDm(parts[3]);
@@ -98,11 +102,18 @@ class Router {
 
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
-    const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts)
-      .concat([undefined, undefined, undefined])
-      .slice(0, 3);
+    const [guildId, channelId, friendId, inviteId] = this.getRouteIds(
+      pathStr,
+      parts
+    )
+      .concat([undefined, undefined, undefined, undefined])
+      .slice(0, 4);
 
-    console.log(guildId, channelId, friendId);
+    if (inviteId) {
+      showGuildPop(inviteId);
+    }
+
+    //apiClient.send(EventType.JOIN_GUILD,{ inviteId });
 
     if (
       (guildId && !this.isIdDefined(guildId)) ||
@@ -128,15 +139,17 @@ class Router {
   }
 
   getRouteIds(pathStr: string, parts: string[]) {
-    let guildId, channelId, friendId;
+    let guildId, channelId, friendId, inviteId;
 
     if (pathStr.startsWith("/channels/@me/")) friendId = parts[3];
     else if (pathStr.startsWith("/channels/") && parts.length === 4) {
       guildId = parts[2];
       channelId = parts[3];
+    } else if (pathStr.startsWith("/join-guild")) {
+      inviteId = parts[2];
     }
 
-    return [guildId, channelId, friendId];
+    return [guildId, channelId, friendId, inviteId];
   }
 
   shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string) {
