@@ -243,10 +243,17 @@ const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
       if (entry.target instanceof HTMLElement) {
-        const target = entry.target;
-        if (entry.isIntersecting && target.dataset.contentLoaded !== "true") {
-          loadObservedContent(target);
-          target.dataset.contentLoaded = "true";
+        const target = entry.target as HTMLElement;
+        if (
+          target &&
+          entry.isIntersecting &&
+          target.dataset.contentLoaded !== "true"
+        ) {
+          setTimeout(() => {
+            loadObservedContent(target);
+            observer.unobserve(target);
+            target.dataset.contentLoaded = "true";
+          }, 100);
         }
       }
     });
@@ -269,7 +276,6 @@ function loadObservedContent(targetElement: HTMLElement) {
       targetElement.insertBefore(nodes[i], targetElement.firstChild);
     }
   }
-  observer.unobserve(targetElement);
 }
 
 export interface MessageResponse {
@@ -495,7 +501,7 @@ export function handleHistoryResponse(data: MessageResponse) {
 
     if (checkAllMediaLoaded()) {
       chatContainer.style.overflow = "";
-      observer.disconnect();
+      _observer.disconnect();
     } else {
       setTimeout(monitorContentSizeChanges, MONITOR_CHANGES_DELAY);
     }
