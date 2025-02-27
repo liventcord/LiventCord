@@ -4,9 +4,13 @@ sidebar_position: 1
 
 # Set Enviroment Variables
 
+## .NET Server Configuration
 1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
+```bash
+mv Properties/exampleSettings.json Properties/appsettings.json
+```
 
-### Configuration Options
+#### Configuration Options
   - **Host**:
     Hostname the server will run at.
     **Defaults to** `0.0.0.0`
@@ -73,4 +77,32 @@ sidebar_position: 1
   - **ExternalMediaLimit**:
     Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
     **Defaults to** `10`
+
+  - **BuildFrontend**:
+    Whether to build frontend assets on .net server start or not.
+    **Defaults to** `none`
     
+
+
+## Gin Server Configuration
+1. Move .example.env to .env.
+
+```bash
+mv .example.env .env
+```
+#### Configuration Options
+  - **Host**:
+    Hostname the server will run at.
+    **Defaults to** `0.0.0.0`
+
+  - **Port**:
+    Port the server will run at.
+    **Defaults to** `8080`
+
+  - **DotnetApiUrl**:
+    The URL used to verify the WebSocket authentication by passing the cookie to the .NET server.
+    **Defaults to** `http://localhost:5005`
+  
+  -**RedisConnectionString**:
+    Connection string for connecting redis
+    **Defaults to** `localhost:6379`

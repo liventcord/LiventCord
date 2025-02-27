@@ -47,7 +47,7 @@ import {
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage, createReplyBar } from "./app.ts";
-import { loadingScreen, setActiveIcon } from "./ui.ts";
+import { alertUser, loadingScreen, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
@@ -334,27 +334,44 @@ export function handleOldMessagesResponse(data: MessageResponse) {
 
 export function handleMessage(data: MessageResponse): void {
   try {
+    console.warn("Received message data:", data);
+
     if (data.isOldMessages) {
+      console.log("Processing old messages.");
       handleOldMessagesResponse(data);
       return;
     }
+
     const { isDm, channelId } = data;
     const userId = data.messages[0].userId;
+    console.log(`isDm: ${isDm}, channelId: ${channelId}, userId: ${userId}`);
 
     const idToCompare = isDm
       ? friendsCache.currentDmId
       : guildCache.currentChannelId;
 
     if (data.guildId !== currentGuildId || idToCompare !== channelId) {
-      console.log(`${idToCompare} is not ${channelId} so returning`);
+      console.log(
+        `guildId ${data.guildId} does not match currentGuildId ${currentGuildId} or channelId ${channelId} does not match idToCompare ${idToCompare}. Returning.`
+      );
+
       if (userId !== currentUserId) {
+        console.log(
+          "UserId does not match currentUserId, playing notification sound."
+        );
         playNotification();
         setActiveIcon();
       }
       return;
     }
 
-    displayChatMessage(data.messages[0]);
+    const message = data.messages[0];
+    if (typeof message.date === "string") {
+      message.date = new Date(message.date);
+      console.log("Converted date string to Date object:", message.date);
+    }
+
+    displayChatMessage(message);
 
     fetchReplies(data.messages, new Set<string>());
   } catch (error) {
@@ -686,7 +703,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
   if (!attachmentUrls && content === "" && embeds.length === 0) return null;
-
+  console.warn(typeof date);
   const nick = getUserNick(userId);
   const newMessage = createMessageElement(
     messageId,

@@ -16,12 +16,13 @@ namespace LiventCord.Controllers
         private readonly ITokenValidationService _tokenValidationService;
 
         private readonly ImageController _imageController;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
 
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController
+            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter
         )
         {
             _tokenValidationService = tokenValidationService;
@@ -29,6 +30,7 @@ namespace LiventCord.Controllers
             _context = context;
             _metadataService = metadataService;
             _imageController = imageController;
+            _redisEventEmitter = redisEventEmitter;
 
         }
 
@@ -140,9 +142,9 @@ namespace LiventCord.Controllers
 
         [HttpPut("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditGuildMessage(
-            [FromRoute] string guildId,
-            [FromRoute] string channelId,
-            [FromRoute] string messageId,
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId,
+            [FromRoute][IdLengthValidation] string messageId,
             [FromBody] EditMessageRequest request
         )
         {
@@ -157,7 +159,9 @@ namespace LiventCord.Controllers
             }
 
             await EditMessage(channelId, messageId, request.Content);
-            return Ok(new { Type = "success", Message = "Message edited in guild." });
+            var editBroadcast = new { guildId, channelId, messageId, request.Content };
+            await _redisEventEmitter.EmitToGuild(EventType.EDIT_CHANNEL, editBroadcast, guildId, UserId!);
+            return Ok(editBroadcast);
         }
 
         [HttpPut("/api/dms/channels/{channelId}/messages/{messageId}")]
@@ -173,7 +177,9 @@ namespace LiventCord.Controllers
             }
 
             await EditMessage(channelId, messageId, request.Content);
-            return Ok(new { Type = "success", Message = "Message edited in DM." });
+            var editBroadcast = new { channelId, messageId, request.Content };
+            await _redisEventEmitter.EmitToFriend(EventType.EDIT_CHANNEL, editBroadcast, UserId!, channelId);
+            return Ok(editBroadcast);
         }
 
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
@@ -183,12 +189,13 @@ namespace LiventCord.Controllers
             [IdLengthValidation][FromRoute] string messageId
         )
         {
-            if (!await _permissionsController.CanManageChannels(UserId!, guildId))
+            if (!await _permissionsController.CanDeleteMessages(UserId!, guildId))
             {
                 return StatusCode(StatusCodes.Status403Forbidden);
             }
-
+            var deleteBroadcast = new { guildId, channelId, messageId };
             await DeleteMessage(channelId, messageId);
+            await _redisEventEmitter.EmitToGuild(EventType.DELETE_MESSAGE_GUILD, deleteBroadcast, guildId, UserId!);
             return Ok(new { messageId });
         }
 
@@ -278,6 +285,7 @@ namespace LiventCord.Controllers
                 request.MessageId,
                 request.UserId,
                 channelId,
+                guildId,
                 request.Content,
                 request.Date,
                 request.LastEdited,
@@ -294,6 +302,7 @@ namespace LiventCord.Controllers
              string messageId,
              string userId,
              string channelId,
+             string? guildId,
              string? content,
              DateTime date,
              DateTime? lastEdited,
@@ -338,12 +347,25 @@ namespace LiventCord.Controllers
                 AttachmentUrls = attachmentUrls,
                 ReplyToId = replyToId,
                 ReactionEmojisIds = reactionEmojisIds,
-                Embeds = embeds ?? new(),
+                Embeds = embeds ?? new List<Embed>(),
                 Metadata = new Metadata()
             };
 
             await _context.Messages.AddAsync(message).ConfigureAwait(false);
             await _context.SaveChangesAsync().ConfigureAwait(false);
+
+            if (guildId != null)
+            {
+                var broadcastMessage = new
+                {
+                    guildId,
+                    messages = new[] { message },
+                    channelId,
+                    userId
+                };
+                await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
+            }
+
         }
 
         private async Task SaveMetadataAsync(string messageId, Metadata metadata)
@@ -417,6 +439,7 @@ namespace LiventCord.Controllers
                 Utils.CreateRandomId(),
                 UserId!,
                 channelId,
+                guildId,
                 request.Content,
                 DateTime.UtcNow,
                 null,
@@ -527,21 +550,8 @@ public class NewMessageRequest
 
 public class EditMessageRequest
 {
-    [IdLengthValidation]
-    [Required]
-    public required string GuildId { get; set; }
-
-    [IdLengthValidation]
-    [Required]
-    public required string MessageId { get; set; }
-
-    [IdLengthValidation]
-    [Required]
-    public required string ChannelId { get; set; }
-
     [Required]
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public required string Content { get; set; }
 
-    public string? AttachmentUrls { get; set; }
 }

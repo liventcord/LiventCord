@@ -5,18 +5,18 @@ using LiventCord.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSignalR();
 
 ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<BaseRedisEmitter>();
+builder.Services.AddScoped<RedisEventEmitter>();
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
@@ -26,7 +26,6 @@ builder.Services.AddScoped<NickDiscriminatorController>();
 builder.Services.AddScoped<MembersController>();
 builder.Services.AddScoped<ChannelController>();
 builder.Services.AddScoped<AppLogicService>();
-builder.Services.AddScoped<SSEManager>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
@@ -89,7 +88,7 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
 
 if (FRONTEND_URL != null)
 {
@@ -170,14 +169,13 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "docs";
 });
 
-app.MapHub<Hub>("/socket");
 app.MapControllers();
 
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
 
-    if (env.IsDevelopment())
+    if (env.IsDevelopment() && builder.Configuration["BuildFrontend"] == "true")
     {
         Task.Run(() => BuilderService.StartFrontendBuild());
     }

@@ -55,7 +55,7 @@ namespace LiventCord.Controllers
                 return NotFound("Friend not found.");
             }
 
-            var existingFriendship = await CheckExistingFriendship(friend.UserId);
+            var existingFriendship = await _dbContext.CheckFriendship(UserId!, friend.UserId);
             if (existingFriendship)
             {
                 return Conflict("You are already friends with this user.");
@@ -130,13 +130,7 @@ namespace LiventCord.Controllers
                 .FirstOrDefaultAsync();
         }
 
-        private async Task<bool> CheckExistingFriendship(string friendUserId)
-        {
-            return await _dbContext.Friends.AnyAsync(f =>
-                (f.UserId == UserId && f.FriendId == friendUserId)
-                || (f.UserId == friendUserId && f.FriendId == UserId)
-            );
-        }
+
 
         private async Task CreateFriendship(string friendUserId, FriendStatus status)
         {

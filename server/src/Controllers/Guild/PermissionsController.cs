@@ -141,7 +141,6 @@ namespace LiventCord.Controllers
 
             return permissionsMap;
         }
-
         public async Task AssignPermissions(
             string guildId,
             string userId,

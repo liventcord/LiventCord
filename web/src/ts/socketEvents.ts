@@ -1,5 +1,3 @@
-declare var signalR: any;
-
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
 import { updateUserOnlineStatus } from "./user.ts";
@@ -32,22 +30,149 @@ import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 
-const socketClient = new signalR.HubConnectionBuilder()
-  .withUrl("/socket")
-  .configureLogging(signalR.LogLevel.Information)
-  .build();
-
 const SocketEvent = Object.freeze({
-  GUILD_MESSAGE: "GUILD_MESSAGE",
-  DM_MESSAGE: "DM_MESSAGE",
-  UPDATE_USER: "UPDATE_USER",
-  USER_STATUS: "USER_STATUS",
-  UPDATE_CHANNEL: "UPDATE_CHANNEL",
+  CREATE_CHANNEL: "CREATE_CHANNEL",
+  JOIN_GUILD: "JOIN_GUILD",
+  LEAVE_GUILD: "LEAVE_GUILD",
+  DELETE_GUILD: "DELETE_GUILD",
+  DELETE_GUILD_IMAGE: "DELETE_GUILD_IMAGE",
+  SEND_MESSAGE_GUILD: "SEND_MESSAGE_GUILD",
+  SEND_MESSAGE_DM: "SEND_MESSAGE_DM",
   DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
   DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
+  UPDATE_GUILD_NAME: "UPDATE_GUILD_NAME",
+  UPDATE_GUILD_IMAGE: "UPDATE_GUILD_IMAGE",
+  DELETE_CHANNEL: "DELETE_CHANNEL",
+  START_TYPING: "START_TYPING",
+  STOP_TYPING: "STOP_TYPING",
+  ADD_FRIEND: "ADD_FRIEND",
+  ACCEPT_FRIEND: "ACCEPT_FRIEND",
+  REMOVE_FRIEND: "REMOVE_FRIEND",
+  DENY_FRIEND: "DENY_FRIEND",
+  CHANGE_NICK: "CHANGE_NICK",
+  LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
-  INCOMING_AUDIO: "INCOMING_AUDIO"
-});
+  CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
+  UPDATE_USER_NAME: "UPDATE_USER_NAME",
+  UPDATE_USER_STATUS: "UPDATE_USER_STATUS"
+} as const);
+
+type SocketEventType = keyof typeof SocketEvent;
+
+const socketUrl = "ws://localhost:8080/ws";
+
+class WebSocketClient {
+  private socket: WebSocket;
+  private eventHandlers: Record<string, Function[]> = {};
+  private socketUrl: string;
+  private retryCount: number = 0;
+  private maxRetryDelay: number = 30000;
+  private static instance: WebSocketClient | null = null;
+
+  private constructor(url: string = "") {
+    this.socketUrl = url;
+    this.socket = new WebSocket(this.socketUrl);
+
+    this.socket.onopen = () => {
+      console.log("Connected to WebSocket server");
+      this.retryCount = 0;
+    };
+
+    this.socket.onmessage = (event) => {
+      console.log("Received message:", event.data);
+      try {
+        const message = JSON.parse(event.data);
+        const { event_type, payload } = message;
+
+        // Inner function to convert keys to camelCase
+        const convertKeysToCamelCase = (obj: any): any => {
+          if (Array.isArray(obj)) {
+            return obj.map(convertKeysToCamelCase); // Recursively handle arrays
+          } else if (
+            obj !== null &&
+            obj !== undefined &&
+            typeof obj === "object"
+          ) {
+            return Object.keys(obj).reduce((acc, key) => {
+              const camelKey = key.charAt(0).toLowerCase() + key.slice(1); // Convert to camelCase
+              acc[camelKey] = convertKeysToCamelCase(obj[key]); // Recursively handle nested objects
+              return acc;
+            }, {} as Record<string, any>);
+          }
+          return obj; // Return primitive value as is
+        };
+
+        if (Object.values(SocketEvent).includes(event_type)) {
+          const eventEnumValue = event_type as SocketEventType;
+          if (this.eventHandlers[eventEnumValue]) {
+            const camelCasedPayload = convertKeysToCamelCase(payload); // Use the inner function
+            this.eventHandlers[eventEnumValue].forEach((handler) => {
+              console.log(camelCasedPayload);
+              handler(camelCasedPayload);
+            });
+          } else {
+            console.log(
+              "No handler for event type:",
+              event_type,
+              typeof event_type
+            );
+          }
+        } else {
+          console.log("Invalid event type:", event_type);
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    this.socket.onerror = (error) => {
+      console.error("WebSocket Error:", error);
+    };
+
+    this.socket.onclose = (event) => {
+      if (event.wasClean) {
+        console.log("Closed cleanly:", event.code, event.reason);
+      } else {
+        console.error("Connection interrupted");
+        const retryDelay = Math.min(
+          Math.pow(2, this.retryCount) * 1000,
+          this.maxRetryDelay
+        );
+        console.log(`Retrying connection in ${retryDelay / 1000} seconds...`);
+        setTimeout(() => this.reconnect(), retryDelay);
+        this.retryCount = Math.min(this.retryCount + 1, 10);
+      }
+    };
+  }
+
+  private reconnect() {
+    this.socket = new WebSocket(this.socketUrl);
+  }
+
+  public static getInstance(url: string): WebSocketClient {
+    if (!WebSocketClient.instance) {
+      WebSocketClient.instance = new WebSocketClient(url);
+    }
+    return WebSocketClient.instance;
+  }
+
+  on(eventType: SocketEventType, handler: Function) {
+    if (!this.eventHandlers[eventType]) {
+      this.eventHandlers[eventType] = [];
+    }
+    this.eventHandlers[eventType].push(handler);
+  }
+
+  send(data: any) {
+    this.socket.send(JSON.stringify(data));
+  }
+
+  close() {
+    this.socket.close();
+  }
+}
+
+const socketClient = WebSocketClient.getInstance(socketUrl);
 
 interface UpdateUserData {
   userId: string;
@@ -60,80 +185,73 @@ interface UserStatusData {
   userId: string;
   isOnline: boolean;
 }
-export interface UpdateChannelData extends CachedChannel {
-  type: "create" | "edit" | "remove";
+export interface CreateChannelData extends CachedChannel {
   guildId: string;
   channelId: string;
-  channelName: string; // No longer optional
+  channelName: string;
   isTextChannel: boolean;
 }
 
 interface GuildMessageData {
-  message: Message;
+  messages: Message[];
   guildId: string;
   channelId: string;
 }
 
 interface DMMessageData {
-  message: Message;
+  message: Message[];
   channelId: string;
 }
-
-socketClient.on(SocketEvent.GUILD_MESSAGE, (data: GuildMessageData) => {
+socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: GuildMessageData) => {
   const messageData: MessageResponse = {
     guildId: data.guildId,
     isOldMessages: false,
-    messages: [],
     isDm: false,
-    ...data.message
+    messages: data.messages,
+    channelId: data.channelId
   };
 
   handleMessage(messageData);
 });
 
-socketClient.on(SocketEvent.DM_MESSAGE, (data: DMMessageData) => {
+socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: DMMessageData) => {
   const messageData: MessageResponse = {
     isOldMessages: false,
-    messages: [],
+    messages: data.message,
     isDm: true,
-    ...data.message
+    channelId: data.channelId
   };
 
   handleMessage(messageData);
 });
 
-socketClient.on(SocketEvent.UPDATE_USER, (data: UpdateUserData) => {
+socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
   refreshUserProfile(data.userId);
 });
 
-socketClient.on(SocketEvent.USER_STATUS, (data: UserStatusData) => {
+socketClient.on(SocketEvent.UPDATE_USER_STATUS, (data: UserStatusData) => {
   const userId = data.userId;
   const isOnline = data.isOnline;
   updateUserOnlineStatus(userId, isOnline);
 });
 
-socketClient.on(SocketEvent.UPDATE_CHANNEL, (data: UpdateChannelData) => {
+socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {
   if (!data) return;
-  const { type, guildId, channelId, channelName = "", isTextChannel } = data;
+  const { guildId, channelId, channelName = "", isTextChannel } = data;
 
-  const removeType = "remove";
-  const editType = "edit";
-  const createType = "create";
+  const channel = {
+    guildId,
+    channelId,
+    channelName,
+    isTextChannel
+  };
+  addChannel(channel);
 
-  if (type === createType) {
-    const channel = {
-      guildId,
-      channelId,
-      channelName,
-      isTextChannel
-    };
-
-    addChannel(channel);
-  } else if (type === removeType) {
-    removeChannel(data);
-  } else if (type === editType) {
-    editChannel(data);
-  }
+  //} else if (type === removeType) {
+  //  removeChannel(data);
+  //} else if (type === editType) {
+  //  editChannel(data);
+  //}
 });
 
 interface DeleteMessageEmit {
@@ -251,18 +369,9 @@ interface IncomingAudioResponse {
 
 export const voiceHandler = new VoiceHandler();
 
-socketClient.on(
-  SocketEvent.INCOMING_AUDIO,
-  async (data: IncomingAudioResponse) => {
-    await voiceHandler.handleAudio(data);
-  }
-);
-
-socketClient
-  .start()
-  .then(() => {
-    console.log("SignalR connection established.");
-  })
-  .catch((err: Error) => {
-    console.error("Error while establishing connection: ", err.message);
-  });
+//socketClient.on(
+//  SocketEvent.INCOMING_AUDIO,
+//  async (data: IncomingAudioResponse) => {
+//    await voiceHandler.handleAudio(data);
+//  }
+//);
