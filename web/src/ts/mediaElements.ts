@@ -13,7 +13,7 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
-  defaultMediaImageSrc
+  defaultMediaImageSrc,
 } from "./utils.ts";
 import { initialState } from "./app.ts";
 import { router } from "./router.ts";

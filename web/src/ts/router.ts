@@ -22,6 +22,8 @@ class Router {
   constructor() {
     this.init();
   }
+  public ID_LENGTH = 19;
+
   isPathnameCorrect(url: string) {
     const regex = new RegExp(`^/channels/\\d+/\\d+$`);
     return regex.test(url);
