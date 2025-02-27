@@ -84,28 +84,27 @@ class WebSocketClient {
         const message = JSON.parse(event.data);
         const { event_type, payload } = message;
 
-        // Inner function to convert keys to camelCase
         const convertKeysToCamelCase = (obj: any): any => {
           if (Array.isArray(obj)) {
-            return obj.map(convertKeysToCamelCase); // Recursively handle arrays
+            return obj.map(convertKeysToCamelCase);
           } else if (
             obj !== null &&
             obj !== undefined &&
             typeof obj === "object"
           ) {
             return Object.keys(obj).reduce((acc, key) => {
-              const camelKey = key.charAt(0).toLowerCase() + key.slice(1); // Convert to camelCase
-              acc[camelKey] = convertKeysToCamelCase(obj[key]); // Recursively handle nested objects
+              const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+              acc[camelKey] = convertKeysToCamelCase(obj[key]); 
               return acc;
             }, {} as Record<string, any>);
           }
-          return obj; // Return primitive value as is
+          return obj; 
         };
 
         if (Object.values(SocketEvent).includes(event_type)) {
           const eventEnumValue = event_type as SocketEventType;
           if (this.eventHandlers[eventEnumValue]) {
-            const camelCasedPayload = convertKeysToCamelCase(payload); // Use the inner function
+            const camelCasedPayload = convertKeysToCamelCase(payload);
             this.eventHandlers[eventEnumValue].forEach((handler) => {
               console.log(camelCasedPayload);
               handler(camelCasedPayload);
@@ -146,7 +145,82 @@ class WebSocketClient {
   }
 
   private reconnect() {
+    const previousHandlers = this.eventHandlers;
     this.socket = new WebSocket(this.socketUrl);
+    this.eventHandlers = previousHandlers; 
+    this.attachHandlers(); 
+  }
+
+  private attachHandlers() {
+    this.socket.onopen = () => {
+      console.log("Connected to WebSocket server");
+      this.retryCount = 0;
+    };
+
+    this.socket.onmessage = (event) => {
+      console.log("Received message:", event.data);
+      try {
+        const message = JSON.parse(event.data);
+        const { event_type, payload } = message;
+        
+        const convertKeysToCamelCase = (obj: any): any => {
+          if (Array.isArray(obj)) {
+            return obj.map(convertKeysToCamelCase);
+          } else if (
+            obj !== null &&
+            obj !== undefined &&
+            typeof obj === "object"
+          ) {
+            return Object.keys(obj).reduce((acc, key) => {
+              const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+              acc[camelKey] = convertKeysToCamelCase(obj[key]); 
+              return acc;
+            }, {} as Record<string, any>);
+          }
+          return obj; 
+        };
+
+        if (Object.values(SocketEvent).includes(event_type)) {
+          const eventEnumValue = event_type as SocketEventType;
+          if (this.eventHandlers[eventEnumValue]) {
+            const camelCasedPayload = convertKeysToCamelCase(payload);
+            this.eventHandlers[eventEnumValue].forEach((handler) => {
+              console.log(camelCasedPayload);
+              handler(camelCasedPayload);
+            });
+          } else {
+            console.log(
+              "No handler for event type:",
+              event_type,
+              typeof event_type
+            );
+          }
+        } else {
+          console.log("Invalid event type:", event_type);
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    this.socket.onerror = (error) => {
+      console.error("WebSocket Error:", error);
+    };
+
+    this.socket.onclose = (event) => {
+      if (event.wasClean) {
+        console.log("Closed cleanly:", event.code, event.reason);
+      } else {
+        console.error("Connection interrupted");
+        const retryDelay = Math.min(
+          Math.pow(2, this.retryCount) * 1000,
+          this.maxRetryDelay
+        );
+        console.log(`Retrying connection in ${retryDelay / 1000} seconds...`);
+        setTimeout(() => this.reconnect(), retryDelay);
+        this.retryCount = Math.min(this.retryCount + 1, 10);
+      }
+    };
   }
 
   public static getInstance(url: string): WebSocketClient {
@@ -173,6 +247,7 @@ class WebSocketClient {
 }
 
 const socketClient = WebSocketClient.getInstance(socketUrl);
+
 
 interface UpdateUserData {
   userId: string;
