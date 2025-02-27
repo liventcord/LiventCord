@@ -34,6 +34,14 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     
     Defaults to `sqlite`
 
+  -**MaxPoolSize**: 
+    Maximum number of connections in the database pool.
+    **Defaults to** `5`
+    
+  -**MinPoolSize**: 
+    Minimum number of connections in the database pool.
+    **Defaults to** `0`
+
   - **SqlitePath**:
     File path where SQLite will store data.
     **Defaults to** `Data/liventcord.db`
@@ -81,7 +89,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
   - **BuildFrontend**:
     Whether to build frontend assets on .net server start or not.
     **Defaults to** `none`
-    
+
 
 
 ## Gin Server Configuration
