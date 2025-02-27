@@ -66,7 +66,9 @@ import {
   channelTitle,
   channelsUl,
   getChannels,
-  currentChannelName
+  currentChannelName,
+  getRootChannel,
+  Channel
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -283,38 +285,94 @@ export function isDefined(variable: any) {
 }
 export function initializeGuild() {
   initialiseMe();
-  const { isValid, initialGuildId, initialChannelId, initialFriendId } =
-    router.validateRoute();
+  const {
+    isValid,
+    initialGuildId,
+    initialChannelId,
+    initialFriendId
+  }: {
+    isValid: boolean;
+    initialGuildId?: string;
+    initialChannelId?: string;
+    initialFriendId?: string;
+  } = router.validateRoute();
+
+  if (initialState.guilds && initialState.guilds.length > 0) {
+    processGuilds(initialGuildId, initialState.guilds);
+  }
 
   if (isValid && initialGuildId) {
     if (!cacheInterface.doesGuildExist(initialGuildId)) {
       loadDmHome();
       return;
     }
-    loadGuild(initialGuildId, initialChannelId || "", "", false, true);
+    handleChannelLoading(initialGuildId, initialChannelId);
     fetchMembers();
   } else {
-    console.log("Route is not a guild");
-    if (initialFriendId && isDefined(initialFriendId)) {
-      addUser(initialFriendId);
+    handleFriendRoute(initialFriendId);
+  }
+}
+
+function processGuilds(
+  initialGuildId: string | undefined,
+  guilds: { guildId: string; rootChannel: string; guildChannels: Channel[] }[]
+): void {
+  guilds.forEach((data) => {
+    data.guildChannels.forEach((channel: any) => {
+      cacheInterface.addChannel(data.guildId, channel);
+    });
+
+    if (initialGuildId && initialGuildId === data.guildId) {
+      cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
+    }
+
+    if (data.guildId === currentGuildId) {
+      updateChannels(data.guildChannels);
+    }
+  });
+}
+
+export function handleChannelLoading(
+  guildId: string,
+  channelId?: string
+): void {
+  if (channelId) {
+    console.log("Channe lch");
+    const channelExists: boolean = cacheInterface.doesChannelExists(
+      guildId,
+      channelId
+    );
+    const isVoiceChannel: boolean = cacheInterface.isVoiceChannel(
+      guildId,
+      channelId
+    );
+    if (isVoiceChannel || channelExists) {
+      const rootChannel = cacheInterface.getRootChannel(guildId);
+      if (rootChannel) {
+        console.warn("ROOOOT");
+        loadGuild(
+          guildId,
+          getRootChannel(guildId, rootChannel.channelId),
+          "",
+          true
+        );
+      }
+    } else {
+      console.warn("VOOOICE", isVoiceChannel, channelExists);
+      loadGuild(
+        guildId,
+        cacheInterface.getRootChannel(guildId)?.channelId ?? "",
+        "",
+        true
+      );
     }
   }
+}
 
-  console.log(initialState.guilds);
-
-  if (initialState.guilds && initialState.guilds.length > 0) {
-    initialState.guilds.forEach((data) => {
-      console.log(data);
-      data.guildChannels.forEach((channel: CachedChannel) => {
-        cacheInterface.addChannel(data.guildId, channel);
-      });
-      //cacheInterface.setChannels(data.guildId,data.guildChannels);
-      if (initialGuildId)
-        cacheInterface.setRootChannel(initialGuildId, data.rootChannel);
-      if (data.guildId === currentGuildId) {
-        updateChannels(data.guildChannels);
-      }
-    });
+function handleFriendRoute(friendId?: string): void {
+  console.log("Route is not a guild");
+  if (friendId && isDefined(friendId)) {
+    addUser(friendId);
   }
 }
 

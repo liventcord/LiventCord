@@ -6,7 +6,7 @@ import {
   handleHistoryResponse
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
-import { addChannel, changeChannel, ChannelData, handleChannelDelete, removeChannel } from "./channels.ts";
+import { addChannel, changeChannel, handleChannelDelete } from "./channels.ts";
 import { getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
 import {
@@ -130,9 +130,6 @@ apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   }
   createFireWorks();
 });
-
-
-
 
 apiClient.on(EventType.DELETE_CHANNEL, (data) => {
   handleChannelDelete(data);

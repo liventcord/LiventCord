@@ -94,11 +94,11 @@ class WebSocketClient {
           ) {
             return Object.keys(obj).reduce((acc, key) => {
               const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
-              acc[camelKey] = convertKeysToCamelCase(obj[key]); 
+              acc[camelKey] = convertKeysToCamelCase(obj[key]);
               return acc;
             }, {} as Record<string, any>);
           }
-          return obj; 
+          return obj;
         };
 
         if (Object.values(SocketEvent).includes(event_type)) {
@@ -147,8 +147,8 @@ class WebSocketClient {
   private reconnect() {
     const previousHandlers = this.eventHandlers;
     this.socket = new WebSocket(this.socketUrl);
-    this.eventHandlers = previousHandlers; 
-    this.attachHandlers(); 
+    this.eventHandlers = previousHandlers;
+    this.attachHandlers();
   }
 
   private attachHandlers() {
@@ -162,7 +162,7 @@ class WebSocketClient {
       try {
         const message = JSON.parse(event.data);
         const { event_type, payload } = message;
-        
+
         const convertKeysToCamelCase = (obj: any): any => {
           if (Array.isArray(obj)) {
             return obj.map(convertKeysToCamelCase);
@@ -173,11 +173,11 @@ class WebSocketClient {
           ) {
             return Object.keys(obj).reduce((acc, key) => {
               const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
-              acc[camelKey] = convertKeysToCamelCase(obj[key]); 
+              acc[camelKey] = convertKeysToCamelCase(obj[key]);
               return acc;
             }, {} as Record<string, any>);
           }
-          return obj; 
+          return obj;
         };
 
         if (Object.values(SocketEvent).includes(event_type)) {
@@ -247,7 +247,6 @@ class WebSocketClient {
 }
 
 const socketClient = WebSocketClient.getInstance(socketUrl);
-
 
 interface UpdateUserData {
   userId: string;
@@ -389,10 +388,9 @@ export function handleDeleteMessageEmit(
   processDeleteMessage(data.msgDate, data.messageId, isDm);
 }
 
-socketClient.on(SocketEvent.DELETE_CHANNEL, (data:ChannelData) => {
+socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
   handleChannelDelete(data);
 });
-
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
   handleDeleteMessageEmit(data, true);
