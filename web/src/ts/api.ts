@@ -126,7 +126,7 @@ const EventUrlMap: Record<EventType, string> = {
 
   GET_FRIENDS: "/friends",
   ADD_FRIEND: "/friends",
-  ADD_FRIEND_ID: "/friends",
+  ADD_FRIEND_ID: "/friends/id/{friendId}",
   REMOVE_FRIEND: "/friends/{friendId}",
 
   ADD_DM: "/dm/{friendId}",

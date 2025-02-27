@@ -381,10 +381,7 @@ export function handleMessage(data: MessageResponse): void {
 
 export function handleHistoryResponse(data: MessageResponse) {
   const { messages: history, channelId, guildId, oldestMessageDate } = data;
-  if (!guildId) {
-    console.error("History response doesnt have guild id: ", data);
-    return;
-  }
+
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
@@ -398,7 +395,7 @@ export function handleHistoryResponse(data: MessageResponse) {
     return;
   }
 
-  if (guildId !== currentGuildId)
+  if (guildId && guildId !== currentGuildId)
     console.warn(
       data,
       guildId,
@@ -413,7 +410,9 @@ export function handleHistoryResponse(data: MessageResponse) {
       guildCache.currentChannelId
     );
 
-  cacheInterface.setMessages(guildId, guildId, history);
+  if (guildId) {
+    cacheInterface.setMessages(guildId, guildId, history);
+  }
 
   const firstMessageDateOnChannel = oldestMessageDate
     ? new Date(oldestMessageDate)

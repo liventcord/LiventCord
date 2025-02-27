@@ -18,7 +18,6 @@ public static class FriendEventExtensions
     public static string ToString(FRIEND_EVENTS eventType) => eventStrings.GetValueOrDefault(eventType, string.Empty);
 }
 
-
 namespace LiventCord.Controllers
 {
     [ApiController]
@@ -33,7 +32,7 @@ namespace LiventCord.Controllers
             _dbContext = dbContext;
         }
 
-        [HttpGet("")]
+        [HttpGet]
         public async Task<IActionResult> GetFriendEndpoint()
         {
             if (string.IsNullOrEmpty(UserId))
@@ -43,7 +42,27 @@ namespace LiventCord.Controllers
             return Ok(friends);
         }
 
-        [HttpPost("")]
+        [HttpPost("id/{friendId}")]
+        public async Task<IActionResult> SendFriendIdRequest([FromRoute][UserIdLengthValidation] string friendId)
+        {
+            var friend = await FindUser(friendId);
+            if (friend == null)
+            {
+                return NotFound("Friend not found.");
+            }
+
+            var existingFriendship = await _dbContext.CheckFriendship(UserId!, friend.UserId);
+            if (existingFriendship)
+            {
+                return Conflict("You are already friends with this user.");
+            }
+
+            await CreateFriendship(friend.UserId, FriendStatus.Pending);
+
+            return Ok(FRIEND_EVENTS.ADD_FRIEND);
+        }
+
+        [HttpPost]
         public async Task<IActionResult> SendFriendRequest([FromBody] SendFriendRequest request)
         {
             var friend = await FindUserByFriendDetails(
@@ -65,6 +84,8 @@ namespace LiventCord.Controllers
 
             return Ok(FRIEND_EVENTS.ADD_FRIEND);
         }
+
+
 
         [HttpPut("accept/{friendId}")]
         public async Task<IActionResult> AcceptFriendRequest(string friendId)
@@ -130,7 +151,16 @@ namespace LiventCord.Controllers
                 .FirstOrDefaultAsync();
         }
 
-
+        private async Task<User?> FindUser(
+            string friendId
+        )
+        {
+            return await _dbContext
+                .Users.Where(u =>
+                    u.UserId == friendId
+                )
+                .FirstOrDefaultAsync();
+        }
 
         private async Task CreateFriendship(string friendUserId, FriendStatus status)
         {

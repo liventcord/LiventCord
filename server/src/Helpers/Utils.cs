@@ -2,40 +2,48 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using LiventCord.Helpers;
 using System.Security.Cryptography;
-
-public class IdLengthValidationAttribute : ValidationAttribute
+public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
 {
+    private readonly int _idLength;
 
-    public IdLengthValidationAttribute()
-        : base($"The value must be {Utils.ID_LENGTH} characters long and cannot be null or empty.")
-    { }
+    protected BaseIdLengthValidationAttribute(int idLength)
+        : base($"The value must be {idLength} characters long and cannot be null or empty.")
+    {
+        _idLength = idLength;
+    }
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not string id || string.IsNullOrWhiteSpace(id))
         {
-            return new ValidationResult(
-                $"The {validationContext.MemberName ?? "value"} is required and cannot be null or empty."
-            );
+            return new ValidationResult($"The {validationContext.MemberName ?? "value"} is required and cannot be null or empty.");
         }
 
-        if (id.Length != Utils.ID_LENGTH)
+        if (id.Length != _idLength)
         {
-            return new ValidationResult(
-                $"The {validationContext.MemberName ?? "value"} must be exactly {Utils.ID_LENGTH} characters long."
-            );
+            return new ValidationResult($"The {validationContext.MemberName ?? "value"} must be exactly {_idLength} characters long.");
         }
 
         return ValidationResult.Success;
     }
 }
 
+public class UserIdLengthValidationAttribute : BaseIdLengthValidationAttribute
+{
+    public UserIdLengthValidationAttribute() : base(Utils.USER_ID_LENGTH) { }
+}
+
+public class IdLengthValidationAttribute : BaseIdLengthValidationAttribute
+{
+    public IdLengthValidationAttribute() : base(Utils.ID_LENGTH) { }
+}
 namespace LiventCord.Helpers
 {
     public static partial class Utils
     {
         public static int ID_LENGTH = 19;
 
+        public static int USER_ID_LENGTH = 18;
 
         public static string CreateRandomId()
         {
@@ -74,7 +82,7 @@ namespace LiventCord.Helpers
 
             result += random.Next(1, 10).ToString();
 
-            for (int i = 1; i < 18; i++)
+            for (int i = 1; i < USER_ID_LENGTH; i++)
             {
                 result += random.Next(0, 10).ToString();
             }
