@@ -627,7 +627,7 @@ export function updateChannels(channels: Channel[]) {
     console.error("Invalid or malformed channels data:", channels);
   }
 }
-export function handleChannelDelete(data:ChannelData) {
+export function handleChannelDelete(data: ChannelData) {
   const guildId = data.guildId;
   const channelId = data.channelId;
   if (!guildId || !channelId) return;

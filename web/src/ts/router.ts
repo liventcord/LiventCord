@@ -1,8 +1,7 @@
 import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
-import { loadDmHome, openDm } from "./app.ts";
-import { loadGuild, selectGuildList } from "./guild.ts";
-import { apiClient, EventType } from "./api.ts";
+import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
+import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
 export let isOnMe = true;
 export let isOnDm = false;
@@ -20,15 +19,11 @@ export function setIsOnGuild(val: boolean) {
 const hasNotifications = false;
 
 class Router {
-  ID_LENGTH: number;
   constructor() {
-    this.ID_LENGTH = 19;
     this.init();
   }
   isPathnameCorrect(url: string) {
-    const regex = new RegExp(
-      `^/channels/\\d{${this.ID_LENGTH}}/\\d{${this.ID_LENGTH}}$`
-    );
+    const regex = new RegExp(`^/channels/\\d+/\\d+$`);
     return regex.test(url);
   }
 
@@ -57,7 +52,7 @@ class Router {
       } else if (pathStr.startsWith("/channels/@me/")) {
         openDm(parts[3]);
       } else if (pathStr.startsWith("/channels/") && parts.length === 4) {
-        loadGuild(parts[2], parts[3], "", false);
+        handleChannelLoading(parts[2], parts[3]);
       }
     } catch (error) {
       console.error(error);
@@ -91,7 +86,7 @@ class Router {
   }
 
   isIdDefined(id: string) {
-    return id && id.length === this.ID_LENGTH;
+    return id;
   }
 
   parsePath() {

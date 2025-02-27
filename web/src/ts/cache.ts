@@ -70,43 +70,26 @@ class BaseCache {
 }
 
 class ChannelCache extends BaseCache {
-  rootChannel: string | null;
-
-  constructor() {
-    super();
-    this.rootChannel = null;
-  }
-
-  setRootChannel(rootChannel: string): void {
-    console.log("Set root channel: ", rootChannel);
-    this.rootChannel = rootChannel;
-  }
-
   setChannels(guildId: string, channels: CachedChannel[]): void {
     this.setArray(guildId, channels);
   }
-  addChannel(guildId: string, channel: CachedChannel): void {
-    console.log("Adding channel: ", guildId, channel);
-    const channels = this.getChannels(guildId) || [];
-    const index = channels.findIndex(
-      (_channel) => _channel && _channel.channelId === channel.channelId
-    );
-    if (index === MINUS_INDEX) {
-      channels.push(channel);
-      this.setChannels(guildId, channels);
-    }
+
+  getChannels(guildId: string): CachedChannel[] {
+    const result = this.get(guildId);
+    return Array.isArray(result) ? result : [];
   }
 
-  editChannel(guildId: string, channel: CachedChannel): void {
+  addChannel(guildId: string, channel: CachedChannel): void {
+    console.log(`Adding channel to guild: ${guildId}`, channel);
     const channels = this.getChannels(guildId);
-    const index = channels.findIndex(
-      (_channel) => _channel.channelId === channel.channelId
-    );
-    if (index !== MINUS_INDEX) {
-      channels[index] = { ...channels[index], ...channel };
+    if (!channels.some((ch) => ch.channelId === channel.channelId)) {
+      channels.push(channel);
       this.setChannels(guildId, channels);
+      console.log(`Channel added: ${channel.channelId} to guild: ${guildId}`);
     } else {
-      console.log("Channel not found for guild:", guildId);
+      console.warn(
+        `Channel already exists: ${channel.channelId} in guild: ${guildId}`
+      );
     }
   }
 
@@ -117,33 +100,41 @@ class ChannelCache extends BaseCache {
     this.setChannels(guildId, channels);
   }
 
-  getChannels(guildId: string): CachedChannel[] {
-    return this.get(guildId) || [];
+  doesChannelExist(guildId: string, channelId: string): boolean {
+    const result = this.getChannels(guildId).some(
+      (channel) => channel.channelId === channelId
+    );
+    console.log("Channel exists check:", guildId, channelId, "->", result);
+    return result;
   }
 
-  isRootChannel(guildId: string, channelId: string): boolean {
-    console.log("Root channel unhandled");
-    return false;
-  }
-
-  getRootChannel(guildId: string): CachedChannel | null {
+  editChannel(guildId: string, channel: CachedChannel): void {
     const channels = this.getChannels(guildId);
-    for (const channel of channels) {
-      if (channel.channelId === this.rootChannel) {
-        return channel;
-      }
+    const index = channels.findIndex(
+      (ch) => ch.channelId === channel.channelId
+    );
+    if (index !== -1) {
+      channels[index] = { ...channels[index], ...channel };
+      this.setChannels(guildId, channels);
+    } else {
+      console.log("Channel not found for guild:", guildId);
     }
-    return null;
+  }
+
+  isVoiceChannel(guildId: string, channelId: string): boolean {
+    return this.getChannels(guildId).some(
+      (channel) => channel.channelId === channelId && !channel.isTextChannel
+    );
   }
 
   updateChannel(guildId: string, channel: CachedChannel, add = true): void {
     const channels = this.getChannels(guildId);
     const index = channels.findIndex(
-      (_channel) => _channel.channelId === channel.channelId
+      (ch) => ch.channelId === channel.channelId
     );
-    if (add && index === MINUS_INDEX) {
+    if (add && index === -1) {
       channels.push(channel);
-    } else if (!add && index !== MINUS_INDEX) {
+    } else if (!add && index !== -1) {
       channels.splice(index, 1);
     }
     this.setChannels(guildId, channels);
@@ -306,6 +297,7 @@ class Guild {
   invites: InviteIdsCache;
   voiceChannels?: VoiceChannelCache;
   ownerId: string | null;
+  private rootChannel: string | null = null;
 
   constructor(guildId: string, guildName: string) {
     this.guildId = guildId;
@@ -315,6 +307,24 @@ class Guild {
     this.messages = new MessagesCache();
     this.invites = new InviteIdsCache();
     this.ownerId = null;
+  }
+
+  setRootChannel(rootChannel: string): void {
+    this.rootChannel = rootChannel;
+  }
+
+  getRootChannel() {
+    const channels = this.channels.getChannels(this.guildId);
+    for (const channel of channels) {
+      if (channel.channelId == this.rootChannel) {
+        return channel;
+      }
+    }
+    return null;
+  }
+
+  isRootChannel(channelId: string): boolean {
+    return this.rootChannel === channelId;
   }
 
   setName(guildName: string): void {
@@ -523,19 +533,29 @@ class GuildCacheInterface {
   }
 
   isRootChannel(guildId: string, channelId: string): boolean {
+    return !!this.getGuild(guildId)?.isRootChannel(channelId);
+  }
+
+  doesChannelExists(guildId: string, channelId: string) {
     return (
-      this.getGuild(guildId)?.channels.isRootChannel(guildId, channelId) ||
+      this.getGuild(guildId)?.channels.doesChannelExist(guildId, channelId) ||
       false
     );
   }
-
-  getRootChannel(guildId: string): CachedChannel | null {
-    const result = this.getGuild(guildId)?.channels.getRootChannel(guildId);
+  getRootChannel(guildId: string) {
+    const result = this.getGuild(guildId)?.getRootChannel();
     return result ?? null;
   }
 
   setRootChannel(guildId: string, channelId: string): void {
-    this.getGuild(guildId)?.channels.setRootChannel(channelId);
+    this.getGuild(guildId)?.setRootChannel(channelId);
+  }
+
+  isVoiceChannel(guildId: string, channelId: string): boolean {
+    return (
+      this.getGuild(guildId)?.channels.isVoiceChannel(guildId, channelId) ||
+      false
+    );
   }
 
   setChannels(guildId: string, channelsData: CachedChannel[]): void {
