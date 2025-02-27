@@ -5,8 +5,8 @@ import {
   messageDates,
   handleHistoryResponse
 } from "./chat.ts";
-import { guildCache, replyCache, cacheInterface } from "./cache.ts";
-import { addChannel, changeChannel, removeChannel } from "./channels.ts";
+import { replyCache, cacheInterface } from "./cache.ts";
+import { addChannel, changeChannel, ChannelData, handleChannelDelete, removeChannel } from "./channels.ts";
 import { getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
 import {
@@ -130,21 +130,12 @@ apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   }
   createFireWorks();
 });
+
+
+
+
 apiClient.on(EventType.DELETE_CHANNEL, (data) => {
-  const guildId = data.guildId;
-  const channelId = data.channelId;
-  if (!guildId || !channelId) return;
-  if (guildCache.currentChannelId === channelId) {
-    const rootChannel = cacheInterface.getRootChannel(guildId);
-    console.log(rootChannel);
-    closeSettings();
-    if (rootChannel) {
-      changeChannel(rootChannel);
-    } else {
-      loadDmHome();
-    }
-  }
-  removeChannel(data);
+  handleChannelDelete(data);
 });
 
 apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data) => {

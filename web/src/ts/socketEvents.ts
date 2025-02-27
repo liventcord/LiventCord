@@ -3,13 +3,13 @@ import { refreshUserProfile } from "./avatar.ts";
 import { updateUserOnlineStatus } from "./user.ts";
 import {
   addChannel,
-  removeChannel,
-  editChannel,
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
   setCurrentVoiceChannelGuild,
   currentChannelName,
-  channelsUl
+  channelsUl,
+  handleChannelDelete,
+  ChannelData
 } from "./channels.ts";
 import { getId, enableElement } from "./utils.ts";
 import {
@@ -388,6 +388,11 @@ export function handleDeleteMessageEmit(
 ) {
   processDeleteMessage(data.msgDate, data.messageId, isDm);
 }
+
+socketClient.on(SocketEvent.DELETE_CHANNEL, (data:ChannelData) => {
+  handleChannelDelete(data);
+});
+
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
   handleDeleteMessageEmit(data, true);

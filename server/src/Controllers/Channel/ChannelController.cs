@@ -70,6 +70,7 @@ namespace LiventCord.Controllers
 
             _dbContext.Channels.Remove(channel);
             await _dbContext.SaveChangesAsync();
+            await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, UserId!);
             return Ok(new { guildId, channelId });
         }
 

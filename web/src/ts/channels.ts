@@ -34,8 +34,9 @@ import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
 import { isOnMe, isOnDm } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { getUserNick, Member } from "./user.ts";
-import { openChannelSettings } from "./settingsui.ts";
+import { closeSettings, openChannelSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
+import { loadDmHome } from "./app.ts";
 
 export const channelTitle = getId("channel-info") as HTMLElement;
 export const channelList = getId("channel-list") as HTMLElement;
@@ -625,6 +626,21 @@ export function updateChannels(channels: Channel[]) {
   } else {
     console.error("Invalid or malformed channels data:", channels);
   }
+}
+export function handleChannelDelete(data:ChannelData) {
+  const guildId = data.guildId;
+  const channelId = data.channelId;
+  if (!guildId || !channelId) return;
+  if (guildCache.currentChannelId === channelId) {
+    const rootChannel = cacheInterface.getRootChannel(guildId);
+    closeSettings();
+    if (rootChannel) {
+      changeChannel(rootChannel);
+    } else {
+      loadDmHome();
+    }
+  }
+  removeChannel(data);
 }
 
 function refreshChannelList(channels: Channel[]) {
