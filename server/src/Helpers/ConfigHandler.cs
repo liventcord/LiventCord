@@ -1,4 +1,5 @@
 using LiventCord.Controllers;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -77,6 +78,12 @@ public static class ConfigHandler
 
         Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");
 
+        if (databaseType != "sqlite" && connectionString != null && databaseType != null)
+        {
+            connectionString = EnsureConnectionPoolSettings(connectionString, databaseType);
+        }
+
+
         switch (databaseType)
         {
             case "postgres":
@@ -143,4 +150,56 @@ public static class ConfigHandler
                 break;
         }
     }
+
+    private static string EnsureConnectionPoolSettings(string connectionString, string databaseType)
+    {
+        switch (databaseType)
+        {
+            case "sqlserver":
+                var sqlServerBuilder = new SqlConnectionStringBuilder(connectionString);
+                if (!sqlServerBuilder.ContainsKey("Max Pool Size"))
+                {
+                    sqlServerBuilder["Max Pool Size"] = 100;
+                }
+
+                if (!sqlServerBuilder.ContainsKey("Min Pool Size"))
+                {
+                    sqlServerBuilder["Min Pool Size"] = 0;
+                }
+
+                return sqlServerBuilder.ConnectionString;
+
+            case "postgres":
+            case "postgresql":
+                if (!connectionString.Contains("Maximum Pool Size"))
+                {
+                    connectionString += ";Maximum Pool Size=100";
+                }
+
+                if (!connectionString.Contains("Minimum Pool Size"))
+                {
+                    connectionString += ";Minimum Pool Size=0";
+                }
+
+                return connectionString;
+
+            case "mysql":
+            case "mariadb":
+                if (!connectionString.Contains("Max Pool Size"))
+                {
+                    connectionString += ";Max Pool Size=100";
+                }
+
+                if (!connectionString.Contains("Min Pool Size"))
+                {
+                    connectionString += ";Min Pool Size=0";
+                }
+
+                return connectionString;
+
+            default:
+                return connectionString;
+        }
+    }
+
 }
