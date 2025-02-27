@@ -267,7 +267,7 @@ export function observe(element: HTMLElement) {
 }
 function loadObservedContent(targetElement: HTMLElement) {
   const jsonData = targetElement.dataset.content_observe;
-  if (jsonData) {
+  if (jsonData && targetElement.dataset.contentLoaded !== "true") {
     const sanitizedHTML = sanitizeHTML(jsonData);
     const tempDiv = createEl("div");
     tempDiv.innerHTML = sanitizedHTML;
