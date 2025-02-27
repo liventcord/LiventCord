@@ -1,6 +1,7 @@
 import { friendsContainer, getFriendsTranslation } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
+import { router } from "./router.ts";
 
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
@@ -31,7 +32,6 @@ export const clydeSrc = "/clyde.webp";
 
 const defaultProfileImageUrl = "/guest.webp";
 
-const ID_LENGTH = 19;
 export let defaultProfileImageSrc = defaultProfileImageUrl;
 const defaultMediaImageUrl = "/defaultmediaimage.webp";
 export let defaultMediaImageSrc = defaultMediaImageUrl;
@@ -165,7 +165,7 @@ export function getEmojiPath(emojiId: string) {
   return `/emojis/${emojiId}.webp`;
 }
 export function isId(url: string) {
-  return url.length === ID_LENGTH && /^\d+$/.test(url);
+  return url.length === router.ID_LENGTH && /^\d+$/.test(url);
 }
 export function constructAttachmentUrl(id: string) {
   return `/attachments/${id}`;
@@ -403,11 +403,10 @@ export function randomInRange(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
 export function createRandomId() {
-  const length = ID_LENGTH;
   const digits = "0123456789";
   let result = "";
   const digitsLength = digits.length;
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < router.ID_LENGTH; i++) {
     result += digits.charAt(Math.floor(Math.random() * digitsLength));
   }
   return result;
