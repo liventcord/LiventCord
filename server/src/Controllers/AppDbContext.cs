@@ -52,6 +52,27 @@ namespace LiventCord.Controllers
             );
         }
 
+        public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
+        {
+            var query = Set<GuildMember>().Where(gm => gm.GuildId == guildId);
+
+            if (!string.IsNullOrEmpty(userIdToExclude))
+            {
+                query = query.Where(gm => gm.MemberId != userIdToExclude);
+            }
+
+            return await query.Select(gm => gm.MemberId).ToArrayAsync();
+        }
+
+        public async Task<bool> CheckFriendship(string userId, string friendUserId)
+        {
+            return await Friends.AnyAsync(f =>
+                (f.UserId == userId && f.FriendId == friendUserId)
+                || (f.UserId == friendUserId && f.FriendId == userId)
+            );
+        }
+
+
         public async Task<bool> IsGuildPublic(string guildId)
         {
             if (string.IsNullOrEmpty(guildId))

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace LiventCord.Models
 {
@@ -90,7 +91,7 @@ namespace LiventCord.Models
 
         [Column("order")]
         public int Order { get; set; }
-
+        [JsonIgnore]
         public virtual Guild Guild { get; set; } = null!;
         public virtual ICollection<UserChannel>? UserChannels { get; set; }
     }

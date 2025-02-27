@@ -35,7 +35,6 @@ namespace LiventCord.Controllers
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
-
         }
 
         [HttpPost("login")]
@@ -81,7 +80,6 @@ namespace LiventCord.Controllers
             return result == PasswordVerificationResult.Success ? user : null;
         }
 
-
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
@@ -95,5 +93,74 @@ namespace LiventCord.Controllers
                 return Ok();
             }
         }
+        [HttpPost("validate-session")]
+        public async Task<IActionResult> ValidateSession([FromHeader(Name = "Cookie")] string cookieHeader)
+        {
+            if (string.IsNullOrEmpty(cookieHeader))
+            {
+                return Unauthorized(new { message = "Missing cookie" });
+            }
+
+            string cookieValue = ExtractAspNetCoreCookie(cookieHeader);
+
+            if (string.IsNullOrEmpty(cookieValue))
+            {
+                return Unauthorized(new { message = "Invalid cookie value" });
+            }
+
+            var user = await ValidateUserFromCookie(cookieValue);
+
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Invalid session" });
+            }
+
+            return Ok(user.UserId);
+        }
+
+        public async Task<User?> ValidateUserFromCookie(string cookieValue)
+        {
+            try
+            {
+                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+                if (result.Succeeded)
+                {
+                    var claimsPrincipal = result.Principal;
+                    if (claimsPrincipal?.Identity?.IsAuthenticated == true)
+                    {
+                        var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                        if (string.IsNullOrEmpty(userIdClaim))
+                            return null;
+                        var user = await _context.Users
+                            .SingleOrDefaultAsync(u => u.UserId == userIdClaim);
+
+                        return user;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex + "Error validating user from cookie.");
+            }
+
+            return null;
+        }
+
+        private string ExtractAspNetCoreCookie(string cookieHeader)
+        {
+            var cookies = cookieHeader.Split("; ");
+            foreach (var cookie in cookies)
+            {
+                if (cookie.StartsWith(".AspNetCore.Cookies="))
+                {
+                    return cookie.Substring(".AspNetCore.Cookies=".Length);
+                }
+            }
+            return string.Empty;
+        }
+
+
+
     }
 }

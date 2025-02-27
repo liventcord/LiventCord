@@ -35,7 +35,7 @@ import { isOnMe, isOnDm } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { getUserNick, Member } from "./user.ts";
 import { openChannelSettings } from "./settingsui.ts";
-import { UpdateChannelData } from "./socketEvents.ts";
+import { CreateChannelData } from "./socketEvents.ts";
 
 export const channelTitle = getId("channel-info") as HTMLElement;
 export const channelList = getId("channel-list") as HTMLElement;
@@ -608,7 +608,7 @@ export function removeChannel(data: ChannelData) {
   }
 }
 
-export function editChannel(data: UpdateChannelData) {
+export function editChannel(data: CreateChannelData) {
   const { guildId } = data;
   cacheInterface.editChannel(guildId, data);
 

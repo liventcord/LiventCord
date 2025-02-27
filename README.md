@@ -6,16 +6,20 @@
 
 
 
-# Server Setup
+## 🚀 Quick Start
 
-Run a LiventCord backend server
+**Jump in now:** **[liventcord.koyeb.app](https://liventcord.koyeb.app)**.
+### Or:
+# **Run Locally**
 
-## Quick Start
+## Requirements
 ### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
-### 2. Install Node https://nodejs.org/en/download
+### 2. Install Node(Optional, For development server) https://nodejs.org/en/download
+### 3. Install Go (Optional, for realtime updates) https://go.dev/dl/
+### 3. Install Redis (Optional, for realtime updates) https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/
 
 
-## Clone the repository:
+### Clone the repository:
 ```bash
 git clone https://github.com/liventcord/Liventcord
 cd Liventcord/server/src
@@ -31,15 +35,21 @@ cd Liventcord/web
 npm install
 npm run dev
 ```
+### Run Redis
+```bash
+redis-server
+```
+### Run Gin server for realtime updates (Requires redis)
+```bash
+cd Liventcord/server/go-ws-api
+mv .env.example .env
+go run main.go
+```
 
 
 ---
 
-## Website
-https://liventcord.github.io
 
-## Docs
-https://liventcord.github.io/LiventCord
 
 ## Docker
 ### Docker Compose
@@ -52,6 +62,11 @@ Run directly with Docker
 ```bash
 docker run -p 5005:5005 -v appsettings.json thelp281/liventcord:latest
 ```
+## Website
+https://liventcord.github.io
+
+## Docs
+https://liventcord.github.io/LiventCord
 
 ### Contributing
 

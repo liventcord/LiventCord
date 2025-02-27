@@ -10,8 +10,7 @@ namespace LiventCord.Controllers
     public class TypingController : BaseController
     {
         private readonly AppDbContext _dbContext;
-        private readonly SSEManager _sseManager;
-        private readonly MembersController _membersController;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
         private Dictionary<string, List<string>> writingMembersState = new();
 
@@ -21,13 +20,11 @@ namespace LiventCord.Controllers
 
         public TypingController(
             AppDbContext dbContext,
-            SSEManager sseManager,
-            MembersController membersController
+            RedisEventEmitter sseManager
         )
         {
             _dbContext = dbContext;
-            _sseManager = sseManager;
-            _membersController = membersController;
+            _redisEventEmitter = sseManager;
         }
 
         [HttpPost("start")]
@@ -54,9 +51,11 @@ namespace LiventCord.Controllers
                 guildId,
                 channelId,
             };
-            await _sseManager.EmitToGuild(
-                _membersController.GetGuildMembersIds(guildId),
-                messageToEmit
+            await _redisEventEmitter.EmitToGuild(
+                EventType.START_TYPING,
+                messageToEmit,
+                guildId,
+                UserId!
             );
 
             _ = CheckTypingTimeoutAsync(guildId, channelId);
@@ -84,9 +83,11 @@ namespace LiventCord.Controllers
                 channelId,
                 TypingStopped = true,
             };
-            await _sseManager.EmitToGuild(
-                _membersController.GetGuildMembersIds(guildId),
-                messageToEmit
+            await _redisEventEmitter.EmitToGuild(
+                EventType.STOP_TYPING,
+                messageToEmit,
+                guildId,
+                UserId!
             );
 
             return Accepted();
@@ -129,9 +130,11 @@ namespace LiventCord.Controllers
                 channelId,
                 TypingStopped = true,
             };
-            await _sseManager.EmitToGuild(
-                _membersController.GetGuildMembersIds(guildId),
-                messageToEmit
+            await _redisEventEmitter.EmitToGuild(
+                EventType.STOP_TYPING,
+                messageToEmit,
+                guildId,
+                UserId!
             );
         }
     }

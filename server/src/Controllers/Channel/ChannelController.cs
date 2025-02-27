@@ -14,18 +14,21 @@ namespace LiventCord.Controllers
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
         private readonly ITokenValidationService _tokenValidationService;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
         public ChannelController(
             AppDbContext dbContext,
             MembersController membersController,
             PermissionsController permissionsController,
-            ITokenValidationService tokenValidationService
+            ITokenValidationService tokenValidationService,
+            RedisEventEmitter redisEventEmitter
         )
         {
             _dbContext = dbContext;
             _permissionsController = permissionsController;
             _membersController = membersController;
             _tokenValidationService = tokenValidationService;
+            _redisEventEmitter = redisEventEmitter;
 
         }
         [Authorize]
@@ -113,6 +116,7 @@ namespace LiventCord.Controllers
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
+            await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, UserId!);
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }

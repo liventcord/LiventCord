@@ -5,4 +5,4 @@ Access the Swagger REST API UI at:
 
 ## Live server: 
 
-https://liventcord.onrender.com/docs
+https://liventcord.koyeb.app/docs
