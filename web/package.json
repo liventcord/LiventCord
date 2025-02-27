@@ -21,13 +21,11 @@
     "*.json": "npx prettier --write --ignore-unknown"
   },
   "devDependencies": {
-    "@types/pica": "^9.0.5",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@typescript-eslint/parser": "^8.22.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "autoprefixer": "^10.4.20",
     "babel-plugin-import-resolver": "^0.1.2",
-    "concurrently": "^9.1.2",
     "cssnano": "^7.0.6",
     "dompurify": "^3.2.3",
     "eslint": "^9.18.0",
