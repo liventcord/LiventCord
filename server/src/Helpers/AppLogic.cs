@@ -8,6 +8,7 @@ namespace LiventCord.Helpers
     {
         public static string GifWorkerUrl { get; private set; }
         public static string ProxyWorkerUrl { get; private set; }
+        public static string WsUrl { get; private set; }
         public static float MaxAvatarSize { get; private set; }
         public static float MaxAttachmentSize { get; private set; }
 
@@ -17,12 +18,14 @@ namespace LiventCord.Helpers
             ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
+            WsUrl = "ws://localhost:8080/ws";
         }
 
         public static void Initialize(IConfiguration configuration)
         {
             GifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] ?? GifWorkerUrl;
             ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
+            WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
 
             MaxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize)
                 ? avatarSize
@@ -129,6 +132,7 @@ namespace LiventCord.Helpers
                     proxyWorkerUrl = SharedAppConfig.ProxyWorkerUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
+                    wsUrl = SharedAppConfig.WsUrl
                 };
 
                 context.Response.ContentType = "application/json";
