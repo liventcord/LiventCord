@@ -118,6 +118,24 @@ namespace LiventCord.Controllers
             return Ok(user.UserId);
         }
 
+        [HttpGet("ws-token")]
+        public IActionResult GetWebsocketToken([FromHeader(Name = "Cookie")] string cookieHeader)
+        {
+            if (string.IsNullOrEmpty(cookieHeader))
+            {
+                return Unauthorized(new { message = "Missing cookie" });
+            }
+
+            string cookieValue = ExtractAspNetCoreCookie(cookieHeader);
+
+            if (string.IsNullOrEmpty(cookieValue))
+            {
+                return Unauthorized(new { message = "Invalid cookie value" });
+            }
+
+            return Ok(new { cookieValue });
+        }
+
         public async Task<User?> ValidateUserFromCookie(string cookieValue)
         {
             try

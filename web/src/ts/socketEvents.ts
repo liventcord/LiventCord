@@ -174,19 +174,27 @@ class WebSocketClient {
     this.socket.close();
   }
 
-  setSocketUrl(url: string) {
+  async setSocketUrl(url: string) {
     if (!this.socketUrl) {
       this.socketUrl = url;
-      this.socket = new WebSocket(url);
+      const cookie = await getAuthCookie();
+      this.socket = new WebSocket(url, [`cookie-${cookie}`]);
       this.attachHandlers();
     }
   }
 }
+async function getAuthCookie(): Promise<string> {
+  const response = await fetch("/auth/ws-token");
+  if (!response.ok) throw new Error("Failed to retrieve cookie");
+  const data = await response.json();
+  console.log(data);
+  return encodeURIComponent(data.cookieValue);
+}
 
 const socketClient = WebSocketClient.getInstance();
 
-export function setSocketClient(wsUrl: string) {
-  socketClient.setSocketUrl(wsUrl);
+export async function setSocketClient(wsUrl: string) {
+  await socketClient.setSocketUrl(wsUrl);
 }
 
 interface UpdateUserData {
