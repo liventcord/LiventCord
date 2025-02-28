@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"strings"
 	"net/http"
 	"os"
+	"crypto/tls"
 	"sync"
+	"strings"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
@@ -115,6 +116,17 @@ func handleWebSocket(c *gin.Context) {
 func consumeMessagesFromRedis() {
 	streamName := "event_stream"
 	lastID := "0"
+
+	err := redisClient.XAdd(ctx, &redis.XAddArgs{
+		Stream: streamName,
+		Values: map[string]interface{}{"init": "value"},
+	}).Err()
+	if err != nil {
+		fmt.Println("Error creating stream:", err)
+		return
+	}
+
+
 	for {
 		messages, err := redisClient.XRead(ctx, &redis.XReadArgs{
 			Streams: []string{streamName, lastID},
@@ -183,30 +195,39 @@ func consumeMessagesFromRedis() {
 
 
 func parseRedisURL(redisURL string) (*redis.Options, error) {
-	if strings.HasPrefix(redisURL, "rediss://") {
-		redisURL = strings.TrimPrefix(redisURL, "rediss://")
-	} else if strings.HasPrefix(redisURL, "redis://") {
-		redisURL = strings.TrimPrefix(redisURL, "redis://")
-	}
-
-	parsedURL, err := url.Parse("redis://" + redisURL) 
+	parsedURL, err := url.Parse(redisURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
+		return nil, err
 	}
 
-	hostPort := strings.Split(parsedURL.Host, ":")
-	if len(hostPort) != 2 {
-		return nil, fmt.Errorf("invalid Redis host:port format")
+	options := &redis.Options{}
+
+	options.Addr = parsedURL.Host
+	if parsedURL.Scheme == "rediss" {
+		options.TLSConfig = &tls.Config{}
 	}
 
-	password, _ := parsedURL.User.Password()
+	if parsedURL.User != nil {
+		password, _ := parsedURL.User.Password()
+		options.Password = password
 
-	return &redis.Options{
-		Addr:     parsedURL.Host,
-		Password: password, 
-		DB:       0,
-	}, nil
+		username := parsedURL.User.Username()
+		if username != "" {
+			options.Username = username
+		}
+	}
+
+	hostParts := strings.Split(parsedURL.Host, ":")
+	if len(hostParts) > 0 {
+		options.Addr = hostParts[0]
+	}
+	if len(hostParts) > 1 {
+		options.Addr = hostParts[0] + ":" + hostParts[1]
+	}
+
+	return options, nil
 }
+
 
 func init() {
 	loadConfig()
@@ -214,10 +235,15 @@ func init() {
 	redisURL := getEnv("RedisConnectionString", "localhost:6379")
 	redisOptions, err := parseRedisURL(redisURL)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize Redis client: %v", err))
+		fmt.Printf("Warning: Failed to parse Redis URL: %v. Redis will not be used.\n", err)
+	} else {
+		redisClient = redis.NewClient(redisOptions)
+		_, err := redisClient.Ping(context.Background()).Result()
+		if err != nil {
+			fmt.Printf("Warning: Failed to connect to Redis: %v. Redis will not be used.\n", err)
+			redisClient = nil 
+		}
 	}
-
-	redisClient = redis.NewClient(redisOptions)
 }
 
 func main() {
@@ -234,6 +260,16 @@ func main() {
 	}
 
 	router.GET("/ws", handleWebSocket)
-	go consumeMessagesFromRedis()
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "Service is running",
+		})
+	})
+
+	if redisClient != nil {
+		go consumeMessagesFromRedis()
+	}
+
 	router.Run(hostname + ":" + port)
 }
+
