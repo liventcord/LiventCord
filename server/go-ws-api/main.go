@@ -183,7 +183,13 @@ func consumeMessagesFromRedis() {
 
 
 func parseRedisURL(redisURL string) (*redis.Options, error) {
-	parsedURL, err := url.Parse(redisURL)
+	if strings.HasPrefix(redisURL, "rediss://") {
+		redisURL = strings.TrimPrefix(redisURL, "rediss://")
+	} else if strings.HasPrefix(redisURL, "redis://") {
+		redisURL = strings.TrimPrefix(redisURL, "redis://")
+	}
+
+	parsedURL, err := url.Parse("redis://" + redisURL) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
 	}
@@ -193,12 +199,11 @@ func parseRedisURL(redisURL string) (*redis.Options, error) {
 		return nil, fmt.Errorf("invalid Redis host:port format")
 	}
 
-	// Capture password, ignore the bool result.
 	password, _ := parsedURL.User.Password()
 
 	return &redis.Options{
 		Addr:     parsedURL.Host,
-		Password: password, // Use the password
+		Password: password, 
 		DB:       0,
 	}, nil
 }
