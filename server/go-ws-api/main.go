@@ -60,22 +60,35 @@ func handleWebSocket(c *gin.Context) {
     cookie := strings.TrimPrefix(cookieHeader, "cookie-")
 
     if cookie == "" {
+        fmt.Println("Error: Session missing")
         c.JSON(http.StatusUnauthorized, gin.H{"message": "Session missing"})
         return
     }
-	DOTNET_API_URL := getEnv("DotnetApiUrl","http://localhost:5005")
-	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-session", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
-		return
-	}
-	req.Header.Set("Cookie", ".AspNetCore.Cookies="+cookie)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Session invalid"})
-		return
-	}
+
+    DOTNET_API_URL := getEnv("DotnetApiUrl", "http://localhost:5005")
+    req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-session", nil)
+    if err != nil {
+        fmt.Printf("Error creating request: %v\n", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Internal server error"})
+        return
+    }
+
+    req.Header.Set("Cookie", ".AspNetCore.Cookies="+cookie)
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Printf("Error sending request: %v\n", err)
+        c.JSON(http.StatusUnauthorized, gin.H{"message": "Session invalid"})
+        return
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        fmt.Printf("Invalid session. Status code: %d\n", resp.StatusCode)
+        c.JSON(http.StatusUnauthorized, gin.H{"message": "Session invalid"})
+        return
+    }
+
+
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
