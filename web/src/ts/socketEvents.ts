@@ -66,6 +66,8 @@ class WebSocketClient {
   private retryCount: number = 0;
   private maxRetryDelay: number = 30000;
   private static instance: WebSocketClient | null = null;
+  private heartbeatInterval: number = 30000;
+  private heartbeatTimer: number | null = null;
 
   private constructor(url: string = "") {
     this.socketUrl = url;
@@ -79,6 +81,7 @@ class WebSocketClient {
     this.socket.onopen = () => {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
+      this.startHeartbeat();
     };
 
     this.socket.onmessage = (event) => {
@@ -140,7 +143,26 @@ class WebSocketClient {
         setTimeout(() => this.reconnect(), retryDelay);
         this.retryCount = Math.min(this.retryCount + 1, 10);
       }
+      this.stopHeartbeat();
     };
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
+    this.heartbeatTimer = window.setInterval(() => {
+      if (this.socket.readyState === WebSocket.OPEN) {
+        console.log("Sending heartbeat");
+        this.socket.send(JSON.stringify({ type: "ping" }));
+      }
+    }, this.heartbeatInterval);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
   }
 
   private reconnect() {
@@ -183,6 +205,7 @@ class WebSocketClient {
     }
   }
 }
+
 async function getAuthCookie(): Promise<string> {
   const response = await fetch("/auth/ws-token");
   if (!response.ok) throw new Error("Failed to retrieve cookie");
