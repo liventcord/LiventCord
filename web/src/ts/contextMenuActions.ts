@@ -12,7 +12,7 @@ import {
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
 import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
-import { friendsCache } from "./friends.ts";
+import { addFriendId, friendsCache } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser } from "./ui.ts";
@@ -28,7 +28,7 @@ type ItemOption = {
   action: CallableFunction;
 };
 
-type ItemOptions = {
+export type ItemOptions = {
   action: CallableFunction;
   subOptions?: ItemOption[];
   [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
@@ -38,6 +38,7 @@ const ActionType = {
   COPY_ID: "COPY_ID",
   COPY_USER_ID: "COPY_USER_ID",
   INVITE_TO_GUILD: "INVITE_TO_GUILD",
+  ADD_FRIEND: "ADD_FRIEND",
   BLOCK_USER: "BLOCK_USER",
   REMOVE_USER: "REMOVE_USER",
   EDIT_GUILD_PROFILE: "EDIT_GUILD_PROFILE",
@@ -107,10 +108,6 @@ export function deleteMessage(messageId: string) {
     ? EventType.DELETE_MESSAGE_GUILD
     : EventType.DELETE_MESSAGE_DM;
   apiClient.send(_eventType, data);
-}
-
-export function inviteToGuild(userId: string) {
-  alertUser("Not implemented: Inviting user ");
 }
 
 export function blockUser(userId: string) {
@@ -223,19 +220,6 @@ export function createProfileContext(userData: UserInfo) {
     action: () => drawProfilePop(userData)
   };
 
-  if (userId !== currentUserId) {
-    const guildSubOptions = getManageableGuilds();
-    if (Array.isArray(guildSubOptions) && guildSubOptions.length > 0) {
-      context[ActionType.INVITE_TO_GUILD] = {
-        action: () => {},
-        subOptions: guildSubOptions.map((subOption) => ({
-          label: cacheInterface.getGuildName(subOption),
-          action: () => inviteUser(userId, subOption)
-        }))
-      };
-    }
-  }
-
   if (!isOnMe) {
     context[ActionType.MENTION_USER] = {
       action: () => mentionUser(userId)
@@ -249,6 +233,20 @@ export function createProfileContext(userData: UserInfo) {
   } else {
     context[ActionType.BLOCK_USER] = {
       action: () => blockUser(userId)
+    };
+    const guildSubOptions = getManageableGuilds();
+
+    if (Array.isArray(guildSubOptions) && guildSubOptions.length > 0) {
+      context[ActionType.INVITE_TO_GUILD] = {
+        action: () => {},
+        subOptions: guildSubOptions.map((subOption) => ({
+          label: cacheInterface.getGuildName(subOption),
+          action: () => inviteUser(userId, subOption)
+        }))
+      };
+    }
+    context[ActionType.ADD_FRIEND] = {
+      action: () => addFriendId(userId)
     };
   }
 

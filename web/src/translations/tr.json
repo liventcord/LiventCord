@@ -21,7 +21,8 @@
     "PIN_MESSAGE": "Mesajı Sabitle",
     "REPLY": "Yanıtla",
     "MARK_AS_UNREAD": "Okunmadı olarak işaretle",
-    "DELETE_MESSAGE": "Mesajı Sil"
+    "DELETE_MESSAGE": "Mesajı Sil",
+    "ADD_FRIEND": "Arkadaş Ekle"
   },
   "friendErrorTranslations": {
     "404": {

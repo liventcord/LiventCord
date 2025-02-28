@@ -16,7 +16,8 @@ import {
   openAddFriend,
   printFriendMessage,
   ButtonTypes,
-  createButtonWithBubblesImg
+  createButtonWithBubblesImg,
+  updateUsersStatus
 } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -41,6 +42,7 @@ interface FriendData {
   nickName: string;
   discriminator: string;
   status: string;
+  activity: string;
   isOnline: boolean;
   description?: string;
   createdAt?: string;
@@ -54,6 +56,7 @@ export class Friend implements UserInfo {
   nickName: string;
   discriminator: string;
   status?: string;
+  activity?: string;
   isOnline?: boolean;
   description?: string;
   createdAt?: string;
@@ -61,6 +64,7 @@ export class Friend implements UserInfo {
   socialMediaLinks?: string[];
   isFriendsRequestToUser: boolean;
   isPending: boolean;
+  publicUser: any;
 
   constructor(friend: FriendData) {
     this.userId = friend.userId;
@@ -74,6 +78,7 @@ export class Friend implements UserInfo {
     this.socialMediaLinks = friend.socialMediaLinks;
     this.isFriendsRequestToUser = friend.isFriendsRequestToUser;
     this.isPending = friend.isFriendsRequestToUser;
+    this.activity = friend.activity;
   }
 }
 
@@ -95,6 +100,13 @@ class FriendsCache {
   initialiseFriends(initData: Record<string, Friend>) {
     this.friendsCache = initData;
     populateFriendsContainer(Object.values(initData));
+
+    requestAnimationFrame(() => {
+      const friends = this.cacheFriendToFriendConverter();
+      for (const friend of friends) {
+        updateUsersStatus(friend);
+      }
+    });
   }
 
   addFriend(friend: Friend) {
@@ -115,6 +127,21 @@ class FriendsCache {
 
   isOnline(userId: string): boolean {
     return !!this.friendsCache[userId]?.isOnline;
+  }
+  cacheFriendToFriendConverter() {
+    return Object.values(this.friendsCache).map(
+      (friend) =>
+        new Friend({
+          userId: friend.publicUser?.userId,
+          nickName: friend.publicUser?.nickName,
+          discriminator: friend.publicUser?.discriminator,
+          status: friend.publicUser?.status,
+          activity: friend.publicUser?.activity,
+          isOnline: false,
+          createdAt: friend.publicUser?.createdAt,
+          isFriendsRequestToUser: friend.isFriendsRequestToUser
+        })
+    );
   }
 }
 
@@ -177,6 +204,7 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
       nickName: userData.nickName,
       discriminator: userData.discriminator,
       status: userData.status ?? "",
+      activity: userData.activity ?? "",
       isOnline: userData.isOnline ?? false,
       description: userData.description,
       isFriendsRequestToUser: userData.isFriendsRequestToUser ?? false,
@@ -326,8 +354,14 @@ export function handleButtonClick(
   apiClient.send(action, { friendId: userId });
 }
 
-export function addFriend(userId: string) {
+export function addFriendId(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
+}
+export function addFriend(nickName: string, discriminator: string) {
+  apiClient.send(EventType.ADD_FRIEND, {
+    friendName: nickName,
+    friendDiscriminator: discriminator
+  });
 }
 
 export function submitAddFriend() {
@@ -355,10 +389,7 @@ export function submitAddFriend() {
 
   const { nickName, discriminator } = parsed;
 
-  apiClient.send(EventType.ADD_FRIEND, {
-    friendName: nickName,
-    friendDiscriminator: discriminator
-  });
+  addFriend(nickName, discriminator);
 }
 
 export function filterFriends(): void {
