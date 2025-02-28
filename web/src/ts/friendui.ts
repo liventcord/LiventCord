@@ -4,7 +4,8 @@ import {
   createRandomId,
   createEl,
   getId,
-  disableElementHTML
+  disableElementHTML,
+  disableElement
 } from "./utils.ts";
 import { openDm, removeDm } from "./app.ts";
 import {
@@ -54,6 +55,13 @@ export const ButtonTypes = {
 };
 const HOVER_BUBBLE_TIME = 500;
 
+export const friendMenuTypes = {
+  online: "online",
+  all: "all",
+  pending: "pending",
+  blocked: "blocked"
+};
+
 const buttonElements = {
   online: getId("online-button") as HTMLElement,
   all: getId("all-button") as HTMLElement,
@@ -101,6 +109,7 @@ interface DmUserInfo {
   userId: string;
   isOnline: boolean;
   nickName: string;
+  activity: string;
   discriminator: string;
 }
 interface ExistingDmContainer {
@@ -245,6 +254,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
         nickName: friend.nickName,
         discriminator: "0000",
         status: "offline",
+        activity: "",
         isOnline: friend.isOnline,
         description: "",
         createdAt: new Date().toISOString(),
@@ -283,14 +293,16 @@ const sampleData = {
     nickName: "Alice",
     isOnline: true,
     discriminator: "1234",
-    isPending: false
+    isPending: false,
+    activity: "act"
   },
   user2: {
     userId: createRandomId(),
     nickName: "Bob",
     isOnline: false,
     discriminator: "5678",
-    isPending: false
+    isPending: false,
+    activity: "act"
   }
 };
 
@@ -347,10 +359,9 @@ export function selectFriendMenu(clickedButton: HTMLElement) {
   currentSelectedFriendMenu = getRequestType(clickedButton);
   console.log("Selected: ", currentSelectedFriendMenu);
 
-  populateFriendsContainer(
-    Object.values(friendsCache.friendsCache),
-    clickedButton === buttonElements.pending
-  );
+  const friends = friendsCache.cacheFriendToFriendConverter();
+
+  populateFriendsContainer(friends, clickedButton === buttonElements.pending);
 
   if (!ButtonsList) {
     ButtonsList = Object.values(buttonElements);
@@ -461,33 +472,55 @@ export function createButtonWithBubblesImg(
   return iconSphere;
 }
 export function updateUsersStatus(friend: Friend) {
-  const activityCard = createEl("div", {
-    className: "activity-card",
-    id: friend.userId
-  });
-  const contentDiv = createEl("div", { className: "activity-card-content" });
-  const avatarImg = createEl("img", {
-    className: "activity-card-avatar"
-  }) as HTMLImageElement;
-  setProfilePic(avatarImg, friend.userId);
-  const nickHeading = createEl("h2", { className: "activity-card-nick" });
-  nickHeading.textContent = friend.nickName || getUserNick(friend.userId);
-  const titleSpan = createEl("span", { className: "activity-card-title" });
-  titleSpan.textContent = friend.status || "";
-  contentDiv.appendChild(avatarImg);
-  contentDiv.appendChild(nickHeading);
-  contentDiv.appendChild(titleSpan);
+  if (!friendsCache.isOnline(friend.userId)) return;
+  console.log(friend);
+  disableElement("activity-detail");
+  disableElement("activity-detail-2");
+  let activityCard = userList.querySelector(`#${CSS.escape(friend.userId)}`);
 
-  const iconImg = createEl("img", {
-    className: "activity-card-icon",
-    src: "/defaultmediaimage.webp"
-  });
+  if (!activityCard) {
+    activityCard = createEl("div", {
+      className: "activity-card",
+      id: friend.userId
+    });
+    const contentDiv = createEl("div", { className: "activity-card-content" });
+    const avatarImg = createEl("img", {
+      className: "activity-card-avatar"
+    }) as HTMLImageElement;
+    setProfilePic(avatarImg, friend.userId);
+    const nickHeading = createEl("h2", { className: "activity-card-nick" });
+    nickHeading.textContent = friend.nickName || getUserNick(friend.userId);
+    const titleSpan = createEl("span", { className: "activity-card-title" });
+    titleSpan.textContent = friend.activity || "";
+    contentDiv.appendChild(avatarImg);
+    contentDiv.appendChild(nickHeading);
+    contentDiv.appendChild(titleSpan);
 
-  activityCard.appendChild(contentDiv);
-  activityCard.appendChild(iconImg);
+    const iconImg = createEl("img", {
+      className: "activity-card-icon",
+      src: "/defaultmediaimage.webp"
+    });
 
-  userList.appendChild(activityCard);
+    activityCard.appendChild(contentDiv);
+    activityCard.appendChild(iconImg);
+
+    userList.appendChild(activityCard);
+  } else {
+    const contentDiv = activityCard.querySelector(".activity-card-content");
+    const avatarImg = contentDiv?.querySelector(
+      ".activity-card-avatar"
+    ) as HTMLImageElement;
+    setProfilePic(avatarImg, friend.userId);
+
+    const nickHeading = contentDiv?.querySelector(".activity-card-nick");
+    if (nickHeading)
+      nickHeading.textContent = friend.nickName || getUserNick(friend.userId);
+
+    const titleSpan = contentDiv?.querySelector(".activity-card-title");
+    if (titleSpan) titleSpan.textContent = friend.activity || "";
+  }
 }
+
 export function openAddFriend() {
   resetButtons();
   isAddFriendsOpen = true;
@@ -612,12 +645,6 @@ export function displayWumpus() {
   friendsContainer.appendChild(imgElement);
 }
 
-export const friendMenuTypes = {
-  online: "online",
-  all: "all",
-  pending: "pending",
-  blocked: "blocked"
-};
 export function populateFriendsContainer(
   friends: Friend[],
   isPending?: boolean
@@ -627,8 +654,7 @@ export function populateFriendsContainer(
   }
 
   friends.forEach((friend) => {
-    const { userId, nickName, discriminator } = friend;
-    addUser(userId, nickName, discriminator);
+    addUser(friend.userId, friend.nickName, friend.discriminator);
   });
 
   try {
@@ -642,18 +668,9 @@ export function populateFriendsContainer(
       console.warn("Unhandled status:" + currentSelectedFriendMenu);
       return;
     }
+    const friendsTitleContainer = createFriendsTitle(friends.length);
 
-    const friendsCount = friends.length;
-    const textToWrite =
-      friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
-    const friendsTitleContainer = createEl("h2", {
-      marginRight: "50px",
-      marginTop: "100px",
-      textContent: textToWrite,
-      id: "friendsTitleContainer"
-    });
-
-    if (friendsCount === 0) {
+    if (friends.length === 0) {
       displayWumpus();
     } else {
       const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
@@ -664,31 +681,33 @@ export function populateFriendsContainer(
       setTimeout(() => {
         filterFriends();
       }, 10);
-      for (const friend of friends) {
-        const {
-          userId,
-          nickName,
-          discriminator,
-          isOnline,
-          isFriendsRequestToUser
-        } = friend;
-        createFriendCard(
-          friend,
-          userId,
-          nickName,
-          discriminator,
-          isOnline || false,
-          isPending || false,
-          isFriendsRequestToUser
-        );
-        if (friend.status) {
-          updateUsersStatus(friend);
-        }
-      }
+      updateUsersList(friends, !!isPending);
       enableElement("friendsTitleContainer");
     }
   } catch (error) {
     console.error("Error populating friends container:", error);
+  }
+}
+function updateUsersList(friends: Friend[], isPending: boolean) {
+  for (const friend of friends) {
+    const {
+      userId,
+      nickName,
+      discriminator,
+      isOnline,
+      isFriendsRequestToUser
+    } = friend;
+    console.warn(friend);
+    createFriendCard(
+      friend,
+      userId,
+      nickName,
+      discriminator,
+      isOnline || false,
+      isPending || false,
+      isFriendsRequestToUser
+    );
+    updateUsersStatus(friend);
   }
 }
 export function createFriendCard(
@@ -716,6 +735,8 @@ export function createFriendCard(
   img.addEventListener("mouseout", () =>
     handleImageHover(img, bubble, isPending, isOnline, false)
   );
+  console.log(nickName);
+  console.log(friend);
 
   appendToProfileContextList({ userId, nickName, discriminator }, userId);
 
@@ -812,4 +833,15 @@ export function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
 
 export function getFriendsTranslation() {
   return translations.getTranslation(currentSelectedFriendMenu);
+}
+function createFriendsTitle(friendsCount: number) {
+  const textToWrite =
+    friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
+  const friendsTitleContainer = createEl("h2", {
+    marginRight: "50px",
+    marginTop: "100px",
+    textContent: textToWrite,
+    id: "friendsTitleContainer"
+  });
+  return friendsTitleContainer;
 }

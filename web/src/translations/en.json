@@ -21,7 +21,8 @@
     "PIN_MESSAGE": "Pin Message",
     "REPLY": "Reply",
     "MARK_AS_UNREAD": "Mark As Unread",
-    "DELETE_MESSAGE": "Delete Message"
+    "DELETE_MESSAGE": "Delete Message",
+    "ADD_FRIEND": "Add Friend"
   },
   "friendErrorTranslations": {
     "404": {

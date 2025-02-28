@@ -23,6 +23,7 @@ export interface UserInfo {
   nickName: string;
   discriminator: string;
   status?: string;
+  activity?: string;
   isOnline?: boolean;
   description?: string;
   isFriendsRequestToUser?: boolean;
