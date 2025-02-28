@@ -23,7 +23,7 @@ import {
   newMessagesBar,
   chatContainer
 } from "./chatbar.ts";
-import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
+import { cacheInterface, guildCache } from "./cache.ts";
 import {
   updateGuilds,
   addKeybinds,
@@ -103,6 +103,7 @@ import {
 } from "./router.ts";
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
+import { setSocketClient } from "./socketEvents.ts";
 
 interface InitialStateData {
   email: string;
@@ -121,6 +122,7 @@ interface InitialStateData {
   proxyWorkerUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
+  wsUrl: string;
 }
 
 interface User {
@@ -142,6 +144,7 @@ interface InitialState {
   proxyWorkerUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
+  wsUrl: string;
 }
 export function initializeApp() {
   window.scrollTo(0, 0);
@@ -178,7 +181,8 @@ export function initialiseState(data: InitialStateData): void {
     gifWorkerUrl,
     proxyWorkerUrl,
     maxAvatarSize,
-    maxAttachmentSize
+    maxAttachmentSize,
+    wsUrl
   } = data;
 
   console.log("Data loaded:", data);
@@ -199,9 +203,11 @@ export function initialiseState(data: InitialStateData): void {
     gifWorkerUrl,
     proxyWorkerUrl,
     maxAvatarSize,
-    maxAttachmentSize
+    maxAttachmentSize,
+    wsUrl
   };
 
+  setSocketClient(wsUrl);
   guildCache.currentGuildName = guildName;
   updateDmsList(dmFriends);
   setupSampleUsers();
