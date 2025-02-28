@@ -37,7 +37,7 @@ var ctx = context.Background()
 
 func loadConfig() {
 	if err := godotenv.Load(); err != nil {
-		panic("Error loading .env file")
+		fmt.Println("Error loading .env file")
 	}
 }
 
