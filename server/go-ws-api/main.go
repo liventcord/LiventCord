@@ -56,11 +56,13 @@ func getEnv(key, defaultValue string) string {
 
 
 func handleWebSocket(c *gin.Context) {
-	cookie, err := c.Cookie(".AspNetCore.Cookies")
-	if err != nil || cookie == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "Session missing"})
-		return
-	}
+    cookieHeader := c.Request.Header.Get("Sec-WebSocket-Protocol")
+    cookie := strings.TrimPrefix(cookieHeader, "cookie-")
+
+    if cookie == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"message": "Session missing"})
+        return
+    }
 	DOTNET_API_URL := getEnv("DotnetApiUrl","http://localhost:5005")
 	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-session", nil)
 	if err != nil {
