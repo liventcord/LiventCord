@@ -59,7 +59,7 @@ namespace LiventCord.Controllers
                     .ToArray()
             );
         }
-
+        [NonAction]
         public async Task AddInviteAsync(string guildId, string channelId)
         {
             var inviteId = CreateRandomInviteId();
