@@ -135,7 +135,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { cookieValue });
         }
-
+        [NonAction]
         public async Task<User?> ValidateUserFromCookie(string cookieValue)
         {
             try

@@ -66,7 +66,7 @@ namespace LiventCord.Controllers
                 return BadRequest(new { Type = "error", Message = ex.Message });
             }
         }
-
+        [NonAction]
         public async Task<IActionResult> UploadImage(IFormFile photo, string userId, string? guildId = null)
         {
             if (!IsFileSizeValid(photo))
