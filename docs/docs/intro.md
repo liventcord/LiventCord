@@ -40,6 +40,7 @@ npm run dev
 ```bash
 redis-server
 ```
+
 ### Run Gin server for realtime updates (Requires redis)
 ```bash
 cd Liventcord/server/go-ws-api
@@ -47,5 +48,4 @@ mv .env.example .env
 go run main.go
 ```
 
-Server runs at `http://localhost:5005`, while vite runs at `http://localhost:5173`.
-
+.NET server runs at `http://localhost:5005`, while vite runs at `http://localhost:5173`.

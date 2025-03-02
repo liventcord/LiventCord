@@ -1,32 +1,52 @@
-name: Deploy Docs
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "docs/**"
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
+    name: Build Docusaurus
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: cd docs/ && yarn install --frozen-lockfile
 
-      - name: Deploy Docs
-        run: |
-          cd docs
-          GIT_USER=TheLp281 yarn deploy
-        env:
-          GIT_USER: TheLp281
-          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build website
+        run: cd docs/ && yarn build
+        working-directory: docs
+
+      - name: Upload Build Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
