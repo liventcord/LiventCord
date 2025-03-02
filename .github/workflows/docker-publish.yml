@@ -25,3 +25,4 @@ jobs:
           context: .
           push: true
           tags: thelp281/liventcord:latest
+
