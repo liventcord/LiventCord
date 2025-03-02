@@ -34,48 +34,48 @@ jobs:
           push: true
           tags: thelp281/liventcord:latest
 
-deploy-koyeb:
-  runs-on: ubuntu-latest
+  deploy-koyeb:
+    runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Redeploy Service
-      env:
-        KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
-        IMAGE_NAME: ${{ github.event.inputs.IMAGE_NAME }}
-      run: |
-        #!/bin/bash
-        set -e
+      - name: Redeploy Service
+        env:
+          KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+          IMAGE_NAME: ${{ github.event.inputs.IMAGE_NAME }}
+        run: |
+          #!/bin/bash
+          set -e
 
-        SERVICE_ID="${SERVICE_ID}"
-        IMAGE_NAME="${IMAGE_NAME}"
-        KOYEB_API_URL="https://api.koyeb.com/v1/services/$SERVICE_ID/redeploy"
-        KOYEB_API_TOKEN="${KOYEB_API_TOKEN}"
+          SERVICE_ID="${SERVICE_ID}"
+          IMAGE_NAME="${IMAGE_NAME}"
+          KOYEB_API_URL="https://api.koyeb.com/v1/services/$SERVICE_ID/redeploy"
+          KOYEB_API_TOKEN="${KOYEB_API_TOKEN}"
 
-        if [ -z "$KOYEB_API_TOKEN" ]; then
-          echo "KOYEB_API_TOKEN environment variable is not set"
-          exit 1
-        fi
+          if [ -z "$KOYEB_API_TOKEN" ]; then
+            echo "KOYEB_API_TOKEN environment variable is not set"
+            exit 1
+          fi
 
-        if [ -z "$IMAGE_NAME" ]; then
-          echo "IMAGE_NAME is not set"
-          exit 1
-        fi
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "IMAGE_NAME is not set"
+            exit 1
+          fi
 
-        PAYLOAD=$(echo '{"image": "'"$IMAGE_NAME"'"}')
+          PAYLOAD=$(echo '{"image": "'"$IMAGE_NAME"'"}')
 
-        RESPONSE=$(curl --silent --write-out "HTTPSTATUS:%{http_code}" -X POST "$KOYEB_API_URL" \
-          -H "Authorization: Bearer $KOYEB_API_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "$PAYLOAD")
+          RESPONSE=$(curl --silent --write-out "HTTPSTATUS:%{http_code}" -X POST "$KOYEB_API_URL" \
+            -H "Authorization: Bearer $KOYEB_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
 
-        HTTP_STATUS=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:([0-9]*)/\1/')
+          HTTP_STATUS=$(echo "$RESPONSE" | sed -e 's/HTTPSTATUS\:([0-9]*)/\1/')
 
-        if [ "$HTTP_STATUS" -ne 200 ]; then
-          echo "Failed to trigger redeployment for service $SERVICE_ID. HTTP Status: $HTTP_STATUS"
-          exit 1
-        fi
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Failed to trigger redeployment for service $SERVICE_ID. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
 
-        echo "Successfully triggered redeployment for service $SERVICE_ID with image $IMAGE_NAME"
+          echo "Successfully triggered redeployment for service $SERVICE_ID with image $IMAGE_NAME"
