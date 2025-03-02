@@ -236,7 +236,16 @@ namespace LiventCord.Controllers
 
         private async Task<List<Message>> SearchMessagesInContext(string id, string query, MessageType type)
         {
-            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query));
+            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
+
+            if (Utils.IsPostgres(_context))
+            {
+                queryable = queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query));
+            }
+            else
+            {
+                queryable = queryable.Where(m => m.Content != null && m.Content.Contains(query));
+            }
 
             switch (type)
             {
@@ -252,6 +261,9 @@ namespace LiventCord.Controllers
 
             return await queryable.ToListAsync();
         }
+
+
+
 
 
         [NonAction]
