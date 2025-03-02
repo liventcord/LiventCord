@@ -177,6 +177,7 @@ namespace LiventCord.Controllers
                 .Where(m => _dbContext.Channels.Any(c => c.GuildId == guildId && c.ChannelId == m.ChannelId))
                 .ToListAsync();
 
+            await _imageController.DeleteAttachmentFiles(messages);
 
 
             _dbContext.Guilds.Remove(guild);

@@ -18,11 +18,11 @@ namespace LiventCord.Controllers
         private readonly ImageController _imageController;
         private readonly RedisEventEmitter _redisEventEmitter;
 
-
+        private readonly ILogger<MessageController> _logger;
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter
+            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger
         )
         {
             _tokenValidationService = tokenValidationService;
@@ -31,6 +31,7 @@ namespace LiventCord.Controllers
             _metadataService = metadataService;
             _imageController = imageController;
             _redisEventEmitter = redisEventEmitter;
+            _logger = logger;
 
         }
 
@@ -508,11 +509,25 @@ namespace LiventCord.Controllers
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
                 m.MessageId == messageId && m.ChannelId == channelId
             );
-            if (message == null) return;
-            await _imageController.DeleteAttachmentFile(message);
+            if (message == null)
+            {
+                _logger.LogWarning("Message not found for deletion. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+                return;
+            }
 
-            _context.Messages.Remove(message);
+            try
+            {
+                await _imageController.DeleteAttachmentFile(message);
+                _context.Messages.Remove(message);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting message. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+            }
         }
+
 
     }
 }

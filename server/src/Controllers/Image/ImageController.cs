@@ -151,27 +151,37 @@ namespace LiventCord.Controllers
             return fileId;
         }
 
+
         private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
         {
             var filesToDelete = await _context.Set<AttachmentFile>()
-                .Where(f => attachmentIds.Contains(f.FileId))
+                .Where(f => attachmentIds.Contains(f.FileId) && f.FileType == "attachments")
                 .ToListAsync();
 
-            foreach (var fileId in attachmentIds)
+            if (filesToDelete.Any())
             {
-                var file = filesToDelete.FirstOrDefault(f => f.FileId == fileId);
+                _context.Set<AttachmentFile>().RemoveRange(filesToDelete);
+                await _context.SaveChangesAsync();
 
-                if (file == null)
+                foreach (var fileId in attachmentIds)
+                {
+                    if (filesToDelete.Any(f => f.FileId == fileId))
+                    {
+                        _logger.LogInformation("Attachment file deleted from database successfully. FileId: {FileId}", fileId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Attachment file not found for deletion in database. FileId: {FileId}", fileId);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var fileId in attachmentIds)
                 {
                     _logger.LogWarning("Attachment file not found for deletion. FileId: {FileId}", fileId);
-                    continue;
                 }
-
-                _context.Set<AttachmentFile>().Remove(file);
-                _logger.LogInformation("Attachment file deleted from database successfully. FileId: {FileId}", fileId);
             }
-
-            await _context.SaveChangesAsync();
         }
 
         [NonAction]
