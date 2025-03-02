@@ -208,10 +208,9 @@ namespace LiventCord.Controllers
             await DeleteMessage(channelId, messageId);
             return Ok(new { messageId });
         }
-
         [HttpGet("/api/{type}/{id}/search")]
         public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
-            [FromRoute] string type,
+            [FromRoute] MessageType type,
             [IdLengthValidation][FromRoute] string id,
             [FromBody] string query
         )
@@ -219,30 +218,9 @@ namespace LiventCord.Controllers
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest("Query cannot be empty.");
 
-            type = type.ToLower();
-
             try
             {
-                List<Message> results;
-
-                if (type == "guilds")
-                {
-                    results = await _context
-                        .Messages.Where(m => m.Channel.GuildId == id)
-                        .Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query))
-                        .ToListAsync();
-                }
-                else if (type == "dms")
-                {
-                    results = await _context
-                        .Messages.Where(m => m.ChannelId == id)
-                        .Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query))
-                        .ToListAsync();
-                }
-                else
-                {
-                    return BadRequest("Invalid type. It must be 'guilds' or 'dms'.");
-                }
+                var results = await SearchMessagesInContext(id, query, type);
 
                 if (results.Count == 0)
                     return NotFound("No messages found matching your query.");
@@ -253,6 +231,25 @@ namespace LiventCord.Controllers
             {
                 return StatusCode(500, $"An error occurred while searching: {ex.Message}");
             }
+        }
+
+        private async Task<List<Message>> SearchMessagesInContext(string id, string query, MessageType type)
+        {
+            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query));
+
+            switch (type)
+            {
+                case MessageType.Guilds:
+                    queryable = queryable.Where(m => m.Channel.GuildId == id);
+                    break;
+                case MessageType.Dms:
+                    queryable = queryable.Where(m => m.ChannelId == id);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid message type.");
+            }
+
+            return await queryable.ToListAsync();
         }
 
 
@@ -555,4 +552,9 @@ public class EditMessageRequest
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public required string Content { get; set; }
 
+}
+public enum MessageType
+{
+    Guilds,
+    Dms
 }
