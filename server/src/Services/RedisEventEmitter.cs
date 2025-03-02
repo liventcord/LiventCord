@@ -2,11 +2,13 @@ using LiventCord.Controllers;
 
 public class RedisEventEmitter
 {
+    private readonly IBackgroundTaskService _backgroundTaskService;
     private readonly IServiceProvider _serviceProvider;
     private readonly BaseRedisEmitter _redisEmitter;
 
-    public RedisEventEmitter(IServiceProvider serviceProvider, BaseRedisEmitter redisEmitter)
+    public RedisEventEmitter(IBackgroundTaskService backgroundTaskService, IServiceProvider serviceProvider, BaseRedisEmitter redisEmitter)
     {
+        _backgroundTaskService = backgroundTaskService;
         _serviceProvider = serviceProvider;
         _redisEmitter = redisEmitter;
     }
@@ -18,7 +20,11 @@ public class RedisEventEmitter
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userIds = await dbContext.GetGuildUserIds(guildId, userId);
-            await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
+
+            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+            {
+                await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
+            });
         }
     }
 
@@ -28,12 +34,16 @@ public class RedisEventEmitter
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             bool isFriend = await dbContext.CheckFriendship(userId, friendId);
-            string[] userIds = [friendId];
-            await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
-        }
+            string[] userIds = { friendId };
 
+            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+            {
+                await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
+            });
+        }
     }
 }
+
 public enum EventType
 {
     CREATE_CHANNEL,

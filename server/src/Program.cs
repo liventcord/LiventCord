@@ -15,8 +15,11 @@ ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
+
 builder.Services.AddSingleton<BaseRedisEmitter>();
 builder.Services.AddScoped<RedisEventEmitter>();
+
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
