@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using LiventCord.Helpers;
 using System.Security.Cryptography;
+using LiventCord.Controllers;
 public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
 {
     private readonly int _idLength;
@@ -100,6 +101,13 @@ namespace LiventCord.Helpers
         public static string SanitizeFileName(string fileName)
         {
             return new string(fileName.Where(c => c >= 32 && c <= 126).ToArray());
+        }
+
+        public static bool IsPostgres(AppDbContext _context)
+        {
+            if (_context.Database.ProviderName != null)
+                return _context.Database.ProviderName.Contains("Npgsql");
+            return false;
         }
     }
 }
