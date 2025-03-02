@@ -530,7 +530,7 @@ namespace LiventCord.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting message. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, messageId);
+                _logger.LogError(ex, "Error deleting message. " +ex.Message);
             }
         }
 
