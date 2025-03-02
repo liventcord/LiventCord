@@ -90,7 +90,13 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Whether to build frontend assets on .net server start or not.
     **Defaults to** `none`
 
+  - **RedisConnectionString**:
+    Connection string for connecting redis
+    **Defaults to** `localhost:6379`
 
+  - **RedisConnectionLimit**:
+    Maximum number of concurrent redis connectons. 
+    **Defaults** to 1.
 
 ## Gin Server Configuration
 1. Move .example.env to .env.
@@ -111,6 +117,6 @@ mv .example.env .env
     The URL used to verify the WebSocket authentication by passing the cookie to the .NET server.
     **Defaults to** `http://localhost:5005`
   
-  -**RedisConnectionString**:
+  - **RedisConnectionString**:
     Connection string for connecting redis
     **Defaults to** `localhost:6379`
