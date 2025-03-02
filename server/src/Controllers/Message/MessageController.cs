@@ -517,7 +517,7 @@ namespace LiventCord.Controllers
             );
             if (message == null)
             {
-                _logger.LogWarning("Message not found for deletion. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+                _logger.LogWarning("Message not found for deletion.");
                 return;
             }
 
@@ -526,11 +526,11 @@ namespace LiventCord.Controllers
                 await _imageController.DeleteAttachmentFile(message);
                 _context.Messages.Remove(message);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+                _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting message. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
+                _logger.LogError(ex, "Error deleting message. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, messageId);
             }
         }
 
