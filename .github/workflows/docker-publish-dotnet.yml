@@ -1,9 +1,12 @@
-name: Publish Docker Image
+name: Publish Docker Image Dotnet
 
 on:
   push:
     branches:
       - main
+    paths:
+      - "server/src**"
+      - "web/**"
 
 jobs:
   build-and-push:
