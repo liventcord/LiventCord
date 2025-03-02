@@ -1,7 +1,6 @@
 using System.Text.Json;
 using StackExchange.Redis;
 using MessagePack;
-
 public class BaseRedisEmitter
 {
     private readonly string? redisConnectionString;
@@ -16,6 +15,8 @@ public class BaseRedisEmitter
     private IDatabase? db;
     private const string? defaultRedisConnectionString = "localhost:6379";
 
+    private static SemaphoreSlim? _connectionSemaphore;
+
     public BaseRedisEmitter(IServiceProvider serviceProvider, IConfiguration configuration, ILogger<BaseRedisEmitter> logger)
     {
         redisConnectionString = configuration["AppSettings:RedisConnectionString"];
@@ -24,6 +25,9 @@ public class BaseRedisEmitter
         {
             redisConnectionString = defaultRedisConnectionString;
         }
+
+        int connectionLimit = configuration.GetValue<int>("AppSettings:RedisConnectionLimit", 1);
+        _connectionSemaphore = new SemaphoreSlim(connectionLimit);
 
         Task.Run(ConnectToRedisAsync);
     }
@@ -68,6 +72,7 @@ public class BaseRedisEmitter
 
     public async Task EmitToRedisStream(string[] userIds, EventType eventType, object message)
     {
+        if (_connectionSemaphore == null) return;
         if (userIds.Length == 0) return;
 
         if (redis == null || db == null)
@@ -79,31 +84,38 @@ public class BaseRedisEmitter
 
         try
         {
-            string payloadJson = JsonSerializer.Serialize(message);
-            var eventPayload = new
+            await _connectionSemaphore.WaitAsync();
+
+            try
             {
-                EventType = eventType.ToString(),
-                UserIDs = userIds,
-                Payload = payloadJson
-            };
+                string payloadJson = JsonSerializer.Serialize(message);
+                var eventPayload = new
+                {
+                    EventType = eventType.ToString(),
+                    UserIDs = userIds,
+                    Payload = payloadJson
+                };
 
-            var messageBytes = MessagePackSerializer.Serialize(eventPayload);
+                var messageBytes = MessagePackSerializer.Serialize(eventPayload);
 
-            var streamMessage = new NameValueEntry[]
-            {
-                new NameValueEntry("EventType", eventType.ToString()),
-                new NameValueEntry("UserIDs", JsonSerializer.Serialize(userIds)),
-                new NameValueEntry("Payload", payloadJson)
-            };
+                var streamMessage = new NameValueEntry[] {
+                    new NameValueEntry("EventType", eventType.ToString()),
+                    new NameValueEntry("UserIDs", JsonSerializer.Serialize(userIds)),
+                    new NameValueEntry("Payload", payloadJson)
+                };
 
-            if (db != null)
-            {
-                await db.StreamAddAsync(streamKey, streamMessage);
+                if (db != null)
+                {
+                    await db.StreamAddAsync(streamKey, streamMessage);
+                    await db.KeyExpireAsync(streamKey, TimeSpan.FromMinutes(5));
+                }
 
-                await db.KeyExpireAsync(streamKey, TimeSpan.FromMinutes(5));
+                Console.WriteLine($"Event of type {eventType} published to Redis stream for {userIds.Length} users.");
             }
-
-            Console.WriteLine($"Event of type {eventType} published to Redis stream for {userIds.Length} users.");
+            finally
+            {
+                _connectionSemaphore.Release();
+            }
         }
         catch (Exception ex)
         {
@@ -111,6 +123,30 @@ public class BaseRedisEmitter
             await ConnectToRedisAsync();
         }
     }
+}
 
+public class BackgroundTaskService : IBackgroundTaskService
+{
+    public void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem)
+    {
+        Task.Run(() => ExecuteWorkItemAsync(workItem));
+    }
 
+    private async Task ExecuteWorkItemAsync(Func<CancellationToken, Task> workItem)
+    {
+        var cancellationToken = new CancellationToken();
+        try
+        {
+            await workItem(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in background task: {ex.Message}");
+        }
+    }
+}
+
+public interface IBackgroundTaskService
+{
+    void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem);
 }
