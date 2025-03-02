@@ -177,8 +177,8 @@ app.MapControllers();
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
-
-    if (env.IsDevelopment() && builder.Configuration["BuildFrontend"] == "true")
+    var configf = builder.Configuration["AppSettings:BuildFrontend"];
+    if (env.IsDevelopment() && builder.Configuration["AppSettings:BuildFrontend"] == "true")
     {
         Task.Run(() => BuilderService.StartFrontendBuild());
     }
