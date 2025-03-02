@@ -1,4 +1,5 @@
 using LiventCord.Helpers;
+using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,7 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly ILogger<ImageController> _logger;
 
-        public ImageController(AppDbContext context, ILogger<ImageController> logger, PermissionsController permissionsController, ChannelController channelController)
+        public ImageController(AppDbContext context, ILogger<ImageController> logger, PermissionsController permissionsController)
         {
             _context = context;
             _logger = logger;
@@ -150,9 +151,57 @@ namespace LiventCord.Controllers
             return fileId;
         }
 
+        private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
+        {
+            var filesToDelete = await _context.Set<AttachmentFile>()
+                .Where(f => attachmentIds.Contains(f.FileId))
+                .ToListAsync();
 
+            foreach (var fileId in attachmentIds)
+            {
+                var file = filesToDelete.FirstOrDefault(f => f.FileId == fileId);
 
+                if (file == null)
+                {
+                    _logger.LogWarning("Attachment file not found for deletion. FileId: {FileId}", fileId);
+                    continue;
+                }
 
+                _context.Set<AttachmentFile>().Remove(file);
+                _logger.LogInformation("Attachment file deleted from database successfully. FileId: {FileId}", fileId);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        [NonAction]
+        public async Task DeleteAttachmentFile(Message message)
+        {
+            if (!string.IsNullOrEmpty(message.AttachmentUrls))
+            {
+                var attachmentIds = message.AttachmentUrls.Split(',').ToList();
+                await DeleteAttachmentFilesByIds(attachmentIds);
+            }
+        }
+
+        [NonAction]
+        public async Task DeleteAttachmentFiles(List<Message> messages)
+        {
+            var attachmentIds = new List<string>();
+
+            foreach (var message in messages)
+            {
+                if (!string.IsNullOrEmpty(message.AttachmentUrls))
+                {
+                    attachmentIds.AddRange(message.AttachmentUrls.Split(','));
+                }
+            }
+
+            if (attachmentIds.Any())
+            {
+                await DeleteAttachmentFilesByIds(attachmentIds);
+            }
+        }
 
         private async Task SetIsUploadedGuildImg(string guildId)
         {
@@ -226,8 +275,6 @@ namespace LiventCord.Controllers
 
             return await query.FirstOrDefaultAsync();
         }
-
-
 
     }
 }

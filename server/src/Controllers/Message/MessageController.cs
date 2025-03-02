@@ -499,8 +499,10 @@ namespace LiventCord.Controllers
 
             if (messages.Any())
             {
-                _context.Messages.RemoveRange(messages);
-                await _context.SaveChangesAsync();
+                foreach (var message in messages)
+                {
+                    await DeleteMessage(message.ChannelId, message.MessageId);
+                }
             }
         }
 
@@ -509,13 +511,12 @@ namespace LiventCord.Controllers
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
                 m.MessageId == messageId && m.ChannelId == channelId
             );
+            if (message == null) return;
+            await _imageController.DeleteAttachmentFile(message);
 
-            if (message != null)
-            {
-                _context.Messages.Remove(message);
-                await _context.SaveChangesAsync();
-            }
+            _context.Messages.Remove(message);
         }
+
     }
 }
 public class NewBotMessageRequest
