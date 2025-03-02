@@ -213,17 +213,15 @@ namespace LiventCord.Controllers
         public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
             [FromRoute] MessageType type,
             [IdLengthValidation][FromRoute] string id,
-            [FromBody] string query
-        )
+            [FromBody] string query)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return BadRequest("Query cannot be empty.");
 
             try
             {
-                var results = await SearchMessagesInContext(id, query, type);
-
-                if (results.Count == 0)
+                var results = await SearchMessagesInContext(id, query, type, UserId!);
+                if (results == null || !results.Any())
                     return NotFound("No messages found matching your query.");
 
                 return Ok(results);
@@ -234,34 +232,30 @@ namespace LiventCord.Controllers
             }
         }
 
-        private async Task<List<Message>> SearchMessagesInContext(string id, string query, MessageType type)
+        private async Task<List<Message>?> SearchMessagesInContext(string id, string query, MessageType type, string userId)
         {
             IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
 
-            if (Utils.IsPostgres(_context))
-            {
-                queryable = queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query));
-            }
-            else
-            {
-                queryable = queryable.Where(m => m.Content != null && m.Content.Contains(query));
-            }
+            queryable = Utils.IsPostgres(_context) 
+                ? queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query)) 
+                : queryable.Where(m => m.Content != null && m.Content.Contains(query));
 
             switch (type)
             {
                 case MessageType.Guilds:
                     queryable = queryable.Where(m => m.Channel.GuildId == id);
+                    if (!await _context.DoesMemberExistInGuild(userId, id))
+                        return null;
                     break;
                 case MessageType.Dms:
                     queryable = queryable.Where(m => m.ChannelId == id);
+                    if (!await _context.CheckFriendship(userId, id))
+                        return null;
                     break;
-                default:
-                    throw new ArgumentException("Invalid message type.");
             }
 
             return await queryable.ToListAsync();
         }
-
 
 
 
