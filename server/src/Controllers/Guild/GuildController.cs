@@ -173,11 +173,18 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
                 return StatusCode(StatusCodes.Status403Forbidden);
 
+            var messages = await _dbContext.Messages
+                .Where(m => _dbContext.Channels.Any(c => c.GuildId == guildId && c.ChannelId == m.ChannelId))
+                .ToListAsync();
+
+
+
             _dbContext.Guilds.Remove(guild);
             await _dbContext.SaveChangesAsync();
 
             return Ok(new { guildId });
         }
+
 
     }
 }

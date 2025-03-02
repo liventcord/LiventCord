@@ -15,13 +15,15 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly ITokenValidationService _tokenValidationService;
         private readonly RedisEventEmitter _redisEventEmitter;
+        private readonly ImageController _imageController;
 
         public ChannelController(
             AppDbContext dbContext,
             MembersController membersController,
             PermissionsController permissionsController,
             ITokenValidationService tokenValidationService,
-            RedisEventEmitter redisEventEmitter
+            RedisEventEmitter redisEventEmitter,
+            ImageController imageController
         )
         {
             _dbContext = dbContext;
@@ -29,6 +31,7 @@ namespace LiventCord.Controllers
             _membersController = membersController;
             _tokenValidationService = tokenValidationService;
             _redisEventEmitter = redisEventEmitter;
+            _imageController = imageController;
 
         }
         [Authorize]
@@ -49,11 +52,11 @@ namespace LiventCord.Controllers
         [Authorize]
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
-                [FromRoute][IdLengthValidation] string guildId,
-                [IdLengthValidation] string channelId
-            )
+            [FromRoute][IdLengthValidation] string guildId,
+            [IdLengthValidation] string channelId
+        )
         {
-            var channel = _dbContext.Channels.Find(channelId);
+            var channel = await _dbContext.Channels.FindAsync(channelId);
             if (channel == null)
                 return NotFound("Channel does not exist.");
 
@@ -68,11 +71,17 @@ namespace LiventCord.Controllers
                 };
             }
 
+            var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
+
+            await _imageController.DeleteAttachmentFiles(messages);
+
             _dbContext.Channels.Remove(channel);
             await _dbContext.SaveChangesAsync();
             await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, UserId!);
+
             return Ok(new { guildId, channelId });
         }
+
 
 
         [HttpPost("/api/guilds/{guildId}/channels")]
