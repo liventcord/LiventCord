@@ -17,8 +17,12 @@ import (
 
 const cacheHeader = "public, max-age=31536000, immutable"
 
-func getCachePath(videoID string) string {
-	return filepath.Join("cache", videoID+".cache")
+func getCachePath(videoID string) (string, error) {
+	// Validate videoID to ensure it does not contain path traversal characters
+	if strings.Contains(videoID, "/") || strings.Contains(videoID, "\\") || strings.Contains(videoID, "..") {
+		return "", fmt.Errorf("invalid video ID")
+	}
+	return filepath.Join("cache", videoID+".cache"), nil
 }
 
 func getAudioStream(videoID string) (string, error) {
@@ -73,7 +77,12 @@ func handleRangeRequest(c *gin.Context, data []byte) {
 }
 
 func proxyStreamWithCache(c *gin.Context, videoID string) {
-	cachePath := getCachePath(videoID)
+	cachePath, err := getCachePath(videoID)
+	if err != nil {
+		log.Println("[ERROR] Invalid video ID:", err)
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
 	if _, err := os.Stat(cachePath); err == nil {
 		log.Println("[CACHE] Serving from disk:", videoID)
@@ -238,7 +247,12 @@ func main() {
 
 	router.GET("/stream/audio/:videoID", func(c *gin.Context) {
 		videoID := c.Param("videoID")
-		cachePath := getCachePath(videoID)
+		cachePath, err := getCachePath(videoID)
+		if err != nil {
+			log.Println("[ERROR] Invalid video ID:", err)
+			c.Status(http.StatusBadRequest)
+			return
+		}
 
 		if _, err := os.Stat(cachePath); err == nil {
 			log.Println("[CACHE] Serving from disk:", videoID)
@@ -257,7 +271,12 @@ func main() {
 
 	router.HEAD("/stream/audio/:videoID", func(c *gin.Context) {
 		videoID := c.Param("videoID")
-		cachePath := getCachePath(videoID)
+		cachePath, err := getCachePath(videoID)
+		if err != nil {
+			log.Println("[ERROR] Invalid video ID:", err)
+			c.Status(http.StatusBadRequest)
+			return
+		}
 
 		if fi, err := os.Stat(cachePath); err == nil {
 			c.Header("Content-Type", "audio/mp4")
