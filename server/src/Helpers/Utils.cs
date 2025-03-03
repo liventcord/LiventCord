@@ -42,60 +42,42 @@ namespace LiventCord.Helpers
 {
     public static partial class Utils
     {
+        private static readonly Random _random = new();
         public static int ID_LENGTH = 19;
-
         public static int USER_ID_LENGTH = 18;
 
         public static string CreateRandomId()
         {
-            Random random = new();
-            string result = string.Empty;
-
-
-            result += random.Next(1, 10).ToString();
-
+            Span<char> result = stackalloc char[ID_LENGTH];
+            result[0] = (char)('0' + _random.Next(1, 10));
             for (int i = 1; i < ID_LENGTH; i++)
             {
-                result += random.Next(0, 10).ToString();
+                result[i] = (char)('0' + _random.Next(0, 10));
             }
-
-            return result;
+            return new string(result);
         }
-
 
         public static string CreateRandomIdSecure()
         {
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                byte[] randomBytes = new byte[16];
-                rng.GetBytes(randomBytes);
-
-                return Convert.ToBase64String(randomBytes);
-            }
+            byte[] randomBytes = new byte[16];
+            RandomNumberGenerator.Fill(randomBytes);
+            return Convert.ToBase64String(randomBytes);
         }
-
 
         public static string CreateRandomUserId()
         {
-            Random random = new();
-            string result = string.Empty;
-
-
-            result += random.Next(1, 10).ToString();
-
+            Span<char> result = stackalloc char[USER_ID_LENGTH];
+            result[0] = (char)('0' + _random.Next(1, 10));
             for (int i = 1; i < USER_ID_LENGTH; i++)
             {
-                result += random.Next(0, 10).ToString();
+                result[i] = (char)('0' + _random.Next(0, 10));
             }
-
-            return result;
+            return new string(result);
         }
 
         public static bool IsValidId(string input)
         {
-            if (string.IsNullOrEmpty(input))
-                return false;
-            return input.Length == 19 && Regex.IsMatch(input, @"^\d{19}$");
+            return !string.IsNullOrEmpty(input) && input.Length == 19 && Regex.IsMatch(input, "^\\d{19}$");
         }
 
         public static string SanitizeFileName(string fileName)
@@ -105,9 +87,7 @@ namespace LiventCord.Helpers
 
         public static bool IsPostgres(AppDbContext _context)
         {
-            if (_context.Database.ProviderName != null)
-                return _context.Database.ProviderName.Contains("Npgsql");
-            return false;
+            return _context.Database.ProviderName?.Contains("Npgsql") == true;
         }
     }
 }
