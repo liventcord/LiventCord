@@ -25,13 +25,11 @@ func main() {
 	router.GET("/stream/audio/:videoID", func(c *gin.Context) {
 		videoID := c.Param("videoID")
 
-		audioURL, err := getAudioStream(videoID)
-
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve audio stream"+err})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to retrieve audio stream: %v", err)})
 			return
 		}
-
+		
 		resp, err := http.Get(audioURL)
 		log.Println(videoID);
 		if err != nil {
