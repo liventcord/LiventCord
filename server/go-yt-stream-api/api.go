@@ -221,12 +221,20 @@ func startCacheCleaner(interval time.Duration, maxSize int64) {
     }()
 }
 
+
 func main() {
 	os.MkdirAll("cache", os.ModePerm)
 	CACHE_LIMIT_GB := 0.5
 	go startCacheCleaner(5*time.Minute, int64(CACHE_LIMIT_GB*1024*1024*1024))
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+
+	corsDomains := os.Getenv("CORS_DOMAINS")
+	if corsDomains != "" {
+		router.Use(gin.Logger())
+		allowedOrigins := strings.Split(corsDomains, ",")
+		router.Use(cors(allowedOrigins))
+	}
 
 	router.GET("/stream/audio/:videoID", func(c *gin.Context) {
 		videoID := c.Param("videoID")
@@ -288,4 +296,24 @@ func main() {
 
 	log.Println("Server running on :8080")
 	router.Run(":8080")
+}
+
+func cors(allowedOrigins []string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin || allowedOrigin == "*" {
+				c.Header("Access-Control-Allow-Origin", origin)
+				c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				c.Header("Access-Control-Allow-Credentials", "true")
+				break
+			}
+		}
+		if c.Request.Method == http.MethodOptions {
+			c.Status(http.StatusOK)
+			return
+		}
+		c.Next()
+	}
 }
