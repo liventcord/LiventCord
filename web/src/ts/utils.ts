@@ -1,4 +1,8 @@
-import { friendsContainer, getFriendsTranslation } from "./friendui.ts";
+import {
+  displayWumpus,
+  friendsContainer,
+  getFriendsTranslation
+} from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
@@ -79,12 +83,17 @@ export function isValidFriendName(input: string) {
   const pattern = /^[^#]+#\d{4}$/;
   return pattern.test(input);
 }
-const friendsTitleContainer = getId("friendsTitleContainer") as HTMLElement;
 export function reCalculateFriTitle() {
-  const friendsCount = friendsContainer.children.length;
+  const friendCards = friendsContainer.querySelectorAll(".friend-card");
+  const friendsCount = friendCards.length;
   const textToWrite =
     friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
-  friendsTitleContainer.textContent = textToWrite;
+  const friendsTitleContainer = getId("friendsTitleContainer") as HTMLElement;
+  if (friendsTitleContainer) friendsTitleContainer.textContent = textToWrite;
+
+  if (friendsCount === 0) {
+    displayWumpus();
+  }
 }
 
 export function setWindowName(pendingCounter: number) {

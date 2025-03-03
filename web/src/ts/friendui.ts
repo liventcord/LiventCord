@@ -8,12 +8,7 @@ import {
   disableElement
 } from "./utils.ts";
 import { openDm, removeDm } from "./app.ts";
-import {
-  getUserNick,
-  addUser,
-  isUserBlocked,
-  currentUserNick
-} from "./user.ts";
+import { getUserNick, isUserBlocked, currentUserNick } from "./user.ts";
 import {
   submitAddFriend,
   filterFriends,
@@ -53,6 +48,10 @@ export const ButtonTypes = {
   OptionsBtn:
     '<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm2 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" clip-rule="evenodd" class=""></path></svg>'
 };
+const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
+  "friendsSearchInput"
+)} onkeyup="filterFriends()"></input>`;
+
 const HOVER_BUBBLE_TIME = 500;
 
 export const friendMenuTypes = {
@@ -260,7 +259,8 @@ export function updateDmsList(friends: DmUserInfo[]) {
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
         socialMediaLinks: [],
-        isFriendsRequestToUser: false
+        isFriendsRequestToUser: false,
+        isPending: false
       })
     ])
   );
@@ -471,8 +471,9 @@ export function createButtonWithBubblesImg(
   button.appendChild(iconSphere);
   return iconSphere;
 }
-export function updateUsersStatus(friend: Friend) {
+export function updateUsersActivities(friend: Friend) {
   if (!friendsCache.isOnline(friend.userId)) return;
+  if (friend.activity === "" || friend.activity === undefined) return;
   console.log(friend);
   disableElement("activity-detail");
   disableElement("activity-detail-2");
@@ -645,6 +646,27 @@ export function displayWumpus() {
   friendsContainer.appendChild(imgElement);
 }
 
+export function filterFriendsByCategory(friends: Friend[]): Friend[] {
+  switch (currentSelectedFriendMenu) {
+    case friendMenuTypes.online:
+      return friends.filter(
+        (friend) =>
+          friend.status === friendMenuTypes.online && !friend.isPending
+      );
+    case friendMenuTypes.all:
+      return friends.filter((friend) => !friend.isPending);
+    case friendMenuTypes.blocked:
+      return friends.filter(
+        (friend) => isUserBlocked(friend.userId) && !friend.isPending
+      );
+    case friendMenuTypes.pending:
+      return friends.filter((friend) => friend.isPending === true);
+    default:
+      console.warn("Unhandled status: " + currentSelectedFriendMenu);
+      return [];
+  }
+}
+
 export function populateFriendsContainer(
   friends: Friend[],
   isPending?: boolean
@@ -653,42 +675,31 @@ export function populateFriendsContainer(
     return;
   }
 
-  friends.forEach((friend) => {
-    addUser(friend.userId, friend.nickName, friend.discriminator);
-  });
-
   try {
-    if (currentSelectedFriendMenu === friendMenuTypes.online) {
-      friends = friends.filter((friend) => friend.status === "online");
-    } else if (currentSelectedFriendMenu === friendMenuTypes.all) {
-    } else if (currentSelectedFriendMenu === friendMenuTypes.blocked) {
-      friends = friends.filter((friend) => isUserBlocked(friend.userId));
-    } else if (currentSelectedFriendMenu === friendMenuTypes.pending) {
-    } else {
-      console.warn("Unhandled status:" + currentSelectedFriendMenu);
-      return;
-    }
-    const friendsTitleContainer = createFriendsTitle(friends.length);
+    console.log(friends);
+    friends = filterFriendsByCategory(friends);
 
     if (friends.length === 0) {
       displayWumpus();
-    } else {
-      const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
-        "friendsSearchInput"
-      )} onkeyup="filterFriends()"></input>`;
-      friendsContainer.innerHTML = initialFriendsContainerHtml;
-      friendsContainer.appendChild(friendsTitleContainer);
-      setTimeout(() => {
-        filterFriends();
-      }, 10);
-      updateUsersList(friends, !!isPending);
-      enableElement("friendsTitleContainer");
+      return;
     }
+
+    const friendsTitleContainer = createFriendsTitle(friends.length);
+    friendsContainer.innerHTML = initialFriendsContainerHtml;
+    friendsContainer.appendChild(friendsTitleContainer);
+
+    setTimeout(() => {
+      filterFriends();
+    }, 10);
+
+    updateFriendsList(friends, !!isPending);
+    enableElement("friendsTitleContainer");
   } catch (error) {
     console.error("Error populating friends container:", error);
   }
 }
-function updateUsersList(friends: Friend[], isPending: boolean) {
+
+function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
     const {
       userId,
@@ -697,7 +708,6 @@ function updateUsersList(friends: Friend[], isPending: boolean) {
       isOnline,
       isFriendsRequestToUser
     } = friend;
-    console.warn(friend);
     createFriendCard(
       friend,
       userId,
@@ -707,7 +717,7 @@ function updateUsersList(friends: Friend[], isPending: boolean) {
       isPending || false,
       isFriendsRequestToUser
     );
-    updateUsersStatus(friend);
+    updateUsersActivities(friend);
   }
 }
 export function createFriendCard(
@@ -750,8 +760,9 @@ export function createFriendCard(
       textContent: `#${discriminator}`
     })
   );
+
   const onlineStatus = translations.getTranslation(
-    isPending
+    friend.isPending
       ? isFriendsRequestToUser
         ? "incoming-friend-request"
         : "outgoing-friend-request"
@@ -759,6 +770,7 @@ export function createFriendCard(
       ? "online"
       : "offline"
   );
+  console.log(isPending, friend.isPending);
 
   friendInfo.appendChild(
     createEl("div", { className: "friend-status", textContent: onlineStatus })
@@ -803,7 +815,7 @@ export function handleOptionsClick(
   if (options) {
     const actionContext = options[optionsButton.id];
     if (actionContext && typeof actionContext.action === "function") {
-      showContextMenu(event.pageX, event.pageY, { main: actionContext });
+      showContextMenu(event.pageX, event.pageY, { action: actionContext });
     } else {
       console.error(
         `Missing or invalid 'action' for options with ID ${optionsButton.id}`

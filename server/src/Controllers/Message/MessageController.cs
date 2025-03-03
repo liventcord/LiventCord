@@ -236,8 +236,8 @@ namespace LiventCord.Controllers
         {
             IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
 
-            queryable = Utils.IsPostgres(_context) 
-                ? queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query)) 
+            queryable = Utils.IsPostgres(_context)
+                ? queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query))
                 : queryable.Where(m => m.Content != null && m.Content.Contains(query));
 
             switch (type)
@@ -530,7 +530,7 @@ namespace LiventCord.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting message. " +ex.Message);
+                _logger.LogError(ex, "Error deleting message. " + ex.Message);
             }
         }
 

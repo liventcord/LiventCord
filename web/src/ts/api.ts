@@ -46,7 +46,7 @@ export const EventType = Object.freeze({
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
 const friendEvents: EventType[] = Object.values(EventType).filter((event) =>
-  event.includes("friend")
+  event.toLowerCase().includes("friend".toLowerCase())
 ) as EventType[];
 
 export const HttpMethod = Object.freeze({

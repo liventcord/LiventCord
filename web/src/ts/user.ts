@@ -30,6 +30,7 @@ export interface UserInfo {
   createdAt?: string;
   lastLogin?: string;
   socialMediaLinks?: string[];
+  isPending?: boolean;
   isBlocked?: boolean;
 }
 

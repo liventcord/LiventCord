@@ -261,9 +261,18 @@ class Translations {
 
   getFriendErrorMessage(key: string) {
     const result = this.friendErrorTranslations[key];
-    if (key && !result) {
-      console.error("Cant find translation for:", key);
+
+    if (!result) {
+      console.error("Can't find translation for:", key);
+      return key;
     }
+
+    if (typeof result === "object" && result !== null && "default" in result) {
+      console.log("Found object with default:", result);
+      return result.default as string;
+    }
+
+    console.log("Found direct string:", result);
     return result as string;
   }
 

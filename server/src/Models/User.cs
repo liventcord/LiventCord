@@ -135,16 +135,21 @@ namespace LiventCord.Models
 
     public class PublicUser
     {
-        public bool IsOnline;
-        public string? Description;
-
-        public required string Discriminator { get; set; }
-
-        public required string UserId { get; set; }
-        public required string NickName { get; set; }
+        public string? UserId { get; set; }
+        public string? NickName { get; set; }
+        public string? Discriminator { get; set; }
         public string? Status { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public bool? IsOnline { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public string? Description { get; set; }
         public string? Location { get; set; }
         public string? SocialMediaLinks { get; set; }
+    }
+
+    public class PublicUserWithStatus : PublicUser
+    {
+        public FriendStatus FriendshipStatus { get; set; }
+        public bool IsPending { get; set; }
+        public bool IsFriendsRequestToUser { get; set; }
     }
 }
