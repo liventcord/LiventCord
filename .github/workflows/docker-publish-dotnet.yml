@@ -7,7 +7,6 @@ on:
     paths:
       - "server/src/**"
       - "web/**"
-
   workflow_dispatch:
     inputs:
       IMAGE_NAME:
@@ -43,6 +42,7 @@ jobs:
   deploy-koyeb:
     runs-on: ubuntu-latest
     needs: build-and-push
+    if: ${{ github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout code
