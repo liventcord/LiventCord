@@ -217,7 +217,7 @@ func startCacheCleaner(interval time.Duration, maxSize int64) {
 func main() {
 	os.MkdirAll("cache", os.ModePerm)
 	CACHE_LIMIT_GB := 0.5
-	go startCacheCleaner(5*time.Minute, CACHE_LIMIT_GB*1024*1024*1024) 
+	go startCacheCleaner(5*time.Minute, int64(CACHE_LIMIT_GB*1024*1024*1024))
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
