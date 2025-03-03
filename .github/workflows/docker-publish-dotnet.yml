@@ -16,7 +16,7 @@ on:
       SERVICE_ID:
         description: 'Id of koyeb service'
         required: true
-        
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
 
           SERVICE_ID="${SERVICE_ID}"
           IMAGE_NAME="${IMAGE_NAME}"
-          KOYEB_API_URL="https://api.koyeb.com/v1/services/$SERVICE_ID/redeploy"
+          KOYEB_API_URL="https://app.koyeb.com/v1/services/$SERVICE_ID/redeploy"
           KOYEB_API_TOKEN="${KOYEB_API_TOKEN}"
 
           if [ -z "$KOYEB_API_TOKEN" ]; then
