@@ -38,59 +38,48 @@ namespace LiventCord.Controllers
 
         [HttpPost("{friendId}")]
         public async Task<IActionResult> AddDmEndpoint(
-            [FromRoute][IdLengthValidation] string friendId
+            [FromRoute][UserIdLengthValidation] string friendId
         )
         {
-            var result = await AddDmUser(UserId!, friendId);
-            return result;
+            if (string.IsNullOrEmpty(UserId))
+                return Unauthorized("User ID is missing.");
+
+            var existingDm = await _dbContext.UserDms
+                .FirstOrDefaultAsync(d => d.UserId == UserId && d.FriendId == friendId);
+
+            if (existingDm != null)
+                return Conflict("Direct message relationship already exists.");
+
+            var newDm = new UserDm
+            {
+                UserId = UserId,
+                FriendId = friendId
+            };
+
+            await _dbContext.UserDms.AddAsync(newDm);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok();
         }
 
-        private async Task<IActionResult> AddDmUser(string userId, string friendId)
+        [HttpDelete("{friendId}")]
+        public async Task<IActionResult> RemoveDmEndpoint(
+            [FromRoute][UserIdLengthValidation] string friendId
+        )
         {
-            // # TODO: add to dm users
-            var friend = await _dbContext
-                .Users.Where(u => u.UserId == friendId)
-                .Select(u => new { u.UserId })
-                .FirstOrDefaultAsync();
+            if (string.IsNullOrEmpty(UserId))
+                return Unauthorized("User ID is missing.");
 
-            if (friend == null)
-                return NotFound("Friend not found.");
+            var dmToRemove = await _dbContext.UserDms
+                .FirstOrDefaultAsync(d => d.UserId == UserId && d.FriendId == friendId);
 
-            if (friend.UserId == userId)
-                return BadRequest("You cannot add yourself as a friend.");
+            if (dmToRemove == null)
+                return NotFound("Direct message relationship not found.");
 
-            var existingFriendship = await _dbContext.Friends.AnyAsync(f =>
-                (f.UserId == userId && f.FriendId == friend.UserId)
-                || (f.UserId == friend.UserId && f.FriendId == userId)
-            );
+            _dbContext.UserDms.Remove(dmToRemove);
+            await _dbContext.SaveChangesAsync();
 
-            if (existingFriendship)
-                return Conflict("You are already friends with this user.");
-
-            using (var transaction = await _dbContext.Database.BeginTransactionAsync())
-            {
-                var newFriendship = new Friend
-                {
-                    UserId = userId,
-                    FriendId = friend.UserId,
-                    Status = FriendStatus.Pending,
-                };
-
-                var reverseFriendship = new Friend
-                {
-                    UserId = friend.UserId,
-                    FriendId = userId,
-                    Status = FriendStatus.Pending,
-                };
-
-                _dbContext.Friends.Add(newFriendship);
-                _dbContext.Friends.Add(reverseFriendship);
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return Ok("Friend request sent.");
-            }
+            return Ok();
         }
     }
 }
