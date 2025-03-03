@@ -28,10 +28,10 @@ func main() {
 		audioURL, err := getAudioStream(videoID)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve audio stream"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve audio stream"+err})
 			return
 		}
-		
+
 		resp, err := http.Get(audioURL)
 		log.Println(videoID);
 		if err != nil {
@@ -39,10 +39,10 @@ func main() {
 			return
 		}
 		defer resp.Body.Close()
-		
-		c.Header("Content-Type", "audio/mp4") 
+
+		c.Header("Content-Type", "audio/mp4")
 		c.Header("Transfer-Encoding", "chunked")
-		
+
 		_, err = io.Copy(c.Writer, resp.Body)
 		if err != nil {
 			log.Println("Error streaming audio:", err)
@@ -52,3 +52,4 @@ func main() {
 	log.Println("Server running on :8080")
 	router.Run(":8080")
 }
+
