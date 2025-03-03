@@ -23,18 +23,20 @@ func getCachePath(videoID string) string {
 
 func getAudioStream(videoID string) (string, error) {
     tempCookies := "/tmp/cookies.txt"
-    if _, err := exec.Command("cp", "/etc/secrets/cookies.txt", tempCookies).Run(); err != nil {
-        return "", fmt.Errorf("failed to copy cookies file: %v", err)
+    err := exec.Command("cp", "/etc/secrets/cookies.txt", tempCookies).Run()
+    if err != nil {
+        return "", fmt.Errorf("failed to copy cookies file.")
     }
 
     cmd := exec.Command("yt-dlp", "--cookies", tempCookies, "-f", "bestaudio[ext=m4a]/bestaudio[height<=480]", "--get-url", "https://www.youtube.com/watch?v="+videoID)
     output, err := cmd.CombinedOutput()
     if err != nil {
-        log.Printf("yt-dlp command failed: %s\n", string(output))
-        return "", fmt.Errorf("yt-dlp error: %s", string(output))
+        log.Printf("yt-dlp command failed.")
+        return "", fmt.Errorf("yt-dlp error.")
     }
     return strings.TrimSpace(string(output)), nil
 }
+
 
 
 func handleRangeRequest(c *gin.Context, data []byte) {
