@@ -17,7 +17,7 @@ import {
   printFriendMessage,
   ButtonTypes,
   createButtonWithBubblesImg,
-  updateUsersStatus
+  updateUsersActivities
 } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -41,13 +41,14 @@ interface FriendData {
   userId: string;
   nickName: string;
   discriminator: string;
-  status: string;
-  activity: string;
-  isOnline: boolean;
+  status?: string;
+  activity?: string;
+  isOnline?: boolean;
   description?: string;
   createdAt?: string;
   lastLogin?: string;
   socialMediaLinks?: string[];
+  isPending: boolean;
   isFriendsRequestToUser: boolean;
 }
 
@@ -64,7 +65,7 @@ export class Friend implements UserInfo {
   socialMediaLinks?: string[];
   isFriendsRequestToUser: boolean;
   isPending: boolean;
-  publicUser: any;
+  publicUser?: any;
 
   constructor(friend: FriendData) {
     this.userId = friend.userId;
@@ -77,7 +78,7 @@ export class Friend implements UserInfo {
     this.lastLogin = friend.lastLogin;
     this.socialMediaLinks = friend.socialMediaLinks;
     this.isFriendsRequestToUser = friend.isFriendsRequestToUser;
-    this.isPending = friend.isFriendsRequestToUser;
+    this.isPending = friend.isPending;
     this.activity = friend.activity;
   }
 }
@@ -98,19 +99,81 @@ class FriendsCache {
   }
 
   initialiseFriends(initData: Record<string, Friend>) {
-    this.friendsCache = initData;
-    populateFriendsContainer(Object.values(initData));
+    this.friendsCache = {};
+
+    Object.values(initData).forEach((friend) => {
+      this.friendsCache[friend.userId] = friend;
+    });
+
+    populateFriendsContainer(Object.values(this.friendsCache));
 
     requestAnimationFrame(() => {
       const friends = this.cacheFriendToFriendConverter();
       for (const friend of friends) {
-        updateUsersStatus(friend);
+        updateUsersActivities(friend);
       }
     });
   }
 
-  addFriend(friend: Friend) {
-    this.friendsCache[friend.userId] = friend;
+  addFriend(friendOrArray: Friend | UserInfo | any) {
+    // Check if the input is an array
+    if (Array.isArray(friendOrArray)) {
+      // If it's an array, process each item individually
+      for (const friendItem of friendOrArray) {
+        this.addSingleFriend(friendItem);
+      }
+    } else {
+      // If it's not an array, process it directly
+      this.addSingleFriend(friendOrArray);
+    }
+  }
+
+  // New helper method to process a single friend
+  private addSingleFriend(friend: Friend | UserInfo) {
+    // Make sure friend is not null/undefined and has a userId
+    if (!friend || !friend.userId) {
+      console.error("Invalid friend data:", friend);
+      return;
+    }
+
+    const userId = friend.userId;
+
+    if (friend instanceof Friend) {
+      this.friendsCache[userId] = friend;
+    } else {
+      const friendData: FriendData = {
+        userId: friend.userId,
+        nickName: friend.nickName || "",
+        discriminator: friend.discriminator || "",
+        status: friend.status,
+        isOnline: friend.isOnline,
+        description: friend.description,
+        createdAt: friend.createdAt,
+        lastLogin: friend.lastLogin,
+        socialMediaLinks: friend.socialMediaLinks || [],
+        isFriendsRequestToUser: friend.isFriendsRequestToUser || false,
+        isPending: friend.isPending || false,
+        activity: friend.activity
+      };
+
+      this.friendsCache[userId] = new Friend(friendData);
+    }
+
+    console.warn("Added friend:", this.friendsCache);
+  }
+
+  removeFriend(userId: string) {
+    console.log("Removing friend:", userId);
+
+    if (userId in this.friendsCache) {
+      delete this.friendsCache[userId];
+      console.log("Friend removed successfully");
+    } else {
+      console.log("Friend not found in cache with ID:", userId);
+      console.log("Available keys:", Object.keys(this.friendsCache));
+    }
+
+    console.log("Friends after removal:", this.friendsCache);
   }
 
   isFriend(userId: string): boolean {
@@ -128,23 +191,12 @@ class FriendsCache {
   isOnline(userId: string): boolean {
     return !!this.friendsCache[userId]?.isOnline;
   }
+
   cacheFriendToFriendConverter() {
-    return Object.values(this.friendsCache).map(
-      (friend) =>
-        new Friend({
-          userId: friend.publicUser?.userId,
-          nickName: friend.publicUser?.nickName,
-          discriminator: friend.publicUser?.discriminator,
-          status: friend.publicUser?.status,
-          activity: friend.publicUser?.activity,
-          isOnline: false,
-          createdAt: friend.publicUser?.createdAt,
-          isFriendsRequestToUser: friend.isFriendsRequestToUser
-        })
-    );
+    console.log("Pulling from cache: ", this.friendsCache);
+    return Object.values(this.friendsCache).map((friend) => new Friend(friend));
   }
 }
-
 export const friendsCache = new FriendsCache();
 
 //actions
@@ -152,23 +204,26 @@ export const friendsCache = new FriendsCache();
 function getFriendMessage(
   userNick: string,
   isSuccess: boolean,
-  errorType: string
+  errorType: string,
+  status?: string
 ): string {
   if (isSuccess) {
     return translations.replacePlaceholder(errorType, { userNick });
-  } else {
-    return translations.getFriendErrorMessage(errorType);
+  } else if (status) {
+    return translations.getFriendErrorMessage(status);
   }
+  return "";
 }
 
 function displayFriendActionMessage(
   userNick: string,
   isSuccess: boolean,
-  errorType: string
+  errorType: string,
+  status?: string
 ): void {
   const text = isSuccess
-    ? getFriendMessage(userNick, isSuccess, errorType)
-    : getFriendMessage(userNick, false, errorType);
+    ? getFriendMessage(userNick, isSuccess, errorType, status)
+    : getFriendMessage(userNick, false, errorType, status);
 
   printFriendMessage(text);
 }
@@ -181,12 +236,17 @@ interface FriendMessage {
 }
 
 function handleAddFriendResponse(message: FriendMessage): void {
-  const { userNick, isSuccess } = message; //userId , userData
+  const { userNick, isSuccess, userData } = message;
+  console.log(message);
   displayFriendActionMessage(
     userNick,
     isSuccess,
     FriendErrorType.ERR_FRIEND_REQUEST_EXISTS
   );
+  if (userData) {
+    console.log("Pushing: ", userData);
+    friendsCache.addFriend(userData);
+  }
 }
 
 function handleAcceptFriendRequestResponse(message: FriendMessage): void {
@@ -210,7 +270,8 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
       isFriendsRequestToUser: userData.isFriendsRequestToUser ?? false,
       createdAt: userData.createdAt,
       lastLogin: userData.lastLogin,
-      socialMediaLinks: userData.socialMediaLinks
+      socialMediaLinks: userData.socialMediaLinks,
+      isPending: userData.isPending ?? false
     };
 
     const newFriend = new Friend(updatedUserData);
@@ -225,19 +286,21 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
 
 function handleRemoveFriendResponse(message: FriendMessage): void {
   const { userId, userNick, isSuccess } = message;
-  displayFriendActionMessage(
-    userNick,
-    isSuccess,
-    FriendErrorType.ERR_NOT_FRIENDS
-  );
 
   if (isSuccess) {
     const friCard = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
     if (friCard) {
       friCard.remove();
     }
+    friendsCache.removeFriend(userId);
     reCalculateFriTitle();
   }
+
+  displayFriendActionMessage(
+    userNick,
+    isSuccess,
+    FriendErrorType.ERR_NOT_FRIENDS
+  );
 }
 
 function handleDenyFriendRequestResponse(message: FriendMessage): void {
@@ -251,10 +314,11 @@ function handleDenyFriendRequestResponse(message: FriendMessage): void {
 
 export function handleFriendEventResponse(message: FriendMessage): void {
   const { type } = message;
+  console.log(type);
 
   switch (type) {
     case "add_friend":
-    case "add_friend_request_id":
+    case "add_friend_id":
       handleAddFriendResponse(message);
       break;
     case "accept_friend_request":
@@ -275,7 +339,7 @@ export function handleFriendEventResponse(message: FriendMessage): void {
 interface FriendData {
   userId: string;
   nickName: string;
-  status: string;
+  status?: string;
 }
 
 interface UpdateFriendsListOptions {

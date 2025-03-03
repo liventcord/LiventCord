@@ -279,6 +279,9 @@ apiClient.on(EventType.GET_FRIENDS, (data) => {
 apiClient.on(EventType.ADD_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
+apiClient.on(EventType.ADD_FRIEND_ID, function (message) {
+  handleFriendEventResponse(message);
+});
 
 apiClient.on(EventType.ACCEPT_FRIEND, function (message) {
   handleFriendEventResponse(message);

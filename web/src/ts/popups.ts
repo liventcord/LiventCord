@@ -4,7 +4,7 @@ import "croppie/croppie.css";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId, createGuild, joinToGuild } from "./guild.ts";
 import { getId, getAverageRGB, createEl } from "./utils.ts";
-import { friendsCache, addFriend } from "./friends.ts";
+import { friendsCache, addFriendId } from "./friends.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
@@ -368,7 +368,7 @@ export function drawProfilePop(userData: UserInfo) {
       )}`;
 
       addFriendBtn.addEventListener("click", () => {
-        addFriend(userId);
+        addFriendId(userId);
       });
       profileOptionsContainer.appendChild(addFriendBtn);
     }
