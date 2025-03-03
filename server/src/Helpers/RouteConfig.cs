@@ -93,10 +93,7 @@ public static class RouteConfig
             "/channels/{guildId}/{channelId}",
             async (
                 HttpContext context,
-                [FromServices] AppLogicService appLogicService,
-                string guildId,
-                string channelId
-            ) =>
+                [FromServices] AppLogicService appLogicService) =>
             {
                 await appLogicService.HandleChannelRequest(context);
             }
@@ -106,13 +103,24 @@ public static class RouteConfig
             "/channels/{friendId}",
             async (
                 HttpContext context,
-                [FromServices] AppLogicService appLogicService,
-                string friendId
+                [FromServices] AppLogicService appLogicService
             ) =>
             {
                 await appLogicService.HandleChannelRequest(context);
             }
         );
+
+        app.MapGet(
+            "/join-guild/{inviteId}",
+            async (
+                HttpContext context,
+                [FromServices] AppLogicService appLogicService
+            ) =>
+            {
+                await appLogicService.HandleChannelRequest(context);
+            }
+        );
+
 
         app.Map(
             "/api/init",
