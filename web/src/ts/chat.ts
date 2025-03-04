@@ -47,7 +47,7 @@ import {
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage, createReplyBar } from "./app.ts";
-import { alertUser, loadingScreen, setActiveIcon } from "./ui.ts";
+import { loadingScreen, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
@@ -380,7 +380,8 @@ export function handleMessage(data: MessageResponse): void {
 }
 
 export function handleHistoryResponse(data: MessageResponse) {
-  const { messages: history, channelId, guildId, oldestMessageDate } = data;
+  console.log(data);
+  const { messages, channelId, guildId, oldestMessageDate } = data;
 
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
@@ -443,7 +444,7 @@ export function handleHistoryResponse(data: MessageResponse) {
   let isUserInteracted = false;
 
   const userScrollEvents = ["mousedown", "touchstart", "wheel"];
-  fetchReplies(data.messages, new Set<string>());
+  fetchReplies(messages, new Set<string>());
 
   if (wasAtBottom) {
     scrollToBottom();
@@ -1084,7 +1085,7 @@ export function getHistoryFromOneChannel(
       console.warn("No messages found in cache for this channel.");
     }
   }
-
+  chatContent.innerHTML = "";
   fetchMessagesFromServer(channelId, isDm);
 }
 

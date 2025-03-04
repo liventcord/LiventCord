@@ -42,7 +42,8 @@ import {
   updateDmsList,
   setupSampleUsers,
   activateDmContainer,
-  updateFriendMenu
+  updateFriendMenu,
+  unselectFriendContainer
 } from "./friendui.ts";
 import {
   closeDropdown,
@@ -476,6 +477,7 @@ export function openDm(friendId: string) {
   friendsCache.currentDmId = friendId;
   setLastSenderID("");
   activateDmContainer(friendId);
+  unselectFriendContainer();
   const url = constructDmPage(friendId);
   if (url !== window.location.pathname) {
     window.history.pushState(null, "", url);
@@ -543,9 +545,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     }
     setIsOnMe(true);
     setIsOnGuild(false);
-    selectGuildList("main-logo");
     updateFriendMenu();
   }
+  selectGuildList("main-logo");
 
   function handleDm() {
     openDm(lastDmId);

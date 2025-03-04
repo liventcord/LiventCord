@@ -335,7 +335,6 @@ export function selectGuildList(guildId: string): void {
   for (const guild of foundGuilds) {
     const guildParent = guild.parentElement;
     if (!guildParent) continue;
-
     if (guild.id === guildId) {
       wrapWhiteRod(guildParent);
       guildParent.classList.add("selected-guild");
