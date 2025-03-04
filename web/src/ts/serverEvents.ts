@@ -20,7 +20,7 @@ import {
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
-import { currentUserId, Member, setUserNick, UserInfo } from "./user.ts";
+import { currentUserId, Member, UserInfo, userManager } from "./user.ts";
 import { updateFriendsList, handleFriendEventResponse } from "./friends.ts";
 import { refreshUserProfile, selfName } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -264,7 +264,7 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
     if (setInfoNick) {
       setInfoNick.innerText = newNickname;
     }
-    setUserNick(newNickname);
+    userManager.setUserNick(newNickname);
     return;
   }
 

@@ -28,7 +28,7 @@ import { isDomLoaded } from "./app.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import { currentGuildId } from "./guild.ts";
-import { currentUserId, currentUserNick, setUserNick } from "./user.ts";
+import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
 
@@ -46,7 +46,7 @@ export const settingTypes = {
 let changeNicknameTimeout: number;
 let changeGuildNameTimeout: number;
 export let isSettingsOpen = false;
-export let currentPopUp: HTMLElement | null;
+export let currentPopUp: HTMLElement | undefined;
 export function setIsSettingsOpen(val: boolean) {
   isSettingsOpen = val;
 }
@@ -272,8 +272,9 @@ export function regenerateConfirmationPanel() {
   if (!currentPopUp) {
     currentPopUp = generateConfirmationPanel();
   }
-
-  showConfirmationPanel(currentPopUp);
+  if (currentPopUp) {
+    showConfirmationPanel(currentPopUp);
+  }
 }
 
 export function applySettings() {
@@ -318,7 +319,7 @@ export function changeNickname() {
   if (newNickname && newNickname !== currentUserNick) {
     console.log("Changed your nickname to: " + newNickname);
     refreshUserProfile(currentUserId, newNickname);
-    setUserNick(newNickname);
+    userManager.setUserNick(newNickname);
     const setInfoNick = getId("set-info-nick");
     if (setInfoNick) setInfoNick.innerText = newNickname;
     updateSelfName(newNickname);

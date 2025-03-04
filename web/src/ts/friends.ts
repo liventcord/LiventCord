@@ -7,18 +7,24 @@ import {
   getId,
   isValidFriendName
 } from "./utils.ts";
-import { getSelfFullDisplay, currentUserId, UserInfo } from "./user.ts";
+import {
+  getSelfFullDisplay,
+  currentUserId,
+  UserInfo,
+  userManager
+} from "./user.ts";
 import { handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
-  friendsContainer,
   isAddFriendsOpen,
   openAddFriend,
   printFriendMessage,
   ButtonTypes,
   createButtonWithBubblesImg,
   updateUsersActivities,
-  updateFriendMenu
+  updateFriendMenu,
+  removeFriendCard,
+  currentSelectedFriendMenu
 } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -98,6 +104,14 @@ class FriendsCache {
 
   setupDmFriends(friends: Record<string, Friend>) {
     this.dmFriends = friends;
+    for (const friend of Object.values(friends)) {
+      userManager.addUser(
+        friend.userId,
+        friend.nickName,
+        friend.discriminator,
+        userManager.isUserBlocked(friend.userId)
+      );
+    }
   }
 
   initialiseFriends(initData: Record<string, Friend>) {
@@ -258,6 +272,9 @@ function handleAddFriendResponse(message: FriendMessage): void {
     friendsCache.addFriend(userData);
     updateFriendMenu();
   }
+  if (currentSelectedFriendMenu !== "pending" || userData?.userId === undefined)
+    return;
+  removeFriendCard(userData?.userId);
 }
 
 function handleAcceptFriendRequestResponse(message: FriendMessage): void {
@@ -299,10 +316,7 @@ function handleRemoveFriendResponse(message: FriendMessage): void {
   const { userId, userNick, isSuccess } = message;
 
   if (isSuccess) {
-    const friCard = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
-    if (friCard) {
-      friCard.remove();
-    }
+    removeFriendCard(userId);
     friendsCache.removeFriend(userId);
     reCalculateFriTitle();
   }
@@ -406,7 +420,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
       translations.getTranslation("accept")
     );
     acceptButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.ADD_FRIEND, friend.userId)
+      handleButtonClick(event, EventType.ACCEPT_FRIEND, friend.userId)
     );
   } else {
     const closeButton = createButtonWithBubblesImg(

@@ -20,7 +20,8 @@ import {
   currentUserId,
   currentDiscriminator,
   deletedUser,
-  UserInfo
+  UserInfo,
+  userManager
 } from "./user.ts";
 import { currentGuildId } from "./guild.ts";
 import { handleResize } from "./ui.ts";
@@ -151,7 +152,6 @@ export function updateMemberList(members: UserInfo[], ignoreIsOnMe = false) {
     console.warn("Already updating members!");
     return;
   }
-  console.log("Updating members with:", members);
 
   isUpdatingUsers = true;
   const { onlineUsers, offlineUsers } = categorizeMembers(members);
@@ -184,6 +184,7 @@ export function updateMemberList(members: UserInfo[], ignoreIsOnMe = false) {
   userList.appendChild(tableWrapper);
 
   isUpdatingUsers = false;
+  console.error("Updating members with:", members);
 }
 export function categorizeMembers(members: UserInfo[]) {
   const onlineUsers = members.filter((member) => member.isOnline);
@@ -248,7 +249,7 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
     {
       userId: currentUserId,
       nickName: currentUserNick,
-      isOnline: true,
+      isOnline: userManager.isSelfOnline(),
       discriminator: currentDiscriminator || DEFAULT_DISCRIMINATOR
     },
     {

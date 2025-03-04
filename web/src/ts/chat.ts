@@ -32,10 +32,10 @@ import {
   getFormattedDate
 } from "./utils.ts";
 import {
-  getUserNick,
   currentUserId,
   setLastTopSenderId,
-  UserInfo
+  UserInfo,
+  userManager
 } from "./user.ts";
 import { createMediaElement } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -703,8 +703,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
   if (!attachmentUrls && content === "" && embeds.length === 0) return null;
-  console.warn(typeof date);
-  const nick = getUserNick(userId);
+  const nick = userManager.getUserNick(userId);
   const newMessage = createMessageElement(
     messageId,
     userId,

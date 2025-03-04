@@ -8,10 +8,10 @@ import { friendsCache, addFriendId } from "./friends.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
-  getUserNick,
   currentUserNick,
   UserInfo,
-  deletedUser
+  deletedUser,
+  userManager
 } from "./user.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
@@ -308,7 +308,7 @@ export function drawProfilePop(userData: UserInfo) {
 
   const profileTitle = createEl("p", {
     id: "profile-title",
-    textContent: getUserNick(userId)
+    textContent: userManager.getUserNick(userId)
   });
   const profileDiscriminator = createEl("p", {
     id: "profile-discriminator",

@@ -1,14 +1,13 @@
 import {
   removeElement,
   enableElement,
-  createRandomId,
   createEl,
   getId,
   disableElementHTML,
   disableElement
 } from "./utils.ts";
 import { openDm, removeDm } from "./app.ts";
-import { getUserNick, isUserBlocked, currentUserNick } from "./user.ts";
+import { currentUserNick, userManager } from "./user.ts";
 import {
   submitAddFriend,
   filterFriends,
@@ -30,7 +29,7 @@ const highlightedColor = "#43444b";
 const defaultColor = "#313338";
 const grayColor = "#c2c2c2";
 
-let currentSelectedFriendMenu: keyof typeof buttonElements;
+export let currentSelectedFriendMenu: keyof typeof buttonElements;
 const dmContainerParent = getId("dm-container-parent") as HTMLElement;
 export const friendContainerItem = getId(
   "friend-container-item"
@@ -249,7 +248,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
 
     existingFriendsIds.add(friend.userId);
   });
-
+  console.log(friends);
   const friendsRecord: Record<string, Friend> = Object.fromEntries(
     friends.map((friend) => [
       friend.userId,
@@ -290,31 +289,6 @@ export function addToDmList(userData: DmUserInfo) {
   if (newContainer) {
     dmContainerParent.insertBefore(newContainer, dmContainerParent.firstChild);
   }
-}
-
-const sampleData = {
-  user1: {
-    userId: createRandomId(),
-    nickName: "Alice",
-    isOnline: true,
-    discriminator: "1234",
-    isPending: false,
-    activity: "act"
-  },
-  user2: {
-    userId: createRandomId(),
-    nickName: "Bob",
-    isOnline: false,
-    discriminator: "5678",
-    isPending: false,
-    activity: "act"
-  }
-};
-
-export function setupSampleUsers() {
-  Object.entries(sampleData).forEach(([userId, userData]) => {
-    appendToDmList(userData);
-  });
 }
 
 export function getCurrentDmFriends() {
@@ -501,7 +475,8 @@ export function updateUsersActivities(friend: Friend) {
     }) as HTMLImageElement;
     setProfilePic(avatarImg, friend.userId);
     const nickHeading = createEl("h2", { className: "activity-card-nick" });
-    nickHeading.textContent = friend.nickName || getUserNick(friend.userId);
+    nickHeading.textContent =
+      friend.nickName || userManager.getUserNick(friend.userId);
     const titleSpan = createEl("span", { className: "activity-card-title" });
     titleSpan.textContent = friend.activity || "";
     contentDiv.appendChild(avatarImg);
@@ -526,7 +501,8 @@ export function updateUsersActivities(friend: Friend) {
 
     const nickHeading = contentDiv?.querySelector(".activity-card-nick");
     if (nickHeading)
-      nickHeading.textContent = friend.nickName || getUserNick(friend.userId);
+      nickHeading.textContent =
+        friend.nickName || userManager.getUserNick(friend.userId);
 
     const titleSpan = contentDiv?.querySelector(".activity-card-title");
     if (titleSpan) titleSpan.textContent = friend.activity || "";
@@ -668,7 +644,8 @@ export function filterFriendsByCategory(friends: Friend[]): Friend[] {
       return friends.filter((friend) => !friend.isPending);
     case friendMenuTypes.blocked:
       return friends.filter(
-        (friend) => isUserBlocked(friend.userId) && !friend.isPending
+        (friend) =>
+          userManager.isUserBlocked(friend.userId) && !friend.isPending
       );
     case friendMenuTypes.pending:
       return friends.filter((friend) => friend.isPending === true);
@@ -800,6 +777,13 @@ export function createFriendCard(
   friendCard.appendChild(friendButton);
   friendsContainer.appendChild(friendCard);
   friendCard.dataset.name = nickName;
+}
+
+export function removeFriendCard(userId: string) {
+  const friCard = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
+  if (friCard) {
+    friCard.remove();
+  }
 }
 
 export function handleImageHover(
