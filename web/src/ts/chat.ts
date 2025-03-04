@@ -382,7 +382,7 @@ export function handleMessage(data: MessageResponse): void {
 export function handleHistoryResponse(data: MessageResponse) {
   console.log(data);
   const { messages, channelId, guildId, oldestMessageDate } = data;
-
+  const history = messages;
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
@@ -428,7 +428,6 @@ export function handleHistoryResponse(data: MessageResponse) {
   history.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
-
   history.forEach((msgData) => {
     const msg = new Message(msgData);
     const foundReply = displayChatMessage(msg);

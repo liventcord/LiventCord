@@ -16,7 +16,6 @@ namespace LiventCord.Controllers
         public DbSet<Discriminator> Discriminators { get; set; }
         public DbSet<Friend> Friends { get; set; }
         public DbSet<UserDm> UserDms { get; set; }
-        public DbSet<TypingStatus> TypingStatuses { get; set; }
         public DbSet<Guild> Guilds { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<GuildMember> GuildMembers { get; set; }
@@ -127,15 +126,6 @@ namespace LiventCord.Controllers
                 entity.Property(f => f.FriendId).HasColumnName(nameof(Friend.FriendId)).IsRequired();
                 entity.Property(f => f.Status).HasColumnName(nameof(Friend.Status)).IsRequired().HasMaxLength(20);
                 entity.Property(f => f.Status).HasConversion<int>();
-            });
-
-            modelBuilder.Entity<TypingStatus>(entity =>
-            {
-                entity.ToTable(nameof(TypingStatus));
-                entity.HasKey(ts => new { ts.UserId, ts.GuildId, ts.ChannelId });
-                entity.Property(ts => ts.UserId).IsRequired();
-                entity.Property(ts => ts.GuildId).IsRequired();
-                entity.Property(ts => ts.ChannelId).IsRequired();
             });
 
             modelBuilder.Entity<UserDm>().ToTable(nameof(UserDm));
