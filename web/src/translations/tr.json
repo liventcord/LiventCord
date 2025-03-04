@@ -22,7 +22,8 @@
     "REPLY": "Yanıtla",
     "MARK_AS_UNREAD": "Okunmadı olarak işaretle",
     "DELETE_MESSAGE": "Mesajı Sil",
-    "ADD_FRIEND": "Arkadaş Ekle"
+    "ADD_FRIEND": "Arkadaş Ekle",
+    "ADDED_FRIEND": "Arkadaş Eklendi!"
   },
   "friendErrorTranslations": {
     "404": {

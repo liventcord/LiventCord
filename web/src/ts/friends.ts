@@ -17,10 +17,12 @@ import {
   printFriendMessage,
   ButtonTypes,
   createButtonWithBubblesImg,
-  updateUsersActivities
+  updateUsersActivities,
+  updateFriendMenu
 } from "./friendui.ts";
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
+import { createTooltipAtCursor } from "./tooltip.ts";
 
 const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
 const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
@@ -116,21 +118,16 @@ class FriendsCache {
   }
 
   addFriend(friendOrArray: Friend | UserInfo | any) {
-    // Check if the input is an array
     if (Array.isArray(friendOrArray)) {
-      // If it's an array, process each item individually
       for (const friendItem of friendOrArray) {
         this.addSingleFriend(friendItem);
       }
     } else {
-      // If it's not an array, process it directly
       this.addSingleFriend(friendOrArray);
     }
   }
 
-  // New helper method to process a single friend
   private addSingleFriend(friend: Friend | UserInfo) {
-    // Make sure friend is not null/undefined and has a userId
     if (!friend || !friend.userId) {
       console.error("Invalid friend data:", friend);
       return;
@@ -177,7 +174,20 @@ class FriendsCache {
   }
 
   isFriend(userId: string): boolean {
-    return userId !== currentUserId && userId in this.friendsCache;
+    return (
+      userId !== currentUserId &&
+      userId in this.friendsCache &&
+      !this.friendsCache[userId].isPending
+    );
+  }
+
+  //Did we sent request to this user
+  hasRequestToFriend(userId: string) {
+    return (
+      userId !== currentUserId &&
+      userId in this.friendsCache &&
+      this.friendsCache[userId].isPending
+    );
   }
 
   userExistsDm(userId: string): boolean {
@@ -246,6 +256,7 @@ function handleAddFriendResponse(message: FriendMessage): void {
   if (userData) {
     console.log("Pushing: ", userData);
     friendsCache.addFriend(userData);
+    updateFriendMenu();
   }
 }
 
@@ -420,12 +431,14 @@ export function handleButtonClick(
 
 export function addFriendId(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
+  createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
 export function addFriend(nickName: string, discriminator: string) {
   apiClient.send(EventType.ADD_FRIEND, {
     friendName: nickName,
     friendDiscriminator: discriminator
   });
+  createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
 
 export function submitAddFriend() {
