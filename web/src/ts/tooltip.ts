@@ -52,6 +52,18 @@ export function copyText(event: MouseEvent, text: string) {
   setTimeout(() => tooltip?.remove(), 1200);
 }
 
+export function createTooltipAtCursor(text: string) {
+  const event = window.event as MouseEvent | null;
+  if (!event) return;
+
+  createTooltip(document.body, text, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  setTimeout(() => tooltip?.remove(), 1200);
+}
+
 function getTooltipClassName(target: HTMLElement): string | undefined {
   return Array.from(target.classList).find((className) =>
     translations.getTooltipTranslation(className)
@@ -69,15 +81,8 @@ function createTooltip(
   tooltip = createEl("div", { className: "tooltip", textContent: tooltipText });
   document.body.appendChild(tooltip);
 
-  const rect = target.getBoundingClientRect();
-  let tooltipLeft =
-    rect.left +
-    window.scrollX +
-    rect.width / 2 -
-    tooltip.offsetWidth / 2 +
-    positionOffset.x;
-  let tooltipTop =
-    rect.top + window.scrollY - tooltip.offsetHeight - 8 + positionOffset.y;
+  let tooltipLeft = positionOffset.x - tooltip.offsetWidth / 2;
+  let tooltipTop = positionOffset.y - tooltip.offsetHeight - 8;
 
   tooltipLeft = Math.max(
     10,

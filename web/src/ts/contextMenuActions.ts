@@ -245,15 +245,15 @@ export function createProfileContext(userData: UserInfo) {
         }))
       };
     }
-    context[ActionType.ADD_FRIEND] = {
-      action: () => addFriendId(userId)
-    };
-  }
-
-  if (friendsCache.isFriend(userId)) {
-    context[ActionType.REMOVE_USER] = {
-      action: () => removeFriend(userId)
-    };
+    if (friendsCache.isFriend(userId)) {
+      context[ActionType.REMOVE_USER] = {
+        action: () => removeFriend(userId)
+      };
+    } else if (!friendsCache.hasRequestToFriend(userId)) {
+      context[ActionType.ADD_FRIEND] = {
+        action: () => addFriendId(userId)
+      };
+    }
   }
 
   if (isDeveloperMode) {

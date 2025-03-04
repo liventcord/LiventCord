@@ -30,7 +30,7 @@ const highlightedColor = "#43444b";
 const defaultColor = "#313338";
 const grayColor = "#c2c2c2";
 
-let currentSelectedFriendMenu: string;
+let currentSelectedFriendMenu: keyof typeof buttonElements;
 const dmContainerParent = getId("dm-container-parent") as HTMLElement;
 export const friendContainerItem = getId(
   "friend-container-item"
@@ -350,6 +350,12 @@ export function printFriendMessage(content: string) {
 
 selectFriendMenu(buttonElements.online);
 
+export function updateFriendMenu() {
+  const currentSelectedFriendMenuElement =
+    buttonElements[currentSelectedFriendMenu];
+  if (currentSelectedFriendMenuElement)
+    selectFriendMenu(currentSelectedFriendMenuElement);
+}
 export function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
   openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor;

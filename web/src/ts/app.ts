@@ -41,7 +41,8 @@ import {
   printFriendMessage,
   updateDmsList,
   setupSampleUsers,
-  activateDmContainer
+  activateDmContainer,
+  updateFriendMenu
 } from "./friendui.ts";
 import {
   closeDropdown,
@@ -543,6 +544,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     setIsOnMe(true);
     setIsOnGuild(false);
     selectGuildList("main-logo");
+    updateFriendMenu();
   }
 
   function handleDm() {
