@@ -1,46 +1,79 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace LiventCord.Controllers
 {
-    [Route("/api/guilds/{guildId}/channels/{channelId}/typing")]
     [ApiController]
     [Authorize]
     public class TypingController : BaseController
     {
-        private readonly AppDbContext _dbContext;
         private readonly RedisEventEmitter _redisEventEmitter;
-
-        private Dictionary<string, List<string>> writingMembersState = new();
-
-        private Dictionary<string, DateTime> typingTimeouts = new();
-
         private readonly int typingTimeoutSeconds = 5;
 
-        public TypingController(
-            AppDbContext dbContext,
-            RedisEventEmitter sseManager
-        )
+        private static readonly ConcurrentDictionary<string, List<string>> typingStates = new();
+        private static readonly ConcurrentDictionary<string, DateTime> typingTimeouts = new();
+
+        public TypingController(RedisEventEmitter sseManager)
         {
-            _dbContext = dbContext;
             _redisEventEmitter = sseManager;
         }
 
-        [HttpPost("start")]
-        public async Task<IActionResult> HandleStartWriting(
+        public enum RouteType
+        {
+            Guild,
+            DM
+        }
+
+        [Route("/api/guilds/{guildId}/channels/{channelId}/typing/start")]
+        [HttpPost]
+        public async Task<IActionResult> HandleStartWritingGuild(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId
         )
         {
-            if (!writingMembersState.ContainsKey(guildId))
+            return await HandleStartWriting(guildId, channelId, RouteType.Guild);
+        }
+
+        [Route("/api/dm/{userId}/typing/start")]
+        [HttpPost]
+        public async Task<IActionResult> HandleStartWritingDM(
+            [FromRoute][UserIdLengthValidation] string userId
+        )
+        {
+            return await HandleStartWriting(userId, "dm", RouteType.DM);
+        }
+
+        [Route("/api/guilds/{guildId}/channels/{channelId}/typing/stop")]
+        [HttpPost]
+        public async Task<IActionResult> HandleStopWritingGuild(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId
+        )
+        {
+            return await HandleStopWriting(guildId, channelId, RouteType.Guild);
+        }
+
+        [Route("/api/dm/{userId}/typing/stop")]
+        [HttpPost]
+        public async Task<IActionResult> HandleStopWritingDM(
+            [FromRoute][UserIdLengthValidation] string userId
+        )
+        {
+            return await HandleStopWriting(userId, "dm", RouteType.DM);
+        }
+
+        private async Task<IActionResult> HandleStartWriting(string id, string channelId, RouteType routeType)
+        {
+            var key = $"{routeType}_{channelId}_{id}";
+            if (!typingStates.ContainsKey(key))
             {
-                writingMembersState[guildId] = new List<string>();
+                typingStates[key] = new List<string>();
             }
 
-            if (!writingMembersState[guildId].Contains(UserId!))
+            if (!typingStates[key].Contains(UserId!))
             {
-                writingMembersState[guildId].Add(UserId!);
+                typingStates[key].Add(UserId!);
             }
 
             typingTimeouts[UserId!] = DateTime.UtcNow.AddSeconds(typingTimeoutSeconds);
@@ -48,94 +81,105 @@ namespace LiventCord.Controllers
             var messageToEmit = new
             {
                 UserId,
-                guildId,
-                channelId,
+                key,
+                routeType
             };
             await _redisEventEmitter.EmitToGuild(
                 EventType.START_TYPING,
                 messageToEmit,
-                guildId,
+                key,
                 UserId!
             );
 
-            _ = CheckTypingTimeoutAsync(guildId, channelId);
+            _ = CheckTypingTimeoutAsync(key, routeType);
 
             return Accepted();
         }
 
-        [HttpPost("stop")]
-        public async Task<IActionResult> HandleStopWriting(
-            [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId
-        )
+        private async Task<IActionResult> HandleStopWriting(string id, string channelId, RouteType routeType)
         {
-            if (writingMembersState.TryGetValue(guildId, out var users) && users.Contains(UserId!))
+            var key = $"{routeType}_{channelId}_{id}";
+
+            if (typingStates.ContainsKey(key) && typingStates[key].Contains(UserId!))
             {
-                users.Remove(UserId!);
+                typingStates[key].Remove(UserId!);
             }
 
-            typingTimeouts.Remove(UserId!);
+            typingTimeouts.TryRemove(UserId!, out _);
 
             var messageToEmit = new
             {
                 UserId,
-                guildId,
-                channelId,
+                key,
+                routeType,
                 TypingStopped = true,
             };
             await _redisEventEmitter.EmitToGuild(
                 EventType.STOP_TYPING,
                 messageToEmit,
-                guildId,
+                key,
                 UserId!
             );
 
             return Accepted();
+        }
+
+        private async Task CheckTypingTimeoutAsync(string key, RouteType routeType)
+        {
+            await Task.Delay(typingTimeoutSeconds * 1000);
+
+            if (typingTimeouts.TryGetValue(UserId!, out var timeoutTime) && timeoutTime <= DateTime.UtcNow)
+            {
+                HandleTimeoutStopTyping(key, routeType);
+            }
+        }
+
+        private async void HandleTimeoutStopTyping(string key, RouteType routeType)
+        {
+            if (typingStates.ContainsKey(key) && typingStates[key].Contains(UserId!))
+            {
+                typingStates[key].Remove(UserId!);
+            }
+
+            var messageToEmit = new
+            {
+                UserId,
+                key,
+                routeType,
+                TypingStopped = true,
+            };
+            await _redisEventEmitter.EmitToGuild(
+                EventType.STOP_TYPING,
+                messageToEmit,
+                key,
+                UserId!
+            );
         }
 
         [HttpGet]
-        public async Task<List<string>?> GetTypingUsers(string guildId, string channelId)
+        [Route("/api/guilds/{guildId}/channels/{channelId}/typing")]
+        public IActionResult GetTypingUsersGuild(string guildId, string channelId)
         {
-            var typingUsers = await _dbContext
-                .TypingStatuses.Where(t => t.GuildId == guildId && t.ChannelId == channelId)
-                .Select(t => t.UserId)
-                .ToListAsync();
-
-            return typingUsers;
-        }
-
-        private async Task CheckTypingTimeoutAsync(string guildId, string channelId)
-        {
-            await Task.Delay(typingTimeoutSeconds * 1000);
-            if (
-                typingTimeouts.TryGetValue(UserId!, out var timeoutTime)
-                && timeoutTime <= DateTime.UtcNow
-            )
+            var key = $"guild_{channelId}_{guildId}";
+            if (typingStates.ContainsKey(key))
             {
-                HandleTimeoutStopTyping(guildId, channelId);
-            }
-        }
-
-        private async void HandleTimeoutStopTyping(string guildId, string channelId)
-        {
-            if (writingMembersState.TryGetValue(guildId, out var users) && users.Contains(UserId!))
-            {
-                users.Remove(UserId!);
+                return Ok(typingStates[key]);
             }
 
-            var messageToEmit = new
+            return Ok(new List<string>());
+        }
+
+        [HttpGet]
+        [Route("/api/dm/{userId}/typing")]
+        public IActionResult GetTypingUsersDM(string userId)
+        {
+            var key = $"dm_{userId}";
+            if (typingStates.ContainsKey(key))
             {
-                UserId,
-                guildId,
-                channelId,
-                TypingStopped = true,
-            };
-            await _redisEventEmitter.EmitToGuild(
-                EventType.STOP_TYPING,
-                messageToEmit,
-                guildId,
-                UserId!
-            );
+                return Ok(typingStates[key]);
+            }
+
+            return Ok(new List<string>());
         }
     }
 }
