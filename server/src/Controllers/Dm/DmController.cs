@@ -1,3 +1,4 @@
+using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,9 +13,11 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _dbContext;
 
-        public DmController(AppDbContext dbContext)
+        private readonly AppLogicService _appLogicService;
+        public DmController(AppDbContext dbContext, AppLogicService appLogicService)
         {
             _dbContext = dbContext;
+            _appLogicService = appLogicService;
         }
 
         [HttpGet("")]
@@ -23,15 +26,7 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(UserId))
                 return Unauthorized("User ID is missing.");
 
-            var publicDmUsers = await _dbContext
-                .UserDms.Where(d => d.UserId == UserId)
-                .Join(
-                    _dbContext.Users,
-                    friend => friend.FriendId,
-                    user => user.UserId,
-                    (friend, user) => user.GetPublicUser()
-                )
-                .ToListAsync();
+            var publicDmUsers = await _appLogicService.GetDmUsers(UserId);
 
             return Ok(publicDmUsers);
         }

@@ -173,7 +173,7 @@
   position: relative;
   background-color: #313338;
   color: #dcddde;
-  margin-top: 770px;
+  margin-top: 650px;
 }
 .channelIcon {
   background-color: rgb(65, 67, 74);
@@ -184,7 +184,7 @@
   justify-content: center;
   align-items: center;
   margin-left: 10px;
-  margin-top: 0;
+  margin-top: -15px;
   overflow: hidden;
   flex-shrink: 0;
 }

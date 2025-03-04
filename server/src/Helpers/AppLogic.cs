@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using LiventCord.Controllers;
+using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Helpers
@@ -126,7 +127,7 @@ namespace LiventCord.Helpers
                     sharedGuildsMap = new List<string>(),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus = await _friendController.GetFriendsStatus(userId),
-                    dmFriends = new List<string>(),
+                    dmFriends = await GetDmUsers(userId),
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
                     proxyWorkerUrl = SharedAppConfig.ProxyWorkerUrl,
@@ -179,6 +180,19 @@ namespace LiventCord.Helpers
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 await context.Response.WriteAsync("An internal server error occurred.");
             }
+        }
+
+        public async Task<List<PublicUser>> GetDmUsers(string userId)
+        {
+            return await _dbContext
+                .UserDms.Where(d => d.UserId == userId)
+                .Join(
+                    _dbContext.Users,
+                    friend => friend.FriendId,
+                    user => user.UserId,
+                    (friend, user) => user.GetPublicUser()
+                )
+                .ToListAsync();
         }
     }
 }

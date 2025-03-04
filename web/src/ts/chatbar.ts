@@ -34,7 +34,7 @@ import { maxAttachmentSize, setProfilePic } from "./avatar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
-import { currentUserId, getUserNick, getUserIdFromNick } from "./user.ts";
+import { currentUserId, userManager } from "./user.ts";
 
 export let currentReplyingTo = "";
 
@@ -117,7 +117,7 @@ export function initialiseChatInput() {
 export function showReplyMenu(replyToMsgId: string, replyToUserId: string) {
   replyCloseButton.style.display = "flex";
   replyInfo.textContent = translations.getReplyingTo(
-    getUserNick(replyToUserId)
+    userManager.getUserNick(replyToUserId)
   );
   replyInfo.style.display = "flex";
   if (isAttachmentsAdded) {
@@ -169,7 +169,7 @@ export function extractUserIds(message: string) {
   const regex = /@(\w+)/g;
   let match;
   while ((match = regex.exec(message)) !== null) {
-    const userId = getUserIdFromNick(match[1]);
+    const userId = userManager.getUserIdFromNick(match[1]);
     if (userId) {
       userIds.push(userId);
     }
@@ -566,13 +566,13 @@ export function displayStartMessage() {
       return;
     }
     const message = createEl("div", { className: "startmessage" });
-    const titleToWrite = getUserNick(friendsCache.currentDmId);
+    const titleToWrite = userManager.getUserNick(friendsCache.currentDmId);
     const msgtitle = createEl("h1", {
       id: "msgTitle",
       textContent: titleToWrite
     });
     const startChannelText = translations.getDmStartText(
-      getUserNick(friendsCache.currentDmId)
+      userManager.getUserNick(friendsCache.currentDmId)
     );
     const profileImg = createEl("img", {
       className: "channelIcon"

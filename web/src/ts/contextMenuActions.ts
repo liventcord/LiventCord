@@ -5,9 +5,8 @@ import {
   currentDiscriminator,
   currentUserId,
   currentUserNick,
-  getUserNick,
   UserInfo,
-  userNames
+  userManager
 } from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
@@ -130,7 +129,7 @@ export function togglePin() {
   console.log("Toggle pin!");
 }
 export function mentionUser(userId: string) {
-  const userNick = getUserNick(userId);
+  const userNick = userManager.getUserNick(userId);
   chatInput.value += `@${userNick}`;
 }
 
@@ -183,7 +182,7 @@ export function appendToMessageContextList(messageId: string, userId: string) {
 }
 export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
-    userData = userNames[userId];
+    userData = userManager.getUserInfo(userId);
   }
   if (userId && userData) {
     contextList[userId] = createProfileContext(userData);
@@ -396,7 +395,7 @@ export function createMessageContext(messageId: string, userId: string) {
       };
     }
   } else {
-    if (permissionManager.canManageMessages())
+    if (isOnGuild && permissionManager.canManageMessages())
       context[MessagesActionType.DELETE_MESSAGE] = {
         label: MessagesActionType.DELETE_MESSAGE,
         action: () => deleteMessage(messageId)

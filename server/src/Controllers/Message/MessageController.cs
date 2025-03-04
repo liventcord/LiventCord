@@ -52,7 +52,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("/api/dms/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleGetDMMessages([FromRoute] string channelId)
+        public async Task<IActionResult> HandleGetDMMessages([FromRoute][UserIdLengthValidation] string channelId)
         {
             var messages = await GetMessages(channelId, null);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
@@ -92,8 +92,8 @@ namespace LiventCord.Controllers
 
         [HttpPost("/api/dms/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleNewDmMessage(
-            [IdLengthValidation][FromRoute] string channelId,
-            [FromBody] NewMessageRequest request
+            [UserIdLengthValidation][FromRoute] string channelId,
+            [FromForm] NewMessageRequest request
         )
         {
             return await HandleMessage("dms", null, channelId, request);
@@ -167,7 +167,7 @@ namespace LiventCord.Controllers
 
         [HttpPut("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditDMMessage(
-            [IdLengthValidation][FromRoute] string channelId,
+            [UserIdLengthValidation][FromRoute] string channelId,
             [IdLengthValidation][FromRoute] string messageId,
             [FromBody] EditMessageRequest request
         )
@@ -202,7 +202,7 @@ namespace LiventCord.Controllers
 
         [HttpDelete("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleDeleteDMMessage(
-            [IdLengthValidation][FromRoute] string channelId,
+            [UserIdLengthValidation][FromRoute] string channelId,
             [IdLengthValidation][FromRoute] string messageId
         )
         {

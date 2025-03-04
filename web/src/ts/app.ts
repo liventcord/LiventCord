@@ -40,7 +40,6 @@ import {
   friendContainerItem,
   printFriendMessage,
   updateDmsList,
-  setupSampleUsers,
   activateDmContainer,
   updateFriendMenu,
   unselectFriendContainer
@@ -52,11 +51,10 @@ import {
   toggleDropdown
 } from "./popups.ts";
 import {
-  addUser,
   initializeProfile,
-  getUserNick,
   currentUserId,
-  currentUserNick
+  currentUserNick,
+  userManager
 } from "./user.ts";
 import {
   addContextListeners,
@@ -212,7 +210,6 @@ export function initialiseState(data: InitialStateData): void {
   setSocketClient(wsUrl);
   guildCache.currentGuildName = guildName;
   updateDmsList(dmFriends);
-  setupSampleUsers();
   friendsCache.initialiseFriends(friendsStatus);
   setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
   updateGuilds(guilds);
@@ -316,8 +313,6 @@ export function initializeGuild() {
     }
     handleChannelLoading(initialGuildId, initialChannelId);
     fetchMembers();
-  } else {
-    handleFriendRoute(initialFriendId);
   }
 }
 
@@ -377,13 +372,6 @@ export function handleChannelLoading(
   }
 }
 
-function handleFriendRoute(friendId?: string): void {
-  console.log("Route is not a guild");
-  if (friendId && isDefined(friendId)) {
-    addUser(friendId);
-  }
-}
-
 export function readCurrentMessages() {
   if (!guildCache.currentChannelId) {
     return;
@@ -414,7 +402,7 @@ export function createReplyBar(
   newMessage.appendChild(replyBar);
   newMessage.classList.add("replyMessage");
 
-  const nick = getUserNick(userId);
+  const nick = userManager.getUserNick(userId);
   replyBar.style.height = "100px";
   const replyAvatar = createEl("img", {
     className: "profile-pic",
@@ -648,7 +636,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     enableElement("guild-container", false, true);
     disableElement("guild-settings-button");
     activateDmContainer(friendId);
-    const friendNick = getUserNick(friendId);
+    const friendNick = userManager.getUserNick(friendId);
     chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
 
     channelTitle.textContent = friendNick;
@@ -683,7 +671,7 @@ export function changeCurrentDm(friendId: string) {
   setIsOnDm(true);
   setReachedChannelEnd(false);
 
-  const friendNick = getUserNick(friendId);
+  const friendNick = userManager.getUserNick(friendId);
   channelTitle.textContent = friendNick;
   chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
   const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;

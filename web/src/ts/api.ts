@@ -83,8 +83,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   ADD_FRIEND: HttpMethod.POST,
   ADD_FRIEND_ID: HttpMethod.POST,
   REMOVE_FRIEND: HttpMethod.DELETE,
-  DENY_FRIEND: HttpMethod.POST,
-  ACCEPT_FRIEND: HttpMethod.POST,
+  DENY_FRIEND: HttpMethod.DELETE,
+  ACCEPT_FRIEND: HttpMethod.PUT,
   CHANGE_NICK: HttpMethod.PUT,
   ADD_DM: HttpMethod.POST,
   GET_BULK_REPLY: HttpMethod.GET,
@@ -130,11 +130,9 @@ const EventUrlMap: Record<EventType, string> = {
   REMOVE_FRIEND: "/friends/{friendId}",
 
   ADD_DM: "/dm/{friendId}",
-
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
-  SEND_MESSAGE_DM: "/dms/{Id}/channels/{channelId}/messages",
-  DELETE_MESSAGE_DM:
-    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
+  SEND_MESSAGE_DM: "/dms/channels/{channelId}/messages",
+  DELETE_MESSAGE_DM: "/dms/channels/{channelId}/messages/{messageId}",
   DELETE_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
 
@@ -143,8 +141,8 @@ const EventUrlMap: Record<EventType, string> = {
   JOIN_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
   UPDATE_GUILD_NAME: "",
   UPDATE_GUILD_IMAGE: "",
-  ACCEPT_FRIEND: "",
-  DENY_FRIEND: "",
+  ACCEPT_FRIEND: "/friends/accept/{friendId}",
+  DENY_FRIEND: "/friends/accept/{friendId}",
   GET_MESSAGE_DATES: "",
   READ_MESSAGE: ""
 };

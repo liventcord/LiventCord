@@ -33,7 +33,7 @@ import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
 import { isOnMe, isOnDm } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { getUserNick, Member } from "./user.ts";
+import { Member, userManager } from "./user.ts";
 import { closeSettings, openChannelSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
@@ -667,7 +667,6 @@ function isValidChannelData(channel: ChannelData) {
 }
 
 // voice
-
 export function drawVoiceChannelUser(
   index: number,
   userId: string,
@@ -675,7 +674,7 @@ export function drawVoiceChannelUser(
   channelButton: HTMLElement,
   allUsersContainer: HTMLElement
 ) {
-  const userName = getUserNick(userId);
+  const userName = userManager.getUserNick(userId);
   const userContainer = createEl("li", {
     className: "channel-button",
     id: userId

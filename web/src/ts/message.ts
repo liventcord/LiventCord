@@ -26,12 +26,12 @@ import {
   formatDate,
   disableElement
 } from "./utils.ts";
-import { getUserNick } from "./user.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
 import { constructUserData } from "./popups.ts";
 import { maxAttachmentSize } from "./avatar.ts";
+import { userManager } from "./user.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -407,7 +407,7 @@ export function deleteLocalMessage(
       if (smallDate) {
         smallDate.remove();
       }
-      const nick = getUserNick(userId);
+      const nick = userManager.getUserNick(userId);
       const userInfo = constructUserData(userId);
 
       createProfileImageChat(

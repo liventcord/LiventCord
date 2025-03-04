@@ -34,7 +34,6 @@ export interface UserInfo {
   isBlocked?: boolean;
 }
 
-export const userNames: { [userId: string]: UserInfo } = {};
 export const deletedUser = "Deleted User";
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 let lastTopSenderId = null;
@@ -43,20 +42,86 @@ export function setLastTopSenderId(id: string) {
   if (!id) return;
   lastTopSenderId = id;
 }
-userNames["1"] = {
-  userId: "1",
-  nickName: "Clyde",
-  discriminator: "0000",
-  isBlocked: false,
-  isOnline: false,
-  description: ""
-};
-export function setUserNick(newNickname: string) {
-  currentUserNick = newNickname;
+class UserManager {
+  private selfOnline = false;
+  private userNames: { [userId: string]: UserInfo } = {};
+
+  constructor() {
+    this.userNames["1"] = {
+      userId: "1",
+      nickName: "Clyde",
+      discriminator: "0000",
+      isBlocked: false,
+      isOnline: false,
+      description: ""
+    };
+  }
+
+  setUserNick(newNickname: string) {
+    currentUserNick = newNickname;
+  }
+
+  setCurrentUserId(id: string) {
+    currentUserId = id;
+  }
+
+  getUserInfo(userId: string) {
+    return this.userNames[userId];
+  }
+
+  getUserNick(userId: string): string {
+    if (userId && currentUserId && currentUserId === userId) {
+      return currentUserNick;
+    }
+    console.log("Searching for user ", userId, " in : ", this.userNames);
+    return this.userNames[userId]?.nickName ?? deletedUser;
+  }
+
+  getUserDiscriminator(userId: string): string {
+    return this.userNames[userId]?.discriminator ?? "0000";
+  }
+
+  getUserIdFromNick(nick: string): string | null {
+    for (const [userId, userInfo] of Object.entries(this.userNames)) {
+      if (userInfo.nickName === nick) {
+        return userId;
+      }
+    }
+    return null;
+  }
+
+  isUserBlocked(userId: string): boolean {
+    return this.userNames[userId]?.isBlocked ?? false;
+  }
+
+  addUser(
+    userId: string,
+    nick: string = "",
+    discriminator: string = "",
+    isBlocked?: boolean
+  ) {
+    console.log("Adding user: ", userId, nick, discriminator);
+    if (!nick) {
+      console.error("Adding user without nick!: ", userId, discriminator);
+      if (this.userNames[userId]) {
+        console.log("User already exists, not overwriting: ", userId);
+        return;
+      }
+    }
+    this.userNames[userId] = {
+      nickName: nick,
+      discriminator,
+      isBlocked: Boolean(isBlocked),
+      userId
+    };
+  }
+  isSelfOnline() {
+    return this.selfOnline;
+  }
 }
-function setCurrentUserId(id: string) {
-  currentUserId = id;
-}
+
+export const userManager = new UserManager();
+
 export const statusTypes = {
   offline: "offline",
   online: "online",
@@ -76,7 +141,7 @@ export function setSelfStatus() {
 }
 
 export function initializeProfile() {
-  setCurrentUserId(initialState.user.id);
+  userManager.setCurrentUserId(initialState.user.id);
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
@@ -87,43 +152,6 @@ export function initializeProfile() {
 
 export function getSelfFullDisplay() {
   return initialState.user.nickname + "#" + initialState.user.discriminator;
-}
-
-export function getUserNick(userId: string): string {
-  if (userId && currentUserId && currentUserId === userId) {
-    return currentUserNick;
-  }
-  return userNames[userId]?.nickName ?? deletedUser;
-}
-
-export function getUserDiscriminator(userId: string): string {
-  return userNames[userId]?.discriminator ?? "0000";
-}
-
-export function getUserIdFromNick(nick: string): string | null {
-  for (const [userId, userInfo] of Object.entries(userNames)) {
-    if (userInfo.nickName === nick) {
-      return userId;
-    }
-  }
-  return null;
-}
-export function isUserBlocked(userId: string): boolean {
-  return userNames[userId]?.isBlocked ?? false;
-}
-
-export function addUser(
-  userId: string,
-  nick: string = "",
-  discriminator: string = "",
-  isBlocked?: boolean
-) {
-  userNames[userId] = {
-    nickName: nick,
-    discriminator,
-    isBlocked: Boolean(isBlocked),
-    userId
-  };
 }
 
 export function updateUserOnlineStatus(userId: string, isOnline: boolean) {
