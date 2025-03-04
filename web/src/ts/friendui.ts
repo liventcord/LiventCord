@@ -35,6 +35,11 @@ const dmContainerParent = getId("dm-container-parent") as HTMLElement;
 export const friendContainerItem = getId(
   "friend-container-item"
 ) as HTMLElement;
+
+export function unselectFriendContainer() {
+  friendContainerItem.classList.remove("dm-selected");
+}
+
 export const friendsContainer = getId("friends-container") as HTMLElement;
 export let isAddFriendsOpen = false;
 

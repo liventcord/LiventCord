@@ -138,7 +138,7 @@ export async function changeChannel(newChannel?: ChannelData) {
     }
 
     setLastSenderID("");
-    chatContent.innerHTML = "";
+
     clearLastDate();
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
