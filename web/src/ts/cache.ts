@@ -78,7 +78,12 @@ class ChannelCache extends BaseCache {
     const result = this.get(guildId);
     return Array.isArray(result) ? result : [];
   }
-
+  getChannel(guildId: string, channelId: string): CachedChannel | undefined {
+    const result = this.get(guildId);
+    return Array.isArray(result)
+      ? result.find((channel) => channel.id === channelId)
+      : undefined;
+  }
   addChannel(guildId: string, channel: CachedChannel): void {
     console.log(`Adding channel to guild: ${guildId}`, channel);
     const channels = this.getChannels(guildId);
@@ -316,7 +321,7 @@ class Guild {
   getRootChannel() {
     const channels = this.channels.getChannels(this.guildId);
     for (const channel of channels) {
-      if (channel.channelId == this.rootChannel) {
+      if (channel.channelId === this.rootChannel) {
         return channel;
       }
     }
@@ -523,9 +528,16 @@ class GuildCacheInterface {
     return this.getMembers(guildId).length === 0;
   }
 
-  // Channels
   getChannels(guildId: string): CachedChannel[] {
     return this.getGuild(guildId)?.channels.getChannels(guildId) || [];
+  }
+
+  getChannel(guildId: string, channelId: string): CachedChannel | null {
+    return (
+      this.getGuild(guildId)
+        ?.channels.getChannels(guildId)
+        .find((channel) => channel.channelId === channelId) || null
+    );
   }
 
   removeChannel(guildId: string, channelId: string): void {
@@ -547,6 +559,9 @@ class GuildCacheInterface {
     return result ?? null;
   }
 
+  getRootChannelData(guildId: string): CachedChannel | null {
+    return this.getGuild(guildId)?.getRootChannel() ?? null;
+  }
   setRootChannel(guildId: string, channelId: string): void {
     this.getGuild(guildId)?.setRootChannel(channelId);
   }
