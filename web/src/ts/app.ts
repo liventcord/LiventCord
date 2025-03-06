@@ -314,6 +314,9 @@ export function initializeGuild() {
     handleChannelLoading(initialGuildId, initialChannelId);
     fetchMembers();
   }
+  if(isValid && initialFriendId) {
+    openDm(initialFriendId);
+  }
 }
 
 function processGuilds(
@@ -350,15 +353,17 @@ export function handleChannelLoading(
       channelId
     );
     if (isVoiceChannel || channelExists) {
-      const rootChannel = cacheInterface.getRootChannel(guildId);
+      const rootChannel = getRootChannel(guildId,channelId);
       if (rootChannel) {
         console.warn("ROOOOT");
         loadGuild(
           guildId,
-          getRootChannel(guildId, rootChannel.channelId),
+          rootChannel,
           "",
           true
         );
+      } else {
+        console.warn("No root channel found");
       }
     } else {
       console.warn("VOOOICE", isVoiceChannel, channelExists);
