@@ -79,6 +79,7 @@ namespace LiventCord.Models
 
         [Column("is_text_channel")]
         public required bool IsTextChannel { get; set; } = false;
+
         [Column("is_private")]
         public required bool IsPrivate { get; set; } = false;
 
@@ -87,12 +88,17 @@ namespace LiventCord.Models
 
         [ForeignKey("Guild")]
         [Column("guild_id")]
-        public required string GuildId { get; set; }
+        public string? GuildId { get; set; }
+
+        [Column("recipient_id")]
+        public string? RecipientId { get; set; }
 
         [Column("order")]
         public int Order { get; set; }
+
         [JsonIgnore]
-        public virtual Guild Guild { get; set; } = null!;
+        public virtual Guild? Guild { get; set; }
+
         public virtual ICollection<UserChannel>? UserChannels { get; set; }
     }
 }

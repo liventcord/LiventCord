@@ -89,5 +89,13 @@ namespace LiventCord.Helpers
         {
             return _context.Database.ProviderName?.Contains("Npgsql") == true;
         }
+
+        public static string GenerateDmChannelId(string userId, string recipientId)
+        {
+            var userIds = new List<string> { userId, recipientId };
+            userIds.Sort();
+            return string.Join("", userIds);
+        }
+
     }
 }

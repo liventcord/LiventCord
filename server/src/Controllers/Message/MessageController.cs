@@ -17,12 +17,14 @@ namespace LiventCord.Controllers
 
         private readonly ImageController _imageController;
         private readonly RedisEventEmitter _redisEventEmitter;
+        private readonly ChannelController _channelController;
 
         private readonly ILogger<MessageController> _logger;
+
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger
+            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger, ChannelController channelController
         )
         {
             _tokenValidationService = tokenValidationService;
@@ -32,8 +34,10 @@ namespace LiventCord.Controllers
             _imageController = imageController;
             _redisEventEmitter = redisEventEmitter;
             _logger = logger;
+            _channelController = channelController;
 
         }
+
 
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetGuildMessages(
@@ -46,18 +50,67 @@ namespace LiventCord.Controllers
             {
                 return NotFound();
             }
-            var messages = await GetMessages(channelId, guildId);
+            var messages = await GetMessages(null, null, channelId, guildId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
             return Ok(new { messages, channelId, guildId, oldestMessageDate });
         }
 
-        [HttpGet("/api/dms/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleGetDMMessages([FromRoute][UserIdLengthValidation] string channelId)
+
+        [HttpGet("/api/dms/channels/{friendId}/messages")]
+        public async Task<IActionResult> HandleGetDMMessages(
+            [UserIdLengthValidation][FromRoute] string friendId
+        )
         {
-            var messages = await GetMessages(channelId, null);
+            var userId = UserId!;
+
+            var sortedChannelId = string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
+
+            var messages = await GetMessages(userId, friendId);
+
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
-            return Ok(new { messages, channelId, oldestMessageDate });
+
+            return Ok(new { messages, channelId = sortedChannelId, oldestMessageDate });
         }
+
+
+
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages")]
+        public async Task<IActionResult> HandleNewGuildMessage(
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
+            [FromForm] NewMessageRequest request
+        )
+        {
+            return await HandleMessage(MessageType.Guilds, guildId, channelId, request);
+        }
+
+        [HttpPost("/api/dms/channels/{friendId}/messages")]
+        public async Task<IActionResult> HandleNewDmMessage(
+            [UserIdLengthValidation][FromRoute] string friendId,
+            [FromForm] NewMessageRequest request
+        )
+        {
+            var userId = UserId!;
+
+
+            var sortedChannelId = string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
+
+
+            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == sortedChannelId);
+            if (!channelExists)
+            {
+                await _channelController.CreateChannelInternal(userId, friendId, sortedChannelId, sortedChannelId, true, false, sortedChannelId, false);
+            }
+
+
+            return await HandleMessage(
+                MessageType.Dms,
+                null,
+                sortedChannelId,
+                request
+            );
+        }
+
 
         [HttpPost("/api/discord/bot/messages/{guildId}/{channelId}")]
         public async Task<IActionResult> HandleNewBotMessage(
@@ -79,25 +132,9 @@ namespace LiventCord.Controllers
         }
 
 
-        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleNewGuildMessage(
-            [IdLengthValidation][FromRoute] string guildId,
-            [IdLengthValidation][FromRoute] string channelId,
-            [FromForm] NewMessageRequest request
-        )
-        {
-            return await HandleMessage("guilds", guildId, channelId, request);
-        }
 
 
-        [HttpPost("/api/dms/channels/{channelId}/messages")]
-        public async Task<IActionResult> HandleNewDmMessage(
-            [UserIdLengthValidation][FromRoute] string channelId,
-            [FromForm] NewMessageRequest request
-        )
-        {
-            return await HandleMessage("dms", null, channelId, request);
-        }
+
         private async Task<IActionResult> HandleBotMessage(
             string guildId,
             string channelId,
@@ -258,19 +295,34 @@ namespace LiventCord.Controllers
         }
 
 
-
-
         [NonAction]
-        private async Task<List<Message>> GetMessages(string channelId, string? guildId = null)
+        private async Task<List<Message>> GetMessages(string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null)
         {
-            return await _context.Messages
-                .Where(m => m.ChannelId == channelId && (guildId == null || m.Channel.GuildId == guildId))
+            IQueryable<Message> query = _context.Messages.AsQueryable();
+
+            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
+            {
+                var sortedChannelId = string.Compare(userId, friendId) < 0
+                    ? $"{userId}_{friendId}"
+                    : $"{friendId}_{userId}";
+                query = query.Where(m => m.ChannelId == sortedChannelId);
+            }
+            else if (!string.IsNullOrEmpty(channelId))
+            {
+                query = query.Where(m => m.ChannelId == channelId);
+            }
+
+            if (!string.IsNullOrEmpty(guildId))
+            {
+                query = query.Where(m => m.Channel.GuildId == guildId);
+            }
+
+            return await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
         }
-
 
         [NonAction]
         private async Task NewBotMessage(NewBotMessageRequest request, string channelId, string guildId)
@@ -299,22 +351,21 @@ namespace LiventCord.Controllers
                 embeds
             );
         }
-
-
         [NonAction]
         private async Task NewMessage(
-             string messageId,
-             string userId,
-             string channelId,
-             string? guildId,
-             string? content,
-             DateTime date,
-             DateTime? lastEdited,
-             string? attachmentUrls,
-             string? replyToId,
-             string? reactionEmojisIds,
-             List<Embed>? embeds)
+            string messageId,
+            string userId,
+            string channelId,
+            string? guildId,
+            string? content,
+            DateTime date,
+            DateTime? lastEdited,
+            string? attachmentUrls,
+            string? replyToId,
+            string? reactionEmojisIds,
+            List<Embed>? embeds)
         {
+
             var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
             if (!userExists)
             {
@@ -323,16 +374,43 @@ namespace LiventCord.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == channelId);
+
+            string sortedChannelId = channelId;
+            if (guildId == null)
+            {
+
+                var userIds = channelId.Split('_');
+                if (userIds.Length != 2 || !userIds.Contains(userId))
+                {
+                    return;
+                }
+
+
+                string recipientId = userIds.First(id => id != userId);
+                sortedChannelId = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
+            }
+
+
+            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == sortedChannelId);
             if (!channelExists)
             {
-                return;
+                if (guildId == null)
+                {
+
+                    await _channelController.CreateChannelInternal(userId, null, sortedChannelId, sortedChannelId, true, false, sortedChannelId, false);
+                }
+                else
+                {
+                    return;
+                }
             }
+
 
             if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
             {
                 return;
             }
+
 
             await Task.Run(async () =>
             {
@@ -340,12 +418,13 @@ namespace LiventCord.Controllers
                 await SaveMetadataAsync(messageId, metadata);
             });
 
+
             var message = new Message
             {
                 MessageId = messageId,
                 UserId = userId,
                 Content = content,
-                ChannelId = channelId,
+                ChannelId = sortedChannelId,
                 Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
                 LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
                 AttachmentUrls = attachmentUrls,
@@ -355,8 +434,10 @@ namespace LiventCord.Controllers
                 Metadata = new Metadata()
             };
 
+
             await _context.Messages.AddAsync(message).ConfigureAwait(false);
             await _context.SaveChangesAsync().ConfigureAwait(false);
+
 
             if (guildId != null)
             {
@@ -369,8 +450,8 @@ namespace LiventCord.Controllers
                 };
                 await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
             }
-
         }
+
 
         private async Task SaveMetadataAsync(string messageId, Metadata metadata)
         {
@@ -385,13 +466,13 @@ namespace LiventCord.Controllers
 
         [NonAction]
         private async Task<IActionResult> HandleMessage(
-            string mode,
+            MessageType mode,
             string? guildId,
             string channelId,
             NewMessageRequest request
         )
         {
-            if (mode == "guilds")
+            if (mode == MessageType.Guilds)
             {
                 if (string.IsNullOrWhiteSpace(guildId))
                 {
@@ -402,6 +483,7 @@ namespace LiventCord.Controllers
                     return StatusCode(StatusCodes.Status403Forbidden);
                 }
             }
+
             if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
             {
                 return BadRequest(new { Type = "error", Message = "Required properties (channelId, content) are missing." });
@@ -411,7 +493,6 @@ namespace LiventCord.Controllers
             {
                 return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
             }
-
 
             long MAX_TOTAL_SIZE = SharedAppConfig.GetMaxAttachmentSize();
             long totalSize = 0;
