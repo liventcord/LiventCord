@@ -9,7 +9,8 @@ import {
   currentChannelName,
   channelsUl,
   handleChannelDelete,
-  ChannelData
+  ChannelData,
+  editChannelElement
 } from "./channels.ts";
 import { getId, enableElement } from "./utils.ts";
 import {
@@ -53,9 +54,9 @@ const SocketEvent = Object.freeze({
   CHANGE_NICK: "CHANGE_NICK",
   LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
-  CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
   UPDATE_USER_NAME: "UPDATE_USER_NAME",
-  UPDATE_USER_STATUS: "UPDATE_USER_STATUS"
+  UPDATE_USER_STATUS: "UPDATE_USER_STATUS",
+  UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME"
 } as const);
 
 type SocketEventType = keyof typeof SocketEvent;
@@ -295,12 +296,11 @@ socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {
     isTextChannel
   };
   addChannel(channel);
-
-  //} else if (type === removeType) {
-  //  removeChannel(data);
-  //} else if (type === editType) {
-  //  editChannel(data);
-  //}
+});
+socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
+  if (data.guildId === currentGuildId) {
+    editChannelElement(data.channelId, data.channelName);
+  }
 });
 
 interface DeleteMessageEmit {
@@ -362,6 +362,10 @@ export function handleDeleteMessageEmit(
 ) {
   processDeleteMessage(data.msgDate, data.messageId, isDm);
 }
+
+socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
+  handleChannelDelete(data);
+});
 
 socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
   handleChannelDelete(data);

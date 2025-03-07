@@ -13,7 +13,7 @@ import {
   clearLastDate
 } from "./chat.ts";
 import { translations } from "./translations.ts";
-import { closeReplyMenu, chatInput, chatContent } from "./chatbar.ts";
+import { closeReplyMenu, chatInput } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
 import {
   selectedChanColor,
@@ -320,18 +320,16 @@ export function handleKeydown(event: KeyboardEvent) {
   isKeyDown = true;
 }
 
-export function editChannelElement(
-  channelId: string,
-  new_channel_name: string
-) {
+export function editChannelElement(channelId: string, newChannelName: string) {
   const existingChannelButton = channelsUl.querySelector(
     `li[id="${channelId}"]`
   ) as HTMLElement;
+  console.log(existingChannelButton);
   if (!existingChannelButton) {
     return;
   }
-  const channelSpan = existingChannelButton.querySelector("channelSpan");
-  if (channelSpan) channelSpan.textContent = new_channel_name;
+  const channelSpan = existingChannelButton.querySelector(".channelSpan");
+  if (channelSpan) channelSpan.textContent = newChannelName;
 }
 export function removeChannelElement(channelId: string) {
   const existingChannelButton = channelsUl.querySelector(
@@ -400,7 +398,7 @@ export function createChannelButton(
 function onChannelSettings(event: Event, channel: Channel) {
   event.stopPropagation();
   console.log("Click to settings on:", channel);
-  openChannelSettings();
+  openChannelSettings(channel.channelId, channel.channelName);
 }
 function createContentWrapper(
   channel: Channel,

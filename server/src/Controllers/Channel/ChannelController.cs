@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -53,7 +54,7 @@ namespace LiventCord.Controllers
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
             [FromRoute][IdLengthValidation] string guildId,
-            [IdLengthValidation] string channelId
+            [FromRoute][IdLengthValidation] string channelId
         )
         {
             var channel = await _dbContext.Channels.FindAsync(channelId);
@@ -65,10 +66,7 @@ namespace LiventCord.Controllers
 
             if (!await _permissionsController.HasPermission(UserId!, guildId, PermissionFlags.ManageChannels))
             {
-                return new ObjectResult(new { Type = "error", Message = "User is not authorized to delete this channel." })
-                {
-                    StatusCode = StatusCodes.Status403Forbidden
-                };
+                return Forbid();
             }
 
             var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
@@ -82,13 +80,41 @@ namespace LiventCord.Controllers
             return Ok(new { guildId, channelId });
         }
 
+        [Authorize]
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}")]
+        public async Task<IActionResult> EditChannelName(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId,
+            [FromBody] ChangeChannelNameRequest request
+        )
+        {
+            var channel = await _dbContext.Channels.FindAsync(channelId);
+            if (channel == null)
+                return NotFound("Channel does not exist.");
+
+            if (!await _membersController.DoesMemberExistInGuild(UserId!, guildId))
+                return BadRequest(new { Type = "error", Message = "User not in guild." });
+
+            if (!await _permissionsController.CanManageChannels(UserId!, guildId))
+            {
+                return Forbid();
+            }
+            channel.ChannelName = request.ChannelName;
+            await _dbContext.SaveChangesAsync();
+            var channelToEmit = new { channelId, channelName = request.ChannelName, guildId };
+
+            await _redisEventEmitter.EmitToGuild(EventType.UPDATE_CHANNEL_NAME, channelToEmit, guildId, UserId!);
+
+            return Ok(new { guildId, channelId, request.ChannelName });
+        }
 
 
+        [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels")]
         public async Task<IActionResult> CreateChannel([FromRoute][IdLengthValidation] string guildId, [FromBody] CreateChannelRequest request)
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
-                return Unauthorized(new { Type = "error", Message = "User does not have permission to manage channels." });
+                return Forbid();
 
             return await CreateChannelInternal(UserId!, guildId, Utils.CreateRandomId(), request.ChannelName, request.IsTextChannel, request.IsPrivate, recipientId: null, returnResponse: true);
         }
@@ -209,6 +235,7 @@ namespace LiventCord.Controllers
 
 public class CreateChannelRequest
 {
+    [MaxLength(100)]
     public required string ChannelName { get; set; }
     public required bool IsTextChannel { get; set; }
     public required bool IsPrivate { get; set; }
@@ -216,6 +243,14 @@ public class CreateChannelRequest
 
 public class CreateChannelRequestBot
 {
+    [IdLengthValidation]
     public required string ChannelId { get; set; }
+    [MaxLength(100)]
     public required string ChannelName { get; set; }
+}
+public class ChangeChannelNameRequest
+{
+    [MaxLength(100)]
+    public required string ChannelName { get; set; }
+
 }

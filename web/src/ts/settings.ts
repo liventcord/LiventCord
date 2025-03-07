@@ -21,7 +21,10 @@ import {
   isGuildSettings,
   closeSettings,
   generateConfirmationPanel,
-  hideConfirmationPanel
+  hideConfirmationPanel,
+  isChannelSettings,
+  isProfileSettings,
+  currentSettingsChannelId
 } from "./settingsui.ts";
 import { alertUser, hideImagePreviewRequest, handleToggleClick } from "./ui.ts";
 import { isDomLoaded } from "./app.ts";
@@ -33,7 +36,7 @@ import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
 
 const isImagePreviewOpen = false;
-const CHANGE_NICK_COOLDOWN = 1000;
+const CHANGE_NAME_COOLDOWN = 1000;
 
 export const settingTypes = {
   MyAccount: "MyAccount",
@@ -45,6 +48,7 @@ export const settingTypes = {
 
 let changeNicknameTimeout: number;
 let changeGuildNameTimeout: number;
+let changeChannelNameTimeout: number;
 export let isSettingsOpen = false;
 export let currentPopUp: HTMLElement | undefined;
 export function setIsSettingsOpen(val: boolean) {
@@ -263,6 +267,10 @@ export function onEditNick() {
   isUnsaved = true;
   regenerateConfirmationPanel();
 }
+export function onEditChannelName() {
+  isUnsaved = true;
+  regenerateConfirmationPanel();
+}
 export function onEditGuildName() {
   isUnsaved = true;
   regenerateConfirmationPanel();
@@ -283,18 +291,15 @@ export function applySettings() {
   }
   if (isUnsaved) {
     if (isGuildSettings()) {
-      console.log(
-        "Applying guild settings. can manage guild: ",
-        permissionManager.canManageGuild()
-      );
       changeGuildName();
 
       if (permissionManager.canManageGuild()) {
         uploadImage(true);
       }
-    } else {
+    } else if (isChannelSettings()) {
+      changeChannelName();
+    } else if (isProfileSettings()) {
       console.log("Applying profile settings");
-      // in user profile settings
       changeNickname();
       uploadImage(false);
     }
@@ -328,7 +333,7 @@ export function changeNickname() {
 
     changeNicknameTimeout = setTimeout(() => {
       changeNicknameTimeout = 0;
-    }, CHANGE_NICK_COOLDOWN);
+    }, CHANGE_NAME_COOLDOWN);
   }
 }
 
@@ -342,14 +347,38 @@ export function changeGuildName() {
   const newGuildName = newGuildInput.value.trim();
   if (newGuildName && newGuildName !== guildCache.currentGuildName) {
     console.log("Changed guild name to: " + newGuildName);
-    apiClient.send(EventType.CHANGE_GUILD_NAME, {
+    apiClient.send(EventType.UPDATE_GUILD_NAME, {
       guildName: newGuildName,
       guildId: currentGuildId
     });
     newGuildInput.value = newGuildName;
     changeGuildNameTimeout = setTimeout(
       () => (changeGuildNameTimeout = 0),
-      CHANGE_NICK_COOLDOWN
+      CHANGE_NAME_COOLDOWN
+    );
+  }
+}
+export function changeChannelName() {
+  if (changeChannelNameTimeout) return;
+  const channelNameInput = getId(
+    "channel-overview-name-input"
+  ) as HTMLInputElement;
+  if (!channelNameInput) {
+    console.warn("Guild input does not exist");
+    return;
+  }
+  const newChannelName = channelNameInput.value.trim();
+  if (newChannelName && newChannelName !== guildCache.currentGuildName) {
+    console.log("Changed channel name to: " + newChannelName);
+    apiClient.send(EventType.UPDATE_CHANNEL_NAME, {
+      channelName: newChannelName,
+      guildId: currentGuildId,
+      channelId: currentSettingsChannelId
+    });
+    channelNameInput.value = newChannelName;
+    changeChannelNameTimeout = setTimeout(
+      () => (changeChannelNameTimeout = 0),
+      CHANGE_NAME_COOLDOWN
     );
   }
 }

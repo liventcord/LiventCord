@@ -153,7 +153,7 @@ namespace LiventCord.Controllers
 
             if (existingPermissions != null)
             {
-                existingPermissions.Permissions = permissions;
+                existingPermissions.Permissions |= permissions;
                 _dbContext.GuildPermissions.Update(existingPermissions);
             }
             else
@@ -168,6 +168,7 @@ namespace LiventCord.Controllers
             }
             await _dbContext.SaveChangesAsync();
         }
+
 
 
         public async Task RemovePermissions(string guildId, string userId, PermissionFlags permissionsToRemove)
@@ -203,17 +204,5 @@ public enum PermissionFlags
     CanInvite = 1 << 9,
     ManageGuild = 1 << 11,
     ManageMessages = 1 << 12,
-    All =
-        ReadMessages
-        | SendMessages
-        | MentionEveryone
-        | ManageRoles
-        | KickMembers
-        | BanMembers
-        | ManageChannels
-        | AddReaction
-        | IsAdmin
-        | CanInvite
-        | ManageGuild
-        | ManageMessages
+    All = 1 << 13
 }

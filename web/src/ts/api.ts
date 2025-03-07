@@ -38,7 +38,7 @@ export const EventType = Object.freeze({
   LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
   GET_BULK_REPLY: "GET_BULK_REPLY",
-  CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
+  UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
   GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
   READ_MESSAGE: "READ_MESSAGE"
 } as const);
@@ -88,15 +88,15 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   CHANGE_NICK: HttpMethod.PUT,
   ADD_DM: HttpMethod.POST,
   GET_BULK_REPLY: HttpMethod.GET,
-  CHANGE_GUILD_NAME: HttpMethod.PUT,
+  UPDATE_GUILD_NAME: HttpMethod.PUT,
   DELETE_CHANNEL: HttpMethod.DELETE,
   LEAVE_VOICE_CHANNEL: HttpMethod.PUT,
   JOIN_VOICE_CHANNEL: HttpMethod.POST,
   DELETE_MESSAGE_DM: HttpMethod.DELETE,
   DELETE_MESSAGE_GUILD: HttpMethod.DELETE,
-  UPDATE_GUILD_NAME: HttpMethod.PUT,
   UPDATE_GUILD_IMAGE: HttpMethod.PUT,
-  READ_MESSAGE: HttpMethod.POST
+  READ_MESSAGE: HttpMethod.POST,
+  UPDATE_CHANNEL_NAME: HttpMethod.POST
 };
 
 const EventUrlMap: Record<EventType, string> = {
@@ -108,6 +108,7 @@ const EventUrlMap: Record<EventType, string> = {
   GET_GUILDS: "/guilds",
   GET_CHANNELS: "/guilds/{guildId}/channels/",
   DELETE_CHANNEL: "/guilds/{guildId}/channels/{channelId}",
+  UPDATE_CHANNEL_NAME: "/guilds/{guildId}/channels/{channelId}",
   GET_MEMBERS: "/guilds/{guildId}/members",
   GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
 
@@ -119,7 +120,8 @@ const EventUrlMap: Record<EventType, string> = {
   GET_MESSAGE_DATE: "/guilds/{guildId}/channels/{channelId}/messages/date",
   START_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/start",
   STOP_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/stop",
-  CHANGE_GUILD_NAME: "/guilds/{guildId}",
+  UPDATE_GUILD_NAME: "/guilds/{guildId}",
+  UPDATE_GUILD_IMAGE: "",
 
   JOIN_GUILD: "/guilds/{inviteId}/members",
   LEAVE_GUILD: "/guilds/{guildId}/members",
@@ -139,8 +141,6 @@ const EventUrlMap: Record<EventType, string> = {
   CHANGE_NICK: "/nicks",
   LEAVE_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
   JOIN_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
-  UPDATE_GUILD_NAME: "",
-  UPDATE_GUILD_IMAGE: "",
   ACCEPT_FRIEND: "/friends/accept/{friendId}",
   DENY_FRIEND: "/friends/deny/{friendId}",
   GET_MESSAGE_DATES: "",

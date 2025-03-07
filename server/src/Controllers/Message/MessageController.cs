@@ -204,7 +204,7 @@ namespace LiventCord.Controllers
 
             await EditMessage(channelId, messageId, request.Content);
             var editBroadcast = new { guildId, channelId, messageId, request.Content };
-            await _redisEventEmitter.EmitToGuild(EventType.EDIT_CHANNEL, editBroadcast, guildId, UserId!);
+            await _redisEventEmitter.EmitToGuild(EventType.UPDATE_MESSAGE, editBroadcast, guildId, UserId!);
             return Ok(editBroadcast);
         }
         [Authorize]
@@ -223,7 +223,7 @@ namespace LiventCord.Controllers
 
             await EditMessage(channelId, messageId, request.Content);
             var editBroadcast = new { channelId, messageId, request.Content };
-            await _redisEventEmitter.EmitToFriend(EventType.EDIT_CHANNEL, editBroadcast, UserId!, channelId);
+            await _redisEventEmitter.EmitToFriend(EventType.UPDATE_MESSAGE, editBroadcast, UserId!, channelId);
             return Ok(editBroadcast);
         }
         [Authorize]
