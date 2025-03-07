@@ -153,7 +153,7 @@ namespace LiventCord.Controllers
 
             if (existingPermissions != null)
             {
-                existingPermissions.Permissions |= permissions;
+                existingPermissions.Permissions = permissions;
                 _dbContext.GuildPermissions.Update(existingPermissions);
             }
             else
