@@ -367,6 +367,8 @@
 }
 .pendingAlert {
   display: none;
+  justify-content: center;
+  align-items: center;
   background-color: rgb(242, 63, 66);
   color: white;
   border-radius: 50%;
@@ -374,8 +376,9 @@
   height: 16px;
   border: none;
   font-size: 12px;
-  text-indent: 1;
+  text-indent: 0;
 }
+
 #pendingAlertLeft {
   position: absolute;
   right: 20px;
@@ -408,7 +411,8 @@
   pointer-events: none;
 }
 .friend-icon,
-#friend-label {
+#friend-label,
+.friend-info {
   pointer-events: none;
 }
 .friend-container {
@@ -475,6 +479,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
 }
 .friend-button .gray-sphere img {
   width: 22px;

@@ -42,6 +42,18 @@ public class RedisEventEmitter
             });
         }
     }
+    public Task EmitToUser(EventType eventType, object payload, string friendId)
+    {
+        string[] userIds = { friendId };
+
+        _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+        {
+            await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
+        });
+
+        return Task.CompletedTask;
+    }
+
 }
 
 public enum EventType

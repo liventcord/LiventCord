@@ -29,6 +29,7 @@ import { isOnGuild } from "./router.ts";
 import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
+import { handleFriendEventResponse } from "./friends.ts";
 
 const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -61,7 +62,7 @@ type SocketEventType = keyof typeof SocketEvent;
 
 class WebSocketClient {
   private socket!: WebSocket;
-  private eventHandlers: Record<string, Function[]> = {};
+  private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
   private socketUrl: string = "";
   private retryCount: number = 0;
   private maxRetryDelay: number = 30000;
@@ -109,10 +110,12 @@ class WebSocketClient {
 
         if (Object.values(SocketEvent).includes(event_type)) {
           const eventEnumValue = event_type as SocketEventType;
+
+          const camelCasedPayload = convertKeysToCamelCase(payload);
+
           if (this.eventHandlers[eventEnumValue]) {
-            const camelCasedPayload = convertKeysToCamelCase(payload);
             this.eventHandlers[eventEnumValue].forEach((handler) => {
-              console.log(camelCasedPayload);
+              console.log("Calling handler with payload:", camelCasedPayload);
               handler(camelCasedPayload);
             });
           } else {
@@ -179,7 +182,7 @@ class WebSocketClient {
     return WebSocketClient.instance;
   }
 
-  on(eventType: SocketEventType, handler: Function) {
+  on(eventType: SocketEventType, handler: (...args: any[]) => any) {
     if (!this.eventHandlers[eventType]) {
       this.eventHandlers[eventType] = [];
     }
@@ -370,6 +373,22 @@ socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data: DeleteMessageEmit) => {
   handleDeleteMessageEmit(data, false);
+});
+
+socketClient.on(SocketEvent.ADD_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.ACCEPT_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.REMOVE_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.DENY_FRIEND, function (message) {
+  handleFriendEventResponse(message);
 });
 
 //audio

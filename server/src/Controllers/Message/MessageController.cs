@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using LiventCord.Helpers;
 using LiventCord.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +39,7 @@ namespace LiventCord.Controllers
 
         }
 
+        [Authorize]
 
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetGuildMessages(
@@ -55,6 +57,7 @@ namespace LiventCord.Controllers
             return Ok(new { messages, channelId, guildId, oldestMessageDate });
         }
 
+        [Authorize]
 
         [HttpGet("/api/dms/channels/{friendId}/messages")]
         public async Task<IActionResult> HandleGetDMMessages(
@@ -73,6 +76,7 @@ namespace LiventCord.Controllers
         }
 
 
+        [Authorize]
 
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleNewGuildMessage(
@@ -83,6 +87,7 @@ namespace LiventCord.Controllers
         {
             return await HandleMessage(MessageType.Guilds, guildId, channelId, request);
         }
+        [Authorize]
 
         [HttpPost("/api/dms/channels/{friendId}/messages")]
         public async Task<IActionResult> HandleNewDmMessage(
@@ -177,6 +182,7 @@ namespace LiventCord.Controllers
         }
 
 
+        [Authorize]
 
         [HttpPut("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditGuildMessage(
@@ -201,6 +207,7 @@ namespace LiventCord.Controllers
             await _redisEventEmitter.EmitToGuild(EventType.EDIT_CHANNEL, editBroadcast, guildId, UserId!);
             return Ok(editBroadcast);
         }
+        [Authorize]
 
         [HttpPut("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditDMMessage(
@@ -219,6 +226,7 @@ namespace LiventCord.Controllers
             await _redisEventEmitter.EmitToFriend(EventType.EDIT_CHANNEL, editBroadcast, UserId!, channelId);
             return Ok(editBroadcast);
         }
+        [Authorize]
 
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleDeleteGuildMessage(
@@ -236,6 +244,7 @@ namespace LiventCord.Controllers
             await _redisEventEmitter.EmitToGuild(EventType.DELETE_MESSAGE_GUILD, deleteBroadcast, guildId, UserId!);
             return Ok(new { messageId });
         }
+        [Authorize]
 
         [HttpDelete("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleDeleteDMMessage(
@@ -246,6 +255,7 @@ namespace LiventCord.Controllers
             await DeleteMessage(channelId, messageId);
             return Ok(new { messageId });
         }
+        [Authorize]
         [HttpGet("/api/{type}/{id}/search")]
         public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
             [FromRoute] MessageType type,

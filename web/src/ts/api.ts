@@ -142,7 +142,7 @@ const EventUrlMap: Record<EventType, string> = {
   UPDATE_GUILD_NAME: "",
   UPDATE_GUILD_IMAGE: "",
   ACCEPT_FRIEND: "/friends/accept/{friendId}",
-  DENY_FRIEND: "/friends/accept/{friendId}",
+  DENY_FRIEND: "/friends/deny/{friendId}",
   GET_MESSAGE_DATES: "",
   READ_MESSAGE: ""
 };
