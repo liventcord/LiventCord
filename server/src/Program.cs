@@ -45,14 +45,28 @@ builder.Services.AddHttpContextAccessor();
 
 builder
     .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.Cookie.HttpOnly = true;
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-        options.SlidingExpiration = true;
-        options.LoginPath = "/auth/login";
-        options.LogoutPath = "/auth/logout";
-    });
+        .AddCookie(options =>
+        {
+            options.Cookie.HttpOnly = true;
+            options.ExpireTimeSpan = TimeSpan.FromDays(7);
+            options.SlidingExpiration = true;
+            options.LoginPath = "/auth/login";
+            options.LogoutPath = "/auth/logout";
+            options.AccessDeniedPath = null;
+            options.Events = new CookieAuthenticationEvents
+            {
+                OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                },
+                OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                }
+            };
+        });
 
 builder
     .Services.AddControllers()
