@@ -36,7 +36,7 @@ namespace LiventCord.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok("Nickname updated successfully");
+            return Ok();
         }
 
         [HttpGet("discriminators")]

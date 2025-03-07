@@ -17,7 +17,8 @@ import {
   triggerGuildImageUpdate,
   regenerateConfirmationPanel,
   triggerFileInput,
-  onEditGuildName
+  onEditGuildName,
+  onEditChannelName
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -40,7 +41,6 @@ import { currentUserNick, currentUserId, setSelfStatus } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId } from "./guild.ts";
-import { currentChannelName } from "./channels.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -76,12 +76,21 @@ interface Settings {
   channelSettings: Setting[];
 }
 
+export let currentSettingsChannelName: string;
+export let currentSettingsChannelId: string;
+
 export let currentSettingsCategory: string;
 export let currentSettingsType: SettingType = SettingType.PROFILE;
 (window as any).currentSettingsType = currentSettingsType;
 
 export function isGuildSettings() {
   return currentSettingsType === SettingType.GUILD;
+}
+export function isChannelSettings() {
+  return currentSettingsType === SettingType.CHANNEL;
+}
+export function isProfileSettings() {
+  return currentSettingsType === SettingType.PROFILE;
 }
 
 let currentSettings: Settings;
@@ -388,8 +397,8 @@ export function selectSettingCategory(
   if (settingCategory === ChannelCategoryTypes.DeleteChannel) {
     createDeleteChannelPrompt(
       currentGuildId,
-      guildCache.currentChannelId,
-      currentChannelName
+      currentSettingsChannelId,
+      currentSettingsChannelName
     );
     return;
   }
@@ -487,7 +496,7 @@ function getGuildOverviewHtml() {
     <div id="set-info-title-guild-name">${translations.getSettingsTranslation(
       "GuildName"
     )}</div>
-    <input type="text" id="guild-overview-name-input" autocomplete="off" 
+    <input type="text" id="guild-overview-name-input" class="base-overview-name-input" autocomplete="off" 
            value="${escapeHtml(
              guildCache.currentGuildName || ""
            )}" maxlength="32">
@@ -607,7 +616,14 @@ function getNotificationsHtml() {
 }
 
 function getOverviewHtml() {
-  return "channel overview";
+  return `
+  <div id="guild-settings-rightbar">
+    <div id="set-info-title-channel-name">${translations.getTranslation(
+      "channel-name"
+    )}</div>
+    <input type="text" id="channel-overview-name-input" class="base-overview-name-input" autocomplete="off" maxlength="100">
+  </div>
+`;
 }
 function getPermissionsHtml() {
   return "channel permissions";
@@ -645,7 +661,6 @@ function initialiseSettingComponents(
   }, 100);
 
   initializeLanguageDropdown();
-
   const closeButton = getCloseButtonElement();
   closeButton.addEventListener("click", closeSettings);
   settingsContainer.insertBefore(closeButton, settingsContainer.firstChild);
@@ -653,37 +668,39 @@ function initialiseSettingComponents(
   toggleManager.setupToggles();
 
   const settingsSelfProfile = getProfileImage();
-  if (settingsSelfProfile) {
+  if (settingsSelfProfile)
     settingsSelfProfile.addEventListener("click", triggerFileInput);
-  }
 
   const newNickInput = getId("new-nickname-input");
-  if (newNickInput) {
-    newNickInput.addEventListener("keydown", onEditNick);
-  }
+  if (newNickInput) newNickInput.addEventListener("input", onEditNick);
+
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getGuildImage();
+  const channelNameInput = getId(
+    "channel-overview-name-input"
+  ) as HTMLInputElement;
+
+  if (channelNameInput) {
+    channelNameInput.value = currentSettingsChannelName;
+    if (permissionManager.canManageChannels()) {
+      channelNameInput.addEventListener("input", onEditChannelName);
+    } else if (channelNameInput) {
+      channelNameInput.disabled = true;
+    }
+  }
 
   if (permissionManager.canManageGuild()) {
     if (guildNameInput) {
-      guildNameInput.addEventListener("keydown", onEditGuildName);
+      guildNameInput.addEventListener("input", onEditGuildName);
+      guildImage?.addEventListener("click", triggerGuildImageUpdate);
+      if (guildImage && !guildImage?.src) guildImage.src = blackImage;
     }
-    if (guildImage) {
-      guildImage.addEventListener("click", triggerGuildImageUpdate);
-      if (!guildImage.src) {
-        guildImage.src = blackImage;
-      }
-    }
-  } else {
-    if (guildNameInput) {
-      guildNameInput.disabled = true;
-    }
+  } else if (guildNameInput) {
+    guildNameInput.disabled = true;
   }
 
   const emailToggler = getId("set-info-email-eye");
-  if (emailToggler) {
-    emailToggler.addEventListener("click", toggleEmail);
-  }
+  if (emailToggler) emailToggler.addEventListener("click", toggleEmail);
 }
 
 export function createToggle(id: string, label: string, description: string) {
@@ -716,7 +733,10 @@ export function createToggle(id: string, label: string, description: string) {
         </div>
     `;
 }
-export function openChannelSettings() {
+
+export function openChannelSettings(channelId: string, channelName: string) {
+  currentSettingsChannelName = channelName;
+  currentSettingsChannelId = channelId;
   openSettings(SettingType.CHANNEL);
 }
 export function openSettings(settingType: SettingType) {
@@ -846,6 +866,13 @@ export function generateConfirmationPanel() {
     ) as HTMLInputElement;
     if (guildNameInput) {
       guildNameInput.value = guildCache.currentGuildName;
+    }
+
+    const channelNameInput = getId(
+      "channel-overview-name-input"
+    ) as HTMLInputElement;
+    if (channelNameInput) {
+      channelNameInput.value = currentSettingsChannelName;
     }
 
     setUnsaved(false);

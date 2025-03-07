@@ -6,7 +6,12 @@ import {
   handleHistoryResponse
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
-import { addChannel, changeChannel, handleChannelDelete } from "./channels.ts";
+import {
+  addChannel,
+  changeChannel,
+  editChannelElement,
+  handleChannelDelete
+} from "./channels.ts";
 import { getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
 import {
@@ -269,6 +274,16 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
   }
 
   refreshUserProfile(userId, newNickname);
+});
+type ChangeChannelResponse = {
+  channelId: string;
+  guildId: string;
+  channelName: string;
+};
+apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
+  if (data.guildId === currentGuildId) {
+    editChannelElement(data.channelId, data.channelName);
+  }
 });
 
 apiClient.on(EventType.GET_FRIENDS, (data) => {

@@ -9,7 +9,8 @@ import {
   currentChannelName,
   channelsUl,
   handleChannelDelete,
-  ChannelData
+  ChannelData,
+  editChannelElement
 } from "./channels.ts";
 import { getId, enableElement } from "./utils.ts";
 import {
@@ -29,6 +30,7 @@ import { isOnGuild } from "./router.ts";
 import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
+import { handleFriendEventResponse } from "./friends.ts";
 
 const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -52,16 +54,16 @@ const SocketEvent = Object.freeze({
   CHANGE_NICK: "CHANGE_NICK",
   LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
-  CHANGE_GUILD_NAME: "CHANGE_GUILD_NAME",
   UPDATE_USER_NAME: "UPDATE_USER_NAME",
-  UPDATE_USER_STATUS: "UPDATE_USER_STATUS"
+  UPDATE_USER_STATUS: "UPDATE_USER_STATUS",
+  UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME"
 } as const);
 
 type SocketEventType = keyof typeof SocketEvent;
 
 class WebSocketClient {
   private socket!: WebSocket;
-  private eventHandlers: Record<string, Function[]> = {};
+  private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
   private socketUrl: string = "";
   private retryCount: number = 0;
   private maxRetryDelay: number = 30000;
@@ -109,10 +111,12 @@ class WebSocketClient {
 
         if (Object.values(SocketEvent).includes(event_type)) {
           const eventEnumValue = event_type as SocketEventType;
+
+          const camelCasedPayload = convertKeysToCamelCase(payload);
+
           if (this.eventHandlers[eventEnumValue]) {
-            const camelCasedPayload = convertKeysToCamelCase(payload);
             this.eventHandlers[eventEnumValue].forEach((handler) => {
-              console.log(camelCasedPayload);
+              console.log("Calling handler with payload:", camelCasedPayload);
               handler(camelCasedPayload);
             });
           } else {
@@ -179,7 +183,7 @@ class WebSocketClient {
     return WebSocketClient.instance;
   }
 
-  on(eventType: SocketEventType, handler: Function) {
+  on(eventType: SocketEventType, handler: (...args: any[]) => any) {
     if (!this.eventHandlers[eventType]) {
       this.eventHandlers[eventType] = [];
     }
@@ -292,12 +296,11 @@ socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {
     isTextChannel
   };
   addChannel(channel);
-
-  //} else if (type === removeType) {
-  //  removeChannel(data);
-  //} else if (type === editType) {
-  //  editChannel(data);
-  //}
+});
+socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
+  if (data.guildId === currentGuildId) {
+    editChannelElement(data.channelId, data.channelName);
+  }
 });
 
 interface DeleteMessageEmit {
@@ -364,12 +367,32 @@ socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
   handleChannelDelete(data);
 });
 
+socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
+  handleChannelDelete(data);
+});
+
 socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
   handleDeleteMessageEmit(data, true);
 });
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data: DeleteMessageEmit) => {
   handleDeleteMessageEmit(data, false);
+});
+
+socketClient.on(SocketEvent.ADD_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.ACCEPT_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.REMOVE_FRIEND, function (message) {
+  handleFriendEventResponse(message);
+});
+
+socketClient.on(SocketEvent.DENY_FRIEND, function (message) {
+  handleFriendEventResponse(message);
 });
 
 //audio

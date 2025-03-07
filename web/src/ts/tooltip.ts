@@ -81,8 +81,13 @@ function createTooltip(
   tooltip = createEl("div", { className: "tooltip", textContent: tooltipText });
   document.body.appendChild(tooltip);
 
-  let tooltipLeft = positionOffset.x - tooltip.offsetWidth / 2;
-  let tooltipTop = positionOffset.y - tooltip.offsetHeight - 8;
+  const targetRect = target.getBoundingClientRect();
+  let tooltipLeft =
+    targetRect.left +
+    targetRect.width / 2 -
+    tooltip.offsetWidth / 2 +
+    positionOffset.x;
+  let tooltipTop = targetRect.top - tooltip.offsetHeight - 8 + positionOffset.y;
 
   tooltipLeft = Math.max(
     10,

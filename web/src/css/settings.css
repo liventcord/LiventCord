@@ -560,15 +560,10 @@ th {
 #guild-overview-name-input:hover {
   cursor: not-allowed;
 }
-#guild-overview-name-input:disabled {
-  color: #888;
-  cursor: not-allowed;
-}
-#guild-overview-name-input:disabled:focus {
-  outline: none;
-}
+
 #set-info-title-nick,
 #set-info-title-email,
+#set-info-title-channel-name,
 #set-info-title-guild-name {
   padding: 15px 15px;
   margin-right: -25px;
@@ -583,6 +578,9 @@ th {
 }
 #set-info-title-email {
   margin-top: 70px;
+}
+#set-info-title-channel-name {
+  margin-top: -150px;
 }
 #set-info-nick,
 #set-info-email,
@@ -701,17 +699,30 @@ th {
   font-weight: bolder;
   font-size: 250px;
 }
-#guild-overview-name-input {
+.base-overview-name-input {
   width: 100%;
   position: relative;
-  margin-bottom: 100px;
-  margin-left: 355px;
   padding: 10px;
   width: 255px;
   box-sizing: border-box;
   border: none;
   color: white;
   background-color: rgb(30, 31, 34);
+}
+.base-overview-name-input:disabled {
+  color: #888;
+  cursor: not-allowed;
+}
+.base-overview-name-input:disabled:focus {
+  outline: none;
+}
+#guild-overview-name-input {
+  margin-bottom: 100px;
+  margin-left: 355px;
+}
+#channel-overview-name-input {
+  margin-bottom: 100px;
+  margin-left: 15px;
 }
 .sound-panel-button {
   border-radius: 5px;

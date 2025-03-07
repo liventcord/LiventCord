@@ -23,7 +23,9 @@
     "MARK_AS_UNREAD": "Okunmadı olarak işaretle",
     "DELETE_MESSAGE": "Mesajı Sil",
     "ADD_FRIEND": "Arkadaş Ekle",
-    "ADDED_FRIEND": "Arkadaş Eklendi!"
+    "ADDED_FRIEND": "Arkadaş Eklendi!",
+    "VOICE_CALL": "Sesli arama başlat",
+    "VIDEO_CALL": "Görüntülü arama başlat"
   },
   "friendErrorTranslations": {
     "404": {
@@ -197,7 +199,9 @@
     "create-channel-type": "KANAL TÜRÜ",
     "private-channel-text": "Özel Kanal",
     "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir.",
-    "click-to-attachment": "Eki görüntülemek için tıkla"
+    "click-to-attachment": "Eki görüntülemek için tıkla",
+    "more": "Daha fazla",
+    "deny": "Reddet"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

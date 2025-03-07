@@ -143,7 +143,7 @@ export function inviteUser(userId: string, guildId: string) {
 }
 
 export function removeFriend(userId: string) {
-  apiClient.send(EventType.REMOVE_FRIEND, { friend_id: userId });
+  apiClient.send(EventType.REMOVE_FRIEND, { friendId: userId });
 }
 
 export function copyChannelLink(
@@ -262,6 +262,17 @@ export function createProfileContext(userData: UserInfo) {
   }
 
   return context;
+}
+export function triggerContextMenuById(targetElement: HTMLElement) {
+  const rect = targetElement.getBoundingClientRect();
+  const x = rect.left + window.scrollX;
+  const y = rect.top + window.scrollY;
+
+  const options =
+    contextList[targetElement.id] || messageContextList[targetElement.id];
+  if (options) {
+    showContextMenu(x, y, options);
+  }
 }
 
 export function addContextListeners() {

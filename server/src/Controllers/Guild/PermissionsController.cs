@@ -170,6 +170,7 @@ namespace LiventCord.Controllers
         }
 
 
+
         public async Task RemovePermissions(string guildId, string userId, PermissionFlags permissionsToRemove)
         {
             var existingPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
@@ -203,17 +204,5 @@ public enum PermissionFlags
     CanInvite = 1 << 9,
     ManageGuild = 1 << 11,
     ManageMessages = 1 << 12,
-    All =
-        ReadMessages
-        | SendMessages
-        | MentionEveryone
-        | ManageRoles
-        | KickMembers
-        | BanMembers
-        | ManageChannels
-        | AddReaction
-        | IsAdmin
-        | CanInvite
-        | ManageGuild
-        | ManageMessages
+    All = 1 << 13
 }
