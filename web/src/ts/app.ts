@@ -68,7 +68,8 @@ import {
   getChannels,
   currentChannelName,
   getRootChannel,
-  Channel
+  Channel,
+  changeChannel
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -314,6 +315,9 @@ export function initializeGuild() {
     handleChannelLoading(initialGuildId, initialChannelId);
     fetchMembers();
   }
+  if (isValid && initialFriendId) {
+    openDm(initialFriendId);
+  }
 }
 
 function processGuilds(
@@ -339,36 +343,34 @@ export function handleChannelLoading(
   guildId: string,
   channelId?: string
 ): void {
-  if (channelId) {
-    console.log("Channe lch");
-    const channelExists: boolean = cacheInterface.doesChannelExists(
-      guildId,
-      channelId
-    );
-    const isVoiceChannel: boolean = cacheInterface.isVoiceChannel(
-      guildId,
-      channelId
-    );
-    if (isVoiceChannel || channelExists) {
-      const rootChannel = cacheInterface.getRootChannel(guildId);
-      if (rootChannel) {
-        console.warn("ROOOOT");
-        loadGuild(
-          guildId,
-          getRootChannel(guildId, rootChannel.channelId),
-          "",
-          true
-        );
-      }
-    } else {
-      console.warn("VOOOICE", isVoiceChannel, channelExists);
-      loadGuild(
-        guildId,
-        cacheInterface.getRootChannel(guildId)?.channelId ?? "",
-        "",
-        true
-      );
+  if (!channelId) return;
+
+  console.log("Channel check");
+
+  const channelExists = cacheInterface.doesChannelExists(guildId, channelId);
+  const isVoiceChannel = cacheInterface.isVoiceChannel(guildId, channelId);
+
+  if (!channelExists || isVoiceChannel) {
+    console.warn("Voice channel", isVoiceChannel, channelExists);
+    const rootChannel = cacheInterface.getRootChannelData(guildId);
+    if (rootChannel) {
+      changeChannel(rootChannel);
+      loadGuild(guildId, rootChannel.channelId, "", true);
     }
+    return;
+  }
+
+  const channel = cacheInterface.getChannel(guildId, channelId);
+  if (channel) {
+    changeChannel(channel);
+    loadGuild(guildId, channel.channelId, "", true);
+    return;
+  }
+
+  const rootChannel = cacheInterface.getRootChannelData(guildId);
+  if (rootChannel) {
+    changeChannel(rootChannel);
+    loadGuild(guildId, rootChannel.channelId, "", true);
   }
 }
 

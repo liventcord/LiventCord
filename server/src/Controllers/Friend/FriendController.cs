@@ -28,10 +28,12 @@ namespace LiventCord.Controllers
     public class FriendController : BaseController
     {
         private readonly AppDbContext _dbContext;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
-        public FriendController(AppDbContext dbContext)
+        public FriendController(AppDbContext dbContext, RedisEventEmitter redisEventEmitter)
         {
             _dbContext = dbContext;
+            _redisEventEmitter = redisEventEmitter;
         }
 
         [HttpGet]
@@ -60,19 +62,19 @@ namespace LiventCord.Controllers
                 return Unauthorized();
             }
 
-            var friendPublicData = await GetFriendWithStatus(UserId!, friendId);
 
-            var existingFriendship = await _dbContext.CheckFriendship(UserId!, friend.UserId);
+            var existingFriendship = await _dbContext.CheckFriendship(UserId!, friendId);
             if (existingFriendship)
             {
                 return Conflict();
             }
 
-            await CreateFriendship(friend.UserId, FriendStatus.Pending);
+            await CreateFriendship(UserId!, friendId, user);
 
+            var friendPublicData = await GetFriendWithStatus(UserId!, friendId, false);
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ADD_FRIEND,
-                user,
+                friend,
                 friendPublicData));
         }
         [HttpPost]
@@ -92,14 +94,14 @@ namespace LiventCord.Controllers
             if (existingFriendship)
                 return Conflict();
 
-            await CreateFriendship(friend.UserId, FriendStatus.Pending);
+            await CreateFriendship(UserId!, friend.UserId, user);
 
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ADD_FRIEND,
                 user));
         }
         [HttpDelete("deny/{friendId}")]
-        public async Task<IActionResult> DenyFriend(string friendId)
+        public async Task<IActionResult> DenyFriend([FromRoute][UserIdLengthValidation] string friendId)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
             if (user == null)
@@ -117,9 +119,18 @@ namespace LiventCord.Controllers
 
             if (friendship.Status == FriendStatus.Pending)
             {
+                var broadcast = CreateFriendResponse(
+                    FRIEND_EVENTS.DENY_FRIEND,
+                    user);
+
+                await _redisEventEmitter.EmitToUser(EventType.DENY_FRIEND, broadcast, friendId);
+
                 _dbContext.Friends.Remove(friendship);
                 await _dbContext.SaveChangesAsync();
-                return Ok(new { message = "Friend request denied." });
+
+                return Ok(CreateFriendResponse(
+                    FRIEND_EVENTS.DENY_FRIEND,
+                    friend));
             }
 
             return Conflict();
@@ -127,7 +138,7 @@ namespace LiventCord.Controllers
 
 
         [HttpPut("accept/{friendId}")]
-        public async Task<IActionResult> AcceptFriendRequest(string friendId)
+        public async Task<IActionResult> AcceptFriendRequest([FromRoute][UserIdLengthValidation] string friendId)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
             var friend = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == friendId);
@@ -138,13 +149,20 @@ namespace LiventCord.Controllers
             if (friend == null)
                 return NotFound();
 
-            var friendPublicData = friend.GetPublicUser();
+            var userPublicData = await GetFriendWithStatus(friend.UserId, UserId!, false);
 
             var friendship = await _dbContext
                 .Friends.FirstOrDefaultAsync(f => f.UserId == friendId && f.FriendId == UserId && f.Status == FriendStatus.Pending);
 
             if (friendship == null)
                 return NotFound();
+
+            var broadcast = CreateFriendResponse(
+                FRIEND_EVENTS.ACCEPT_FRIEND,
+                user,
+                userPublicData);
+
+            await _redisEventEmitter.EmitToUser(EventType.ACCEPT_FRIEND, broadcast, friendId);
 
             friendship.Status = FriendStatus.Accepted;
             var reverseFriendship = new Friend
@@ -157,14 +175,16 @@ namespace LiventCord.Controllers
             _dbContext.Friends.Add(reverseFriendship);
             await _dbContext.SaveChangesAsync();
 
+            var friendPublicData = await GetFriendWithStatus(UserId!, friend.UserId, false);
+
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ACCEPT_FRIEND,
-                user,
+                friend,
                 friendPublicData));
         }
 
         [HttpDelete("{friendId}")]
-        public async Task<IActionResult> RemoveFriend(string friendId)
+        public async Task<IActionResult> RemoveFriend([FromRoute][UserIdLengthValidation] string friendId)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
             var friend = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == friendId);
@@ -183,12 +203,19 @@ namespace LiventCord.Controllers
             if (!friendships.Any())
                 return NotFound();
 
-            _dbContext.Friends.RemoveRange(friendships);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(CreateFriendResponse(
+            var broadcast = CreateFriendResponse(
                 FRIEND_EVENTS.REMOVE_FRIEND,
-                friend));
+                user);
+            await _redisEventEmitter.EmitToUser(EventType.REMOVE_FRIEND, broadcast, friendId);
+            _dbContext.Friends.RemoveRange(friendships);
+
+
+            await _dbContext.SaveChangesAsync();
+            var response = CreateFriendResponse(
+                FRIEND_EVENTS.REMOVE_FRIEND,
+                friend);
+
+            return Ok(response);
         }
 
 
@@ -199,15 +226,13 @@ namespace LiventCord.Controllers
         {
             return new FriendResponse
             {
-                UserId = user.UserId,
-                UserNick = user.Nickname,
-                UserData = friendPublicData,
+                FriendId = user.UserId,
+                FriendNick = user.Nickname,
+                FriendData = friendPublicData,
                 IsSuccess = true,
                 Type = type.ToEventString()
             };
         }
-
-
 
         private async Task<User?> FindUserByFriendDetails(
             string friendName,
@@ -232,66 +257,35 @@ namespace LiventCord.Controllers
                 .FirstOrDefaultAsync();
         }
 
-        private async Task CreateFriendship(string friendUserId, FriendStatus status)
+        private async Task CreateFriendship(string userId, string friendUserId, User user)
         {
-            if (UserId == null)
-            {
-                return;
-            }
 
             var newFriendship = new Friend
             {
-                UserId = UserId,
+                UserId = userId,
                 FriendId = friendUserId,
-                Status = status,
+                Status = FriendStatus.Pending,
             };
 
             _dbContext.Friends.Add(newFriendship);
-
             await _dbContext.SaveChangesAsync();
+
+            var friendPublicData = await GetFriendWithStatus(friendUserId, userId, false);
+            var response = CreateFriendResponse(FRIEND_EVENTS.ADD_FRIEND, user, friendPublicData);
+            await _redisEventEmitter.EmitToUser(EventType.ADD_FRIEND, response, friendUserId);
+
+
         }
 
-        [NonAction]
-        public async Task<List<PublicUserWithStatus>> GetFriendsStatus(string userId)
-        {
-            var friends = await _dbContext
-                .Friends.Where(f =>
-                    (f.UserId == userId || f.FriendId == userId)
-                    && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending)
-                )
-                .Join(
-                    _dbContext.Users,
-                    friend => friend.UserId == userId ? friend.FriendId : friend.UserId,
-                    user => user.UserId,
-                    (friend, user) =>
-                        new PublicUserWithStatus
-                        {
-                            UserId = user.UserId,
-                            NickName = user.Nickname,
-                            Discriminator = user.Discriminator,
-                            Status = user.Status,
-                            IsOnline = user.IsOnline(),
-                            CreatedAt = user.CreatedAt,
-                            Description = user.Description,
-                            Location = user.Location,
-                            SocialMediaLinks = user.SocialMediaLinks,
-                            FriendshipStatus = friend.Status,
-                            IsPending = friend.Status == FriendStatus.Pending,
-                            IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>
-                                fr.UserId == user.UserId
-                                && fr.FriendId == userId
-                                && fr.Status == FriendStatus.Pending
-                            )
-                        }
-                )
-                .ToListAsync();
 
-            return friends;
-        }
 
         [NonAction]
-        public async Task<List<PublicUserWithStatus>> GetFriendWithStatus(string userId, string friendId)
+        public async Task<PublicUserWithStatus?> GetFriendWithStatus(string userId, string friendId, bool isSender)
         {
+            var friendshipQuery = _dbContext.Friends
+                .Where(f => (f.UserId == userId && f.FriendId == friendId) ||
+                            (f.UserId == friendId && f.FriendId == userId));
+
             var user = await _dbContext.Users
                 .Where(u => u.UserId == friendId)
                 .Select(user => new PublicUserWithStatus
@@ -305,22 +299,65 @@ namespace LiventCord.Controllers
                     Description = user.Description,
                     Location = user.Location,
                     SocialMediaLinks = user.SocialMediaLinks,
-                    FriendshipStatus = _dbContext.Friends
-                        .Where(f => (f.UserId == userId && f.FriendId == friendId) ||
-                            (f.UserId == friendId && f.FriendId == userId))
-                        .Select(f => f.Status)
-                        .FirstOrDefault(),
-                    IsPending = _dbContext.Friends
-                        .Any(f => f.Status == FriendStatus.Pending),
-                    IsFriendsRequestToUser = _dbContext.Friends
-                        .Any(fr => fr.UserId == friendId &&
-                            fr.FriendId == userId &&
-                            fr.Status == FriendStatus.Pending)
+                    FriendshipStatus = friendshipQuery.Select(f => f.Status).FirstOrDefault(),
+                    IsPending = true,
+                    IsFriendsRequestToUser = isSender
+                        ? friendshipQuery.Any(fr => fr.UserId == userId && fr.FriendId == friendId)
+                        : friendshipQuery.Any(fr => fr.UserId == friendId && fr.FriendId == userId)
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
             return user;
         }
+
+
+        [NonAction]
+        public async Task<List<PublicUserWithStatus?>> GetFriendsStatus(string userId)
+        {
+            var friends = await _dbContext
+                .Friends.Where(f =>
+                    (f.UserId == userId || f.FriendId == userId)
+                    && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending)
+                )
+                .Select(f => new
+                {
+                    f.UserId,
+                    f.FriendId,
+                    f.Status,
+                    Friend = f.UserId == userId ? f.FriendId : f.UserId
+                })
+                .Join(
+                    _dbContext.Users,
+                    f => f.Friend,
+                    user => user.UserId,
+                    (f, user) => new PublicUserWithStatus
+                    {
+                        UserId = user.UserId,
+                        NickName = user.Nickname,
+                        Discriminator = user.Discriminator,
+                        Status = user.Status,
+                        IsOnline = user.IsOnline(),
+                        CreatedAt = user.CreatedAt,
+                        Description = user.Description,
+                        Location = user.Location,
+                        SocialMediaLinks = user.SocialMediaLinks,
+                        FriendshipStatus = f.Status,
+                        IsPending = f.Status == FriendStatus.Pending,
+                        IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>
+                            fr.UserId == user.UserId
+                            && fr.FriendId == userId
+                            && fr.Status == FriendStatus.Pending
+                        )
+                    }
+                )
+                .GroupBy(u => u.UserId)
+                .Select(g => g.FirstOrDefault())
+                .ToListAsync();
+
+            return friends;
+        }
+
+
 
     }
 
@@ -334,9 +371,10 @@ public class SendFriendRequest
 
 public class FriendResponse
 {
-    public required string UserId { get; set; }
-    public required string UserNick { get; set; }
-    public object? UserData { get; set; }
+
+    public required string FriendId { get; set; }
+    public required string FriendNick { get; set; }
+    public object? FriendData { get; set; }
     public bool IsSuccess { get; set; }
     public required string Type { get; set; }
 }

@@ -23,7 +23,9 @@
     "MARK_AS_UNREAD": "Mark As Unread",
     "DELETE_MESSAGE": "Delete Message",
     "ADD_FRIEND": "Add Friend",
-    "ADDED_FRIEND": "Added Friend!"
+    "ADDED_FRIEND": "Added Friend!",
+    "VOICE_CALL": "Start Video Call",
+    "VIDEO_CALL": "Start Video Call"
   },
   "friendErrorTranslations": {
     "404": {
@@ -197,7 +199,9 @@
     "create-channel-type": "CHANNEL TYPE",
     "private-channel-text": "Private Channel",
     "private-channel-description": "Only selected members and roles will be able to view this channel",
-    "click-to-attachment": "Click to see attachment"
+    "click-to-attachment": "Click to see attachment",
+    "more": "More",
+    "deny": "Deny"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

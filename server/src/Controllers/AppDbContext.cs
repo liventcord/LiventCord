@@ -229,7 +229,7 @@ namespace LiventCord.Controllers
                 entity.Property(c => c.ChannelDescription).HasColumnName(nameof(Channel.ChannelDescription)).HasMaxLength(256);
                 entity.Property(c => c.IsTextChannel).HasColumnName(nameof(Channel.IsTextChannel)).IsRequired();
                 entity.Property(c => c.LastReadDateTime).HasColumnName(nameof(Channel.LastReadDateTime));
-                entity.Property(c => c.GuildId).HasColumnName(nameof(Channel.GuildId)).IsRequired();
+                entity.Property(c => c.GuildId).HasColumnName(nameof(Channel.GuildId)).IsRequired(false);
                 entity.Property(c => c.Order).HasColumnName(nameof(Channel.Order)).IsRequired();
                 entity.HasIndex(c => c.GuildId);
                 entity.HasOne(c => c.Guild).WithMany(g => g.Channels).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);

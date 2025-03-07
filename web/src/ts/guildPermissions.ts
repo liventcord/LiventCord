@@ -16,6 +16,7 @@ export enum Permission {
   MANAGE_GUILD,
   ALL
 }
+
 export interface PermissionsRecord {
   [guildId: string]: Record<string, number>;
 }
@@ -42,20 +43,27 @@ export class PermissionManager {
 
     if (rawPermissions) {
       const permissionSet = new Set<Permission>();
-      for (const [key, value] of Object.entries(rawPermissions)) {
-        if (value === 1) {
-          const normalizedKey = key
-            .replace(/([a-z])([A-Z])/g, "$1_$2")
-            .toUpperCase();
 
-          if (
-            Permission[normalizedKey as keyof typeof Permission] !== undefined
-          ) {
-            permissionSet.add(
-              Permission[normalizedKey as keyof typeof Permission]
-            );
-          } else {
-            console.log(`Skipping invalid permission: ${key}`);
+      if (rawPermissions["ALL"] === 1) {
+        Object.values(Permission)
+          .filter((perm) => typeof perm === "number")
+          .forEach((perm) => permissionSet.add(perm));
+      } else {
+        for (const [key, value] of Object.entries(rawPermissions)) {
+          if (value === 1) {
+            const normalizedKey = key
+              .replace(/([a-z])([A-Z])/g, "$1_$2")
+              .toUpperCase();
+
+            if (
+              Permission[normalizedKey as keyof typeof Permission] !== undefined
+            ) {
+              permissionSet.add(
+                Permission[normalizedKey as keyof typeof Permission]
+              );
+            } else {
+              console.log(`Skipping invalid permission: ${key}`);
+            }
           }
         }
       }
@@ -72,8 +80,12 @@ export class PermissionManager {
     }
 
     const permissions = this.permissionsMap.get(currentGuildId);
-    const result = permissions ? permissions.has(permType) : false;
 
+    if (permissions && permissions.has(Permission.ALL)) {
+      return true;
+    }
+
+    const result = permissions ? permissions.has(permType) : false;
     return result;
   }
 

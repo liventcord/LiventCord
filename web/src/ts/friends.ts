@@ -29,6 +29,7 @@ import {
 import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
+import { appendToProfileContextList } from "./contextMenuActions.ts";
 
 const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
 const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
@@ -60,7 +61,7 @@ interface FriendData {
   isFriendsRequestToUser: boolean;
 }
 
-export class Friend implements UserInfo {
+export class Friend {
   userId: string;
   nickName: string;
   discriminator: string;
@@ -121,14 +122,15 @@ class FriendsCache {
       this.friendsCache[friend.userId] = friend;
     });
 
-    populateFriendsContainer(Object.values(this.friendsCache));
-
+    updateFriendsList(Object.values(this.friendsCache));
     requestAnimationFrame(() => {
       const friends = this.cacheFriendToFriendConverter();
       for (const friend of friends) {
         updateUsersActivities(friend);
       }
     });
+
+    UpdatePendingCounter();
   }
 
   addFriend(friendOrArray: Friend | UserInfo | any) {
@@ -140,51 +142,60 @@ class FriendsCache {
       this.addSingleFriend(friendOrArray);
     }
   }
+  getFriend(friendId: string) {
+    return this.friendsCache[friendId] || null;
+  }
 
+  addFriendPending(friend: UserInfo) {
+    const updatedFriend = { ...friend, isPending: true };
+    this.addSingleFriend(updatedFriend);
+  }
+  addFriendNonPending(friend: UserInfo) {
+    const updatedFriend = { ...friend, isPending: false };
+    this.addSingleFriend(updatedFriend);
+  }
   private addSingleFriend(friend: Friend | UserInfo) {
+    console.log(friend);
     if (!friend || !friend.userId) {
       console.error("Invalid friend data:", friend);
       return;
     }
 
     const userId = friend.userId;
-
-    if (friend instanceof Friend) {
-      this.friendsCache[userId] = friend;
-    } else {
-      const friendData: FriendData = {
-        userId: friend.userId,
-        nickName: friend.nickName || "",
-        discriminator: friend.discriminator || "",
-        status: friend.status,
-        isOnline: friend.isOnline,
-        description: friend.description,
-        createdAt: friend.createdAt,
-        lastLogin: friend.lastLogin,
-        socialMediaLinks: friend.socialMediaLinks || [],
-        isFriendsRequestToUser: friend.isFriendsRequestToUser || false,
-        isPending: friend.isPending || false,
-        activity: friend.activity
-      };
-
-      this.friendsCache[userId] = new Friend(friendData);
+    if (userId === currentUserId) {
+      console.error("User id is same as friend!");
     }
 
-    console.warn("Added friend:", this.friendsCache);
+    const defaultFriendData: FriendData = {
+      userId: friend.userId,
+      nickName: "",
+      discriminator: "",
+      isFriendsRequestToUser: false,
+      isPending: false
+    };
+
+    const friendData: FriendData = {
+      ...defaultFriendData,
+      ...friend
+    };
+
+    this.friendsCache[userId] = this.friendsCache[userId]
+      ? { ...this.friendsCache[userId], ...friendData }
+      : new Friend(friendData);
+
+    console.warn("Added/Updated friend:", this.friendsCache);
   }
 
   removeFriend(userId: string) {
-    console.log("Removing friend:", userId);
-
     if (userId in this.friendsCache) {
       delete this.friendsCache[userId];
-      console.log("Friend removed successfully");
+      currentFriendInstances = currentFriendInstances.filter(
+        (friend) => friend.userId !== userId
+      );
+      console.log("Friend removed successfully", this.friendsCache);
     } else {
       console.log("Friend not found in cache with ID:", userId);
-      console.log("Available keys:", Object.keys(this.friendsCache));
     }
-
-    console.log("Friends after removal:", this.friendsCache);
   }
 
   isFriend(userId: string): boolean {
@@ -252,89 +263,80 @@ function displayFriendActionMessage(
   printFriendMessage(text);
 }
 interface FriendMessage {
-  userId: string;
-  userNick: string;
-  userData?: UserInfo;
+  friendId: string;
+  friendNick: string;
+  friendData?: UserInfo;
   isSuccess: boolean;
   type: string;
 }
-
 function handleAddFriendResponse(message: FriendMessage): void {
-  const { userNick, isSuccess, userData } = message;
+  const { friendNick, isSuccess, friendData } = message;
   console.log(message);
   displayFriendActionMessage(
-    userNick,
+    friendNick,
     isSuccess,
     FriendErrorType.ERR_FRIEND_REQUEST_EXISTS
   );
-  if (userData) {
-    console.log("Pushing: ", userData);
-    friendsCache.addFriend(userData);
-    updateFriendMenu();
+
+  if (friendData) {
+    friendsCache.addFriend(friendData);
   }
-  if (currentSelectedFriendMenu !== "pending" || userData?.userId === undefined)
+  if (
+    currentSelectedFriendMenu !== "pending" ||
+    friendData?.userId === undefined
+  )
     return;
-  removeFriendCard(userData?.userId);
+  updateFriendMenu();
 }
 
 function handleAcceptFriendRequestResponse(message: FriendMessage): void {
-  const { userId, userNick, userData, isSuccess } = message;
+  const { friendId, friendNick, friendData, isSuccess } = message;
 
   displayFriendActionMessage(
-    userNick,
+    friendNick,
     isSuccess,
     FriendErrorType.ERR_REQUEST_ALREADY_ACCEPTED
   );
 
-  if (isSuccess && userData) {
-    const updatedUserData: FriendData = {
-      userId: userData.userId,
-      nickName: userData.nickName,
-      discriminator: userData.discriminator,
-      status: userData.status ?? "",
-      activity: userData.activity ?? "",
-      isOnline: userData.isOnline ?? false,
-      description: userData.description,
-      isFriendsRequestToUser: userData.isFriendsRequestToUser ?? false,
-      createdAt: userData.createdAt,
-      lastLogin: userData.lastLogin,
-      socialMediaLinks: userData.socialMediaLinks,
-      isPending: userData.isPending ?? false
-    };
+  if (isSuccess && friendData) {
+    friendsCache.addFriendNonPending(friendData);
 
-    const newFriend = new Friend(updatedUserData);
-
-    friendsCache.friendsCache[userId] = newFriend;
-
-    disableElement(pendingAlertRight);
-    disableElement(pendingAlertLeft);
-    document.title = "LiventCord";
+    if (currentSelectedFriendMenu === "pending") {
+      removeFriendCard(friendId);
+    }
   }
 }
 
 function handleRemoveFriendResponse(message: FriendMessage): void {
-  const { userId, userNick, isSuccess } = message;
+  const { friendId, friendNick, isSuccess } = message;
 
+  const cachedFriend = friendsCache.getFriend(friendId);
   if (isSuccess) {
-    removeFriendCard(userId);
-    friendsCache.removeFriend(userId);
-    reCalculateFriTitle();
+    removeFriendCard(friendId);
+    friendsCache.removeFriend(friendId);
   }
+  appendToProfileContextList(cachedFriend, friendId);
 
   displayFriendActionMessage(
-    userNick,
+    friendNick,
     isSuccess,
     FriendErrorType.ERR_NOT_FRIENDS
   );
 }
 
 function handleDenyFriendRequestResponse(message: FriendMessage): void {
-  const { userNick, isSuccess } = message;
+  const { friendNick, isSuccess, friendId } = message;
   displayFriendActionMessage(
-    userNick,
+    friendNick,
     isSuccess,
     FriendErrorType.ERR_REQUEST_NOT_SENT
   );
+  if (isSuccess) {
+    removeFriendCard(friendId);
+    friendsCache.removeFriend(friendId);
+    UpdatePendingCounter();
+    removeFriendCard(friendId);
+  }
 }
 
 export function handleFriendEventResponse(message: FriendMessage): void {
@@ -346,19 +348,25 @@ export function handleFriendEventResponse(message: FriendMessage): void {
     case "add_friend_id":
       handleAddFriendResponse(message);
       break;
-    case "accept_friend_request":
+    case "accept_friend":
       handleAcceptFriendRequestResponse(message);
       break;
     case "remove_friend":
-    case "remove_friend_request":
       handleRemoveFriendResponse(message);
       break;
-    case "deny_friend_request":
+    case "deny_friend":
       handleDenyFriendRequestResponse(message);
       break;
     default:
       printFriendMessage("");
   }
+  updateFriendsList(Object.values(friendsCache.friendsCache));
+  UpdatePendingCounter();
+  const cachedFriend = friendsCache.getFriend(message.friendId);
+  if (cachedFriend) {
+    appendToProfileContextList(cachedFriend, message.friendId);
+  }
+  reCalculateFriTitle();
 }
 
 interface FriendData {
@@ -367,49 +375,56 @@ interface FriendData {
   status?: string;
 }
 
-interface UpdateFriendsListOptions {
-  friends: FriendData[];
-  isPending?: boolean;
+let currentFriendInstances: FriendData[];
+
+export function UpdatePendingCounter() {
+  let pendingCounter = 0;
+  if (currentFriendInstances) {
+    currentFriendInstances.forEach((friend) => {
+      if (friend.isPending && friend.isFriendsRequestToUser) {
+        pendingCounter += 1;
+      }
+    });
+  }
+  console.log(pendingCounter, currentFriendInstances);
+
+  if (pendingCounter > 0) {
+    if (pendingAlertLeft) {
+      pendingAlertLeft.textContent = String(pendingCounter);
+      enableElement(pendingAlertLeft);
+    }
+    if (pendingAlertRight) {
+      pendingAlertRight.textContent = String(pendingCounter);
+      enableElement(pendingAlertRight);
+    }
+
+    setWindowName(pendingCounter);
+  } else {
+    if (pendingAlertLeft) {
+      disableElement(pendingAlertLeft);
+      pendingAlertLeft.textContent = "0";
+    }
+    if (pendingAlertRight) {
+      disableElement(pendingAlertRight);
+      pendingAlertRight.textContent = "0";
+    }
+  }
 }
-export function updateFriendsList({
-  friends,
-  isPending
-}: UpdateFriendsListOptions): void {
+export function updateFriendsList(friends: FriendData[]): void {
   if (!friends || friends.length === 0) {
     console.warn("Empty friend list data.");
     return;
   }
-
+  console.warn("Friends: ", friends);
   if (isAddFriendsOpen) return;
 
-  const friendInstances = friends.map((friendData) => new Friend(friendData));
+  currentFriendInstances = friends;
+  console.warn(currentFriendInstances);
 
-  if (isPending) {
-    let pendingCounter = 0;
-
-    friendInstances.forEach((friend) => {
-      if (friend.isPending) {
-        pendingCounter += 1;
-      }
-    });
-
-    if (pendingCounter > 0) {
-      if (pendingAlertLeft) {
-        pendingAlertLeft.textContent = String(pendingCounter);
-        enableElement(pendingAlertLeft);
-      }
-      if (pendingAlertRight) {
-        pendingAlertRight.textContent = String(pendingCounter);
-        enableElement(pendingAlertRight);
-      }
-
-      setWindowName(pendingCounter);
-    }
-
-    return;
-  }
-
-  populateFriendsContainer(friendInstances, isPending);
+  populateFriendsContainer(
+    currentFriendInstances,
+    currentSelectedFriendMenu === "pending"
+  );
 }
 
 export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
@@ -421,6 +436,15 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
     );
     acceptButton.addEventListener("click", (event) =>
       handleButtonClick(event, EventType.ACCEPT_FRIEND, friend.userId)
+    );
+
+    const denyButton = createButtonWithBubblesImg(
+      friendButton,
+      ButtonTypes.CloseBtn,
+      translations.getTranslation("deny")
+    );
+    denyButton.addEventListener("click", (event) =>
+      handleButtonClick(event, EventType.DENY_FRIEND, friend.userId)
     );
   } else {
     const closeButton = createButtonWithBubblesImg(
@@ -437,10 +461,10 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
 export function handleButtonClick(
   event: Event,
   action: EventType,
-  userId: string
+  friendId: string
 ) {
   event.stopPropagation();
-  apiClient.send(action, { friendId: userId });
+  apiClient.send(action, { friendId });
 }
 
 export function addFriendId(userId: string) {

@@ -42,6 +42,18 @@ public class RedisEventEmitter
             });
         }
     }
+    public Task EmitToUser(EventType eventType, object payload, string friendId)
+    {
+        string[] userIds = { friendId };
+
+        _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+        {
+            await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
+        });
+
+        return Task.CompletedTask;
+    }
+
 }
 
 public enum EventType
@@ -68,5 +80,6 @@ public enum EventType
     LEAVE_VOICE_CHANNEL,
     JOIN_VOICE_CHANNEL,
     CHANGE_GUILD_NAME,
-    EDIT_CHANNEL
+    UPDATE_CHANNEL_NAME,
+    UPDATE_MESSAGE
 }

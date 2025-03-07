@@ -132,16 +132,6 @@ func consumeMessagesFromRedis() {
 	streamName := "event_stream"
 	lastID := "0"
 
-	err := redisClient.XAdd(ctx, &redis.XAddArgs{
-		Stream: streamName,
-		Values: map[string]interface{}{"init": "value"},
-	}).Err()
-	if err != nil {
-		fmt.Println("Error creating stream:", err)
-		return
-	}
-
-
 	for {
 		messages, err := redisClient.XRead(ctx, &redis.XReadArgs{
 			Streams: []string{streamName, lastID},
