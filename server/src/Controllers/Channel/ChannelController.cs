@@ -135,11 +135,11 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(guildId) && string.IsNullOrEmpty(recipientId))
                 return BadRequest(new { Type = "error", Message = "Either GuildId or RecipientId must be provided." });
 
-            if (userId != null && !string.IsNullOrEmpty(guildId))
+            if (!string.IsNullOrEmpty(guildId))
             {
                 return await HandleGuildChannelCreation(userId, guildId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
-            else if (userId != null && !string.IsNullOrEmpty(recipientId))
+            else if (!string.IsNullOrEmpty(recipientId))
             {
                 return await HandleDmChannelCreation(userId, recipientId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
@@ -147,7 +147,7 @@ namespace LiventCord.Controllers
             return BadRequest(new { Type = "error", Message = "Invalid request." });
         }
 
-        private async Task<IActionResult> HandleGuildChannelCreation(string userId, string guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
+        private async Task<IActionResult> HandleGuildChannelCreation(string? userId, string guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
         {
             var guild = await _dbContext.Guilds.Include(g => g.Channels).FirstOrDefaultAsync(g => g.GuildId == guildId);
             var dbguilds = await _dbContext.Guilds.Select(g => g.GuildId).ToListAsync();
@@ -170,7 +170,9 @@ namespace LiventCord.Controllers
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
-            await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
+            if(userId != null) {
+                await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
+            }
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
