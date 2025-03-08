@@ -117,6 +117,7 @@ namespace LiventCord.Controllers
         }
 
 
+
         [HttpPost("/api/discord/bot/messages/{guildId}/{channelId}")]
         public async Task<IActionResult> HandleNewBotMessage(
             [IdLengthValidation][FromRoute] string guildId,
@@ -133,14 +134,53 @@ namespace LiventCord.Controllers
                 return Unauthorized();
             }
 
-            return await HandleBotMessage(guildId, channelId, request);
+            return await ProcessMessage(guildId, channelId, request);
         }
 
+        [HttpPost("/api/discord/bot/messages/bulk/{guildId}/{channelId}")]
+        public async Task<IActionResult> HandleBulkMessages(
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
+            [FromBody] List<NewBotMessageRequest> requests,
+            [FromHeader(Name = "Authorization")] string token
+        )
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            if (!_tokenValidationService.ValidateToken(token))
+            {
+                return Unauthorized();
+            }
+
+            var messagesToAddOrUpdate = new List<Message>();
+
+            foreach (var request in requests)
+            {
+                var message = await _context.Messages
+                    .Include(m => m.Embeds)
+                    .FirstOrDefaultAsync(m => m.MessageId == request.MessageId);
+
+                if (message != null)
+                {
+                    UpdateMessage(message, request);
+                    messagesToAddOrUpdate.Add(message);
+                }
+                else
+                {
+
+                    var newMessage = CreateNewMessage(request, channelId);
+                    messagesToAddOrUpdate.Add(newMessage);
+                }
+            }
 
 
+            await _context.SaveChangesAsync();
 
+            return Ok(new { Type = "success", Message = "Messages processed successfully." });
+        }
 
-        private async Task<IActionResult> HandleBotMessage(
+        private async Task<IActionResult> ProcessMessage(
             string guildId,
             string channelId,
             NewBotMessageRequest request
@@ -152,34 +192,63 @@ namespace LiventCord.Controllers
 
             if (message != null)
             {
-                _context.Entry(message).Collection(m => m.Embeds).Load();
-
-                message.Content = request.Content;
-                message.LastEdited = DateTime.UtcNow;
-                message.AttachmentUrls = request.AttachmentUrls;
-                message.ReplyToId = request.ReplyToId;
-                message.ReactionEmojisIds = request.ReactionEmojisIds;
-
-                if (request.Embeds != null && request.Embeds.Any())
-                {
-                    message.Embeds.Clear();
-                    var newEmbeds = request.Embeds.Select(embed =>
-                    {
-                        embed.Id ??= Utils.CreateRandomId();
-                        return embed;
-                    }).ToList();
-
-                    message.Embeds.AddRange(newEmbeds);
-                }
-
-
+                UpdateMessage(message, request);
                 await _context.SaveChangesAsync();
                 return Ok(new { Type = "success", Message = "Message updated in guild." });
             }
 
-            await NewBotMessage(request, channelId, guildId);
+
+            var newMessage = CreateNewMessage(request, channelId);
+            _context.Messages.Add(newMessage);
+            await _context.SaveChangesAsync();
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
         }
+
+        private void UpdateMessage(Message message, NewBotMessageRequest request)
+        {
+            message.Content = request.Content;
+            message.LastEdited = DateTime.UtcNow;
+            message.AttachmentUrls = request.AttachmentUrls;
+            message.ReplyToId = request.ReplyToId;
+            message.ReactionEmojisIds = request.ReactionEmojisIds;
+
+            if (request.Embeds != null && request.Embeds.Any())
+            {
+                message.Embeds.Clear();
+                var newEmbeds = request.Embeds.Select(embed =>
+                {
+                    embed.Id ??= Utils.CreateRandomId();
+                    return embed;
+                }).ToList();
+
+                message.Embeds.AddRange(newEmbeds);
+            }
+        }
+
+        private Message CreateNewMessage(NewBotMessageRequest request, string channelId)
+        {
+            return new Message
+            {
+                MessageId = request.MessageId,
+                Content = request.Content,
+                UserId = request.UserId,
+                Date = request.Date,
+                ChannelId = channelId,
+                LastEdited = request.LastEdited,
+                AttachmentUrls = request.AttachmentUrls,
+                ReplyToId = request.ReplyToId,
+                ReactionEmojisIds = request.ReactionEmojisIds,
+                Embeds = request.Embeds?.Select(embed =>
+                {
+                    embed.Id ??= Utils.CreateRandomId();
+                    return embed;
+                }).ToList() ?? new List<Embed>()
+            };
+        }
+
+
+
+
 
 
         [Authorize]
