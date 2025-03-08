@@ -253,7 +253,7 @@ export function createVideoElement(url: string) {
     throw new Error("Invalid video URL");
   }
   const videoElement = createEl("video") as HTMLVideoElement;
-  videoElement.src = getProxy(url);
+  videoElement.src = getProxy(url,true);
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
