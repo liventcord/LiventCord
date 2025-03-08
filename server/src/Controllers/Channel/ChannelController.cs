@@ -126,20 +126,20 @@ namespace LiventCord.Controllers
             if (token == null || !_tokenValidationService.ValidateToken(token))
                 return Forbid();
 
-            return await CreateChannelInternal(UserId!, guildId, request.ChannelId, request.ChannelName, isTextChannel: true, isPrivate: false, recipientId: null, returnResponse: false);
+            return await CreateChannelInternal(null, guildId, request.ChannelId, request.ChannelName, isTextChannel: true, isPrivate: false, recipientId: null, returnResponse: false);
         }
 
         [NonAction]
-        public async Task<IActionResult> CreateChannelInternal(string userId, string? guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, string? recipientId, bool returnResponse)
+        public async Task<IActionResult> CreateChannelInternal(string? userId, string? guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, string? recipientId, bool returnResponse)
         {
             if (string.IsNullOrEmpty(guildId) && string.IsNullOrEmpty(recipientId))
                 return BadRequest(new { Type = "error", Message = "Either GuildId or RecipientId must be provided." });
 
-            if (!string.IsNullOrEmpty(guildId))
+            if (userId != null && !string.IsNullOrEmpty(guildId))
             {
                 return await HandleGuildChannelCreation(userId, guildId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
-            else if (!string.IsNullOrEmpty(recipientId))
+            else if (userId != null && !string.IsNullOrEmpty(recipientId))
             {
                 return await HandleDmChannelCreation(userId, recipientId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
