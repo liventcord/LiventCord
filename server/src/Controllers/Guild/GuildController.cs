@@ -9,6 +9,7 @@ namespace LiventCord.Controllers
 {
     [Route("/api/guilds")]
     [ApiController]
+    [Authorize]
     public class GuildController : BaseController
     {
         private string DEFAULT_CHANNEL_NAME = "general";
@@ -35,7 +36,6 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("")]
-        [Authorize]
         public async Task<IActionResult> HandleGetGuilds()
         {
             var guilds = await _membersController.GetUserGuilds(UserId!) ?? new List<GuildDto>();
@@ -45,7 +45,6 @@ namespace LiventCord.Controllers
 
 
         [HttpPut("{guildId}")]
-        [Authorize]
         public async Task<IActionResult> ChangeGuildName([FromRoute][IdLengthValidation] string guildId, [FromBody] ChangeGuildNameRequest request)
         {
             var guild = await _dbContext.Guilds.FindAsync(guildId);
@@ -162,7 +161,6 @@ namespace LiventCord.Controllers
             return await HandleGuildCreation(UserId!, request.GuildName, request.Photo, request.IsPublic);
         }
 
-        [Authorize]
         [HttpDelete("{guildId}")]
         public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
         {
