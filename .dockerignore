@@ -6,6 +6,6 @@ obj/
 *.log
 Dockerfile
 server/src/Properties/*
-server/src/MediaCache/
+server/proxy-api/MediaCache/
 server/src/wwwroot/ts
 web/node_modules/*

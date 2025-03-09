@@ -23,7 +23,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Connection string for the database.
 
   - **DatabaseType**:
-    Type of database server for data storage. Supported options:
+    Type of database server for storage. Supported options:
       - **PostgreSQL**
       - **MySQL**
       - **MariaDB**
@@ -57,7 +57,12 @@ mv Properties/exampleSettings.json Properties/appsettings.json
   - **ProxyWorkerUrl**:
     Url of the Cloudflare Worker for proxying external resources.
     **Defaults to** `"proxy.liventcord-a60.workers.dev"`
+
+  - **MediaProxyApiUrl**:
+    Url of the Media Proxy url for proxying external resources on media previews.
+    **Defaults to** `ymemwaf.bsite.net`
     
+
   - **MaxAvatarSize**:
     Maximum upload size(in MB) for avatar on guilds and profiles.
     **Defaults to** `3`
@@ -75,23 +80,15 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     **Defaults to** `true`
 
   - **MetadataDomainLimit**:
-    The maximum number of metadata records that can be indexed or stored per domain within a day.
+    The maximum number of metadata records that can be indexed per domain within a day.
     **Defaults to** `100`
   
-  - **MediaProxy**:
-    Proxy adress for media previews.
-    **Defaults to** `none`
-
-  - **ExternalMediaLimit**:
-    Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
-    **Defaults to** `10`
-
   - **BuildFrontend**:
     Whether to build frontend assets on .net server start or not.
     **Defaults to** `none`
 
   - **RedisConnectionString**:
-    Connection string for connecting redis
+    Connection string for connecting redis.
     **Defaults to** `localhost:6379`
 
   - **RedisConnectionLimit**:
@@ -118,5 +115,24 @@ mv .example.env .env
     **Defaults to** `http://localhost:5005`
   
   - **RedisConnectionString**:
-    Connection string for connecting redis
+    Connection string for connecting redis.
     **Defaults to** `localhost:6379`
+
+## Media Proxy Server Configuration
+```bash
+cd Liventcord/server/proxy-api
+```
+1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
+```bash
+mv Properties/exampleSettings.json Properties/appsettings.json
+```
+
+#### Configuration Options
+
+  - **FrontendUrl**:
+    Url to add cors headers at.
+    **Defaults to** `none`
+
+  - **ExternalMediaLimit**:
+    Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
+    **Defaults to** `10`
