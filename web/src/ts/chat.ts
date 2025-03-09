@@ -696,6 +696,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     replyOf,
     metadata,
     willDisplayProfile,
+    isNotSent: isSent,
     embeds
   } = data;
 
@@ -709,7 +710,8 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     date.toISOString(),
     content,
     attachmentUrls,
-    replyToId || undefined
+    replyToId || undefined,
+    isSent
   );
   const messageContentElement = createMessageContentElement();
 
@@ -784,6 +786,61 @@ export function displayChatMessage(data: Message): HTMLElement | null {
 function isValidMessage(data: Message) {
   return data && data.messageId && data.channelId && data.date;
 }
+type SentMessage = {
+  id: string;
+};
+
+const selfSentMessages: SentMessage[] = [];
+
+export function appendtoSelfSentMessages(temporaryId: string) {
+  selfSentMessages.push({ id: temporaryId });
+}
+
+export function handleSelfSentMessage(data: Message) {
+  console.log("Handle self-sent message: ", data);
+
+  const foundMessageIndex = selfSentMessages.findIndex(
+    (message) => message.id === data.temporaryId
+  );
+  console.log(
+    selfSentMessages,
+    "Found message: ",
+    selfSentMessages[foundMessageIndex]
+  );
+
+  if (foundMessageIndex !== -1) {
+    const element = chatContainer.querySelector(
+      `#${CSS.escape(selfSentMessages[foundMessageIndex].id)}`
+    ) as HTMLElement;
+    if (element) {
+      element.style.color = "white";
+      const messageContentElement = element.querySelector(
+        "#message-content-element"
+      ) as HTMLElement;
+      console.log(messageContentElement);
+      if (messageContentElement && data.attachmentUrls) {
+        console.log(
+          "Create media element: ",
+          data.content,
+          messageContentElement,
+          element,
+          data.metadata,
+          data.embeds,
+          data.attachmentUrls
+        );
+        createMediaElement(
+          data.content,
+          messageContentElement,
+          element,
+          data.metadata,
+          data.embeds,
+          data.attachmentUrls
+        );
+      }
+    }
+    selfSentMessages.splice(foundMessageIndex, 1);
+  }
+}
 
 function createMessageElement(
   messageId: string,
@@ -791,7 +848,8 @@ function createMessageElement(
   date: string,
   content: string,
   attachmentUrls: string | string[] | undefined,
-  replyToId?: string
+  replyToId?: string,
+  isNotSent?: boolean
 ) {
   const newMessage = createEl("div", { className: "message" });
   newMessage.id = messageId;
@@ -806,6 +864,9 @@ function createMessageElement(
   }
   if (replyToId) {
     newMessage.dataset.replyToId = replyToId;
+  }
+  if (isNotSent) {
+    newMessage.style.color = "gray";
   }
   return newMessage;
 }

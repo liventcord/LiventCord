@@ -14,7 +14,8 @@ import {
   displayChatMessage,
   CLYDE_ID,
   setIsLastMessageStart,
-  updateChatWidth
+  updateChatWidth,
+  appendtoSelfSentMessages
 } from "./chat.ts";
 import { Message, sendMessage } from "./message.ts";
 import { isDomLoaded, readCurrentMessages } from "./app.ts";
@@ -450,11 +451,15 @@ export function setDropHandler() {
   }
 }
 
-export function displayLocalMessage(channelId: string, content: string) {
-  const failedId = createRandomId();
+export function displayLocalMessage(
+  messageId: string,
+  channelId: string,
+  content: string
+) {
+  appendtoSelfSentMessages(messageId);
 
   const preMessage = new Message({
-    messageId: failedId,
+    messageId,
     userId: currentUserId,
     content,
     channelId,
@@ -467,6 +472,7 @@ export function displayLocalMessage(channelId: string, content: string) {
     metadata: {},
     embeds: [],
     willDisplayProfile: false,
+    isNotSent: true,
     replyOf: undefined,
     replies: []
   });
@@ -478,8 +484,9 @@ export function displayCannotSendMessage(channelId: string, content: string) {
   if (!isOnDm) {
     return;
   }
+  const randomId = createRandomId();
 
-  displayLocalMessage(channelId, content);
+  displayLocalMessage(randomId, channelId, content);
   const failedId = createRandomId();
 
   const failedMsg = getId(failedId);
@@ -503,6 +510,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     metadata: {},
     embeds: [],
     willDisplayProfile: true,
+    isNotSent: true,
     replyOf: "",
     replies: []
   });

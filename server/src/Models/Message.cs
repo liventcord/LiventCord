@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using System.Text.Json;
 namespace LiventCord.Models
 {
     public class Message
@@ -9,6 +8,10 @@ namespace LiventCord.Models
         [Key]
         [Column("message_id")]
         public required string MessageId { get; set; }
+
+        [NotMapped]
+        public string? TemporaryId { get; set; } // Client generated and used for local display
+
 
         [ForeignKey("User")]
         public required string UserId { get; set; }

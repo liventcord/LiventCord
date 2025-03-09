@@ -3,7 +3,8 @@ import {
   currentLastDate,
   handleReplies,
   messageDates,
-  handleHistoryResponse
+  handleHistoryResponse,
+  handleSelfSentMessage
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
@@ -152,8 +153,7 @@ apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
   const replies: Message[] = data.replies;
 
   replies.forEach((reply) => {
-    const { messageId, userId, content, attachmentUrls } = reply;
-
+    const messageId = reply.messageId;
     if (!replyCache[messageId]) {
       replyCache[messageId] = {
         messageId,
@@ -161,24 +161,7 @@ apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
       };
     }
 
-    replyCache[messageId].replies.push({
-      messageId,
-      userId,
-      content,
-      attachmentUrls,
-      channelId: "defaultChannel",
-      date: new Date(),
-      lastEdited: null,
-      replyToId: null,
-      isBot: false,
-      reactionEmojisIds: [],
-      addToTop: false,
-      metadata: reply.metadata || {},
-      embeds: reply.embeds || [],
-      willDisplayProfile: reply.willDisplayProfile || false,
-      replyOf: reply.replyOf || undefined,
-      replies: reply.replies || []
-    });
+    replyCache[messageId].replies.push(reply);
   });
 
   setTimeout(() => {
@@ -288,6 +271,13 @@ apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
 
 apiClient.on(EventType.GET_FRIENDS, (data) => {
   updateFriendsList(data);
+});
+
+apiClient.on(EventType.SEND_MESSAGE_GUILD, (data: Message) => {
+  handleSelfSentMessage(data);
+});
+apiClient.on(EventType.SEND_MESSAGE_DM, (data: Message) => {
+  handleSelfSentMessage(data);
 });
 
 //friend

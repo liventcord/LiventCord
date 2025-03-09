@@ -252,7 +252,7 @@ interface DMMessageData {
   message: Message[];
   channelId: string;
 }
-socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: GuildMessageData) => {
+export const handleGuildMessage = (data: GuildMessageData) => {
   const messageData: MessageResponse = {
     guildId: data.guildId,
     isOldMessages: false,
@@ -260,19 +260,24 @@ socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: GuildMessageData) => {
     messages: data.messages,
     channelId: data.channelId
   };
-
   handleMessage(messageData);
-});
+};
 
-socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: DMMessageData) => {
+export const handleDmMessage = (data: DMMessageData) => {
   const messageData: MessageResponse = {
     isOldMessages: false,
     messages: data.message,
     isDm: true,
     channelId: data.channelId
   };
-
   handleMessage(messageData);
+};
+
+socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: any) => {
+  handleGuildMessage(data);
+});
+socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: any) => {
+  handleDmMessage(data);
 });
 
 socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
