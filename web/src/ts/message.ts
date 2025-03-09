@@ -24,7 +24,8 @@ import {
   getEmojiPath,
   getBeforeElement,
   formatDate,
-  disableElement
+  disableElement,
+  createRandomId
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -49,8 +50,10 @@ interface MessageData {
   metadata?: any;
   embeds?: any;
   willDisplayProfile?: boolean;
+  isNotSent: boolean;
   replyOf?: string | null;
   replies?: Message[];
+  temporaryId?: string;
 }
 
 export interface MessageReply {
@@ -72,8 +75,10 @@ export class Message {
   metadata: any;
   embeds: any;
   willDisplayProfile: boolean;
+  isNotSent: boolean;
   replyOf: string | undefined;
   replies: Message[];
+  temporaryId: string | undefined;
 
   constructor({
     messageId,
@@ -89,6 +94,7 @@ export class Message {
     metadata,
     embeds,
     willDisplayProfile,
+    isNotSent: isSent,
     replyOf,
     replies = []
   }: MessageData) {
@@ -106,14 +112,20 @@ export class Message {
     this.metadata = metadata;
     this.embeds = embeds;
     this.willDisplayProfile = willDisplayProfile || false;
+    this.isNotSent = isSent || false;
     this.replyOf = replyOf || undefined;
     this.replies = replies;
   }
 }
 
-function createFormData(content: string, user_ids?: string[]): FormData {
+function createFormData(
+  temporaryId: string,
+  content: string,
+  user_ids?: string[]
+): FormData {
   const formData = new FormData();
   formData.append("content", content);
+  formData.append("temporaryId", temporaryId);
 
   if (currentReplyingTo) {
     formData.append("replyToId", currentReplyingTo);
@@ -168,14 +180,15 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   attachmentsTray.innerHTML = "";
   disableElement(attachmentsTray);
 
-  const formData = createFormData(content, user_ids);
+  const temporaryId = createRandomId();
+  const formData = createFormData(temporaryId, content, user_ids);
   await processFiles(fileInput.files, formData);
 
-  fileInput.files = null;
+  fileInput.value = "";
 
   const additionalData = { guildId: currentGuildId, channelId };
 
-  displayLocalMessage(channelId, content);
+  displayLocalMessage(temporaryId, channelId, content);
   try {
     await apiClient.sendForm(
       isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,

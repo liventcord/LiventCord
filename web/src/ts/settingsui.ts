@@ -852,7 +852,7 @@ export function generateConfirmationPanel() {
     }
     const profileimg = getId("profileImage") as HTMLInputElement;
     if (profileimg) {
-      profileimg.files = null;
+      profileimg.value = "";
     }
     const settingsSelfProfile = getProfileImage();
 

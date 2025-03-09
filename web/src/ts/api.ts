@@ -350,7 +350,13 @@ class ApiClient {
       }
 
       const responseBody = await response.text();
-      return responseBody ? JSON.parse(responseBody) : null;
+      const parsedResponse = responseBody ? JSON.parse(responseBody) : null;
+
+      if (parsedResponse) {
+        this.handleMessage(event, parsedResponse);
+      }
+
+      return parsedResponse;
     } catch (error) {
       console.error(`Failed to send form request for event "${event}":`, error);
       throw error;

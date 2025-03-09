@@ -279,7 +279,7 @@ export function uploadImage(isGuild: boolean): void {
 
 function resetProfileImageFile() {
   const profileImgFile = getProfileImageFile();
-  if (profileImgFile) profileImgFile.files = null;
+  if (profileImgFile) profileImgFile.value = "";
 }
 function getFileSrc(isGuild: boolean): string {
   return isGuild ? getGuildImage()?.src ?? "" : getProfileImage()?.src ?? "";

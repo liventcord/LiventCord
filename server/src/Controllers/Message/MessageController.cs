@@ -85,7 +85,7 @@ namespace LiventCord.Controllers
             [FromForm] NewMessageRequest request
         )
         {
-            return await HandleMessage(MessageType.Guilds, guildId, channelId, request);
+            return await HandleMessage(MessageType.Guilds, guildId, channelId, UserId!, request);
         }
         [Authorize]
 
@@ -112,6 +112,7 @@ namespace LiventCord.Controllers
                 MessageType.Dms,
                 null,
                 sortedChannelId,
+                UserId!,
                 request
             );
         }
@@ -418,6 +419,7 @@ namespace LiventCord.Controllers
 
             await NewMessage(
                 request.MessageId,
+                null,
                 request.UserId,
                 channelId,
                 guildId,
@@ -431,8 +433,9 @@ namespace LiventCord.Controllers
             );
         }
         [NonAction]
-        private async Task NewMessage(
+        private async Task<IActionResult> NewMessage(
             string messageId,
+            string? temporaryId,
             string userId,
             string channelId,
             string? guildId,
@@ -444,7 +447,6 @@ namespace LiventCord.Controllers
             string? reactionEmojisIds,
             List<Embed>? embeds)
         {
-
             var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
             if (!userExists)
             {
@@ -453,50 +455,42 @@ namespace LiventCord.Controllers
                 await _context.SaveChangesAsync();
             }
 
-
             string sortedChannelId = channelId;
             if (guildId == null)
             {
-
                 var userIds = channelId.Split('_');
                 if (userIds.Length != 2 || !userIds.Contains(userId))
                 {
-                    return;
+                    return BadRequest();
                 }
-
 
                 string recipientId = userIds.First(id => id != userId);
                 sortedChannelId = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
             }
-
 
             var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == sortedChannelId);
             if (!channelExists)
             {
                 if (guildId == null)
                 {
-
                     await _channelController.CreateChannelInternal(userId, null, sortedChannelId, sortedChannelId, true, false, sortedChannelId, false);
                 }
                 else
                 {
-                    return;
+                    return BadRequest();
                 }
             }
 
-
             if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
             {
-                return;
+                return BadRequest();
             }
-
 
             await Task.Run(async () =>
             {
                 var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
                 await SaveMetadataAsync(messageId, metadata);
             });
-
 
             var message = new Message
             {
@@ -512,11 +506,13 @@ namespace LiventCord.Controllers
                 Embeds = embeds ?? new List<Embed>(),
                 Metadata = new Metadata()
             };
-
+            if (temporaryId != null)
+            {
+                message.TemporaryId = temporaryId;
+            }
 
             await _context.Messages.AddAsync(message).ConfigureAwait(false);
             await _context.SaveChangesAsync().ConfigureAwait(false);
-
 
             if (guildId != null)
             {
@@ -529,6 +525,8 @@ namespace LiventCord.Controllers
                 };
                 await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
             }
+
+            return Ok(message);
         }
 
 
@@ -545,11 +543,11 @@ namespace LiventCord.Controllers
 
         [NonAction]
         private async Task<IActionResult> HandleMessage(
-            MessageType mode,
-            string? guildId,
-            string channelId,
-            NewMessageRequest request
-        )
+             MessageType mode,
+             string? guildId,
+             string channelId,
+             string userId,
+             NewMessageRequest request)
         {
             if (mode == MessageType.Guilds)
             {
@@ -592,16 +590,19 @@ namespace LiventCord.Controllers
                         return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
                     }
 
-                    string fileId = await _imageController.UploadFileInternal(file, UserId!, guildId, channelId);
+                    string fileId = await _imageController.UploadFileInternal(file, userId, guildId, channelId);
                     attachmentUrls += fileId + ",";
                 }
 
                 attachmentUrls = attachmentUrls.TrimEnd(',');
             }
 
-            await NewMessage(
-                Utils.CreateRandomId(),
-                UserId!,
+            var messageId = Utils.CreateRandomId();
+
+            return await NewMessage(
+                messageId,
+                request.TemporaryId,
+                userId,
                 channelId,
                 guildId,
                 request.Content,
@@ -612,9 +613,8 @@ namespace LiventCord.Controllers
                 null,
                 null
             );
-
-            return Ok(new { Type = "success", Message = $"Message sent to {mode}." });
         }
+
 
 
 
@@ -723,6 +723,10 @@ public class NewMessageRequest
 
     [BindProperty(Name = "replyToId")]
     public string? ReplyToId { get; set; }
+    [BindProperty(Name = "temporaryId")]
+    public string? TemporaryId { get; set; }
+
+
 }
 
 
