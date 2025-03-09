@@ -121,6 +121,7 @@ interface InitialStateData {
   guilds: any[];
   gifWorkerUrl: string;
   proxyWorkerUrl: string;
+  mediaProxyApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
   wsUrl: string;
@@ -143,6 +144,7 @@ interface InitialState {
   guilds: any[];
   gifWorkerUrl: string;
   proxyWorkerUrl: string;
+  mediaProxyApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
   wsUrl: string;
@@ -181,6 +183,7 @@ export function initialiseState(data: InitialStateData): void {
     guilds,
     gifWorkerUrl,
     proxyWorkerUrl,
+    mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
     wsUrl
@@ -203,6 +206,7 @@ export function initialiseState(data: InitialStateData): void {
     guilds,
     gifWorkerUrl,
     proxyWorkerUrl,
+    mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
     wsUrl

@@ -128,7 +128,7 @@ export function createTenorElement(
   return imgElement;
 }
 
-function getProxy(url: string, useBackendProxy = false): string {
+function getProxy(url: string): string {
   if (url.startsWith("/")) {
     return `${location.origin}${url}`;
   }
@@ -144,11 +144,12 @@ function getProxy(url: string, useBackendProxy = false): string {
       return url;
     }
 
-    if (useBackendProxy) {
-      return `/api/proxy/media?url=${encodeURIComponent(url)}`;
-    }
+    return (
+      initialState.mediaProxyApiUrl +
+      `/api/proxy/media?url=${encodeURIComponent(url)}`
+    );
 
-    return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
+    //return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
   } catch (e) {
     console.error("Invalid URL:", url, e);
     return url;
@@ -185,8 +186,10 @@ export function createImageElement(
   imgElement.addEventListener("click", () => displayImagePreview(imgElement));
 
   preloadImage(getProxy(urlSrc))
-    .catch(() => preloadImage(getProxy(urlSrc, true)))
-    .then((loadedSrc) => (imgElement.src = loadedSrc))
+    .catch(() => preloadImage(getProxy(urlSrc)))
+    .then((loadedSrc) => {
+      imgElement.src = loadedSrc;
+    })
     .catch(() => {});
 
   return imgElement;
@@ -253,7 +256,7 @@ export function createVideoElement(url: string) {
     throw new Error("Invalid video URL");
   }
   const videoElement = createEl("video") as HTMLVideoElement;
-  videoElement.src = getProxy(url,true);
+  videoElement.src = getProxy(url);
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;

@@ -54,15 +54,17 @@ public class MediaStorageInitializer
 public class MediaCacheSettings
 {
     public string CacheDirectory { get; }
-    public string MediaProxy { get; }
     public long StorageLimitBytes { get; }
 
     public MediaCacheSettings(IConfiguration configuration)
     {
         CacheDirectory = Path.Combine(Directory.GetCurrentDirectory(), "MediaCache");
+        if (!Directory.Exists(CacheDirectory))
+            Directory.CreateDirectory(CacheDirectory);
+
         StorageLimitBytes = long.TryParse(configuration["AppSettings:ExternalMediaLimit"], out var limit)
             ? limit * 1024 * 1024 * 1024
             : 10L * 1024 * 1024 * 1024;
-        MediaProxy = configuration["AppSettings:MediaProxy"] ?? "";
     }
+
 }

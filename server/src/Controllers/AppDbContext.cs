@@ -28,7 +28,6 @@ namespace LiventCord.Controllers
         public DbSet<Message> Messages { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
-        public DbSet<UrlStatus> UrlStatuses { get; set; }
 
         public void RecreateDatabase()
         {

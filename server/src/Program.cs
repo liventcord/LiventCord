@@ -36,9 +36,6 @@ builder.Services.AddScoped<ImageController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
 builder.Services.AddScoped<MetadataService>();
-builder.Services.AddScoped<MediaProxyController>();
-builder.Services.AddSingleton<MediaStorageInitializer>();
-builder.Services.AddSingleton<MediaCacheSettings>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
@@ -107,19 +104,30 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
 
 string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
 
-if (FRONTEND_URL != null)
+builder.Services.AddCors(options =>
 {
-    builder.Services.AddCors(options =>
+    options.AddPolicy("AllowSpecificOrigin", policy =>
     {
-        options.AddPolicy("AllowSpecificOrigin", policy =>
+        if (FRONTEND_URL == "*")
         {
-            policy.WithOrigins(FRONTEND_URL)
+            policy.AllowAnyOrigin()
                 .AllowAnyHeader()
                 .AllowAnyMethod();
-        });
-    });
+        }
+        else
+        {
+            var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
-}
+            if (allowedOrigins != null && allowedOrigins.Length > 0)
+            {
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            }
+        }
+    });
+});
+
 
 
 var app = builder.Build();
@@ -131,9 +139,6 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.EnsureCreated();
-
-    var mediaStorageInitializer = scope.ServiceProvider.GetRequiredService<MediaStorageInitializer>();
-    mediaStorageInitializer.Initialize();
 }
 if (isDevelopment)
 {
