@@ -4,7 +4,8 @@ import {
   handleReplies,
   messageDates,
   handleHistoryResponse,
-  handleSelfSentMessage
+  handleSelfSentMessage,
+  handleOldMessagesResponse
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
@@ -216,6 +217,18 @@ interface DMHistoryResponse extends MessageResponse {
   isDm: true;
   history: Message[];
 }
+
+apiClient.on(
+  EventType.GET_SCROLL_HISTORY_GUILD,
+  (data: GuildHistoryResponse) => {
+    handleOldMessagesResponse(data);
+  }
+);
+
+apiClient.on(EventType.GET_SCROLL_HISTORY_DM, (data: DMHistoryResponse) => {
+  handleOldMessagesResponse(data);
+});
+
 apiClient.on(EventType.GET_HISTORY_GUILD, (data: GuildHistoryResponse) => {
   handleHistoryResponse(data);
 });

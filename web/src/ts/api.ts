@@ -23,7 +23,8 @@ export const EventType = Object.freeze({
   GET_FRIENDS: "GET_FRIENDS",
   GET_HISTORY_GUILD: "GET_HISTORY_GUILD",
   GET_HISTORY_DM: "GET_HISTORY_DM",
-  GET_SCROLL_HISTORY: "GET_SCROLL_HISTORY",
+  GET_SCROLL_HISTORY_GUILD: "GET_SCROLL_HISTORY_GUILD",
+  GET_SCROLL_HISTORY_DM: "GET_SCROLL_HISTORY_DM",
   GET_GUILDS: "GET_GUILDS",
   GET_INVITES: "GET_INVITES",
   START_TYPING: "START_TYPING",
@@ -74,7 +75,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_FRIENDS: HttpMethod.GET,
   GET_HISTORY_GUILD: HttpMethod.GET,
   GET_HISTORY_DM: HttpMethod.GET,
-  GET_SCROLL_HISTORY: HttpMethod.GET,
+  GET_SCROLL_HISTORY_GUILD: HttpMethod.GET,
+  GET_SCROLL_HISTORY_DM: HttpMethod.GET,
   GET_GUILDS: HttpMethod.GET,
   GET_INVITES: HttpMethod.GET,
   GET_MESSAGE_DATES: HttpMethod.GET,
@@ -112,10 +114,14 @@ const EventUrlMap: Record<EventType, string> = {
   GET_MEMBERS: "/guilds/{guildId}/members",
   GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
 
-  GET_HISTORY_DM: "/dms/channels/{channelId}/messages",
-  GET_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_HISTORY_DM:
+    "/dms/channels/{channelId}/messages?date={date}&messageId={messageId}",
+  GET_HISTORY_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages?date={date}&messageId={messageId}",
 
-  GET_SCROLL_HISTORY: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_SCROLL_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_SCROLL_HISTORY_DM: "/dms/channels/{friendId}/messages",
+
   GET_BULK_REPLY: "/guilds/{guildId}/channels/{channelId}/messages/reply",
   GET_MESSAGE_DATE: "/guilds/{guildId}/channels/{channelId}/messages/date",
   START_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/start",
@@ -221,38 +227,62 @@ class ApiClient {
     }
     return method;
   }
-
   getUrlForEvent(
     event: EventType,
     data: Record<string, any> = {}
   ): { method: HttpMethod; url: string } {
     const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
-
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);
     }
 
     let url = urlTemplate;
-    const missingKeys: string[] = [];
-    const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) =>
-      match.replace(/[{}]/g, "")
+    const allPlaceholders = (url.match(/{(.*?)}/g) || []).map((match) =>
+      match.slice(1, -1)
     );
 
     allPlaceholders.forEach((placeholder) => {
-      if (!data.hasOwnProperty(placeholder)) {
-        missingKeys.push(placeholder);
+      const value = data[placeholder];
+      if (value !== undefined && value !== null && value !== "") {
+        url = url.replace(`{${placeholder}}`, encodeURIComponent(value));
       } else {
-        url = url.replace(`{${placeholder}}`, data[placeholder]);
+        url = url.replace(`{${placeholder}}`, "");
       }
     });
 
-    if (missingKeys.length > 0) {
-      alertUser(
-        `Missing data for URL placeholders: ${missingKeys.join(", ")}.`
-      );
+    url = url.replace(/([^:]\/)\/+/g, "$1");
+
+    const [path, query] = url.split("?");
+    let templateParams: string[] = [];
+
+    if (query) {
+      templateParams = query.split("&").filter((param) => {
+        const [key, value] = param.split("=");
+        return value !== undefined && value.trim() !== "";
+      });
     }
-    const fullUrl = `${basePath}${url}`;
+
+    const usedPlaceholders = allPlaceholders;
+    const additionalParams = Object.entries(data)
+      .filter(
+        ([key, value]) =>
+          value !== undefined &&
+          value !== null &&
+          String(value).trim() !== "" &&
+          !usedPlaceholders.includes(key) &&
+          !urlTemplate.includes(`{${key}}`)
+      )
+      .map(
+        ([key, value]) =>
+          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+      );
+
+    const allQueryParams = [...templateParams, ...additionalParams];
+    const queryString = allQueryParams.length
+      ? `?${allQueryParams.join("&")}`
+      : "";
+    const fullUrl = `${basePath}${path}${queryString}`;
 
     return { method: this.getHttpMethod(event), url: fullUrl };
   }
