@@ -408,6 +408,7 @@ export function UpdatePendingCounter() {
       disableElement(pendingAlertRight);
       pendingAlertRight.textContent = "0";
     }
+    setWindowName(0);
   }
 }
 export function updateFriendsList(friends: FriendData[]): void {

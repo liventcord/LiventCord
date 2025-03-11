@@ -97,9 +97,9 @@ export function reCalculateFriTitle() {
 }
 
 export function setWindowName(pendingCounter: number) {
-  if (pendingCounter) {
-    document.title = `LiventCord (${pendingCounter})`;
-  }
+  document.title = pendingCounter
+    ? `LiventCord (${pendingCounter})`
+    : "LiventCord";
 }
 
 export function sendNotify(data: string) {
