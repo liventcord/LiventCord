@@ -74,9 +74,14 @@ class WebSocketClient {
   private constructor(url: string = "") {
     this.socketUrl = url;
     if (this.socketUrl) {
-      this.socket = new WebSocket(this.socketUrl);
-      this.attachHandlers();
+      this.connectSocket();
     }
+  }
+
+  private async connectSocket() {
+    const cookie = await getAuthCookie();
+    this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
+    this.attachHandlers();
   }
 
   private attachHandlers() {
@@ -169,11 +174,10 @@ class WebSocketClient {
     }
   }
 
-  private reconnect() {
+  private async reconnect() {
     const previousHandlers = this.eventHandlers;
-    this.socket = new WebSocket(this.socketUrl);
+    await this.connectSocket();
     this.eventHandlers = previousHandlers;
-    this.attachHandlers();
   }
 
   public static getInstance(url: string = ""): WebSocketClient {
@@ -203,9 +207,7 @@ class WebSocketClient {
   async setSocketUrl(url: string) {
     if (!this.socketUrl) {
       this.socketUrl = url;
-      const cookie = await getAuthCookie();
-      this.socket = new WebSocket(url, [`cookie-${cookie}`]);
-      this.attachHandlers();
+      await this.connectSocket();
     }
   }
 }
