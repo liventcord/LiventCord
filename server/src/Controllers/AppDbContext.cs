@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
 using LiventCord.Helpers;
-
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace LiventCord.Controllers
 {
@@ -28,6 +28,7 @@ namespace LiventCord.Controllers
         public DbSet<Message> Messages { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
+
 
         public void RecreateDatabase()
         {
@@ -297,7 +298,11 @@ namespace LiventCord.Controllers
                     embed.Property(e => e.Id).IsRequired();
 
                     embed.Property(e => e.Title);
-                    embed.Property(e => e.Type).HasDefaultValue(EmbedType.Rich);
+
+                    embed.Property(e => e.Type)
+                        .HasDefaultValue(EmbedType.Rich)
+                        .HasConversion<string>();
+
                     embed.Property(e => e.Description);
                     embed.Property(e => e.Url);
                     embed.Property(e => e.Color).HasDefaultValue(0x808080);
@@ -343,6 +348,14 @@ namespace LiventCord.Controllers
                             v => v != null
                                 ? JsonSerializer.Deserialize<List<EmbedField>>(v, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<EmbedField>()
                                 : new List<EmbedField>()
+                        )
+                        .Metadata.SetValueComparer(
+                            new ValueComparer<List<EmbedField>>(
+                                (c1, c2) => c1 == null && c2 == null ||
+                                            c1 != null && c2 != null && c1.SequenceEqual(c2),
+                                c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                                c => c == null ? new List<EmbedField>() : c.ToList()
+                            )
                         );
                 });
             });

@@ -139,7 +139,7 @@ namespace LiventCord.Controllers
             {
                 return await HandleGuildChannelCreation(userId, guildId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
-            else if (!string.IsNullOrEmpty(recipientId))
+            else if (!string.IsNullOrEmpty(recipientId) && userId != null)
             {
                 return await HandleDmChannelCreation(userId, recipientId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
             }
