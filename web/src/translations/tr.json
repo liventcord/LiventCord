@@ -1,6 +1,7 @@
 {
   "contextTranslations": {
     "COPY_ID": "ID'yi Kopyala",
+    "COPY_GUILD_ID": "Sunucu Id'sini kopyala",
     "COPY_USER_ID": "Kullanıcı ID'sini Kopyala",
     "INVITE_TO_GUILD": "Sunucuya Davet Et",
     "BLOCK_USER": "Engelle",

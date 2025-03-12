@@ -229,7 +229,8 @@ class ApiClient {
   }
   getUrlForEvent(
     event: EventType,
-    data: Record<string, any> = {}
+    data: Record<string, any> = {},
+    queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } {
     const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
@@ -237,56 +238,48 @@ class ApiClient {
       throw new Error(`Unknown event: ${event}`);
     }
 
-    let url = urlTemplate;
-    const allPlaceholders = (url.match(/{(.*?)}/g) || []).map((match) =>
+    let [urlPath, queryStringTemplate] = urlTemplate.split("?");
+    queryStringTemplate = queryStringTemplate;
+    const routeParams = (urlPath.match(/{(.*?)}/g) || []).map((match) =>
       match.slice(1, -1)
     );
+    const queryKeys =
+      (queryStringTemplate ? queryStringTemplate.match(/{(.*?)}/g) : [])?.map(
+        (match) => match.slice(1, -1)
+      ) || [];
 
-    allPlaceholders.forEach((placeholder) => {
-      const value = data[placeholder];
-      if (value !== undefined && value !== null && value !== "") {
-        url = url.replace(`{${placeholder}}`, encodeURIComponent(value));
+    routeParams.forEach((param) => {
+      if (data.hasOwnProperty(param)) {
+        urlPath = urlPath.replace(
+          `{${param}}`,
+          encodeURIComponent(data[param])
+        );
       } else {
-        url = url.replace(`{${placeholder}}`, "");
+        throw new Error(`Missing required route parameter: ${param}`);
       }
     });
 
-    url = url.replace(/([^:]\/)\/+/g, "$1");
+    urlPath = urlPath.replace(/\/+/g, "/").replace(/\/$/, "");
 
-    const [path, query] = url.split("?");
-    let templateParams: string[] = [];
+    const queryParts: string[] = [];
+    queryKeys.forEach((key) => {
+      if (
+        queryParams.hasOwnProperty(key) &&
+        queryParams[key] !== undefined &&
+        queryParams[key] !== null &&
+        queryParams[key] !== ""
+      ) {
+        queryParts.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(queryParams[key])}`
+        );
+      }
+    });
 
-    if (query) {
-      templateParams = query.split("&").filter((param) => {
-        const [key, value] = param.split("=");
-        return value !== undefined && value.trim() !== "";
-      });
-    }
-
-    const usedPlaceholders = allPlaceholders;
-    const additionalParams = Object.entries(data)
-      .filter(
-        ([key, value]) =>
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== "" &&
-          !usedPlaceholders.includes(key) &&
-          !urlTemplate.includes(`{${key}}`)
-      )
-      .map(
-        ([key, value]) =>
-          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
-      );
-
-    const allQueryParams = [...templateParams, ...additionalParams];
-    const queryString = allQueryParams.length
-      ? `?${allQueryParams.join("&")}`
-      : "";
-    const fullUrl = `${basePath}${path}${queryString}`;
+    const queryString = queryParts.length ? `?${queryParts.join("&")}` : "";
+    const fullUrl = `${basePath}${urlPath}${queryString}`;
 
     return { method: this.getHttpMethod(event), url: fullUrl };
   }
-
   handleMessage(event: EventType, data: any): void {
     if (this.nonResponseEvents.includes(event)) {
       return;

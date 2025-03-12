@@ -348,6 +348,7 @@ export function isChannelExist(channelId: string) {
   return existingChannelButton !== null;
 }
 export function createChannel(
+  guildId: string,
   channelName: string,
   isTextChannel: boolean,
   isPrivate: boolean
@@ -355,10 +356,10 @@ export function createChannel(
   if (typeof isPrivate !== "boolean") {
     isPrivate = false;
   }
-  console.log(channelName, isTextChannel, isPrivate);
+  console.log("Sending request with guildId:", guildId);
   apiClient.send(EventType.CREATE_CHANNEL, {
+    guildId,
     channelName,
-    guildId: currentGuildId,
     isTextChannel,
     isPrivate
   });

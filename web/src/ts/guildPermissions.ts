@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { currentGuildId } from "./guild.ts";
+import { createGuildContextLists, currentGuildId } from "./guild.ts";
 
 export enum Permission {
   READ_MESSAGES,
@@ -44,7 +44,7 @@ export class PermissionManager {
     if (rawPermissions) {
       const permissionSet = new Set<Permission>();
 
-      if (rawPermissions["ALL"] === 1) {
+      if (rawPermissions["All"] === 1) {
         Object.values(Permission)
           .filter((perm) => typeof perm === "number")
           .forEach((perm) => permissionSet.add(perm));
@@ -70,6 +70,7 @@ export class PermissionManager {
 
       this.permissionsMap.set(guildId, permissionSet);
       console.log("Updated permissionsMap:", this.permissionsMap);
+      createGuildContextLists();
     }
   }
 

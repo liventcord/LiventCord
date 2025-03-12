@@ -1,6 +1,7 @@
 {
   "contextTranslations": {
     "COPY_ID": "Copy ID",
+    "COPY_GUILD_ID": "Copy Guild ID",
     "COPY_USER_ID": "Copy User ID",
     "INVITE_TO_GUILD": "Invite to Guild",
     "BLOCK_USER": "Block User",
@@ -10,8 +11,10 @@
     "MARK_AS_READ": "Mark as Read",
     "COPY_LINK": "Copy Link",
     "MUTE_CHANNEL": "Mute Channel",
+    "MUTE_GUILD": "Mute Guild",
     "NOTIFY_SETTINGS": "Notification Settings",
     "EDIT_CHANNEL": "Edit Channel",
+    "CREATE_CHANNEL": "Create Channel",
     "DELETE_CHANNEL": "Delete Channel",
     "OPEN_PROFILE": "Profile",
     "MUTE_USER": "Mute User",

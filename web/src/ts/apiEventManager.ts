@@ -100,7 +100,7 @@ apiClient.on(EventType.DELETE_GUILD, (data) => {
     removeFromGuildList(data.guildId);
     loadDmHome();
   } else {
-    alertUser(data);
+    console.error(data);
   }
 });
 apiClient.on(EventType.GET_INVITES, (data) => {
@@ -131,9 +131,14 @@ apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   const channelId = data.channelId;
   const isTextChannel = data.isTextChannel;
   if (!guildId || !channelId) return;
-  addChannel(data);
-  if (isTextChannel) {
-    changeChannel(data);
+
+  if (guildId == currentGuildId) {
+    addChannel(data);
+  } else {
+    cacheInterface.addChannel(guildId, data);
+    if (isTextChannel) {
+      changeChannel(data);
+    }
   }
   createFireWorks();
 });

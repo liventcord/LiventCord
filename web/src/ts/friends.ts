@@ -479,6 +479,9 @@ export function addFriend(nickName: string, discriminator: string) {
   });
   createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
+export function removeFriend(friendId: string) {
+  apiClient.send(EventType.REMOVE_FRIEND, { friendId });
+}
 
 export function submitAddFriend() {
   const addfriendinput = getId("addfriendinputfield") as HTMLInputElement;

@@ -377,8 +377,12 @@ export function handleChannelLoading(
     loadGuild(guildId, rootChannel.channelId, "", true);
   }
 }
-
+export function readGuildMessages(guildId: string) {
+  alertUser("Reading messages is not implemented!");
+}
 export function readCurrentMessages() {
+  alertUser("Reading messages is not implemented!");
+  return;
   if (!guildCache.currentChannelId) {
     return;
   }

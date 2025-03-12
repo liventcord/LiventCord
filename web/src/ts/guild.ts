@@ -26,6 +26,7 @@ import { apiClient, EventType } from "./api.ts";
 import { currentVoiceChannelId, getRootChannel } from "./channels.ts";
 import { createFireWorks } from "./extras.ts";
 import { UserInfo } from "./user.ts";
+import { appendToGuildContextList } from "./contextMenuActions.ts";
 
 export let currentGuildId: string;
 export const guildNameText = getId("guild-name") as HTMLElement;
@@ -344,7 +345,14 @@ export function selectGuildList(guildId: string): void {
     }
   }
 }
-
+export function createGuildContextLists() {
+  const foundGuilds = Array.from(
+    guildsList.querySelectorAll("img")
+  ) as HTMLImageElement[];
+  for (const guild of foundGuilds) {
+    appendToGuildContextList(guild.id);
+  }
+}
 const createGuildListItem = (
   guildId: string,
   rootChannel: string,
@@ -404,6 +412,7 @@ export function updateGuilds(guildsJson: Array<any>) {
         cacheInterface.setMemberIds(guildId, guildMembers);
       }
     );
+
     const createGuildButton = createNewGuildButton();
     guildsList.appendChild(createGuildButton);
 

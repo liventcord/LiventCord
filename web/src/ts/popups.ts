@@ -21,7 +21,7 @@ import {
   contextList,
   appendToProfileContextList
 } from "./contextMenuActions.ts";
-import { textChanHtml, fillDropDownContent } from "./ui.ts";
+import { textChanHtml, fillDropDownContent, alertUser } from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
@@ -135,7 +135,7 @@ function createChannelType(isVoice: boolean) {
   return container;
 }
 
-export function createChannelsPop() {
+export function createChannelsPop(guildId: string) {
   let isTextChannel = true;
 
   const newPopOuterParent = createEl("div", { className: "outer-parent" });
@@ -188,6 +188,7 @@ export function createChannelsPop() {
       inviteUsersSendInput.value.trim() ||
       translations.getTranslation("new-channel-placeholder");
     createChannel(
+      guildId,
       channelName,
       isTextChannel,
       toggleManager.states["private-channel-toggle"]
