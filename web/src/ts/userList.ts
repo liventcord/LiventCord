@@ -3,11 +3,11 @@ import {
   disableElement,
   enableElement,
   createEl,
-  DEFAULT_DISCRIMINATOR
+  DEFAULT_DISCRIMINATOR,
+  saveBooleanCookie
 } from "./utils.ts";
 import { guildCache } from "./cache.ts";
 import { isOnGuild, isOnMe } from "./router.ts";
-import { saveBooleanCookie } from "./settings.ts";
 import { crownEmojibase64 } from "./extras.ts";
 import { updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";

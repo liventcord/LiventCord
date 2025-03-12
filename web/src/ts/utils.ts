@@ -608,26 +608,36 @@ export async function urlToBase64(url: string): Promise<string> {
   }
 }
 
-function getDomain(url: string) {
-  const link = createEl("a", { href: url }) as HTMLAnchorElement;
-  return link.hostname;
+export function saveCookie(
+  name: string,
+  value: string,
+  isBoolean: boolean = false
+) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000);
+  const expiresStr = `expires=${expires.toUTCString()}`;
+  const cookieValue = isBoolean ? (value ? 1 : 0) : encodeURIComponent(value);
+  document.cookie = `${encodeURIComponent(
+    name
+  )}=${cookieValue}; ${expiresStr}; path=/`;
 }
-export function reloadCSS() {
-  const approvedDomains = ["localhost"];
-  const links = document.getElementsByTagName("link");
-  for (let i = 0; i < links.length; i++) {
-    const link = links[i];
-    if (link.rel === "stylesheet") {
-      const href = link.href;
-      const domain = getDomain(href);
-      if (approvedDomains.includes(domain)) {
-        const newHref =
-          href.indexOf("?") !== MINUS_INDEX
-            ? `${href}&_=${new Date().getTime()}`
-            : `${href}?_=${new Date().getTime()}`;
-        link.href = newHref;
-      }
+
+export function loadCookie(name: string): string | null {
+  const cookieName = encodeURIComponent(name) + "=";
+  const cookies = document.cookie.split("; ");
+  for (const cookie of cookies) {
+    if (cookie.startsWith(cookieName)) {
+      return decodeURIComponent(cookie.substring(cookieName.length));
     }
   }
+  return null;
 }
-//window.addEventListener("focus", reloadCSS);
+
+export function saveBooleanCookie(name: string, value: number) {
+  saveCookie(name, value ? "1" : "0", true);
+}
+
+export function loadBooleanCookie(name: string): boolean {
+  const result = loadCookie(name);
+  return result === "1";
+}

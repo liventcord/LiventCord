@@ -86,13 +86,14 @@ import {
   createEl,
   enableElement,
   disableElement,
-  constructDmPage
+  constructDmPage,
+  loadBooleanCookie
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 
 import { friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
-import { loadBooleanCookie, initializeCookies } from "./settings.ts";
+import { initializeCookies } from "./settings.ts";
 import {
   isOnMe,
   router,
