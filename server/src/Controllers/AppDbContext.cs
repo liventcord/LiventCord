@@ -50,6 +50,13 @@ namespace LiventCord.Controllers
                 gu.MemberId == userId && gu.GuildId == guildId
             );
         }
+        public async Task<List<string>> GetUserGuildIds(string userId)
+        {
+            return await GuildMembers
+                .Where(gu => gu.MemberId == userId)
+                .Select(gu => gu.GuildId)
+                .ToListAsync();
+        }
 
         public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
         {
