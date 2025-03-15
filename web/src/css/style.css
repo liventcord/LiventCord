@@ -23,7 +23,6 @@
   transition: border-radius 0.2s ease-out;
 }
 #self-bubble {
-  background-color: #23a55a;
   border-radius: 20px;
   position: absolute;
   margin-left: 30px;
@@ -35,6 +34,18 @@
   z-index: 1;
   display: flex;
   transition: display 0.3s;
+}
+.online {
+  background-color: #23a55a;
+}
+.offline {
+  background-color: #757575;
+}
+.idle {
+  background-color: #d8db1c;
+}
+.do-not-disturb {
+  background-color: #eb1c1c;
 }
 #self-name {
   position: absolute;

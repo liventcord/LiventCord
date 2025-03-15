@@ -37,6 +37,7 @@ import { Member, userManager } from "./user.ts";
 import { closeSettings, openChannelSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
+import { createFireWorks } from "./extras.ts";
 
 export const channelTitle = getId("channel-info") as HTMLElement;
 export const channelList = getId("channel-list") as HTMLElement;
@@ -110,8 +111,24 @@ export function getRootChannel(guildId: string, rootChannel: string) {
   return rootChannel;
 }
 
+export function handleNewChannel(data: any) {
+  const guildId = data.guildId;
+  const isTextChannel = data.isTextChannel;
+  console.log(data);
+
+  if (guildId == currentGuildId) {
+    addChannel(data);
+  }
+  if (isTextChannel) {
+    changeChannel(data);
+  }
+  cacheInterface.addChannel(guildId, data);
+  createFireWorks();
+}
+
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) return;
+  if (!newChannel.isTextChannel) return;
   console.log("Changed channel: ", newChannel);
   if (isOnMe || isOnDm) {
     return;
@@ -348,6 +365,7 @@ export function isChannelExist(channelId: string) {
   return existingChannelButton !== null;
 }
 export function createChannel(
+  guildId: string,
   channelName: string,
   isTextChannel: boolean,
   isPrivate: boolean
@@ -355,10 +373,10 @@ export function createChannel(
   if (typeof isPrivate !== "boolean") {
     isPrivate = false;
   }
-  console.log(channelName, isTextChannel, isPrivate);
+  console.log("Sending request with guildId:", guildId);
   apiClient.send(EventType.CREATE_CHANNEL, {
+    guildId,
     channelName,
-    guildId: currentGuildId,
     isTextChannel,
     isPrivate
   });

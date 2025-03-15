@@ -165,6 +165,8 @@ async function processFiles(
   }
 }
 
+let messageQueue = Promise.resolve();
+
 export async function sendMessage(content: string, user_ids?: string[]) {
   if (content === "") return;
 
@@ -189,16 +191,19 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   const additionalData = { guildId: currentGuildId, channelId };
 
   displayLocalMessage(temporaryId, channelId, content);
-  try {
-    await apiClient.sendForm(
-      isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
-      formData,
-      additionalData
-    );
-    closeReplyMenu();
-  } catch (error) {
-    console.error("Error Sending File Message:", error);
-  }
+
+  messageQueue = messageQueue.then(async () => {
+    try {
+      await apiClient.sendForm(
+        isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
+        formData,
+        additionalData
+      );
+      closeReplyMenu();
+    } catch (error) {
+      console.error("Error Sending File Message:", error);
+    }
+  });
 }
 
 function canSendMessageToDm(dmId: string): boolean {
@@ -299,38 +304,44 @@ export function replaceCustomEmojis(content: string) {
 }
 class GetMessagesRequest {
   date: string;
-  isDm: boolean;
-  channelId: string;
+  friendId?: string;
+  channelId?: string;
   messageId?: string;
-  isBot: boolean;
   guildId?: string;
 
   constructor(
     date: Date,
-    isDm: boolean,
-    channelId: string,
+    id: string,
     messageId?: string,
-    guildId?: string
+    guildId?: string,
+    isDm: boolean = false
   ) {
-    this.date = date.toString();
-    this.isDm = isDm;
-    this.channelId = channelId;
-    this.messageId = messageId;
-    this.isBot = false;
-    this.guildId = guildId;
+    this.date = date.toISOString();
+    if (isDm) {
+      this.friendId = id;
+    } else {
+      this.channelId = id;
+    }
+    if (messageId) this.messageId = messageId;
+    if (guildId) this.guildId = guildId;
   }
 }
 
 export function getOldMessages(date: Date, messageId?: string) {
   const request = new GetMessagesRequest(
     date,
-    isOnDm,
     isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId,
     messageId,
-    isOnGuild ? currentGuildId : undefined
+    isOnGuild ? currentGuildId : undefined,
+    isOnDm
   );
 
-  apiClient.send(EventType.GET_SCROLL_HISTORY, request);
+  apiClient.send(
+    isOnDm
+      ? EventType.GET_SCROLL_HISTORY_DM
+      : EventType.GET_SCROLL_HISTORY_GUILD,
+    request
+  );
 
   setTimeout(() => {
     setHasJustFetchedMessagesFalse();

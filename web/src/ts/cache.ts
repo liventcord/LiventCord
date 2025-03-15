@@ -85,12 +85,10 @@ class ChannelCache extends BaseCache {
       : undefined;
   }
   addChannel(guildId: string, channel: CachedChannel): void {
-    console.log(`Adding channel to guild: ${guildId}`, channel);
     const channels = this.getChannels(guildId);
     if (!channels.some((ch) => ch.channelId === channel.channelId)) {
       channels.push(channel);
       this.setChannels(guildId, channels);
-      console.log(`Channel added: ${channel.channelId} to guild: ${guildId}`);
     } else {
       console.warn(
         `Channel already exists: ${channel.channelId} in guild: ${guildId}`
@@ -109,7 +107,6 @@ class ChannelCache extends BaseCache {
     const result = this.getChannels(guildId).some(
       (channel) => channel.channelId === channelId
     );
-    console.log("Channel exists check:", guildId, channelId, "->", result);
     return result;
   }
 
@@ -230,6 +227,15 @@ class GuildMembersCache extends BaseCache {
 
   updateMembers(guildId: string, newMembers: Member[], add = true): void {
     newMembers.forEach((member) => this.updateMember(guildId, member, add));
+  }
+
+  updateMemberStatus(guildId: string, memberId: string, status: string): void {
+    const members = this.getMembers(guildId);
+    const member = members.find((m) => m.userId === memberId);
+    if (member) {
+      member.status = status;
+      this.setMembers(guildId, members);
+    }
   }
 }
 
@@ -526,6 +532,14 @@ class GuildCacheInterface {
 
   isMembersEmpty(guildId: string): boolean {
     return this.getMembers(guildId).length === 0;
+  }
+
+  updateMemberStatus(guildId: string, memberId: string, status: string): void {
+    this.getGuild(guildId)?.members.updateMemberStatus(
+      guildId,
+      memberId,
+      status
+    );
   }
 
   getChannels(guildId: string): CachedChannel[] {

@@ -126,7 +126,6 @@ namespace LiventCord.Helpers
                     userId,
                     email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
-                    userStatus = user.Status ?? "",
                     userDiscriminator = user.Discriminator ?? "",
                     sharedGuildsMap = new List<string>(),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),

@@ -2,13 +2,12 @@ import { CLYDE_ID } from "./chat.ts";
 import { updateGuildImage, currentGuildId } from "./guild.ts";
 import {
   getProfileUrl,
-  clydeSrc,
   getBase64Image,
   getId,
   blackImage,
   STATUS_200,
-  defaultProfileImageSrc,
-  base64ToBlob
+  base64ToBlob,
+  IMAGE_SRCS
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -66,20 +65,20 @@ export async function setPicture(
   isTimestamp?: boolean
 ) {
   if (!srcId) {
-    imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
     return;
   }
   if (!imgToUpdate) return;
 
   if (srcId === CLYDE_ID) {
-    imgToUpdate.src = clydeSrc;
+    imgToUpdate.src = IMAGE_SRCS.CLYDE_SRC;
     return;
   }
 
   srcId = String(srcId);
 
   if (failedImages.has(srcId)) {
-    imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
     return;
   }
 
@@ -96,20 +95,20 @@ export async function setPicture(
   try {
     const response = await fetch(imageUrl);
     if (!response.ok) {
-      imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+      imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
       failedImages.add(srcId);
       return;
     }
     imageCache.set(srcId, imageUrl);
     imgToUpdate.src = imageUrl;
   } catch (e) {
-    imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
     failedImages.add(srcId);
     console.error(e);
   }
 
   imgToUpdate.addEventListener("error", function () {
-    imgToUpdate.src = isProfile ? defaultProfileImageSrc : blackImage;
+    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
     failedImages.add(srcId);
   });
 }
@@ -195,8 +194,8 @@ export function updateImageSource(
   imagePath: string
 ) {
   imageElement.onerror = () => {
-    if (imageElement.src !== defaultProfileImageSrc) {
-      imageElement.src = defaultProfileImageSrc;
+    if (imageElement.src !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
+      imageElement.src = IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
     }
   };
   imageElement.onload = updateSettingsProfileColor;
@@ -467,32 +466,12 @@ export async function setProfilePic(
 }
 
 async function init() {
-  try {
-    const {
-      urlToBase64,
-      defaultMediaImageSrc: defaultMediaImageUrl,
-      defaultProfileImageSrc: defaultProfileImageUrl,
-      setDefaultMediaImageSrc: setDefaultMediaImageUrl,
-      setDefaultProfileImageSrc: setDefaultProfileImageUrl
-    } = await import("./utils.ts");
-
-    const base64Profile = await urlToBase64(defaultProfileImageUrl);
-    const blobProfile = base64ToBlob(base64Profile);
-    setDefaultProfileImageUrl(blobProfile);
-
-    const base64Media = await urlToBase64(defaultMediaImageUrl);
-    const blobMedia = base64ToBlob(base64Media);
-    setDefaultMediaImageUrl(blobMedia);
-
-    selfProfileImage.addEventListener("mouseover", function () {
-      this.style.borderRadius = "0px";
-    });
-    selfProfileImage.addEventListener("mouseout", function () {
-      this.style.borderRadius = "50%";
-    });
-  } catch (error) {
-    console.error(error);
-  }
+  selfProfileImage.addEventListener("mouseover", function () {
+    this.style.borderRadius = "0px";
+  });
+  selfProfileImage.addEventListener("mouseout", function () {
+    this.style.borderRadius = "50%";
+  });
 }
 
 init();

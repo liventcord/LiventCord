@@ -516,7 +516,9 @@ export function openGuildSettingsDropdown(event: Event) {
     "settings-dropdown-button": () => {
       openSettings(SettingType.GUILD);
     },
-    "channel-dropdown-button": createChannelsPop,
+    "channel-dropdown-button": () => {
+      createChannelsPop(currentGuildId);
+    },
     "exit-dropdown-button": () => {
       askUser(
         translations.getTranslation("exit-dropdown-button"),
