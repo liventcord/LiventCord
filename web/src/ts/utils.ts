@@ -14,8 +14,12 @@ export const IMAGE_SRCS = {
   REDMIC_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redmic.webp",
   WHITEEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whiteearphones.webp",
   REDEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redearphones.webp",
-  DEFAULT_MEDIA_IMG_SRC: "/https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp"
+  DEFAULT_MEDIA_IMG_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp",
+  CLYDE_SRC : "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/clyde.webp",
+  DEFAULT_PROFILE_IMG_SRC : "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/guest.webp",
 };
+
+
 
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
@@ -41,14 +45,6 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 
   return element;
 };
-
-export const clydeSrc = "/clyde.webp";
-
-const defaultProfileImageUrl = "/guest.webp";
-
-export let defaultProfileImageSrc = defaultProfileImageUrl;
-const defaultMediaImageUrl = "/defaultmediaimage.webp";
-export let defaultMediaImageSrc = defaultMediaImageUrl;
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const DEFAULT_DISCRIMINATOR = "0000";
@@ -58,12 +54,23 @@ export const STATUS_200 = 200;
 export const blackImage =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
 export function setDefaultMediaImageSrc(blob: Blob) {
-  defaultMediaImageSrc = URL.createObjectURL(blob);
+  IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC = URL.createObjectURL(blob);
 }
 
 export function setDefaultProfileImageSrc(blob: Blob) {
-  defaultProfileImageSrc = URL.createObjectURL(blob);
+  IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC = URL.createObjectURL(blob);
 }
+
+const base64Profile = await urlToBase64(IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC);
+const blobProfile = base64ToBlob(base64Profile);
+setDefaultProfileImageSrc(blobProfile);
+
+const base64Media = await urlToBase64(IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC);
+const blobMedia = base64ToBlob(base64Media);
+setDefaultMediaImageSrc(blobMedia);
+
+
+
 
 export function getMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -302,7 +309,7 @@ export function rgbToHex(r: number, g: number, b: number) {
   );
 }
 export function getAverageRGB(imgEl: HTMLImageElement): string {
-  if (imgEl.src === defaultProfileImageSrc) {
+  if (imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
     return "#e7e7e7";
   }
 

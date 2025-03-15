@@ -13,7 +13,7 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
-  defaultMediaImageSrc
+  IMAGE_SRCS,
 } from "./utils.ts";
 import { initialState } from "./app.ts";
 import { router } from "./router.ts";
@@ -98,7 +98,7 @@ export function createTenorElement(
   }
 
   const imgElement = createEl("img", {
-    src: defaultMediaImageSrc,
+    src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       cursor: "pointer",
       maxWidth: `${maxTenorWidth}px`,
@@ -116,7 +116,7 @@ export function createTenorElement(
   };
 
   imgElement.onerror = function () {
-    imgElement.src = defaultMediaImageSrc;
+    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
     imgElement.remove();
     msgContentElement.textContent = inputText;
   };
@@ -173,7 +173,7 @@ export function createImageElement(
 ): HTMLImageElement {
   const imgElement = createEl("img", {
     className: "chat-image",
-    src: defaultMediaImageSrc,
+    src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
