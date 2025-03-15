@@ -190,11 +190,8 @@ export function setHasJustFetchedMessagesFalse() {
 let isFetchingOldMessages = false;
 let stopFetching = false;
 
-export function getOldMessagesOnScroll() {
+export async function getOldMessagesOnScroll() {
   if (isReachedChannelEnd || isOnMe || stopFetching) {
-    return;
-  }
-  if (hasJustFetchedMessages) {
     return;
   }
   const oldestDate = getMessageDate();
@@ -203,14 +200,19 @@ export function getOldMessagesOnScroll() {
     return;
   }
   hasJustFetchedMessages = true;
-  getOldMessages(new Date(oldestDate));
+  await getOldMessages(new Date(oldestDate));
+  isFetchingOldMessages = false;
+  stopFetching = true;
+  console.log("Fetching complete. Resetting flag.");
+  setHasJustFetchedMessagesFalse();
+  setTimeout(() => {
+    stopFetching = false;
+  }, 1000);
 }
 export async function handleScroll() {
   if (loadingScreen && loadingScreen.style.display === "flex") {
     return;
   }
-
-  const SCROLL_DELAY = 500;
   const buffer = 10;
   const scrollPosition = chatContainer.scrollTop;
   const isAtTop = scrollPosition <= buffer;
@@ -220,25 +222,15 @@ export async function handleScroll() {
     console.log("Fetching old messages...");
 
     try {
-      if (hasJustFetchedMessages || stopFetching) {
-        return;
-      }
-
       const updatedScrollPosition = chatContainer.scrollTop;
       if (updatedScrollPosition <= buffer) {
         await getOldMessagesOnScroll();
       }
     } catch (error) {
       console.error("Error fetching old messages:", error);
-    } finally {
-      isFetchingOldMessages = false;
-      stopFetching = true;
-      console.log("Fetching complete. Resetting flag.");
-      setHasJustFetchedMessagesFalse();
     }
   }
 }
-
 const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
@@ -283,11 +275,33 @@ export interface MessageResponse {
   isOldMessages: boolean;
   isDm: boolean;
   messages: Message[];
-  channelId: string | null;
+  channelId: string;
   oldestMessageDate?: string | null;
 }
 
+function clearDateBarAndStartMessageFromChat() {
+  const messages = Array.from(chatContent.children);
+
+  for (let i = 0; i < messages.length; i++) {
+    const element = messages[i] as HTMLElement;
+
+    if (
+      element.classList &&
+      (element.classList.contains("dateBar") ||
+        element.classList.contains("startmessage"))
+    ) {
+      element.remove();
+    }
+
+    if (element.classList && element.classList.contains("message")) {
+      break;
+    }
+  }
+}
+
 export function handleOldMessagesResponse(data: MessageResponse) {
+  console.log("Processing old messages: ", data);
+
   const { messages: history, oldestMessageDate } = data;
 
   if (!Array.isArray(history) || history.length === 0) {
@@ -304,12 +318,15 @@ export function handleOldMessagesResponse(data: MessageResponse) {
 
   let firstMessageDate = new Date();
 
-  history.forEach((msgData) => {
-    const msg = new Message(msgData);
-    const { date, messageId } = msgData;
-    const displayMessageData = msg;
+  clearDateBarAndStartMessageFromChat();
 
-    if (displayChatMessage(displayMessageData)) {
+  history.forEach((msgData) => {
+    const { date, messageId } = msgData;
+    msgData.addToTop = true;
+    msgData.willDisplayProfile = true;
+
+    const foundReply = displayChatMessage(msgData);
+    if (foundReply) {
       repliesList.add(messageId);
     }
 
@@ -337,7 +354,6 @@ export function handleMessage(data: MessageResponse): void {
     console.warn("Received message data:", data);
 
     if (data.isOldMessages) {
-      console.log("Processing old messages.");
       handleOldMessagesResponse(data);
       return;
     }
@@ -379,10 +395,27 @@ export function handleMessage(data: MessageResponse): void {
   }
 }
 
+function isScrolledToBottom() {
+  return (
+    chatContainer.scrollHeight - chatContainer.scrollTop <=
+    chatContainer.clientHeight + 1
+  );
+}
+
+function isAllMediaLoaded(elements: NodeListOf<Element>) {
+  return Array.from(elements).every((media) => {
+    if (media instanceof HTMLImageElement) {
+      return media.complete;
+    } else if (media instanceof HTMLMediaElement) {
+      return media.readyState === 4;
+    }
+    return true;
+  });
+}
+
 export function handleHistoryResponse(data: MessageResponse) {
-  console.log(data);
   const { messages, channelId, guildId, oldestMessageDate } = data;
-  const history = messages;
+
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
@@ -391,46 +424,36 @@ export function handleHistoryResponse(data: MessageResponse) {
   isLastMessageStart = false;
   clearMessagesCache();
 
-  if (!Array.isArray(history) || history.length === 0) {
+  if (!Array.isArray(messages) || messages.length === 0) {
     displayStartMessage();
     return;
   }
 
-  if (guildId && guildId !== currentGuildId)
-    console.warn(
-      data,
-      guildId,
-      "History guild ID is different from current guild",
-      currentGuildId
-    );
-  if (channelId !== guildCache.currentChannelId)
-    console.warn(
-      data,
-      channelId,
-      "History channel ID is different from current channel",
-      guildCache.currentChannelId
-    );
+  validateChannelAndGuild(channelId, guildId);
 
   if (guildId) {
-    cacheInterface.setMessages(guildId, guildId, history);
+    cacheInterface.setMessages(guildId, guildId, messages);
   }
 
+  processMessages(messages, oldestMessageDate);
+}
+
+function processMessages(messages: any[], oldestMessageDate?: string | null) {
   const firstMessageDateOnChannel = oldestMessageDate
     ? new Date(oldestMessageDate)
     : null;
   const repliesList = new Set<string>();
-  const wasAtBottom =
-    chatContainer.scrollHeight - chatContainer.scrollTop ===
-    chatContainer.clientHeight;
-
+  const wasAtBottom = isScrolledToBottom();
   chatContainer.style.overflow = "hidden";
 
-  history.sort(
+  messages.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
-  history.forEach((msgData) => {
+
+  for (const msgData of messages) {
     const msg = new Message(msgData);
     const foundReply = displayChatMessage(msg);
+
     if (foundReply) {
       repliesList.add(msg.messageId);
       const index = unknownReplies.indexOf(msg.messageId);
@@ -438,100 +461,28 @@ export function handleHistoryResponse(data: MessageResponse) {
         unknownReplies.splice(index, 1);
       }
     }
-  });
+  }
 
-  let isUserInteracted = false;
-
-  const userScrollEvents = ["mousedown", "touchstart", "wheel"];
   fetchReplies(messages, new Set<string>());
 
   if (wasAtBottom) {
     scrollToBottom();
   }
 
-  const ensureScrollAtBottom = () => {
-    if (wasAtBottom && !isUserInteracted) {
-      scrollToBottom();
-    }
-  };
-
-  const _observer = new MutationObserver(() => {
-    ensureScrollAtBottom();
-  });
-
-  _observer.observe(chatContainer, {
-    childList: true,
-    subtree: true
-  });
-
-  const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
-  const mediaLoadedPromises: Promise<void>[] = [];
-
-  mediaElements.forEach((media) => {
-    if (media instanceof HTMLImageElement && !media.complete) {
-      const mediaPromise = new Promise<void>((resolve) => {
-        media.addEventListener("load", () => {
-          resolve();
-        });
-      });
-      mediaLoadedPromises.push(mediaPromise);
-    } else if (media instanceof HTMLVideoElement && media.readyState < 4) {
-      const mediaPromise = new Promise<void>((resolve) => {
-        media.addEventListener("loadeddata", () => {
-          resolve();
-        });
-      });
-      mediaLoadedPromises.push(mediaPromise);
-    }
-  });
-
-  const checkAllMediaLoaded = () => {
-    return Array.from(mediaElements).every((media) => {
-      if (media instanceof HTMLImageElement) {
-        return media.complete;
-      } else if (media instanceof HTMLMediaElement) {
-        return media.readyState === 4;
-      }
-      return true;
-    });
-  };
-
-  Promise.all(mediaLoadedPromises).then(() => {
-    chatContainer.style.overflow = "";
-    _observer.disconnect();
-  });
-  let lastHeight = chatContainer.scrollHeight;
-  const MONITOR_CHANGES_DELAY = 50;
-  const PREVENT_SCROLL_JUMP_DELAY = 20;
-  const HISTORY_SCROLL_DELAY = 200;
-  const monitorContentSizeChanges = () => {
-    const currentHeight = chatContainer.scrollHeight;
-
-    if (currentHeight !== lastHeight) {
-      if (wasAtBottom && !isUserInteracted) {
-        chatContainer.scrollTop = currentHeight;
-      }
-    }
-
-    lastHeight = currentHeight;
-
-    if (checkAllMediaLoaded()) {
-      chatContainer.style.overflow = "";
-      _observer.disconnect();
-    } else {
-      setTimeout(monitorContentSizeChanges, MONITOR_CHANGES_DELAY);
-    }
-  };
-
-  monitorContentSizeChanges();
+  setupScrollHandling(wasAtBottom);
 
   if (
-    history[0]?.date &&
+    messages[0]?.date &&
     firstMessageDateOnChannel &&
-    new Date(history[0].date).getTime() === firstMessageDateOnChannel.getTime()
+    new Date(messages[0].date).getTime() === firstMessageDateOnChannel.getTime()
   ) {
     displayStartMessage();
   }
+}
+
+function setupScrollHandling(wasAtBottom: boolean) {
+  let isUserInteracted = false;
+  const userScrollEvents = ["mousedown", "touchstart", "wheel"];
 
   const releaseScrollLock = () => {
     isUserInteracted = true;
@@ -546,28 +497,95 @@ export function handleHistoryResponse(data: MessageResponse) {
   );
 
   chatContainer.addEventListener("scroll", () => {
-    if (
-      chatContainer.scrollTop <
-      chatContainer.scrollHeight - chatContainer.clientHeight
-    ) {
-      isUserInteracted = true;
-    } else {
-      isUserInteracted = false;
+    isUserInteracted = !isScrolledToBottom();
+  });
+
+  const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
+  const mediaLoadedPromises = createMediaLoadPromises(mediaElements);
+
+  const observer = new MutationObserver(() => {
+    if (wasAtBottom && !isUserInteracted) {
+      scrollToBottom();
     }
   });
 
-  const preventScrollJump = () => {
-    if (!isUserInteracted) {
-      ensureScrollAtBottom();
+  observer.observe(chatContainer, {
+    childList: true,
+    subtree: true
+  });
+
+  let lastHeight = chatContainer.scrollHeight;
+  const monitorContentSizeChanges = () => {
+    const currentHeight = chatContainer.scrollHeight;
+
+    if (currentHeight !== lastHeight && wasAtBottom && !isUserInteracted) {
+      chatContainer.scrollTop = currentHeight;
+    }
+
+    lastHeight = currentHeight;
+
+    if (isAllMediaLoaded(mediaElements)) {
+      chatContainer.style.overflow = "";
+      observer.disconnect();
+    } else {
+      setTimeout(monitorContentSizeChanges, 50);
     }
   };
 
-  setInterval(preventScrollJump, PREVENT_SCROLL_JUMP_DELAY);
+  Promise.all(mediaLoadedPromises).then(() => {
+    chatContainer.style.overflow = "";
+    observer.disconnect();
+  });
+
+  monitorContentSizeChanges();
+
+  const preventScrollJump = () => {
+    if (!isUserInteracted) {
+      if (wasAtBottom) scrollToBottom();
+    }
+  };
+
+  const preventScrollInterval = setInterval(preventScrollJump, 20);
+
   setTimeout(() => {
     scrollToBottom();
-  }, HISTORY_SCROLL_DELAY);
+    clearInterval(preventScrollInterval);
+  }, 200);
 }
 
+function validateChannelAndGuild(channelId: string, guildId?: string) {
+  if (guildId && guildId !== currentGuildId) {
+    console.warn(
+      "History guild ID is different from current guild",
+      guildId,
+      currentGuildId
+    );
+  }
+  if (channelId !== guildCache.currentChannelId) {
+    console.warn(
+      "History channel ID is different from current channel",
+      channelId,
+      guildCache.currentChannelId
+    );
+  }
+}
+
+function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
+  return Array.from(mediaElements).map((media) => {
+    if (media instanceof HTMLImageElement && !media.complete) {
+      return new Promise<void>((resolve) => {
+        media.addEventListener("load", () => resolve());
+        media.addEventListener("error", () => resolve());
+      });
+    } else if (media instanceof HTMLVideoElement && media.readyState < 4) {
+      return new Promise<void>((resolve) => {
+        media.addEventListener("loadeddata", () => resolve());
+        media.addEventListener("error", () => resolve());
+      });
+    }
+    return Promise.resolve();
+  });
+}
 export function createDateBar(currentDate: string) {
   const formattedDate = new Date(currentDate).toLocaleDateString(
     translations.getLocale(),
@@ -707,7 +725,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   const newMessage = createMessageElement(
     messageId,
     userId,
-    date.toISOString(),
+    (typeof date === "string" ? new Date(date) : date).toISOString(),
     content,
     attachmentUrls,
     replyToId || undefined,
@@ -727,7 +745,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      date.toISOString(),
+      (typeof date === "string" ? new Date(date) : date).toISOString(),
       isBot,
       willDisplayProfile
     );

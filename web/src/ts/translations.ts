@@ -1,4 +1,10 @@
-import { kebapToSentence, getId, truncateString } from "./utils.ts";
+import {
+  kebapToSentence,
+  getId,
+  truncateString,
+  loadCookie,
+  saveCookie
+} from "./utils.ts";
 import { alertUser } from "./ui.ts";
 
 import enTranslations from "./../translations/en.json";
@@ -38,7 +44,7 @@ class Translations {
   tooltipTranslations: Record<string, string>;
 
   constructor() {
-    this.currentLanguage = "English";
+    this.currentLanguage = loadCookie("language") || "English";
     this.languages = {
       en: "en-us",
       tr: "tr-TR"
@@ -229,6 +235,7 @@ class Translations {
 
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
+    saveCookie("language", language);
     this.loadTranslations(language);
   }
 
@@ -283,7 +290,7 @@ class Translations {
 
 export const translations = new Translations();
 
-translations.setLanguage("English");
+translations.setLanguage(translations.currentLanguage);
 
 setTimeout(() => {
   translations.initializeTranslations();

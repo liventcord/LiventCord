@@ -38,13 +38,13 @@ namespace LiventCord.Controllers
             _channelController = channelController;
 
         }
-
         [Authorize]
-
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages")]
         public async Task<IActionResult> HandleGetGuildMessages(
             [IdLengthValidation][FromRoute] string guildId,
-            [IdLengthValidation][FromRoute] string channelId
+            [IdLengthValidation][FromRoute] string channelId,
+            [FromQuery] string? date,
+            [FromQuery] string? messageId
         )
         {
             bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
@@ -52,27 +52,50 @@ namespace LiventCord.Controllers
             {
                 return NotFound();
             }
-            var messages = await GetMessages(null, null, channelId, guildId);
+
+            DateTime? parsedDate = null;
+            if (date != null)
+            {
+                if (!DateTime.TryParse(date, out DateTime tempParsedDate))
+                {
+                    return BadRequest("Invalid date format.");
+                }
+                parsedDate = tempParsedDate;
+            }
+
+            var messages = await GetMessages(parsedDate?.ToString("o"), UserId!, null, channelId, guildId, messageId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
-            return Ok(new { messages, channelId, guildId, oldestMessageDate });
+            bool isOldMessages = date != null;
+            return Ok(new { messages, channelId, guildId, oldestMessageDate, isOldMessages });
         }
-
         [Authorize]
-
         [HttpGet("/api/dms/channels/{friendId}/messages")]
         public async Task<IActionResult> HandleGetDMMessages(
-            [UserIdLengthValidation][FromRoute] string friendId
+            [UserIdLengthValidation][FromRoute] string friendId,
+            [FromQuery] string? date,
+            [FromQuery] string? messageId,
+            [FromQuery] string? guildId
         )
         {
             var userId = UserId!;
+            var sortedChannelId = string.Compare(userId, friendId) < 0
+                ? $"{userId}_{friendId}"
+                : $"{friendId}_{userId}";
 
-            var sortedChannelId = string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
+            DateTime? parsedDate = null;
+            if (date != null)
+            {
+                if (!DateTime.TryParse(date, out DateTime tempParsedDate))
+                {
+                    return BadRequest("Invalid date format.");
+                }
+                parsedDate = tempParsedDate;
+            }
 
-            var messages = await GetMessages(userId, friendId);
-
+            var messages = await GetMessages(parsedDate?.ToString("o"), UserId!, friendId, null, guildId, messageId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
-
-            return Ok(new { messages, channelId = sortedChannelId, oldestMessageDate });
+            bool isOldMessages = date != null;
+            return Ok(new { messages, channelId = sortedChannelId, oldestMessageDate, isOldMessages });
         }
 
 
@@ -278,7 +301,6 @@ namespace LiventCord.Controllers
             return Ok(editBroadcast);
         }
         [Authorize]
-
         [HttpPut("/api/dms/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditDMMessage(
             [UserIdLengthValidation][FromRoute] string channelId,
@@ -374,11 +396,23 @@ namespace LiventCord.Controllers
             return await queryable.ToListAsync();
         }
 
-
         [NonAction]
-        private async Task<List<Message>> GetMessages(string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null)
+        private async Task<List<Message>> GetMessages(string? date = null, string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null, string? messageId = null)
         {
             IQueryable<Message> query = _context.Messages.AsQueryable();
+            DateTime? parsedDate = null;
+            if (date != null)
+            {
+                if (DateTime.TryParse(date, out DateTime tempParsedDate))
+                {
+                    parsedDate = tempParsedDate.ToUniversalTime();
+                }
+            }
+
+            if (parsedDate != null)
+            {
+                query = query.Where(m => m.Date < parsedDate);
+            }
 
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
             {
@@ -397,12 +431,19 @@ namespace LiventCord.Controllers
                 query = query.Where(m => m.Channel.GuildId == guildId);
             }
 
+            if (!string.IsNullOrEmpty(messageId))
+            {
+                query = query.Where(m => m.MessageId == messageId);
+            }
+
             return await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+
 
         [NonAction]
         private async Task NewBotMessage(NewBotMessageRequest request, string channelId, string guildId)
@@ -506,7 +547,7 @@ namespace LiventCord.Controllers
                 Embeds = embeds ?? new List<Embed>(),
                 Metadata = new Metadata()
             };
-            if (temporaryId != null)
+            if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
             {
                 message.TemporaryId = temporaryId;
             }

@@ -7,7 +7,7 @@ import {
   currentVoiceChannelGuild
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
-import { getId, createEl } from "./utils.ts";
+import { getId, createEl, IMAGE_SRCS } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
 import { currentUserId } from "./user.ts";
@@ -464,8 +464,8 @@ export function activateSoundOutput() {
 let isMicrophoneOpen = true;
 export function setMicrophone() {
   const imagePath = isMicrophoneOpen
-    ? "/images/icons/whitemic.webp"
-    : "/images/icons/redmic.webp";
+    ? IMAGE_SRCS.WHITEMIC_SRC
+    : IMAGE_SRCS.REDMIC_SRC;
   microphoneButton.src = imagePath;
   isMicrophoneOpen = !isMicrophoneOpen;
   console.log("Set microphone! to ", isMicrophoneOpen);
@@ -474,8 +474,8 @@ export function setMicrophone() {
 let isEarphonesOpen = true;
 export function setEarphones() {
   const imagePath = isEarphonesOpen
-    ? "/images/icons/whiteearphones.webp"
-    : "/images/icons/redearphones.webp";
+    ? IMAGE_SRCS.WHITEEARPHONES_SRC
+    : IMAGE_SRCS.REDEARPHONES_SRC;
   earphoneButton.src = imagePath;
   isEarphonesOpen = !isEarphonesOpen;
   console.log("Set earphones! to ", isEarphonesOpen);

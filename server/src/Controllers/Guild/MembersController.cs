@@ -13,12 +13,6 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _dbContext;
         private readonly InviteController _inviteController;
         private readonly PermissionsController _permissionsController;
-        private static List<string> OnlineMembers = new();
-
-        private static bool IsOnline(string userId)
-        {
-            return OnlineMembers.Contains(userId);
-        }
 
         public MembersController(
             AppDbContext dbContext,
@@ -163,19 +157,6 @@ namespace LiventCord.Controllers
                 .AnyAsync();
         }
 
-        [NonAction]
-        public async Task SetMemberOnlineStatus(string userId, bool isOnline)
-        {
-            var user = await _dbContext.Users.FindAsync(userId);
-            if (user != null)
-            {
-                if (isOnline && !OnlineMembers.Contains(userId))
-                    OnlineMembers.Add(userId);
-                else if (!isOnline)
-                    OnlineMembers.Remove(userId);
-                await _dbContext.SaveChangesAsync();
-            }
-        }
 
         [NonAction]
         public async Task<List<string>> GetGuildMembersIds(string guildId)
@@ -203,8 +184,6 @@ namespace LiventCord.Controllers
                     NickName = gu.User.Nickname,
                     Discriminator = gu.User.Discriminator,
                     Description = gu.User.Description,
-                    Status = gu.User.Status,
-                    IsOnline = IsOnline(gu.User.UserId),
                     CreatedAt = gu.User.CreatedAt,
                     SocialMediaLinks = gu.User.SocialMediaLinks,
                 })
@@ -214,8 +193,6 @@ namespace LiventCord.Controllers
                     NickName = user.NickName,
                     Discriminator = user.Discriminator,
                     Description = user.Description,
-                    Status = user.Status,
-                    IsOnline = user.IsOnline,
                     CreatedAt = user.CreatedAt,
                     SocialMediaLinks = user.SocialMediaLinks,
                 })

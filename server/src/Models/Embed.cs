@@ -5,7 +5,7 @@ public class Embed
 {
     public string? Id { get; set; }
     public string? Title { get; set; }
-    public EmbedType Type { get; set; } = EmbedType.Rich;
+    public EmbedType? Type { get; set; } = EmbedType.Rich;
     public string? Description { get; set; }
     public string? Url { get; set; }
     public int? Color { get; set; } = 0x808080;
@@ -29,7 +29,7 @@ public class EmbedThumbnail
 
 public class EmbedImage
 {
-    public required string? Url { get; set; }
+    public required string Url { get; set; }
     public string? ProxyUrl { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }

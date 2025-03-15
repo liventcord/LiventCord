@@ -1,5 +1,9 @@
-import { openDm, readCurrentMessages } from "./app.ts";
-import { drawProfilePop, drawProfilePopId } from "./popups.ts";
+import { openDm, readCurrentMessages, readGuildMessages } from "./app.ts";
+import {
+  createChannelsPop,
+  drawProfilePop,
+  drawProfilePopId
+} from "./popups.ts";
 import { showReplyMenu, chatInput } from "./chatbar.ts";
 import {
   currentDiscriminator,
@@ -11,7 +15,7 @@ import {
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
 import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
-import { addFriendId, friendsCache } from "./friends.ts";
+import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser } from "./ui.ts";
@@ -51,6 +55,15 @@ const ChannelsActionType = {
   NOTIFY_SETTINGS: "NOTIFY_SETTINGS",
   EDIT_CHANNEL: "EDIT_CHANNEL",
   DELETE_CHANNEL: "DELETE_CHANNEL"
+};
+
+const GuildActionType = {
+  MARK_AS_READ: "MARK_AS_READ",
+  INVITE_USERS: "INVITE_USERS",
+  MUTE_GUILD: "MUTE_GUILD",
+  NOTIFY_SETTINGS: "NOTIFY_SETTINGS",
+  CREATE_CHANNEL: "CREATE_CHANNEL",
+  COPY_GUILD_ID: "COPY_GUILD_ID"
 };
 
 const VoiceActionType = {
@@ -109,31 +122,34 @@ export function deleteMessage(messageId: string) {
   apiClient.send(_eventType, data);
 }
 
-export function blockUser(userId: string) {
+function blockUser(userId: string) {
   alertUser("Not implemented: Blocking user ");
 }
 
-export function muteChannel(channelId: string) {
+function muteChannel(channelId: string) {
   alertUser("Mute channel is not implemented!");
 }
-export function showNotifyMenu(channelId: string) {
+function muteGuild(guildId: string) {
+  alertUser("Mute guild is not implemented!");
+}
+function showNotifyMenu(channelId: string) {
   alertUser("Notify menu is not implemented!");
 }
-export function onChangeChannel(channelId: string) {
+function onChangeChannel(channelId: string) {
   alertUser("Channel editing is not implemented!");
 }
 function muteUser(userId: string) {}
 function deafenUser(userId: string) {}
 
-export function togglePin() {
+function togglePin() {
   console.log("Toggle pin!");
 }
-export function mentionUser(userId: string) {
+function mentionUser(userId: string) {
   const userNick = userManager.getUserNick(userId);
   chatInput.value += `@${userNick}`;
 }
 
-export function inviteUser(userId: string, guildId: string) {
+function inviteUser(userId: string, guildId: string) {
   if (!userId || !guildId) {
     return;
   }
@@ -142,11 +158,7 @@ export function inviteUser(userId: string, guildId: string) {
   //TODO: add invitation prompt to here
 }
 
-export function removeFriend(userId: string) {
-  apiClient.send(EventType.REMOVE_FRIEND, { friendId: userId });
-}
-
-export function copyChannelLink(
+function copyChannelLink(
   guildId: string,
   channelId: string,
   event: MouseEvent
@@ -187,6 +199,9 @@ export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (userId && userData) {
     contextList[userId] = createProfileContext(userData);
   }
+}
+export function appendToGuildContextList(guildId: string) {
+  contextList[guildId] = createGuildContext(guildId);
 }
 
 export function createUserContext(userId: string) {
@@ -328,8 +343,37 @@ export function addContextListeners() {
     }
   });
 }
+function createGuildContext(guildId: string) {
+  const context: { [key: string]: any } = {};
+  context[GuildActionType.MARK_AS_READ] = {
+    action: () => readGuildMessages(guildId)
+  };
 
-export function createChannelsContext(channelId: string) {
+  //context[GuildActionType.INVITE_USERS] = {
+  //  action: () => muteChannel(channelId)
+  //};
+  context[GuildActionType.MUTE_GUILD] = {
+    action: () => muteGuild(guildId)
+  };
+  context[GuildActionType.NOTIFY_SETTINGS] = {
+    action: () => showNotifyMenu(guildId)
+  };
+  if (permissionManager.canManageChannels()) {
+    context[GuildActionType.CREATE_CHANNEL] = {
+      action: () => createChannelsPop(guildId)
+    };
+  }
+
+  if (isDeveloperMode) {
+    context[GuildActionType.COPY_GUILD_ID] = {
+      action: (event: MouseEvent) => copyId(guildId, event)
+    };
+  }
+
+  return context;
+}
+
+function createChannelsContext(channelId: string) {
   const context: { [key: string]: any } = {};
   context[ChannelsActionType.MARK_AS_READ] = {
     action: () => readCurrentMessages()

@@ -23,7 +23,8 @@ export const EventType = Object.freeze({
   GET_FRIENDS: "GET_FRIENDS",
   GET_HISTORY_GUILD: "GET_HISTORY_GUILD",
   GET_HISTORY_DM: "GET_HISTORY_DM",
-  GET_SCROLL_HISTORY: "GET_SCROLL_HISTORY",
+  GET_SCROLL_HISTORY_GUILD: "GET_SCROLL_HISTORY_GUILD",
+  GET_SCROLL_HISTORY_DM: "GET_SCROLL_HISTORY_DM",
   GET_GUILDS: "GET_GUILDS",
   GET_INVITES: "GET_INVITES",
   START_TYPING: "START_TYPING",
@@ -74,7 +75,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_FRIENDS: HttpMethod.GET,
   GET_HISTORY_GUILD: HttpMethod.GET,
   GET_HISTORY_DM: HttpMethod.GET,
-  GET_SCROLL_HISTORY: HttpMethod.GET,
+  GET_SCROLL_HISTORY_GUILD: HttpMethod.GET,
+  GET_SCROLL_HISTORY_DM: HttpMethod.GET,
   GET_GUILDS: HttpMethod.GET,
   GET_INVITES: HttpMethod.GET,
   GET_MESSAGE_DATES: HttpMethod.GET,
@@ -112,10 +114,14 @@ const EventUrlMap: Record<EventType, string> = {
   GET_MEMBERS: "/guilds/{guildId}/members",
   GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
 
-  GET_HISTORY_DM: "/dms/channels/{channelId}/messages",
-  GET_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_HISTORY_DM:
+    "/dms/channels/{channelId}/messages?date={date}&messageId={messageId}",
+  GET_HISTORY_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages?date={date}&messageId={messageId}",
 
-  GET_SCROLL_HISTORY: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_SCROLL_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
+  GET_SCROLL_HISTORY_DM: "/dms/channels/{friendId}/messages",
+
   GET_BULK_REPLY: "/guilds/{guildId}/channels/{channelId}/messages/reply",
   GET_MESSAGE_DATE: "/guilds/{guildId}/channels/{channelId}/messages/date",
   START_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/start",
@@ -221,42 +227,59 @@ class ApiClient {
     }
     return method;
   }
-
   getUrlForEvent(
     event: EventType,
-    data: Record<string, any> = {}
+    data: Record<string, any> = {},
+    queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } {
     const basePath = "/api";
     const urlTemplate = EventUrlMap[event];
-
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);
     }
 
-    let url = urlTemplate;
-    const missingKeys: string[] = [];
-    const allPlaceholders = (urlTemplate.match(/{(.*?)}/g) || []).map((match) =>
-      match.replace(/[{}]/g, "")
+    let [urlPath, queryStringTemplate] = urlTemplate.split("?");
+    queryStringTemplate = queryStringTemplate;
+    const routeParams = (urlPath.match(/{(.*?)}/g) || []).map((match) =>
+      match.slice(1, -1)
     );
+    const queryKeys =
+      (queryStringTemplate ? queryStringTemplate.match(/{(.*?)}/g) : [])?.map(
+        (match) => match.slice(1, -1)
+      ) || [];
 
-    allPlaceholders.forEach((placeholder) => {
-      if (!data.hasOwnProperty(placeholder)) {
-        missingKeys.push(placeholder);
+    routeParams.forEach((param) => {
+      if (data.hasOwnProperty(param)) {
+        urlPath = urlPath.replace(
+          `{${param}}`,
+          encodeURIComponent(data[param])
+        );
       } else {
-        url = url.replace(`{${placeholder}}`, data[placeholder]);
+        throw new Error(`Missing required route parameter: ${param}`);
       }
     });
 
-    if (missingKeys.length > 0) {
-      alertUser(
-        `Missing data for URL placeholders: ${missingKeys.join(", ")}.`
-      );
-    }
-    const fullUrl = `${basePath}${url}`;
+    urlPath = urlPath.replace(/\/+/g, "/").replace(/\/$/, "");
+
+    const queryParts: string[] = [];
+    queryKeys.forEach((key) => {
+      if (
+        queryParams.hasOwnProperty(key) &&
+        queryParams[key] !== undefined &&
+        queryParams[key] !== null &&
+        queryParams[key] !== ""
+      ) {
+        queryParts.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(queryParams[key])}`
+        );
+      }
+    });
+
+    const queryString = queryParts.length ? `?${queryParts.join("&")}` : "";
+    const fullUrl = `${basePath}${urlPath}${queryString}`;
 
     return { method: this.getHttpMethod(event), url: fullUrl };
   }
-
   handleMessage(event: EventType, data: any): void {
     if (this.nonResponseEvents.includes(event)) {
       return;

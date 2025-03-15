@@ -76,7 +76,7 @@ th {
   max-width: 300px;
 }
 
-.guilds-list li img:not([src="/images/icons/icon.webp"]):hover {
+.guilds-list li img:not([src="https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/icon.webp"]):hover {
   border-radius: 0px;
 }
 .guilds-list li:hover .white-rod {

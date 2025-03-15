@@ -5,13 +5,14 @@ import {
   updateSelfProfile
 } from "./avatar.ts";
 import { initialState } from "./app.ts";
-import { cacheInterface } from "./cache.ts";
-import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
+import { getId } from "./utils.ts";
+import { socketClient } from "./socketEvents.ts";
 
 export interface Member {
   userId: string;
   nickName: string;
+  status: string;
 }
 
 export let currentUserId: string;
@@ -24,7 +25,6 @@ export interface UserInfo {
   discriminator: string;
   status?: string;
   activity?: string;
-  isOnline?: boolean;
   description?: string;
   isFriendsRequestToUser?: boolean;
   createdAt?: string;
@@ -46,13 +46,15 @@ class UserManager {
   private selfOnline = false;
   private userNames: { [userId: string]: UserInfo } = {};
 
+  private statusCache: Record<string, Promise<boolean> | boolean> = {};
+
   constructor() {
     this.userNames["1"] = {
       userId: "1",
       nickName: "Clyde",
       discriminator: "0000",
       isBlocked: false,
-      isOnline: false,
+      status: "offline",
       description: ""
     };
   }
@@ -74,7 +76,7 @@ class UserManager {
       return currentUserNick;
     }
     console.log("Searching for user ", userId, " in : ", this.userNames);
-    return this.userNames[userId]?.nickName ?? deletedUser;
+    return this.userNames[userId]?.nickName ?? "Deleted User";
   }
 
   getUserDiscriminator(userId: string): string {
@@ -112,11 +114,98 @@ class UserManager {
       nickName: nick,
       discriminator,
       isBlocked: Boolean(isBlocked),
-      userId
+      userId,
+      status,
+      description: ""
     };
   }
+
   isSelfOnline() {
     return this.selfOnline;
+  }
+
+  updateMemberStatus(userId: string, status: string): void {
+    if (!this.userNames[userId]) {
+      this.userNames[userId] = {
+        userId,
+        nickName: "",
+        discriminator: "",
+        isBlocked: false,
+        status,
+        description: ""
+      };
+    } else {
+      this.userNames[userId].status = status;
+    }
+    console.warn(this.userNames);
+  }
+
+  getMemberStatus(userId: string): string {
+    return this.userNames[userId]?.status ?? "offline";
+  }
+
+  async isOnline(userId: string): Promise<boolean> {
+    if (this.statusCache[userId] instanceof Promise) {
+      return this.statusCache[userId];
+    }
+
+    if (this.statusCache[userId] !== undefined) {
+      return this.statusCache[userId] as boolean;
+    }
+
+    const currentStatus = this.userNames[userId]?.status;
+
+    if (currentStatus === "online") {
+      this.statusCache[userId] = true;
+      return true;
+    }
+
+    if (currentStatus === "offline") {
+      this.statusCache[userId] = false;
+      return false;
+    }
+
+    const statusPromise = this.getStatusPollingInternal(userId);
+    this.statusCache[userId] = statusPromise;
+    const isOnline = await statusPromise;
+    this.statusCache[userId] = isOnline;
+
+    return isOnline;
+  }
+
+  private pollStatus(
+    userId: string,
+    resolve: (status: string) => void,
+    timeout: number
+  ): void {
+    const checkStatus = setInterval(() => {
+      const updatedStatus = this.userNames[userId]?.status;
+      if (updatedStatus) {
+        clearInterval(checkStatus);
+        resolve(updatedStatus);
+      }
+    }, 100);
+
+    setTimeout(() => {
+      clearInterval(checkStatus);
+      resolve("offline");
+    }, timeout);
+
+    socketClient.getUserStatus([userId]);
+  }
+
+  private getStatusPollingInternal(userId: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      console.log("Polling status for user:", userId);
+      this.pollStatus(userId, (status) => resolve(status === "online"), 5000);
+    });
+  }
+
+  public getStatusPollingString(userId: string): Promise<string> {
+    return new Promise((resolve) => {
+      console.log("Polling status for user:", userId);
+      this.pollStatus(userId, resolve, 5000);
+    });
   }
 }
 
@@ -129,46 +218,46 @@ export const statusTypes = {
   idle: "idle"
 };
 
-export function setSelfStatus() {
-  const status =
+export function setSelfStatus(status: string) {
+  const status_translated =
     translations.getTranslation(
-      statusTypes[initialState.user.status as keyof typeof statusTypes]
+      statusTypes[status as keyof typeof statusTypes]
     ) ??
     translations.getTranslation(statusTypes.offline) ??
     "Unknown";
 
-  selfStatus.textContent = status;
+  selfStatus.textContent = status_translated;
 }
 
 export function initializeProfile() {
-  userManager.setCurrentUserId(initialState.user.id);
+  userManager.setCurrentUserId(initialState.user.userId);
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
-  setSelfStatus();
+  setSelfStatus(initialState.user.status);
   updateSelfProfile(currentUserId, currentUserNick);
 }
 
 export function getSelfFullDisplay() {
   return initialState.user.nickname + "#" + initialState.user.discriminator;
 }
+const selfBubble = getId("self-bubble") as HTMLElement;
 
-export function updateUserOnlineStatus(userId: string, isOnline: boolean) {
-  if (userId === currentUserId) return;
+function updateSelfStatus(status: string) {
+  if (!selfBubble) return;
+  selfBubble.classList.value = "";
+  selfBubble.classList.add(status);
+  setSelfStatus(status);
+}
 
-  const guildMembers = cacheInterface.getMembers(currentGuildId);
-
-  for (const guildId in guildMembers) {
-    const user = guildMembers[guildId];
-
-    if (user && user.userId === userId) {
-      console.log(
-        `User ${userId} online status updated to ${isOnline} in guild ${guildId}`
-      );
-      return;
-    }
+export function updateUserOnlineStatus(userId: string, status: string) {
+  if (userId === currentUserId) {
+    updateSelfStatus(status);
   }
+  console.log(userId, status);
+
+  userManager.updateMemberStatus(userId, status);
 
   console.log(`User ${userId} not found in any guild`);
 }

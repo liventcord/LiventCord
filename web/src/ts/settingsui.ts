@@ -37,7 +37,7 @@ import {
   enableElement,
   blackImage
 } from "./utils.ts";
-import { currentUserNick, currentUserId, setSelfStatus } from "./user.ts";
+import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId } from "./guild.ts";
@@ -644,7 +644,6 @@ function initializeLanguageDropdown() {
 
       setTimeout(() => {
         reconstructSettings(currentSettingsType);
-        setSelfStatus();
       }, 200);
     }
   });

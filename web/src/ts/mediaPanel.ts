@@ -1,5 +1,5 @@
 import { initialState } from "./app.ts";
-import { createEl, defaultMediaImageSrc, getId, debounce } from "./utils.ts";
+import { createEl, getId, debounce, IMAGE_SRCS } from "./utils.ts";
 import { sendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
@@ -421,7 +421,7 @@ export function handleCategoryGifs(responseText: string) {
     const gifImg = createEl("img", {
       className: "gif-content"
     }) as HTMLImageElement;
-    gifImg.src = defaultMediaImageSrc;
+    gifImg.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
     mediaMenuContainer.appendChild(gifImg);
 
     gif.loadGif(gifImg);

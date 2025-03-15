@@ -67,7 +67,6 @@ import {
   channelsUl,
   getChannels,
   currentChannelName,
-  getRootChannel,
   Channel,
   changeChannel
 } from "./channels.ts";
@@ -86,13 +85,14 @@ import {
   createEl,
   enableElement,
   disableElement,
-  constructDmPage
+  constructDmPage,
+  loadBooleanCookie
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 
 import { friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
-import { loadBooleanCookie, initializeCookies } from "./settings.ts";
+import { initializeCookies } from "./settings.ts";
 import {
   isOnMe,
   router,
@@ -128,7 +128,7 @@ interface InitialStateData {
 }
 
 interface User {
-  id: string;
+  userId: string;
   nickname: string;
   status: string;
   discriminator: string;
@@ -193,7 +193,7 @@ export function initialiseState(data: InitialStateData): void {
 
   initialState = {
     user: {
-      id: userId,
+      userId,
       nickname: nickName,
       status: userStatus,
       discriminator: userDiscriminator,
@@ -377,8 +377,12 @@ export function handleChannelLoading(
     loadGuild(guildId, rootChannel.channelId, "", true);
   }
 }
-
+export function readGuildMessages(guildId: string) {
+  alertUser("Reading messages is not implemented!");
+}
 export function readCurrentMessages() {
+  alertUser("Reading messages is not implemented!");
+  return;
   if (!guildCache.currentChannelId) {
     return;
   }

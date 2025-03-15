@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   app:
     build:
@@ -9,4 +11,31 @@ services:
       - ./Properties/appsettings.json:/app/Properties/appsettings.json
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production} 
-    entrypoint: ["./LiventCord"]
+    networks:
+      - shared_network
+    extra_hosts:
+      - "localhost:host-gateway"
+
+  go-ws-api:
+    build:
+      context: ./server/go-ws-api
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - shared_network
+    extra_hosts:
+      - "localhost:host-gateway"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - shared_network
+    extra_hosts:
+      - "localhost:host-gateway"
+
+networks:
+  shared_network:
+    driver: bridge

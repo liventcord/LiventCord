@@ -1,5 +1,11 @@
 declare var confetti: any;
-import { blackImage, getId, randomInRange } from "./utils.ts";
+import {
+  blackImage,
+  getId,
+  loadBooleanCookie,
+  randomInRange,
+  saveBooleanCookie
+} from "./utils.ts";
 import {
   enableBorderMovement,
   stopAudioAnalysis,
@@ -69,29 +75,6 @@ export function clearCookies() {
     const [name] = cookie.split("=");
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
   }
-}
-
-export function saveBooleanCookie(name: string, value: number) {
-  value = value ? 1 : 0;
-  const expires = new Date();
-  expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000);
-  const expiresStr = `expires=${expires.toUTCString()}`;
-  const cookieValue = encodeURIComponent(value);
-  document.cookie = `${encodeURIComponent(
-    name
-  )}=${cookieValue}; ${expiresStr}; path=/`;
-}
-
-export function loadBooleanCookie(name: string) {
-  const cookieName = encodeURIComponent(name) + "=";
-  const cookies = document.cookie.split("; ");
-  for (const cookie of cookies) {
-    if (cookie.startsWith(cookieName)) {
-      const result = decodeURIComponent(cookie.substring(cookieName.length));
-      return result === "1";
-    }
-  }
-  return false;
 }
 
 type ToggleState = {
