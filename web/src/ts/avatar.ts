@@ -65,7 +65,9 @@ export async function setPicture(
   isTimestamp?: boolean
 ) {
   if (!srcId) {
-    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
+    imgToUpdate.src = isProfile
+      ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+      : blackImage;
     return;
   }
   if (!imgToUpdate) return;
@@ -78,7 +80,9 @@ export async function setPicture(
   srcId = String(srcId);
 
   if (failedImages.has(srcId)) {
-    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
+    imgToUpdate.src = isProfile
+      ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+      : blackImage;
     return;
   }
 
@@ -95,20 +99,26 @@ export async function setPicture(
   try {
     const response = await fetch(imageUrl);
     if (!response.ok) {
-      imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
+      imgToUpdate.src = isProfile
+        ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+        : blackImage;
       failedImages.add(srcId);
       return;
     }
     imageCache.set(srcId, imageUrl);
     imgToUpdate.src = imageUrl;
   } catch (e) {
-    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
+    imgToUpdate.src = isProfile
+      ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+      : blackImage;
     failedImages.add(srcId);
     console.error(e);
   }
 
   imgToUpdate.addEventListener("error", function () {
-    imgToUpdate.src = isProfile ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC : blackImage;
+    imgToUpdate.src = isProfile
+      ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+      : blackImage;
     failedImages.add(srcId);
   });
 }

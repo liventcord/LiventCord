@@ -8,18 +8,25 @@ import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
 
 export const IMAGE_SRCS = {
-  ICON_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/icon.webp",
-  WUMPUS_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/wumpusalone.webp",
-  WHITEMIC_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whitemic.webp",
-  REDMIC_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redmic.webp",
-  WHITEEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whiteearphones.webp",
-  REDEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redearphones.webp",
-  DEFAULT_MEDIA_IMG_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp",
-  CLYDE_SRC : "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/clyde.webp",
-  DEFAULT_PROFILE_IMG_SRC : "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/guest.webp",
+  ICON_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/icon.webp",
+  WUMPUS_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/wumpusalone.webp",
+  WHITEMIC_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whitemic.webp",
+  REDMIC_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redmic.webp",
+  WHITEEARPHONES_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whiteearphones.webp",
+  REDEARPHONES_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redearphones.webp",
+  DEFAULT_MEDIA_IMG_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp",
+  CLYDE_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/clyde.webp",
+  DEFAULT_PROFILE_IMG_SRC:
+    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/guest.webp"
 };
-
-
 
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
@@ -61,16 +68,17 @@ export function setDefaultProfileImageSrc(blob: Blob) {
   IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC = URL.createObjectURL(blob);
 }
 
-const base64Profile = await urlToBase64(IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC);
-const blobProfile = base64ToBlob(base64Profile);
-setDefaultProfileImageSrc(blobProfile);
+async function convertAndSetImage(url: string, setter: CallableFunction) {
+  const base64 = await urlToBase64(url);
+  const blob = base64ToBlob(base64);
+  setter(blob);
+}
 
-const base64Media = await urlToBase64(IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC);
-const blobMedia = base64ToBlob(base64Media);
-setDefaultMediaImageSrc(blobMedia);
-
-
-
+convertAndSetImage(
+  IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC,
+  setDefaultProfileImageSrc
+);
+convertAndSetImage(IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC, setDefaultMediaImageSrc);
 
 export function getMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
