@@ -3,7 +3,8 @@ import {
   createEl,
   blackImage,
   constructAppPage,
-  getProfileUrl
+  getProfileUrl,
+  IMAGE_SRCS
 } from "./utils.ts";
 import { clickMainLogo, alertUser, preventDrag } from "./ui.ts";
 import {
@@ -500,7 +501,7 @@ function createNewGuildButton() {
 function createMainLogo() {
   const mainLogoImg = createEl("img", {
     id: "main-logo",
-    src: "/images/icons/icon.webp"
+    src: IMAGE_SRCS.ICON_SRC
   });
 
   const mainLogo = createEl("li");

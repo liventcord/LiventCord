@@ -7,6 +7,16 @@ import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
 
+export const IMAGE_SRCS = {
+  ICON_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/icon.webp",
+  WUMPUS_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/wumpusalone.webp",
+  WHITEMIC_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whitemic.webp",
+  REDMIC_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redmic.webp",
+  WHITEEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whiteearphones.webp",
+  REDEARPHONES_SRC: "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redearphones.webp",
+  DEFAULT_MEDIA_IMG_SRC: "/https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp"
+};
+
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
   tag: K,

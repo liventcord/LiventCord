@@ -4,7 +4,8 @@ import {
   createEl,
   getId,
   disableElementHTML,
-  disableElement
+  disableElement,
+  IMAGE_SRCS
 } from "./utils.ts";
 import { openDm, removeDm } from "./app.ts";
 import { currentUserNick, userManager } from "./user.ts";
@@ -499,7 +500,7 @@ export function updateUsersActivities(friend: Friend) {
 
     const iconImg = createEl("img", {
       className: "activity-card-icon",
-      src: "/defaultmediaimage.webp"
+      src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC
     });
 
     activityCard.appendChild(contentDiv);
@@ -641,7 +642,7 @@ export function displayWumpus() {
   friendsContainer.innerHTML = "";
   const imgElement = createEl("img", {
     id: "wumpusalone",
-    src: "/images/wumpusalone.webp"
+    src: IMAGE_SRCS.WUMPUS_SRC
   });
   imgElement.style.userSelect = "none";
   friendsContainer.appendChild(imgElement);

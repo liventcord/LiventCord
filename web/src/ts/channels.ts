@@ -128,6 +128,7 @@ export function handleNewChannel(data: any) {
 
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) return;
+  if (!newChannel.isTextChannel) return;
   console.log("Changed channel: ", newChannel);
   if (isOnMe || isOnDm) {
     return;
