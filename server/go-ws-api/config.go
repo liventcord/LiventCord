@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"github.com/joho/godotenv"
+	"os"
 )
 
 func loadConfig() {

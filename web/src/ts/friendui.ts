@@ -10,7 +10,7 @@ import { openDm, removeDm } from "./app.ts";
 import { currentUserNick, userManager } from "./user.ts";
 import {
   submitAddFriend,
-  filterFriends,
+  filterFriendsOnSearch,
   addPendingButtons,
   friendsCache,
   Friend,
@@ -54,7 +54,7 @@ export const ButtonTypes = {
 };
 const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
   "friendsSearchInput"
-)} onkeyup="filterFriends()"></input>`;
+)} ></input>`;
 
 const HOVER_BUBBLE_TIME = 500;
 
@@ -110,10 +110,12 @@ export function disableDmContainers() {
 
 interface DmUserInfo {
   userId: string;
-  isOnline: boolean;
+  status: string;
   nickName: string;
   activity: string;
   discriminator: string;
+  isPending: boolean;
+  isFriendsRequestToUser: boolean;
 }
 interface ExistingDmContainer {
   dmContainer: HTMLElement;
@@ -121,24 +123,32 @@ interface ExistingDmContainer {
 class DmUser {
   friend: DmUserInfo;
   friendId: string;
-  isOnline: boolean;
   friendNick: string;
   dmContainer: HTMLElement;
 
-  constructor(friend: DmUserInfo) {
+  private constructor(friend: DmUserInfo, dmContainer: HTMLElement) {
     this.friend = friend;
     this.friendId = friend.userId;
-    this.isOnline = friend.isOnline;
     this.friendNick = friend.nickName;
-    this.dmContainer = this.createDmContainer();
+    this.dmContainer = dmContainer;
   }
 
-  createDmContainer() {
+  // Static method to ensure async creation
+  static async create(friend: DmUserInfo): Promise<DmUser> {
+    const dmContainer = await DmUser.createDmContainer(friend);
+    return new DmUser(friend, dmContainer);
+  }
+
+  // Static method to handle async container creation
+  private static async createDmContainer(
+    friend: DmUserInfo
+  ): Promise<HTMLElement> {
     const dmContainer = createEl("div", {
       className: "dm-container",
-      id: this.friendId
+      id: friend.userId
     });
-    if (this.friendId === friendsCache.currentDmId) {
+
+    if (friend.userId === friendsCache.currentDmId) {
       dmContainer.classList.add("dm-selected");
     }
 
@@ -146,10 +156,11 @@ class DmUser {
       className: "dm-profile-img"
     }) as HTMLImageElement;
     if (profileImg) {
-      setProfilePic(profileImg, this.friendId);
+      setProfilePic(profileImg, friend.userId);
     }
 
-    const bubble = createDmBubble(this.isOnline);
+    const isOnline = await userManager.isOnline(friend.userId);
+    const bubble = createDmBubble(isOnline);
     profileImg.style.transition = "border-radius 0.5s ease-out";
     bubble.style.transition = "opacity 0.5s ease-in-out";
 
@@ -177,17 +188,17 @@ class DmUser {
     });
 
     dmContainer.addEventListener("click", () => {
-      openDm(this.friendId);
+      openDm(friend.userId);
     });
 
-    appendToProfileContextList(this.friend, this.friendId);
+    appendToProfileContextList(friend, friend.userId);
 
     dmContainer.appendChild(bubble);
     dmContainer.appendChild(profileImg);
 
     const titleContent = createEl("p", {
       className: "content",
-      textContent: this.friendNick
+      textContent: friend.nickName
     });
     dmContainer.appendChild(titleContent);
 
@@ -196,7 +207,7 @@ class DmUser {
     closeBtn.textContent = "X";
     closeBtn.addEventListener("click", (event) => {
       event.stopPropagation();
-      removeDm(this.friendId);
+      removeDm(friend.userId);
     });
     dmContainer.appendChild(closeBtn);
 
@@ -204,12 +215,14 @@ class DmUser {
   }
 }
 
-export function appendToDmList(user: DmUserInfo): HTMLElement | null {
+export async function appendToDmList(
+  user: DmUserInfo
+): Promise<HTMLElement | null> {
   if (existingFriendsIds.has(user.userId)) {
     return null;
   }
 
-  const dmUser = new DmUser(user);
+  const dmUser = await DmUser.create(user);
 
   dmContainerParent.appendChild(dmUser.dmContainer);
 
@@ -235,47 +248,39 @@ export function updateDmsList(friends: DmUserInfo[]) {
   existingFriendsDmContainers.clear();
   existingFriendsIds.clear();
 
-  friends.forEach((friend) => {
-    const dmUser = new DmUser(friend);
-    dmContainerParent.appendChild(dmUser.dmContainer);
+  const friendsRecord: { [key: string]: Friend } = friends.reduce(
+    (record, friend) => {
+      async function setupDmUser(friend: DmUserInfo) {
+        const dmUser = await DmUser.create(friend);
+        dmContainerParent.appendChild(dmUser.dmContainer);
+        dmContainerParent.appendChild(dmUser.dmContainer);
 
-    existingFriendsDmContainers.add({
-      dmContainer: dmUser.dmContainer,
-      remove() {
-        this.dmContainer.remove();
+        existingFriendsDmContainers.add({
+          dmContainer: dmUser.dmContainer,
+          remove() {
+            this.dmContainer.remove();
+          }
+        });
       }
-    });
+      setupDmUser(friend);
 
-    existingFriendsIds.add(friend.userId);
-  });
-  console.log(friends);
-  const friendsRecord: Record<string, Friend> = Object.fromEntries(
-    friends.map((friend) => [
-      friend.userId,
-      new Friend({
-        userId: friend.userId,
-        nickName: friend.nickName,
-        discriminator: "0000",
-        status: "offline",
-        activity: "",
-        isOnline: friend.isOnline,
-        description: "",
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        socialMediaLinks: [],
-        isFriendsRequestToUser: false,
-        isPending: false
-      })
-    ])
+      existingFriendsIds.add(friend.userId);
+
+      record[friend.userId] = new Friend(friend);
+
+      return record;
+    },
+    {} as { [key: string]: Friend }
   );
 
   friendsCache.setupDmFriends(friendsRecord);
 }
 
-export function addToDmList(userData: DmUserInfo) {
+export async function addToDmList(userData: DmUserInfo): Promise<void> {
   const existingDmContainer = dmContainerParent.querySelector(
     `#${CSS.escape(userData.userId)}`
   );
+
   if (existingDmContainer) {
     dmContainerParent.insertBefore(
       existingDmContainer,
@@ -284,7 +289,7 @@ export function addToDmList(userData: DmUserInfo) {
     return;
   }
 
-  const newContainer = appendToDmList(userData);
+  const newContainer = await appendToDmList(userData);
 
   if (newContainer) {
     dmContainerParent.insertBefore(newContainer, dmContainerParent.firstChild);
@@ -466,7 +471,7 @@ export function createButtonWithBubblesImg(
   return iconSphere;
 }
 export function updateUsersActivities(friend: Friend) {
-  if (!friendsCache.isOnline(friend.userId)) return;
+  if (!userManager.isOnline(friend.userId)) return;
   if (friend.activity === "" || friend.activity === undefined) return;
   console.log(friend);
   disableElement("activity-detail");
@@ -642,27 +647,38 @@ export function displayWumpus() {
   friendsContainer.appendChild(imgElement);
 }
 
-export function filterFriendsByCategory(friends: Friend[]): Friend[] {
+export async function filterFriendsByCategory(
+  friends: Friend[]
+): Promise<Friend[]> {
   const filterConditions = {
-    [friendMenuTypes.online]: (friend: Friend) =>
-      friend.isOnline && !friend.isPending,
-    [friendMenuTypes.all]: (friend: Friend) => !friend.isPending,
-    [friendMenuTypes.blocked]: (friend: Friend) =>
+    [friendMenuTypes.online]: async (friend: Friend) =>
+      (await userManager.isOnline(friend.userId)) && !friend.isPending,
+    [friendMenuTypes.all]: async (friend: Friend) => !friend.isPending,
+    [friendMenuTypes.blocked]: async (friend: Friend) =>
       userManager.isUserBlocked(friend.userId) && !friend.isPending,
-    [friendMenuTypes.pending]: (friend: Friend) => friend.isPending
+    [friendMenuTypes.pending]: async (friend: Friend) => friend.isPending
   };
 
   const filterFn = filterConditions[currentSelectedFriendMenu];
 
   if (filterFn) {
-    return friends.filter(filterFn);
+    const filteredFriends = await Promise.all(
+      friends.map(async (friend) => ({
+        friend,
+        keep: await filterFn(friend)
+      }))
+    );
+
+    return filteredFriends
+      .filter(({ keep }) => keep)
+      .map(({ friend }) => friend);
   }
 
   console.warn("Unhandled status: " + currentSelectedFriendMenu);
   return [];
 }
 
-export function populateFriendsContainer(
+export async function populateFriendsContainer(
   friends: Friend[],
   isPending?: boolean
 ) {
@@ -672,7 +688,7 @@ export function populateFriendsContainer(
 
   try {
     console.log(friends);
-    friends = filterFriendsByCategory(friends);
+    friends = await filterFriendsByCategory(friends);
 
     if (friends.length === 0) {
       displayWumpus();
@@ -681,11 +697,9 @@ export function populateFriendsContainer(
 
     const friendsTitleContainer = createFriendsTitle(friends.length);
     friendsContainer.innerHTML = initialFriendsContainerHtml;
+    const friendsSearchInput = getId("friendsSearchInput");
+    friendsSearchInput?.addEventListener("onkeyup", filterFriendsOnSearch);
     friendsContainer.appendChild(friendsTitleContainer);
-
-    setTimeout(() => {
-      filterFriends();
-    }, 10);
 
     updateFriendsList(friends, !!isPending);
     enableElement("friendsTitleContainer");
@@ -694,32 +708,31 @@ export function populateFriendsContainer(
   }
 }
 
-function updateFriendsList(friends: Friend[], isPending: boolean) {
+async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
-    const {
-      userId,
-      nickName,
-      discriminator,
-      isOnline,
-      isFriendsRequestToUser
-    } = friend;
+    const status = await userManager.getStatusPollingString(friend.userId);
+    console.warn(status, friend);
+    const isOnline = await userManager.isOnline(friend.userId);
     createFriendCard(
       friend,
-      userId,
-      nickName,
-      discriminator,
-      isOnline || false,
+      friend.userId,
+      friend.nickName,
+      friend.discriminator,
+      status,
+      isOnline,
       isPending || false,
-      isFriendsRequestToUser
+      friend.isFriendsRequestToUser
     );
     updateUsersActivities(friend);
   }
+  filterFriendsOnSearch();
 }
 export function createFriendCard(
   friend: Friend,
   userId: string,
   nickName: string,
   discriminator: string,
+  status: string,
   isOnline: boolean,
   isPending: boolean,
   isFriendsRequestToUser: boolean
@@ -765,7 +778,6 @@ export function createFriendCard(
       ? "online"
       : "offline"
   );
-  console.log(isPending, friend.isPending);
 
   friendInfo.appendChild(
     createEl("div", { className: "friend-status", textContent: onlineStatus })
@@ -782,8 +794,8 @@ export function createFriendCard(
   friendCard.appendChild(img);
   friendCard.appendChild(friendInfo);
   friendCard.appendChild(friendButton);
-  friendsContainer.appendChild(friendCard);
   friendCard.dataset.name = nickName;
+  friendsContainer.appendChild(friendCard);
 }
 
 export function removeFriendCard(userId: string) {

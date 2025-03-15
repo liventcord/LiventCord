@@ -104,7 +104,7 @@ export function setUpEventListeners(
   });
 }
 
-export function renderUsers(
+export async function renderUsers(
   users: UserInfo[],
   tbody: HTMLElement,
   isOnline: boolean
@@ -112,8 +112,8 @@ export function renderUsers(
   const fragment = document.createDocumentFragment();
 
   for (const userData of users) {
-    const isUserOnline = userData.isOnline === true;
     const userId = userData.userId;
+    const isUserOnline = await userManager.isOnline(userId);
     const nickName = userData.nickName;
     if (isUserOnline === isOnline) {
       const { profileContainer, userNameDiv, profileImg, bubble } =
@@ -143,18 +143,17 @@ export function renderUsers(
 
 let isUpdatingUsers = false;
 
-export function updateMemberList(members: UserInfo[], ignoreIsOnMe = false) {
+export async function updateMemberList(
+  members: UserInfo[],
+  ignoreIsOnMe = false
+) {
   if (isOnMe && !ignoreIsOnMe) {
     console.log("Got users while on me page.");
     return;
   }
-  if (isUpdatingUsers) {
-    console.warn("Already updating members!");
-    return;
-  }
 
   isUpdatingUsers = true;
-  const { onlineUsers, offlineUsers } = categorizeMembers(members);
+  const { onlineUsers, offlineUsers } = await categorizeMembers(members);
 
   userList.innerHTML = "";
   const tableWrapper = createEl("div", { className: "user-table-wrapper" });
@@ -166,17 +165,17 @@ export function updateMemberList(members: UserInfo[], ignoreIsOnMe = false) {
       `${translations.getTranslation("online")} — ${onlineUsers.length}`,
       tbody
     );
-
     renderUsers(onlineUsers, tbody, true);
   }
 
   if (offlineUsers.length > 0) {
-    renderTitle(
-      `${translations.getTranslation("offline")} — ${offlineUsers.length}`,
-      tbody
-    );
-
-    renderUsers(offlineUsers, tbody, false);
+    setTimeout(() => {
+      renderTitle(
+        `${translations.getTranslation("offline")} — ${offlineUsers.length}`,
+        tbody
+      );
+      renderUsers(offlineUsers, tbody, false);
+    }, 0);
   }
 
   table.appendChild(tbody);
@@ -184,11 +183,28 @@ export function updateMemberList(members: UserInfo[], ignoreIsOnMe = false) {
   userList.appendChild(tableWrapper);
 
   isUpdatingUsers = false;
-  console.error("Updating members with:", members);
+  console.log("Updating members with:", members);
 }
-export function categorizeMembers(members: UserInfo[]) {
-  const onlineUsers = members.filter((member) => member.isOnline);
-  const offlineUsers = members.filter((member) => !member.isOnline);
+
+export async function categorizeMembers(members: UserInfo[]) {
+  const onlineUsers: UserInfo[] = [];
+  const offlineUsers: UserInfo[] = [];
+
+  const statusPromises = members.map(async (member) => {
+    const isOnline = await userManager.isOnline(member.userId);
+    return { member, isOnline };
+  });
+
+  const statuses = await Promise.all(statusPromises);
+
+  statuses.forEach(({ member, isOnline }) => {
+    if (isOnline) {
+      onlineUsers.push(member);
+    } else {
+      offlineUsers.push(member);
+    }
+  });
+
   return { onlineUsers, offlineUsers };
 }
 
@@ -255,7 +271,7 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
     {
       userId: friendId,
       nickName: friendNick,
-      isOnline: friendsCache.isOnline(friendId),
+      isOnline: userManager.isOnline(friendId),
       discriminator:
         friendsCache.getFriendDiscriminator(friendId) || DEFAULT_DISCRIMINATOR
     }

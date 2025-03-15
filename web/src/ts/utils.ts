@@ -641,3 +641,16 @@ export function loadBooleanCookie(name: string): boolean {
   const result = loadCookie(name);
   return result === "1";
 }
+
+export const convertKeysToCamelCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(convertKeysToCamelCase);
+  } else if (obj !== null && obj !== undefined && typeof obj === "object") {
+    return Object.keys(obj).reduce((acc, key) => {
+      const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+      acc[camelKey] = convertKeysToCamelCase(obj[key]);
+      return acc;
+    }, {} as Record<string, any>);
+  }
+  return obj;
+};

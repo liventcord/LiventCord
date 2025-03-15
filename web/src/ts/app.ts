@@ -67,7 +67,6 @@ import {
   channelsUl,
   getChannels,
   currentChannelName,
-  getRootChannel,
   Channel,
   changeChannel
 } from "./channels.ts";
@@ -129,7 +128,7 @@ interface InitialStateData {
 }
 
 interface User {
-  id: string;
+  userId: string;
   nickname: string;
   status: string;
   discriminator: string;
@@ -194,7 +193,7 @@ export function initialiseState(data: InitialStateData): void {
 
   initialState = {
     user: {
-      id: userId,
+      userId,
       nickname: nickName,
       status: userStatus,
       discriminator: userDiscriminator,

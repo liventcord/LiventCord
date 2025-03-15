@@ -117,6 +117,8 @@
     "offline": "Offline",
     "pending": "Pending",
     "blocked": "Blocked",
+    "do-not-disturb": "Do Not Disturb",
+    "idle": "idle",
     "online-button": "Online",
     "all-button": "All",
     "pending-button": "Pending",

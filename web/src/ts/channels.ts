@@ -37,6 +37,7 @@ import { Member, userManager } from "./user.ts";
 import { closeSettings, openChannelSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
+import { createFireWorks } from "./extras.ts";
 
 export const channelTitle = getId("channel-info") as HTMLElement;
 export const channelList = getId("channel-list") as HTMLElement;
@@ -108,6 +109,21 @@ export function getRootChannel(guildId: string, rootChannel: string) {
     return currentSelectedChannels[guildId];
   }
   return rootChannel;
+}
+
+export function handleNewChannel(data: any) {
+  const guildId = data.guildId;
+  const isTextChannel = data.isTextChannel;
+  console.log(data);
+
+  if (guildId == currentGuildId) {
+    addChannel(data);
+  }
+  if (isTextChannel) {
+    changeChannel(data);
+  }
+  cacheInterface.addChannel(guildId, data);
+  createFireWorks();
 }
 
 export async function changeChannel(newChannel?: ChannelData) {

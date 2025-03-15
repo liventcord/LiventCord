@@ -38,10 +38,6 @@ namespace LiventCord.Models
         [Column("bot")]
         public int Bot { get; set; }
 
-        [StringLength(128)]
-        [Column("status")]
-        public string? Status { get; set; }
-
         [StringLength(256)]
         [Column("description")]
         public string? Description { get; set; }
@@ -85,7 +81,6 @@ namespace LiventCord.Models
                 Nickname = nickname,
                 Discriminator = discriminator,
                 Bot = 0,
-                Status = "offline",
                 Password = ""
             };
 
@@ -98,7 +93,6 @@ namespace LiventCord.Models
                 Nickname = nickname,
                 Discriminator = discriminator,
                 Bot = 0,
-                Status = "offline",
                 Password = hashedPassword
             };
         }
@@ -112,7 +106,6 @@ namespace LiventCord.Models
                 UserId = UserId,
                 NickName = Nickname,
                 Discriminator = Discriminator,
-                Status = Status,
                 CreatedAt = CreatedAt,
             };
         }
@@ -134,7 +127,6 @@ namespace LiventCord.Models
         public string? UserId { get; set; }
         public string? NickName { get; set; }
         public string? Discriminator { get; set; }
-        public string? Status { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? Description { get; set; }
         public string? Location { get; set; }

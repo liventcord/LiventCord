@@ -2,22 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
-	"strings"
-	"crypto/tls"
 	"net/url"
+	"strings"
 )
 
 var redisClient *redis.Client
 var ctx = context.Background()
-
-type EventMessage struct {
-	EventType string          `json:"event_type"`
-	Payload   json.RawMessage `json:"payload"`
-}
 
 func consumeMessagesFromRedis() {
 	streamName := "event_stream"
@@ -78,8 +73,6 @@ func consumeMessagesFromRedis() {
 							delete(hub.clients, userId)
 							hub.lock.Unlock()
 						}
-					} else {
-						fmt.Println("No WebSocket connection found for user:", userId)
 					}
 				}
 				hub.lock.RUnlock()

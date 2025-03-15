@@ -21,7 +21,7 @@ import {
   contextList,
   appendToProfileContextList
 } from "./contextMenuActions.ts";
-import { textChanHtml, fillDropDownContent, alertUser } from "./ui.ts";
+import { textChanHtml, fillDropDownContent } from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
@@ -295,7 +295,7 @@ export function drawProfilePopId(id: string) {
   const userData: UserInfo = constructUserData(id);
   drawProfilePop(userData);
 }
-export function drawProfilePop(userData: UserInfo) {
+export async function drawProfilePop(userData: UserInfo) {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
     return;
@@ -304,7 +304,7 @@ export function drawProfilePop(userData: UserInfo) {
 
   const discriminator = userData.discriminator;
   const userId = userData.userId;
-  const isOnline = userData.isOnline;
+  const _isOnline = await userManager.isOnline(userId);
   const description = userData.description;
 
   const profileTitle = createEl("p", {
@@ -396,7 +396,7 @@ export function drawProfilePop(userData: UserInfo) {
   profileContainer.appendChild(profileOptionsContainer);
   setProfilePic(profileImg, userId);
 
-  const bubble = createBubble(isOnline ?? false, true);
+  const bubble = createBubble(_isOnline ?? false, true);
   profileImg.appendChild(bubble);
 
   profileOptions.addEventListener("click", function (event) {

@@ -9,10 +9,9 @@ import {
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
-  addChannel,
-  changeChannel,
   editChannelElement,
-  handleChannelDelete
+  handleChannelDelete,
+  handleNewChannel
 } from "./channels.ts";
 import { getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
@@ -34,7 +33,6 @@ import { apiClient, EventType } from "./api.ts";
 import { Permission, permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
-import { createFireWorks } from "./extras.ts";
 import { router } from "./router.ts";
 import { handleDeleteMessageEmit } from "./socketEvents.ts";
 
@@ -127,20 +125,7 @@ apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
 });
 
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
-  const guildId = data.guildId;
-  const channelId = data.channelId;
-  const isTextChannel = data.isTextChannel;
-  if (!guildId || !channelId) return;
-
-  if (guildId == currentGuildId) {
-    addChannel(data);
-  } else {
-    cacheInterface.addChannel(guildId, data);
-    if (isTextChannel) {
-      changeChannel(data);
-    }
-  }
-  createFireWorks();
+  handleNewChannel(data);
 });
 
 apiClient.on(EventType.DELETE_CHANNEL, (data) => {

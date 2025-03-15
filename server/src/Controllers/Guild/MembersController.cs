@@ -184,7 +184,6 @@ namespace LiventCord.Controllers
                     NickName = gu.User.Nickname,
                     Discriminator = gu.User.Discriminator,
                     Description = gu.User.Description,
-                    Status = gu.User.Status,
                     CreatedAt = gu.User.CreatedAt,
                     SocialMediaLinks = gu.User.SocialMediaLinks,
                 })
@@ -194,7 +193,6 @@ namespace LiventCord.Controllers
                     NickName = user.NickName,
                     Discriminator = user.Discriminator,
                     Description = user.Description,
-                    Status = user.Status,
                     CreatedAt = user.CreatedAt,
                     SocialMediaLinks = user.SocialMediaLinks,
                 })

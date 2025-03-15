@@ -1,8 +1,7 @@
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { updateUserOnlineStatus } from "./user.ts";
+import { currentUserId, updateUserOnlineStatus } from "./user.ts";
 import {
-  addChannel,
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
   setCurrentVoiceChannelGuild,
@@ -10,9 +9,10 @@ import {
   channelsUl,
   handleChannelDelete,
   ChannelData,
-  editChannelElement
+  editChannelElement,
+  handleNewChannel
 } from "./channels.ts";
-import { getId, enableElement } from "./utils.ts";
+import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
 import {
   deleteLocalMessage,
   getLastSecondMessageDate,
@@ -32,7 +32,7 @@ import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
 
-const SocketEvent = Object.freeze({
+export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
   JOIN_GUILD: "JOIN_GUILD",
   LEAVE_GUILD: "LEAVE_GUILD",
@@ -56,11 +56,11 @@ const SocketEvent = Object.freeze({
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
   UPDATE_USER_NAME: "UPDATE_USER_NAME",
   UPDATE_USER_STATUS: "UPDATE_USER_STATUS",
-  UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME"
+  UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
+  GET_USER_STATUS: "GET_USER_STATUS"
 } as const);
 
 type SocketEventType = keyof typeof SocketEvent;
-
 class WebSocketClient {
   private socket!: WebSocket;
   private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
@@ -70,6 +70,7 @@ class WebSocketClient {
   private static instance: WebSocketClient | null = null;
   private heartbeatInterval: number = 30000;
   private heartbeatTimer: number | null = null;
+  private pendingRequests: Array<() => void> = [];
 
   private constructor(url: string = "") {
     this.socketUrl = url;
@@ -84,11 +85,22 @@ class WebSocketClient {
     this.attachHandlers();
   }
 
+  getUserStatus(user_ids: string[]) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      this.pendingRequests.push(() => this.getUserStatus(user_ids));
+      return;
+    }
+    this.send(SocketEvent.GET_USER_STATUS, { user_ids });
+  }
+
   private attachHandlers() {
     this.socket.onopen = () => {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
       this.startHeartbeat();
+      this.send(SocketEvent.UPDATE_USER_STATUS, { status: "online" });
+      this.getUserStatus([currentUserId]);
+      this.processPendingRequests();
     };
 
     this.socket.onmessage = (event) => {
@@ -97,26 +109,8 @@ class WebSocketClient {
         const message = JSON.parse(event.data);
         const { event_type, payload } = message;
 
-        const convertKeysToCamelCase = (obj: any): any => {
-          if (Array.isArray(obj)) {
-            return obj.map(convertKeysToCamelCase);
-          } else if (
-            obj !== null &&
-            obj !== undefined &&
-            typeof obj === "object"
-          ) {
-            return Object.keys(obj).reduce((acc, key) => {
-              const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
-              acc[camelKey] = convertKeysToCamelCase(obj[key]);
-              return acc;
-            }, {} as Record<string, any>);
-          }
-          return obj;
-        };
-
         if (Object.values(SocketEvent).includes(event_type)) {
           const eventEnumValue = event_type as SocketEventType;
-
           const camelCasedPayload = convertKeysToCamelCase(payload);
 
           if (this.eventHandlers[eventEnumValue]) {
@@ -180,6 +174,15 @@ class WebSocketClient {
     this.eventHandlers = previousHandlers;
   }
 
+  private processPendingRequests() {
+    while (this.pendingRequests.length > 0) {
+      const request = this.pendingRequests.shift();
+      if (request) {
+        request();
+      }
+    }
+  }
+
   public static getInstance(url: string = ""): WebSocketClient {
     if (!WebSocketClient.instance) {
       WebSocketClient.instance = new WebSocketClient(url);
@@ -194,10 +197,17 @@ class WebSocketClient {
     this.eventHandlers[eventType].push(handler);
   }
 
-  send(data: any) {
-    if (this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(data));
+  send(event: SocketEventType, data: any) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      this.pendingRequests.push(() => this.send(event, data));
+      return;
     }
+    const eventMessage = {
+      event_type: event,
+      payload: data
+    };
+    this.socket.send(JSON.stringify(eventMessage));
+    console.error(this.pendingRequests);
   }
 
   close() {
@@ -216,11 +226,10 @@ async function getAuthCookie(): Promise<string> {
   const response = await fetch("/auth/ws-token");
   if (!response.ok) throw new Error("Failed to retrieve cookie");
   const data = await response.json();
-  console.log(data);
   return encodeURIComponent(data.cookieValue);
 }
 
-const socketClient = WebSocketClient.getInstance();
+export const socketClient = WebSocketClient.getInstance();
 
 export async function setSocketClient(wsUrl: string) {
   await socketClient.setSocketUrl(wsUrl);
@@ -232,11 +241,11 @@ interface UpdateUserData {
   avatarUrl?: string;
   status?: string;
 }
-
 interface UserStatusData {
   userId: string;
-  isOnline: boolean;
+  status: string;
 }
+
 export interface CreateChannelData extends CachedChannel {
   guildId: string;
   channelId: string;
@@ -286,23 +295,15 @@ socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
   refreshUserProfile(data.userId);
 });
 
-socketClient.on(SocketEvent.UPDATE_USER_STATUS, (data: UserStatusData) => {
-  const userId = data.userId;
-  const isOnline = data.isOnline;
-  updateUserOnlineStatus(userId, isOnline);
+socketClient.on(SocketEvent.GET_USER_STATUS, (data: UserStatusData[]) => {
+  data.forEach((userStatus) => {
+    const userId = userStatus.userId;
+    updateUserOnlineStatus(userId, userStatus.status);
+  });
 });
 
 socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {
-  if (!data) return;
-  const { guildId, channelId, channelName = "", isTextChannel } = data;
-
-  const channel = {
-    guildId,
-    channelId,
-    channelName,
-    isTextChannel
-  };
-  addChannel(channel);
+  handleNewChannel(data);
 });
 socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
   if (data.guildId === currentGuildId) {

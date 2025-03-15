@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
 	"github.com/go-redis/redis/v8"
+	"log"
 )
 
 func main() {
@@ -11,7 +11,7 @@ func main() {
 	port := getEnv("Port", "8080")
 	hostname := getEnv("Host", "0.0.0.0")
 	appMode := getEnv("AppMode", "debug")
-	redisURL := getEnv("RedisURL", "redis://localhost:6379") 
+	redisURL := getEnv("RedisURL", "redis://localhost:6379")
 
 	router := gin.Default()
 

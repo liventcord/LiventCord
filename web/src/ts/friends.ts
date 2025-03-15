@@ -50,9 +50,7 @@ interface FriendData {
   userId: string;
   nickName: string;
   discriminator: string;
-  status?: string;
   activity?: string;
-  isOnline?: boolean;
   description?: string;
   createdAt?: string;
   lastLogin?: string;
@@ -65,23 +63,18 @@ export class Friend {
   userId: string;
   nickName: string;
   discriminator: string;
-  status?: string;
   activity?: string;
-  isOnline?: boolean;
   description?: string;
   createdAt?: string;
   lastLogin?: string;
   socialMediaLinks?: string[];
   isFriendsRequestToUser: boolean;
   isPending: boolean;
-  publicUser?: any;
 
   constructor(friend: FriendData) {
     this.userId = friend.userId;
     this.nickName = friend.nickName;
     this.discriminator = friend.discriminator;
-    this.status = friend.status;
-    this.isOnline = friend.isOnline;
     this.description = friend.description;
     this.createdAt = friend.createdAt;
     this.lastLogin = friend.lastLogin;
@@ -110,7 +103,7 @@ class FriendsCache {
         friend.userId,
         friend.nickName,
         friend.discriminator,
-        userManager.isUserBlocked(friend.userId)
+        false
       );
     }
   }
@@ -167,7 +160,7 @@ class FriendsCache {
     }
 
     const defaultFriendData: FriendData = {
-      userId: friend.userId,
+      userId,
       nickName: "",
       discriminator: "",
       isFriendsRequestToUser: false,
@@ -221,10 +214,6 @@ class FriendsCache {
 
   getFriendDiscriminator(friendId: string): string | undefined {
     return this.friendsCache[friendId]?.discriminator;
-  }
-
-  isOnline(userId: string): boolean {
-    return !!this.friendsCache[userId]?.isOnline;
   }
 
   cacheFriendToFriendConverter() {
@@ -372,7 +361,6 @@ export function handleFriendEventResponse(message: FriendMessage): void {
 interface FriendData {
   userId: string;
   nickName: string;
-  status?: string;
 }
 
 let currentFriendInstances: FriendData[];
@@ -511,7 +499,7 @@ export function submitAddFriend() {
   addFriend(nickName, discriminator);
 }
 
-export function filterFriends(): void {
+export function filterFriendsOnSearch(): void {
   const friendsSearchInput = getId("friendsSearchInput") as HTMLInputElement;
   if (!friendsSearchInput) return;
 
@@ -521,6 +509,7 @@ export function filterFriends(): void {
   for (let i = 0; i < friends.length; i++) {
     const friend = friends[i] as HTMLElement;
     const dataName = friend.getAttribute("data-name");
+    console.log(friends);
 
     if (dataName) {
       const friendName = dataName.toLowerCase();
