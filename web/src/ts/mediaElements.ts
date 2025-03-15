@@ -13,7 +13,7 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
-  IMAGE_SRCS,
+  IMAGE_SRCS
 } from "./utils.ts";
 import { initialState } from "./app.ts";
 import { router } from "./router.ts";
