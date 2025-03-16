@@ -21,3 +21,5 @@ WORKDIR /usr/local/bin
 COPY --from=builder /usr/local/bin/app .
 
 CMD ["app"]
+
+ARG CORS_DOMAINS

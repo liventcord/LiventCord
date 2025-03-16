@@ -1,4 +1,4 @@
-module github.com/render-examples/go-gin-web-server
+module LiventcordGoWsApi
 
 go 1.23.0
 

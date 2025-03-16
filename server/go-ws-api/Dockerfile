@@ -14,3 +14,10 @@ WORKDIR /usr/local/bin
 COPY --from=builder /usr/local/bin/app .
 
 CMD ["app"]
+
+ARG DotnetApiUrl http://localhost:5005
+ARG RedisConnectionString redis://localhost:6379
+ARG GinMode release
+ARG StreamPassword
+ARG Host localhost
+ARG Port 8080
