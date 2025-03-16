@@ -128,7 +128,7 @@ export function refreshUserProfile(
   userNick: string | null = null
 ): void {
   if (userId === currentUserId) {
-    updateSelfProfile(userId, "", true, true);
+    updateSelfProfile(userId, "", true);
   }
 
   // from user list
@@ -226,11 +226,10 @@ export function updateSelfName(nickName: string) {
 export function updateSelfProfile(
   userId: string,
   nickName: string,
-  isTimestamp?: boolean,
   isAfterUploading?: boolean
 ) {
   if (!userId) return;
-  const timestamp = isTimestamp ? `?ts=${new Date().getTime()}` : "";
+  const timestamp = `?ts=${new Date().getTime()}`;
   const selfimagepath = `/profiles/${userId}.webp${timestamp}`;
 
   updateImageSource(selfProfileImage, selfimagepath);
