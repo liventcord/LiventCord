@@ -41,6 +41,7 @@ import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId } from "./guild.ts";
+import { isOnGuild } from "./router.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -660,6 +661,7 @@ function initialiseSettingComponents(
   }, 100);
 
   initializeLanguageDropdown();
+
   const closeButton = getCloseButtonElement();
   closeButton.addEventListener("click", closeSettings);
   settingsContainer.insertBefore(closeButton, settingsContainer.firstChild);
@@ -667,11 +669,9 @@ function initialiseSettingComponents(
   toggleManager.setupToggles();
 
   const settingsSelfProfile = getProfileImage();
-  if (settingsSelfProfile)
-    settingsSelfProfile.addEventListener("click", triggerFileInput);
+  settingsSelfProfile?.addEventListener("click", triggerFileInput);
 
-  const newNickInput = getId("new-nickname-input");
-  if (newNickInput) newNickInput.addEventListener("input", onEditNick);
+  getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getGuildImage();
@@ -681,25 +681,23 @@ function initialiseSettingComponents(
 
   if (channelNameInput) {
     channelNameInput.value = currentSettingsChannelName;
-    if (permissionManager.canManageChannels()) {
+    channelNameInput.disabled = !permissionManager.canManageChannels();
+    if (!channelNameInput.disabled) {
       channelNameInput.addEventListener("input", onEditChannelName);
-    } else if (channelNameInput) {
-      channelNameInput.disabled = true;
     }
   }
 
-  if (permissionManager.canManageGuild()) {
-    if (guildNameInput) {
+  if (isOnGuild && guildNameInput) {
+    if (permissionManager.canManageGuild()) {
       guildNameInput.addEventListener("input", onEditGuildName);
       guildImage?.addEventListener("click", triggerGuildImageUpdate);
-      if (guildImage && !guildImage?.src) guildImage.src = blackImage;
+      if (guildImage && !guildImage.src) guildImage.src = blackImage;
+    } else {
+      guildNameInput.disabled = true;
     }
-  } else if (guildNameInput) {
-    guildNameInput.disabled = true;
   }
 
-  const emailToggler = getId("set-info-email-eye");
-  if (emailToggler) emailToggler.addEventListener("click", toggleEmail);
+  getId("set-info-email-eye")?.addEventListener("click", toggleEmail);
 }
 
 export function createToggle(id: string, label: string, description: string) {

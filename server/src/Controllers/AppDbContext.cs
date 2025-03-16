@@ -173,11 +173,9 @@ namespace LiventCord.Controllers
             {
                 entity.Property(f => f.UserId).HasColumnName(nameof(GuildFile.UserId));
             });
-
-            modelBuilder.Entity<ProfileFile>(entity =>
-            {
-                entity.Property(f => f.UserId).HasColumnName(nameof(ProfileFile.UserId));
-            });
+            modelBuilder.Entity<ProfileFile>()
+                .HasIndex(p => p.UserId)
+                .IsUnique();
 
             modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
             modelBuilder.Entity<GuildMember>()

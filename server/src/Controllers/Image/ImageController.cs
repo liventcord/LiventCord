@@ -228,6 +228,8 @@ namespace LiventCord.Controllers
         }
 
 
+
+
         private async Task SaveOrUpdateFile<T>(T newFile)
             where T : FileBase
         {
@@ -252,17 +254,18 @@ namespace LiventCord.Controllers
         }
 
 
+
+
         private async Task<T?> GetExistingFile<T>(T newFile)
             where T : FileBase
         {
             string? userId = (newFile as ProfileFile)?.UserId
                             ?? (newFile as GuildFile)?.UserId
                             ?? (newFile as AttachmentFile)?.UserId;
+
             string? guildId = newFile.GuildId;
 
             var query = _context.Set<T>().AsQueryable();
-
-            query = query.Where(file => file.FileId == newFile.FileId);
 
             if (typeof(T) == typeof(ProfileFile))
             {
@@ -285,6 +288,7 @@ namespace LiventCord.Controllers
 
             return await query.FirstOrDefaultAsync();
         }
+
 
     }
 }

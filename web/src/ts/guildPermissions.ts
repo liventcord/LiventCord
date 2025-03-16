@@ -76,7 +76,7 @@ export class PermissionManager {
 
   getPermission(permType: Permission) {
     if (!currentGuildId || !permType) {
-      console.log("Invalid input: Missing currentGuildId or permType");
+      console.error("Invalid input: Missing currentGuildId or permType");
       return false;
     }
 

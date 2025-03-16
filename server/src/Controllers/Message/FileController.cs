@@ -60,6 +60,26 @@ namespace LiventCord.Controllers
             return GetFileResult(file);
         }
 
+        [HttpGet("profiles")]
+        public async Task<IActionResult> GetAllProfileFiles()
+        {
+            var files = await _context.ProfileFiles.ToListAsync();
+            if (files == null || files.Count == 0)
+                return Content("<h2>No profile files found.</h2>", "text/html");
+
+            var html = "<html><head><title>Profile Files</title></head><body>";
+            html += "<h2>Profile Files</h2><ul>";
+
+            foreach (var file in files)
+            {
+                html += $"<li>{file.FileName} ({file.UserId})</li>";
+            }
+
+            html += "</ul></body></html>";
+
+            return Content(html, "text/html");
+        }
+
 
         private string RemoveFileExtension(string userId)
         {
