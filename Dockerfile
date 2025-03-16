@@ -27,3 +27,22 @@ RUN chmod +x /app/LiventCord
 USER appuser
 EXPOSE 5005
 ENTRYPOINT ["./LiventCord"]
+
+ARG Host
+ARG Port
+ARG RemoteConnection
+ARG DatabaseType
+ARG MaxPoolSize
+ARG MinPoolSize
+ARG SqlitePath
+ARG FrontendUrl
+ARG GifWorkerUrl
+ARG ProxyWorkerUrl
+ARG MediaProxyApiUrl
+ARG MaxAvatarSize
+ARG MaxAttachmentsSize
+ARG BotToken
+ARG EnableMetadataIndexing
+ARG MetadataDomainLimit
+ARG RedisConnectionString
+ARG RedisConnectionLimit

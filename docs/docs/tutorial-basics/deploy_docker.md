@@ -24,11 +24,12 @@ Run **LiventCord** using Docker.
     ```bash
     docker run -p 5005:5005 -e "APPSETTINGS__PORT=6000" -e "APPSETTINGS__DATABASETYPE=mysql" TheLp281/liventcord:latest
     ```
+  Your container is now running at `http://localhost:5005`.
+  
 
 ## Run Gin Websocket Server On Docker
   ## Docker
    ```bash
    docker run -p 8080:8080 TheLp281/liventcord-ws-api:latest
    ```
-
-Your container is now running at `http://localhost:5005`.
+  Your container is now running at `http://localhost:8080`.

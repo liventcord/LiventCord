@@ -96,7 +96,10 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     **Defaults** to 1.
 
 ## Gin Server Configuration
-1. Move .example.env to .env.
+```bash
+cd Liventcord/server/go-ws-api
+```
+1. Move `.example.env` to `.env`.
 
 ```bash
 mv .example.env .env
