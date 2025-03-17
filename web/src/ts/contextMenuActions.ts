@@ -18,7 +18,7 @@ import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
-import { alertUser } from "./ui.ts";
+import { alertUser, askUser } from "./ui.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
@@ -103,7 +103,20 @@ export function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
 
-export function deleteMessage(messageId: string) {
+function deleteMessagePrompt(messageId: string) {
+  const acceptCallback = () => {
+    deleteMessage(messageId);
+  };
+  askUser(
+    translations.getContextTranslation("DELETE_MESSAGE"),
+    translations.getTranslation("delete-message-prompt"),
+    translations.getTranslation("ok"),
+    acceptCallback,
+    true
+  );
+}
+
+function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
   const data = {
     isDm: isOnDm,
@@ -446,14 +459,14 @@ export function createMessageContext(messageId: string, userId: string) {
     if (userId === currentUserId) {
       context[MessagesActionType.DELETE_MESSAGE] = {
         label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessage(messageId)
+        action: () => deleteMessagePrompt(messageId)
       };
     }
   } else {
     if (isOnGuild && permissionManager.canManageMessages())
       context[MessagesActionType.DELETE_MESSAGE] = {
         label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessage(messageId)
+        action: () => deleteMessagePrompt(messageId)
       };
   }
 

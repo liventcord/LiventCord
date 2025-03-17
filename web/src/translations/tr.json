@@ -204,7 +204,8 @@
     "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir.",
     "click-to-attachment": "Eki görüntülemek için tıkla",
     "more": "Daha fazla",
-    "deny": "Reddet"
+    "deny": "Reddet",
+    "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
