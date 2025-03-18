@@ -46,6 +46,7 @@ interface MessageData {
   attachmentUrls?: string | string[];
   replyToId?: string | null;
   isBot: boolean;
+  addToTop?:boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
   embeds?: any;
@@ -96,7 +97,8 @@ export class Message {
     willDisplayProfile,
     isNotSent: isSent,
     replyOf,
-    replies = []
+    replies = [],
+    addToTop = false
   }: MessageData) {
     this.messageId = messageId;
     this.userId = userId;
@@ -108,7 +110,7 @@ export class Message {
     this.replyToId = replyToId;
     this.isBot = isBot;
     this.reactionEmojisIds = reactionEmojisIds;
-    this.addToTop = false;
+    this.addToTop = addToTop;
     this.metadata = metadata;
     this.embeds = embeds;
     this.willDisplayProfile = willDisplayProfile || false;
@@ -116,6 +118,8 @@ export class Message {
     this.replyOf = replyOf || undefined;
     this.replies = replies;
   }
+  
+  
 }
 
 function createFormData(

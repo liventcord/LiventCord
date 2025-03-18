@@ -708,15 +708,16 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     lastEdited,
     attachmentUrls,
     replyToId,
+    isBot,
     reactionEmojisIds,
     addToTop,
-    isBot,
-    replyOf,
     metadata,
+    embeds,
     willDisplayProfile,
-    isNotSent: isSent,
-    embeds
+    isNotSent,
+    replyOf,
   } = data;
+  console.log("add top: ",addToTop, data);
 
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
@@ -729,7 +730,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     content,
     attachmentUrls,
     replyToId || undefined,
-    isSent
+    isNotSent
   );
   const messageContentElement = createMessageContentElement();
 
