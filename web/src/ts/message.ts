@@ -46,7 +46,7 @@ interface MessageData {
   attachmentUrls?: string | string[];
   replyToId?: string | null;
   isBot: boolean;
-  addToTop?:boolean;
+  addToTop?: boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
   embeds?: any;
@@ -118,8 +118,6 @@ export class Message {
     this.replyOf = replyOf || undefined;
     this.replies = replies;
   }
-  
-  
 }
 
 function createFormData(

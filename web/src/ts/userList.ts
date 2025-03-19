@@ -141,8 +141,6 @@ export async function renderUsers(
   tbody.appendChild(fragment);
 }
 
-let isUpdatingUsers = false;
-
 export async function updateMemberList(
   members: UserInfo[],
   ignoreIsOnMe = false
@@ -152,7 +150,6 @@ export async function updateMemberList(
     return;
   }
 
-  isUpdatingUsers = true;
   const { onlineUsers, offlineUsers } = await categorizeMembers(members);
 
   userList.innerHTML = "";
@@ -182,7 +179,6 @@ export async function updateMemberList(
   tableWrapper.appendChild(table);
   userList.appendChild(tableWrapper);
 
-  isUpdatingUsers = false;
   console.log("Updating members with:", members);
 }
 

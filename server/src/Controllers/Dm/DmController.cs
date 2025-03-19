@@ -14,10 +14,13 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _dbContext;
 
         private readonly AppLogicService _appLogicService;
-        public DmController(AppDbContext dbContext, AppLogicService appLogicService)
+        private readonly FriendDmService _friendDmService;
+
+        public DmController(AppDbContext dbContext, AppLogicService appLogicService, FriendDmService friendDmService)
         {
             _dbContext = dbContext;
             _appLogicService = appLogicService;
+            _friendDmService = friendDmService;
         }
 
         [HttpGet("")]
@@ -26,36 +29,20 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(UserId))
                 return Unauthorized("User ID is missing.");
 
-            var publicDmUsers = await _appLogicService.GetDmUsers(UserId);
+            var publicDmUsers = await _friendDmService.GetDmUsers(UserId);
 
             return Ok(publicDmUsers);
         }
 
         [HttpPost("{friendId}")]
-        public async Task<IActionResult> AddDmEndpoint(
-            [FromRoute][UserIdLengthValidation] string friendId
-        )
+        public async Task<IActionResult> AddDmEndpoint([FromRoute][UserIdLengthValidation] string friendId)
         {
-            if (string.IsNullOrEmpty(UserId))
-                return Unauthorized("User ID is missing.");
-
-            var existingDm = await _dbContext.UserDms
-                .FirstOrDefaultAsync(d => d.UserId == UserId && d.FriendId == friendId);
-
-            if (existingDm != null)
-                return Conflict("Direct message relationship already exists.");
-
-            var newDm = new UserDm
-            {
-                UserId = UserId,
-                FriendId = friendId
-            };
-
-            await _dbContext.UserDms.AddAsync(newDm);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok();
+            var result = await _friendDmService.AddDmBetweenUsers(UserId!, friendId);
+            var friend = await _friendDmService.GetUserDetails(friendId);
+            return result ? Ok(friend) : Conflict("Direct message relationship already exists.");
         }
+
+
 
         [HttpDelete("{friendId}")]
         public async Task<IActionResult> RemoveDmEndpoint(
@@ -70,11 +57,10 @@ namespace LiventCord.Controllers
 
             if (dmToRemove == null)
                 return NotFound("Direct message relationship not found.");
-
             _dbContext.UserDms.Remove(dmToRemove);
             await _dbContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new { friendId });
         }
     }
 }

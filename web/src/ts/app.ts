@@ -63,12 +63,12 @@ import {
 } from "./contextMenuActions.ts";
 import {
   updateChannels,
-  channelTitle,
   channelsUl,
   getChannels,
   currentChannelName,
   Channel,
-  changeChannel
+  changeChannel,
+  setChannelTitle
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -90,7 +90,7 @@ import {
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 
-import { friendsCache } from "./friends.ts";
+import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
@@ -290,9 +290,6 @@ export function handleGuildClick(event: MouseEvent) {
   }
 }
 
-export function isDefined(variable: any) {
-  return typeof variable !== "undefined" && variable !== null;
-}
 export function initializeGuild() {
   initialiseMe();
   const {
@@ -320,7 +317,9 @@ export function initializeGuild() {
     fetchMembers();
   }
   if (isValid && initialFriendId) {
-    openDm(initialFriendId);
+    setTimeout(() => {
+      openDm(initialFriendId);
+    }, 0);
   }
 }
 
@@ -454,8 +453,6 @@ export function createReplyBar(
   replyBar.appendChild(replyContent);
 }
 
-export function removeDm(userId: string) {}
-
 export function initialiseMe() {
   if (!isOnMe) {
     console.log("Cant initialise me while isOnMe is false");
@@ -474,7 +471,9 @@ export function openDm(friendId: string) {
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
   setLastSenderID("");
-  activateDmContainer(friendId);
+  setTimeout(() => {
+    activateDmContainer(friendId);
+  }, 100);
   unselectFriendContainer();
   const url = constructDmPage(friendId);
   if (url !== window.location.pathname) {
@@ -482,7 +481,7 @@ export function openDm(friendId: string) {
   }
   if (!friendsCache.userExistsDm(friendId)) {
     try {
-      apiClient.send(EventType.ADD_DM, { friendId });
+      addDm(friendId);
     } catch (e) {
       if (e instanceof Error) {
         printFriendMessage(e.message);
@@ -593,7 +592,7 @@ export function changecurrentGuild() {
   fetchMembers();
   refreshInviteId();
   closeDropdown();
-  channelTitle.textContent = currentChannelName;
+  setChannelTitle(currentChannelName);
   setGuildNameText(guildCache.currentGuildName);
   hideGuildSettingsDropdown();
 
@@ -649,7 +648,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     const friendNick = userManager.getUserNick(friendId);
     chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
 
-    channelTitle.textContent = friendNick;
+    setChannelTitle(friendNick);
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
@@ -682,7 +681,7 @@ export function changeCurrentDm(friendId: string) {
   setReachedChannelEnd(false);
 
   const friendNick = userManager.getUserNick(friendId);
-  channelTitle.textContent = friendNick;
+  setChannelTitle(friendNick);
   chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
   const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
   if (dmProfSign) {

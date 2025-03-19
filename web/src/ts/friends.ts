@@ -13,7 +13,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { handleResize } from "./ui.ts";
+import { alertUser, handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
   isAddFriendsOpen,
@@ -106,6 +106,9 @@ class FriendsCache {
         false
       );
     }
+  }
+  removeDmFriend(friendId: string) {
+    delete this.dmFriends[friendId];
   }
 
   initialiseFriends(initData: Record<string, Friend>) {
@@ -209,6 +212,7 @@ class FriendsCache {
   }
 
   userExistsDm(userId: string): boolean {
+    console.log("User exists in dm: ", userId in this.dmFriends);
     return userId in this.dmFriends;
   }
 
@@ -293,7 +297,12 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
     if (currentSelectedFriendMenu === "pending") {
       removeFriendCard(friendId);
     }
+
+    handleAddDm(friendData);
   }
+}
+function handleAddDm(friendData: UserInfo) {
+  alertUser(String(friendData));
 }
 
 function handleRemoveFriendResponse(message: FriendMessage): void {
@@ -356,6 +365,12 @@ export function handleFriendEventResponse(message: FriendMessage): void {
     appendToProfileContextList(cachedFriend, message.friendId);
   }
   reCalculateFriTitle();
+}
+export function removeDm(friendId: string) {
+  apiClient.send(EventType.REMOVE_DM, { friendId });
+}
+export function addDm(friendId: string) {
+  apiClient.send(EventType.ADD_DM, { friendId });
 }
 
 interface FriendData {

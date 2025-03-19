@@ -27,10 +27,10 @@ import {
   MessageResponse
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
-import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
+import { playAudio, clearVoiceChannel } from "./audio.ts";
 
 export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -197,6 +197,16 @@ class WebSocketClient {
     this.eventHandlers[eventType].push(handler);
   }
 
+  off(eventType: SocketEventType, handler: (...args: any[]) => any) {
+    const handlers = this.eventHandlers[eventType];
+    if (!handlers) return;
+
+    const index = handlers.indexOf(handler);
+    if (index !== -1) {
+      handlers.splice(index, 1);
+    }
+  }
+
   send(event: SocketEventType, data: any) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.pendingRequests.push(() => this.send(event, data));
@@ -207,7 +217,6 @@ class WebSocketClient {
       payload: data
     };
     this.socket.send(JSON.stringify(eventMessage));
-    console.error(this.pendingRequests);
   }
 
   close() {
@@ -447,8 +456,6 @@ socketClient.on(
 interface IncomingAudioResponse {
   buffer: ArrayBuffer;
 }
-
-export const voiceHandler = new VoiceHandler();
 
 //socketClient.on(
 //  SocketEvent.INCOMING_AUDIO,

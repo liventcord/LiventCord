@@ -715,9 +715,8 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     embeds,
     willDisplayProfile,
     isNotSent,
-    replyOf,
+    replyOf
   } = data;
-  console.log("add top: ",addToTop, data);
 
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;

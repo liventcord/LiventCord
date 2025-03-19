@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 
 
@@ -56,6 +57,7 @@ namespace LiventCord.Models
 
         [StringLength(256)]
         [Column("location")]
+        [JsonIgnore]
         public string? Location { get; set; }
 
         [StringLength(10)]
@@ -129,11 +131,10 @@ namespace LiventCord.Models
         public string? Discriminator { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? Description { get; set; }
-        public string? Location { get; set; }
         public string? SocialMediaLinks { get; set; }
     }
 
-    public class PublicUserWithStatus : PublicUser
+    public class PublicUserWithFriendData : PublicUser
     {
         public FriendStatus FriendshipStatus { get; set; }
         public bool IsPending { get; set; }

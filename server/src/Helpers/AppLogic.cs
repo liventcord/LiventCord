@@ -129,7 +129,7 @@ namespace LiventCord.Helpers
                     userDiscriminator = user.Discriminator ?? "",
                     sharedGuildsMap = new List<string>(),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
-                    friendsStatus = await _friendController.GetFriendsStatus(userId),
+                    friendsStatus = await _friendController.GetFriends(userId),
                     dmFriends = await GetDmUsers(userId),
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,

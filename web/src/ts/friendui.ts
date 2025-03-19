@@ -7,15 +7,15 @@ import {
   disableElement,
   IMAGE_SRCS
 } from "./utils.ts";
-import { openDm, removeDm } from "./app.ts";
-import { currentUserNick, userManager } from "./user.ts";
+import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import {
   submitAddFriend,
   filterFriendsOnSearch,
   addPendingButtons,
   friendsCache,
   Friend,
-  UpdatePendingCounter
+  UpdatePendingCounter,
+  removeDm
 } from "./friends.ts";
 import {
   appendToProfileContextList,
@@ -24,6 +24,7 @@ import {
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { userList } from "./userList.ts";
+import { loadDmHome, openDm } from "./app.ts";
 
 const addfriendhighlightedcolor = "#248046";
 const highlightedColor = "#43444b";
@@ -86,11 +87,13 @@ const existingFriendsDmContainers = new Set<ExistingDmContainer>();
 const existingFriendsIds = new Set<string>();
 
 export function activateDmContainer(friendId: string) {
+  console.warn(existingFriendsDmContainers);
   if (!existingFriendsDmContainers || existingFriendsDmContainers.size < 1) {
     return;
   }
 
   existingFriendsDmContainers.forEach(({ dmContainer }) => {
+    console.warn(dmContainer);
     if (dmContainer.id === friendId) {
       dmContainer.classList.add("dm-selected");
     } else {
@@ -109,7 +112,7 @@ export function disableDmContainers() {
   });
 }
 
-interface DmUserInfo {
+export interface DmUserInfo {
   userId: string;
   status: string;
   nickName: string;
@@ -118,6 +121,7 @@ interface DmUserInfo {
   isPending: boolean;
   isFriendsRequestToUser: boolean;
 }
+
 interface ExistingDmContainer {
   dmContainer: HTMLElement;
 }
@@ -134,13 +138,11 @@ class DmUser {
     this.dmContainer = dmContainer;
   }
 
-  // Static method to ensure async creation
   static async create(friend: DmUserInfo): Promise<DmUser> {
     const dmContainer = await DmUser.createDmContainer(friend);
     return new DmUser(friend, dmContainer);
   }
 
-  // Static method to handle async container creation
   private static async createDmContainer(
     friend: DmUserInfo
   ): Promise<HTMLElement> {
@@ -215,15 +217,30 @@ class DmUser {
     return dmContainer;
   }
 }
+interface DmUserAddResponse {
+  userId: string;
+  nickName: string;
+  discriminator: string;
+}
 
 export async function appendToDmList(
-  user: DmUserInfo
+  user: DmUserAddResponse
 ): Promise<HTMLElement | null> {
   if (existingFriendsIds.has(user.userId)) {
     return null;
   }
+  console.log(user, user.userId, typeof user);
+  const dmUserInfo: DmUserInfo = {
+    userId: user.userId,
+    status: "",
+    nickName: user.nickName,
+    activity: "",
+    discriminator: user.discriminator,
+    isPending: false,
+    isFriendsRequestToUser: false
+  };
 
-  const dmUser = await DmUser.create(user);
+  const dmUser = await DmUser.create(dmUserInfo);
 
   dmContainerParent.appendChild(dmUser.dmContainer);
 
@@ -297,10 +314,24 @@ export async function addToDmList(userData: DmUserInfo): Promise<void> {
   }
 }
 
+export async function removeFromDmList(userId: string): Promise<void> {
+  console.log("removeFromDmList: ", userId);
+  const existingDmContainer = dmContainerParent.querySelector(
+    `#${CSS.escape(userId)}`
+  );
+  if (existingDmContainer) {
+    dmContainerParent.removeChild(existingDmContainer);
+    friendsCache.removeDmFriend(userId);
+    if (userId === friendsCache.currentDmId) {
+      loadDmHome();
+    }
+  }
+}
+
 export function getCurrentDmFriends() {
   return {
     currentUserId: {
-      userId: "someUserId",
+      userId: currentUserId,
       nick: currentUserNick,
       discriminator: "1234"
     },
@@ -711,7 +742,7 @@ export async function populateFriendsContainer(
 
 async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
-    const status = await userManager.getStatusPollingString(friend.userId);
+    const status = await userManager.getStatusString(friend.userId);
     console.warn(status, friend);
     const isOnline = await userManager.isOnline(friend.userId);
     createFriendCard(

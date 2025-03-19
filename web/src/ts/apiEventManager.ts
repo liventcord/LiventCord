@@ -35,6 +35,7 @@ import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
 import { handleDeleteMessageEmit } from "./socketEvents.ts";
+import { appendToDmList, removeFromDmList } from "./friendui.ts";
 
 interface JoinGuildData {
   success: boolean;
@@ -301,4 +302,12 @@ apiClient.on(EventType.REMOVE_FRIEND, function (message) {
 
 apiClient.on(EventType.DENY_FRIEND, function (message) {
   handleFriendEventResponse(message);
+});
+
+apiClient.on(EventType.ADD_DM, function (data) {
+  appendToDmList(data);
+});
+
+apiClient.on(EventType.REMOVE_DM, function (data) {
+  removeFromDmList(data.friendId);
 });

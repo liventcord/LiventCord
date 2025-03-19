@@ -55,6 +55,14 @@ export function setCurrentVoiceChannelId(val: string) {
 export function setCurrentVoiceChannelGuild(val: string) {
   currentVoiceChannelGuild = val;
 }
+
+export function setChannelTitle(channelTitleText: string) {
+  if (!channelTitleText) {
+    console.error("Channel title called with null title");
+  }
+  channelTitle.textContent = channelTitleText;
+}
+
 let isKeyDown = false;
 let currentChannelIndex = 0;
 export function getChannels() {
@@ -114,9 +122,8 @@ export function getRootChannel(guildId: string, rootChannel: string) {
 export function handleNewChannel(data: any) {
   const guildId = data.guildId;
   const isTextChannel = data.isTextChannel;
-  console.log(data);
 
-  if (guildId == currentGuildId) {
+  if (guildId === currentGuildId) {
     addChannel(data);
   }
   if (isTextChannel) {
@@ -151,7 +158,7 @@ export async function changeChannel(newChannel?: ChannelData) {
       currentChannelName = newChannelName;
       chatInput.placeholder =
         translations.getMessagePlaceholder(newChannelName);
-      channelTitle.textContent = newChannelName;
+      setChannelTitle(newChannelName);
     }
 
     setLastSenderID("");

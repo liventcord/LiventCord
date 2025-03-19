@@ -754,3 +754,5 @@ export function resetWiggleEffect(...elements: HTMLElement[]) {
     }
   });
 }
+
+export const voiceHandler = new VoiceHandler();
