@@ -75,8 +75,9 @@ const maxHeight = 384;
 
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
+const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
+const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 
-const IgnoreProxies = ["i.redd.it"];
 
 export function createTenorElement(
   msgContentElement: HTMLElement,
@@ -86,8 +87,7 @@ export function createTenorElement(
   let tenorURL = "";
   try {
     const parsedUrl = new URL(url);
-    const allowedHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
-    if (allowedHosts.includes(parsedUrl.host)) {
+    if (tenorHosts.includes(parsedUrl.host)) {
       tenorURL =
         parsedUrl.host === "tenor.com" && !url.endsWith(".gif")
           ? `${url}.gif`
