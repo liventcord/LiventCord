@@ -207,7 +207,8 @@
     "click-to-attachment": "Click to see attachment",
     "more": "More",
     "deny": "Deny",
-    "delete-message-prompt": "Are you sure you want to delete this message?"
+    "delete-message-prompt": "Are you sure you want to delete this message?",
+    "message": "Message"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
@@ -223,6 +224,7 @@
     "tb-showprofile": "Show User Profile",
     "more": "More",
     "create-guild-button": "Add a server",
-    "main-logo": "Direct Messages"
+    "main-logo": "Direct Messages",
+    "profile-add-friend-button-pending": "Pending Friend request"
   }
 }

@@ -533,18 +533,6 @@ export function filterFriendsOnSearch(): void {
   }
 }
 
-function toggleButtonState(booleanstate: boolean) {
-  const addButton = getId("profile-add-friend-button");
-  if (!addButton) return;
-  if (booleanstate) {
-    addButton.classList.add("active");
-    addButton.classList.remove("inactive");
-  } else {
-    addButton.classList.add("inactive");
-    addButton.classList.remove("active");
-  }
-}
-
 function init() {
   window.addEventListener("resize", handleResize);
 

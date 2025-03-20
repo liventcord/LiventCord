@@ -1363,12 +1363,19 @@ textarea::-webkit-scrollbar-track {
   background-color: rgb(78, 80, 88);
   color: white;
   height: 32px;
-  width: 30px;
+  width: 90px;
   margin-right: 16px;
   margin-top: -25px;
   border-radius: 5px;
+  display: flex;
+  align-items: center;
 }
-#profile-add-friend-button {
+
+.profile-send-msg-button svg {
+  margin-right: 8px;
+}
+
+.profile-add-friend-button {
   cursor: pointer;
   border: none;
   background-color: rgb(88, 101, 242);
@@ -1383,11 +1390,20 @@ textarea::-webkit-scrollbar-track {
   border-radius: 5px;
   text-indent: 5px;
 }
+.profile-add-friend-button-pending {
+  background-color: rgb(78, 80, 88) !important;
+  width: 30px;
+  opacity: 0.6;
+}
 .icon-container {
   display: flex;
   align-items: center;
   margin-left: 15px;
   justify-content: center;
+  pointer-events: none;
+}
+.profile-add-friend-button-pending .icon-container {
+  margin-left: 8px;
 }
 
 .failed {

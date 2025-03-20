@@ -11,8 +11,10 @@
     "MARK_AS_READ": "Okundu olarak işaretle",
     "COPY_LINK": "Bağlantıyı Kopyala",
     "MUTE_CHANNEL": "Kanalı Sessize Al",
+    "MUTE_GUILD": "Sunucuyu Sustur",
     "NOTIFY_SETTINGS": "Bildirim Ayarları",
     "EDIT_CHANNEL": "Kanalı Düzenle",
+    "CREATE_CHANNEL": "Kanal oluştur",
     "DELETE_CHANNEL": "Kanalı Sil",
     "OPEN_PROFILE": "Profil",
     "MUTE_USER": "Sustur",
@@ -205,7 +207,8 @@
     "click-to-attachment": "Eki görüntülemek için tıkla",
     "more": "Daha fazla",
     "deny": "Reddet",
-    "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?"
+    "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?",
+    "message": "Mesaj"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
@@ -221,6 +224,7 @@
     "tb-showprofile": "Kullanıcı Profilini Göster",
     "more": "Daha fazla",
     "create-guild-button": "Bir sunucu ekle",
-    "main-logo": "Direkt Mesajlar"
+    "main-logo": "Direkt Mesajlar",
+    "profile-add-friend-button-pending": "Giden Arkadaş İsteği"
   }
 }
