@@ -1,3 +1,4 @@
+import { initialState } from "./app.ts";
 import { Message, MessageReply } from "./message.ts";
 import { Member } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
@@ -299,9 +300,64 @@ class VoiceChannelCache extends BaseCache {
   }
 }
 
+class SharedGuildsCache extends BaseCache {
+  private guildFriendIdsMap: Map<string, string[]> = new Map();
+
+  getFriendGuilds(friendId: string): string[] {
+    const guilds: string[] = [];
+    1;
+    this.guildFriendIdsMap.forEach((friendIds, guildId) => {
+      if (friendIds.includes(friendId)) {
+        guilds.push(guildId);
+      }
+    });
+    return guilds;
+  }
+
+  getFriendIds(guildId: string): string[] {
+    return this.guildFriendIdsMap.get(guildId) || [];
+  }
+
+  setFriendIds(guildId: string, friendIds: string[]): void {
+    if (Array.isArray(friendIds)) {
+      this.guildFriendIdsMap.set(guildId, friendIds);
+    }
+  }
+
+  addFriendId(guildId: string, friendId: string): void {
+    const friendIds = this.getFriendIds(guildId);
+    if (!friendIds.includes(friendId)) {
+      friendIds.push(friendId);
+      this.setFriendIds(guildId, friendIds);
+    }
+  }
+
+  removeFriendId(guildId: string, friendId: string): void {
+    const friendIds = this.getFriendIds(guildId);
+    const index = friendIds.indexOf(friendId);
+    if (index !== -1) {
+      friendIds.splice(index, 1);
+      this.setFriendIds(guildId, friendIds);
+    }
+  }
+
+  updateGuildFriends(guildId: string, newFriendIds: string[]): void {
+    this.setFriendIds(guildId, newFriendIds);
+  }
+
+  updateSharedGuildsCache(guildsWithFriends: {
+    [guildId: string]: string[];
+  }): void {
+    Object.keys(guildsWithFriends).forEach((guildId) => {
+      this.setFriendIds(guildId, guildsWithFriends[guildId]);
+    });
+  }
+}
+
 class Guild {
   guildId: string;
   guildName: string;
+  isUploaded: boolean;
   channels: ChannelCache;
   members: GuildMembersCache;
   messages: MessagesCache;
@@ -310,16 +366,27 @@ class Guild {
   ownerId: string | null;
   private rootChannel: string | null = null;
 
-  constructor(guildId: string, guildName: string) {
+  constructor(guildId: string, guildName: string, isUploaded: boolean) {
     this.guildId = guildId;
     this.guildName = guildName;
+    this.isUploaded = isUploaded;
     this.channels = new ChannelCache();
     this.members = new GuildMembersCache();
     this.messages = new MessagesCache();
     this.invites = new InviteIdsCache();
     this.ownerId = null;
+    if (initialState.sharedGuildsMap) {
+      const sharedGuildsMap = new Map<string, string[]>(
+        Object.entries(initialState.sharedGuildsMap)
+      );
+      const friendIds = sharedGuildsMap.get(guildId);
+      if (Array.isArray(friendIds)) {
+        sharedGuildsCache.setFriendIds(guildId, friendIds);
+      }
+    } else {
+      console.error("sharedGuildsMap is not a valid object or is missing");
+    }
   }
-
   setRootChannel(rootChannel: string): void {
     this.rootChannel = rootChannel;
   }
@@ -361,6 +428,7 @@ class Guild {
 interface GuildCache {
   guilds: { [key: string]: Guild };
 }
+export const sharedGuildsCache = new SharedGuildsCache();
 
 class GuildCache {
   public guilds!: { [key: string]: Guild };
@@ -391,16 +459,22 @@ class GuildCache {
   getGuild(guildId: string): Guild | null {
     if (!guildId) return null;
     if (!this.guilds[guildId]) {
-      this.guilds[guildId] = new Guild(guildId, "Default Guild");
+      this.guilds[guildId] = new Guild(guildId, "Default Guild", false);
     }
     return this.guilds[guildId];
   }
 
-  addGuild(guildData: { guildId: string; guildName: string }): void {
-    if (!guildData) return;
-    const { guildId, guildName } = guildData;
-    if (!this.guilds[guildId]) {
-      this.guilds[guildId] = new Guild(guildId, guildName);
+  addGuild(guildData?: {
+    guildId: string;
+    guildName: string;
+    isUploaded: boolean;
+  }): void {
+    if (guildData && !this.guilds[guildData.guildId]) {
+      this.guilds[guildData.guildId] = new Guild(
+        guildData.guildId,
+        guildData.guildName,
+        guildData.isUploaded
+      );
     }
   }
 
@@ -415,13 +489,18 @@ class GuildCache {
 
 class GuildCacheInterface {
   guildCache: GuildCache;
+  defaultGuild = "Default Guiild";
 
   constructor() {
     this.guildCache = GuildCache.getInstance();
   }
 
   // Guild
-  addGuild(guildData: { guildId: string; guildName: string }): void {
+  addGuild(guildData: {
+    guildId: string;
+    guildName: string;
+    isUploaded: boolean;
+  }): void {
     this.guildCache.addGuild(guildData);
   }
   removeGuild(guildId: string) {
@@ -447,6 +526,10 @@ class GuildCacheInterface {
   getGuildName(guildId: string): string | null {
     const guild = this.getGuild(guildId);
     return guild ? guild.guildName : null;
+  }
+  getIsUploaded(guildId: string): boolean | null {
+    const guild = this.getGuild(guildId);
+    return guild ? guild.isUploaded : null;
   }
 
   // Invite
@@ -570,7 +653,7 @@ class GuildCacheInterface {
   }
   getRootChannel(guildId: string) {
     const result = this.getGuild(guildId)?.getRootChannel();
-    return result ?? null;
+    return result ?? this.defaultGuild;
   }
 
   getRootChannelData(guildId: string): CachedChannel | null {

@@ -200,18 +200,49 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<List<string>> GetSharedGuilds(string guildId, string userId)
+        public async Task<Dictionary<string, List<string>>> GetSharedGuilds(string userId, List<PublicUserWithFriendData?>? friends, List<GuildDto> guilds)
         {
-            if (string.IsNullOrEmpty(guildId) || string.IsNullOrEmpty(userId))
-                return new List<string>();
+            if (string.IsNullOrEmpty(userId) || friends == null || !friends.Any())
+                return new Dictionary<string, List<string>>();
 
-            var sharedGuilds = await _dbContext
-                .GuildMembers.Where(gu => gu.MemberId == userId)
-                .Select(gu => gu.GuildId)
-                .ToListAsync();
+            var sharedGuildsWithFriends = new Dictionary<string, List<string>>();
 
-            return sharedGuilds.Where(g => g != guildId).ToList();
+            foreach (var friend in friends)
+            {
+                if (friend == null || string.IsNullOrEmpty(friend.UserId))
+                    continue;
+
+                var sharedGuildsForFriend = await _dbContext
+                    .GuildMembers.Where(gu => gu.MemberId == friend.UserId)
+                    .Select(gu => gu.GuildId)
+                    .ToListAsync();
+
+                foreach (var guild in guilds)
+                {
+                    var guildId = guild.GuildId;
+
+                    if (string.IsNullOrEmpty(guildId))
+                        continue;
+
+                    if (sharedGuildsForFriend.Contains(guildId))
+                    {
+                        if (!sharedGuildsWithFriends.ContainsKey(guildId))
+                        {
+                            sharedGuildsWithFriends[guildId] = new List<string>();
+                        }
+
+                        if (!sharedGuildsWithFriends[guildId].Contains(friend.UserId))
+                        {
+                            sharedGuildsWithFriends[guildId].Add(friend.UserId);
+                        }
+                    }
+                }
+            }
+
+            return sharedGuildsWithFriends;
         }
+
+
         [NonAction]
         public async Task<GuildDto?> GetUserGuildAsync(string userId, string guildId)
         {

@@ -1,11 +1,21 @@
 import Croppie from "croppie";
 import "croppie/croppie.css";
 
-import { cacheInterface, guildCache } from "./cache.ts";
-import { currentGuildId, createGuild, joinToGuild } from "./guild.ts";
+import { cacheInterface, guildCache, sharedGuildsCache } from "./cache.ts";
+import {
+  currentGuildId,
+  createGuild,
+  joinToGuild,
+  createGuildListItem,
+  loadGuild
+} from "./guild.ts";
 import { getId, getAverageRGB, createEl } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import { createChannel, currentChannelName } from "./channels.ts";
+import {
+  createChannel,
+  currentChannelName,
+  getRootChannel
+} from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -299,56 +309,78 @@ export function drawProfilePopId(id: string) {
   const userData: UserInfo = constructUserData(id);
   drawProfilePop(userData);
 }
+let currentProfileDisplay: HTMLElement;
+function closeCurrentProfileDisplay() {
+  closePopUp(
+    currentProfileDisplay,
+    currentProfileDisplay.firstChild as HTMLElement
+  );
+}
 export async function drawProfilePop(userData: UserInfo) {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
     return;
   }
-  const profileContainer = createEl("div", { id: "profile-container" });
 
-  const discriminator = userData.discriminator;
-  const userId = userData.userId;
-  const _isOnline = await userManager.isOnline(userId);
-  const description = userData.description;
+  const profileContainer = createProfileContainer(userData);
+  const profileImg = createProfileImage(userData);
+  const popTopContainer = createPopTopContainer(userData, profileImg);
+
+  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userData.userId);
+
+  const popBottomContainer = createPopBottomContainer(
+    userData.description,
+    sharedGuilds,
+    null,
+    userData.userId,
+    userData.createdAt
+  );
+
+  profileContainer.appendChild(profileImg);
+  profileContainer.appendChild(popTopContainer);
+  profileContainer.appendChild(popBottomContainer);
+  const isOnline = await userManager.isOnline(userData.userId);
+  const bubble = createBubble(isOnline);
+  updateOnlineStatus(userData.userId, bubble);
+
+  const contentElements = [
+    popTopContainer,
+    profileImg,
+    bubble,
+    profileContainer,
+    popBottomContainer
+  ];
+  currentProfileDisplay = createPopUp({
+    contentElements,
+    id: "profilePopContainer"
+  });
+
+  appendToProfileContextList(userData, userData.userId);
+}
+
+function createProfileContainer(userData: UserInfo): HTMLElement {
+  const container = createEl("div", { id: "profile-container" });
 
   const profileTitle = createEl("p", {
     id: "profile-title",
-    textContent: userManager.getUserNick(userId)
+    textContent: userManager.getUserNick(userData.userId)
   });
   const profileDiscriminator = createEl("p", {
     id: "profile-discriminator",
-    textContent: "#" + discriminator
+    textContent: "#" + userData.discriminator
   });
-  profileContainer.appendChild(profileTitle);
-  profileContainer.appendChild(profileDiscriminator);
-  const aboutTitle = createEl("p", {
-    id: "profile-about-title",
-    textContent: translations.getTranslation("about")
-  });
-  const aboutDescription = createEl("p", {
-    id: "profile-about-description",
-    textContent: description
-  });
-  const popBottomContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "profile-popup-bottom-container"
-  });
-  popBottomContainer.appendChild(aboutTitle);
-  popBottomContainer.appendChild(aboutDescription);
-  const popTopContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "profile-popup-top-container"
-  });
-  const profileOptions = createEl("button", {
-    id: userId,
-    className: "profile-dots3"
-  });
-  const profileOptionsText = createEl("p", {
-    className: "profile-dots3-text",
-    textContent: "⋯"
-  });
-  profileOptions.appendChild(profileOptionsText);
-  popTopContainer.appendChild(profileOptions);
+
+  container.appendChild(profileTitle);
+  container.appendChild(profileDiscriminator);
+
+  const profileOptionsContainer = createProfileOptionsContainer(userData);
+
+  container.appendChild(profileOptionsContainer);
+
+  return container;
+}
+
+function createProfileImage(userData: UserInfo): HTMLImageElement {
   const profileImg = createEl("img", {
     id: "profile-display"
   }) as HTMLImageElement;
@@ -359,98 +391,312 @@ export async function drawProfilePop(userData: UserInfo) {
     this.style.borderRadius = "50%";
   });
 
-  const profileOptionsContainer = createEl("div", {
-    className: "profile-options-container"
+  setProfilePic(profileImg, userData.userId);
+
+  return profileImg;
+}
+
+function createPopTopContainer(
+  userData: UserInfo,
+  profileImg: HTMLImageElement
+): HTMLElement {
+  const topContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "profile-popup-top-container"
   });
 
-  if (userId !== currentUserId) {
-    const sendMsgBtn = createEl("button", {
-      className: "profile-send-msg-button"
-    });
+  const profileOptions = createProfileOptionsButton(userData);
+  topContainer.appendChild(profileOptions);
 
-    const sendMsgIco = createEl("div", {
-      innerHTML: sendMsgIconSvg
-    });
-    sendMsgBtn.appendChild(sendMsgIco);
+  profileOptions.addEventListener("click", (event) =>
+    handleContextMenuClick(userData.userId, event)
+  );
 
-    const messageText = createEl("span");
-    messageText.textContent = translations.getTranslation("message");
-    sendMsgBtn.appendChild(messageText);
-
-    sendMsgBtn.addEventListener("click", () => {
-      loadDmHome();
-      openDm(userId);
-      const profilePopContainer = getId("profilePopContainer");
-      if (profilePopContainer) {
-        (profilePopContainer.parentNode as HTMLElement).remove();
-      }
-    });
-
-    profileOptionsContainer.appendChild(sendMsgBtn);
-
-    if (!friendsCache.isFriend(userId)) {
-      let addFriendBtn: HTMLElement;
-
-      if (friendsCache.hasRequestToFriend(userId)) {
-        addFriendBtn = createEl("button", {
-          className:
-            "profile-add-friend-button profile-add-friend-button-pending"
-        });
-        addFriendBtn.innerHTML = ` <div class="icon-container">${pendingFriendSvg}</div>`;
-
-        addFriendBtn.addEventListener("click", () => {
-          addFriendId(userId);
-          setCurrentProfilePopButtonToPending(addFriendBtn);
-        });
-      } else {
-        addFriendBtn = createEl("button", {
-          className: "profile-add-friend-button"
-        });
-        addFriendBtn.innerHTML = ` <div class="icon-container">${addFriendSvg}</div> ${translations.getTranslation(
-          "open-friends-button"
-        )}`;
-
-        addFriendBtn.addEventListener("click", () => {
-          addFriendId(userId);
-          setCurrentProfilePopButtonToPending(addFriendBtn);
-        });
-      }
-
-      profileOptionsContainer.appendChild(addFriendBtn);
-    }
-  }
-
-  profileContainer.appendChild(profileOptionsContainer);
-
-  setProfilePic(profileImg, userId);
-
-  const bubble = createBubble(_isOnline ?? false, true);
-  profileImg.appendChild(bubble);
-
-  profileOptions.addEventListener("click", function (event) {
-    if (contextList[userId]) {
-      showContextMenu(event.pageX, event.pageY, contextList[userId]);
-    } else {
-      console.warn(`No context found for userId: ${userId}`);
-    }
-  });
   profileImg.onload = function () {
-    if (popTopContainer) {
-      popTopContainer.style.backgroundColor = getAverageRGB(profileImg);
+    if (topContainer) {
+      topContainer.style.backgroundColor = getAverageRGB(profileImg);
     }
   };
 
-  const contentElements = [
-    popTopContainer,
-    profileImg,
-    profileContainer,
-    popBottomContainer
-  ];
-  createPopUp({
-    contentElements,
-    id: "profilePopContainer"
+  return topContainer;
+}
+
+async function updateOnlineStatus(
+  userId: string,
+  bubble: HTMLElement
+): Promise<void> {
+  try {
+    const isOnline = await userManager.isOnline(userId);
+    bubble.style.backgroundColor = isOnline ? "#23a55a" : "gray";
+    bubble.style.opacity = "1";
+  } catch (error) {
+    console.error(`Error fetching online status for user ${userId}:`, error);
+  }
+}
+function createProfileOptionsButton(userData: UserInfo): HTMLElement {
+  const profileOptions = createEl("button", {
+    id: userData.userId,
+    className: "profile-dots3"
   });
-  appendToProfileContextList(userData, userId);
+  const profileOptionsText = createEl("p", {
+    className: "profile-dots3-text",
+    textContent: "⋯"
+  });
+
+  profileOptions.appendChild(profileOptionsText);
+
+  return profileOptions;
+}
+function createGuildTextElement(guildName: string): HTMLElement {
+  return createEl("p", {
+    textContent: guildName,
+    style: {
+      marginLeft: "20px"
+    }
+  });
+}
+const SECTION_TYPES = {
+  ABOUT: "about",
+  SHARED_GUILDS: "sharedGuilds",
+  SHARED_FRIENDS: "sharedFriends"
+};
+
+function getTranslation(
+  name: string,
+  friendsCount?: number,
+  guildsCount?: number
+) {
+  switch (name) {
+    case SECTION_TYPES.SHARED_FRIENDS:
+      return translations.getSharedFriendsPlaceholder(friendsCount ?? 0);
+    case SECTION_TYPES.SHARED_GUILDS:
+      return translations.getSharedGuildsPlaceholder(guildsCount ?? 0);
+    default:
+      return translations.getTranslation(name);
+  }
+}
+
+function createPopBottomContainer(
+  description: string | undefined,
+  sharedGuilds: string[],
+  sharedFriends: string[] | null,
+  userId: string,
+  memberSince?: string
+) {
+  const bottomContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "profile-popup-bottom-container"
+  });
+
+  const sectionsBar = createEl("div", { className: "profile-sections-bar" });
+  const sectionsLine = createEl("hr", { className: "profile-sections-line" });
+
+  const sectionsData: {
+    name: string;
+    content: HTMLElement;
+    button?: HTMLElement;
+    line?: HTMLElement;
+  }[] = [
+    {
+      name: SECTION_TYPES.ABOUT,
+      content: createEl("div", {
+        innerHTML: `
+          <p id="profile-about-description">${description ?? ""}</p>
+          ${
+            memberSince
+              ? `<p>${translations.getTranslation(
+                  "member-since"
+                )}:</p><p id="profile-member-since">${new Date(
+                  memberSince
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+                })}</p>`
+              : ""
+          }
+        `
+      })
+    }
+  ];
+
+  if (userId !== currentUserId) {
+    const sharedGuildsSection = createEl("div", {
+      className: "shared-guilds-content",
+      style: "display: none; overflow-y: auto; max-height: 200px;"
+    });
+    const guildsList = createEl("ul", {
+      className: "guilds-list shared-guilds-list",
+      id: "guilds-list"
+    });
+    sharedGuilds.forEach((guildId: string) => {
+      const rootChannel = cacheInterface.getRootChannel(guildId) as string;
+      const guildName = cacheInterface.getGuildName(guildId) as string;
+      const isUploaded = cacheInterface.getIsUploaded(guildId) as boolean;
+      const guildImage = createGuildListItem(
+        guildId,
+        rootChannel,
+        guildName,
+        isUploaded,
+        false
+      );
+      const guildText = createGuildTextElement(guildName);
+      guildImage.appendChild(guildText);
+      guildsList.appendChild(guildImage);
+
+      guildsList.addEventListener("click", () => {
+        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
+        closeCurrentProfileDisplay();
+      });
+    });
+    sharedGuildsSection.appendChild(guildsList);
+    sectionsData.push({
+      name: SECTION_TYPES.SHARED_GUILDS,
+      content: sharedGuildsSection
+    });
+
+    const sharedFriendsSection = createEl("div", {
+      className: "shared-friends-content",
+      style: "display: none; overflow-y: auto; max-height: 200px;"
+    });
+    sharedFriendsSection.innerHTML = sharedFriends
+      ? sharedFriends.map((friend: string) => `<p>${friend}</p>`).join("")
+      : "";
+    sectionsData.push({
+      name: SECTION_TYPES.SHARED_FRIENDS,
+      content: sharedFriendsSection
+    });
+  }
+
+  const contentContainer = createEl("div", { className: "profile-content" });
+  sectionsData.forEach((section) =>
+    contentContainer.appendChild(section.content)
+  );
+
+  function showContent(
+    content: HTMLElement,
+    button?: HTMLElement,
+    line?: HTMLElement
+  ) {
+    sectionsData.forEach((sec) => {
+      sec.content.style.display = "none";
+      if (sec.line) {
+        sec.line.classList.remove("selected");
+      }
+    });
+    content.style.display = "block";
+    if (line) {
+      line.classList.add("selected");
+    }
+  }
+
+  sectionsData.forEach((section) => {
+    const sectionButton = createEl("button", {
+      className: "profile-section-button",
+      textContent: getTranslation(
+        section.name,
+        section.name === SECTION_TYPES.SHARED_FRIENDS
+          ? sharedFriends?.length
+          : undefined,
+        section.name === SECTION_TYPES.SHARED_GUILDS
+          ? sharedGuilds?.length
+          : undefined
+      )
+    });
+    const sectionLine = createEl("hr", {
+      className: "profile-sections-line profile-section-line-button"
+    });
+    sectionButton.appendChild(sectionLine);
+    sectionButton.addEventListener("click", () =>
+      showContent(section.content, sectionButton, sectionLine)
+    );
+    sectionsBar.appendChild(sectionButton);
+    section.line = sectionLine;
+  });
+
+  showContent(
+    sectionsData[0].content,
+    sectionsData[0].button,
+    sectionsData[0].line
+  );
+
+  bottomContainer.appendChild(sectionsBar);
+  bottomContainer.appendChild(sectionsLine);
+  bottomContainer.appendChild(contentContainer);
+  return bottomContainer;
+}
+
+function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
+  const container = createEl("div", { className: "profile-options-container" });
+
+  if (userData.userId !== currentUserId) {
+    container.appendChild(createSendMsgButton(userData));
+    if (!friendsCache.isFriend(userData.userId)) {
+      container.appendChild(createAddFriendButton(userData));
+    }
+  }
+
+  return container;
+}
+
+function createSendMsgButton(userData: UserInfo): HTMLElement {
+  const sendMsgBtn = createEl("button", {
+    className: "profile-send-msg-button"
+  });
+  const sendMsgIco = createEl("div", { innerHTML: sendMsgIconSvg });
+  sendMsgBtn.appendChild(sendMsgIco);
+
+  const messageText = createEl("span", {
+    textContent: translations.getTranslation("message")
+  });
+  sendMsgBtn.appendChild(messageText);
+
+  sendMsgBtn.addEventListener("click", () => {
+    loadDmHome();
+    openDm(userData.userId);
+    const profilePopContainer = getId("profilePopContainer");
+    if (profilePopContainer) {
+      (profilePopContainer.parentNode as HTMLElement).remove();
+    }
+  });
+
+  return sendMsgBtn;
+}
+
+function createAddFriendButton(userData: UserInfo): HTMLElement {
+  let addFriendBtn: HTMLElement;
+
+  if (friendsCache.hasRequestToFriend(userData.userId)) {
+    addFriendBtn = createEl("button", {
+      className: "profile-add-friend-button profile-add-friend-button-pending"
+    });
+    addFriendBtn.innerHTML = `<div class="icon-container">${pendingFriendSvg}</div>`;
+    addFriendBtn.addEventListener("click", () => {
+      addFriendId(userData.userId);
+      setCurrentProfilePopButtonToPending(addFriendBtn);
+    });
+  } else {
+    addFriendBtn = createEl("button", {
+      className: "profile-add-friend-button"
+    });
+    addFriendBtn.innerHTML = `<div class="icon-container">${addFriendSvg}</div> ${translations.getTranslation(
+      "open-friends-button"
+    )}`;
+    addFriendBtn.addEventListener("click", () => {
+      addFriendId(userData.userId);
+      setCurrentProfilePopButtonToPending(addFriendBtn);
+    });
+  }
+
+  return addFriendBtn;
+}
+
+function handleContextMenuClick(userId: string, event: MouseEvent): void {
+  if (contextList[userId]) {
+    showContextMenu(event.pageX, event.pageY, contextList[userId]);
+  } else {
+    console.warn(`No context found for userId: ${userId}`);
+  }
 }
 
 export function createPopUp({

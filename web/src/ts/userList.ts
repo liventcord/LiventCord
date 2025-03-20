@@ -73,7 +73,7 @@ function createUserProfile(
   profileImg.style.pointerEvents = "none";
   profileImg.dataset.userId = userId;
 
-  const bubble = createBubble(isUserOnline);
+  const bubble = createBubble(isUserOnline, true);
 
   profileContainer.appendChild(profileImg);
   profileContainer.appendChild(userNameDiv);
@@ -261,7 +261,7 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
     {
       userId: currentUserId,
       nickName: currentUserNick,
-      isOnline: userManager.isSelfOnline(),
+      isOnline: userManager.getIsSelfOnline(),
       discriminator: currentDiscriminator || DEFAULT_DISCRIMINATOR
     },
     {

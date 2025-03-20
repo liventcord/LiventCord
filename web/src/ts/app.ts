@@ -147,6 +147,7 @@ interface InitialState {
   mediaProxyApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
+  sharedGuildsMap: Map<string, any>;
   wsUrl: string;
 }
 export function initializeApp() {
@@ -204,6 +205,7 @@ export function initialiseState(data: InitialStateData): void {
     ownerId,
     permissionsMap,
     guilds,
+    sharedGuildsMap,
     gifWorkerUrl,
     proxyWorkerUrl,
     mediaProxyApiUrl,

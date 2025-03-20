@@ -120,6 +120,7 @@ namespace LiventCord.Helpers
                 }
 
                 var guilds = await _membersController.GetUserGuilds(userId);
+                var friendsStatus = await _friendController.GetFriends(userId);
 
                 var jsonData = new
                 {
@@ -127,9 +128,9 @@ namespace LiventCord.Helpers
                     email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
                     userDiscriminator = user.Discriminator ?? "",
-                    sharedGuildsMap = new List<string>(),
+                    sharedGuildsMap = await _membersController.GetSharedGuilds(userId, friendsStatus, guilds),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
-                    friendsStatus = await _friendController.GetFriends(userId),
+                    friendsStatus,
                     dmFriends = await GetDmUsers(userId),
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,

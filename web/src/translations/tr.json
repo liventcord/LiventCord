@@ -70,7 +70,9 @@
     "avatar-upload-size-error-message": "Avatar boyutu {{avatarLimit}}MB'den küçük olmalı!",
     "attachment-upload-size-error-message": "Ek dosya boyutu {{attachmentLimit}}MB'den küçük olmalı!",
     "readen-chat": "{{date}}'da {{time}}'den beri {{count}}+ yeni mesaj",
-    "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!"
+    "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!",
+    "shared-guilds": "{{count}} Ortak Sunucu",
+    "shared-friends": "{{count}} Ortak Arkadaş"
   },
   "settingTranslations": {
     "en": "İngilizce",
@@ -208,7 +210,8 @@
     "more": "Daha fazla",
     "deny": "Reddet",
     "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?",
-    "message": "Mesaj"
+    "message": "Mesaj",
+    "member-since": "Şu Tarihten Beri Üye"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

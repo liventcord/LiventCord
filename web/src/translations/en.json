@@ -70,7 +70,9 @@
     "avatar-upload-size-error-message": "Avatar size must be smaller than {{avatarLimit}}MB!",
     "attachment-upload-size-error-message": "Attachment size must be smaller than {{attachmentLimit}}MB!",
     "readen-chat": "{{count}}+ messages since {{date}} at {{time}}.",
-    "channel-manage-fail": "You dont have permission to manage channels in guild {{guildName}}"
+    "channel-manage-fail": "You dont have permission to manage channels in guild {{guildName}}",
+    "shared-guilds": "{{count}} Shared Guilds",
+    "shared-friends": "{{count}} Shared Friends"
   },
   "settingTranslations": {
     "en": "English",
@@ -208,7 +210,8 @@
     "more": "More",
     "deny": "Deny",
     "delete-message-prompt": "Are you sure you want to delete this message?",
-    "message": "Message"
+    "message": "Message",
+    "member-since": "Member Since"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

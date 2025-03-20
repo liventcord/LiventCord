@@ -354,11 +354,12 @@ export function createGuildContextLists() {
     appendToGuildContextList(guild.id);
   }
 }
-const createGuildListItem = (
+export const createGuildListItem = (
   guildId: string,
   rootChannel: string,
   guildName: string,
-  isUploaded: boolean
+  isUploaded: boolean,
+  isInteractable: boolean
 ) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
@@ -371,14 +372,15 @@ const createGuildListItem = (
   imgElement.onerror = () => {
     imgElement.src = blackImage;
   };
-
-  imgElement.addEventListener("click", () => {
-    try {
-      loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
-    } catch (error) {
-      console.error("Error while loading guild:", error);
-    }
-  });
+  if (isInteractable) {
+    imgElement.addEventListener("click", () => {
+      try {
+        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
+      } catch (error) {
+        console.error("Error while loading guild:", error);
+      }
+    });
+  }
 
   listItem.appendChild(imgElement);
   return listItem;
@@ -405,7 +407,8 @@ export function updateGuilds(guildsJson: Array<any>) {
           guildId,
           rootChannel,
           guildName,
-          isGuildUploadedImg
+          isGuildUploadedImg,
+          true
         );
         guildsList.appendChild(listItem);
 
@@ -449,7 +452,8 @@ function appendToGuildList(guild: Guild) {
     guild.guildId,
     guild.rootChannel,
     guild.guildName,
-    guild.isGuildUploadedImg
+    guild.isGuildUploadedImg,
+    true
   );
 
   guildsList.appendChild(listItem);

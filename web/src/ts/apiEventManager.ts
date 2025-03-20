@@ -162,26 +162,30 @@ apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
 });
 
 interface GuildMembersResponse {
-  members: Member[];
+  members: UserInfo[];
   guildId: string;
 }
-apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
-  const members = data.members;
-  const guildId = data.guildId;
+function userInfosToMembers(userInfos: UserInfo[]): Member[] {
+  return userInfos.map((userInfo) => {
+    return {
+      userId: String(userInfo.userId),
+      nickName: userInfo.nickName || "",
+      status: userInfo.status ?? "offline"
+    } as Member;
+  });
+}
 
-  if (!data || !members || !guildId) {
+apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
+  if (!data || !data.members || !data.guildId) {
     console.error("Malformed members data: ", data);
     return;
   }
 
-  const userInfoList: UserInfo[] = members.map((member) => ({
-    userId: member.userId,
-    nickName: member.nickName,
-    discriminator: "0000"
-  }));
+  const userInfos = data.members;
+  const guildId = data.guildId;
 
-  cacheInterface.updateMembers(guildId, members);
-  updateMemberList(userInfoList);
+  cacheInterface.updateMembers(guildId, userInfosToMembers(userInfos));
+  updateMemberList(userInfos);
 });
 
 interface MessageResponse {

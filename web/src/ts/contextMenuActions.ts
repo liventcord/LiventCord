@@ -209,6 +209,7 @@ export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userManager.getUserInfo(userId);
   }
+  console.error(userData);
   if (userId && userData) {
     contextList[userId] = createProfileContext(userData);
   }

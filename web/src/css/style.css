@@ -857,25 +857,25 @@
 .profile-bubble {
   z-index: 50;
   color: white;
-  padding: 6px 6px;
+  padding: 5px;
   border-radius: 20px;
   position: absolute;
-  margin-left: 25px;
-  margin-top: 30px;
-  border: 5.5px solid #2f3136;
+  margin-left: 22px;
+  margin-top: 22px;
   transition: opacity 0.5s ease-in-out;
+  border: 3px solid #2b2d31;
 }
 .status-bubble {
-  z-index: 1;
   color: white;
-  padding: 6px 6px;
-  border-radius: 20px;
+  padding: 12px;
+  border-radius: 50px;
   position: absolute;
-  margin-left: 25px;
-  margin-top: 30px;
-  border: 5.5px solid #2f3136;
   transition: opacity 0.5s ease-in-out;
+  top: 202px;
+  left: 87px;
+  border: 10px solid #111214;
 }
+
 #drop-zone {
   position: fixed;
   top: 0;
@@ -917,7 +917,6 @@
   margin-left: 20px;
   margin-top: 20px;
   padding: 5px 5px;
-  border: 3px solid #2f3136;
 }
 #user-list {
   padding-top: 65px;

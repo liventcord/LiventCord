@@ -43,9 +43,8 @@ export function setLastTopSenderId(id: string) {
   lastTopSenderId = id;
 }
 class UserManager {
-  private selfOnline = false;
   private userNames: { [userId: string]: UserInfo } = {};
-
+  private isSelfOnline: boolean = false;
   private statusCache: Record<string, Promise<boolean> | boolean> = {};
 
   constructor() {
@@ -118,28 +117,35 @@ class UserManager {
     };
   }
 
-  isSelfOnline() {
-    return this.selfOnline;
+  setIsSelfOnline(val: boolean) {
+    this.isSelfOnline = val;
+  }
+  getIsSelfOnline() {
+    return this.isSelfOnline;
   }
 
   updateMemberStatus(userId: string, status: string): void {
+    if (!this.userNames[userId]) {
+      console.error(userId, "does not exist!");
+      this.addUser(userId);
+    }
     if (this.userNames[userId]) {
+      console.log("Updating user status for: ", userId, status);
       this.userNames[userId].status = status;
+    } else {
+      console.error("Failed to add user:", userId);
     }
   }
 
   getMemberStatus(userId: string): string {
     return this.userNames[userId]?.status ?? "offline";
   }
-
   async isOnline(userId: string): Promise<boolean> {
-    if (this.statusCache[userId] instanceof Promise) {
+    if (userId === currentUserId) return this.getIsSelfOnline();
+    if (this.statusCache[userId] instanceof Promise)
       return this.statusCache[userId];
-    }
-
-    if (this.statusCache[userId] !== undefined) {
+    if (this.statusCache[userId] !== undefined)
       return this.statusCache[userId] as boolean;
-    }
 
     const currentStatus = this.userNames[userId]?.status;
     if (currentStatus !== undefined) {
@@ -147,9 +153,8 @@ class UserManager {
       return this.statusCache[userId];
     }
 
-    const statusPromise = this.getStatus(userId);
-    this.statusCache[userId] = statusPromise;
-    const isOnline = await statusPromise;
+    this.statusCache[userId] = this.getStatus(userId);
+    const isOnline = await this.statusCache[userId];
     this.statusCache[userId] = isOnline;
     return isOnline;
   }
@@ -294,6 +299,7 @@ function updateSelfStatus(status: string) {
   selfBubble.classList.value = "";
   selfBubble.classList.add(status);
   setSelfStatus(status);
+  userManager.setIsSelfOnline(status === "online");
 }
 
 export function updateUserOnlineStatus(userId: string, status: string) {

@@ -180,6 +180,13 @@ class Translations {
     return this.replacePlaceholder("channel-manage-fail", { guildName: name });
   }
 
+  getSharedGuildsPlaceholder(count: number): string {
+    return this.replacePlaceholder("shared-guilds", { count: String(count) });
+  }
+  getSharedFriendsPlaceholder(count: number | null): string {
+    return this.replacePlaceholder("shared-friends", { count: String(count) });
+  }
+
   initializeTranslations() {
     const currentTranslations = this.textTranslations;
 
