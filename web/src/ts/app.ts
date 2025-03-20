@@ -221,7 +221,7 @@ export function initialiseState(data: InitialStateData): void {
   addKeybinds();
 }
 
-export function initializeElements() {
+function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
@@ -249,14 +249,14 @@ export function initializeElements() {
   });
 }
 
-export function initializeSettings() {
+function initializeSettings() {
   updateSelfProfile(currentUserId, currentUserNick);
   const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
   setUsersList(isCookieUsersOpen, true);
   disableElement("loading-screen");
 }
 
-export function initializeListeners() {
+function initializeListeners() {
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
 
@@ -280,7 +280,7 @@ export function initializeListeners() {
   addContextListeners();
 }
 
-export function handleGuildClick(event: MouseEvent) {
+function handleGuildClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
   if (
     target &&
@@ -290,7 +290,7 @@ export function handleGuildClick(event: MouseEvent) {
   }
 }
 
-export function initializeGuild() {
+function initializeGuild() {
   initialiseMe();
   const {
     isValid,
@@ -453,7 +453,7 @@ export function createReplyBar(
   replyBar.appendChild(replyContent);
 }
 
-export function initialiseMe() {
+function initialiseMe() {
   if (!isOnMe) {
     console.log("Cant initialise me while isOnMe is false");
     return;
@@ -673,7 +673,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   isChangingPage = false;
 }
 
-export function changeCurrentDm(friendId: string) {
+function changeCurrentDm(friendId: string) {
   isChangingPage = true;
   setIsOnMe(false);
   setIsOnGuild(false);

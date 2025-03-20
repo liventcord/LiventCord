@@ -30,7 +30,7 @@ import { UserInfo } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 
 export let currentGuildId: string;
-export const guildNameText = getId("guild-name") as HTMLElement;
+const guildNameText = getId("guild-name") as HTMLElement;
 export const guildContainer = getId("guild-container") as HTMLElement;
 const guildsList = getId("guilds-list") as HTMLElement;
 
@@ -267,7 +267,7 @@ let keybindHandlers: { [key: string]: (event: KeyboardEvent) => void } = {};
 let isGuildKeyDown = false;
 let currentGuildIndex = 1;
 
-export function clearKeybinds() {
+function clearKeybinds() {
   if (keybindHandlers["shift"]) {
     document.removeEventListener("keydown", keybindHandlers["shift"]);
   }
@@ -442,7 +442,7 @@ function removeWhiteRod(element: HTMLElement) {
   whiteRod.remove();
 }
 
-export function appendToGuildList(guild: Guild) {
+function appendToGuildList(guild: Guild) {
   if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
 
   const listItem = createGuildListItem(
@@ -531,7 +531,7 @@ function createMainLogo() {
   return mainLogo;
 }
 
-export function setGuildImage(
+function setGuildImage(
   guildId: string,
   imageElement: HTMLImageElement,
   isUploaded: boolean
@@ -539,6 +539,6 @@ export function setGuildImage(
   imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
 }
 
-export function doesGuildExistInBar(guildId: string) {
+function doesGuildExistInBar(guildId: string) {
   return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
 }

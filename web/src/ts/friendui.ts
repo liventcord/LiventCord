@@ -7,7 +7,12 @@ import {
   disableElement,
   IMAGE_SRCS
 } from "./utils.ts";
-import { currentUserId, currentUserNick, userManager } from "./user.ts";
+import {
+  currentDiscriminator,
+  currentUserId,
+  currentUserNick,
+  userManager
+} from "./user.ts";
 import {
   submitAddFriend,
   filterFriendsOnSearch,
@@ -60,7 +65,7 @@ const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete
 
 const HOVER_BUBBLE_TIME = 500;
 
-export const friendMenuTypes = {
+const friendMenuTypes = {
   online: "online",
   all: "all",
   pending: "pending",
@@ -112,7 +117,7 @@ export function disableDmContainers() {
   });
 }
 
-export interface DmUserInfo {
+interface DmUserInfo {
   userId: string;
   status: string;
   nickName: string;
@@ -294,7 +299,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
   friendsCache.setupDmFriends(friendsRecord);
 }
 
-export async function addToDmList(userData: DmUserInfo): Promise<void> {
+async function addToDmList(userData: DmUserInfo): Promise<void> {
   const existingDmContainer = dmContainerParent.querySelector(
     `#${CSS.escape(userData.userId)}`
   );
@@ -333,7 +338,7 @@ export function getCurrentDmFriends() {
     currentUserId: {
       userId: currentUserId,
       nick: currentUserNick,
-      discriminator: "1234"
+      discriminator: currentDiscriminator
     },
     currentDmId: {
       userId: friendsCache.currentDmId,
@@ -372,7 +377,7 @@ export function updateFriendMenu() {
   if (currentSelectedFriendMenuElement)
     selectFriendMenu(currentSelectedFriendMenuElement);
 }
-export function selectFriendMenu(clickedButton: HTMLElement) {
+function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
   openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor;
   openFriendsBtn.style.color = "white";
@@ -402,7 +407,7 @@ export function selectFriendMenu(clickedButton: HTMLElement) {
   UpdatePendingCounter();
 }
 
-export function getRequestType(btn: HTMLElement) {
+function getRequestType(btn: HTMLElement) {
   return (
     (Object.keys(buttonElements) as Array<keyof typeof buttonElements>).find(
       (key) => buttonElements[key] === btn
@@ -410,7 +415,7 @@ export function getRequestType(btn: HTMLElement) {
   );
 }
 
-export function initializeButtonsList() {
+function initializeButtonsList() {
   Array.from(ButtonsList).forEach((element) => {
     const el = element as HTMLElement;
     const reqType = getRequestType(el);
@@ -431,7 +436,7 @@ export function initializeButtonsList() {
   });
 }
 
-export function resetButtons() {
+function resetButtons() {
   for (const element of ButtonsList) {
     if (element) {
       element.style.backgroundColor = defaultColor;
@@ -440,7 +445,7 @@ export function resetButtons() {
   }
 }
 
-export function createGraySphere(
+function createGraySphere(
   content: string,
   element: HTMLElement,
   contentClass = "",
@@ -576,7 +581,7 @@ function clearFriendContainer() {
   friendsContainer.innerHTML = "";
 }
 
-export function createAddFriendForm() {
+function createAddFriendForm() {
   const addfriendtext = createEl("div", {
     id: "addfriendtext",
     textContent: translations.getTranslation("addfriendtext")
@@ -630,7 +635,7 @@ export function createAddFriendForm() {
   friendsContainer.appendChild(userlistline);
 }
 
-export function adjustButtonPosition() {
+function adjustButtonPosition() {
   const inputrighttoset = userList.style.display === "flex" ? "463px" : "76px";
   const addfriendinputbutton = getId("addfriendinputbutton");
   if (addfriendinputbutton) {
@@ -638,7 +643,7 @@ export function adjustButtonPosition() {
   }
 }
 
-export function createFriendCardBubble(isOnline: boolean) {
+function createFriendCardBubble(isOnline: boolean) {
   const bubble = createEl("span", { className: "status-bubble" });
   bubble.style.marginLeft = "20px";
   bubble.style.marginTop = "25px";
@@ -654,7 +659,7 @@ export function createFriendCardBubble(isOnline: boolean) {
   return bubble;
 }
 
-export function createDmBubble(isOnline: boolean) {
+function createDmBubble(isOnline: boolean) {
   const bubble = createEl("span", { className: "dm-bubble" });
 
   if (isOnline) {
@@ -679,9 +684,7 @@ export function displayWumpus() {
   friendsContainer.appendChild(imgElement);
 }
 
-export async function filterFriendsByCategory(
-  friends: Friend[]
-): Promise<Friend[]> {
+async function filterFriendsByCategory(friends: Friend[]): Promise<Friend[]> {
   const filterConditions = {
     [friendMenuTypes.online]: async (friend: Friend) =>
       (await userManager.isOnline(friend.userId)) && !friend.isPending,
@@ -759,7 +762,7 @@ async function updateFriendsList(friends: Friend[], isPending: boolean) {
   }
   filterFriendsOnSearch();
 }
-export function createFriendCard(
+function createFriendCard(
   friend: Friend,
   userId: string,
   nickName: string,
@@ -837,7 +840,7 @@ export function removeFriendCard(userId: string) {
   }
 }
 
-export function handleImageHover(
+function handleImageHover(
   img: HTMLElement,
   bubble: HTMLElement,
   isPending: boolean,
@@ -850,7 +853,7 @@ export function handleImageHover(
   }
 }
 
-export function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
+function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
   const sendMsgBtn = createButtonWithBubblesImg(
     friendButton,
     ButtonTypes.SendMsgBtn,

@@ -64,7 +64,7 @@ export let currentLastDate: Date;
 export function clearLastDate() {
   currentLastDate = new Date();
 }
-export let lastSenderID = "";
+let lastSenderID = "";
 export function setLastSenderID(id: string) {
   lastSenderID = id;
 }
@@ -72,7 +72,7 @@ export const messageDates: { [key: string]: Date } = {};
 
 const unknownReplies: string[] = [];
 
-export let isLastMessageStart = false;
+let isLastMessageStart = false;
 export function setIsLastMessageStart(val: boolean) {
   isLastMessageStart = val;
 }
@@ -183,14 +183,14 @@ export function scrollToBottom() {
   chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-export let hasJustFetchedMessages: boolean = false;
+let hasJustFetchedMessages: boolean = false;
 export function setHasJustFetchedMessagesFalse() {
   hasJustFetchedMessages = false;
 }
 let isFetchingOldMessages = false;
 let stopFetching = false;
 
-export async function getOldMessagesOnScroll() {
+async function getOldMessagesOnScroll() {
   if (isReachedChannelEnd || isOnMe || stopFetching) {
     return;
   }
@@ -586,7 +586,7 @@ function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
     return Promise.resolve();
   });
 }
-export function createDateBar(currentDate: string) {
+function createDateBar(currentDate: string) {
   const formattedDate = new Date(currentDate).toLocaleDateString(
     translations.getLocale(),
     {
@@ -687,7 +687,7 @@ export function createProfileImageChat(
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
-export function createOptions3Button(
+function createOptions3Button(
   message: HTMLElement,
   messageId: string,
   userId: string
@@ -1046,7 +1046,7 @@ function handleClyde(
   parentElement.appendChild(youCanSeeText);
   newMessage.appendChild(parentElement);
 }
-export function fetchReplies(
+function fetchReplies(
   messages: Message[],
   repliesList: Set<string>,
   goToOld = false
@@ -1168,7 +1168,7 @@ export function getHistoryFromOneChannel(
 
 let timeoutId: number | null = null;
 
-export function fetchMessagesFromServer(channelId: string, isDm = false) {
+function fetchMessagesFromServer(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 
   const requestData = {
@@ -1197,7 +1197,7 @@ export function fetchMessagesFromServer(channelId: string, isDm = false) {
   apiClient.send(typeToUse, requestData);
 }
 
-export function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
+function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
   const textc = isReply ? "↪" : "⋯";
 
   const newButton = createEl("button", { className: "message-button" });
@@ -1244,7 +1244,7 @@ export function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
   return newButton;
 }
 
-export function createNonProfileImage(newMessage: HTMLElement, date: string) {
+function createNonProfileImage(newMessage: HTMLElement, date: string) {
   const messageDate = new Date(date);
   const smallDateElement = createEl("p", {
     className: "small-date-element",

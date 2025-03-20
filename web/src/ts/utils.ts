@@ -55,16 +55,16 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const DEFAULT_DISCRIMINATOR = "0000";
-export const isMobile = getMobile();
-export const STATUS_404 = 404;
+const isMobile = getMobile();
+const STATUS_404 = 404;
 export const STATUS_200 = 200;
 export const blackImage =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
-export function setDefaultMediaImageSrc(blob: Blob) {
+function setDefaultMediaImageSrc(blob: Blob) {
   IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC = URL.createObjectURL(blob);
 }
 
-export function setDefaultProfileImageSrc(blob: Blob) {
+function setDefaultProfileImageSrc(blob: Blob) {
   IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC = URL.createObjectURL(blob);
 }
 
@@ -80,7 +80,7 @@ convertAndSetImage(
 );
 convertAndSetImage(IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC, setDefaultMediaImageSrc);
 
-export function getMobile() {
+function getMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
@@ -90,7 +90,7 @@ export function getId(string: string): HTMLElement | null {
   return document.getElementById(string);
 }
 
-export function capitalizeFirstCharacter(str: string) {
+function capitalizeFirstCharacter(str: string) {
   if (!str) return str;
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -127,7 +127,7 @@ export function setWindowName(pendingCounter: number) {
     : "LiventCord";
 }
 
-export function sendNotify(data: string) {
+function sendNotify(data: string) {
   const container = createEl("div", { className: "info-container" });
 
   const childDiv = createEl("div", {
@@ -143,10 +143,7 @@ export function sendNotify(data: string) {
   });
 }
 
-export function areJsonsEqual(
-  existingData: unknown,
-  newData: unknown
-): boolean {
+function areJsonsEqual(existingData: unknown, newData: unknown): boolean {
   if (existingData === null || newData === null) {
     return false;
   }
@@ -198,10 +195,10 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
 export function getEmojiPath(emojiId: string) {
   return `/emojis/${emojiId}.webp`;
 }
-export function isId(url: string) {
+function isId(url: string) {
   return url.length === router.ID_LENGTH && /^\d+$/.test(url);
 }
-export function constructAttachmentUrl(id: string) {
+function constructAttachmentUrl(id: string) {
   return `/attachments/${id}`;
 }
 
@@ -310,7 +307,7 @@ export function isVideoUrl(url: string) {
 const rgbCache: Record<string, { r: string; g: string; b: string } | string> =
   {};
 
-export function rgbToHex(r: number, g: number, b: number) {
+function rgbToHex(r: number, g: number, b: number) {
   return (
     "#" +
     ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()
@@ -393,7 +390,7 @@ export function getProfileUrl(userId: string) {
   return `/profiles/${userId}.webp`;
 }
 
-export function pad(number: number, length: number) {
+function pad(number: number, length: number) {
   let str = String(number);
   while (str.length < length) {
     str = "0" + str;
@@ -525,7 +522,7 @@ function applyStyles(
     : "flex";
 }
 
-export function enableElementHTML(
+function enableElementHTML(
   element: HTMLElement,
   isFlex1: boolean = false,
   isBlock: boolean = false,
@@ -563,7 +560,7 @@ export function getBeforeElement(element: HTMLElement): HTMLElement | null {
   }
 }
 
-export function applyCustomStyles(html: string): string {
+function applyCustomStyles(html: string): string {
   const styles: Record<string, string> = {
     red: "color: red;",
     blu: "color: blue;",
@@ -606,7 +603,7 @@ export function base64ToBlob(base64: string, contentType = "image/png"): Blob {
   const byteArray = new Uint8Array(byteNumbers);
   return new Blob([byteArray], { type: contentType });
 }
-export async function urlToBase64(url: string): Promise<string> {
+async function urlToBase64(url: string): Promise<string> {
   try {
     const response = await fetch(url);
     if (!response.ok) {

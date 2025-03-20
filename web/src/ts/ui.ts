@@ -46,7 +46,7 @@ const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
 
 export let loadingScreen: HTMLElement;
-export function enableLoadingScreen() {
+function enableLoadingScreen() {
   loadingScreen = createEl("div", { id: "loading-screen" });
   document.body.appendChild(loadingScreen);
   const loadingElement = createEl("img", {
@@ -55,7 +55,7 @@ export function enableLoadingScreen() {
   loadingScreen.appendChild(loadingElement);
   loadingElement.src = "/icons/icon.webp";
 }
-export function isLoadingScreen() {
+function isLoadingScreen() {
   if (!loadingScreen) {
     return false;
   }
@@ -168,11 +168,11 @@ export function setInactiveIcon() {
   }
 }
 
-export function isProfilePopOpen() {
+function isProfilePopOpen() {
   return Boolean(getId("profilePopContainer"));
 }
 
-export function hideLoadingScreen() {
+function hideLoadingScreen() {
   loadingScreen.style.display = "none";
 }
 
@@ -482,7 +482,7 @@ export function hideImagePreviewRequest(event: Event) {
   }
 }
 
-export function hideImagePreview() {
+function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
@@ -494,7 +494,7 @@ export function hideImagePreview() {
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
-export function hideJsonPreview(event: Event) {
+function hideJsonPreview(event: Event) {
   const target = event.target as HTMLElement;
 
   if (target && target.id === "json-preview-container") {

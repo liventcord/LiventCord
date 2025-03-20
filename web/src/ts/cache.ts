@@ -12,7 +12,7 @@ export interface CachedChannel {
   createElement: () => void;
 }
 
-export class CachedChannelClass implements CachedChannel {
+class CachedChannelClass implements CachedChannel {
   channelId: string;
   channelName: string;
   isTextChannel: boolean;
@@ -664,9 +664,9 @@ interface Reply {
 
 export const replyCache: Record<string, MessageReply> = {};
 
-export const guildChatMessages: { [channelId: string]: Message[] } = {};
+const guildChatMessages: { [channelId: string]: Message[] } = {};
 
-export const shared_guilds_map: Record<string, any> = {};
+const shared_guilds_map: Record<string, any> = {};
 export function hasSharedGuild(friend_id: string): boolean {
   return shared_guilds_map.hasOwnProperty(friend_id);
 }

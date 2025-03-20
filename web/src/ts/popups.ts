@@ -856,7 +856,7 @@ function changePopUpToGuildCreation(
   );
 }
 
-export function ChangePopUpToGuildJoining(
+function ChangePopUpToGuildJoining(
   newPopParent: HTMLElement,
   popButtonContainer: HTMLElement,
   newPopContent: HTMLElement,

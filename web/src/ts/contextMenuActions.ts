@@ -25,13 +25,13 @@ import { copyText } from "./tooltip.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
-export const messageContextList: { [key: string]: any } = {};
+const messageContextList: { [key: string]: any } = {};
 
 type ItemOption = {
   action: CallableFunction;
 };
 
-export type ItemOptions = {
+type ItemOptions = {
   action: CallableFunction;
   subOptions?: ItemOption[];
   [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
@@ -84,11 +84,11 @@ const MessagesActionType = {
 
 let contextMenu: HTMLElement | null;
 
-export function openReactionMenu(messageId: string) {
+function openReactionMenu(messageId: string) {
   alertUser("Not implemented: React menu for message ");
 }
 
-export function openEditMessage(messageId: string) {
+function openEditMessage(messageId: string) {
   alertUser("Not implemented: Editing message ");
 }
 
@@ -96,10 +96,10 @@ export function pinMessage(messageId: string) {
   alertUser("Not implemented: Pinning message ");
 }
 
-export function markAsUnread(messageId: string) {
+function markAsUnread(messageId: string) {
   alertUser("Not implemented: Marking message as unread ");
 }
-export function editGuildProfile() {
+function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
 
@@ -184,13 +184,13 @@ export function copySelfName(event: MouseEvent) {
   const text = `${currentUserNick}#${currentDiscriminator}`;
   copyText(event, text);
 }
-export function copyId(id: string, event: MouseEvent) {
+function copyId(id: string, event: MouseEvent) {
   if (!currentUserNick || !currentDiscriminator) return;
 
   copyText(event, id);
 }
 
-export function deleteChannel(channelId: string, guildId: string) {
+function deleteChannel(channelId: string, guildId: string) {
   const data = {
     guildId,
     channelId
@@ -239,7 +239,7 @@ export function createUserContext(userId: string) {
   return context;
 }
 
-export function createProfileContext(userData: UserInfo) {
+function createProfileContext(userData: UserInfo) {
   const userId = userData.userId;
   const context: { [key: string]: any } = {};
 
@@ -420,7 +420,7 @@ function createChannelsContext(channelId: string) {
   return context;
 }
 
-export function createMessageContext(messageId: string, userId: string) {
+function createMessageContext(messageId: string, userId: string) {
   const context: { [key: string]: any } = {};
 
   context[MessagesActionType.ADD_REACTION] = {
@@ -479,7 +479,7 @@ export function createMessageContext(messageId: string, userId: string) {
   return context;
 }
 
-export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
+function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
   const translatedLabel = translations.getContextTranslation(labelKey);
   const li = createEl("li", { textContent: translatedLabel });
 
@@ -571,7 +571,7 @@ export function showContextMenu(x: number, y: number, options: ItemOptions) {
   document.addEventListener("click", clickOutsideContextMenu);
 }
 
-export function clickOutsideContextMenu(event: Event) {
+function clickOutsideContextMenu(event: Event) {
   const target = event.target as HTMLElement | null;
 
   if (
@@ -584,7 +584,7 @@ export function clickOutsideContextMenu(event: Event) {
   }
 }
 
-export function hideContextMenu() {
+function hideContextMenu() {
   if (contextMenu) {
     contextMenu.remove();
     contextMenu = null;

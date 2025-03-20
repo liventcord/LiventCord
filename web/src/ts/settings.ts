@@ -69,7 +69,7 @@ export function setIsChangedImage(val: boolean) {
   isChangedImage = val;
 }
 
-export function clearCookies() {
+function clearCookies() {
   const cookies = document.cookie.split("; ");
   for (const cookie of cookies) {
     const [name] = cookie.split("=");
@@ -86,7 +86,7 @@ type ToggleState = {
   "private-channel-toggle": boolean;
 };
 
-export class ToggleManager {
+class ToggleManager {
   private static instance: ToggleManager;
   states: ToggleState;
 
@@ -291,14 +291,14 @@ export function applySettings() {
   }
 }
 
-export function removeguildImage() {
+function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
   clearAvatarInput(true);
   const guildImg = getGuildImage();
   if (guildImg) guildImg.src = blackImage;
 }
 
-export function changeNickname() {
+function changeNickname() {
   if (changeNicknameTimeout) return;
 
   const newNicknameInput = getId("new-nickname-input") as HTMLInputElement;
@@ -320,7 +320,7 @@ export function changeNickname() {
   }
 }
 
-export function changeGuildName() {
+function changeGuildName() {
   if (changeGuildNameTimeout) return;
   const newGuildInput = getId("guild-overview-name-input") as HTMLInputElement;
   if (!newGuildInput) {
@@ -341,7 +341,7 @@ export function changeGuildName() {
     );
   }
 }
-export function changeChannelName() {
+function changeChannelName() {
   if (changeChannelNameTimeout) return;
   const channelNameInput = getId(
     "channel-overview-name-input"
@@ -366,7 +366,7 @@ export function changeChannelName() {
   }
 }
 
-export async function requestMicrophonePermissions() {
+async function requestMicrophonePermissions() {
   try {
     await sendAudioData();
   } catch (error) {
@@ -378,7 +378,7 @@ export async function requestMicrophonePermissions() {
   }
 }
 
-export function keydownHandler(event: KeyboardEvent) {
+function keydownHandler(event: KeyboardEvent) {
   if (event.key === "Escape") {
     event.preventDefault();
     if (isSettingsOpen) {

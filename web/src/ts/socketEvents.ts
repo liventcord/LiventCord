@@ -272,7 +272,7 @@ interface DMMessageData {
   message: Message[];
   channelId: string;
 }
-export const handleGuildMessage = (data: GuildMessageData) => {
+const handleGuildMessage = (data: GuildMessageData) => {
   const messageData: MessageResponse = {
     guildId: data.guildId,
     isOldMessages: false,
@@ -283,7 +283,7 @@ export const handleGuildMessage = (data: GuildMessageData) => {
   handleMessage(messageData);
 };
 
-export const handleDmMessage = (data: DMMessageData) => {
+const handleDmMessage = (data: DMMessageData) => {
   const messageData: MessageResponse = {
     isOldMessages: false,
     messages: data.message,
@@ -366,7 +366,7 @@ function processDeleteMessage(
   }
 }
 
-export function handleDeleteMessageResponse(
+function handleDeleteMessageResponse(
   data: DeleteMessageResponse,
   isDm: boolean
 ) {

@@ -77,11 +77,11 @@ interface Settings {
   channelSettings: Setting[];
 }
 
-export let currentSettingsChannelName: string;
+let currentSettingsChannelName: string;
 export let currentSettingsChannelId: string;
 
 export let currentSettingsCategory: string;
-export let currentSettingsType: SettingType = SettingType.PROFILE;
+let currentSettingsType: SettingType = SettingType.PROFILE;
 (window as any).currentSettingsType = currentSettingsType;
 
 export function isGuildSettings() {
@@ -99,7 +99,7 @@ let currentSettings: Settings;
 const settingsMenu = getId("settings-menu");
 let resetTimeout: number;
 
-export const GuildCategoryTypes = Object.freeze({
+const GuildCategoryTypes = Object.freeze({
   GuildOverview: "GuildOverview",
   Emoji: "Emoji",
   DeleteGuild: "DeleteGuild",
@@ -107,13 +107,13 @@ export const GuildCategoryTypes = Object.freeze({
   Invites: "Invites"
 });
 
-export const ChannelCategoryTypes = Object.freeze({
+const ChannelCategoryTypes = Object.freeze({
   Overview: "Overview",
   Permissions: "Permissions",
   DeleteChannel: "DeleteChannel"
 });
 
-export const ProfileCategoryTypes = Object.freeze({
+const ProfileCategoryTypes = Object.freeze({
   SoundAndVideo: "SoundAndVideo",
   MyAccount: "MyAccount",
   Notifications: "Notifications",
@@ -382,7 +382,7 @@ function getUnknownSettings(
   };
 }
 
-export function selectSettingCategory(
+function selectSettingCategory(
   settingCategory:
     | keyof typeof ProfileCategoryTypes
     | keyof typeof GuildCategoryTypes
@@ -790,7 +790,7 @@ function getCloseButtonElement() {
   return button;
 }
 
-export function reconstructSettings(categoryType: SettingType) {
+function reconstructSettings(categoryType: SettingType) {
   const leftBar = getId("settings-leftbar");
   if (!leftBar) return;
   leftBar.innerHTML = "";

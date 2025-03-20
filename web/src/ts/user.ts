@@ -256,14 +256,14 @@ class UserManager {
 
 export const userManager = new UserManager();
 
-export const statusTypes = {
+const statusTypes = {
   offline: "offline",
   online: "online",
   "dont-disturb": "dont-disturb",
   idle: "idle"
 };
 
-export function setSelfStatus(status: string) {
+function setSelfStatus(status: string) {
   const status_translated =
     translations.getTranslation(
       statusTypes[status as keyof typeof statusTypes]

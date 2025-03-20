@@ -51,7 +51,7 @@ const friendEvents: EventType[] = Object.values(EventType).filter((event) =>
   event.toLowerCase().includes("friend".toLowerCase())
 ) as EventType[];
 
-export const HttpMethod = Object.freeze({
+const HttpMethod = Object.freeze({
   POST: "POST",
   GET: "GET",
   PUT: "PUT",

@@ -58,7 +58,7 @@ const allowedAvatarTypes = [
 const imageCache = new Map();
 const failedImages = new Set();
 
-export async function setPicture(
+async function setPicture(
   imgToUpdate: HTMLImageElement,
   srcId: string,
   isProfile: boolean,
@@ -199,10 +199,7 @@ export function resetImageInput(inputId: string, imgId: string) {
   img.style.backgroundImage = "";
 }
 
-export function updateImageSource(
-  imageElement: HTMLImageElement,
-  imagePath: string
-) {
+function updateImageSource(imageElement: HTMLImageElement, imagePath: string) {
   imageElement.onerror = () => {
     if (imageElement.src !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
       imageElement.src = IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
@@ -415,7 +412,7 @@ function revertToLastConfirmedImage(isGuild: boolean) {
   }
 }
 
-export function onEditImage(isGuild: boolean) {
+function onEditImage(isGuild: boolean) {
   const fileInput = isGuild ? getGuildImageFile() : getProfileImageFile();
   if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
 
@@ -463,7 +460,7 @@ export function onEditProfile() {
 export function onEditGuildProfile() {
   onEditImage(true);
 }
-export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
+async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
   setPicture(guildImg, guildId, false);
 }
 export async function setProfilePic(

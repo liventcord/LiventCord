@@ -32,7 +32,7 @@ export const userLine = document.querySelector(
 export const userList = getId("user-list") as HTMLElement;
 export let isUsersOpenGlobal: boolean;
 
-export function renderTitle(
+function renderTitle(
   titleText: string,
   container: HTMLElement,
   headingLevel = 1
@@ -46,7 +46,7 @@ export function renderTitle(
   container.appendChild(titleElement);
 }
 
-export function createUserProfile(
+function createUserProfile(
   userId: string,
   nickName: string,
   isUserOnline: boolean
@@ -81,7 +81,7 @@ export function createUserProfile(
   return { profileContainer, userNameDiv, profileImg, bubble };
 }
 
-export function setUpEventListeners(
+function setUpEventListeners(
   profileImg: HTMLElement,
   profileContainer: HTMLElement,
   bubble: HTMLElement,
@@ -104,7 +104,7 @@ export function setUpEventListeners(
   });
 }
 
-export async function renderUsers(
+async function renderUsers(
   users: UserInfo[],
   tbody: HTMLElement,
   isOnline: boolean
@@ -182,7 +182,7 @@ export async function updateMemberList(
   console.log("Updating members with:", members);
 }
 
-export async function categorizeMembers(members: UserInfo[]) {
+async function categorizeMembers(members: UserInfo[]) {
   const onlineUsers: UserInfo[] = [];
   const offlineUsers: UserInfo[] = [];
 

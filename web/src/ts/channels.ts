@@ -39,8 +39,8 @@ import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 
-export const channelTitle = getId("channel-info") as HTMLElement;
-export const channelList = getId("channel-list") as HTMLElement;
+const channelTitle = getId("channel-info") as HTMLElement;
+const channelList = getId("channel-list") as HTMLElement;
 export const channelsUl = channelList.querySelector("ul") as HTMLElement;
 export let currentChannelName: string;
 const CHANNEL_HOVER_DELAY = 50;
@@ -237,7 +237,7 @@ function setCurrentChannel(channelId: string) {
     }
   });
 }
-export function isChannelMatching(channelId: string, isTextChannel: boolean) {
+function isChannelMatching(channelId: string, isTextChannel: boolean) {
   const currentChannel = isTextChannel
     ? guildCache.currentChannelId
     : currentVoiceChannelId;
@@ -249,7 +249,7 @@ export function isChannelMatching(channelId: string, isTextChannel: boolean) {
   }
 }
 
-export function mouseHoverChannelButton(
+function mouseHoverChannelButton(
   channelButton: HTMLElement,
   isTextChannel: boolean,
   channelId: string
@@ -272,7 +272,7 @@ export function mouseHoverChannelButton(
   }
   channelButton.style.color = "white";
 }
-export function hashChildElements(channelButton: HTMLElement) {
+function hashChildElements(channelButton: HTMLElement) {
   return channelButton.querySelector(".channel-users-container") !== null;
 }
 export function mouseLeaveChannelButton(
@@ -320,7 +320,7 @@ export function mouseLeaveChannelButton(
     ? "white"
     : "rgb(148, 155, 164)";
 }
-export function handleKeydown(event: KeyboardEvent) {
+function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
   if (isKeyDown || isOnMe) return;
   currentChannels.forEach((channel, index) => {
@@ -355,7 +355,7 @@ export function editChannelElement(channelId: string, newChannelName: string) {
   const channelSpan = existingChannelButton.querySelector(".channelSpan");
   if (channelSpan) channelSpan.textContent = newChannelName;
 }
-export function removeChannelElement(channelId: string) {
+function removeChannelElement(channelId: string) {
   const existingChannelButton = channelsUl.querySelector(
     `li[id="${channelId}"]`
   );
@@ -365,7 +365,7 @@ export function removeChannelElement(channelId: string) {
   existingChannelButton.remove();
 }
 
-export function isChannelExist(channelId: string) {
+function isChannelExist(channelId: string) {
   const existingChannelButton = channelsUl.querySelector(
     `li[id="${channelId}"]`
   );
@@ -389,7 +389,7 @@ export function createChannel(
   });
 }
 
-export function createChannelButton(
+function createChannelButton(
   channelId: string,
   channelName: string,
   isTextChannel: boolean
@@ -452,7 +452,7 @@ function createContentWrapper(
   return contentWrapper;
 }
 
-export function addEventListeners(
+function addEventListeners(
   channelButton: HTMLElement,
   channelId: string,
   isTextChannel: boolean,
@@ -483,20 +483,17 @@ export function addEventListeners(
   });
 }
 
-export function handleChannelChangeOnLoad(
-  channel: ChannelData,
-  channelId: string
-) {
+function handleChannelChangeOnLoad(channel: ChannelData, channelId: string) {
   if (channelId === guildCache.currentChannelId) {
     changeChannel(channel);
   }
 }
 
-export function resetKeydown() {
+function resetKeydown() {
   isKeyDown = false;
 }
 
-export function moveChannel(direction: number) {
+function moveChannel(direction: number) {
   let newIndex = currentChannelIndex + direction;
   if (newIndex < 0) {
     newIndex = currentChannels.length - 1;
@@ -507,12 +504,12 @@ export function moveChannel(direction: number) {
   currentChannelIndex = newIndex;
 }
 
-export function removeChannelEventListeners() {
+function removeChannelEventListeners() {
   document.removeEventListener("keydown", handleKeydown);
   document.removeEventListener("keyup", resetKeydown);
 }
 
-export function addChannelEventListeners() {
+function addChannelEventListeners() {
   document.addEventListener("keydown", handleKeydown);
   document.addEventListener("keyup", resetKeydown);
 }
@@ -595,7 +592,7 @@ export class Channel implements ChannelData {
   }
 }
 
-export function createChannelElement(channel: Channel) {
+function createChannelElement(channel: Channel) {
   if (isValidChannelData(channel)) {
     new Channel(channel).createElement();
   } else {
@@ -603,7 +600,7 @@ export function createChannelElement(channel: Channel) {
   }
 }
 
-export function addChannel(channelData: ChannelData) {
+function addChannel(channelData: ChannelData) {
   const channel = new Channel(channelData);
 
   console.warn(typeof channel, channel);
@@ -618,7 +615,7 @@ export function addChannel(channelData: ChannelData) {
   refreshChannelList([channel]);
 }
 
-export function removeChannel(data: ChannelData) {
+function removeChannel(data: ChannelData) {
   const { guildId, channelId } = data;
   cacheInterface.removeChannel(guildId, channelId);
 
@@ -632,7 +629,7 @@ export function removeChannel(data: ChannelData) {
   }
 }
 
-export function editChannel(data: CreateChannelData) {
+function editChannel(data: CreateChannelData) {
   const { guildId } = data;
   cacheInterface.editChannel(guildId, data);
 
@@ -690,7 +687,7 @@ function isValidChannelData(channel: ChannelData) {
 }
 
 // voice
-export function drawVoiceChannelUser(
+function drawVoiceChannelUser(
   index: number,
   userId: string,
   channelId: string,

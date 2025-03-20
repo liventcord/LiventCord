@@ -462,11 +462,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
   }
 }
 
-export function handleButtonClick(
-  event: Event,
-  action: EventType,
-  friendId: string
-) {
+function handleButtonClick(event: Event, action: EventType, friendId: string) {
   event.stopPropagation();
   apiClient.send(action, { friendId });
 }
@@ -475,7 +471,7 @@ export function addFriendId(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
   createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
-export function addFriend(nickName: string, discriminator: string) {
+function addFriend(nickName: string, discriminator: string) {
   apiClient.send(EventType.ADD_FRIEND, {
     friendName: nickName,
     friendDiscriminator: discriminator
@@ -537,7 +533,7 @@ export function filterFriendsOnSearch(): void {
   }
 }
 
-export function toggleButtonState(booleanstate: boolean) {
+function toggleButtonState(booleanstate: boolean) {
   const addButton = getId("profile-add-friend-button");
   if (!addButton) return;
   if (booleanstate) {
