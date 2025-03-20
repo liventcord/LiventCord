@@ -51,7 +51,6 @@ export default [
         { vars: "all", args: "none", ignoreRestSiblings: true }
       ],
       "@typescript-eslint/no-explicit-any": "off"
-    },
-    ignores: ["assets/ts/audio.d.ts"]
+    }
   }
 ];
