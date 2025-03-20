@@ -112,13 +112,28 @@ class ToggleManager {
     return ToggleManager.instance;
   }
 
-  updateState(toggleId: keyof ToggleState, newValue: boolean) {
-    this.states[toggleId] = newValue;
-    if (toggleId !== "private-channel-toggle") {
-      saveBooleanCookie(toggleId, newValue ? 1 : 0);
+  updateState(
+    toggleId: keyof ToggleState,
+    newValue: boolean,
+    disabled: boolean = false
+  ) {
+    if (!disabled) {
+      this.states[toggleId] = newValue;
+
+      if (toggleId !== "private-channel-toggle") {
+        saveBooleanCookie(toggleId, newValue ? 1 : 0);
+      }
+
+      this.triggerActions(toggleId, newValue);
+    } else {
+      this.states[toggleId] = false;
+
+      if (toggleId !== "private-channel-toggle") {
+        saveBooleanCookie(toggleId, 0);
+      }
     }
-    this.updateToggleDisplay(toggleId, newValue);
-    this.triggerActions(toggleId, newValue);
+
+    this.updateToggleDisplay(toggleId, this.states[toggleId], disabled);
   }
 
   setupToggles() {
@@ -130,22 +145,70 @@ class ToggleManager {
   setupToggle(id: keyof ToggleState) {
     const toggleElement = getId(id);
     if (toggleElement) {
-      this.updateToggleDisplay(id, this.states[id]);
+      const isDisabled =
+        toggleElement.hasAttribute("disabled") ||
+        toggleElement.classList.contains("disabled");
+
+      if (isDisabled) {
+        this.updateState(id, false, true);
+      } else {
+        this.updateToggleDisplay(id, this.states[id], isDisabled);
+      }
+
       handleToggleClick(toggleElement, () => {
-        const newValue = !this.states[id];
-        this.updateState(id, newValue);
+        const isCurrentlyDisabled =
+          toggleElement.hasAttribute("disabled") ||
+          toggleElement.classList.contains("disabled");
+
+        if (!isCurrentlyDisabled) {
+          const newValue = !this.states[id];
+          this.updateState(id, newValue, false);
+        }
       });
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (
+            mutation.attributeName === "disabled" ||
+            (mutation.attributeName === "class" &&
+              toggleElement.classList.contains("disabled"))
+          ) {
+            const isNowDisabled =
+              toggleElement.hasAttribute("disabled") ||
+              toggleElement.classList.contains("disabled");
+            if (isNowDisabled) {
+              this.updateState(id, false, true);
+            }
+          }
+        });
+      });
+
+      observer.observe(toggleElement, { attributes: true });
     }
   }
 
-  updateToggleDisplay(toggleId: keyof ToggleState, newValue: boolean) {
+  updateToggleDisplay(
+    toggleId: keyof ToggleState,
+    newValue: boolean,
+    disabled: boolean = false
+  ) {
     const toggleElement = getId(toggleId);
     if (toggleElement) {
       const switchElement = toggleElement.querySelector(".toggle-switch");
+
       if (switchElement) {
-        switchElement.classList.toggle("active", newValue);
+        if (disabled) {
+          switchElement.classList.remove("active");
+        } else {
+          switchElement.classList.toggle("active", newValue);
+        }
       }
-      toggleElement.classList.toggle("active", newValue);
+
+      if (disabled) {
+        toggleElement.classList.remove("active");
+      } else {
+        toggleElement.classList.toggle("active", newValue);
+      }
     }
   }
 
@@ -154,6 +217,7 @@ class ToggleManager {
       "snow-toggle": this.toggleEffect.bind(this, "snow", newValue),
       "party-toggle": this.toggleEffect.bind(this, "party", newValue)
     };
+
     if (toggleActions[toggleId]) {
       toggleActions[toggleId]();
     }
@@ -180,15 +244,11 @@ class ToggleManager {
         return;
 
       skew = Math.max(0.8, skew - 0.001);
-
       confetti({
         particleCount: 1,
         startVelocity: 0,
         ticks: 300,
-        origin: {
-          x: Math.random(),
-          y: Math.random() * skew - 0.2
-        },
+        origin: { x: Math.random(), y: Math.random() * skew - 0.2 },
         colors: ["#ffff"],
         shapes: ["circle"],
         gravity: randomInRange(0.4, 0.6),

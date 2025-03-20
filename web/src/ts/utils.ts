@@ -635,6 +635,13 @@ export function saveCookie(
   value: string,
   isBoolean: boolean = false
 ) {
+  if (isBoolean && value === "0") {
+    document.cookie = `${encodeURIComponent(
+      name
+    )}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    return;
+  }
+
   const expires = new Date();
   expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000);
   const expiresStr = `expires=${expires.toUTCString()}`;
