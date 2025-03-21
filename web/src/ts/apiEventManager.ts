@@ -34,7 +34,10 @@ import { Permission, permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
-import { handleDeleteMessageEmit } from "./socketEvents.ts";
+import {
+  handleDeleteMessageEmit,
+  handleDeleteMessageResponse
+} from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
 
 interface JoinGuildData {
@@ -135,6 +138,10 @@ apiClient.on(EventType.DELETE_CHANNEL, (data) => {
 
 apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data) => {
   handleDeleteMessageEmit(data, false);
+});
+
+apiClient.on(EventType.DELETE_MESSAGE_DM, (data) => {
+  handleDeleteMessageResponse(data, true);
 });
 
 interface BulkReplies {

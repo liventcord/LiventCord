@@ -78,7 +78,7 @@ namespace LiventCord.Controllers
         )
         {
             var userId = UserId!;
-            var sortedChannelId = string.Compare(userId, friendId) < 0
+            var constructedFriendUserChannel = string.Compare(userId, friendId) < 0
                 ? $"{userId}_{friendId}"
                 : $"{friendId}_{userId}";
 
@@ -95,7 +95,7 @@ namespace LiventCord.Controllers
             var messages = await GetMessages(parsedDate?.ToString("o"), UserId!, friendId, null, guildId, messageId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
             bool isOldMessages = date != null;
-            return Ok(new { messages, channelId = sortedChannelId, oldestMessageDate, isOldMessages });
+            return Ok(new { messages, channelId = constructedFriendUserChannel, oldestMessageDate, isOldMessages });
         }
 
 
@@ -121,20 +121,20 @@ namespace LiventCord.Controllers
             var userId = UserId!;
 
 
-            var sortedChannelId = string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
+            var constructedFriendUserChannel = string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
 
 
-            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == sortedChannelId);
+            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
             if (!channelExists)
             {
-                await _channelController.CreateChannelInternal(userId, friendId, sortedChannelId, sortedChannelId, true, false, sortedChannelId, false);
+                await _channelController.CreateChannelInternal(userId, friendId, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
             }
 
 
             return await HandleMessage(
                 MessageType.Dms,
                 null,
-                sortedChannelId,
+                constructedFriendUserChannel,
                 UserId!,
                 request
             );
@@ -312,10 +312,11 @@ namespace LiventCord.Controllers
             {
                 return BadRequest(new { Type = "error", Message = "Content is required." });
             }
-
-            await EditMessage(channelId, messageId, request.Content);
-            var editBroadcast = new { channelId, messageId, request.Content };
-            await _redisEventEmitter.EmitToFriend(EventType.UPDATE_MESSAGE, editBroadcast, UserId!, channelId);
+            var userId = UserId!;
+            var constructedFriendUserChannel = string.Compare(userId, channelId) < 0 ? $"{userId}_{channelId}" : $"{channelId}_{userId}";
+            await EditMessage(constructedFriendUserChannel, messageId, request.Content);
+            var editBroadcast = new { constructedFriendUserChannel, messageId, request.Content };
+            await _redisEventEmitter.EmitToFriend(EventType.UPDATE_MESSAGE, editBroadcast, UserId!, constructedFriendUserChannel);
             return Ok(editBroadcast);
         }
         [Authorize]
@@ -344,8 +345,21 @@ namespace LiventCord.Controllers
             [IdLengthValidation][FromRoute] string messageId
         )
         {
-            await DeleteMessage(channelId, messageId);
-            return Ok(new { messageId });
+            var userId = UserId!;
+            var constructedFriendUserChannel = string.Compare(userId, channelId) < 0 ? $"{userId}_{channelId}" : $"{channelId}_{userId}";
+            var deleteBroadcast = new { channelId, messageId };
+            var foundMessage = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+            if (foundMessage == null)
+            {
+                return NotFound();
+            }
+            if (foundMessage.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            await DeleteMessage(constructedFriendUserChannel, messageId);
+            return Ok(deleteBroadcast);
         }
         [Authorize]
         [HttpGet("/api/{type}/{id}/search")]
@@ -416,10 +430,10 @@ namespace LiventCord.Controllers
 
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
             {
-                var sortedChannelId = string.Compare(userId, friendId) < 0
+                var constructedFriendUserChannel = string.Compare(userId, friendId) < 0
                     ? $"{userId}_{friendId}"
                     : $"{friendId}_{userId}";
-                query = query.Where(m => m.ChannelId == sortedChannelId);
+                query = query.Where(m => m.ChannelId == constructedFriendUserChannel);
             }
             else if (!string.IsNullOrEmpty(channelId))
             {
@@ -496,7 +510,7 @@ namespace LiventCord.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            string sortedChannelId = channelId;
+            string constructedFriendUserChannel = channelId;
             if (guildId == null)
             {
                 var userIds = channelId.Split('_');
@@ -506,15 +520,15 @@ namespace LiventCord.Controllers
                 }
 
                 string recipientId = userIds.First(id => id != userId);
-                sortedChannelId = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
+                constructedFriendUserChannel = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
             }
 
-            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == sortedChannelId);
+            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
             if (!channelExists)
             {
                 if (guildId == null)
                 {
-                    await _channelController.CreateChannelInternal(userId, null, sortedChannelId, sortedChannelId, true, false, sortedChannelId, false);
+                    await _channelController.CreateChannelInternal(userId, null, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
                 }
                 else
                 {
@@ -538,7 +552,7 @@ namespace LiventCord.Controllers
                 MessageId = messageId,
                 UserId = userId,
                 Content = content,
-                ChannelId = sortedChannelId,
+                ChannelId = constructedFriendUserChannel,
                 Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
                 LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
                 AttachmentUrls = attachmentUrls,

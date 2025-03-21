@@ -391,6 +391,18 @@ export function deleteLocalMessage(
     (isOnGuild && channelId !== guildCache.currentChannelId) ||
     (isOnDm && isDm && channelId !== friendsCache.currentDmId)
   ) {
+    if (isOnGuild && channelId !== guildCache.currentChannelId) {
+      console.log(
+        "Condition: isOnGuild and channelId !== guildCache.currentChannelId"
+      );
+    }
+    if (isOnDm && isDm && channelId !== friendsCache.currentDmId) {
+      console.log(
+        channelId,
+        "Condition: isOnDm and isDm and channelId !== friendsCache.currentDmId",
+        friendsCache.currentDmId
+      );
+    }
     console.error(
       "Can not delete message: ",
       guildId,

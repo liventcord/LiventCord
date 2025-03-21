@@ -329,10 +329,12 @@ interface DeleteMessageEmit {
 
 interface DeleteMessageResponse {
   messageId: string;
+  channelId: string;
 }
 
 function processDeleteMessage(
   msgDate: string,
+  channelId: string,
   messageId: string,
   isDm: boolean
 ) {
@@ -340,17 +342,8 @@ function processDeleteMessage(
     `[data-message-id="${messageId}"]`
   ) as HTMLElement;
   const msgDateElement = messageElement?.dataset.date;
-  deleteLocalMessage(
-    messageId,
-    currentGuildId,
-    guildCache.currentChannelId,
-    isDm
-  );
-  cacheInterface.removeMessage(
-    messageId,
-    guildCache.currentChannelId,
-    currentGuildId
-  );
+  deleteLocalMessage(messageId, currentGuildId, channelId, isDm);
+  cacheInterface.removeMessage(messageId, channelId, currentGuildId);
 
   if (msgDateElement && typeof lastMessageDate === "number") {
     const msgDateTimestamp = new Date(msgDateElement).setHours(0, 0, 0, 0);
@@ -366,18 +359,19 @@ function processDeleteMessage(
   }
 }
 
-function handleDeleteMessageResponse(
+export function handleDeleteMessageResponse(
   data: DeleteMessageResponse,
   isDm: boolean
 ) {
-  processDeleteMessage(data.messageId, data.messageId, isDm);
+  console.log(data);
+  processDeleteMessage(data.messageId, data.channelId, data.messageId, isDm);
 }
 
 export function handleDeleteMessageEmit(
   data: DeleteMessageEmit,
   isDm: boolean
 ) {
-  processDeleteMessage(data.msgDate, data.messageId, isDm);
+  processDeleteMessage(data.msgDate, data.channelId, data.messageId, isDm);
 }
 
 socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
