@@ -214,6 +214,21 @@ function createPopupContent(
     id: ""
   });
 
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      handleAccept();
+    }
+  };
+
+  const handleAccept = () => {
+    console.log(acceptCallback);
+    if (acceptCallback) acceptCallback();
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  };
+
   if (includeCancel) {
     const popRefuseButton = createEl("button", {
       className: "pop-up-refuse",
@@ -224,15 +239,23 @@ function createPopupContent(
     popRefuseButton.addEventListener("click", function () {
       if (outerParent && outerParent.firstChild) {
         closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+        document.removeEventListener("keydown", handleKeyDown);
       }
     });
   }
+
   buttonContainer.appendChild(popAcceptButton);
+
+  popAcceptButton.addEventListener("click", handleAccept);
+
+  document.addEventListener("keydown", handleKeyDown);
 
   popAcceptButton.addEventListener("click", function () {
     if (acceptCallback) acceptCallback();
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+
+      document.removeEventListener("keydown", handleKeyDown);
     }
   });
 

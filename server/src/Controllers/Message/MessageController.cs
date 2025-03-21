@@ -335,7 +335,7 @@ namespace LiventCord.Controllers
             var deleteBroadcast = new { guildId, channelId, messageId };
             await DeleteMessage(channelId, messageId);
             await _redisEventEmitter.EmitToGuild(EventType.DELETE_MESSAGE_GUILD, deleteBroadcast, guildId, UserId!);
-            return Ok(new { messageId });
+            return Ok(deleteBroadcast);
         }
         [Authorize]
 
