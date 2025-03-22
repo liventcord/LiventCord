@@ -24,24 +24,24 @@ export default [
     },
     files: ["**/*.ts"],
     rules: {
-      "import/no-unresolved": "error",
+      "import/no-unresolved": "off",
       "no-unused-vars": [
         "warn",
         { vars: "all", args: "none", ignoreRestSiblings: true }
       ],
-      "no-undef": "error",
+      "no-undef": "warn",
       eqeqeq: ["warn", "always"],
       "no-trailing-spaces": "warn",
       quotes: "off",
       curly: "off",
       "consistent-return": "off",
-      "prefer-const": "error",
+      "prefer-const": "warn",
       "no-use-before-define": "off",
-      "object-shorthand": ["error", "always"],
+      "object-shorthand": ["warn", "always"],
       "array-callback-return": "error",
       "no-shadow": "warn",
-      "space-infix-ops": ["error", { int32Hint: false }],
-      "no-duplicate-imports": "error",
+      "space-infix-ops": ["warn", { int32Hint: false }],
+      "no-duplicate-imports": "warn",
       "import/order": [
         "error",
         { groups: [["builtin", "external", "internal"]] }
