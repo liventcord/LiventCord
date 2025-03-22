@@ -188,6 +188,7 @@
   margin-top: 30px;
 }
 #channel-list,
+#activity-list,
 #user-list {
   user-select: none;
   z-index: 1;
@@ -454,6 +455,7 @@
 }
 #chat-container::-webkit-scrollbar,
 #channel-list::-webkit-scrollbar,
+#activity-list::-webkit-scrollbar,
 #user-list::-webkit-scrollbar {
   width: 8px;
   margin-left: 10px;
@@ -461,12 +463,13 @@
 }
 #chat-container::-webkit-scrollbar-thumb,
 #channel-list::-webkit-scrollbar-thumb,
-#user-list::-webkit-scrollbar-thumb {
+#user-list::-webkit-scrollbar-thumb,
+#activity-list::-webkit-scrollbar-thumb {
   background-color: #212222;
   border-radius: 6px;
 }
 #chat-container::-webkit-scrollbar-track,
-#user-list::-webkit-scrollbar-track {
+#user-list::-webkit-scrollbar-track #activity-list::-webkit-scrollbar-track {
   background-color: #2b2d31;
   border-radius: 5px;
 }
@@ -483,6 +486,10 @@
     scrollbar-color: #212222 #2f3136;
   }
   #user-list {
+    scrollbar-width: auto;
+    scrollbar-color: #212222 #2b2d31;
+  }
+  #activity-list {
     scrollbar-width: auto;
     scrollbar-color: #212222 #2b2d31;
   }
@@ -874,7 +881,7 @@
   margin-left: 8px;
 }
 .profile-bubble {
-  z-index: 50;
+  z-index: 1;
   color: white;
   padding: 5px;
   border-radius: 20px;
@@ -937,14 +944,15 @@
   margin-top: 20px;
   padding: 5px 5px;
 }
-#user-list {
+#user-list,
+#activity-list {
   padding-top: 65px;
   width: 238px;
   display: flex;
   flex-direction: column;
   z-index: 0;
 }
-#user-list.friendactive {
+#activity-list {
   background-color: transparent;
   padding-left: 178px;
 }

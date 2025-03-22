@@ -42,7 +42,9 @@ import {
   updateDmsList,
   activateDmContainer,
   updateFriendMenu,
-  unselectFriendContainer
+  unselectFriendContainer,
+  updateUsersActivities,
+  clearActivityList
 } from "./friendui.ts";
 import {
   closeDropdown,
@@ -68,7 +70,6 @@ import {
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
-  updateUserListText,
   toggleUsersList,
   userList,
   setUserListLine,
@@ -155,6 +156,7 @@ export function initializeApp() {
   initializeSettings();
   initializeListeners();
   initializeGuild();
+  clearActivityList();
   initializeProfile();
   initialiseAudio();
   initializeCookies();
@@ -294,6 +296,7 @@ function handleGuildClick(event: MouseEvent) {
 
 function initializeGuild() {
   initialiseMe();
+  disableElement(userList);
   const {
     isValid,
     initialGuildId,
@@ -461,8 +464,7 @@ function initialiseMe() {
     return;
   }
   enableElement("dms-title");
-  console.warn(translations.textTranslations);
-  updateUserListText();
+  updateUsersActivities();
   loadMainToolbar();
 }
 
@@ -530,9 +532,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
 
-    updateUserListText();
-    userList.classList.add("friendactive");
-    handleResize();
+    updateUsersActivities();
+
+    setUsersList(false);
     setUserListLine();
     if (userListFriActiveHtml) {
       userList.innerHTML = userListFriActiveHtml;
@@ -545,6 +547,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     setIsOnMe(true);
     setIsOnGuild(false);
     updateFriendMenu();
+    handleResize();
   }
   selectGuildList("main-logo");
 
@@ -612,9 +615,6 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   }
 
   setIsOnMe(false);
-
-  userList.innerHTML = "";
-  userList.classList.remove("friendactive");
   enableElement("guild-name");
   console.log("Loading app with friend id:", friendId);
 

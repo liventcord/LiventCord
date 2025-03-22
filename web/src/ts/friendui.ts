@@ -28,13 +28,15 @@ import {
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
-import { userList } from "./userList.ts";
+import { activityList, userList } from "./userList.ts";
 import { loadDmHome, openDm } from "./app.ts";
 
 const addfriendhighlightedcolor = "#248046";
 const highlightedColor = "#43444b";
 const defaultColor = "#313338";
 const grayColor = "#c2c2c2";
+
+let currentUserActivities: Friend[] = [];
 
 export let currentSelectedFriendMenu: keyof typeof buttonElements;
 const dmContainerParent = getId("dm-container-parent") as HTMLElement;
@@ -507,10 +509,41 @@ export function createButtonWithBubblesImg(
   button.appendChild(iconSphere);
   return iconSphere;
 }
-export function updateUsersActivities(friend: Friend) {
+
+export function clearActivityList() {
+  if (currentUserActivities.length === 0) {
+    const activityListEmptyHTML = `
+      <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
+        "nowonline"
+      )}</h1>
+      <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
+        "activity-detail"
+      )}</h1>
+      <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
+        "activity-detail-2"
+      )}</h1>
+      <ul></ul>`;
+
+    activityList.innerHTML = activityListEmptyHTML;
+  }
+}
+
+export function updateUsersActivities(friends?: Friend[]) {
+  if (friends) currentUserActivities = friends;
+  console.error(friends);
+  console.log(String(Array.isArray(currentUserActivities)));
+  if (currentUserActivities && Array.isArray(currentUserActivities)) {
+    clearActivityList();
+    currentUserActivities.forEach((friend) => {
+      createActivityCard(friend);
+    });
+  }
+}
+
+export function createActivityCard(friend: Friend) {
   if (!userManager.isOnline(friend.userId)) return;
   if (friend.activity === "" || friend.activity === undefined) return;
-  console.log(friend);
+
   disableElement("activity-detail");
   disableElement("activity-detail-2");
   let activityCard = userList.querySelector(`#${CSS.escape(friend.userId)}`);
@@ -542,13 +575,13 @@ export function updateUsersActivities(friend: Friend) {
     activityCard.appendChild(contentDiv);
     activityCard.appendChild(iconImg);
 
-    userList.appendChild(activityCard);
+    activityList.appendChild(activityCard);
   } else {
     const contentDiv = activityCard.querySelector(".activity-card-content");
-    const avatarImg = contentDiv?.querySelector(
-      ".activity-card-avatar"
-    ) as HTMLImageElement;
-    setProfilePic(avatarImg, friend.userId);
+    //const avatarImg = contentDiv?.querySelector(
+    //  ".activity-card-avatar"
+    //) as HTMLImageElement;
+    //setProfilePic(avatarImg, friend.userId);
 
     const nickHeading = contentDiv?.querySelector(".activity-card-nick");
     if (nickHeading)
@@ -556,7 +589,9 @@ export function updateUsersActivities(friend: Friend) {
         friend.nickName || userManager.getUserNick(friend.userId);
 
     const titleSpan = contentDiv?.querySelector(".activity-card-title");
-    if (titleSpan) titleSpan.textContent = friend.activity || "";
+    if (titleSpan && titleSpan.textContent !== friend.activity) {
+      titleSpan.textContent = friend.activity || "";
+    }
   }
 }
 
@@ -644,14 +679,7 @@ function adjustButtonPosition() {
 }
 
 function createFriendCardBubble(status: string) {
-  const bubble = createEl("span", { className: "status-bubble" });
-  bubble.style.marginLeft = "20px";
-  bubble.style.marginTop = "25px";
-  bubble.style.padding = "5px";
-  bubble.style.border = "3px solid #2f3136";
-
-  bubble.classList.add(status);
-
+  const bubble = createEl("span", { className: `profile-bubble ${status}` });
   return bubble;
 }
 
@@ -734,7 +762,7 @@ export async function populateFriendsContainer(
     console.error("Error populating friends container:", error);
   }
 }
-
+//TODO: make this call userManager in bulk
 async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
     const status = await userManager.getStatusString(friend.userId);
@@ -750,8 +778,8 @@ async function updateFriendsList(friends: Friend[], isPending: boolean) {
       isPending || false,
       friend.isFriendsRequestToUser
     );
-    updateUsersActivities(friend);
   }
+  updateUsersActivities(friends);
   filterFriendsOnSearch();
 }
 function createFriendCard(

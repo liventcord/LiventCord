@@ -121,9 +121,7 @@ class FriendsCache {
     updateFriendsList(Object.values(this.friendsCache));
     requestAnimationFrame(() => {
       const friends = this.cacheFriendToFriendConverter();
-      for (const friend of friends) {
-        updateUsersActivities(friend);
-      }
+      updateUsersActivities(friends);
     });
 
     UpdatePendingCounter();

@@ -1,7 +1,5 @@
 import {
   getId,
-  disableElement,
-  enableElement,
   createEl,
   DEFAULT_DISCRIMINATOR,
   saveBooleanCookie
@@ -24,12 +22,13 @@ import {
   userManager
 } from "./user.ts";
 import { currentGuildId } from "./guild.ts";
-import { handleResize } from "./ui.ts";
 
 export const userLine = document.querySelector(
   ".horizontal-line"
 ) as HTMLElement;
 export const userList = getId("user-list") as HTMLElement;
+export const activityList = getId("activity-list") as HTMLElement;
+
 export let isUsersOpenGlobal: boolean;
 
 function renderTitle(
@@ -231,10 +230,8 @@ export function enableUserList() {
 
 export function setUserListLine() {
   if (isUsersOpenGlobal) {
-    enableElement("user-list");
     userLine.style.display = "flex";
   } else {
-    disableElement("user-list");
     userLine.style.display = "none";
   }
 }
@@ -242,14 +239,8 @@ export function setUsersList(
   isUsersOpen: boolean,
   isLoadingFromCookie = false
 ) {
-  const displayToSet = isUsersOpen ? "flex" : "none";
   const inputRightToSet = isUsersOpen ? "463px" : "76px";
 
-  userList.style.display = displayToSet;
-
-  if (userLine) {
-    userLine.style.display = displayToSet;
-  }
   const addFriendInputButton = getId("addfriendinputbutton");
   if (addFriendInputButton) {
     addFriendInputButton.style.right = inputRightToSet;
@@ -279,25 +270,6 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
   ];
 
   updateMemberList(usersData);
-}
-
-export function updateUserListText() {
-  const userListTitleHTML = `
-    <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
-      "nowonline"
-    )}</h1>
-    <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
-      "activity-detail"
-    )}</h1>
-    <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
-      "activity-detail-2"
-    )}</h1>
-    <ul></ul>`;
-
-  if (userList) {
-    userList.innerHTML = userListTitleHTML;
-  }
-  handleResize();
 }
 
 export function updateStatusInMembersList(userId: string, status: string) {

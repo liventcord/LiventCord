@@ -1,7 +1,7 @@
 //ui.js
 import DOMPurify from "dompurify";
 import {
-  enableUserList,
+  activityList,
   setUserListLine,
   userLine,
   userList
@@ -102,7 +102,15 @@ export function handleResize() {
       setUserListLine();
     }
   } else {
-    enableUserList();
+    if (isOnMe) {
+      disableElement(userList);
+      enableElement(activityList);
+      enableElement(userLine);
+    } else {
+      enableElement(userList);
+      disableElement(activityList);
+      disableElement(userLine);
+    }
   }
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
