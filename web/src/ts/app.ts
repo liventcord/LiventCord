@@ -630,7 +630,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
-    disableElement(activityList)
+    disableElement(activityList);
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");

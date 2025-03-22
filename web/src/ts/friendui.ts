@@ -793,7 +793,7 @@ function createFriendCard(
   isFriendsRequestToUser: boolean
 ) {
   const foundFriend = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
-  if(foundFriend) return;
+  if (foundFriend) return;
   const friendCard = createEl("div", { className: "friend-card", id: userId });
   const img = createEl("img") as HTMLImageElement;
   setProfilePic(img, userId);
