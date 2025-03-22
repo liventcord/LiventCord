@@ -13,6 +13,7 @@ import { toggleManager } from "./settings.ts";
 import { currentUserId } from "./user.ts";
 import { isOnGuild } from "./router.ts";
 import { translations } from "./translations.ts";
+import { currentProfileImg } from "./popups.ts";
 
 declare global {
   interface Window {
@@ -154,7 +155,7 @@ export async function playAudio(audioUrl: string) {
   }
 }
 
-export function formatTime(seconds: number) {
+function formatTime(seconds: number) {
   const SECONDS_IN_MINUTE = 60;
   const MINIMUM_SECONDS_DISPLAY = 10;
 
@@ -163,7 +164,7 @@ export function formatTime(seconds: number) {
   return `${minutes}:${secs < MINIMUM_SECONDS_DISPLAY ? "0" + secs : secs}`;
 }
 
-export function initializeMp3Yt() {
+function initializeMp3Yt() {
   const modal = createEl("div", { className: "modal" });
   document.body.appendChild(modal);
 
@@ -189,7 +190,7 @@ export function initializeMp3Yt() {
 
   document.addEventListener("click", handleClick);
 }
-export async function fetchAudioStreamUrl(videoId?: string) {
+async function fetchAudioStreamUrl(videoId?: string) {
   if (!videoId) return null;
   try {
     const response = await fetch(
@@ -220,21 +221,19 @@ export function stopAudioAnalysis() {
 
   isAnalyzing = false;
 
-  const selfProfileDisplayElementList = getSelfFromUserList() as HTMLElement;
-  if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = "50%";
+  const selfcurrentProfileImgList = getSelfFromUserList() as HTMLElement;
+  if (selfcurrentProfileImgList) {
+    selfcurrentProfileImgList.style.borderRadius = "50%";
   }
 
-  const profileDisplayElement = getId("profile-display") as HTMLElement;
-
   resetWiggleEffect(
-    profileDisplayElement,
+    currentProfileImg,
     selfProfileImage,
-    selfProfileDisplayElementList
+    selfcurrentProfileImgList
   );
 }
 
-export function startAudioAnalysis() {
+function startAudioAnalysis() {
   audioContext = new (window.AudioContext ||
     (window as any).webkitAudioContext)();
 
@@ -257,7 +256,7 @@ export function startAudioAnalysis() {
   analyzeAudio(bufferSize, dataArray, recentVolumes);
 }
 
-export function getSelfFromUserList(): HTMLImageElement | null {
+function getSelfFromUserList(): HTMLImageElement | null {
   if (!userList) return null;
 
   const userProfiles = userList.querySelectorAll(".profile-container");
@@ -271,7 +270,7 @@ export function getSelfFromUserList(): HTMLImageElement | null {
   return null;
 }
 
-export function analyzeAudio(
+function analyzeAudio(
   bufferSize: number,
   dataArray: Uint8Array,
   recentVolumes: number[]
@@ -308,13 +307,12 @@ export function analyzeAudio(
     MAX_COLOR_VALUE - averageVolume * VOLUME_TO_COLOR_MULTIPLIER
   )})`;
 
-  const profileDisplayElement = getId("profile-display") as HTMLElement;
-  if (profileDisplayElement) {
+  if (currentProfileImg) {
     if (averageVolume > dynamicThreshold) {
-      if (profileDisplayElement) {
-        profileDisplayElement.classList.add("dancing-border");
-        profileDisplayElement.style.transform = `scale(${scaleFactor})`;
-        profileDisplayElement.style.borderColor = borderColor;
+      if (currentProfileImg) {
+        currentProfileImg.classList.add("dancing-border");
+        currentProfileImg.style.transform = `scale(${scaleFactor})`;
+        currentProfileImg.style.borderColor = borderColor;
       }
       if (selfProfileImage) {
         selfProfileImage.classList.add("dancing-border");
@@ -329,7 +327,7 @@ export function analyzeAudio(
         selfUserListProfileList.style.borderColor = borderColor;
       }
     } else {
-      resetStyles(profileDisplayElement);
+      resetStyles(currentProfileImg);
     }
   }
 
@@ -338,11 +336,11 @@ export function analyzeAudio(
   );
 }
 
-export function resetStyles(profileDisplayElement: HTMLElement) {
-  if (profileDisplayElement) {
-    profileDisplayElement.classList.remove("dancing-border");
-    profileDisplayElement.style.transform = "scale(1)";
-    profileDisplayElement.style.borderColor = "rgb(17, 18, 20)";
+function resetStyles(currentProfileImg: HTMLElement) {
+  if (currentProfileImg) {
+    currentProfileImg.classList.remove("dancing-border");
+    currentProfileImg.style.transform = "scale(1)";
+    currentProfileImg.style.borderColor = "rgb(17, 18, 20)";
   }
   if (selfProfileImage) {
     selfProfileImage.classList.remove("dancing-border");
@@ -357,7 +355,7 @@ export function resetStyles(profileDisplayElement: HTMLElement) {
   }
 }
 
-export function stopCurrentMusic() {
+function stopCurrentMusic() {
   if (currentAudioPlayer) {
     currentAudioPlayer.pause();
     currentAudioPlayer.currentTime = 0;
@@ -378,20 +376,20 @@ export function stopCurrentMusic() {
   }
 }
 
-export function resetProfileBorders() {
-  const profileDisplayElement = getId("profile-display");
+function resetProfileBorders() {
+  const currentProfileImg = getId("profile-display");
 
-  const selfProfileDisplayElementList = getSelfFromUserList();
-  if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = "50%";
-    selfProfileDisplayElementList.style.borderColor = "";
-    selfProfileDisplayElementList.style.transform = "";
+  const selfcurrentProfileImgList = getSelfFromUserList();
+  if (selfcurrentProfileImgList) {
+    selfcurrentProfileImgList.style.borderRadius = "50%";
+    selfcurrentProfileImgList.style.borderColor = "";
+    selfcurrentProfileImgList.style.transform = "";
   }
 
-  if (profileDisplayElement) {
-    profileDisplayElement.style.borderRadius = "50%";
-    profileDisplayElement.style.borderColor = "";
-    profileDisplayElement.style.transform = "";
+  if (currentProfileImg) {
+    currentProfileImg.style.borderRadius = "50%";
+    currentProfileImg.style.borderColor = "";
+    currentProfileImg.style.transform = "";
   }
   if (selfProfileImage) {
     selfProfileImage.style.borderRadius = "50%";
@@ -400,7 +398,7 @@ export function resetProfileBorders() {
   }
 }
 
-export function activateSoundOutput() {
+function activateSoundOutput() {
   async function requestSoundOutputPermissions() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
@@ -462,7 +460,7 @@ export function activateSoundOutput() {
 }
 
 let isMicrophoneOpen = true;
-export function setMicrophone() {
+function setMicrophone() {
   const imagePath = isMicrophoneOpen
     ? IMAGE_SRCS.WHITEMIC_SRC
     : IMAGE_SRCS.REDMIC_SRC;
@@ -472,7 +470,7 @@ export function setMicrophone() {
 }
 
 let isEarphonesOpen = true;
-export function setEarphones() {
+function setEarphones() {
   const imagePath = isEarphonesOpen
     ? IMAGE_SRCS.WHITEEARPHONES_SRC
     : IMAGE_SRCS.REDEARPHONES_SRC;
@@ -481,7 +479,7 @@ export function setEarphones() {
   console.log("Set earphones! to ", isEarphonesOpen);
 }
 
-export async function activateMicAndSoundOutput() {
+async function activateMicAndSoundOutput() {
   activateMicAndCamera();
   activateSoundOutput();
 }
@@ -496,7 +494,7 @@ export async function sendAudioData() {
   }
 }
 
-export function activateMicAndCamera() {
+function activateMicAndCamera() {
   async function requestMediaPermissions() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
@@ -580,7 +578,7 @@ export function activateMicAndCamera() {
   }
 }
 
-export function closeCurrentCall() {
+function closeCurrentCall() {
   currentAudioPlayer = getId("audio-player") as HTMLAudioElement;
   playAudio("/sounds/leavevoice.mp3");
 
@@ -639,7 +637,7 @@ export function playNotification() {
   }
 }
 
-export function initializeMusic() {
+function initializeMusic() {
   const modal = createEl("div", { className: "modal" });
   document.body.appendChild(modal);
 
@@ -673,7 +671,7 @@ export function initializeMusic() {
     modal.style.display = "none";
   });
 }
-export class VoiceHandler {
+class VoiceHandler {
   async handleAudio(
     data: ArrayBuffer | { buffer: ArrayBuffer } | null
   ): Promise<void> {
@@ -723,7 +721,7 @@ export class VoiceHandler {
   }
 }
 
-export function applyWiggleEffect(
+function applyWiggleEffect(
   profileElement: HTMLElement,
   selfProfileElement: HTMLElement
 ) {
@@ -743,7 +741,7 @@ export function applyWiggleEffect(
   }, WIGGLE_DELAY);
 }
 
-export function resetWiggleEffect(...elements: HTMLElement[]) {
+function resetWiggleEffect(...elements: HTMLElement[]) {
   elements.forEach((element) => {
     if (element) {
       element.style.transition = "none";
@@ -754,3 +752,5 @@ export function resetWiggleEffect(...elements: HTMLElement[]) {
     }
   });
 }
+
+const voiceHandler = new VoiceHandler();

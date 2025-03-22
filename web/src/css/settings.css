@@ -192,7 +192,7 @@ th {
   text-indent: 0.5px;
   user-select: none;
 }
-#profile-display {
+.profile-display {
   width: 120px;
   height: 120px;
   border: solid rgb(17, 18, 20) 8px;
@@ -949,6 +949,7 @@ th {
   transform: rotate(180deg);
   z-index: 1;
 }
+
 #guild-container-friend {
   background-color: #2b2d31;
   position: absolute;
@@ -991,6 +992,45 @@ th {
   height: 50px;
   margin-left: -30px;
   cursor: pointer;
+}
+.shared-guilds-list {
+  background-color: transparent;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px 5px;
+}
+
+.shared-guilds-list li {
+  display: flex;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  height: 50px;
+  width: 90%;
+  border-radius: 5px;
+}
+
+.shared-guilds-list li:hover {
+  background-color: #2e3035;
+}
+
+.shared-guilds-list li img {
+  margin-left: 0;
+  margin-top: 0;
+}
+
+.shared-guilds-list li span {
+  margin-left: 10px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shared-guilds-content {
+  padding: 5px 0;
+  width: 100%;
 }
 #create-guild-button {
   transition: border-radius 0.5s ease, border 0.5s ease;

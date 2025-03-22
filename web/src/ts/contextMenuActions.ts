@@ -18,20 +18,21 @@ import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
-import { alertUser } from "./ui.ts";
+import { alertUser, askUser } from "./ui.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
-export const messageContextList: { [key: string]: any } = {};
+const messageContextList: { [key: string]: any } = {};
 
 type ItemOption = {
+  label: string;
   action: CallableFunction;
 };
 
-export type ItemOptions = {
+type ItemOptions = {
   action: CallableFunction;
   subOptions?: ItemOption[];
   [key: string]: ItemOption | CallableFunction | ItemOption[] | undefined;
@@ -84,11 +85,11 @@ const MessagesActionType = {
 
 let contextMenu: HTMLElement | null;
 
-export function openReactionMenu(messageId: string) {
+function openReactionMenu(messageId: string) {
   alertUser("Not implemented: React menu for message ");
 }
 
-export function openEditMessage(messageId: string) {
+function openEditMessage(messageId: string) {
   alertUser("Not implemented: Editing message ");
 }
 
@@ -96,14 +97,27 @@ export function pinMessage(messageId: string) {
   alertUser("Not implemented: Pinning message ");
 }
 
-export function markAsUnread(messageId: string) {
+function markAsUnread(messageId: string) {
   alertUser("Not implemented: Marking message as unread ");
 }
-export function editGuildProfile() {
+function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
 
-export function deleteMessage(messageId: string) {
+function deleteMessagePrompt(messageId: string) {
+  const acceptCallback = () => {
+    deleteMessage(messageId);
+  };
+  askUser(
+    translations.getContextTranslation("DELETE_MESSAGE"),
+    translations.getTranslation("delete-message-prompt"),
+    translations.getTranslation("ok"),
+    acceptCallback,
+    true
+  );
+}
+
+function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
   const data = {
     isDm: isOnDm,
@@ -177,7 +191,7 @@ export function copyId(id: string, event: MouseEvent) {
   copyText(event, id);
 }
 
-export function deleteChannel(channelId: string, guildId: string) {
+function deleteChannel(channelId: string, guildId: string) {
   const data = {
     guildId,
     channelId
@@ -226,7 +240,7 @@ export function createUserContext(userId: string) {
   return context;
 }
 
-export function createProfileContext(userData: UserInfo) {
+function createProfileContext(userData: UserInfo) {
   const userId = userData.userId;
   const context: { [key: string]: any } = {};
 
@@ -407,7 +421,7 @@ function createChannelsContext(channelId: string) {
   return context;
 }
 
-export function createMessageContext(messageId: string, userId: string) {
+function createMessageContext(messageId: string, userId: string) {
   const context: { [key: string]: any } = {};
 
   context[MessagesActionType.ADD_REACTION] = {
@@ -446,14 +460,14 @@ export function createMessageContext(messageId: string, userId: string) {
     if (userId === currentUserId) {
       context[MessagesActionType.DELETE_MESSAGE] = {
         label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessage(messageId)
+        action: () => deleteMessagePrompt(messageId)
       };
     }
   } else {
     if (isOnGuild && permissionManager.canManageMessages())
       context[MessagesActionType.DELETE_MESSAGE] = {
         label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessage(messageId)
+        action: () => deleteMessagePrompt(messageId)
       };
   }
 
@@ -466,37 +480,40 @@ export function createMessageContext(messageId: string, userId: string) {
   return context;
 }
 
-export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
-  const translatedLabel = translations.getContextTranslation(labelKey);
+function createMenuItem(
+  labelKey: string,
+  itemOptions: ItemOptions
+): HTMLElement {
+  const shouldTranslate = labelKey in translations.contextTranslations;
+  const translatedLabel = shouldTranslate
+    ? translations.getContextTranslation(
+        labelKey.toUpperCase().replace(/ /g, "_")
+      )
+    : labelKey;
   const li = createEl("li", { textContent: translatedLabel });
-
-  li.addEventListener("click", function (event) {
+  li.addEventListener("click", function (event: Event) {
     event.stopPropagation();
     hideContextMenu();
     if (itemOptions.action) {
       itemOptions.action(event);
     }
   });
-
   if (itemOptions.subOptions) {
     const subUl = createEl("ul");
-    itemOptions.subOptions.forEach((subOption) => {
-      const subLi = createMenuItem(translatedLabel, subOption);
+    itemOptions.subOptions.forEach((subOption: any) => {
+      const subLi = createMenuItem(subOption.label, subOption);
       subUl.appendChild(subLi);
     });
     li.appendChild(subUl);
   }
-
   li.addEventListener("mouseenter", function () {
-    const subMenu = li.querySelector("ul");
+    const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
       subMenu.style.display = "block";
       subMenu.style.left = "100%";
       subMenu.style.right = "auto";
-
       const subRect = subMenu.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-
       if (subRect.right > viewportWidth) {
         subMenu.style.left = "auto";
         subMenu.style.right = "100%";
@@ -506,14 +523,12 @@ export function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
       }
     }
   });
-
   li.addEventListener("mouseleave", function () {
-    const subMenu = li.querySelector("ul");
+    const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
       subMenu.style.display = "none";
     }
   });
-
   return li;
 }
 
@@ -558,7 +573,7 @@ export function showContextMenu(x: number, y: number, options: ItemOptions) {
   document.addEventListener("click", clickOutsideContextMenu);
 }
 
-export function clickOutsideContextMenu(event: Event) {
+function clickOutsideContextMenu(event: Event) {
   const target = event.target as HTMLElement | null;
 
   if (
@@ -571,7 +586,7 @@ export function clickOutsideContextMenu(event: Event) {
   }
 }
 
-export function hideContextMenu() {
+function hideContextMenu() {
   if (contextMenu) {
     contextMenu.remove();
     contextMenu = null;

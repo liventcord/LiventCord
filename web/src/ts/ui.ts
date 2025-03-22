@@ -1,7 +1,7 @@
 //ui.js
 import DOMPurify from "dompurify";
 import {
-  enableUserList,
+  activityList,
   setUserListLine,
   userLine,
   userList
@@ -46,7 +46,7 @@ const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
 
 export let loadingScreen: HTMLElement;
-export function enableLoadingScreen() {
+function enableLoadingScreen() {
   loadingScreen = createEl("div", { id: "loading-screen" });
   document.body.appendChild(loadingScreen);
   const loadingElement = createEl("img", {
@@ -55,7 +55,7 @@ export function enableLoadingScreen() {
   loadingScreen.appendChild(loadingElement);
   loadingElement.src = "/icons/icon.webp";
 }
-export function isLoadingScreen() {
+function isLoadingScreen() {
   if (!loadingScreen) {
     return false;
   }
@@ -101,8 +101,17 @@ export function handleResize() {
     } else {
       setUserListLine();
     }
+    disableElement(activityList);
   } else {
-    enableUserList();
+    if (isOnMe) {
+      disableElement(userList);
+      enableElement(activityList);
+      enableElement(userLine);
+    } else {
+      enableElement(userList);
+      disableElement(activityList);
+      disableElement(userLine);
+    }
   }
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
@@ -168,11 +177,11 @@ export function setInactiveIcon() {
   }
 }
 
-export function isProfilePopOpen() {
+function isProfilePopOpen() {
   return Boolean(getId("profilePopContainer"));
 }
 
-export function hideLoadingScreen() {
+function hideLoadingScreen() {
   loadingScreen.style.display = "none";
 }
 
@@ -214,6 +223,21 @@ function createPopupContent(
     id: ""
   });
 
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      handleAccept();
+    }
+  };
+
+  const handleAccept = () => {
+    console.log(acceptCallback);
+    if (acceptCallback) acceptCallback();
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  };
+
   if (includeCancel) {
     const popRefuseButton = createEl("button", {
       className: "pop-up-refuse",
@@ -224,15 +248,23 @@ function createPopupContent(
     popRefuseButton.addEventListener("click", function () {
       if (outerParent && outerParent.firstChild) {
         closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+        document.removeEventListener("keydown", handleKeyDown);
       }
     });
   }
+
   buttonContainer.appendChild(popAcceptButton);
+
+  popAcceptButton.addEventListener("click", handleAccept);
+
+  document.addEventListener("keydown", handleKeyDown);
 
   popAcceptButton.addEventListener("click", function () {
     if (acceptCallback) acceptCallback();
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+
+      document.removeEventListener("keydown", handleKeyDown);
     }
   });
 
@@ -482,7 +514,7 @@ export function hideImagePreviewRequest(event: Event) {
   }
 }
 
-export function hideImagePreview() {
+function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
@@ -494,7 +526,7 @@ export function hideImagePreview() {
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
-export function hideJsonPreview(event: Event) {
+function hideJsonPreview(event: Event) {
   const target = event.target as HTMLElement;
 
   if (target && target.id === "json-preview-container") {

@@ -19,7 +19,7 @@ const gifsBackBtn = getId("gifsBackBtn") as HTMLElement;
 const exampleTenorId = "LIVDSRZULELA"; //Example tenor apikey from tenor docs
 
 export const gifBtn = getId("gifbtn") as HTMLElement;
-export const gifBtnTop = getId("gifbtntop") as HTMLElement;
+const gifBtnTop = getId("gifbtntop") as HTMLElement;
 export const emojiBtn = getId("emojibtn") as HTMLElement;
 const emojiBtnTop = getId("emojibtntop") as HTMLElement;
 const STATUS_200 = 200;
@@ -31,7 +31,7 @@ if (imgPreviewContainer) {
   imgPreviewContainer.addEventListener("click", hideImagePreviewRequest);
 }
 
-export function onMouseMove(e: MouseEvent) {
+function onMouseMove(e: MouseEvent) {
   const MIN_WIDTH = 300;
   const MIN_HEIGHT = 300;
   const MIN_WIDTH_LEFT = 100;
@@ -69,7 +69,7 @@ export function onMouseMove(e: MouseEvent) {
   mediaMenu.style.height = Math.min(viewportHeight, newHeight) + "px";
 }
 
-export function onMouseUp() {
+function onMouseUp() {
   if (isResizing) {
     isResizing = false;
     document.removeEventListener("mousemove", onMouseMove);
@@ -106,7 +106,7 @@ interface MediaCategory {
   image: string;
 }
 
-export function renderEmojis(
+function renderEmojis(
   container: HTMLElement,
   categories: EmojiCategory[]
 ): void {
@@ -170,7 +170,7 @@ interface MediaData {
   [key: string]: any;
 }
 
-export function displayContent(
+function displayContent(
   contentData: (MediaData | EmojiCategory | MediaCategory)[],
   type: string,
   isCategory: boolean = false
@@ -246,7 +246,7 @@ function isMediaData(
   return (data as MediaData).preview !== undefined;
 }
 
-export async function loadMenuGifContent(): Promise<void> {
+async function loadMenuGifContent(): Promise<void> {
   console.log("Loading GIF content...");
 
   const categoryUrls = await fetchCategoryUrls();
@@ -260,7 +260,7 @@ export async function loadMenuGifContent(): Promise<void> {
   }
 }
 
-export function getEmojiPanel(): string {
+function getEmojiPanel(): string {
   const emojiPanel = createEl("div", { id: "emoji-panel" });
   const emojisContainer = createEl("div", {
     className: "emojis-container",
@@ -276,7 +276,7 @@ export function getEmojiPanel(): string {
   return emojiPanel.outerHTML;
 }
 
-export async function fetchCategoryUrls(): Promise<Category[]> {
+async function fetchCategoryUrls(): Promise<Category[]> {
   const url = `https://g.tenor.com/v1/categories?key=${exampleTenorId}`;
   try {
     const response = await fetch(url);
@@ -295,7 +295,7 @@ export async function fetchCategoryUrls(): Promise<Category[]> {
   }
 }
 
-export async function loadGifContent(query: string): Promise<void> {
+async function loadGifContent(query: string): Promise<void> {
   if (!query) {
     mediaMenuContainer.innerHTML = "";
     showCategoriesList();
@@ -356,7 +356,7 @@ interface GifResponse {
   results: GifResult[];
 }
 
-export function toggleMediaMenu() {
+function toggleMediaMenu() {
   if (isMediaMenuOpen) {
     console.log("Closing media menu");
     mediaMenu.style.display = "none";
@@ -367,7 +367,7 @@ export function toggleMediaMenu() {
     isMediaMenuOpen = true;
   }
 }
-export function httpGetAsync(url: string, callback: CallableFunction) {
+function httpGetAsync(url: string, callback: CallableFunction) {
   const xmlHttp = new XMLHttpRequest();
 
   const READY_STATE_DONE = 4;
@@ -411,7 +411,7 @@ class Gif {
   }
 }
 
-export function handleCategoryGifs(responseText: string) {
+function handleCategoryGifs(responseText: string) {
   const gifs = JSON.parse(responseText).results as GifData[];
   mediaMenuContainer.innerHTML = "";
 
@@ -428,13 +428,13 @@ export function handleCategoryGifs(responseText: string) {
   });
 }
 
-export async function fetchCategoryGifs(categoryPath: string) {
+async function fetchCategoryGifs(categoryPath: string) {
   const url = `https://g.tenor.com/v1/search?key=${exampleTenorId}&q=${categoryPath}&limit=50`;
   httpGetAsync(url, handleCategoryGifs);
 }
 // search input field should hidden and shown category name when rendered gifs
 // should return back to input field when this function is called
-export function showCategoriesList() {
+function showCategoriesList() {
   console.log("Show categories list");
   const categoryNameText = getId("categoryName");
   if (categoryNameText) {
@@ -453,7 +453,7 @@ export function showCategoriesList() {
   }
 }
 
-export function showCategoryView(categoryName: string) {
+function showCategoryView(categoryName: string) {
   const categoryNameText = getId("categoryName");
   if (categoryNameText) {
     categoryNameText.style.display = "block";
@@ -471,7 +471,7 @@ export function showCategoryView(categoryName: string) {
 function fetchTrendingGifs() {
   throw new Error("Trending gifs not implemented");
 }
-export function createCategoryBox(
+function createCategoryBox(
   name: string,
   categoryPath: string,
   previewImage: string
@@ -500,7 +500,7 @@ export function createCategoryBox(
   return box;
 }
 
-export function toggleGifs(isTop?: boolean) {
+function toggleGifs(isTop?: boolean) {
   if (currentMenuType === "gif") {
     toggleMediaMenu();
   } else {
@@ -512,7 +512,7 @@ export function toggleGifs(isTop?: boolean) {
   }
 }
 
-export function toggleEmojis(isTop?: boolean) {
+function toggleEmojis(isTop?: boolean) {
   if (currentMenuType === "emoji") {
     toggleMediaMenu();
   } else {
@@ -525,7 +525,7 @@ export function toggleEmojis(isTop?: boolean) {
   }
 }
 
-export function httpGetSync(url: string) {
+function httpGetSync(url: string) {
   const xmlHttp = new XMLHttpRequest();
   xmlHttp.open("GET", url, false);
   xmlHttp.send(null);
@@ -538,7 +538,7 @@ export function httpGetSync(url: string) {
 
 //TODO: add favourite gifs and popular gifs here
 
-export function initialiseEmojiPreview() {
+function initialiseEmojiPreview() {
   const emoji = getId("emojibtn") as HTMLElement;
   const totalEmojis = 73;
   const emojiWidth = 48;
@@ -572,7 +572,7 @@ export function initialiseEmojiPreview() {
   });
 }
 const GIF_DEBOUNCE_TIME = 300;
-export function initialiseMedia() {
+function initialiseMedia() {
   initialiseEmojiPreview();
   mediaMenu = getId("media-menu") as HTMLElement;
   mediaMenuContainer = getId("media-menu-container") as HTMLElement;

@@ -165,7 +165,7 @@ export function adjustHeight() {
   }
   adjustReplyPosition();
 }
-export function extractUserIds(message: string) {
+function extractUserIds(message: string) {
   const userIds = [];
   const regex = /@(\w+)/g;
   let match;
@@ -181,7 +181,7 @@ export function extractUserIds(message: string) {
 let typingTimeout: number;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
-export async function handleUserKeydown(event: KeyboardEvent) {
+async function handleUserKeydown(event: KeyboardEvent) {
   if (chatInput.value !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
@@ -248,7 +248,7 @@ let isAttachmentsAdded: boolean;
 const maxFiles = 8;
 let fileList: File[] = [];
 
-export function handleFileInput(
+function handleFileInput(
   eventOrFiles: Event | FileList | File[] | null = null
 ): void {
   let filesToProcess = extractFiles(eventOrFiles);

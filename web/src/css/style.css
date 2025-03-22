@@ -37,16 +37,34 @@
 }
 .online {
   background-color: #23a55a;
+  border-color: #23a55a;
 }
 .offline {
-  background-color: #757575;
+  background-color: #80848e;
+  border-color: #80848e;
 }
 .idle {
   background-color: #d8db1c;
+  border-color: #d8db1c;
 }
 .do-not-disturb {
-  background-color: #eb1c1c;
+  background-color: #f23f43;
+  border-color: #f23f43;
 }
+
+.dm_online {
+  background-color: #23a55a;
+}
+.dm_offline {
+  background-color: #80848e;
+}
+.dm_idle {
+  background-color: #d8db1c;
+}
+.dm_do-not-disturb {
+  background-color: #f23f43;
+}
+
 #self-name {
   position: absolute;
   left: 50px;
@@ -62,7 +80,7 @@
 #avatar-wrapper {
   border-radius: 5px;
   background-color: #232428;
-  width: 120px;
+  width: 125px;
   height: 42px;
   margin-top: 7px;
   left: 20px;
@@ -150,6 +168,7 @@
   opacity: 1;
   transform: translateY(0);
   transition: all 0.3s ease;
+  white-space: noWrap;
 }
 
 #avatar-wrapper:hover #self-discriminator {
@@ -169,6 +188,7 @@
   margin-top: 30px;
 }
 #channel-list,
+#activity-list,
 #user-list {
   user-select: none;
   z-index: 1;
@@ -435,6 +455,7 @@
 }
 #chat-container::-webkit-scrollbar,
 #channel-list::-webkit-scrollbar,
+#activity-list::-webkit-scrollbar,
 #user-list::-webkit-scrollbar {
   width: 8px;
   margin-left: 10px;
@@ -442,12 +463,13 @@
 }
 #chat-container::-webkit-scrollbar-thumb,
 #channel-list::-webkit-scrollbar-thumb,
-#user-list::-webkit-scrollbar-thumb {
+#user-list::-webkit-scrollbar-thumb,
+#activity-list::-webkit-scrollbar-thumb {
   background-color: #212222;
   border-radius: 6px;
 }
 #chat-container::-webkit-scrollbar-track,
-#user-list::-webkit-scrollbar-track {
+#user-list::-webkit-scrollbar-track #activity-list::-webkit-scrollbar-track {
   background-color: #2b2d31;
   border-radius: 5px;
 }
@@ -464,6 +486,10 @@
     scrollbar-color: #212222 #2f3136;
   }
   #user-list {
+    scrollbar-width: auto;
+    scrollbar-color: #212222 #2b2d31;
+  }
+  #activity-list {
     scrollbar-width: auto;
     scrollbar-color: #212222 #2b2d31;
   }
@@ -855,27 +881,27 @@
   margin-left: 8px;
 }
 .profile-bubble {
-  z-index: 50;
-  color: white;
-  padding: 6px 6px;
-  border-radius: 20px;
-  position: absolute;
-  margin-left: 25px;
-  margin-top: 30px;
-  border: 5.5px solid #2f3136;
-  transition: opacity 0.5s ease-in-out;
-}
-.status-bubble {
   z-index: 1;
   color: white;
-  padding: 6px 6px;
+  padding: 5px;
   border-radius: 20px;
   position: absolute;
-  margin-left: 25px;
-  margin-top: 30px;
-  border: 5.5px solid #2f3136;
+  margin-left: 22px;
+  margin-top: 22px;
   transition: opacity 0.5s ease-in-out;
+  border: 3px solid #2b2d31;
 }
+.status-bubble {
+  color: white;
+  padding: 8px;
+  border-radius: 50px;
+  position: absolute;
+  transition: opacity 0.5s ease-in-out;
+  top: 202px;
+  left: 87px;
+  border: 4px solid #111214;
+}
+
 #drop-zone {
   position: fixed;
   top: 0;
@@ -917,16 +943,16 @@
   margin-left: 20px;
   margin-top: 20px;
   padding: 5px 5px;
-  border: 3px solid #2f3136;
 }
-#user-list {
+#user-list,
+#activity-list {
   padding-top: 65px;
   width: 238px;
   display: flex;
   flex-direction: column;
   z-index: 0;
 }
-#user-list.friendactive {
+#activity-list {
   background-color: transparent;
   padding-left: 178px;
 }
@@ -1363,12 +1389,19 @@ textarea::-webkit-scrollbar-track {
   background-color: rgb(78, 80, 88);
   color: white;
   height: 32px;
-  width: 30px;
+  width: 90px;
   margin-right: 16px;
   margin-top: -25px;
   border-radius: 5px;
+  display: flex;
+  align-items: center;
 }
-#profile-add-friend-button {
+
+.profile-send-msg-button svg {
+  margin-right: 8px;
+}
+
+.profile-add-friend-button {
   cursor: pointer;
   border: none;
   background-color: rgb(88, 101, 242);
@@ -1383,11 +1416,20 @@ textarea::-webkit-scrollbar-track {
   border-radius: 5px;
   text-indent: 5px;
 }
+.profile-add-friend-button-pending {
+  background-color: rgb(78, 80, 88) !important;
+  width: 30px;
+  opacity: 0.6;
+}
 .icon-container {
   display: flex;
   align-items: center;
   margin-left: 15px;
   justify-content: center;
+  pointer-events: none;
+}
+.profile-add-friend-button-pending .icon-container {
+  margin-left: 8px;
 }
 
 .failed {
@@ -1404,7 +1446,7 @@ textarea::-webkit-scrollbar-track {
   width: 100%;
   height: 100%;
 }
-#profile-display,
+.profile-display,
 #self-profile-image {
   border: 8px solid rgb(17, 18, 20);
   border-radius: 8px;
@@ -1592,4 +1634,117 @@ textarea::-webkit-scrollbar-track {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s ease-in-out;
+}
+
+.statusPanelContainer {
+  animation: none !important;
+  width: 295px !important;
+  height: 430px !important;
+  z-index: 3;
+  position: fixed !important;
+  top: unset !important;
+  bottom: -168px !important;
+  left: 200px !important;
+  gap: 10px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.status-profile {
+  width: 90px !important;
+  height: auto !important;
+  top: 50px !important;
+}
+
+.panel-status-bubble {
+  top: 90px;
+  left: 65px;
+  border: 4px solid #111214;
+  padding: 8px;
+}
+
+.panel-status-profile-titles {
+  margin-left: -115px !important;
+  margin-top: 130px !important;
+}
+
+.status-button-bubble {
+  padding: 8;
+  top: 5px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  position: relative;
+}
+.status-button-bubble-main {
+  left: -30px;
+  margin-right: -30px;
+  top: -5px;
+}
+
+.status-button {
+  border: none;
+  background-color: #232528;
+  height: 50px;
+  width: 90%;
+  border-radius: 5px;
+  padding: 5px 15px 5px 15px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+  position: relative;
+}
+
+.status-button:hover {
+  background-color: #2f3236;
+}
+
+#status-edit-profile-button {
+  border: none;
+  position: relative;
+}
+.status-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.status-dropdown {
+  position: absolute;
+  top: 73%;
+  left: 320px;
+  margin-left: 10px;
+  display: none;
+  background-color: #111214;
+  width: 200px;
+  z-index: 3;
+  border-radius: 5px;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  color: white;
+  transition: display 0.3s ease-in-out;
+}
+.status-option-bubble {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: gray;
+  position: relative;
+  margin: 0;
+}
+
+.status-option:hover {
+  background-color: #232425;
+}
+
+.status-option:active {
+  background-color: #232425;
 }

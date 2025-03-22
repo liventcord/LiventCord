@@ -4,18 +4,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
-var hub = Hub{
-	clients: make(map[string]*websocket.Conn),
-	status:  make(map[string]UserStatus),
-	lock:    sync.RWMutex{},
+const (
+	StatusOnline    UserStatus = "online"
+	StatusIdle      UserStatus = "idle"
+	StatusOffline   UserStatus = "offline"
+	StatusDND       UserStatus = "do-not-disturb"
+	StatusInvisible UserStatus = "invisible"
+)
+
+var hub struct {
+	clients            map[string]*websocket.Conn
+	connectivityStatus map[string]UserStatus
+	userStatus         map[string]UserStatus
+	lock               sync.RWMutex
 }
 
 var upgrader = websocket.Upgrader{
@@ -99,9 +109,24 @@ func authenticateSession(cookie string) (string, error) {
 
 func registerClient(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
+	defer hub.lock.Unlock()
+
+	if hub.clients == nil {
+		hub.clients = make(map[string]*websocket.Conn)
+	}
+	if hub.connectivityStatus == nil {
+		hub.connectivityStatus = make(map[string]UserStatus)
+	}
+	if hub.userStatus == nil {
+		hub.userStatus = make(map[string]UserStatus)
+	}
+
 	hub.clients[userId] = conn
-	hub.status[userId] = Online
-	hub.lock.Unlock()
+	hub.connectivityStatus[userId] = StatusOnline
+
+	if _, exists := hub.userStatus[userId]; !exists {
+		hub.userStatus[userId] = StatusOnline
+	}
 }
 
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
@@ -141,12 +166,12 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 	}
 	return conn.WriteMessage(websocket.TextMessage, response)
 }
-
 func cleanupWebSocket(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
+	defer hub.lock.Unlock()
 	delete(hub.clients, userId)
-	hub.status[userId] = Offline
-	hub.lock.Unlock()
+
+	hub.connectivityStatus[userId] = Offline
 	conn.Close()
 }
 
@@ -162,14 +187,13 @@ func handleUpdateUserStatus(conn *websocket.Conn, event EventMessage, userId str
 	status := UserStatus(statusUpdate.Status)
 	if isValidStatus(status) {
 		hub.lock.Lock()
-		hub.status[userId] = status
+		hub.userStatus[userId] = status
 		hub.lock.Unlock()
-		fmt.Printf("User %s status updated to %s\n", userId, status)
+		fmt.Printf("User %s custom status updated to %s\n", userId, status)
 	} else {
 		fmt.Println("Invalid status:", statusUpdate.Status)
 	}
 }
-
 func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string) {
 	var request struct {
 		UserIds []string `json:"user_ids"`
@@ -181,17 +205,20 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 
 	var statusResponses []UserStatusResponse
 	hub.lock.RLock()
+	defer hub.lock.RUnlock()
+
 	for _, id := range request.UserIds {
-		status, exists := hub.status[id]
+
+		UserStatus, exists := hub.userStatus[id]
 		if !exists {
-			status = Offline
+			UserStatus = StatusOffline
 		}
+
 		statusResponses = append(statusResponses, UserStatusResponse{
-			UserId: id,
-			Status: status,
+			UserId:             id,
+			ConnectivityStatus: string(UserStatus),
 		})
 	}
-	hub.lock.RUnlock()
 
 	if err := sendResponse(conn, event.EventType, statusResponses); err != nil {
 		fmt.Println("Error sending status response:", err)
@@ -200,7 +227,7 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 
 func isValidStatus(status UserStatus) bool {
 	switch status {
-	case Online, Offline, DoNotDisturb, Idling:
+	case Online, StatusInvisible, DoNotDisturb, Idling:
 		return true
 	}
 	return false

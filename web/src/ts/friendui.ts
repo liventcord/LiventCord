@@ -7,15 +7,20 @@ import {
   disableElement,
   IMAGE_SRCS
 } from "./utils.ts";
-import { openDm, removeDm } from "./app.ts";
-import { currentUserNick, userManager } from "./user.ts";
+import {
+  currentDiscriminator,
+  currentUserId,
+  currentUserNick,
+  userManager
+} from "./user.ts";
 import {
   submitAddFriend,
   filterFriendsOnSearch,
   addPendingButtons,
   friendsCache,
   Friend,
-  UpdatePendingCounter
+  UpdatePendingCounter,
+  removeDm
 } from "./friends.ts";
 import {
   appendToProfileContextList,
@@ -23,12 +28,15 @@ import {
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
-import { userList } from "./userList.ts";
+import { activityList, userList } from "./userList.ts";
+import { loadDmHome, openDm } from "./app.ts";
 
 const addfriendhighlightedcolor = "#248046";
 const highlightedColor = "#43444b";
 const defaultColor = "#313338";
 const grayColor = "#c2c2c2";
+
+let currentUserActivities: Friend[] = [];
 
 export let currentSelectedFriendMenu: keyof typeof buttonElements;
 const dmContainerParent = getId("dm-container-parent") as HTMLElement;
@@ -59,7 +67,7 @@ const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete
 
 const HOVER_BUBBLE_TIME = 500;
 
-export const friendMenuTypes = {
+const friendMenuTypes = {
   online: "online",
   all: "all",
   pending: "pending",
@@ -86,11 +94,13 @@ const existingFriendsDmContainers = new Set<ExistingDmContainer>();
 const existingFriendsIds = new Set<string>();
 
 export function activateDmContainer(friendId: string) {
+  console.warn(existingFriendsDmContainers);
   if (!existingFriendsDmContainers || existingFriendsDmContainers.size < 1) {
     return;
   }
 
   existingFriendsDmContainers.forEach(({ dmContainer }) => {
+    console.warn(dmContainer);
     if (dmContainer.id === friendId) {
       dmContainer.classList.add("dm-selected");
     } else {
@@ -118,6 +128,7 @@ interface DmUserInfo {
   isPending: boolean;
   isFriendsRequestToUser: boolean;
 }
+
 interface ExistingDmContainer {
   dmContainer: HTMLElement;
 }
@@ -134,13 +145,11 @@ class DmUser {
     this.dmContainer = dmContainer;
   }
 
-  // Static method to ensure async creation
   static async create(friend: DmUserInfo): Promise<DmUser> {
     const dmContainer = await DmUser.createDmContainer(friend);
     return new DmUser(friend, dmContainer);
   }
 
-  // Static method to handle async container creation
   private static async createDmContainer(
     friend: DmUserInfo
   ): Promise<HTMLElement> {
@@ -160,8 +169,8 @@ class DmUser {
       setProfilePic(profileImg, friend.userId);
     }
 
-    const isOnline = await userManager.isOnline(friend.userId);
-    const bubble = createDmBubble(isOnline);
+    const status = await userManager.getStatusString(friend.userId);
+    const bubble = createDmBubble(status);
     profileImg.style.transition = "border-radius 0.5s ease-out";
     bubble.style.transition = "opacity 0.5s ease-in-out";
 
@@ -215,15 +224,30 @@ class DmUser {
     return dmContainer;
   }
 }
+interface DmUserAddResponse {
+  userId: string;
+  nickName: string;
+  discriminator: string;
+}
 
 export async function appendToDmList(
-  user: DmUserInfo
+  user: DmUserAddResponse
 ): Promise<HTMLElement | null> {
   if (existingFriendsIds.has(user.userId)) {
     return null;
   }
+  console.log(user, user.userId, typeof user);
+  const dmUserInfo: DmUserInfo = {
+    userId: user.userId,
+    status: "",
+    nickName: user.nickName,
+    activity: "",
+    discriminator: user.discriminator,
+    isPending: false,
+    isFriendsRequestToUser: false
+  };
 
-  const dmUser = await DmUser.create(user);
+  const dmUser = await DmUser.create(dmUserInfo);
 
   dmContainerParent.appendChild(dmUser.dmContainer);
 
@@ -277,7 +301,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
   friendsCache.setupDmFriends(friendsRecord);
 }
 
-export async function addToDmList(userData: DmUserInfo): Promise<void> {
+async function addToDmList(userData: DmUserInfo): Promise<void> {
   const existingDmContainer = dmContainerParent.querySelector(
     `#${CSS.escape(userData.userId)}`
   );
@@ -297,12 +321,26 @@ export async function addToDmList(userData: DmUserInfo): Promise<void> {
   }
 }
 
+export async function removeFromDmList(userId: string): Promise<void> {
+  console.log("removeFromDmList: ", userId);
+  const existingDmContainer = dmContainerParent.querySelector(
+    `#${CSS.escape(userId)}`
+  );
+  if (existingDmContainer) {
+    dmContainerParent.removeChild(existingDmContainer);
+    friendsCache.removeDmFriend(userId);
+    if (userId === friendsCache.currentDmId) {
+      loadDmHome();
+    }
+  }
+}
+
 export function getCurrentDmFriends() {
   return {
     currentUserId: {
-      userId: "someUserId",
+      userId: currentUserId,
       nick: currentUserNick,
-      discriminator: "1234"
+      discriminator: currentDiscriminator
     },
     currentDmId: {
       userId: friendsCache.currentDmId,
@@ -341,7 +379,7 @@ export function updateFriendMenu() {
   if (currentSelectedFriendMenuElement)
     selectFriendMenu(currentSelectedFriendMenuElement);
 }
-export function selectFriendMenu(clickedButton: HTMLElement) {
+function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
   openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor;
   openFriendsBtn.style.color = "white";
@@ -371,7 +409,7 @@ export function selectFriendMenu(clickedButton: HTMLElement) {
   UpdatePendingCounter();
 }
 
-export function getRequestType(btn: HTMLElement) {
+function getRequestType(btn: HTMLElement) {
   return (
     (Object.keys(buttonElements) as Array<keyof typeof buttonElements>).find(
       (key) => buttonElements[key] === btn
@@ -379,7 +417,7 @@ export function getRequestType(btn: HTMLElement) {
   );
 }
 
-export function initializeButtonsList() {
+function initializeButtonsList() {
   Array.from(ButtonsList).forEach((element) => {
     const el = element as HTMLElement;
     const reqType = getRequestType(el);
@@ -400,7 +438,7 @@ export function initializeButtonsList() {
   });
 }
 
-export function resetButtons() {
+function resetButtons() {
   for (const element of ButtonsList) {
     if (element) {
       element.style.backgroundColor = defaultColor;
@@ -409,7 +447,7 @@ export function resetButtons() {
   }
 }
 
-export function createGraySphere(
+function createGraySphere(
   content: string,
   element: HTMLElement,
   contentClass = "",
@@ -471,10 +509,41 @@ export function createButtonWithBubblesImg(
   button.appendChild(iconSphere);
   return iconSphere;
 }
-export function updateUsersActivities(friend: Friend) {
+
+export function clearActivityList() {
+  if (currentUserActivities.length === 0) {
+    const activityListEmptyHTML = `
+      <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
+        "nowonline"
+      )}</h1>
+      <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
+        "activity-detail"
+      )}</h1>
+      <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
+        "activity-detail-2"
+      )}</h1>
+      <ul></ul>`;
+
+    activityList.innerHTML = activityListEmptyHTML;
+  }
+}
+
+export function updateUsersActivities(friends?: Friend[]) {
+  if (friends) currentUserActivities = friends;
+  console.error(friends);
+  console.log(String(Array.isArray(currentUserActivities)));
+  if (currentUserActivities && Array.isArray(currentUserActivities)) {
+    clearActivityList();
+    currentUserActivities.forEach((friend) => {
+      createActivityCard(friend);
+    });
+  }
+}
+
+export function createActivityCard(friend: Friend) {
   if (!userManager.isOnline(friend.userId)) return;
   if (friend.activity === "" || friend.activity === undefined) return;
-  console.log(friend);
+
   disableElement("activity-detail");
   disableElement("activity-detail-2");
   let activityCard = userList.querySelector(`#${CSS.escape(friend.userId)}`);
@@ -506,13 +575,13 @@ export function updateUsersActivities(friend: Friend) {
     activityCard.appendChild(contentDiv);
     activityCard.appendChild(iconImg);
 
-    userList.appendChild(activityCard);
+    activityList.appendChild(activityCard);
   } else {
     const contentDiv = activityCard.querySelector(".activity-card-content");
-    const avatarImg = contentDiv?.querySelector(
-      ".activity-card-avatar"
-    ) as HTMLImageElement;
-    setProfilePic(avatarImg, friend.userId);
+    //const avatarImg = contentDiv?.querySelector(
+    //  ".activity-card-avatar"
+    //) as HTMLImageElement;
+    //setProfilePic(avatarImg, friend.userId);
 
     const nickHeading = contentDiv?.querySelector(".activity-card-nick");
     if (nickHeading)
@@ -520,7 +589,9 @@ export function updateUsersActivities(friend: Friend) {
         friend.nickName || userManager.getUserNick(friend.userId);
 
     const titleSpan = contentDiv?.querySelector(".activity-card-title");
-    if (titleSpan) titleSpan.textContent = friend.activity || "";
+    if (titleSpan && titleSpan.textContent !== friend.activity) {
+      titleSpan.textContent = friend.activity || "";
+    }
   }
 }
 
@@ -545,7 +616,7 @@ function clearFriendContainer() {
   friendsContainer.innerHTML = "";
 }
 
-export function createAddFriendForm() {
+function createAddFriendForm() {
   const addfriendtext = createEl("div", {
     id: "addfriendtext",
     textContent: translations.getTranslation("addfriendtext")
@@ -599,7 +670,7 @@ export function createAddFriendForm() {
   friendsContainer.appendChild(userlistline);
 }
 
-export function adjustButtonPosition() {
+function adjustButtonPosition() {
   const inputrighttoset = userList.style.display === "flex" ? "463px" : "76px";
   const addfriendinputbutton = getId("addfriendinputbutton");
   if (addfriendinputbutton) {
@@ -607,30 +678,15 @@ export function adjustButtonPosition() {
   }
 }
 
-export function createFriendCardBubble(isOnline: boolean) {
-  const bubble = createEl("span", { className: "status-bubble" });
-  bubble.style.marginLeft = "20px";
-  bubble.style.marginTop = "25px";
-  bubble.style.padding = "5px";
-  bubble.style.border = "3px solid #2f3136";
-
-  if (isOnline) {
-    bubble.classList.add("online");
-  } else {
-    bubble.classList.add("offline");
-  }
-
+function createFriendCardBubble(status: string) {
+  const bubble = createEl("span", { className: `profile-bubble ${status}` });
   return bubble;
 }
 
-export function createDmBubble(isOnline: boolean) {
+function createDmBubble(status: string) {
   const bubble = createEl("span", { className: "dm-bubble" });
 
-  if (isOnline) {
-    bubble.classList.add("online");
-  } else {
-    bubble.classList.add("offline");
-  }
+  bubble.classList.add("dm_" + status);
 
   return bubble;
 }
@@ -648,9 +704,7 @@ export function displayWumpus() {
   friendsContainer.appendChild(imgElement);
 }
 
-export async function filterFriendsByCategory(
-  friends: Friend[]
-): Promise<Friend[]> {
+async function filterFriendsByCategory(friends: Friend[]): Promise<Friend[]> {
   const filterConditions = {
     [friendMenuTypes.online]: async (friend: Friend) =>
       (await userManager.isOnline(friend.userId)) && !friend.isPending,
@@ -708,10 +762,10 @@ export async function populateFriendsContainer(
     console.error("Error populating friends container:", error);
   }
 }
-
+//TODO: make this call userManager in bulk
 async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
-    const status = await userManager.getStatusPollingString(friend.userId);
+    const status = await userManager.getStatusString(friend.userId);
     console.warn(status, friend);
     const isOnline = await userManager.isOnline(friend.userId);
     createFriendCard(
@@ -724,11 +778,11 @@ async function updateFriendsList(friends: Friend[], isPending: boolean) {
       isPending || false,
       friend.isFriendsRequestToUser
     );
-    updateUsersActivities(friend);
   }
+  updateUsersActivities(friends);
   filterFriendsOnSearch();
 }
-export function createFriendCard(
+function createFriendCard(
   friend: Friend,
   userId: string,
   nickName: string,
@@ -738,13 +792,14 @@ export function createFriendCard(
   isPending: boolean,
   isFriendsRequestToUser: boolean
 ) {
+  const foundFriend = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
+  if (foundFriend) return;
   const friendCard = createEl("div", { className: "friend-card", id: userId });
   const img = createEl("img") as HTMLImageElement;
   setProfilePic(img, userId);
   img.classList.add("friend-image");
-  img.style.transition = "border-radius 0.5s ease-out";
 
-  const bubble = createFriendCardBubble(isOnline);
+  const bubble = createFriendCardBubble(status);
   bubble.style.transition = "display 0.5s ease-in-out";
   if (!isPending) friendCard.appendChild(bubble);
 
@@ -806,7 +861,7 @@ export function removeFriendCard(userId: string) {
   }
 }
 
-export function handleImageHover(
+function handleImageHover(
   img: HTMLElement,
   bubble: HTMLElement,
   isPending: boolean,
@@ -819,7 +874,7 @@ export function handleImageHover(
   }
 }
 
-export function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
+function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
   const sendMsgBtn = createButtonWithBubblesImg(
     friendButton,
     ButtonTypes.SendMsgBtn,

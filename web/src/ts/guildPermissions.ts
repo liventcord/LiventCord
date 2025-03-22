@@ -21,7 +21,7 @@ export interface PermissionsRecord {
   [guildId: string]: Record<string, number>;
 }
 
-export class PermissionManager {
+class PermissionManager {
   permissionsMap: Map<string, Set<Permission>>;
 
   constructor(permissionsMap: Map<string, Set<Permission>> = new Map()) {

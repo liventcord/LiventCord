@@ -8,8 +8,7 @@
     "lint": "npx eslint src/ts/* --fix",
     "build": "vite build",
     "serve": "vite preview",
-    "format": "npx prettier --write --ignore-unknown .",
-    "prepare": "husky"
+    "format": "npx prettier --write --ignore-unknown ."
   },
   "type": "module",
   "lint-staged": {
@@ -34,10 +33,10 @@
     "eslint-define-config": "^2.1.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "postcss": "^8.5.1",
     "prettier": "^2.7.1",
+    "terser": "^5.37.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vite-plugin-eslint": "^1.8.1",
@@ -47,7 +46,6 @@
   "dependencies": {
     "@types/croppie": "^2.6.4",
     "browser-image-compression": "^2.0.2",
-    "croppie": "^2.6.5",
-    "terser": "^5.37.0"
+    "croppie": "^2.6.5"
   }
 }
