@@ -57,6 +57,9 @@ const pendingFriendSvg = `
 const sendMsgIconSvg = `
             <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>
         `;
+
+export let currentProfileImg: HTMLElement;
+
 const radioStates = new WeakMap<HTMLElement, boolean>();
 
 function toggleRadio(radio: HTMLElement, newValue: boolean) {
@@ -305,9 +308,12 @@ export function constructUserData(userId: string): UserInfo {
   };
 }
 
-export function drawProfilePopId(id: string) {
+export async function drawProfilePopId(
+  id: string,
+  shouldDrawPanel: boolean = false
+) {
   const userData: UserInfo = constructUserData(id);
-  drawProfilePop(userData);
+  return await drawProfilePop(userData, shouldDrawPanel);
 }
 let currentProfileDisplay: HTMLElement;
 function closeCurrentProfileDisplay() {
@@ -316,46 +322,61 @@ function closeCurrentProfileDisplay() {
     currentProfileDisplay.firstChild as HTMLElement
   );
 }
-export async function drawProfilePop(userData: UserInfo) {
+export async function drawProfilePop(
+  userData: UserInfo,
+  shouldDrawPanel?: boolean
+): Promise<HTMLElement | null> {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
-    return;
+    return null;
   }
 
   const profileContainer = createProfileContainer(userData);
   const profileImg = createProfileImage(userData);
-  const popTopContainer = createPopTopContainer(userData, profileImg);
-
-  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userData.userId);
-
-  const popBottomContainer = createPopBottomContainer(
-    userData.description,
-    sharedGuilds,
-    null,
-    userData.userId,
-    userData.createdAt
+  const popTopContainer = createPopTopContainer(
+    userData,
+    profileImg,
+    !shouldDrawPanel
   );
+  const userId = userData.userId;
+  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userId);
+
+  const popBottomContainer = !shouldDrawPanel
+    ? createPopBottomContainer(
+        userData.description,
+        sharedGuilds,
+        null,
+        userId,
+        userData.createdAt
+      )
+    : null;
 
   profileContainer.appendChild(profileImg);
   profileContainer.appendChild(popTopContainer);
-  profileContainer.appendChild(popBottomContainer);
-  const isOnline = await userManager.isOnline(userData.userId);
-  const bubble = createBubble(isOnline);
-  updateOnlineStatus(userData.userId, bubble);
+  if (popBottomContainer) profileContainer.appendChild(popBottomContainer);
+
+  const status = await userManager.getStatusString(userId);
+  const bubble = createBubble(status);
 
   const contentElements = [
     popTopContainer,
     profileImg,
     bubble,
     profileContainer,
-    popBottomContainer
+    ...(popBottomContainer ? [popBottomContainer] : [])
   ];
-  currentProfileDisplay = createPopUp({
-    contentElements,
-    id: "profilePopContainer"
-  });
 
-  appendToProfileContextList(userData, userData.userId);
+  const createdPop = createPopUp({
+    contentElements,
+    id: "profilePopContainer",
+    shouldDrawPanel
+  });
+  if (!shouldDrawPanel) {
+    currentProfileDisplay = createdPop;
+  }
+
+  appendToProfileContextList(userData, userId);
+  return createdPop;
 }
 
 function createProfileContainer(userData: UserInfo): HTMLElement {
@@ -379,11 +400,11 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
 
   return container;
 }
-
 function createProfileImage(userData: UserInfo): HTMLImageElement {
   const profileImg = createEl("img", {
-    id: "profile-display"
+    className: "profile-display"
   }) as HTMLImageElement;
+  currentProfileImg = profileImg;
   profileImg.addEventListener("mouseover", function () {
     this.style.borderRadius = "0px";
   });
@@ -398,19 +419,21 @@ function createProfileImage(userData: UserInfo): HTMLImageElement {
 
 function createPopTopContainer(
   userData: UserInfo,
-  profileImg: HTMLImageElement
+  profileImg: HTMLImageElement,
+  shouldAddOuterHtml: boolean = true
 ): HTMLElement {
   const topContainer = createEl("div", {
     className: "popup-bottom-container",
     id: "profile-popup-top-container"
   });
+  if (shouldAddOuterHtml) {
+    const profileOptions = createProfileOptionsButton(userData);
+    topContainer.appendChild(profileOptions);
 
-  const profileOptions = createProfileOptionsButton(userData);
-  topContainer.appendChild(profileOptions);
-
-  profileOptions.addEventListener("click", (event) =>
-    handleContextMenuClick(userData.userId, event)
-  );
+    profileOptions.addEventListener("click", (event) =>
+      handleContextMenuClick(userData.userId, event)
+    );
+  }
 
   profileImg.onload = function () {
     if (topContainer) {
@@ -421,18 +444,6 @@ function createPopTopContainer(
   return topContainer;
 }
 
-async function updateOnlineStatus(
-  userId: string,
-  bubble: HTMLElement
-): Promise<void> {
-  try {
-    const isOnline = await userManager.isOnline(userId);
-    bubble.style.backgroundColor = isOnline ? "#23a55a" : "gray";
-    bubble.style.opacity = "1";
-  } catch (error) {
-    console.error(`Error fetching online status for user ${userId}:`, error);
-  }
-}
 function createProfileOptionsButton(userData: UserInfo): HTMLElement {
   const profileOptions = createEl("button", {
     id: userData.userId,
@@ -702,11 +713,13 @@ function handleContextMenuClick(userId: string, event: MouseEvent): void {
 export function createPopUp({
   contentElements = [],
   id,
-  closeBtnId = null
+  closeBtnId = null,
+  shouldDrawPanel = false
 }: {
   contentElements?: HTMLElement[];
   id: string;
   closeBtnId?: string | null;
+  shouldDrawPanel?: boolean;
 }) {
   const popOuterParent = createEl("div", { className: "outer-parent" });
   const parentContainer = createEl("div", { className: "pop-up", id });
@@ -722,26 +735,31 @@ export function createPopUp({
     );
     parentContainer.appendChild(closeBtn);
   }
+  if (!shouldDrawPanel) {
+    let isMouseDownOnPopOuter = false;
 
-  let isMouseDownOnPopOuter = false;
+    popOuterParent.addEventListener("mousedown", function (event) {
+      if (event.target === popOuterParent) {
+        isMouseDownOnPopOuter = true;
+      }
+    });
 
-  popOuterParent.addEventListener("mousedown", function (event) {
-    if (event.target === popOuterParent) {
-      isMouseDownOnPopOuter = true;
-    }
-  });
+    popOuterParent.addEventListener("mouseup", function (event) {
+      if (isMouseDownOnPopOuter && event.target === popOuterParent) {
+        closePopUp(popOuterParent, parentContainer);
+      }
+      isMouseDownOnPopOuter = false;
+    });
 
-  popOuterParent.addEventListener("mouseup", function (event) {
-    if (isMouseDownOnPopOuter && event.target === popOuterParent) {
-      closePopUp(popOuterParent, parentContainer);
-    }
-    isMouseDownOnPopOuter = false;
-  });
+    popOuterParent.appendChild(parentContainer);
+    document.body.appendChild(popOuterParent);
+    return popOuterParent;
+  }
 
-  popOuterParent.appendChild(parentContainer);
-  document.body.appendChild(popOuterParent);
-  return popOuterParent;
+  document.body.appendChild(parentContainer);
+  return parentContainer;
 }
+
 export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");

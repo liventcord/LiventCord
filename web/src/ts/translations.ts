@@ -267,7 +267,11 @@ class Translations {
     const translation = this.contextTranslations[key];
 
     if (!translation) {
-      console.error("Cannot find translation for:", key);
+      console.error(
+        "Cannot find translation for:",
+        key,
+        this.contextTranslations
+      );
     }
 
     return translation || key;

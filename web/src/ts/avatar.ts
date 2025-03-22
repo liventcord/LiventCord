@@ -33,7 +33,6 @@ import { chatContainer } from "./chatbar.ts";
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
-export const selfStatus = getId("self-status") as HTMLElement;
 
 export let lastConfirmedProfileImg: Blob;
 let lastConfirmedGuildImg: Blob;

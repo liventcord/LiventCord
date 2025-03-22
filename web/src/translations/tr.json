@@ -211,7 +211,8 @@
     "deny": "Reddet",
     "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?",
     "message": "Mesaj",
-    "member-since": "Şu Tarihten Beri Üye"
+    "member-since": "Şu Tarihten Beri Üye",
+    "edit-profile": "Profili düzenle"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

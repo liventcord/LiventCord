@@ -2,6 +2,7 @@ using System.Security.Claims;
 using LiventCord.Controllers;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LiventCord.Helpers
 {
@@ -54,6 +55,7 @@ namespace LiventCord.Helpers
 
     public class AppLogicService
     {
+        private readonly IMemoryCache _memoryCache;
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -65,6 +67,7 @@ namespace LiventCord.Helpers
 
 
         public AppLogicService(
+            IMemoryCache memoryCache,
             AppDbContext dbContext,
             FriendController friendController,
             GuildController guildController,
@@ -76,6 +79,7 @@ namespace LiventCord.Helpers
             IConfiguration configuration
         )
         {
+            _memoryCache = memoryCache;
             _dbContext = dbContext;
             _guildController = guildController;
             _friendController = friendController;
@@ -87,9 +91,6 @@ namespace LiventCord.Helpers
 
             SharedAppConfig.Initialize(configuration);
         }
-
-
-
 
         public async Task HandleInitRequest(HttpContext context)
         {
@@ -108,6 +109,14 @@ namespace LiventCord.Helpers
                 if (string.IsNullOrEmpty(userId))
                 {
                     await RejectStaleSession();
+                    return;
+                }
+
+                var cacheKey = $"UserInitData_{userId}";
+                if (_memoryCache.TryGetValue(cacheKey, out var cachedData))
+                {
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsJsonAsync(cachedData);
                     return;
                 }
 
@@ -141,6 +150,12 @@ namespace LiventCord.Helpers
                     wsUrl = SharedAppConfig.WsUrl
                 };
 
+                var cacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
+                };
+                _memoryCache.Set(cacheKey, jsonData, cacheOptions);
+
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsJsonAsync(jsonData);
             }
@@ -157,7 +172,6 @@ namespace LiventCord.Helpers
                 }
             }
         }
-
         public async Task HandleChannelRequest(HttpContext context)
         {
             try

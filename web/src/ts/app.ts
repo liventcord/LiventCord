@@ -56,11 +56,7 @@ import {
   currentUserNick,
   userManager
 } from "./user.ts";
-import {
-  addContextListeners,
-  copySelfName,
-  pinMessage
-} from "./contextMenuActions.ts";
+import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
 import {
   updateChannels,
   channelsUl,
@@ -89,7 +85,6 @@ import {
   loadBooleanCookie
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
-
 import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
@@ -105,6 +100,7 @@ import {
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
+import { UserStatus } from "./status.ts";
 
 interface InitialStateData {
   email: string;
@@ -150,7 +146,9 @@ interface InitialState {
   sharedGuildsMap: Map<string, any>;
   wsUrl: string;
 }
+export let userStatus: UserStatus;
 export function initializeApp() {
+  userStatus = new UserStatus();
   window.scrollTo(0, 0);
   addChannelSearchListeners();
   initializeElements();
@@ -278,7 +276,9 @@ function initializeListeners() {
   guildContainer.addEventListener("click", handleGuildClick);
 
   const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
-  avatarWrapper.addEventListener("click", copySelfName);
+  avatarWrapper.addEventListener("click", () => {
+    if (userStatus) userStatus.showStatusPanel();
+  });
   addContextListeners();
 }
 

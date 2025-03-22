@@ -167,8 +167,8 @@ class DmUser {
       setProfilePic(profileImg, friend.userId);
     }
 
-    const isOnline = await userManager.isOnline(friend.userId);
-    const bubble = createDmBubble(isOnline);
+    const status = await userManager.getStatusString(friend.userId);
+    const bubble = createDmBubble(status);
     profileImg.style.transition = "border-radius 0.5s ease-out";
     bubble.style.transition = "opacity 0.5s ease-in-out";
 
@@ -643,30 +643,22 @@ function adjustButtonPosition() {
   }
 }
 
-function createFriendCardBubble(isOnline: boolean) {
+function createFriendCardBubble(status: string) {
   const bubble = createEl("span", { className: "status-bubble" });
   bubble.style.marginLeft = "20px";
   bubble.style.marginTop = "25px";
   bubble.style.padding = "5px";
   bubble.style.border = "3px solid #2f3136";
 
-  if (isOnline) {
-    bubble.classList.add("online");
-  } else {
-    bubble.classList.add("offline");
-  }
+  bubble.classList.add(status);
 
   return bubble;
 }
 
-function createDmBubble(isOnline: boolean) {
+function createDmBubble(status: string) {
   const bubble = createEl("span", { className: "dm-bubble" });
 
-  if (isOnline) {
-    bubble.classList.add("online");
-  } else {
-    bubble.classList.add("offline");
-  }
+  bubble.classList.add("dm_" + status);
 
   return bubble;
 }
@@ -778,7 +770,7 @@ function createFriendCard(
   img.classList.add("friend-image");
   img.style.transition = "border-radius 0.5s ease-out";
 
-  const bubble = createFriendCardBubble(isOnline);
+  const bubble = createFriendCardBubble(status);
   bubble.style.transition = "display 0.5s ease-in-out";
   if (!isPending) friendCard.appendChild(bubble);
 

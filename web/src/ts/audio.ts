@@ -13,6 +13,7 @@ import { toggleManager } from "./settings.ts";
 import { currentUserId } from "./user.ts";
 import { isOnGuild } from "./router.ts";
 import { translations } from "./translations.ts";
+import { currentProfileImg } from "./popups.ts";
 
 declare global {
   interface Window {
@@ -220,17 +221,15 @@ export function stopAudioAnalysis() {
 
   isAnalyzing = false;
 
-  const selfProfileDisplayElementList = getSelfFromUserList() as HTMLElement;
-  if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = "50%";
+  const selfcurrentProfileImgList = getSelfFromUserList() as HTMLElement;
+  if (selfcurrentProfileImgList) {
+    selfcurrentProfileImgList.style.borderRadius = "50%";
   }
 
-  const profileDisplayElement = getId("profile-display") as HTMLElement;
-
   resetWiggleEffect(
-    profileDisplayElement,
+    currentProfileImg,
     selfProfileImage,
-    selfProfileDisplayElementList
+    selfcurrentProfileImgList
   );
 }
 
@@ -308,13 +307,12 @@ function analyzeAudio(
     MAX_COLOR_VALUE - averageVolume * VOLUME_TO_COLOR_MULTIPLIER
   )})`;
 
-  const profileDisplayElement = getId("profile-display") as HTMLElement;
-  if (profileDisplayElement) {
+  if (currentProfileImg) {
     if (averageVolume > dynamicThreshold) {
-      if (profileDisplayElement) {
-        profileDisplayElement.classList.add("dancing-border");
-        profileDisplayElement.style.transform = `scale(${scaleFactor})`;
-        profileDisplayElement.style.borderColor = borderColor;
+      if (currentProfileImg) {
+        currentProfileImg.classList.add("dancing-border");
+        currentProfileImg.style.transform = `scale(${scaleFactor})`;
+        currentProfileImg.style.borderColor = borderColor;
       }
       if (selfProfileImage) {
         selfProfileImage.classList.add("dancing-border");
@@ -329,7 +327,7 @@ function analyzeAudio(
         selfUserListProfileList.style.borderColor = borderColor;
       }
     } else {
-      resetStyles(profileDisplayElement);
+      resetStyles(currentProfileImg);
     }
   }
 
@@ -338,11 +336,11 @@ function analyzeAudio(
   );
 }
 
-function resetStyles(profileDisplayElement: HTMLElement) {
-  if (profileDisplayElement) {
-    profileDisplayElement.classList.remove("dancing-border");
-    profileDisplayElement.style.transform = "scale(1)";
-    profileDisplayElement.style.borderColor = "rgb(17, 18, 20)";
+function resetStyles(currentProfileImg: HTMLElement) {
+  if (currentProfileImg) {
+    currentProfileImg.classList.remove("dancing-border");
+    currentProfileImg.style.transform = "scale(1)";
+    currentProfileImg.style.borderColor = "rgb(17, 18, 20)";
   }
   if (selfProfileImage) {
     selfProfileImage.classList.remove("dancing-border");
@@ -379,19 +377,19 @@ function stopCurrentMusic() {
 }
 
 function resetProfileBorders() {
-  const profileDisplayElement = getId("profile-display");
+  const currentProfileImg = getId("profile-display");
 
-  const selfProfileDisplayElementList = getSelfFromUserList();
-  if (selfProfileDisplayElementList) {
-    selfProfileDisplayElementList.style.borderRadius = "50%";
-    selfProfileDisplayElementList.style.borderColor = "";
-    selfProfileDisplayElementList.style.transform = "";
+  const selfcurrentProfileImgList = getSelfFromUserList();
+  if (selfcurrentProfileImgList) {
+    selfcurrentProfileImgList.style.borderRadius = "50%";
+    selfcurrentProfileImgList.style.borderColor = "";
+    selfcurrentProfileImgList.style.transform = "";
   }
 
-  if (profileDisplayElement) {
-    profileDisplayElement.style.borderRadius = "50%";
-    profileDisplayElement.style.borderColor = "";
-    profileDisplayElement.style.transform = "";
+  if (currentProfileImg) {
+    currentProfileImg.style.borderRadius = "50%";
+    currentProfileImg.style.borderColor = "";
+    currentProfileImg.style.transform = "";
   }
   if (selfProfileImage) {
     selfProfileImage.style.borderRadius = "50%";

@@ -120,7 +120,7 @@
     "pending": "Pending",
     "blocked": "Blocked",
     "do-not-disturb": "Do Not Disturb",
-    "idle": "idle",
+    "idle": "Idle",
     "online-button": "Online",
     "all-button": "All",
     "pending-button": "Pending",
@@ -211,7 +211,8 @@
     "deny": "Deny",
     "delete-message-prompt": "Are you sure you want to delete this message?",
     "message": "Message",
-    "member-since": "Member Since"
+    "member-since": "Member Since",
+    "edit-profile": "Edit Profile"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

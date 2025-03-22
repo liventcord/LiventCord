@@ -28,6 +28,7 @@ export const contextList: { [key: string]: any } = {};
 const messageContextList: { [key: string]: any } = {};
 
 type ItemOption = {
+  label: string;
   action: CallableFunction;
 };
 
@@ -184,7 +185,7 @@ export function copySelfName(event: MouseEvent) {
   const text = `${currentUserNick}#${currentDiscriminator}`;
   copyText(event, text);
 }
-function copyId(id: string, event: MouseEvent) {
+export function copyId(id: string, event: MouseEvent) {
   if (!currentUserNick || !currentDiscriminator) return;
 
   copyText(event, id);
@@ -209,7 +210,6 @@ export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userManager.getUserInfo(userId);
   }
-  console.error(userData);
   if (userId && userData) {
     contextList[userId] = createProfileContext(userData);
   }
@@ -480,37 +480,40 @@ function createMessageContext(messageId: string, userId: string) {
   return context;
 }
 
-function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
-  const translatedLabel = translations.getContextTranslation(labelKey);
+function createMenuItem(
+  labelKey: string,
+  itemOptions: ItemOptions
+): HTMLElement {
+  const shouldTranslate = labelKey in translations.contextTranslations;
+  const translatedLabel = shouldTranslate
+    ? translations.getContextTranslation(
+        labelKey.toUpperCase().replace(/ /g, "_")
+      )
+    : labelKey;
   const li = createEl("li", { textContent: translatedLabel });
-
-  li.addEventListener("click", function (event) {
+  li.addEventListener("click", function (event: Event) {
     event.stopPropagation();
     hideContextMenu();
     if (itemOptions.action) {
       itemOptions.action(event);
     }
   });
-
   if (itemOptions.subOptions) {
     const subUl = createEl("ul");
-    itemOptions.subOptions.forEach((subOption) => {
-      const subLi = createMenuItem(translatedLabel, subOption);
+    itemOptions.subOptions.forEach((subOption: any) => {
+      const subLi = createMenuItem(subOption.label, subOption);
       subUl.appendChild(subLi);
     });
     li.appendChild(subUl);
   }
-
   li.addEventListener("mouseenter", function () {
-    const subMenu = li.querySelector("ul");
+    const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
       subMenu.style.display = "block";
       subMenu.style.left = "100%";
       subMenu.style.right = "auto";
-
       const subRect = subMenu.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
-
       if (subRect.right > viewportWidth) {
         subMenu.style.left = "auto";
         subMenu.style.right = "100%";
@@ -520,14 +523,12 @@ function createMenuItem(labelKey: string, itemOptions: ItemOptions) {
       }
     }
   });
-
   li.addEventListener("mouseleave", function () {
-    const subMenu = li.querySelector("ul");
+    const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
       subMenu.style.display = "none";
     }
   });
-
   return li;
 }
 

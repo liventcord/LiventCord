@@ -49,7 +49,8 @@ function renderTitle(
 function createUserProfile(
   userId: string,
   nickName: string,
-  isUserOnline: boolean
+  isUserOnline: boolean,
+  status: string
 ) {
   const profileContainer = createEl("div", {
     className: "profile-container",
@@ -73,7 +74,7 @@ function createUserProfile(
   profileImg.style.pointerEvents = "none";
   profileImg.dataset.userId = userId;
 
-  const bubble = createBubble(isUserOnline, true);
+  const bubble = createBubble(status, true, true);
 
   profileContainer.appendChild(profileImg);
   profileContainer.appendChild(userNameDiv);
@@ -114,10 +115,11 @@ async function renderUsers(
   for (const userData of users) {
     const userId = userData.userId;
     const isUserOnline = await userManager.isOnline(userId);
+    const status = await userManager.getStatusString(userId);
     const nickName = userData.nickName;
     if (isUserOnline === isOnline) {
       const { profileContainer, userNameDiv, profileImg, bubble } =
-        createUserProfile(userId, nickName, isUserOnline);
+        createUserProfile(userId, nickName, isUserOnline, status);
       const guild = guildCache.getGuild(currentGuildId);
       if (isOnGuild && currentGuildId && guild && guild.isOwner(userId)) {
         const crownEmoji = createEl("img", {
@@ -187,7 +189,7 @@ async function categorizeMembers(members: UserInfo[]) {
   const offlineUsers: UserInfo[] = [];
 
   const statusPromises = members.map(async (member) => {
-    const isOnline = await userManager.isOnline(member.userId);
+    const isOnline = await userManager.isNotOffline(member.userId);
     return { member, isOnline };
   });
 
@@ -204,12 +206,15 @@ async function categorizeMembers(members: UserInfo[]) {
   return { onlineUsers, offlineUsers };
 }
 
-export function createBubble(isOnline: boolean, isProfileBubble?: boolean) {
+export function createBubble(
+  status: string,
+  isProfileBubble?: boolean,
+  isMemberBubble?: boolean
+) {
   const classn = isProfileBubble ? "profile-bubble" : "status-bubble";
   const bubble = createEl("span", { className: classn });
-  if (isOnline) {
-    bubble.style.backgroundColor = "#23a55a";
-  } else {
+  bubble.classList.add(status);
+  if (isMemberBubble && status === "offline") {
     bubble.style.opacity = "0";
   }
 
@@ -261,7 +266,7 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
     {
       userId: currentUserId,
       nickName: currentUserNick,
-      isOnline: userManager.getIsSelfOnline(),
+      isOnline: userManager.isOnline(currentUserId),
       discriminator: currentDiscriminator || DEFAULT_DISCRIMINATOR
     },
     {
@@ -293,4 +298,28 @@ export function updateUserListText() {
     userList.innerHTML = userListTitleHTML;
   }
   handleResize();
+}
+
+export function updateStatusInMembersList(userId: string, status: string) {
+  const profilesList = userList.querySelectorAll(".profile-pic");
+  profilesList.forEach((user) => {
+    const parentNode = user.parentNode as HTMLElement;
+    const userIdDom = parentNode && parentNode.id;
+
+    if (userIdDom === userId) {
+      const selfBubble = parentNode.querySelector(
+        ".profile-bubble"
+      ) as HTMLElement;
+      if (selfBubble) {
+        if (status === "offline") {
+          selfBubble.style.opacity = "0";
+          return;
+        }
+        selfBubble.style.opacity = "1";
+        selfBubble.classList.value = "";
+        selfBubble.className = "profile-bubble";
+        selfBubble.classList.add(status);
+      }
+    }
+  });
 }

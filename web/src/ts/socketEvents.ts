@@ -1,6 +1,6 @@
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId, updateUserOnlineStatus } from "./user.ts";
+import { currentUserId } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
@@ -31,6 +31,7 @@ import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
 import { playAudio, clearVoiceChannel } from "./audio.ts";
+import { userStatus } from "./app.ts";
 
 export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -86,6 +87,11 @@ class WebSocketClient {
   }
 
   getUserStatus(user_ids: string[]) {
+    if (
+      user_ids.length < 1 ||
+      user_ids.some((id) => typeof id !== "string" || id.trim() === "")
+    )
+      return;
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.pendingRequests.push(() => this.getUserStatus(user_ids));
       return;
@@ -98,9 +104,9 @@ class WebSocketClient {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
       this.startHeartbeat();
-      this.send(SocketEvent.UPDATE_USER_STATUS, { status: "online" });
       this.getUserStatus([currentUserId]);
       this.processPendingRequests();
+      authCookie = "";
     };
 
     this.socket.onmessage = (event) => {
@@ -230,11 +236,13 @@ class WebSocketClient {
     }
   }
 }
-
+let authCookie: string;
 async function getAuthCookie(): Promise<string> {
+  if (authCookie) return encodeURIComponent(authCookie);
   const response = await fetch("/auth/ws-token");
   if (!response.ok) throw new Error("Failed to retrieve cookie");
   const data = await response.json();
+  authCookie = data.cookieValue;
   return encodeURIComponent(data.cookieValue);
 }
 
@@ -305,9 +313,9 @@ socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
 });
 
 socketClient.on(SocketEvent.GET_USER_STATUS, (data: UserStatusData[]) => {
-  data.forEach((userStatus) => {
-    const userId = userStatus.userId;
-    updateUserOnlineStatus(userId, userStatus.status);
+  data.forEach((_userStatus) => {
+    const userId = _userStatus.userId;
+    userStatus.updateUserOnlineStatus(userId, _userStatus.status);
   });
 });
 

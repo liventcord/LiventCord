@@ -470,7 +470,7 @@
   height: 27%;
   top: 13.4%;
   display: flex;
-  border-radius: 15px 15px 0 0;
+  border-radius: 15px 15px 5 5;
   align-items: right;
   justify-content: right;
   width: 100%;

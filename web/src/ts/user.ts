@@ -1,13 +1,7 @@
-import {
-  selfDiscriminator,
-  selfName,
-  selfStatus,
-  updateSelfProfile
-} from "./avatar.ts";
-import { initialState } from "./app.ts";
-import { translations } from "./translations.ts";
-import { getId } from "./utils.ts";
+import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
+import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
+import { updateStatusInMembersList } from "./userList.ts";
 
 export interface Member {
   userId: string;
@@ -96,16 +90,11 @@ class UserManager {
 
   addUser(
     userId: string,
-    nick: string = "",
+    nick: string = deletedUser,
     discriminator: string = "",
     isBlocked?: boolean
   ) {
     console.log("Adding user: ", userId, nick, discriminator);
-
-    if (!nick) {
-      console.error("Adding user without nick!: ", userId, discriminator);
-      return;
-    }
 
     this.userNames[userId] = {
       nickName: nick,
@@ -117,13 +106,6 @@ class UserManager {
     };
   }
 
-  setIsSelfOnline(val: boolean) {
-    this.isSelfOnline = val;
-  }
-  getIsSelfOnline() {
-    return this.isSelfOnline;
-  }
-
   updateMemberStatus(userId: string, status: string): void {
     if (!this.userNames[userId]) {
       console.error(userId, "does not exist!");
@@ -132,6 +114,7 @@ class UserManager {
     if (this.userNames[userId]) {
       console.log("Updating user status for: ", userId, status);
       this.userNames[userId].status = status;
+      updateStatusInMembersList(userId, status);
     } else {
       console.error("Failed to add user:", userId);
     }
@@ -140,26 +123,32 @@ class UserManager {
   getMemberStatus(userId: string): string {
     return this.userNames[userId]?.status ?? "offline";
   }
-  async isOnline(userId: string): Promise<boolean> {
-    if (userId === currentUserId) return this.getIsSelfOnline();
-    if (this.statusCache[userId] instanceof Promise)
-      return this.statusCache[userId];
-    if (this.statusCache[userId] !== undefined)
-      return this.statusCache[userId] as boolean;
+  async isNotOffline(userId: string): Promise<boolean> {
+    const cachedStatus = this.statusCache[userId];
+    if (cachedStatus instanceof Promise) return cachedStatus;
+    if (cachedStatus !== undefined) return Boolean(cachedStatus);
 
     const currentStatus = this.userNames[userId]?.status;
     if (currentStatus !== undefined) {
-      this.statusCache[userId] = currentStatus === "online";
-      return this.statusCache[userId];
+      const isNotOffline = currentStatus !== "offline";
+      this.statusCache[userId] = isNotOffline;
+      return isNotOffline;
     }
 
-    this.statusCache[userId] = this.getStatus(userId);
-    const isOnline = await this.statusCache[userId];
-    this.statusCache[userId] = isOnline;
-    return isOnline;
+    const statusPromise = this.getStatusString(userId).then((status) => {
+      const isNotOffline = status !== "offline";
+      this.statusCache[userId] = isNotOffline;
+      return isNotOffline;
+    });
+    this.statusCache[userId] = statusPromise;
+    return statusPromise;
   }
 
-  private async fetchImmediateStatus(userId: string): Promise<string | null> {
+  async isOnline(userId: string): Promise<boolean> {
+    return this.isNotOffline(userId);
+  }
+
+  async fetchImmediateStatus(userId: string): Promise<string | null> {
     return new Promise((resolve) => {
       socketClient.getUserStatus([userId]);
 
@@ -188,6 +177,11 @@ class UserManager {
   }
 
   async getStatusString(userId: string): Promise<string> {
+    const currentStatus = this.userNames[userId]?.status;
+    if (currentStatus !== undefined) {
+      return currentStatus;
+    }
+
     return Promise.race([
       this.fetchImmediateStatus(userId).then((status) =>
         status !== null ? status : null
@@ -261,54 +255,16 @@ class UserManager {
 
 export const userManager = new UserManager();
 
-const statusTypes = {
-  offline: "offline",
-  online: "online",
-  "dont-disturb": "dont-disturb",
-  idle: "idle"
-};
-
-function setSelfStatus(status: string) {
-  const status_translated =
-    translations.getTranslation(
-      statusTypes[status as keyof typeof statusTypes]
-    ) ??
-    translations.getTranslation(statusTypes.offline) ??
-    "Unknown";
-
-  selfStatus.textContent = status_translated;
-}
-
 export function initializeProfile() {
   userManager.setCurrentUserId(initialState.user.userId);
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
-  setSelfStatus(initialState.user.status);
+  userStatus.setSelfStatus(initialState.user.status);
   updateSelfProfile(currentUserId, currentUserNick);
 }
 
 export function getSelfFullDisplay() {
   return initialState.user.nickname + "#" + initialState.user.discriminator;
-}
-const selfBubble = getId("self-bubble") as HTMLElement;
-
-function updateSelfStatus(status: string) {
-  if (!selfBubble) return;
-  selfBubble.classList.value = "";
-  selfBubble.classList.add(status);
-  setSelfStatus(status);
-  userManager.setIsSelfOnline(status === "online");
-}
-
-export function updateUserOnlineStatus(userId: string, status: string) {
-  if (userId === currentUserId) {
-    updateSelfStatus(status);
-  }
-  console.log(userId, status);
-
-  userManager.updateMemberStatus(userId, status);
-
-  console.log(`User ${userId} not found in any guild`);
 }
