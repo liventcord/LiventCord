@@ -513,7 +513,9 @@ th {
   border: none;
   border-radius: 5px;
   text-align: left;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   cursor: pointer;
 }
 
@@ -984,7 +986,9 @@ th {
   z-index: 3;
 }
 .guilds-list li img {
-  transition: border-radius 0.5s ease, border 0.5s ease;
+  transition:
+    border-radius 0.5s ease,
+    border 0.5s ease;
   border-radius: 50%;
   width: 50px;
   margin-top: 5px;
@@ -1033,7 +1037,9 @@ th {
   width: 100%;
 }
 #create-guild-button {
-  transition: border-radius 0.5s ease, border 0.5s ease;
+  transition:
+    border-radius 0.5s ease,
+    border 0.5s ease;
   border-radius: 50%;
   margin-top: 5px;
   position: relative;

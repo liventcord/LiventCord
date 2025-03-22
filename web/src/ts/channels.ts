@@ -328,8 +328,8 @@ function handleKeydown(event: KeyboardEvent) {
       index < ALPHA_KEYS_MAX
         ? (index + 1).toString()
         : index === ALPHA_KEYS_MAX
-        ? "0"
-        : null;
+          ? "0"
+          : null;
     if (hotkey && event.key === hotkey && event.altKey) {
       changeChannel(channel);
     }

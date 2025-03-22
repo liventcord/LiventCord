@@ -436,8 +436,8 @@ export function createReplyBar(
   const textToWrite = content
     ? content
     : attachmentUrls
-    ? attachmentUrls
-    : translations.getTranslation("click-to-attachment");
+      ? attachmentUrls
+      : translations.getTranslation("click-to-attachment");
   const replyContent = createEl("span", {
     className: "replyContent",
     textContent: textToWrite

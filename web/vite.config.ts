@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
+import vue from "@vitejs/plugin-vue";
 import eslintPlugin from "vite-plugin-eslint";
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
@@ -59,7 +60,7 @@ export default defineConfig(({ mode }) => {
       }
     },
 
-    plugins: [eslintPlugin({ emitWarning: false })],
+    plugins: [vue(), eslintPlugin({ emitWarning: false })],
 
     server: {
       hmr: true,

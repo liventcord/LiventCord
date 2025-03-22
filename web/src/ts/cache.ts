@@ -653,7 +653,7 @@ class GuildCacheInterface {
   }
   getRootChannel(guildId: string) {
     const result = this.getGuild(guildId)?.getRootChannel();
-    return result ?? this.defaultGuild;
+    return result;
   }
 
   getRootChannelData(guildId: string): CachedChannel | null {

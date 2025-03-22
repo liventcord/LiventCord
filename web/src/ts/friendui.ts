@@ -831,8 +831,8 @@ function createFriendCard(
         ? "incoming-friend-request"
         : "outgoing-friend-request"
       : isOnline
-      ? "online"
-      : "offline"
+        ? "online"
+        : "offline"
   );
 
   friendInfo.appendChild(

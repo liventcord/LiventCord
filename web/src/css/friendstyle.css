@@ -427,7 +427,10 @@
   align-items: center;
   cursor: pointer;
   pointer-events: auto;
-  transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    box-shadow 0.3s;
 }
 .friend-container:hover {
   background-color: rgb(53, 55, 60);
