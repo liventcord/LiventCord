@@ -31,26 +31,13 @@
     "VIDEO_CALL": "Start Video Call"
   },
   "friendErrorTranslations": {
-    "404": {
-      "add_friend": "The user you are trying to add was not found.",
-      "accept_friend_request": "The friend request you are trying to accept was not found.",
-      "remove_friend": "The friend you are trying to remove was not found.",
-      "deny_friend_request": "The friend request you are trying to deny was not found."
-    },
-    "409": {
-      "add_friend": "This user is already your friend.",
-      "accept_friend_request": "The friend request has already been accepted or denied.",
-      "remove_friend": "You cannot remove this user at the moment.",
-      "deny_friend_request": "The friend request has already been accepted or denied."
-    },
-    "400": {
-      "add_friend": "Invalid request to add friend.",
-      "remove_friend": "Invalid request to remove friend."
-    },
-    "500": {
-      "default": "Internal server error. Please try again later."
-    },
-    "default": "An unexpected error occurred. Please try again."
+    "ERR_FRIEND_REQUEST_NOT_EXISTS": "The friend request was not found.",
+    "ERR_USER_NOT_FOUND": "The friend was not found.",
+    "ERR_FRIEND_REQUEST_EXISTS": "This user is already your friend.",
+    "ERR_REQUEST_ALREADY_ACCEPTED": "The friend request has already been accepted or denied.",
+    "ERR_NOT_FRIENDS": "You are not friends with this user.",
+    "ERR_INVALID_IDENTIFIER": "Invalid identifier for friend.",
+    "ERR_INVALID_EVENT": "Invalid event."
   },
   "placeholderTranslations": {
     "message_placeholder": "Send a message to channel #{{channelName}}",

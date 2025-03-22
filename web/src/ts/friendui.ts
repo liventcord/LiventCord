@@ -792,11 +792,12 @@ function createFriendCard(
   isPending: boolean,
   isFriendsRequestToUser: boolean
 ) {
+  const foundFriend = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
+  if(foundFriend) return;
   const friendCard = createEl("div", { className: "friend-card", id: userId });
   const img = createEl("img") as HTMLImageElement;
   setProfilePic(img, userId);
   img.classList.add("friend-image");
-  img.style.transition = "border-radius 0.5s ease-out";
 
   const bubble = createFriendCardBubble(status);
   bubble.style.transition = "display 0.5s ease-in-out";

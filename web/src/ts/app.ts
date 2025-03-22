@@ -72,6 +72,7 @@ import { apiClient, EventType } from "./api.ts";
 import {
   toggleUsersList,
   userList,
+  activityList,
   setUserListLine,
   setUsersList,
   updateDmFriendList
@@ -160,6 +161,7 @@ export function initializeApp() {
   initializeProfile();
   initialiseAudio();
   initializeCookies();
+  handleResize();
   isDomLoaded = true;
 }
 
@@ -547,7 +549,6 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     setIsOnMe(true);
     setIsOnGuild(false);
     updateFriendMenu();
-    handleResize();
   }
   selectGuildList("main-logo");
 
@@ -629,6 +630,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
+    disableElement(activityList)
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");

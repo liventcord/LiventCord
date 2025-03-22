@@ -101,6 +101,7 @@ export function handleResize() {
     } else {
       setUserListLine();
     }
+    disableElement(activityList);
   } else {
     if (isOnMe) {
       disableElement(userList);
