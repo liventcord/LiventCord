@@ -107,7 +107,7 @@ function createTooltip(
   tooltip.style.pointerEvents = "none";
 }
 
-export function showHoverTooltip(target: HTMLElement, tooltipText: string) {
+function showHoverTooltip(target: HTMLElement, tooltipText: string) {
   createTooltip(target, tooltipText);
   isHoverTooltip = true;
 }

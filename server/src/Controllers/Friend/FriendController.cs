@@ -29,11 +29,13 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly RedisEventEmitter _redisEventEmitter;
+        private readonly FriendDmService _friendDmService;
 
-        public FriendController(AppDbContext dbContext, RedisEventEmitter redisEventEmitter)
+        public FriendController(AppDbContext dbContext, RedisEventEmitter redisEventEmitter, FriendDmService friendDmService)
         {
             _dbContext = dbContext;
             _redisEventEmitter = redisEventEmitter;
+            _friendDmService = friendDmService;
         }
 
         [HttpGet]
@@ -42,7 +44,7 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(UserId))
                 return Unauthorized("User ID is missing.");
 
-            var friends = await GetFriendsStatus(UserId);
+            var friends = await GetFriends(UserId);
             return Ok(friends);
         }
 
@@ -140,7 +142,8 @@ namespace LiventCord.Controllers
         [HttpPut("accept/{friendId}")]
         public async Task<IActionResult> AcceptFriendRequest([FromRoute][UserIdLengthValidation] string friendId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var userId = UserId!;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             var friend = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == friendId);
 
             if (user == null)
@@ -149,7 +152,7 @@ namespace LiventCord.Controllers
             if (friend == null)
                 return NotFound();
 
-            var userPublicData = await GetFriendWithStatus(friend.UserId, UserId!, false);
+            var userPublicData = await GetFriendWithStatus(friend.UserId, userId!, false);
 
             var friendship = await _dbContext
                 .Friends.FirstOrDefaultAsync(f => f.UserId == friendId && f.FriendId == UserId && f.Status == FriendStatus.Pending);
@@ -167,7 +170,7 @@ namespace LiventCord.Controllers
             friendship.Status = FriendStatus.Accepted;
             var reverseFriendship = new Friend
             {
-                UserId = UserId!,
+                UserId = userId!,
                 FriendId = friendId,
                 Status = FriendStatus.Accepted,
             };
@@ -175,7 +178,9 @@ namespace LiventCord.Controllers
             _dbContext.Friends.Add(reverseFriendship);
             await _dbContext.SaveChangesAsync();
 
-            var friendPublicData = await GetFriendWithStatus(UserId!, friend.UserId, false);
+            await _friendDmService.AddDmBetweenUsers(userId, friendId);
+
+            var friendPublicData = await GetFriendWithStatus(userId!, friend.UserId, false);
 
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ACCEPT_FRIEND,
@@ -280,7 +285,7 @@ namespace LiventCord.Controllers
 
 
         [NonAction]
-        public async Task<PublicUserWithStatus?> GetFriendWithStatus(string userId, string friendId, bool isSender)
+        public async Task<PublicUserWithFriendData?> GetFriendWithStatus(string userId, string friendId, bool isSender)
         {
             var friendshipQuery = _dbContext.Friends
                 .Where(f => (f.UserId == userId && f.FriendId == friendId) ||
@@ -288,14 +293,13 @@ namespace LiventCord.Controllers
 
             var user = await _dbContext.Users
                 .Where(u => u.UserId == friendId)
-                .Select(user => new PublicUserWithStatus
+                .Select(user => new PublicUserWithFriendData
                 {
                     UserId = user.UserId,
                     NickName = user.Nickname,
                     Discriminator = user.Discriminator,
                     CreatedAt = user.CreatedAt,
                     Description = user.Description,
-                    Location = user.Location,
                     SocialMediaLinks = user.SocialMediaLinks,
                     FriendshipStatus = friendshipQuery.Select(f => f.Status).FirstOrDefault(),
                     IsPending = true,
@@ -310,7 +314,7 @@ namespace LiventCord.Controllers
 
 
         [NonAction]
-        public async Task<List<PublicUserWithStatus?>> GetFriendsStatus(string userId)
+        public async Task<List<PublicUserWithFriendData?>> GetFriends(string userId)
         {
             var friends = await _dbContext
                 .Friends.Where(f =>
@@ -328,14 +332,13 @@ namespace LiventCord.Controllers
                     _dbContext.Users,
                     f => f.Friend,
                     user => user.UserId,
-                    (f, user) => new PublicUserWithStatus
+                    (f, user) => new PublicUserWithFriendData
                     {
                         UserId = user.UserId,
                         NickName = user.Nickname,
                         Discriminator = user.Discriminator,
                         CreatedAt = user.CreatedAt,
                         Description = user.Description,
-                        Location = user.Location,
                         SocialMediaLinks = user.SocialMediaLinks,
                         FriendshipStatus = f.Status,
                         IsPending = f.Status == FriendStatus.Pending,
@@ -356,8 +359,8 @@ namespace LiventCord.Controllers
 
 
     }
-
 }
+
 
 public class SendFriendRequest
 {

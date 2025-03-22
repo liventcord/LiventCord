@@ -470,7 +470,7 @@
   height: 27%;
   top: 13.4%;
   display: flex;
-  border-radius: 15px 15px 0 0;
+  border-radius: 15px 15px 5 5;
   align-items: right;
   justify-content: right;
   width: 100%;
@@ -566,4 +566,35 @@
   padding: 5px;
   border-radius: 5px;
   pointer-events: none;
+}
+
+.profile-section-button {
+  background-color: transparent;
+  border: none;
+  padding: 5px;
+  margin: 5px;
+  color: lightgray;
+  font-size: 0.8em;
+}
+.profile-sections-line {
+  border: none;
+  width: 100%;
+  border-top: 1px solid #37393f;
+  transform: rotate(180deg);
+  z-index: 1;
+}
+.profile-sections-line-button {
+  border: none;
+  width: 1px;
+  border-top: 1px solid #37393f;
+  transform: rotate(180deg);
+  z-index: 1;
+}
+.profile-section-button .selected {
+  border-top: 1px solid white !important;
+}
+
+.profile-content {
+  font-size: 0.8em;
+  margin-left: 15px;
 }

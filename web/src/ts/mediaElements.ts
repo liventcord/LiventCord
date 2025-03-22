@@ -75,10 +75,10 @@ const maxHeight = 384;
 
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
+const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
+const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 
-const IgnoreProxies = ["i.redd.it"];
-
-export function createTenorElement(
+function createTenorElement(
   msgContentElement: HTMLElement,
   inputText: string,
   url: string
@@ -86,8 +86,7 @@ export function createTenorElement(
   let tenorURL = "";
   try {
     const parsedUrl = new URL(url);
-    const allowedHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
-    if (allowedHosts.includes(parsedUrl.host)) {
+    if (tenorHosts.includes(parsedUrl.host)) {
       tenorURL =
         parsedUrl.host === "tenor.com" && !url.endsWith(".gif")
           ? `${url}.gif`
@@ -167,7 +166,7 @@ function preloadImage(src: string): Promise<string> {
   });
 }
 
-export function createImageElement(
+function createImageElement(
   inputText: string,
   urlSrc: string
 ): HTMLImageElement {
@@ -195,14 +194,14 @@ export function createImageElement(
   return imgElement;
 }
 
-export function createAudioElement(audioURL: string) {
+function createAudioElement(audioURL: string) {
   const audioElement = createEl("audio", {
     src: DOMPurify.sanitize(audioURL),
     controls: true
   });
   return audioElement;
 }
-export async function createJsonElement(url: string) {
+async function createJsonElement(url: string) {
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -229,7 +228,7 @@ export async function createJsonElement(url: string) {
   }
 }
 
-export function createYouTubeElement(url: string): HTMLElement | undefined {
+function createYouTubeElement(url: string): HTMLElement | undefined {
   const youtubeURL = getYouTubeEmbedURL(url);
   if (!youtubeURL) return undefined;
 
@@ -251,7 +250,7 @@ export function createYouTubeElement(url: string): HTMLElement | undefined {
   return iframeElement;
 }
 
-export function createVideoElement(url: string) {
+function createVideoElement(url: string) {
   if (!isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
@@ -263,7 +262,7 @@ export function createVideoElement(url: string) {
 
   return videoElement;
 }
-export function createRegularText(content: string) {
+function createRegularText(content: string) {
   const spanElement = createEl("p", { id: "message-content-element" });
   spanElement.textContent = content;
   spanElement.style.marginLeft = "0px";
@@ -351,7 +350,7 @@ function processAttachments(attachmentUrls?: string | string[]): string[] {
   return [];
 }
 
-export function processMediaLink(
+function processMediaLink(
   link: string,
   newMessage: HTMLElement,
   messageContentElement: HTMLElement,

@@ -13,7 +13,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { handleResize } from "./ui.ts";
+import { alertUser, handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
   isAddFriendsOpen,
@@ -107,6 +107,9 @@ class FriendsCache {
       );
     }
   }
+  removeDmFriend(friendId: string) {
+    delete this.dmFriends[friendId];
+  }
 
   initialiseFriends(initData: Record<string, Friend>) {
     this.friendsCache = {};
@@ -118,9 +121,7 @@ class FriendsCache {
     updateFriendsList(Object.values(this.friendsCache));
     requestAnimationFrame(() => {
       const friends = this.cacheFriendToFriendConverter();
-      for (const friend of friends) {
-        updateUsersActivities(friend);
-      }
+      updateUsersActivities(friends);
     });
 
     UpdatePendingCounter();
@@ -209,6 +210,7 @@ class FriendsCache {
   }
 
   userExistsDm(userId: string): boolean {
+    console.log("User exists in dm: ", userId in this.dmFriends);
     return userId in this.dmFriends;
   }
 
@@ -293,7 +295,12 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
     if (currentSelectedFriendMenu === "pending") {
       removeFriendCard(friendId);
     }
+
+    handleAddDm(friendData);
   }
+}
+function handleAddDm(friendData: UserInfo) {
+  alertUser(String(friendData));
 }
 
 function handleRemoveFriendResponse(message: FriendMessage): void {
@@ -356,6 +363,12 @@ export function handleFriendEventResponse(message: FriendMessage): void {
     appendToProfileContextList(cachedFriend, message.friendId);
   }
   reCalculateFriTitle();
+}
+export function removeDm(friendId: string) {
+  apiClient.send(EventType.REMOVE_DM, { friendId });
+}
+export function addDm(friendId: string) {
+  apiClient.send(EventType.ADD_DM, { friendId });
 }
 
 interface FriendData {
@@ -447,11 +460,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
   }
 }
 
-export function handleButtonClick(
-  event: Event,
-  action: EventType,
-  friendId: string
-) {
+function handleButtonClick(event: Event, action: EventType, friendId: string) {
   event.stopPropagation();
   apiClient.send(action, { friendId });
 }
@@ -460,7 +469,7 @@ export function addFriendId(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
   createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
-export function addFriend(nickName: string, discriminator: string) {
+function addFriend(nickName: string, discriminator: string) {
   apiClient.send(EventType.ADD_FRIEND, {
     friendName: nickName,
     friendDiscriminator: discriminator
@@ -519,18 +528,6 @@ export function filterFriendsOnSearch(): void {
         friend.classList.remove("visible");
       }
     }
-  }
-}
-
-export function toggleButtonState(booleanstate: boolean) {
-  const addButton = getId("profile-add-friend-button");
-  if (!addButton) return;
-  if (booleanstate) {
-    addButton.classList.add("active");
-    addButton.classList.remove("inactive");
-  } else {
-    addButton.classList.add("inactive");
-    addButton.classList.remove("active");
   }
 }
 

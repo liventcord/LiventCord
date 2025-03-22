@@ -100,7 +100,7 @@ export function selectMember(userId: string, userNick: string) {
   chatInput.focus();
 }
 
-export function getMonthValue(query: string) {
+function getMonthValue(query: string) {
   if (query.length === 0) return ["Not Specified"];
 
   const lowerCaseQuery = query.toLowerCase();
@@ -127,10 +127,10 @@ export function getMonthValue(query: string) {
   return matchingMonths.length > 0 ? matchingMonths : ["Not Specified"];
 }
 
-export function handleUserClick(userName: string) {
+function handleUserClick(userName: string) {
   alert(`User ${userName} clicked!`);
 }
-export function filterMembers(query: string): void {
+function filterMembers(query: string): void {
   const userSection = getId("userSection");
   const mentioningSection = getId("mentioningSection");
   const channelSection = getId("channelSection");
@@ -208,7 +208,7 @@ export function filterMembers(query: string): void {
   dateSection3Content.innerHTML += `<div class="search-button">After this date: ${monthValue}</div>`;
 }
 
-export function displayDefaultContent(): void {
+function displayDefaultContent(): void {
   const userSection = getId("userSection");
   const mentioningSection = getId("mentioningSection");
   const channelSection = getId("channelSection");
@@ -260,13 +260,13 @@ export function displayDefaultContent(): void {
     '<div class="button">Before this date: Not Specified</div><div class="button">During this date: Not Specified</div><div class="button">After this date: Not Specified</div>';
 }
 
-export function onFocusInput() {
+function onFocusInput() {
   const dropdown = getId("search-dropdown") as HTMLElement;
   dropdown.classList.remove("hidden");
   channelSearchInputElement.style.width = "225px";
 }
 
-export function onBlurInput() {
+function onBlurInput() {
   const dropdown = getId("search-dropdown") as HTMLElement;
   document.addEventListener("click", (event) => {
     if (!(event.target as Element).closest(".search-container")) {
@@ -274,7 +274,7 @@ export function onBlurInput() {
     }
   });
 }
-export function onInputSearchInput() {
+function onInputSearchInput() {
   const dropdown = getId("search-dropdown") as HTMLElement;
   dropdown.classList.remove("hidden");
   channelSearchInputElement.style.width = "225px";

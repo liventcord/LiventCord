@@ -21,6 +21,8 @@ builder.Services.AddSingleton<BaseRedisEmitter>();
 builder.Services.AddScoped<RedisEventEmitter>();
 
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
+builder.Services.AddScoped<DmController>();
+builder.Services.AddScoped<FriendDmService>();
 builder.Services.AddScoped<FriendController>();
 builder.Services.AddScoped<TypingController>();
 builder.Services.AddScoped<MessageController>();

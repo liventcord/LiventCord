@@ -1,6 +1,6 @@
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId, updateUserOnlineStatus } from "./user.ts";
+import { currentUserId } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
@@ -27,10 +27,11 @@ import {
   MessageResponse
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
-import { playAudio, VoiceHandler, clearVoiceChannel } from "./audio.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
+import { playAudio, clearVoiceChannel } from "./audio.ts";
+import { userStatus } from "./app.ts";
 
 export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -86,6 +87,11 @@ class WebSocketClient {
   }
 
   getUserStatus(user_ids: string[]) {
+    if (
+      user_ids.length < 1 ||
+      user_ids.some((id) => typeof id !== "string" || id.trim() === "")
+    )
+      return;
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.pendingRequests.push(() => this.getUserStatus(user_ids));
       return;
@@ -98,9 +104,9 @@ class WebSocketClient {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
       this.startHeartbeat();
-      this.send(SocketEvent.UPDATE_USER_STATUS, { status: "online" });
       this.getUserStatus([currentUserId]);
       this.processPendingRequests();
+      authCookie = "";
     };
 
     this.socket.onmessage = (event) => {
@@ -197,6 +203,16 @@ class WebSocketClient {
     this.eventHandlers[eventType].push(handler);
   }
 
+  off(eventType: SocketEventType, handler: (...args: any[]) => any) {
+    const handlers = this.eventHandlers[eventType];
+    if (!handlers) return;
+
+    const index = handlers.indexOf(handler);
+    if (index !== -1) {
+      handlers.splice(index, 1);
+    }
+  }
+
   send(event: SocketEventType, data: any) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       this.pendingRequests.push(() => this.send(event, data));
@@ -207,7 +223,6 @@ class WebSocketClient {
       payload: data
     };
     this.socket.send(JSON.stringify(eventMessage));
-    console.error(this.pendingRequests);
   }
 
   close() {
@@ -221,11 +236,13 @@ class WebSocketClient {
     }
   }
 }
-
+let authCookie: string;
 async function getAuthCookie(): Promise<string> {
+  if (authCookie) return encodeURIComponent(authCookie);
   const response = await fetch("/auth/ws-token");
   if (!response.ok) throw new Error("Failed to retrieve cookie");
   const data = await response.json();
+  authCookie = data.cookieValue;
   return encodeURIComponent(data.cookieValue);
 }
 
@@ -263,7 +280,7 @@ interface DMMessageData {
   message: Message[];
   channelId: string;
 }
-export const handleGuildMessage = (data: GuildMessageData) => {
+const handleGuildMessage = (data: GuildMessageData) => {
   const messageData: MessageResponse = {
     guildId: data.guildId,
     isOldMessages: false,
@@ -274,7 +291,7 @@ export const handleGuildMessage = (data: GuildMessageData) => {
   handleMessage(messageData);
 };
 
-export const handleDmMessage = (data: DMMessageData) => {
+const handleDmMessage = (data: DMMessageData) => {
   const messageData: MessageResponse = {
     isOldMessages: false,
     messages: data.message,
@@ -296,9 +313,9 @@ socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
 });
 
 socketClient.on(SocketEvent.GET_USER_STATUS, (data: UserStatusData[]) => {
-  data.forEach((userStatus) => {
-    const userId = userStatus.userId;
-    updateUserOnlineStatus(userId, userStatus.status);
+  data.forEach((_userStatus) => {
+    const userId = _userStatus.userId;
+    userStatus.updateUserOnlineStatus(userId, _userStatus.status);
   });
 });
 
@@ -320,10 +337,12 @@ interface DeleteMessageEmit {
 
 interface DeleteMessageResponse {
   messageId: string;
+  channelId: string;
 }
 
 function processDeleteMessage(
   msgDate: string,
+  channelId: string,
   messageId: string,
   isDm: boolean
 ) {
@@ -331,17 +350,8 @@ function processDeleteMessage(
     `[data-message-id="${messageId}"]`
   ) as HTMLElement;
   const msgDateElement = messageElement?.dataset.date;
-  deleteLocalMessage(
-    messageId,
-    currentGuildId,
-    guildCache.currentChannelId,
-    isDm
-  );
-  cacheInterface.removeMessage(
-    messageId,
-    guildCache.currentChannelId,
-    currentGuildId
-  );
+  deleteLocalMessage(messageId, currentGuildId, channelId, isDm);
+  cacheInterface.removeMessage(messageId, channelId, currentGuildId);
 
   if (msgDateElement && typeof lastMessageDate === "number") {
     const msgDateTimestamp = new Date(msgDateElement).setHours(0, 0, 0, 0);
@@ -361,14 +371,15 @@ export function handleDeleteMessageResponse(
   data: DeleteMessageResponse,
   isDm: boolean
 ) {
-  processDeleteMessage(data.messageId, data.messageId, isDm);
+  console.log(data);
+  processDeleteMessage(data.messageId, data.channelId, data.messageId, isDm);
 }
 
 export function handleDeleteMessageEmit(
   data: DeleteMessageEmit,
   isDm: boolean
 ) {
-  processDeleteMessage(data.msgDate, data.messageId, isDm);
+  processDeleteMessage(data.msgDate, data.channelId, data.messageId, isDm);
 }
 
 socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
@@ -447,8 +458,6 @@ socketClient.on(
 interface IncomingAudioResponse {
   buffer: ArrayBuffer;
 }
-
-export const voiceHandler = new VoiceHandler();
 
 //socketClient.on(
 //  SocketEvent.INCOMING_AUDIO,

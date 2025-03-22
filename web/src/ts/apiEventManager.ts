@@ -34,7 +34,11 @@ import { Permission, permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
-import { handleDeleteMessageEmit } from "./socketEvents.ts";
+import {
+  handleDeleteMessageEmit,
+  handleDeleteMessageResponse
+} from "./socketEvents.ts";
+import { appendToDmList, removeFromDmList } from "./friendui.ts";
 
 interface JoinGuildData {
   success: boolean;
@@ -136,6 +140,10 @@ apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data) => {
   handleDeleteMessageEmit(data, false);
 });
 
+apiClient.on(EventType.DELETE_MESSAGE_DM, (data) => {
+  handleDeleteMessageResponse(data, true);
+});
+
 interface BulkReplies {
   replies: Message[];
 }
@@ -161,26 +169,30 @@ apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
 });
 
 interface GuildMembersResponse {
-  members: Member[];
+  members: UserInfo[];
   guildId: string;
 }
-apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
-  const members = data.members;
-  const guildId = data.guildId;
+function userInfosToMembers(userInfos: UserInfo[]): Member[] {
+  return userInfos.map((userInfo) => {
+    return {
+      userId: String(userInfo.userId),
+      nickName: userInfo.nickName || "",
+      status: userInfo.status ?? "offline"
+    } as Member;
+  });
+}
 
-  if (!data || !members || !guildId) {
+apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
+  if (!data || !data.members || !data.guildId) {
     console.error("Malformed members data: ", data);
     return;
   }
 
-  const userInfoList: UserInfo[] = members.map((member) => ({
-    userId: member.userId,
-    nickName: member.nickName,
-    discriminator: "0000"
-  }));
+  const userInfos = data.members;
+  const guildId = data.guildId;
 
-  cacheInterface.updateMembers(guildId, members);
-  updateMemberList(userInfoList);
+  cacheInterface.updateMembers(guildId, userInfosToMembers(userInfos));
+  updateMemberList(userInfos);
 });
 
 interface MessageResponse {
@@ -301,4 +313,12 @@ apiClient.on(EventType.REMOVE_FRIEND, function (message) {
 
 apiClient.on(EventType.DENY_FRIEND, function (message) {
   handleFriendEventResponse(message);
+});
+
+apiClient.on(EventType.ADD_DM, function (data) {
+  appendToDmList(data);
+});
+
+apiClient.on(EventType.REMOVE_DM, function (data) {
+  removeFromDmList(data.friendId);
 });

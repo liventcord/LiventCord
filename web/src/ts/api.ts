@@ -36,6 +36,7 @@ export const EventType = Object.freeze({
   ADD_FRIEND_ID: "ADD_FRIEND_ID",
   CHANGE_NICK: "CHANGE_NICK",
   ADD_DM: "ADD_DM",
+  REMOVE_DM: "REMOVE_DM",
   LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
   JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
   GET_BULK_REPLY: "GET_BULK_REPLY",
@@ -50,7 +51,7 @@ const friendEvents: EventType[] = Object.values(EventType).filter((event) =>
   event.toLowerCase().includes("friend".toLowerCase())
 ) as EventType[];
 
-export const HttpMethod = Object.freeze({
+const HttpMethod = Object.freeze({
   POST: "POST",
   GET: "GET",
   PUT: "PUT",
@@ -89,6 +90,7 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   ACCEPT_FRIEND: HttpMethod.PUT,
   CHANGE_NICK: HttpMethod.PUT,
   ADD_DM: HttpMethod.POST,
+  REMOVE_DM: HttpMethod.DELETE,
   GET_BULK_REPLY: HttpMethod.GET,
   UPDATE_GUILD_NAME: HttpMethod.PUT,
   DELETE_CHANNEL: HttpMethod.DELETE,
@@ -138,6 +140,7 @@ const EventUrlMap: Record<EventType, string> = {
   REMOVE_FRIEND: "/friends/{friendId}",
 
   ADD_DM: "/dm/{friendId}",
+  REMOVE_DM: "/dm/{friendId}",
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
   SEND_MESSAGE_DM: "/dms/channels/{channelId}/messages",
   DELETE_MESSAGE_DM: "/dms/channels/{channelId}/messages/{messageId}",

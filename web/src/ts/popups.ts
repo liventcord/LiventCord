@@ -1,11 +1,21 @@
 import Croppie from "croppie";
 import "croppie/croppie.css";
 
-import { cacheInterface, guildCache } from "./cache.ts";
-import { currentGuildId, createGuild, joinToGuild } from "./guild.ts";
+import { cacheInterface, guildCache, sharedGuildsCache } from "./cache.ts";
+import {
+  currentGuildId,
+  createGuild,
+  joinToGuild,
+  createGuildListItem,
+  loadGuild
+} from "./guild.ts";
 import { getId, getAverageRGB, createEl } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import { createChannel, currentChannelName } from "./channels.ts";
+import {
+  createChannel,
+  currentChannelName,
+  getRootChannel
+} from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -34,15 +44,22 @@ const hashText =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class="foreground_b545d5"></path></svg>';
 const voiceText =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z" class="foreground_b545d5"></path><path fill="currentColor" d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z" class="foreground_b545d5"></path></svg>';
-const addFriSvg = `
+const addFriendSvg = `
 <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 24 24">
     <path d="M19 14a1 1 0 0 1 1 1v3h3a1 1 0 0 1 0 2h-3v3a1 1 0 0 1-2 0v-3h-3a1 1 0 1 1 0-2h3v-3a1 1 0 0 1 1-1Z" fill="currentColor"></path>
     <path d="M16.83 12.93c.26-.27.26-.75-.08-.92A9.5 9.5 0 0 0 12.47 11h-.94A9.53 9.53 0 0 0 2 20.53c0 .81.66 1.47 1.47 1.47h.22c.24 0 .44-.17.5-.4.29-1.12.84-2.17 1.32-2.91.14-.21.43-.1.4.15l-.26 2.61c-.02.3.2.55.5.55h7.64c.12 0 .17-.31.06-.36C12.82 21.14 12 20.22 12 19a3 3 0 0 1 3-3h.5a.5.5 0 0 0 .5-.5V15c0-.8.31-1.53.83-2.07ZM12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" fill="white"></path>
 </svg>
 `;
+const pendingFriendSvg = `
+<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM2 20.53A9.53 9.53 0 0 1 11.53 11h.94c1.28 0 2.5.25 3.61.7.41.18.36.77-.05.96a7 7 0 0 0-3.65 8.6c.11.36-.13.74-.5.74H6.15a.5.5 0 0 1-.5-.55l.27-2.6c.02-.26-.27-.37-.41-.16-.48.74-1.03 1.8-1.32 2.9a.53.53 0 0 1-.5.41h-.22C2.66 22 2 21.34 2 20.53Z" class=""></path><path fill="currentColor" fill-rule="evenodd" d="M19 24a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm1-7a1 1 0 1 0-2 0v2c0 .27.1.52.3.7l1 1a1 1 0 0 0 1.4-1.4l-.7-.71V17Z" clip-rule="evenodd" class=""></path></svg>
+`;
+
 const sendMsgIconSvg = `
             <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>
         `;
+
+export let currentProfileImg: HTMLElement;
+
 const radioStates = new WeakMap<HTMLElement, boolean>();
 
 function toggleRadio(radio: HTMLElement, newValue: boolean) {
@@ -291,63 +308,103 @@ export function constructUserData(userId: string): UserInfo {
   };
 }
 
-export function drawProfilePopId(id: string) {
+export async function drawProfilePopId(
+  id: string,
+  shouldDrawPanel: boolean = false
+) {
   const userData: UserInfo = constructUserData(id);
-  drawProfilePop(userData);
+  return await drawProfilePop(userData, shouldDrawPanel);
 }
-export async function drawProfilePop(userData: UserInfo) {
+let currentProfileDisplay: HTMLElement;
+function closeCurrentProfileDisplay() {
+  closePopUp(
+    currentProfileDisplay,
+    currentProfileDisplay.firstChild as HTMLElement
+  );
+}
+export async function drawProfilePop(
+  userData: UserInfo,
+  shouldDrawPanel?: boolean
+): Promise<HTMLElement | null> {
   if (!userData) {
     console.error("Null user data requested profile draw", userData);
-    return;
+    return null;
   }
-  const profileContainer = createEl("div", { id: "profile-container" });
 
-  const discriminator = userData.discriminator;
+  const profileContainer = createProfileContainer(userData);
+  const profileImg = createProfileImage(userData);
+  const popTopContainer = createPopTopContainer(
+    userData,
+    profileImg,
+    !shouldDrawPanel
+  );
   const userId = userData.userId;
-  const _isOnline = await userManager.isOnline(userId);
-  const description = userData.description;
+  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userId);
+
+  const popBottomContainer = !shouldDrawPanel
+    ? createPopBottomContainer(
+        userData.description,
+        sharedGuilds,
+        null,
+        userId,
+        userData.createdAt
+      )
+    : null;
+
+  profileContainer.appendChild(profileImg);
+  profileContainer.appendChild(popTopContainer);
+  if (popBottomContainer) profileContainer.appendChild(popBottomContainer);
+
+  const status = await userManager.getStatusString(userId);
+  const bubble = createBubble(status);
+
+  const contentElements = [
+    popTopContainer,
+    profileImg,
+    bubble,
+    profileContainer,
+    ...(popBottomContainer ? [popBottomContainer] : [])
+  ];
+
+  const createdPop = createPopUp({
+    contentElements,
+    id: "profilePopContainer",
+    shouldDrawPanel
+  });
+  if (!shouldDrawPanel) {
+    currentProfileDisplay = createdPop;
+  }
+
+  appendToProfileContextList(userData, userId);
+  return createdPop;
+}
+
+function createProfileContainer(userData: UserInfo): HTMLElement {
+  const container = createEl("div", { id: "profile-container" });
 
   const profileTitle = createEl("p", {
     id: "profile-title",
-    textContent: userManager.getUserNick(userId)
+    textContent: userManager.getUserNick(userData.userId)
   });
   const profileDiscriminator = createEl("p", {
     id: "profile-discriminator",
-    textContent: "#" + discriminator
+    textContent: "#" + userData.discriminator
   });
-  profileContainer.appendChild(profileTitle);
-  profileContainer.appendChild(profileDiscriminator);
-  const aboutTitle = createEl("p", {
-    id: "profile-about-title",
-    textContent: translations.getTranslation("about")
-  });
-  const aboutDescription = createEl("p", {
-    id: "profile-about-description",
-    textContent: description
-  });
-  const popBottomContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "profile-popup-bottom-container"
-  });
-  popBottomContainer.appendChild(aboutTitle);
-  popBottomContainer.appendChild(aboutDescription);
-  const popTopContainer = createEl("div", {
-    className: "popup-bottom-container",
-    id: "profile-popup-top-container"
-  });
-  const profileOptions = createEl("button", {
-    id: userId,
-    className: "profile-dots3"
-  });
-  const profileOptionsText = createEl("p", {
-    className: "profile-dots3-text",
-    textContent: "⋯"
-  });
-  profileOptions.appendChild(profileOptionsText);
-  popTopContainer.appendChild(profileOptions);
+
+  container.appendChild(profileTitle);
+  container.appendChild(profileDiscriminator);
+
+  const profileOptionsContainer = createProfileOptionsContainer(userData);
+
+  container.appendChild(profileOptionsContainer);
+
+  return container;
+}
+function createProfileImage(userData: UserInfo): HTMLImageElement {
   const profileImg = createEl("img", {
-    id: "profile-display"
+    className: "profile-display"
   }) as HTMLImageElement;
+  currentProfileImg = profileImg;
   profileImg.addEventListener("mouseover", function () {
     this.style.borderRadius = "0px";
   });
@@ -355,84 +412,314 @@ export async function drawProfilePop(userData: UserInfo) {
     this.style.borderRadius = "50%";
   });
 
-  const profileOptionsContainer = createEl("div", {
-    className: "profile-options-container"
+  setProfilePic(profileImg, userData.userId);
+
+  return profileImg;
+}
+
+function createPopTopContainer(
+  userData: UserInfo,
+  profileImg: HTMLImageElement,
+  shouldAddOuterHtml: boolean = true
+): HTMLElement {
+  const topContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "profile-popup-top-container"
   });
+  if (shouldAddOuterHtml) {
+    const profileOptions = createProfileOptionsButton(userData);
+    topContainer.appendChild(profileOptions);
 
-  if (userId !== currentUserId) {
-    if (!friendsCache.isFriend(userId)) {
-      const addFriendBtn = createEl("button", {
-        id: "profile-add-friend-button"
-      });
-      addFriendBtn.innerHTML = ` <div class="icon-container">${addFriSvg}</div> ${translations.getTranslation(
-        "open-friends-button"
-      )}`;
-
-      addFriendBtn.addEventListener("click", () => {
-        addFriendId(userId);
-      });
-      profileOptionsContainer.appendChild(addFriendBtn);
-    }
-    const sendMsgBtn = createEl("button", {
-      className: "profile-send-msg-button"
-    });
-    const sendMsgIco = createEl("div", {
-      innerHTML: sendMsgIconSvg
-    });
-
-    sendMsgBtn.appendChild(sendMsgIco);
-
-    sendMsgBtn.addEventListener("click", () => {
-      loadDmHome();
-      openDm(userId);
-      const profilePopContainer = getId("profilePopContainer");
-      if (profilePopContainer) {
-        (profilePopContainer.parentNode as HTMLElement).remove();
-      }
-    });
-    profileOptionsContainer.appendChild(sendMsgBtn);
+    profileOptions.addEventListener("click", (event) =>
+      handleContextMenuClick(userData.userId, event)
+    );
   }
 
-  profileContainer.appendChild(profileOptionsContainer);
-  setProfilePic(profileImg, userId);
-
-  const bubble = createBubble(_isOnline ?? false, true);
-  profileImg.appendChild(bubble);
-
-  profileOptions.addEventListener("click", function (event) {
-    if (contextList[userId]) {
-      showContextMenu(event.pageX, event.pageY, contextList[userId]);
-    } else {
-      console.warn(`No context found for userId: ${userId}`);
-    }
-  });
   profileImg.onload = function () {
-    if (popTopContainer) {
-      popTopContainer.style.backgroundColor = getAverageRGB(profileImg);
+    if (topContainer) {
+      topContainer.style.backgroundColor = getAverageRGB(profileImg);
     }
   };
 
-  const contentElements = [
-    popTopContainer,
-    profileImg,
-    profileContainer,
-    popBottomContainer
-  ];
-  createPopUp({
-    contentElements,
-    id: "profilePopContainer"
+  return topContainer;
+}
+
+function createProfileOptionsButton(userData: UserInfo): HTMLElement {
+  const profileOptions = createEl("button", {
+    id: userData.userId,
+    className: "profile-dots3"
   });
-  appendToProfileContextList(userData, userId);
+  const profileOptionsText = createEl("p", {
+    className: "profile-dots3-text",
+    textContent: "⋯"
+  });
+
+  profileOptions.appendChild(profileOptionsText);
+
+  return profileOptions;
+}
+function createGuildTextElement(guildName: string): HTMLElement {
+  return createEl("p", {
+    textContent: guildName,
+    style: {
+      marginLeft: "20px"
+    }
+  });
+}
+const SECTION_TYPES = {
+  ABOUT: "about",
+  SHARED_GUILDS: "sharedGuilds",
+  SHARED_FRIENDS: "sharedFriends"
+};
+
+function getTranslation(
+  name: string,
+  friendsCount?: number,
+  guildsCount?: number
+) {
+  switch (name) {
+    case SECTION_TYPES.SHARED_FRIENDS:
+      return translations.getSharedFriendsPlaceholder(friendsCount ?? 0);
+    case SECTION_TYPES.SHARED_GUILDS:
+      return translations.getSharedGuildsPlaceholder(guildsCount ?? 0);
+    default:
+      return translations.getTranslation(name);
+  }
+}
+
+function createPopBottomContainer(
+  description: string | undefined,
+  sharedGuilds: string[],
+  sharedFriends: string[] | null,
+  userId: string,
+  memberSince?: string
+) {
+  const bottomContainer = createEl("div", {
+    className: "popup-bottom-container",
+    id: "profile-popup-bottom-container"
+  });
+
+  const sectionsBar = createEl("div", { className: "profile-sections-bar" });
+  const sectionsLine = createEl("hr", { className: "profile-sections-line" });
+
+  const sectionsData: {
+    name: string;
+    content: HTMLElement;
+    button?: HTMLElement;
+    line?: HTMLElement;
+  }[] = [
+    {
+      name: SECTION_TYPES.ABOUT,
+      content: createEl("div", {
+        innerHTML: `
+          <p id="profile-about-description">${description ?? ""}</p>
+          ${
+            memberSince
+              ? `<p>${translations.getTranslation(
+                  "member-since"
+                )}:</p><p id="profile-member-since">${new Date(
+                  memberSince
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+                })}</p>`
+              : ""
+          }
+        `
+      })
+    }
+  ];
+
+  if (userId !== currentUserId) {
+    const sharedGuildsSection = createEl("div", {
+      className: "shared-guilds-content",
+      style: "display: none; overflow-y: auto; max-height: 200px;"
+    });
+    const guildsList = createEl("ul", {
+      className: "guilds-list shared-guilds-list",
+      id: "guilds-list"
+    });
+    sharedGuilds.forEach((guildId: string) => {
+      const rootChannel = cacheInterface.getRootChannel(guildId) as string;
+      const guildName = cacheInterface.getGuildName(guildId) as string;
+      const isUploaded = cacheInterface.getIsUploaded(guildId) as boolean;
+      const guildImage = createGuildListItem(
+        guildId,
+        rootChannel,
+        guildName,
+        isUploaded,
+        false
+      );
+      const guildText = createGuildTextElement(guildName);
+      guildImage.appendChild(guildText);
+      guildsList.appendChild(guildImage);
+
+      guildsList.addEventListener("click", () => {
+        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
+        closeCurrentProfileDisplay();
+      });
+    });
+    sharedGuildsSection.appendChild(guildsList);
+    sectionsData.push({
+      name: SECTION_TYPES.SHARED_GUILDS,
+      content: sharedGuildsSection
+    });
+
+    const sharedFriendsSection = createEl("div", {
+      className: "shared-friends-content",
+      style: "display: none; overflow-y: auto; max-height: 200px;"
+    });
+    sharedFriendsSection.innerHTML = sharedFriends
+      ? sharedFriends.map((friend: string) => `<p>${friend}</p>`).join("")
+      : "";
+    sectionsData.push({
+      name: SECTION_TYPES.SHARED_FRIENDS,
+      content: sharedFriendsSection
+    });
+  }
+
+  const contentContainer = createEl("div", { className: "profile-content" });
+  sectionsData.forEach((section) =>
+    contentContainer.appendChild(section.content)
+  );
+
+  function showContent(
+    content: HTMLElement,
+    button?: HTMLElement,
+    line?: HTMLElement
+  ) {
+    sectionsData.forEach((sec) => {
+      sec.content.style.display = "none";
+      if (sec.line) {
+        sec.line.classList.remove("selected");
+      }
+    });
+    content.style.display = "block";
+    if (line) {
+      line.classList.add("selected");
+    }
+  }
+
+  sectionsData.forEach((section) => {
+    const sectionButton = createEl("button", {
+      className: "profile-section-button",
+      textContent: getTranslation(
+        section.name,
+        section.name === SECTION_TYPES.SHARED_FRIENDS
+          ? sharedFriends?.length
+          : undefined,
+        section.name === SECTION_TYPES.SHARED_GUILDS
+          ? sharedGuilds?.length
+          : undefined
+      )
+    });
+    const sectionLine = createEl("hr", {
+      className: "profile-sections-line profile-section-line-button"
+    });
+    sectionButton.appendChild(sectionLine);
+    sectionButton.addEventListener("click", () =>
+      showContent(section.content, sectionButton, sectionLine)
+    );
+    sectionsBar.appendChild(sectionButton);
+    section.line = sectionLine;
+  });
+
+  showContent(
+    sectionsData[0].content,
+    sectionsData[0].button,
+    sectionsData[0].line
+  );
+
+  bottomContainer.appendChild(sectionsBar);
+  bottomContainer.appendChild(sectionsLine);
+  bottomContainer.appendChild(contentContainer);
+  return bottomContainer;
+}
+
+function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
+  const container = createEl("div", { className: "profile-options-container" });
+
+  if (userData.userId !== currentUserId) {
+    container.appendChild(createSendMsgButton(userData));
+    if (!friendsCache.isFriend(userData.userId)) {
+      container.appendChild(createAddFriendButton(userData));
+    }
+  }
+
+  return container;
+}
+
+function createSendMsgButton(userData: UserInfo): HTMLElement {
+  const sendMsgBtn = createEl("button", {
+    className: "profile-send-msg-button"
+  });
+  const sendMsgIco = createEl("div", { innerHTML: sendMsgIconSvg });
+  sendMsgBtn.appendChild(sendMsgIco);
+
+  const messageText = createEl("span", {
+    textContent: translations.getTranslation("message")
+  });
+  sendMsgBtn.appendChild(messageText);
+
+  sendMsgBtn.addEventListener("click", () => {
+    loadDmHome();
+    openDm(userData.userId);
+    const profilePopContainer = getId("profilePopContainer");
+    if (profilePopContainer) {
+      (profilePopContainer.parentNode as HTMLElement).remove();
+    }
+  });
+
+  return sendMsgBtn;
+}
+
+function createAddFriendButton(userData: UserInfo): HTMLElement {
+  let addFriendBtn: HTMLElement;
+
+  if (friendsCache.hasRequestToFriend(userData.userId)) {
+    addFriendBtn = createEl("button", {
+      className: "profile-add-friend-button profile-add-friend-button-pending"
+    });
+    addFriendBtn.innerHTML = `<div class="icon-container">${pendingFriendSvg}</div>`;
+    addFriendBtn.addEventListener("click", () => {
+      addFriendId(userData.userId);
+      setCurrentProfilePopButtonToPending(addFriendBtn);
+    });
+  } else {
+    addFriendBtn = createEl("button", {
+      className: "profile-add-friend-button"
+    });
+    addFriendBtn.innerHTML = `<div class="icon-container">${addFriendSvg}</div> ${translations.getTranslation(
+      "open-friends-button"
+    )}`;
+    addFriendBtn.addEventListener("click", () => {
+      addFriendId(userData.userId);
+      setCurrentProfilePopButtonToPending(addFriendBtn);
+    });
+  }
+
+  return addFriendBtn;
+}
+
+function handleContextMenuClick(userId: string, event: MouseEvent): void {
+  if (contextList[userId]) {
+    showContextMenu(event.pageX, event.pageY, contextList[userId]);
+  } else {
+    console.warn(`No context found for userId: ${userId}`);
+  }
 }
 
 export function createPopUp({
   contentElements = [],
   id,
-  closeBtnId = null
+  closeBtnId = null,
+  shouldDrawPanel = false
 }: {
   contentElements?: HTMLElement[];
   id: string;
   closeBtnId?: string | null;
+  shouldDrawPanel?: boolean;
 }) {
   const popOuterParent = createEl("div", { className: "outer-parent" });
   const parentContainer = createEl("div", { className: "pop-up", id });
@@ -448,26 +735,31 @@ export function createPopUp({
     );
     parentContainer.appendChild(closeBtn);
   }
+  if (!shouldDrawPanel) {
+    let isMouseDownOnPopOuter = false;
 
-  let isMouseDownOnPopOuter = false;
+    popOuterParent.addEventListener("mousedown", function (event) {
+      if (event.target === popOuterParent) {
+        isMouseDownOnPopOuter = true;
+      }
+    });
 
-  popOuterParent.addEventListener("mousedown", function (event) {
-    if (event.target === popOuterParent) {
-      isMouseDownOnPopOuter = true;
-    }
-  });
+    popOuterParent.addEventListener("mouseup", function (event) {
+      if (isMouseDownOnPopOuter && event.target === popOuterParent) {
+        closePopUp(popOuterParent, parentContainer);
+      }
+      isMouseDownOnPopOuter = false;
+    });
 
-  popOuterParent.addEventListener("mouseup", function (event) {
-    if (isMouseDownOnPopOuter && event.target === popOuterParent) {
-      closePopUp(popOuterParent, parentContainer);
-    }
-    isMouseDownOnPopOuter = false;
-  });
+    popOuterParent.appendChild(parentContainer);
+    document.body.appendChild(popOuterParent);
+    return popOuterParent;
+  }
 
-  popOuterParent.appendChild(parentContainer);
-  document.body.appendChild(popOuterParent);
-  return popOuterParent;
+  document.body.appendChild(parentContainer);
+  return parentContainer;
 }
+
 export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
@@ -856,7 +1148,7 @@ function changePopUpToGuildCreation(
   );
 }
 
-export function ChangePopUpToGuildJoining(
+function ChangePopUpToGuildJoining(
   newPopParent: HTMLElement,
   popButtonContainer: HTMLElement,
   newPopContent: HTMLElement,
@@ -1072,4 +1364,15 @@ export function createCropPop(
   } else {
     console.error("Slider wrap element not found.");
   }
+}
+
+function setCurrentProfilePopButtonToPending(addFriendBtn: HTMLElement) {
+  addFriendBtn.classList.add("profile-add-friend-button-pending");
+  addFriendBtn.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      node.textContent = "";
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      (node as HTMLElement).innerHTML = pendingFriendSvg;
+    }
+  });
 }

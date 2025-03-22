@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
 type EventMessage struct {
@@ -21,8 +22,8 @@ const (
 )
 
 type UserStatusResponse struct {
-	UserId string     `json:"userId"`
-	Status UserStatus `json:"status"`
+	UserId             string `json:"userId"`
+	ConnectivityStatus string `json:"status"`
 }
 
 type Hub struct {

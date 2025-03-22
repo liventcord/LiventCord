@@ -96,10 +96,10 @@ export function createFireWorks() {
   return;
 }
 
-export function enableParty() {
+function enableParty() {
   enableBorderMovement();
 }
 
-export function disableParty() {
+function disableParty() {
   stopAudioAnalysis();
 }

@@ -11,8 +11,10 @@
     "MARK_AS_READ": "Okundu olarak işaretle",
     "COPY_LINK": "Bağlantıyı Kopyala",
     "MUTE_CHANNEL": "Kanalı Sessize Al",
+    "MUTE_GUILD": "Sunucuyu Sustur",
     "NOTIFY_SETTINGS": "Bildirim Ayarları",
     "EDIT_CHANNEL": "Kanalı Düzenle",
+    "CREATE_CHANNEL": "Kanal oluştur",
     "DELETE_CHANNEL": "Kanalı Sil",
     "OPEN_PROFILE": "Profil",
     "MUTE_USER": "Sustur",
@@ -68,7 +70,9 @@
     "avatar-upload-size-error-message": "Avatar boyutu {{avatarLimit}}MB'den küçük olmalı!",
     "attachment-upload-size-error-message": "Ek dosya boyutu {{attachmentLimit}}MB'den küçük olmalı!",
     "readen-chat": "{{date}}'da {{time}}'den beri {{count}}+ yeni mesaj",
-    "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!"
+    "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!",
+    "shared-guilds": "{{count}} Ortak Sunucu",
+    "shared-friends": "{{count}} Ortak Arkadaş"
   },
   "settingTranslations": {
     "en": "İngilizce",
@@ -204,7 +208,11 @@
     "private-channel-description": "Sadece seçilen üyeler ve roller bu kanalı görüntüleyebilir.",
     "click-to-attachment": "Eki görüntülemek için tıkla",
     "more": "Daha fazla",
-    "deny": "Reddet"
+    "deny": "Reddet",
+    "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?",
+    "message": "Mesaj",
+    "member-since": "Şu Tarihten Beri Üye",
+    "edit-profile": "Profili düzenle"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
@@ -220,6 +228,7 @@
     "tb-showprofile": "Kullanıcı Profilini Göster",
     "more": "Daha fazla",
     "create-guild-button": "Bir sunucu ekle",
-    "main-logo": "Direkt Mesajlar"
+    "main-logo": "Direkt Mesajlar",
+    "profile-add-friend-button-pending": "Giden Arkadaş İsteği"
   }
 }

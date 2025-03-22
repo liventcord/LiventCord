@@ -1,13 +1,7 @@
-import {
-  selfDiscriminator,
-  selfName,
-  selfStatus,
-  updateSelfProfile
-} from "./avatar.ts";
-import { initialState } from "./app.ts";
-import { translations } from "./translations.ts";
-import { getId } from "./utils.ts";
-import { socketClient } from "./socketEvents.ts";
+import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
+import { initialState, userStatus } from "./app.ts";
+import { socketClient, SocketEvent } from "./socketEvents.ts";
+import { updateStatusInMembersList } from "./userList.ts";
 
 export interface Member {
   userId: string;
@@ -43,9 +37,8 @@ export function setLastTopSenderId(id: string) {
   lastTopSenderId = id;
 }
 class UserManager {
-  private selfOnline = false;
   private userNames: { [userId: string]: UserInfo } = {};
-
+  private isSelfOnline: boolean = false;
   private statusCache: Record<string, Promise<boolean> | boolean> = {};
 
   constructor() {
@@ -75,7 +68,6 @@ class UserManager {
     if (userId && currentUserId && currentUserId === userId) {
       return currentUserNick;
     }
-    console.log("Searching for user ", userId, " in : ", this.userNames);
     return this.userNames[userId]?.nickName ?? "Deleted User";
   }
 
@@ -98,136 +90,170 @@ class UserManager {
 
   addUser(
     userId: string,
-    nick: string = "",
+    nick: string = deletedUser,
     discriminator: string = "",
     isBlocked?: boolean
   ) {
     console.log("Adding user: ", userId, nick, discriminator);
-    if (!nick) {
-      console.error("Adding user without nick!: ", userId, discriminator);
-      if (this.userNames[userId]) {
-        console.log("User already exists, not overwriting: ", userId);
-        return;
-      }
-    }
+
     this.userNames[userId] = {
       nickName: nick,
       discriminator,
       isBlocked: Boolean(isBlocked),
       userId,
-      status,
+      status: "offline",
       description: ""
     };
   }
 
-  isSelfOnline() {
-    return this.selfOnline;
-  }
-
   updateMemberStatus(userId: string, status: string): void {
     if (!this.userNames[userId]) {
-      this.userNames[userId] = {
-        userId,
-        nickName: "",
-        discriminator: "",
-        isBlocked: false,
-        status,
-        description: ""
-      };
-    } else {
-      this.userNames[userId].status = status;
+      console.error(userId, "does not exist!");
+      this.addUser(userId);
     }
-    console.warn(this.userNames);
+    if (this.userNames[userId]) {
+      console.log("Updating user status for: ", userId, status);
+      this.userNames[userId].status = status;
+      updateStatusInMembersList(userId, status);
+    } else {
+      console.error("Failed to add user:", userId);
+    }
   }
 
   getMemberStatus(userId: string): string {
     return this.userNames[userId]?.status ?? "offline";
   }
-
-  async isOnline(userId: string): Promise<boolean> {
-    if (this.statusCache[userId] instanceof Promise) {
-      return this.statusCache[userId];
-    }
-
-    if (this.statusCache[userId] !== undefined) {
-      return this.statusCache[userId] as boolean;
-    }
+  async isNotOffline(userId: string): Promise<boolean> {
+    const cachedStatus = this.statusCache[userId];
+    if (cachedStatus instanceof Promise) return cachedStatus;
+    if (cachedStatus !== undefined) return Boolean(cachedStatus);
 
     const currentStatus = this.userNames[userId]?.status;
-
-    if (currentStatus === "online") {
-      this.statusCache[userId] = true;
-      return true;
+    if (currentStatus !== undefined) {
+      const isNotOffline = currentStatus !== "offline";
+      this.statusCache[userId] = isNotOffline;
+      return isNotOffline;
     }
 
-    if (currentStatus === "offline") {
-      this.statusCache[userId] = false;
-      return false;
-    }
-
-    const statusPromise = this.getStatusPollingInternal(userId);
+    const statusPromise = this.getStatusString(userId).then((status) => {
+      const isNotOffline = status !== "offline";
+      this.statusCache[userId] = isNotOffline;
+      return isNotOffline;
+    });
     this.statusCache[userId] = statusPromise;
-    const isOnline = await statusPromise;
-    this.statusCache[userId] = isOnline;
-
-    return isOnline;
+    return statusPromise;
   }
 
-  private pollStatus(
-    userId: string,
-    resolve: (status: string) => void,
-    timeout: number
-  ): void {
-    const checkStatus = setInterval(() => {
-      const updatedStatus = this.userNames[userId]?.status;
-      if (updatedStatus) {
-        clearInterval(checkStatus);
-        resolve(updatedStatus);
-      }
-    }, 100);
-
-    setTimeout(() => {
-      clearInterval(checkStatus);
-      resolve("offline");
-    }, timeout);
-
-    socketClient.getUserStatus([userId]);
+  async isOnline(userId: string): Promise<boolean> {
+    return this.isNotOffline(userId);
   }
 
-  private getStatusPollingInternal(userId: string): Promise<boolean> {
+  async fetchImmediateStatus(userId: string): Promise<string | null> {
     return new Promise((resolve) => {
-      console.log("Polling status for user:", userId);
-      this.pollStatus(userId, (status) => resolve(status === "online"), 5000);
+      socketClient.getUserStatus([userId]);
+
+      const listener = (statusData: { userId: string; status: string }) => {
+        if (statusData.userId === userId) {
+          socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+          resolve(statusData.status);
+        }
+      };
+
+      socketClient.on(SocketEvent.UPDATE_USER_STATUS, listener);
+      setTimeout(() => {
+        socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+        resolve(null);
+      }, 200);
     });
   }
 
-  public getStatusPollingString(userId: string): Promise<string> {
-    return new Promise((resolve) => {
-      console.log("Polling status for user:", userId);
-      this.pollStatus(userId, resolve, 5000);
+  async getStatus(userId: string): Promise<boolean> {
+    return Promise.race([
+      this.fetchImmediateStatus(userId).then((status) =>
+        status !== null ? status === "online" : null
+      ),
+      this.pollStatusBoolean(userId, 3000)
+    ]).then((status) => status ?? false);
+  }
+
+  async getStatusString(userId: string): Promise<string> {
+    const currentStatus = this.userNames[userId]?.status;
+    if (currentStatus !== undefined) {
+      return currentStatus;
+    }
+
+    return Promise.race([
+      this.fetchImmediateStatus(userId).then((status) =>
+        status !== null ? status : null
+      ),
+      this.pollStatusString(userId, 3000)
+    ]).then((status) => status ?? "offline");
+  }
+
+  private pollStatusBoolean(userId: string, timeout: number): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      const checkStatus = setInterval(() => {
+        const updatedStatus = this.userNames[userId]?.status;
+        if (updatedStatus !== undefined) {
+          clearInterval(checkStatus);
+          socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+          resolve(updatedStatus === "online");
+        }
+      }, 100);
+
+      const listener = (statusData: { userId: string; status: string }) => {
+        if (statusData.userId === userId) {
+          clearInterval(checkStatus);
+          socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+          resolve(statusData.status === "online");
+        }
+      };
+
+      socketClient.on(SocketEvent.UPDATE_USER_STATUS, listener);
+
+      setTimeout(() => {
+        clearInterval(checkStatus);
+        socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+        resolve(false);
+      }, timeout);
+
+      socketClient.getUserStatus([userId]);
+    });
+  }
+
+  private pollStatusString(userId: string, timeout: number): Promise<string> {
+    return new Promise<string>((resolve) => {
+      const checkStatus = setInterval(() => {
+        const updatedStatus = this.userNames[userId]?.status;
+        if (updatedStatus !== undefined) {
+          clearInterval(checkStatus);
+          socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+          resolve(updatedStatus);
+        }
+      }, 100);
+
+      const listener = (statusData: { userId: string; status: string }) => {
+        if (statusData.userId === userId) {
+          clearInterval(checkStatus);
+          socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+          resolve(statusData.status);
+        }
+      };
+
+      socketClient.on(SocketEvent.UPDATE_USER_STATUS, listener);
+
+      setTimeout(() => {
+        clearInterval(checkStatus);
+        socketClient.off(SocketEvent.UPDATE_USER_STATUS, listener);
+        resolve("offline");
+      }, timeout);
+
+      socketClient.getUserStatus([userId]);
     });
   }
 }
 
 export const userManager = new UserManager();
-
-export const statusTypes = {
-  offline: "offline",
-  online: "online",
-  "dont-disturb": "dont-disturb",
-  idle: "idle"
-};
-
-export function setSelfStatus(status: string) {
-  const status_translated =
-    translations.getTranslation(
-      statusTypes[status as keyof typeof statusTypes]
-    ) ??
-    translations.getTranslation(statusTypes.offline) ??
-    "Unknown";
-
-  selfStatus.textContent = status_translated;
-}
 
 export function initializeProfile() {
   userManager.setCurrentUserId(initialState.user.userId);
@@ -235,29 +261,10 @@ export function initializeProfile() {
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
-  setSelfStatus(initialState.user.status);
+  userStatus.setSelfStatus(initialState.user.status);
   updateSelfProfile(currentUserId, currentUserNick);
 }
 
 export function getSelfFullDisplay() {
   return initialState.user.nickname + "#" + initialState.user.discriminator;
-}
-const selfBubble = getId("self-bubble") as HTMLElement;
-
-function updateSelfStatus(status: string) {
-  if (!selfBubble) return;
-  selfBubble.classList.value = "";
-  selfBubble.classList.add(status);
-  setSelfStatus(status);
-}
-
-export function updateUserOnlineStatus(userId: string, status: string) {
-  if (userId === currentUserId) {
-    updateSelfStatus(status);
-  }
-  console.log(userId, status);
-
-  userManager.updateMemberStatus(userId, status);
-
-  console.log(`User ${userId} not found in any guild`);
 }

@@ -42,7 +42,9 @@ import {
   updateDmsList,
   activateDmContainer,
   updateFriendMenu,
-  unselectFriendContainer
+  unselectFriendContainer,
+  updateUsersActivities,
+  clearActivityList
 } from "./friendui.ts";
 import {
   closeDropdown,
@@ -56,25 +58,21 @@ import {
   currentUserNick,
   userManager
 } from "./user.ts";
-import {
-  addContextListeners,
-  copySelfName,
-  pinMessage
-} from "./contextMenuActions.ts";
+import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
 import {
   updateChannels,
-  channelTitle,
   channelsUl,
   getChannels,
   currentChannelName,
   Channel,
-  changeChannel
+  changeChannel,
+  setChannelTitle
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
-  updateUserListText,
   toggleUsersList,
   userList,
+  activityList,
   setUserListLine,
   setUsersList,
   updateDmFriendList
@@ -89,8 +87,7 @@ import {
   loadBooleanCookie
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
-
-import { friendsCache } from "./friends.ts";
+import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
@@ -105,6 +102,7 @@ import {
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
+import { UserStatus } from "./status.ts";
 
 interface InitialStateData {
   email: string;
@@ -147,18 +145,23 @@ interface InitialState {
   mediaProxyApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
+  sharedGuildsMap: Map<string, any>;
   wsUrl: string;
 }
+export let userStatus: UserStatus;
 export function initializeApp() {
+  userStatus = new UserStatus();
   window.scrollTo(0, 0);
   addChannelSearchListeners();
   initializeElements();
   initializeSettings();
   initializeListeners();
   initializeGuild();
+  clearActivityList();
   initializeProfile();
   initialiseAudio();
   initializeCookies();
+  handleResize();
   isDomLoaded = true;
 }
 
@@ -204,6 +207,7 @@ export function initialiseState(data: InitialStateData): void {
     ownerId,
     permissionsMap,
     guilds,
+    sharedGuildsMap,
     gifWorkerUrl,
     proxyWorkerUrl,
     mediaProxyApiUrl,
@@ -221,7 +225,7 @@ export function initialiseState(data: InitialStateData): void {
   addKeybinds();
 }
 
-export function initializeElements() {
+function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
@@ -249,14 +253,14 @@ export function initializeElements() {
   });
 }
 
-export function initializeSettings() {
+function initializeSettings() {
   updateSelfProfile(currentUserId, currentUserNick);
   const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
   setUsersList(isCookieUsersOpen, true);
   disableElement("loading-screen");
 }
 
-export function initializeListeners() {
+function initializeListeners() {
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
 
@@ -276,11 +280,13 @@ export function initializeListeners() {
   guildContainer.addEventListener("click", handleGuildClick);
 
   const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
-  avatarWrapper.addEventListener("click", copySelfName);
+  avatarWrapper.addEventListener("click", () => {
+    if (userStatus) userStatus.showStatusPanel();
+  });
   addContextListeners();
 }
 
-export function handleGuildClick(event: MouseEvent) {
+function handleGuildClick(event: MouseEvent) {
   const target = event.target as HTMLElement | null;
   if (
     target &&
@@ -290,11 +296,9 @@ export function handleGuildClick(event: MouseEvent) {
   }
 }
 
-export function isDefined(variable: any) {
-  return typeof variable !== "undefined" && variable !== null;
-}
-export function initializeGuild() {
+function initializeGuild() {
   initialiseMe();
+  disableElement(userList);
   const {
     isValid,
     initialGuildId,
@@ -320,7 +324,9 @@ export function initializeGuild() {
     fetchMembers();
   }
   if (isValid && initialFriendId) {
-    openDm(initialFriendId);
+    setTimeout(() => {
+      openDm(initialFriendId);
+    }, 0);
   }
 }
 
@@ -454,16 +460,13 @@ export function createReplyBar(
   replyBar.appendChild(replyContent);
 }
 
-export function removeDm(userId: string) {}
-
-export function initialiseMe() {
+function initialiseMe() {
   if (!isOnMe) {
     console.log("Cant initialise me while isOnMe is false");
     return;
   }
   enableElement("dms-title");
-  console.warn(translations.textTranslations);
-  updateUserListText();
+  updateUsersActivities();
   loadMainToolbar();
 }
 
@@ -474,7 +477,9 @@ export function openDm(friendId: string) {
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
   setLastSenderID("");
-  activateDmContainer(friendId);
+  setTimeout(() => {
+    activateDmContainer(friendId);
+  }, 100);
   unselectFriendContainer();
   const url = constructDmPage(friendId);
   if (url !== window.location.pathname) {
@@ -482,7 +487,7 @@ export function openDm(friendId: string) {
   }
   if (!friendsCache.userExistsDm(friendId)) {
     try {
-      apiClient.send(EventType.ADD_DM, { friendId });
+      addDm(friendId);
     } catch (e) {
       if (e instanceof Error) {
         printFriendMessage(e.message);
@@ -529,9 +534,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
 
-    updateUserListText();
-    userList.classList.add("friendactive");
-    handleResize();
+    updateUsersActivities();
+
+    setUsersList(false);
     setUserListLine();
     if (userListFriActiveHtml) {
       userList.innerHTML = userListFriActiveHtml;
@@ -593,7 +598,7 @@ export function changecurrentGuild() {
   fetchMembers();
   refreshInviteId();
   closeDropdown();
-  channelTitle.textContent = currentChannelName;
+  setChannelTitle(currentChannelName);
   setGuildNameText(guildCache.currentGuildName);
   hideGuildSettingsDropdown();
 
@@ -611,9 +616,6 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   }
 
   setIsOnMe(false);
-
-  userList.innerHTML = "";
-  userList.classList.remove("friendactive");
   enableElement("guild-name");
   console.log("Loading app with friend id:", friendId);
 
@@ -628,6 +630,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
+    disableElement(activityList);
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
@@ -649,7 +652,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     const friendNick = userManager.getUserNick(friendId);
     chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
 
-    channelTitle.textContent = friendNick;
+    setChannelTitle(friendNick);
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
@@ -674,7 +677,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   isChangingPage = false;
 }
 
-export function changeCurrentDm(friendId: string) {
+function changeCurrentDm(friendId: string) {
   isChangingPage = true;
   setIsOnMe(false);
   setIsOnGuild(false);
@@ -682,7 +685,7 @@ export function changeCurrentDm(friendId: string) {
   setReachedChannelEnd(false);
 
   const friendNick = userManager.getUserNick(friendId);
-  channelTitle.textContent = friendNick;
+  setChannelTitle(friendNick);
   chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
   const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
   if (dmProfSign) {
