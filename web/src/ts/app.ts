@@ -167,7 +167,6 @@ export function initializeApp() {
 
 export let isDomLoaded = false;
 let cachedFriMenuContent;
-let userListFriActiveHtml: string;
 export let initialState: InitialState;
 
 export function initialiseState(data: InitialStateData): void {
@@ -540,9 +539,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
     setUsersList(false);
     setUserListLine();
-    if (userListFriActiveHtml && userList) {
-      userList.innerHTML = userListFriActiveHtml;
-    }
+
     const nowOnlineTitle = getId("nowonline");
     if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
     if (isOnMe) {
@@ -612,10 +609,6 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     return;
   }
   isChangingPage = true;
-
-  if (isOnMe && userList) {
-    userListFriActiveHtml = userList.innerHTML;
-  }
 
   setIsOnMe(false);
   enableElement("guild-name");

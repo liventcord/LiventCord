@@ -26,7 +26,10 @@ import { currentGuildId } from "./guild.ts";
 export const userLine = document.querySelector(
   ".horizontal-line"
 ) as HTMLElement;
-export const userList = getId("user-list") as HTMLElement | null;
+export let userList = getId("user-list") as HTMLElement | null;
+document.addEventListener("DOMContentLoaded", () => {
+  userList = getId("user-list") as HTMLElement | null;
+});
 export const activityList = getId("activity-list") as HTMLElement;
 
 export let isUsersOpenGlobal: boolean;
@@ -188,6 +191,9 @@ export function setUsersList(
   const addFriendInputButton = getId("addfriendinputbutton");
   if (addFriendInputButton) {
     addFriendInputButton.style.right = inputRightToSet;
+  }
+  if (userList) {
+    userList.style.display = isUsersOpen ? "flex" : "none";
   }
   if (!isLoadingFromCookie) {
     saveBooleanCookie("isUsersOpen", isUsersOpen ? 1 : 0);
