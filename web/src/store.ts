@@ -1,4 +1,5 @@
 import { createStore } from "vuex";
+import { userManager } from "./ts/user";
 
 export default createStore({
   state: {
@@ -9,29 +10,43 @@ export default createStore({
       currentUserId: null,
       currentUserNick: "",
       currentDiscriminator: "",
-      DEFAULT_DISCRIMINATOR: "0000"
+      DEFAULT_DISCRIMINATOR: "0000",
+      members: [] as Array<{ userId: string; status: string }>
     }
   },
   mutations: {
     updateUserStatus(state, { userId, status }) {
-      // Update user status logic
+      const _member = state.user.members.find(
+        (member) => member.userId === userId
+      );
+      if (_member) {
+        _member.status = status;
+      } else {
+        state.user.members.push({ userId, status });
+      }
     }
   },
   actions: {
     async isNotOffline(_, userId) {
-      // Simulated API call to check online status
-      return true;
+      return await userManager.isNotOffline(userId);
     },
     async isOnline(_, userId) {
-      return true;
+      return await userManager.isOnline(userId);
+    },
+    async updateStatusInMembersList({ commit }, { userId, status }) {
+      commit("updateUserStatus", { userId, status });
     }
   },
   getters: {
-    "guild/getGuild": (state) => (guildId:string) => {
-      return { isOwner: (userId:string) => userId === "1" };
+    "guild/getGuild": (state) => (guildId: string) => {
+      return { isOwner: (userId: string) => userId === "1" };
     },
-    "friends/getFriendDiscriminator": (state) => (friendId:string) => {
+    "friends/getFriendDiscriminator": (state) => (friendId: string) => {
       return state.user.DEFAULT_DISCRIMINATOR;
+    },
+    getUserStatus: (state) => (userId: string) => {
+      const member = state.user.members.find((m) => m.userId === userId);
+      return member ? member.status : "offline";
     }
   }
 });

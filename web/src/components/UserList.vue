@@ -5,11 +5,8 @@
       ref="userLine"
       :style="{ display: isUsersOpenGlobal ? 'flex' : 'none' }"
     ></div>
-    <div
-      id="user-list"
-      ref="userList"
-    >
-      <div v-if="loading" class="loading">Loading users...</div>
+    <div id="user-list" ref="userList">
+      <div v-if="loading"></div>
       <div v-else class="user-table-wrapper">
         <table class="user-table">
           <tbody>
@@ -44,18 +41,14 @@
     <div id="activity-list" ref="activityList"></div>
   </div>
 </template>
-
-
 <script>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
 import CategoryTitle from "./CategoryTitle.vue";
-import {
-  isOnMe,
-  isOnGuild
-} from "../ts/router.ts";
-import {translations} from "../ts/translations.ts"
+import { isOnMe, isOnGuild } from "../ts/router.ts";
+import { translations } from "../ts/translations.ts";
+import { currentUsers } from "../ts/userList.ts";
 
 export default {
   name: "UserList",
@@ -115,12 +108,12 @@ export default {
       return { onlineUsers: online, offlineUsers: offline };
     };
 
-    const updateMemberList = async (newMembers) => {
+    const processMembers = async (newMembers) => {
       if (isOnMe.value && !props.ignoreIsOnMe) {
         console.log("Got users while on me page.");
         return;
       }
-      
+
       loading.value = true;
       const categorizedMembers = await categorizeMembers(newMembers);
       onlineUsers.value = categorizedMembers.onlineUsers;
@@ -179,18 +172,57 @@ export default {
         }
       ];
 
-      updateMemberList(usersData);
+      processMembers(usersData);
     };
 
-    const updateStatusInMembersList = (userId, status) => {
-      store.commit("user/updateUserStatus", { userId, status });
+    const updateStatusInMembersList = async (userId, status) => {
+      store.commit("updateUserStatus", { userId, status });
+
+      if (!userList.value) return;
+
+      const profilesList = userList.value.querySelectorAll(".profile-pic");
+      profilesList.forEach((user) => {
+        const parentNode = user.parentNode;
+        const userIdDom = parentNode && parentNode.id;
+
+        if (userIdDom === userId) {
+          const selfBubble = parentNode.querySelector(".profile-bubble");
+          if (selfBubble) {
+            if (status === "offline") {
+              selfBubble.style.opacity = "0";
+            } else {
+              selfBubble.style.opacity = "1";
+              selfBubble.classList.value = "";
+              selfBubble.className = "profile-bubble";
+              selfBubble.classList.add(status);
+            }
+          }
+        }
+      });
+
+      if (currentUsers.value && currentUsers.value.length > 0) {
+        const userInOnline = onlineUsers.value.find(
+          (user) => user.userId === userId
+        );
+        const userInOffline = offlineUsers.value.find(
+          (user) => user.userId === userId
+        );
+
+        if (
+          (userInOnline && status === "offline") ||
+          (userInOffline && status !== "offline")
+        ) {
+          const currentUsersClone = [...currentUsers.value];
+          await processMembers(currentUsersClone);
+        }
+      }
     };
 
     watch(
-      () => props.members,
-      (newMembers) => {
-        if (newMembers && newMembers.length > 0) {
-          updateMemberList(newMembers);
+      currentUsers,
+      (newUsers) => {
+        if (newUsers && newUsers.length > 0) {
+          processMembers(newUsers);
         }
       },
       { immediate: true, deep: true }
@@ -211,7 +243,7 @@ export default {
       updateDmFriendList,
       updateStatusInMembersList,
       translations,
-      updateMemberList
+      updateMemberList: processMembers
     };
   }
 };

@@ -85,8 +85,7 @@ export default {
     onMounted(async () => {
       status.value = await userManager.getStatusString(props.userData.userId);
 
-      setProfilePic(profileImg.value,props.userData.userId);
-
+      setProfilePic(profileImg.value, props.userData.userId);
 
       appendToProfileContextList(props.userData, props.userData.userId);
     });
@@ -104,4 +103,3 @@ export default {
   }
 };
 </script>
-

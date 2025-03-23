@@ -951,6 +951,8 @@
   display: flex;
   flex-direction: column;
   z-index: 0;
+  margin-right: -180px;
+  height: 100vh;
 }
 #activity-list {
   background-color: transparent;

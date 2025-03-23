@@ -298,7 +298,9 @@ function handleGuildClick(event: MouseEvent) {
 
 function initializeGuild() {
   initialiseMe();
-  disableElement(userList);
+  if (userList) {
+    disableElement(userList);
+  }
   const {
     isValid,
     initialGuildId,
@@ -538,7 +540,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
     setUsersList(false);
     setUserListLine();
-    if (userListFriActiveHtml) {
+    if (userListFriActiveHtml && userList) {
       userList.innerHTML = userListFriActiveHtml;
     }
     const nowOnlineTitle = getId("nowonline");
@@ -611,7 +613,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   }
   isChangingPage = true;
 
-  if (isOnMe) {
+  if (isOnMe && userList) {
     userListFriActiveHtml = userList.innerHTML;
   }
 

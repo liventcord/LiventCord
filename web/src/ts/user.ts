@@ -1,7 +1,7 @@
+import store from "../store";
 import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
 import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
-import { updateStatusInMembersList } from "./userList.ts";
 
 export interface Member {
   userId: string;
@@ -114,7 +114,8 @@ class UserManager {
     if (this.userNames[userId]) {
       console.log("Updating user status for: ", userId, status);
       this.userNames[userId].status = status;
-      updateStatusInMembersList(userId, status);
+      if (store)
+        store.dispatch("updateStatusInMembersList", { currentUserId, status });
     } else {
       console.error("Failed to add user:", userId);
     }

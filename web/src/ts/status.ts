@@ -1,6 +1,7 @@
+import store from "../store";
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
-import { createBubble, updateStatusInMembersList } from "./userList.ts";
+import { createBubble } from "./userList.ts";
 import { createEl, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
@@ -190,7 +191,7 @@ export class UserStatus {
     this.selfStatus.textContent = this.formatStatusText(status);
     const avatarPanelSelfBubble =
       this.createdPanel?.querySelector(".status-bubble");
-    updateStatusInMembersList(currentUserId, status);
+    store.dispatch("updateStatusInMembersList", { currentUserId, status });
     if (avatarPanelSelfBubble) {
       avatarPanelSelfBubble.classList.value = "";
       avatarPanelSelfBubble.classList.add(

@@ -47,37 +47,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.status-bubble,
-.profile-bubble {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-left: 5px;
-}
-
-.profile-bubble {
-  position: absolute;
-  bottom: 8px;
-  left: 23px;
-  border: 2px solid rgb(43, 45, 49);
-}
-
-.online {
-  background-color: #43b581;
-}
-
-.idle {
-  background-color: #faa61a;
-}
-
-.dnd {
-  background-color: #f04747;
-}
-
-.offline {
-  background-color: #747f8d;
-}
-</style>

@@ -93,6 +93,7 @@ export function handleToggleClick(
 
 export function handleResize() {
   handleMediaPanelResize();
+  if (!userList) return;
 
   if (window.innerWidth < 1200) {
     if (isOnMe) {

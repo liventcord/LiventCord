@@ -1097,6 +1097,7 @@ function fetchReplies(
 }
 
 export function updateChatWidth() {
+  if (!userList) return;
   if (userList.style.display === "none") {
     chatInput.classList.add("user-list-hidden");
     replyInfo.classList.add("reply-user-list-open");

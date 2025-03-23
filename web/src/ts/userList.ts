@@ -1,3 +1,4 @@
+import { reactive } from "vue";
 import {
   getId,
   createEl,
@@ -12,7 +13,6 @@ import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
 import { setProfilePic } from "./avatar.ts";
 import { appendToProfileContextList } from "./contextMenuActions.ts";
-import { translations } from "./translations.ts";
 import {
   currentUserNick,
   currentUserId,
@@ -26,24 +26,10 @@ import { currentGuildId } from "./guild.ts";
 export const userLine = document.querySelector(
   ".horizontal-line"
 ) as HTMLElement;
-export const userList = getId("user-list") as HTMLElement;
+export const userList = getId("user-list") as HTMLElement | null;
 export const activityList = getId("activity-list") as HTMLElement;
 
 export let isUsersOpenGlobal: boolean;
-
-function renderTitle(
-  titleText: string,
-  container: HTMLElement,
-  headingLevel = 1
-) {
-  const titleElement = createEl(
-    `h${headingLevel}` as keyof HTMLElementTagNameMap
-  );
-  titleElement.innerText = titleText;
-  titleElement.style.fontSize = "12px";
-  titleElement.style.color = "rgb(148, 155, 153)";
-  container.appendChild(titleElement);
-}
 
 function createUserProfile(
   userId: string,
@@ -141,11 +127,12 @@ async function renderUsers(
 
   tbody.appendChild(fragment);
 }
-let currentUsers: UserInfo[];
+export const currentUsers = reactive<UserInfo[]>([]);
 export function getCurrentUsers() {
-  console.log("Getting current users: ",currentUsers);
+  console.log("Getting current users: ", currentUsers);
   return currentUsers;
 }
+
 export async function updateMemberList(
   members: UserInfo[],
   ignoreIsOnMe = false
@@ -154,60 +141,16 @@ export async function updateMemberList(
     console.log("Got users while on me page.");
     return;
   }
-  currentUsers = members;
-
-  const { onlineUsers, offlineUsers } = await categorizeMembers(members);
-
-  userList.innerHTML = "";
-  const tableWrapper = createEl("div", { className: "user-table-wrapper" });
-  const table = createEl("table", { className: "user-table" });
-  const tbody = createEl("tbody");
-
-  if (onlineUsers.length > 0) {
-    renderTitle(
-      `${translations.getTranslation("online")} — ${onlineUsers.length}`,
-      tbody
-    );
-    renderUsers(onlineUsers, tbody, true);
-  }
-
-  if (offlineUsers.length > 0) {
-    setTimeout(() => {
-      renderTitle(
-        `${translations.getTranslation("offline")} — ${offlineUsers.length}`,
-        tbody
-      );
-      renderUsers(offlineUsers, tbody, false);
-    }, 0);
-  }
-
-  table.appendChild(tbody);
-  tableWrapper.appendChild(table);
-  userList.appendChild(tableWrapper);
-
-  console.log("Updating members with:", members);
+  currentUsers.length = 0;
+  members.forEach((member) => currentUsers.push(member));
 }
 
-async function categorizeMembers(members: UserInfo[]) {
-  const onlineUsers: UserInfo[] = [];
-  const offlineUsers: UserInfo[] = [];
-
-  const statusPromises = members.map(async (member) => {
-    const isOnline = await userManager.isNotOffline(member.userId);
-    return { member, isOnline };
-  });
-
-  const statuses = await Promise.all(statusPromises);
-
-  statuses.forEach(({ member, isOnline }) => {
-    if (isOnline) {
-      onlineUsers.push(member);
-    } else {
-      offlineUsers.push(member);
-    }
-  });
-
-  return { onlineUsers, offlineUsers };
+export function toggleUsersList() {
+  if (!userList) {
+    return;
+  }
+  const isUsersOpen = userList.style.display === "flex";
+  setUsersList(!isUsersOpen);
 }
 
 export function createBubble(
@@ -225,10 +168,6 @@ export function createBubble(
   return bubble;
 }
 
-export function toggleUsersList() {
-  const isUsersOpen = userList.style.display === "flex";
-  setUsersList(!isUsersOpen);
-}
 export function enableUserList() {
   setUsersList(true);
 }
@@ -275,28 +214,4 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
   ];
 
   updateMemberList(usersData);
-}
-
-export function updateStatusInMembersList(userId: string, status: string) {
-  const profilesList = userList.querySelectorAll(".profile-pic");
-  profilesList.forEach((user) => {
-    const parentNode = user.parentNode as HTMLElement;
-    const userIdDom = parentNode && parentNode.id;
-
-    if (userIdDom === userId) {
-      const selfBubble = parentNode.querySelector(
-        ".profile-bubble"
-      ) as HTMLElement;
-      if (selfBubble) {
-        if (status === "offline") {
-          selfBubble.style.opacity = "0";
-          return;
-        }
-        selfBubble.style.opacity = "1";
-        selfBubble.classList.value = "";
-        selfBubble.className = "profile-bubble";
-        selfBubble.classList.add(status);
-      }
-    }
-  });
 }
