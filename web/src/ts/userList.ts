@@ -141,7 +141,11 @@ async function renderUsers(
 
   tbody.appendChild(fragment);
 }
-
+let currentUsers: UserInfo[];
+export function getCurrentUsers() {
+  console.log("Getting current users: ",currentUsers);
+  return currentUsers;
+}
 export async function updateMemberList(
   members: UserInfo[],
   ignoreIsOnMe = false
@@ -150,6 +154,7 @@ export async function updateMemberList(
     console.log("Got users while on me page.");
     return;
   }
+  currentUsers = members;
 
   const { onlineUsers, offlineUsers } = await categorizeMembers(members);
 
