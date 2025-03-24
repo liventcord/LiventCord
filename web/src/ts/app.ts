@@ -603,7 +603,9 @@ export function changecurrentGuild() {
 
   isChangingPage = false;
 }
-
+function updateChatPlaceholder(friendNick: string) {
+  chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
+}
 export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
@@ -614,7 +616,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   enableElement("guild-name");
   console.log("Loading app with friend id:", friendId);
 
-  if (!friendId) {
+  function handleGuild() {
     setIsOnGuild(true);
     setIsOnDm(false);
     if (friendsCache.currentDmId) {
@@ -625,7 +627,9 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
-    disableElement(activityList);
+    if (activityList) {
+      disableElement(activityList);
+    }
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
@@ -635,7 +639,9 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("dm-profile-sign-bubble");
     disableElement("dm-profile-sign");
     loadGuildToolbar();
-  } else {
+  }
+
+  function handleDm(id: string) {
     loadDmToolbar();
     setIsOnGuild(false);
     setIsOnDm(true);
@@ -643,20 +649,27 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     enableElement("dm-profile-sign");
     enableElement("guild-container", false, true);
     disableElement("guild-settings-button");
-    activateDmContainer(friendId);
-    const friendNick = userManager.getUserNick(friendId);
-    chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
+    activateDmContainer(id);
+    const friendNick = userManager.getUserNick(id);
+
+    updateChatPlaceholder(friendNick);
 
     setChannelTitle(friendNick);
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
     if (dmProfSign) {
-      setProfilePic(dmProfSign, friendId);
-      dmProfSign.dataset.cid = friendId;
+      setProfilePic(dmProfSign, id);
+      dmProfSign.dataset.cid = id;
     }
 
-    updateDmFriendList(friendId, friendNick);
+    updateDmFriendList(id, friendNick);
+  }
+
+  if (friendId) {
+    handleDm(friendId);
+  } else {
+    handleGuild();
   }
 
   disableElement("channel-info-container-for-friend");

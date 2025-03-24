@@ -922,70 +922,15 @@
   max-width: 256px;
   max-height: 256px;
 }
-.offline-users {
-  margin-top: 100px;
-}
-.profile-container {
-  display: flex;
-  align-items: center;
+.horizontal-line {
+  border: none;
+  right: 0px;
+  width: 1px;
+  top: -8px;
   position: relative;
-  border-radius: 5px;
-  margin-top: 10px;
-  filter: opacity(0.3);
-}
-.activeprofile {
-  filter: opacity(1);
-}
-.profile-container:hover {
-  filter: opacity(1);
-}
-.profile-container .status-bubble {
-  margin-left: 20px;
-  margin-top: 20px;
-  padding: 5px 5px;
-}
-#user-list,
-#activity-list {
-  padding-top: 65px;
-  width: 238px;
-  display: flex;
-  flex-direction: column;
-  z-index: 0;
-  margin-right: -180px;
-  height: 100vh;
-}
-#activity-list {
-  background-color: transparent;
-  padding-left: 178px;
-}
-.user-table-wrapper {
-  max-height: 90%;
-  min-height: 90%;
-  overflow-y: auto;
-  width: 90%;
-  overflow-x: hidden;
-  margin-left: 5%;
-  padding: 0;
-  flex-grow: 1;
-}
-.user-table-wrapper::-webkit-scrollbar {
-  width: 4px;
-}
-.user-table-wrapper::-webkit-scrollbar-thumb {
-  background-color: #1d1d1d;
-  border-radius: 6px;
-}
-.user-table-wrapper::-webkit-scrollbar-track {
-  background-color: #2f3136;
-}
-.user-table {
-  width: 100%;
-}
-.user-table tr:hover {
-  background-color: #36373d;
-}
-.user-table td {
-  padding-top: 5%;
+  z-index: 1;
+  border-top: 100vh solid rgb(63, 66, 71);
+  transform: rotate(180deg);
 }
 #image-preview-container {
   position: absolute;

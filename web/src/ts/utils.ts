@@ -90,11 +90,6 @@ export function getId(string: string): HTMLElement | null {
   return document.getElementById(string);
 }
 
-function capitalizeFirstCharacter(str: string) {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
 export function getMaskedEmail(email: string) {
   const parts = email.split("@");
   if (parts.length !== 2) return email;
@@ -194,12 +189,6 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
 
 export function getEmojiPath(emojiId: string) {
   return `/emojis/${emojiId}.webp`;
-}
-function isId(url: string) {
-  return url.length === router.ID_LENGTH && /^\d+$/.test(url);
-}
-function constructAttachmentUrl(id: string) {
-  return `/attachments/${id}`;
 }
 
 export function kebapToSentence(text: string) {
@@ -520,16 +509,6 @@ function applyStyles(
     : isInline
       ? "inline-block"
       : "flex";
-}
-
-function enableElementHTML(
-  element: HTMLElement,
-  isFlex1: boolean = false,
-  isBlock: boolean = false,
-  isInline: boolean = false
-): void {
-  if (element instanceof HTMLElement)
-    applyStyles(element, isFlex1, isBlock, isInline);
 }
 
 export function enableElement(

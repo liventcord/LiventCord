@@ -212,16 +212,7 @@
 #addfriendinputfield:focus {
   border-color: #377bd3;
 }
-.horizontal-line {
-  border: none;
-  right: 0px;
-  width: 1px;
-  top: 40px;
-  position: relative;
-  z-index: 1;
-  border-top: 100vh solid rgb(63, 66, 71);
-  transform: rotate(180deg);
-}
+
 #friend-menu-buttons {
   display: flex;
   flex-wrap: nowrap;

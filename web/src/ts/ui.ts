@@ -2,6 +2,7 @@
 import DOMPurify from "dompurify";
 import {
   activityList,
+  isUsersOpenGlobal,
   setUserListLine,
   userLine,
   userList
@@ -95,31 +96,29 @@ export function handleResize() {
   handleMediaPanelResize();
   if (!userList) return;
 
-  if (window.innerWidth < 1200) {
-    if (isOnMe) {
-      disableElement(userList);
-      disableElement(userLine);
-    } else {
-      setUserListLine();
-    }
-    disableElement(activityList);
+  const isSmallScreen = window.innerWidth < 1200;
+
+  if (isSmallScreen) {
+    disableElement(userList);
+    if (userLine) disableElement(userLine);
+    if (activityList) disableElement(activityList);
+
+    if (!isOnMe) setUserListLine();
   } else {
     if (isOnMe) {
-      disableElement(userList);
-      enableElement(activityList);
-      enableElement(userLine);
+      if (activityList) enableElement(activityList);
+      if (userLine) enableElement(userLine);
     } else {
-      enableElement(userList);
-      disableElement(activityList);
-      disableElement(userLine);
+      if (userLine) disableElement(userLine);
+      if (activityList) disableElement(activityList);
+
+      isUsersOpenGlobal ? disableElement(userList) : enableElement(userList);
     }
   }
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
   const addFriendInputButton = getId("addfriendinputbutton");
-  if (addFriendInputButton) {
-    addFriendInputButton.style.right = inputRightToSet;
-  }
+  if (addFriendInputButton) addFriendInputButton.style.right = inputRightToSet;
 }
 
 export function loadMainToolbar() {
