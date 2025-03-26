@@ -29,7 +29,8 @@ var hub struct {
 }
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin:  func(r *http.Request) bool { return true },
+	Subprotocols: []string{"cookie"},
 }
 
 var eventHandlers = map[string]func(*websocket.Conn, EventMessage, string){
@@ -57,7 +58,8 @@ func establishWebSocketConnection(c *gin.Context) (string, *websocket.Conn, erro
 }
 
 func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, error) {
-	cookie := strings.TrimPrefix(c.Request.Header.Get("Sec-WebSocket-Protocol"), "cookie-")
+	protocolHeader := c.Request.Header.Get("Sec-WebSocket-Protocol")
+	cookie := strings.TrimPrefix(protocolHeader, "cookie-")
 	if cookie == "" {
 		return "", nil, errors.New("session missing")
 	}
@@ -67,7 +69,9 @@ func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, er
 		return "", nil, err
 	}
 
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, http.Header{
+		"Sec-WebSocket-Protocol": []string{"cookie-" + cookie},
+	})
 	if err != nil {
 		return "", nil, err
 	}
@@ -166,12 +170,13 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 	}
 	return conn.WriteMessage(websocket.TextMessage, response)
 }
+
 func cleanupWebSocket(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
 	defer hub.lock.Unlock()
 	delete(hub.clients, userId)
 
-	hub.connectivityStatus[userId] = Offline
+	hub.connectivityStatus[userId] = StatusOffline
 	conn.Close()
 }
 
@@ -194,6 +199,7 @@ func handleUpdateUserStatus(conn *websocket.Conn, event EventMessage, userId str
 		fmt.Println("Invalid status:", statusUpdate.Status)
 	}
 }
+
 func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string) {
 	var request struct {
 		UserIds []string `json:"user_ids"`
@@ -208,7 +214,6 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 	defer hub.lock.RUnlock()
 
 	for _, id := range request.UserIds {
-
 		UserStatus, exists := hub.userStatus[id]
 		if !exists {
 			UserStatus = StatusOffline
@@ -227,7 +232,7 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 
 func isValidStatus(status UserStatus) bool {
 	switch status {
-	case Online, StatusInvisible, DoNotDisturb, Idling:
+	case StatusOnline, StatusInvisible, StatusDND, StatusIdle:
 		return true
 	}
 	return false
