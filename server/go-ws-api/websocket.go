@@ -232,7 +232,7 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 
 func isValidStatus(status UserStatus) bool {
 	switch status {
-	case StatusOnline, StatusInvisible, StatusDND, StatusIdle:
+	case StatusOnline, StatusIdle, StatusDND, StatusInvisible, StatusOffline:
 		return true
 	}
 	return false
