@@ -19,6 +19,7 @@ builder.Services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
 
 builder.Services.AddSingleton<BaseRedisEmitter>();
 builder.Services.AddScoped<RedisEventEmitter>();
+builder.Services.AddSingleton<ICacheService, CacheService>();
 
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.Services.AddScoped<DmController>();

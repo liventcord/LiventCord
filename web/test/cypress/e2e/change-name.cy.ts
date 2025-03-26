@@ -3,7 +3,6 @@ describe("Change Name Tests", () => {
     cy.login();
   });
   it("Change name and apply settings", () => {
-    cy.visit("http://localhost:5005/app");
     cy.get("#settings-button").click();
     cy.get("#new-nickname-input").clear();
 

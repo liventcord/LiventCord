@@ -32,4 +32,10 @@ Cypress.Commands.add("login", () => {
   cy.get("#pass").type(password);
   cy.get('button[type="submit"]').click();
   cy.url().should("include", "/channels/@me");
+  cy.get("#loading-screen").should("not.be.visible");
+});
+
+Cypress.Commands.add("clickFirstGuild", () => {
+  cy.get("#guilds-list .guild-image").should("have.length.greaterThan", 1);
+  cy.get("#guilds-list .guild-image").first().click();
 });
