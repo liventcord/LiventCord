@@ -13,33 +13,6 @@ export interface CachedChannel {
   createElement: () => void;
 }
 
-class CachedChannelClass implements CachedChannel {
-  channelId: string;
-  channelName: string;
-  isTextChannel: boolean;
-  lastReadDateTime: Date | null;
-  guildId: string;
-  voiceMembers: Member[];
-
-  constructor(data: {
-    channelId: string;
-    channelName: string;
-    isTextChannel: boolean;
-    lastReadDateTime: Date | null;
-    guildId: string;
-    voiceMembers?: Member[];
-  }) {
-    this.channelId = data.channelId;
-    this.channelName = data.channelName;
-    this.isTextChannel = data.isTextChannel;
-    this.lastReadDateTime = data.lastReadDateTime;
-    this.guildId = data.guildId;
-    this.voiceMembers = data.voiceMembers || [];
-  }
-
-  createElement() {}
-}
-
 class BaseCache {
   private data: { [key: string]: any };
 
@@ -517,6 +490,9 @@ class GuildCacheInterface {
 
   setGuildOwner(guildId: string, ownerId: string): void {
     this.getGuild(guildId)?.setOwner(ownerId);
+  }
+  isGuildOwner(guildId: string, ownerId: string): boolean {
+    return this.getGuild(guildId)?.getOwner() === ownerId;
   }
 
   doesGuildExist(guildId: string): boolean {

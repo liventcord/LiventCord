@@ -32,12 +32,13 @@ export default {
         : "status-bubble";
       return [baseClass, props.status];
     });
+    console.log(props.status);
 
     const computedOpacity = computed(() => {
       if (props.isMemberBubble && props.status === "offline") {
         return "0";
       }
-      return "1";
+      return props.isUserOnline ? "1" : "0";
     });
 
     return {

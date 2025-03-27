@@ -72,6 +72,7 @@ class WebSocketClient {
   private heartbeatInterval: number = 30000;
   private heartbeatTimer: number | null = null;
   private pendingRequests: Array<() => void> = [];
+  private inProgressRequests: Set<string> = new Set();
 
   private constructor(url: string = "") {
     this.socketUrl = url;
@@ -86,17 +87,26 @@ class WebSocketClient {
     this.attachHandlers();
   }
 
-  getUserStatus(user_ids: string[]) {
+  getUserStatus(userIds: string[]) {
     if (
-      user_ids.length < 1 ||
-      user_ids.some((id) => typeof id !== "string" || id.trim() === "")
+      userIds.length < 1 ||
+      userIds.some((id) => typeof id !== "string" || id.trim() === "")
     )
       return;
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.pendingRequests.push(() => this.getUserStatus(user_ids));
-      return;
-    }
-    this.send(SocketEvent.GET_USER_STATUS, { user_ids });
+
+    userIds.forEach((userId) => {
+      if (this.inProgressRequests.has(userId)) {
+        return;
+      }
+
+      this.inProgressRequests.add(userId);
+
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        this.pendingRequests.push(() => this.getUserStatus([userId]));
+        return;
+      }
+      this.send(SocketEvent.GET_USER_STATUS, { user_ids: [userId] });
+    });
   }
 
   private attachHandlers() {
@@ -236,6 +246,7 @@ class WebSocketClient {
     }
   }
 }
+
 let authCookie: string;
 async function getAuthCookie(): Promise<string> {
   if (authCookie) return encodeURIComponent(authCookie);

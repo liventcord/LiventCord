@@ -529,7 +529,6 @@ export function clearActivityList() {
 
 export function updateUsersActivities(friends?: Friend[]) {
   if (friends) currentUserActivities = friends;
-  console.error(friends);
   console.log(String(Array.isArray(currentUserActivities)));
   if (currentUserActivities && Array.isArray(currentUserActivities)) {
     clearActivityList();

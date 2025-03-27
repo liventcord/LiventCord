@@ -115,7 +115,10 @@ class UserManager {
       console.log("Updating user status for: ", userId, status);
       this.userNames[userId].status = status;
       if (store)
-        store.dispatch("updateStatusInMembersList", { currentUserId, status });
+        store.dispatch("updateStatusInMembersList", {
+          userId: currentUserId,
+          status
+        });
     } else {
       console.error("Failed to add user:", userId);
     }
