@@ -1,3 +1,4 @@
+import store from "../store.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   constructAppPage,
@@ -15,30 +16,18 @@ import {
 import { translations } from "./translations.ts";
 import { closeReplyMenu, chatInput } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
-import {
-  selectedChanColor,
-  hoveredChanColor,
-  settingsHtml,
-  inviteHtml,
-  muteHtml,
-  inviteVoiceHtml,
-  voiceChanHtml,
-  textChanHtml
-} from "./ui.ts";
-import {
-  appendToChannelContextList,
-  createUserContext
-} from "./contextMenuActions.ts";
+import { muteHtml, inviteVoiceHtml } from "./ui.ts";
+import { createUserContext } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
 import { isOnMe, isOnDm } from "./router.ts";
-import { permissionManager } from "./guildPermissions.ts";
 import { Member, userManager } from "./user.ts";
-import { closeSettings, openChannelSettings } from "./settingsui.ts";
+import { closeSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 
+export const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
 const channelList = getId("channel-list") as HTMLElement;
 export const channelsUl = channelList.querySelector("ul") as HTMLElement;
@@ -46,7 +35,6 @@ export let currentChannelName: string;
 const CHANNEL_HOVER_DELAY = 50;
 
 export let currentVoiceChannelId: string;
-export let currentChannels: Channel[];
 
 export let currentVoiceChannelGuild: string;
 export function setCurrentVoiceChannelId(val: string) {
@@ -182,34 +170,7 @@ function setCurrentChannel(channelId: string) {
     const channelButton = channelsUl.querySelector(
       `li[id="${channel.channelId}"]`
     ) as HTMLElement;
-    if (channelButton) {
-      const isSelected = channel.channelId === channelId;
-      if (isSelected) {
-        mouseLeaveChannelButton(
-          channelButton,
-          channel.isTextChannel,
-          channel.channelId
-        );
 
-        setTimeout(() => {
-          mouseLeaveChannelButton(
-            channelButton,
-            channel.isTextChannel,
-            channel.channelId
-          );
-        }, CHANNEL_HOVER_DELAY);
-      } else {
-        //unselected channels
-
-        setTimeout(() => {
-          mouseLeaveChannelButton(
-            channelButton,
-            channel.isTextChannel,
-            channel.channelId
-          );
-        }, CHANNEL_HOVER_DELAY);
-      }
-    }
     if (!channel.isTextChannel) {
       //voice channel
       const voiceUsersInChannel =
@@ -237,89 +198,7 @@ function setCurrentChannel(channelId: string) {
     }
   });
 }
-function isChannelMatching(channelId: string, isTextChannel: boolean) {
-  const currentChannel = isTextChannel
-    ? guildCache.currentChannelId
-    : currentVoiceChannelId;
-  if (channelId === currentChannel) {
-    return true;
-  } else {
-    //console.error("Match failed");
-    return false;
-  }
-}
 
-function mouseHoverChannelButton(
-  channelButton: HTMLElement,
-  isTextChannel: boolean,
-  channelId: string
-) {
-  if (!channelButton) {
-    return;
-  }
-  const contentWrapper = channelButton.querySelector(
-    ".content-wrapper"
-  ) as HTMLElement;
-
-  contentWrapper.style.display = "flex";
-  if (isTextChannel) {
-    const isMatch = isChannelMatching(channelId, isTextChannel);
-    channelButton.style.backgroundColor = isMatch
-      ? selectedChanColor
-      : hoveredChanColor;
-  } else {
-    channelButton.style.backgroundColor = hoveredChanColor;
-  }
-  channelButton.style.color = "white";
-}
-function hashChildElements(channelButton: HTMLElement) {
-  return channelButton.querySelector(".channel-users-container") !== null;
-}
-export function mouseLeaveChannelButton(
-  channelButton: HTMLElement,
-  isTextChannel: boolean,
-  channelId: string
-) {
-  if (!channelButton) {
-    return;
-  }
-  const contentWrapper = channelButton.querySelector(
-    ".content-wrapper"
-  ) as HTMLElement;
-  const channelSpan = channelButton.querySelector(
-    ".channelSpan"
-  ) as HTMLElement;
-
-  if (channelSpan && !isTextChannel) {
-    channelSpan.style.marginRight = hashChildElements(channelButton)
-      ? "30px"
-      : "0px";
-  }
-  if (contentWrapper) {
-    if (!isTextChannel) {
-      if (currentVoiceChannelId === channelId) {
-        contentWrapper.style.display = "flex";
-      } else {
-        contentWrapper.style.display = "none";
-      }
-    } else if (guildCache.currentChannelId !== channelId) {
-      contentWrapper.style.display = "none";
-    }
-  }
-  if (isTextChannel) {
-    channelButton.style.backgroundColor = isChannelMatching(
-      channelId,
-      isTextChannel
-    )
-      ? selectedChanColor
-      : "transparent";
-  } else {
-    channelButton.style.backgroundColor = "transparent";
-  }
-  channelButton.style.color = isChannelMatching(channelId, isTextChannel)
-    ? "white"
-    : "rgb(148, 155, 164)";
-}
 function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
   if (isKeyDown || isOnMe) return;
@@ -389,106 +268,6 @@ export function createChannel(
   });
 }
 
-function createChannelButton(
-  channelId: string,
-  channelName: string,
-  isTextChannel: boolean
-) {
-  const htmlToSet = isTextChannel ? textChanHtml : voiceChanHtml;
-  const channelButton = createEl("li", {
-    className: "channel-button",
-    id: channelId
-  });
-  channelButton.style.marginLeft = "-80px";
-
-  const hashtagSpan = createEl("span", {
-    innerHTML: htmlToSet,
-    marginLeft: "50px"
-  });
-  hashtagSpan.style.color = "rgb(128, 132, 142)";
-
-  const channelSpan = createEl("span", {
-    className: "channelSpan",
-    textContent: channelName
-  });
-  channelSpan.style.marginRight = "30px";
-  channelSpan.style.width = "100%";
-  channelButton.style.width = "70%";
-
-  channelButton.appendChild(hashtagSpan);
-  channelButton.appendChild(channelSpan);
-
-  return channelButton;
-}
-function onChannelSettings(event: Event, channel: Channel) {
-  event.stopPropagation();
-  console.log("Click to settings on:", channel);
-  openChannelSettings(channel.channelId, channel.channelName);
-}
-function createContentWrapper(
-  channel: Channel,
-  channelName: string,
-  isTextChannel: boolean
-) {
-  const contentWrapper = createEl("div", { className: "content-wrapper" });
-  contentWrapper.style.display = "none";
-  contentWrapper.style.marginRight = "100px";
-  contentWrapper.style.marginTop = "4px";
-
-  const settingsSpan = createEl("span", { innerHTML: settingsHtml });
-  settingsSpan.addEventListener("click", (event: Event) =>
-    onChannelSettings(event, channel)
-  );
-
-  if (permissionManager.canInvite()) {
-    const inviteSpan = createEl("span", { innerHTML: inviteHtml });
-    inviteSpan.addEventListener("click", () => {
-      console.log("Click to invite on:", channelName);
-    });
-    contentWrapper.appendChild(inviteSpan);
-  }
-
-  contentWrapper.appendChild(settingsSpan);
-  return contentWrapper;
-}
-
-function addEventListeners(
-  channelButton: HTMLElement,
-  channelId: string,
-  isTextChannel: boolean,
-  channel: ChannelData
-) {
-  channelButton.addEventListener("mouseover", function (event: Event) {
-    const target = event.target as HTMLElement;
-    if (target && target.id === channelId) {
-      mouseHoverChannelButton(channelButton, isTextChannel, channelId);
-    }
-  });
-
-  channelButton.addEventListener("mouseleave", function (event: Event) {
-    const target = event.target as HTMLElement;
-    if (target && target.id === channelId) {
-      mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
-    }
-  });
-
-  mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
-
-  setTimeout(() => {
-    mouseLeaveChannelButton(channelButton, isTextChannel, channelId);
-  }, CHANNEL_HOVER_DELAY);
-
-  channelButton.addEventListener("click", function () {
-    changeChannel(channel);
-  });
-}
-
-function handleChannelChangeOnLoad(channel: ChannelData, channelId: string) {
-  if (channelId === guildCache.currentChannelId) {
-    changeChannel(channel);
-  }
-}
-
 function resetKeydown() {
   isKeyDown = false;
 }
@@ -552,49 +331,11 @@ export class Channel implements ChannelData {
     this.lastReadDateTime = lastReadDateTime;
     this.voiceMembers = voiceMembers;
   }
-
-  createElement() {
-    if (isChannelExist(this.channelId)) return;
-
-    const channelButton = createChannelButton(
-      this.channelId,
-      this.channelName,
-      this.isTextChannel
-    );
-    const contentWrapper = createContentWrapper(
-      this,
-      this.channelName,
-      this.isTextChannel
-    );
-
-    channelButton.appendChild(contentWrapper);
-    appendToChannelContextList(this.channelId);
-    channelsUl.appendChild(channelButton);
-
-    addEventListeners(channelButton, this.channelId, this.isTextChannel, this);
-    handleChannelChangeOnLoad(this, this.channelId);
-
-    if (isChannelMatching(this.channelId, this.isTextChannel)) {
-      mouseHoverChannelButton(
-        channelButton,
-        this.isTextChannel,
-        this.channelId
-      );
-    }
-
-    setTimeout(() => {
-      mouseLeaveChannelButton(
-        channelButton,
-        this.isTextChannel,
-        this.channelId
-      );
-    }, CHANNEL_HOVER_DELAY);
-  }
 }
 
 function createChannelElement(channel: Channel) {
   if (isValidChannelData(channel)) {
-    new Channel(channel).createElement();
+    new Channel(channel);
   } else {
     console.error("Invalid channel data:", channel);
   }
@@ -605,11 +346,9 @@ function addChannel(channelData: ChannelData) {
 
   console.warn(typeof channel, channel);
 
-  if (Array.isArray(currentChannels)) {
-    currentChannels.push(channel);
-  } else {
-    console.error("currentChannels is not an array.");
-  }
+  store.dispatch("setChannel", {
+    channel
+  });
   cacheInterface.addChannel(channel.guildId, channel);
 
   refreshChannelList([channel]);
@@ -620,7 +359,7 @@ function removeChannel(data: ChannelData) {
   cacheInterface.removeChannel(guildId, channelId);
 
   const channelsArray = cacheInterface.getChannels(guildId);
-  currentChannels = channelsArray;
+  addChannelsOnState(channelsArray);
   removeChannelElement(channelId);
 
   if (guildCache.currentChannelId === channelId) {
@@ -632,17 +371,22 @@ function removeChannel(data: ChannelData) {
 function editChannel(data: CreateChannelData) {
   const { guildId } = data;
   cacheInterface.editChannel(guildId, data);
-
-  currentChannels = cacheInterface.getChannels(guildId);
+  addChannelsOnState(cacheInterface.getChannels(guildId));
 }
+
+function addChannelsOnState(channels: Channel[]) {
+  store.dispatch("setChannels", {
+    channels
+  });
+}
+
 export function updateChannels(channels: Channel[]) {
   console.log("Updating channels with:", channels);
   channelsUl.innerHTML = "";
   if (!isOnMe) disableElement("dm-container-parent");
 
   if (Array.isArray(channels) && channels.every(isValidChannelData)) {
-    refreshChannelList(channels);
-    currentChannels = channels;
+    addChannelsOnState(channels);
   } else {
     console.error("Invalid or malformed channels data:", channels);
   }

@@ -1,21 +1,67 @@
 import { createStore } from "vuex";
 import { userManager } from "./ts/user";
+import { Channel } from "./ts/channels";
+import { guildCache } from "./ts/cache";
 
-export default createStore({
+interface UserMember {
+  userId: string;
+  status: string;
+  nickName?: string;
+  discriminator?: string;
+  isOnline?: boolean;
+}
+
+interface UserState {
+  members: UserMember[];
+  onlineUsers: UserMember[];
+  offlineUsers: UserMember[];
+}
+
+interface ChannelHoverInfo {
+  isTextChannel: boolean;
+}
+
+interface RootState {
+  user: UserState;
+  channels: Channel[];
+  hoveredChannels: Record<string, ChannelHoverInfo>;
+  selectedChannelId: string | null;
+  selectedChannelType: boolean | null;
+}
+
+export default createStore<RootState>({
   state: {
     user: {
-      members: [] as Array<{
-        userId: string;
-        status: string;
-        nickName?: string;
-        discriminator?: string;
-        isOnline?: boolean;
-      }>,
-      onlineUsers: [] as Array<any>,
-      offlineUsers: [] as Array<any>
-    }
+      members: [],
+      onlineUsers: [],
+      offlineUsers: []
+    },
+    channels: [],
+    hoveredChannels: {},
+    selectedChannelId: null,
+    selectedChannelType: null
   },
   mutations: {
+    setChannels(state, channels: Channel[]) {
+      state.channels = channels;
+    },
+
+    setChannel(state, channel: Channel) {
+      const existingChannelIndex = state.channels.findIndex(
+        (c) => c.channelId === channel.channelId
+      );
+
+      if (existingChannelIndex !== -1) {
+        state.channels[existingChannelIndex] = channel;
+      } else {
+        state.channels.push(channel);
+      }
+    },
+
+    changeChannel(state, channelId: string) {
+      guildCache.currentChannelId = channelId;
+    },
+
     updateUserStatus(state, { userId, status }) {
       if (!userId) {
         throw new Error("User ID cannot be null or undefined");
@@ -60,22 +106,52 @@ export default createStore({
         }
       }
     },
+
     setUsers(state, { onlineUsers, offlineUsers }) {
       state.user.onlineUsers = onlineUsers;
       state.user.offlineUsers = offlineUsers;
+    },
+
+    SET_HOVERED_CHANNEL(state, { channelId, isTextChannel }) {
+      state.hoveredChannels[channelId] = { isTextChannel };
+    },
+
+    CLEAR_HOVERED_CHANNEL(state, { channelId }) {
+      delete state.hoveredChannels[channelId];
+    },
+
+    SELECT_CHANNEL(state, { channelId, isTextChannel }) {
+      console.log(state, channelId);
+
+      state.selectedChannelId = channelId;
+      state.selectedChannelType = isTextChannel;
+
+      state.hoveredChannels = {
+        [channelId]: { isTextChannel }
+      };
     }
   },
+
   actions: {
-    async updateStatusInMembersList({ commit, state }, { userId, status }) {
+    async updateStatusInMembersList({ commit }, { userId, status }) {
       if (!userId) {
         throw new Error("User ID cannot be null or undefined");
       }
       commit("updateUserStatus", { userId, status });
       return { userId, status };
     },
-    async categorizeUsers({ commit, state }, members) {
-      const onlineUsers = [];
-      const offlineUsers = [];
+
+    async setChannels({ commit }, channels) {
+      commit("setChannels", channels);
+    },
+
+    async setChannel({ commit }, channel) {
+      commit("setChannel", channel);
+    },
+
+    async categorizeUsers({ commit }, members) {
+      const onlineUsers: UserMember[] = [];
+      const offlineUsers: UserMember[] = [];
 
       for (const member of members) {
         if (!member.userId) {
@@ -98,12 +174,49 @@ export default createStore({
 
       commit("setUsers", { onlineUsers, offlineUsers });
       return { onlineUsers, offlineUsers };
+    },
+
+    setHoveredChannel({ commit }, { channelId, isTextChannel }) {
+      commit("SET_HOVERED_CHANNEL", { channelId, isTextChannel });
+    },
+
+    clearHoveredChannel({ commit }, { channelId }) {
+      commit("CLEAR_HOVERED_CHANNEL", { channelId });
+    },
+
+    selectChannel({ commit }, props) {
+      console.log(props);
+      commit("SELECT_CHANNEL", {
+        channelId: props.channelId,
+        isTextChannel: props.isTextChannel
+      });
     }
   },
+
   getters: {
     getUserStatus: (state) => (userId: string) => {
       const member = state.user.members.find((m) => m.userId === userId);
       return member ? member.status : "offline";
+    },
+
+    isChannelHovered: (state) => (channelId: string) => {
+      return !!state.hoveredChannels[channelId];
+    },
+
+    isChannelSelected: (state) => (channelId: string) => {
+      return state.selectedChannelId === channelId;
+    },
+
+    getChannelById: (state) => (channelId: string) => {
+      return state.channels.find((channel) => channel.channelId === channelId);
+    },
+
+    getOnlineUsers: (state) => {
+      return state.user.onlineUsers;
+    },
+
+    getOfflineUsers: (state) => {
+      return state.user.offlineUsers;
     }
   }
 });

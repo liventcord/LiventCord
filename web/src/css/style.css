@@ -263,21 +263,7 @@
   font-family: "gg sans Normal", sans-serif;
   z-index: 1;
 }
-#channel-list {
-  width: 140px;
-  padding-left: 125px;
-  max-height: 100%;
-  position: relative;
-}
-.channelSpan {
-  pointer-events: none;
-  margin-left: 0px;
-  overflow: hidden;
-  width: 60%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  align-items: center;
-}
+
 .offline {
   filter: brightness(60%);
 }

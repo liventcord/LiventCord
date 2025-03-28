@@ -650,7 +650,7 @@ class GuildCacheInterface {
     this.getGuild(guildId)?.channels.setChannels(guildId, channelsData);
   }
 
-  addChannel(guildId: string, channel: CachedChannel): void {
+  addChannel(guildId: string, channel: any): void {
     this.getGuild(guildId)?.channels.addChannel(guildId, channel);
   }
 

@@ -163,7 +163,8 @@ function mentionUser(userId: string) {
   chatInput.value += `@${userNick}`;
 }
 
-function inviteUser(userId: string, guildId: string) {
+export function inviteUser(userId: string, guildId: string) {
+  alertUser("Invite user is not implemented!");
   if (!userId || !guildId) {
     return;
   }

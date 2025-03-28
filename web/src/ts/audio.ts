@@ -1,6 +1,5 @@
 import { selfProfileImage } from "./avatar.ts";
 import {
-  mouseLeaveChannelButton,
   channelsUl,
   currentVoiceChannelId,
   setCurrentVoiceChannelGuild,
@@ -593,8 +592,6 @@ function closeCurrentCall() {
   const buttonContainer = channelsUl.querySelector(
     `li[id="${oldVoiceId}"]`
   ) as HTMLElement;
-
-  mouseLeaveChannelButton(buttonContainer, false, oldVoiceId);
 
   const data = {
     guildId: currentVoiceChannelGuild,
