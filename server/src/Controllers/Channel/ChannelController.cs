@@ -53,7 +53,6 @@ namespace LiventCord.Controllers
 
             return Ok(new { guildId, channels });
         }
-
         [Authorize]
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
@@ -70,20 +69,22 @@ namespace LiventCord.Controllers
 
             if (!await _permissionsController.HasPermission(userId, guildId, PermissionFlags.ManageChannels))
                 return Forbid();
-            var channelDebug = await GetGuildChannels(userId, guildId);
-            var guildChannelsCount = channelDebug.Count;
 
-            if (guildChannelsCount <= 1)
+            var guildChannels = await _dbContext.Channels
+                .Where(c => c.GuildId == guildId && c.ChannelId != channelId)
+                .ToListAsync();
+
+            if (guildChannels.Count == 0)
                 return BadRequest(new { Type = "error", Message = $"Cannot delete the last channel." });
 
-
-            if (channel.Guild != null && channel.Guild.RootChannel == channelId)
+            if (channel.Guild?.RootChannel == channelId)
             {
-                var newRootChannel = channel.Guild.Channels
-                    .FirstOrDefault(c => c.ChannelId != channelId);
-
+                var newRootChannel = guildChannels.FirstOrDefault();
                 if (newRootChannel != null)
+                {
                     channel.Guild.RootChannel = newRootChannel.ChannelId;
+                    await _dbContext.SaveChangesAsync();
+                }
             }
 
             var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
@@ -105,6 +106,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { guildId, channelId });
         }
+
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> EditChannelName(

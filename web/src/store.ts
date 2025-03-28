@@ -44,7 +44,6 @@ export default createStore<RootState>({
   mutations: {
     setChannels(state, channels: Channel[]) {
       state.channels = channels;
-      console.log(state.channels);
     },
 
     setChannel(state, channel: Channel) {
@@ -56,6 +55,35 @@ export default createStore<RootState>({
         state.channels[existingChannelIndex] = channel;
       } else {
         state.channels.push(channel);
+      }
+    },
+
+    addChannel(state, channel: Channel) {
+      const existingChannelIndex = state.channels.findIndex(
+        (c) => c.channelId === channel.channelId
+      );
+
+      if (existingChannelIndex === -1) {
+        state.channels.push(channel);
+      }
+    },
+    editChannel(
+      state,
+      { channelId, channelName }: { channelId: string; channelName: string }
+    ) {
+      const channelIndex = state.channels.findIndex(
+        (channel) => channel.channelId === channelId
+      );
+      if (channelIndex !== -1) {
+        state.channels[channelIndex].channelName = channelName;
+      }
+    },
+    removeChannel(state, channelId: string) {
+      const channelIndex = state.channels.findIndex(
+        (channel) => channel.channelId === channelId
+      );
+      if (channelIndex !== -1) {
+        state.channels.splice(channelIndex, 1);
       }
     },
 
@@ -122,8 +150,6 @@ export default createStore<RootState>({
     },
 
     SELECT_CHANNEL(state, { channelId, isTextChannel }) {
-      console.log(state, channelId);
-
       state.selectedChannelId = channelId;
       state.selectedChannelType = isTextChannel;
 
@@ -148,6 +174,13 @@ export default createStore<RootState>({
 
     async setChannel({ commit }, channel) {
       commit("setChannel", channel);
+    },
+
+    async addChannel({ commit }, channel) {
+      commit("addChannel", channel);
+    },
+    async editChannel({ commit }, channel) {
+      commit("editChannel", channel);
     },
 
     async categorizeUsers({ commit }, members) {
@@ -186,7 +219,6 @@ export default createStore<RootState>({
     },
 
     selectChannel({ commit }, props) {
-      console.log(props);
       commit("SELECT_CHANNEL", {
         channelId: props.channelId,
         isTextChannel: props.isTextChannel

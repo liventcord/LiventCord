@@ -219,17 +219,6 @@ function handleKeydown(event: KeyboardEvent) {
   isKeyDown = true;
 }
 
-export function editChannelElement(channelId: string, newChannelName: string) {
-  const existingChannelButton = channelsUl.querySelector(
-    `li[id="${channelId}"]`
-  ) as HTMLElement;
-  console.log(existingChannelButton);
-  if (!existingChannelButton) {
-    return;
-  }
-  const channelSpan = existingChannelButton.querySelector(".channelSpan");
-  if (channelSpan) channelSpan.textContent = newChannelName;
-}
 function removeChannelElement(channelId: string) {
   const existingChannelButton = channelsUl.querySelector(
     `li[id="${channelId}"]`
@@ -240,12 +229,6 @@ function removeChannelElement(channelId: string) {
   existingChannelButton.remove();
 }
 
-function isChannelExist(channelId: string) {
-  const existingChannelButton = channelsUl.querySelector(
-    `li[id="${channelId}"]`
-  );
-  return existingChannelButton !== null;
-}
 export function createChannel(
   guildId: string,
   channelName: string,
@@ -329,22 +312,12 @@ export class Channel implements ChannelData {
   }
 }
 
-function createChannelElement(channel: Channel) {
-  if (isValidChannelData(channel)) {
-    new Channel(channel);
-  } else {
-    console.error("Invalid channel data:", channel);
-  }
-}
-
-function addChannel(channelData: ChannelData) {
+function addChannel(channelData: Channel) {
   const channel = new Channel(channelData);
 
   console.warn(typeof channel, channel);
 
-  store.dispatch("setChannel", {
-    channel
-  });
+  store.dispatch("setChannel", channel);
   cacheInterface.addChannel(channel.guildId, channel);
 
   refreshChannelList([channel]);
@@ -364,10 +337,11 @@ function removeChannel(data: ChannelData) {
   }
 }
 
-function editChannel(data: CreateChannelData) {
-  const { guildId } = data;
-  cacheInterface.editChannel(guildId, data);
-  addChannelsOnState(cacheInterface.getChannels(guildId));
+export function editChannelName(channelId: string, channelName: string) {
+  store.dispatch("editChannel", {
+    channelId,
+    channelName
+  });
 }
 
 function addChannelsOnState(channels: Channel[]) {
@@ -402,14 +376,8 @@ export function handleChannelDelete(data: ChannelData) {
 
 function refreshChannelList(channels: Channel[]) {
   removeChannelEventListeners();
-  (Array.isArray(channels) ? channels : [channels]).forEach((channel) => {
-    if (isValidChannelData(channel)) {
-      createChannelElement(channel);
-    } else {
-      console.error("Invalid channel data in list:", channel);
-    }
-  });
-  if (currentChannels && currentChannels.length > 1) {
+
+  if (channels && channels.length > 1) {
     addChannelEventListeners();
   }
 }

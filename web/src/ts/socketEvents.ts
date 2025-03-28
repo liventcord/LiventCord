@@ -9,7 +9,7 @@ import {
   channelsUl,
   handleChannelDelete,
   ChannelData,
-  editChannelElement,
+  editChannelName,
   handleNewChannel
 } from "./channels.ts";
 import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
@@ -335,7 +335,7 @@ socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {
 });
 socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
   if (data.guildId === currentGuildId) {
-    editChannelElement(data.channelId, data.channelName);
+    editChannelName(data.channelId, data.channelName);
   }
 });
 

@@ -19,11 +19,20 @@
         viewBox="0 0 24 24"
       >
         <path
+          v-if="isTextChannel"
           fill="currentColor"
           fill-rule="evenodd"
           d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z"
-          clip-rule="evenodd"
+        ></path>
+        <path
+          v-else
+          fill="currentColor"
+          d="M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z"
           class=""
+        ></path>
+        <path
+          fill="currentColor"
+          d="M15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z"
         ></path>
       </svg>
     </span>
@@ -80,22 +89,25 @@ import { defineComponent, computed, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { guildCache } from "../ts/cache";
 import { changeChannel } from "../ts/channels";
-import { selectedChanColor, hoveredChanColor } from "../ts/ui";
+import { selectedChanColor, hoveredChanColor, alertUser } from "../ts/ui";
 import { openChannelSettings } from "../ts/settingsui";
-import { inviteUser } from "../ts/contextMenuActions";
+import {
+  appendToChannelContextList,
+  inviteUser
+} from "../ts/contextMenuActions";
+import { currentGuildId } from "../ts/guild";
 export default defineComponent({
   name: "Channel",
   props: {
-    guildId: String,
-    channelId: String,
-    channelName: String,
-    isTextChannel: Boolean,
-    isPrivate: Boolean
+    channelId: { type: String, required: true },
+    channelName: { type: String, required: true },
+    isTextChannel: { type: Boolean, required: true },
+    isPrivate: { type: Boolean }
   },
   setup(props) {
     const store = useStore();
     const isHovered = ref(false);
-    const isClicked = ref(false);
+    props.guildId = currentGuildId;
 
     onMounted(() => {
       if (props.channelId === guildCache.currentChannelId) {
@@ -105,6 +117,8 @@ export default defineComponent({
         });
         changeChannel(props);
       }
+
+      appendToChannelContextList(props.channelId);
     });
 
     const channelButtonStyle = computed(() => {
@@ -152,6 +166,10 @@ export default defineComponent({
     };
 
     const handleClick = () => {
+      if (!props.isTextChannel) {
+        alertUser("Voice channels are not supported yet");
+        return;
+      }
       store.dispatch("selectChannel", {
         channelId: props.channelId,
         isTextChannel: props.isTextChannel
