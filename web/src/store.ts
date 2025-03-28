@@ -44,6 +44,7 @@ export default createStore<RootState>({
   mutations: {
     setChannels(state, channels: Channel[]) {
       state.channels = channels;
+      console.log(state.channels);
     },
 
     setChannel(state, channel: Channel) {

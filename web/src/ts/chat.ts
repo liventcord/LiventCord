@@ -39,7 +39,7 @@ import {
 } from "./user.ts";
 import { createMediaElement } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
-import { isOnGuild, isOnMe } from "./router.ts";
+import { isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
   appendToMessageContextList
@@ -191,7 +191,7 @@ let isFetchingOldMessages = false;
 let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
-  if (isReachedChannelEnd || isOnMe || stopFetching) {
+  if (isReachedChannelEnd || isOnMePage || stopFetching) {
     return;
   }
   const oldestDate = getMessageDate();

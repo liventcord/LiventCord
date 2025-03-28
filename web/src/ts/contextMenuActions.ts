@@ -14,7 +14,7 @@ import {
 } from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
 import { createEl, constructAbsoluteAppPage } from "./utils.ts";
-import { isOnMe, isOnDm, isOnGuild } from "./router.ts";
+import { isOnMePage, isOnDm, isOnGuild } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
@@ -249,7 +249,7 @@ function createProfileContext(userData: UserInfo) {
     action: () => drawProfilePop(userData)
   };
 
-  if (!isOnMe) {
+  if (!isOnMePage) {
     context[ActionType.MENTION_USER] = {
       action: () => mentionUser(userId)
     };

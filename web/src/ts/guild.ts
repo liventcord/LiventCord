@@ -13,7 +13,7 @@ import {
   loadApp,
   changecurrentGuild
 } from "./app.ts";
-import { isOnGuild, isOnMe, isOnDm } from "./router.ts";
+import { isOnGuild, isOnMePage, isOnDm } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
 import { validateAvatar, resetImageInput } from "./avatar.ts";
@@ -176,7 +176,7 @@ export function loadGuild(
 
   guildCache.currentChannelId = channelId;
 
-  if (isOnMe) {
+  if (isOnMePage) {
     loadApp("", isInitial);
   } else if (isOnDm) {
     loadApp("", isInitial);

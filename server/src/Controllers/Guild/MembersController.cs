@@ -13,16 +13,19 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _dbContext;
         private readonly InviteController _inviteController;
         private readonly PermissionsController _permissionsController;
+        private readonly ICacheService _cacheService;
 
         public MembersController(
             AppDbContext dbContext,
             InviteController inviteController,
-            PermissionsController permissionsController
+            PermissionsController permissionsController,
+            ICacheService cacheService
         )
         {
             _dbContext = dbContext;
             _inviteController = inviteController;
             _permissionsController = permissionsController;
+            _cacheService = cacheService;
         }
 
         [HttpGet("/api/guilds/{guildId}/members")]
@@ -66,6 +69,7 @@ namespace LiventCord.Controllers
             {
                 await AddMemberToGuild(UserId!, guildId);
                 var guild = await GetUserGuildAsync(UserId!, guildId);
+                _cacheService.InvalidateCache(UserId!);
                 return Ok(new { success = true, guild, joinedChannelId });
             }
             catch (Exception ex)
@@ -81,6 +85,7 @@ namespace LiventCord.Controllers
             try
             {
                 await RemoveMemberFromGuild(UserId!, guildId);
+                _cacheService.InvalidateCache(UserId!);
                 return Ok(new { guildId });
             }
             catch (Exception ex)

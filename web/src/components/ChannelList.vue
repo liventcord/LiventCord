@@ -13,11 +13,9 @@
     </ul>
   </Teleport>
 </template>
-
 <script>
-import { defineComponent, ref, onMounted, watchEffect } from "vue";
-import { currentGuildId } from "../ts/guild";
-import { cacheInterface } from "../ts/cache";
+import { defineComponent, computed } from "vue";
+import { useStore } from "vuex";
 import Channel from "./Channel.vue";
 
 export default defineComponent({
@@ -26,23 +24,8 @@ export default defineComponent({
     Channel
   },
   setup() {
-    const channels = ref([]);
-
-    onMounted(() => {
-      setTimeout(() => {
-        const fetchedChannels = cacheInterface.getChannels(currentGuildId);
-        if (fetchedChannels) {
-          channels.value = fetchedChannels;
-        }
-      }, 1000);
-    });
-
-    watchEffect(() => {
-      const fetchedChannels = cacheInterface.getChannels(currentGuildId);
-      if (fetchedChannels) {
-        channels.value = fetchedChannels;
-      }
-    });
+    const store = useStore();
+    const channels = computed(() => store.state.channels);
 
     return {
       channels

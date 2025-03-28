@@ -91,11 +91,11 @@ import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
-  isOnMe,
+  isOnMePage,
   router,
   isOnDm,
   isOnGuild,
-  setIsOnMe,
+  setisOnMePage,
   setIsOnDm,
   setIsOnGuild
 } from "./router.ts";
@@ -462,8 +462,8 @@ export function createReplyBar(
 }
 
 function initialiseMe() {
-  if (!isOnMe) {
-    console.log("Cant initialise me while isOnMe is false");
+  if (!isOnMePage) {
+    console.log("Cant initialise me while isOnMePage is false");
     return;
   }
   enableElement("dms-title");
@@ -534,6 +534,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     disableElement("chat-container");
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
+    disableElement("channel-container");
 
     updateUsersActivities();
 
@@ -542,10 +543,10 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
     const nowOnlineTitle = getId("nowonline");
     if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
-    if (isOnMe) {
+    if (isOnMePage) {
       return;
     }
-    setIsOnMe(true);
+    setisOnMePage(true);
     setIsOnGuild(false);
     updateFriendMenu();
   }
@@ -591,7 +592,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
 export function changecurrentGuild() {
   isChangingPage = true;
-  setIsOnMe(false);
+  setisOnMePage(false);
   setIsOnGuild(true);
   getChannels();
   fetchMembers();
@@ -612,7 +613,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   }
   isChangingPage = true;
 
-  setIsOnMe(false);
+  setisOnMePage(false);
   enableElement("guild-name");
   console.log("Loading app with friend id:", friendId);
 
@@ -627,6 +628,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
+    enableElement("channel-container", false, true);
     if (activityList) {
       disableElement(activityList);
     }
@@ -687,7 +689,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
 
 function changeCurrentDm(friendId: string) {
   isChangingPage = true;
-  setIsOnMe(false);
+  setisOnMePage(false);
   setIsOnGuild(false);
   setIsOnDm(true);
   setReachedChannelEnd(false);

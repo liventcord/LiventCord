@@ -20,7 +20,7 @@ import { muteHtml, inviteVoiceHtml } from "./ui.ts";
 import { createUserContext } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
-import { isOnMe, isOnDm } from "./router.ts";
+import { isOnMePage, isOnDm } from "./router.ts";
 import { Member, userManager } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
 import { CreateChannelData } from "./socketEvents.ts";
@@ -78,10 +78,6 @@ export function getChannels() {
 
       updateChannels(channels);
       console.log("Using cached channels: ", channels);
-
-      setTimeout(() => {
-        console.log("Cached channels: ", guildCache.guilds.channels);
-      }, 800);
     } else {
       console.warn("Channel cache is empty. fetching channels...");
       apiClient.send(EventType.GET_CHANNELS, { guildId: currentGuildId });
@@ -125,7 +121,7 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) return;
   if (!newChannel.isTextChannel) return;
   console.log("Changed channel: ", newChannel);
-  if (isOnMe || isOnDm) {
+  if (isOnMePage || isOnDm) {
     return;
   }
   const channelId = newChannel.channelId;
@@ -201,7 +197,7 @@ function setCurrentChannel(channelId: string) {
 
 function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
-  if (isKeyDown || isOnMe) return;
+  if (isKeyDown || isOnMePage) return;
   currentChannels.forEach((channel, index) => {
     const hotkey =
       index < ALPHA_KEYS_MAX
@@ -375,15 +371,12 @@ function editChannel(data: CreateChannelData) {
 }
 
 function addChannelsOnState(channels: Channel[]) {
-  store.dispatch("setChannels", {
-    channels
-  });
+  store.dispatch("setChannels", channels);
 }
 
 export function updateChannels(channels: Channel[]) {
   console.log("Updating channels with:", channels);
-  channelsUl.innerHTML = "";
-  if (!isOnMe) disableElement("dm-container-parent");
+  if (!isOnMePage) disableElement("dm-container-parent");
 
   if (Array.isArray(channels) && channels.every(isValidChannelData)) {
     addChannelsOnState(channels);

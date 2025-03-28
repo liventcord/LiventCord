@@ -5,7 +5,7 @@ import {
   DEFAULT_DISCRIMINATOR,
   saveBooleanCookie
 } from "./utils.ts";
-import { isOnMe } from "./router.ts";
+import { isOnMePage } from "./router.ts";
 import { updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
@@ -37,9 +37,9 @@ export function getCurrentUsers() {
 
 export async function updateMemberList(
   members: UserInfo[],
-  ignoreIsOnMe = false
+  ignoreisOnMePage = false
 ) {
-  if (isOnMe && !ignoreIsOnMe) {
+  if (isOnMePage && !ignoreisOnMePage) {
     console.log("Got users while on me page.");
     return;
   }

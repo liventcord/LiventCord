@@ -41,7 +41,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
 import CategoryTitle from "./CategoryTitle.vue";
-import { isOnMe } from "../ts/router.ts";
+import { isOnMePage } from "../ts/router.ts";
 import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
@@ -51,7 +51,7 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  ignoreIsOnMe: {
+  ignoreisOnMePage: {
     type: Boolean,
     default: false
   }
@@ -64,7 +64,7 @@ const onlineUsers = computed(() => store.state.user.onlineUsers);
 const offlineUsers = computed(() => store.state.user.offlineUsers);
 
 const processMembers = async (newMembers) => {
-  if (isOnMe.value && !props.ignoreIsOnMe) return;
+  if (isOnMePage.value && !props.ignoreisOnMePage) return;
 
   loading.value = true;
   await store.dispatch("categorizeUsers", newMembers);

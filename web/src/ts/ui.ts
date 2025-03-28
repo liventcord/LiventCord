@@ -20,7 +20,7 @@ import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
 import { createEl, getId, disableElement, enableElement } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
-import { isOnMe, router } from "./router.ts";
+import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { observe } from "./chat.ts";
 import { chatContainer } from "./chatbar.ts";
@@ -103,9 +103,9 @@ export function handleResize() {
     if (userLine) disableElement(userLine);
     if (activityList) disableElement(activityList);
 
-    if (!isOnMe) setUserListLine();
+    if (!isOnMePage) setUserListLine();
   } else {
-    if (isOnMe) {
+    if (isOnMePage) {
       if (activityList) enableElement(activityList);
       if (userLine) enableElement(userLine);
     } else {
