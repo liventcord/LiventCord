@@ -442,6 +442,7 @@ class GuildCache {
   getGuild(guildId: string): Guild | null {
     if (!guildId) return null;
     if (!this.guilds[guildId]) {
+      console.error("Creating new guild: ", guildId);
       this.guilds[guildId] = new Guild(guildId, "Default Guild", false);
     }
     return this.guilds[guildId];
@@ -452,6 +453,7 @@ class GuildCache {
     guildName: string;
     isUploaded: boolean;
   }): void {
+    console.log(guildData);
     if (guildData && !this.guilds[guildData.guildId]) {
       this.guilds[guildData.guildId] = new Guild(
         guildData.guildId,
@@ -502,6 +504,7 @@ class GuildCacheInterface {
     this.getGuild(guildId)?.setOwner(ownerId);
   }
   isGuildOwner(guildId: string, ownerId: string): boolean {
+    console.log(guildId, this.getGuild(guildId)?.getOwner());
     return this.getGuild(guildId)?.getOwner() === ownerId;
   }
 

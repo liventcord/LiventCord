@@ -400,7 +400,14 @@ export function updateGuilds(guildsJson: Array<any>) {
   wrapWhiteRod(mainLogoItem);
 
   guildsJson.forEach(
-    ({ guildId, guildName, isGuildUploadedImg, rootChannel, guildMembers }) => {
+    ({
+      guildId,
+      guildName,
+      isGuildUploadedImg,
+      rootChannel,
+      guildMembers,
+      ownerId
+    }) => {
       const listItem = createGuildListItem(
         guildId,
         rootChannel,
@@ -411,6 +418,7 @@ export function updateGuilds(guildsJson: Array<any>) {
       fragment.appendChild(listItem);
 
       cacheInterface.setName(guildId, guildName);
+      cacheInterface.setGuildOwner(guildId, ownerId);
       cacheInterface.setMemberIds(guildId, guildMembers);
     }
   );

@@ -15,7 +15,9 @@
                 :user-data="user"
                 :is-online="true"
                 :status="user.status"
-                :is-guild-owner="cacheInterface.isGuildOwner(user.userId)"
+                :is-guild-owner="
+                  cacheInterface.isGuildOwner(currentGuildId, user.userId)
+                "
               />
             </template>
             <template v-if="offlineUsers.length > 0">
@@ -27,7 +29,9 @@
                 :key="user.userId"
                 :user-data="user"
                 :is-online="false"
-                :is-guild-owner="cacheInterface.isGuildOwner(user.userId)"
+                :is-guild-owner="
+                  cacheInterface.isGuildOwner(currentGuildId, user.userId)
+                "
               />
             </template>
           </tbody>
@@ -45,7 +49,7 @@ import { isOnMePage } from "../ts/router.ts";
 import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
-
+import { currentGuildId } from "../ts/guild.ts";
 const props = defineProps({
   members: {
     type: Array,

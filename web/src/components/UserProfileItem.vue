@@ -38,7 +38,6 @@ import { crownEmojibase64 } from "../ts/extras.ts";
 import { appendToProfileContextList } from "../ts/contextMenuActions";
 import { deletedUser, userManager } from "../ts/user.ts";
 import { setProfilePic } from "../ts/avatar.ts";
-import { alertUser } from "../ts/ui.ts";
 
 export default {
   name: "UserProfileItem",
