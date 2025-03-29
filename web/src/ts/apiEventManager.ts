@@ -193,6 +193,13 @@ apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
 
   cacheInterface.updateMembers(guildId, userInfosToMembers(userInfos));
   updateMemberList(userInfos);
+  userInfos.forEach((userInfo) => {
+    userManager.addUser(
+      userInfo.userId,
+      userInfo.nickName,
+      userInfo.discriminator
+    );
+  });
 });
 
 interface MessageResponse {
