@@ -339,7 +339,10 @@ export async function drawProfilePop(
     !shouldDrawPanel
   );
   const userId = userData.userId;
-  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userId);
+  const sharedGuilds = sharedGuildsCache.getFriendGuilds(
+    userId,
+    currentGuildId
+  );
 
   const popBottomContainer = !shouldDrawPanel
     ? createPopBottomContainer(

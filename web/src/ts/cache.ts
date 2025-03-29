@@ -276,7 +276,7 @@ class VoiceChannelCache extends BaseCache {
 class SharedGuildsCache extends BaseCache {
   private guildFriendIdsMap: Map<string, string[]> = new Map();
 
-  getFriendGuilds(friendId: string): string[] {
+  getFriendGuilds(friendId: string, guildId?: string): string[] {
     const guilds: string[] = [];
     1;
     this.guildFriendIdsMap.forEach((friendIds, guildId) => {
@@ -284,6 +284,16 @@ class SharedGuildsCache extends BaseCache {
         guilds.push(guildId);
       }
     });
+    if (guildId) {
+      guildCache
+        .getGuild(guildId)
+        ?.members.getMemberIds(guildId)
+        .forEach((memberId) => {
+          if (memberId === friendId) {
+            guilds.push(guildId);
+          }
+        });
+    }
     return guilds;
   }
 
