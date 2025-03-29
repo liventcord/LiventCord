@@ -5,14 +5,30 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/websocket"
 	"net/url"
 	"strings"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/websocket"
 )
 
 var redisClient *redis.Client
 var ctx = context.Background()
+
+func initRedisClient(redisURL string) error {
+	options, err := parseRedisURL(redisURL)
+	if err != nil {
+		return fmt.Errorf("error parsing Redis URL: %v", err)
+	}
+
+	redisClient = redis.NewClient(options)
+	_, err = redisClient.Ping(ctx).Result()
+	if err != nil {
+		return fmt.Errorf("error connecting to Redis: %v", err)
+	}
+
+	return nil
+}
 
 func consumeMessagesFromRedis() {
 	streamName := "event_stream"

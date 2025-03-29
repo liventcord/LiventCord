@@ -196,15 +196,26 @@ app.UseSwaggerUI(c =>
 
 app.MapControllers();
 
-app.Lifetime.ApplicationStarted.Register(() =>
+app.Lifetime.ApplicationStarted.Register(async () =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
     var configf = builder.Configuration["AppSettings:BuildFrontend"];
     if (env.IsDevelopment() && builder.Configuration["AppSettings:BuildFrontend"] == "true")
     {
-        Task.Run(() => BuilderService.StartFrontendBuild());
+        await Task.Run(() => BuilderService.StartFrontendBuild());
+    }
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var redisEventEmitter = scope.ServiceProvider.GetRequiredService<RedisEventEmitter>();
+        var guildIds = await scope.ServiceProvider.GetRequiredService<AppDbContext>().GetAllGuildIds();
+        foreach (var guildId in guildIds)
+        {
+            await redisEventEmitter.EmitGuildMembersToRedis(guildId);
+        }
     }
 });
+
 
 app.Run();
 

@@ -50,6 +50,12 @@ namespace LiventCord.Controllers
                 gu.MemberId == userId && gu.GuildId == guildId
             );
         }
+        public async Task<string[]> GetAllGuildIds()
+        {
+            return await Guilds
+                .Select(g => g.GuildId)
+                .ToArrayAsync();
+        }
         public async Task<List<string>> GetUserGuildIds(string userId)
         {
             return await GuildMembers

@@ -101,7 +101,7 @@ import {
 } from "./router.ts";
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
-import { setSocketClient } from "./socketEvents.ts";
+import { setSocketClient, socketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
 
 interface InitialStateData {

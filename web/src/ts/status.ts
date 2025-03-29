@@ -199,10 +199,6 @@ export class UserStatus {
     const avatarPanelSelfBubble = getId("self-bubble");
 
     if (currentUserId) {
-      store.dispatch("updateStatusInMembersList", {
-        userId: currentUserId,
-        status
-      });
       userManager.updateMemberStatus(currentUserId, status);
     } else {
       console.error("currentUserId is not defined");
@@ -225,11 +221,6 @@ export class UserStatus {
   }
 
   updateUserOnlineStatus(userId: string, status: string) {
-    store.dispatch("updateStatusInMembersList", {
-      userId: currentUserId,
-      status
-    });
-
     if (userId === currentUserId) {
       this.updateSelfStatus(status);
     }

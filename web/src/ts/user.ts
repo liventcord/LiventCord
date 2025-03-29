@@ -116,7 +116,7 @@ class UserManager {
       this.userNames[userId].status = status;
       if (store)
         store.dispatch("updateStatusInMembersList", {
-          userId: currentUserId,
+          userId,
           status
         });
     } else {
@@ -261,6 +261,8 @@ export const userManager = new UserManager();
 
 export function initializeProfile() {
   userManager.setCurrentUserId(initialState.user.userId);
+  socketClient.onUserIdAvailable();
+
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;

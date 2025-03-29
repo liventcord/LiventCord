@@ -109,12 +109,21 @@ class WebSocketClient {
     });
   }
 
+  onUserIdAvailable() {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.getUserStatus([currentUserId]);
+    } else {
+      this.pendingRequests.push(() => this.getUserStatus([currentUserId]));
+    }
+  }
   private attachHandlers() {
     this.socket.onopen = () => {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
       this.startHeartbeat();
-      this.getUserStatus([currentUserId]);
+      if (currentUserId) {
+        this.getUserStatus([currentUserId]);
+      }
       this.processPendingRequests();
       authCookie = "";
     };
@@ -328,6 +337,9 @@ socketClient.on(SocketEvent.GET_USER_STATUS, (data: UserStatusData[]) => {
     const userId = _userStatus.userId;
     userStatus.updateUserOnlineStatus(userId, _userStatus.status);
   });
+});
+socketClient.on(SocketEvent.UPDATE_USER_STATUS, (data: UserStatusData) => {
+  userStatus.updateUserOnlineStatus(data.userId, data.status);
 });
 
 socketClient.on(SocketEvent.CREATE_CHANNEL, (data: CreateChannelData) => {

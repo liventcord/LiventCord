@@ -14,18 +14,21 @@ namespace LiventCord.Controllers
         private readonly InviteController _inviteController;
         private readonly PermissionsController _permissionsController;
         private readonly ICacheService _cacheService;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
         public MembersController(
             AppDbContext dbContext,
             InviteController inviteController,
             PermissionsController permissionsController,
             ICacheService cacheService
+            , RedisEventEmitter redisEventEmitter
         )
         {
             _dbContext = dbContext;
             _inviteController = inviteController;
             _permissionsController = permissionsController;
             _cacheService = cacheService;
+            _redisEventEmitter = redisEventEmitter;
         }
 
         [HttpGet("/api/guilds/{guildId}/members")]
@@ -125,6 +128,9 @@ namespace LiventCord.Controllers
             await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.MentionEveryone);
 
             await _dbContext.SaveChangesAsync();
+
+
+            await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
         }
 
         private async Task RemoveMemberFromGuild(string userId, string guildId)
@@ -148,6 +154,8 @@ namespace LiventCord.Controllers
             await _permissionsController.RemovePermissions(guildId, userId, PermissionFlags.MentionEveryone);
 
             await _dbContext.SaveChangesAsync();
+            await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
+
         }
 
 

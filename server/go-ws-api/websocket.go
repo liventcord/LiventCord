@@ -7,26 +7,13 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-const (
-	StatusOnline    UserStatus = "online"
-	StatusIdle      UserStatus = "idle"
-	StatusOffline   UserStatus = "offline"
-	StatusDND       UserStatus = "do-not-disturb"
-	StatusInvisible UserStatus = "invisible"
-)
-
-var hub struct {
-	clients            map[string]*websocket.Conn
-	connectivityStatus map[string]UserStatus
-	userStatus         map[string]UserStatus
-	lock               sync.RWMutex
-}
+const ONLINE_TIMEOUT = 30
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin:  func(r *http.Request) bool { return true },
@@ -131,26 +118,8 @@ func registerClient(userId string, conn *websocket.Conn) {
 	if _, exists := hub.userStatus[userId]; !exists {
 		hub.userStatus[userId] = StatusOnline
 	}
-}
 
-func handleWebSocketMessages(userId string, conn *websocket.Conn) {
-	defer cleanupWebSocket(userId, conn)
-
-	for {
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			return
-		}
-
-		var event EventMessage
-		if json.Unmarshal(message, &event) != nil {
-			continue
-		}
-
-		if handler, exists := eventHandlers[event.EventType]; exists {
-			handler(conn, event, userId)
-		}
-	}
+	go broadcastStatusUpdate(userId, hub.connectivityStatus[userId])
 }
 
 func unmarshalPayload(event EventMessage, v interface{}) error {
@@ -170,70 +139,105 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 	}
 	return conn.WriteMessage(websocket.TextMessage, response)
 }
+func handleWebSocketMessages(userId string, conn *websocket.Conn) {
+	for {
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Printf("WebSocket error for user %s: %v\n", userId, err)
 
-func cleanupWebSocket(userId string, conn *websocket.Conn) {
-	hub.lock.Lock()
-	defer hub.lock.Unlock()
-	delete(hub.clients, userId)
+			hub.lock.Lock()
+			if currentConn, exists := hub.clients[userId]; exists && currentConn == conn {
+				delete(hub.clients, userId)
+				fmt.Printf("Removed connection for user %s from active clients\n", userId)
+			}
+			hub.lock.Unlock()
 
-	hub.connectivityStatus[userId] = StatusOffline
-	conn.Close()
-}
-
-func handleUpdateUserStatus(conn *websocket.Conn, event EventMessage, userId string) {
-	var statusUpdate struct {
-		Status string `json:"status"`
-	}
-	if err := unmarshalPayload(event, &statusUpdate); err != nil {
-		fmt.Println("Error unmarshalling status update:", err)
-		return
-	}
-
-	status := UserStatus(statusUpdate.Status)
-	if isValidStatus(status) {
-		hub.lock.Lock()
-		hub.userStatus[userId] = status
-		hub.lock.Unlock()
-		fmt.Printf("User %s custom status updated to %s\n", userId, status)
-	} else {
-		fmt.Println("Invalid status:", statusUpdate.Status)
-	}
-}
-
-func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string) {
-	var request struct {
-		UserIds []string `json:"user_ids"`
-	}
-	if err := unmarshalPayload(event, &request); err != nil {
-		fmt.Println("Error unmarshalling get status request:", err)
-		return
-	}
-
-	var statusResponses []UserStatusResponse
-	hub.lock.RLock()
-	defer hub.lock.RUnlock()
-
-	for _, id := range request.UserIds {
-		UserStatus, exists := hub.userStatus[id]
-		if !exists {
-			UserStatus = StatusOffline
+			go handleDisconnectionWithTimeout(userId, conn)
+			return
 		}
 
-		statusResponses = append(statusResponses, UserStatusResponse{
-			UserId:             id,
-			ConnectivityStatus: string(UserStatus),
-		})
-	}
+		var event EventMessage
+		if err := json.Unmarshal(message, &event); err != nil {
+			continue
+		}
 
-	if err := sendResponse(conn, event.EventType, statusResponses); err != nil {
-		fmt.Println("Error sending status response:", err)
+		if handler, exists := eventHandlers[event.EventType]; exists {
+			handler(conn, event, userId)
+		}
 	}
 }
 
-func isValidStatus(status UserStatus) bool {
-	switch status {
-	case StatusOnline, StatusIdle, StatusDND, StatusInvisible, StatusOffline:
-		return true
+func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
+	fmt.Printf("Starting disconnection timeout handler for user %s\n", userId)
+
+	timeout := time.After(ONLINE_TIMEOUT * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			fmt.Printf("Timeout reached for user %s, cleaning up status\n", userId)
+
+			hub.lock.Lock()
+			hasOtherConnections := false
+			for id, _ := range hub.clients {
+				if id == userId {
+					hasOtherConnections = true
+					break
+				}
+			}
+
+			if !hasOtherConnections {
+				delete(hub.connectivityStatus, userId)
+				hub.lock.Unlock()
+				broadcastStatusUpdate(userId, StatusOffline)
+			} else {
+				hub.lock.Unlock()
+			}
+
+			conn.Close()
+			return
+
+		case <-ticker.C:
+			hub.lock.RLock()
+			_, reconnected := hub.clients[userId]
+			hub.lock.RUnlock()
+
+			if reconnected {
+				fmt.Printf("User %s has reconnected, aborting disconnection timeout\n", userId)
+				return
+			}
+		}
 	}
-	return false
+}
+
+func broadcastStatusUpdate(userId string, status UserStatus) {
+	guilds, err := fetchGuildMemberships(userId)
+	if err != nil {
+		fmt.Println("Error fetching guild memberships:", err)
+		return
+	}
+	fmt.Println("Broadcasting status update to guilds:", guilds, "for user:", userId)
+	hub.lock.RLock()
+	clients := hub.clients
+	hub.lock.RUnlock()
+
+	seenUsers := make(map[string]struct{})
+
+	for _, members := range guilds {
+		for _, targetUserId := range members {
+			if targetUserId != userId {
+				if _, exists := seenUsers[targetUserId]; !exists {
+					if conn, ok := clients[targetUserId]; ok {
+						sendResponse(conn, "UPDATE_USER_STATUS", UserStatusResponse{
+							UserId:             userId,
+							ConnectivityStatus: string(status),
+						})
+						seenUsers[targetUserId] = struct{}{}
+					}
+				}
+			}
+		}
+	}
 }

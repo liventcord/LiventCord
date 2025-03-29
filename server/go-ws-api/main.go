@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"log"
 )
 
 func main() {
@@ -36,6 +37,9 @@ func main() {
 
 	if redisClient != nil {
 		go consumeMessagesFromRedis()
+	}
+	if err := initRedisClient(redisURL); err != nil {
+		log.Fatalf("Failed to initialize Redis client: %v", err)
 	}
 
 	router.Run(hostname + ":" + port)

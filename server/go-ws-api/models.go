@@ -26,8 +26,9 @@ type UserStatusResponse struct {
 	ConnectivityStatus string `json:"status"`
 }
 
-type Hub struct {
-	clients map[string]*websocket.Conn
-	status  map[string]UserStatus
-	lock    sync.RWMutex
+var hub struct {
+	clients            map[string]*websocket.Conn
+	connectivityStatus map[string]UserStatus
+	userStatus         map[string]UserStatus
+	lock               sync.RWMutex
 }

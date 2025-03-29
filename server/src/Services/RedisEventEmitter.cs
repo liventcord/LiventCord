@@ -27,6 +27,19 @@ public class RedisEventEmitter
             });
         }
     }
+    public async Task EmitGuildMembersToRedis(string guildId)
+    {
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userIds = await dbContext.GetGuildUserIds(guildId, null);
+
+            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+            {
+                await _redisEmitter.EmitGuildMembersToRedisStream(guildId, userIds);
+            });
+        }
+    }
 
     public async Task EmitToFriend(EventType eventType, object payload, string userId, string friendId)
     {
