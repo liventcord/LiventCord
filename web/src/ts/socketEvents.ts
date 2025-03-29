@@ -32,6 +32,7 @@ import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
 import { playAudio, clearVoiceChannel } from "./audio.ts";
 import { userStatus } from "./app.ts";
+import { apiClient } from "./api.ts";
 
 export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -62,6 +63,7 @@ export const SocketEvent = Object.freeze({
 } as const);
 
 type SocketEventType = keyof typeof SocketEvent;
+
 class WebSocketClient {
   private socket!: WebSocket;
   private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
@@ -73,6 +75,7 @@ class WebSocketClient {
   private heartbeatTimer: number | null = null;
   private pendingRequests: Array<() => void> = [];
   private inProgressRequests: Set<string> = new Set();
+  private hasReconnected: boolean = false;
 
   private constructor(url: string = "") {
     this.socketUrl = url;
@@ -121,11 +124,11 @@ class WebSocketClient {
       console.log("Connected to WebSocket server");
       this.retryCount = 0;
       this.startHeartbeat();
-      if (currentUserId) {
-        this.getUserStatus([currentUserId]);
-      }
       this.processPendingRequests();
-      authCookie = "";
+      if (this.hasReconnected) {
+        apiClient.onWebsocketReconnect();
+      }
+      this.hasReconnected = true;
     };
 
     this.socket.onmessage = (event) => {

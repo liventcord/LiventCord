@@ -1169,7 +1169,7 @@ export function getHistoryFromOneChannel(
 
 let timeoutId: number | null = null;
 
-function fetchMessagesFromServer(channelId: string, isDm = false) {
+export function fetchMessagesFromServer(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 
   const requestData = {

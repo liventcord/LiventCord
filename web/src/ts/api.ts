@@ -1,6 +1,11 @@
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
+import { isOnDm } from "./router.ts";
+import { fetchMessagesFromServer } from "./chat.ts";
+import { friendsCache } from "./friends.ts";
+import { currentGuildId } from "./guild.ts";
+import { guildCache } from "./cache.ts";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -170,6 +175,15 @@ class ApiClient {
       this.validateEventMaps();
       this.checkFullCrud();
     }
+  }
+  public onWebsocketReconnect() {
+    this.send(EventType.GET_INIT_DATA);
+    this.send(EventType.GET_FRIENDS);
+    fetchMessagesFromServer(
+      isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId,
+      isOnDm
+    );
+    this.send(EventType.GET_MEMBERS, { guildId: currentGuildId });
   }
 
   private validateEventMaps() {
