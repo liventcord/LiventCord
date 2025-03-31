@@ -113,9 +113,9 @@ export function handleResize() {
       if (activityList) disableElement(activityList);
 
       isUsersOpenGlobal ? enableElement(userList) : disableElement(userList);
-      updateChatWidth();
     }
   }
+  updateChatWidth();
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
   const addFriendInputButton = getId("addfriendinputbutton");
