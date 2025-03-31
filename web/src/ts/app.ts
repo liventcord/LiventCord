@@ -75,7 +75,8 @@ import {
   activityList,
   setUserListLine,
   setUsersList,
-  updateDmFriendList
+  updateDmFriendList,
+  isUsersOpenGlobal
 } from "./userList.ts";
 import {
   getId,
@@ -84,9 +85,15 @@ import {
   enableElement,
   disableElement,
   constructDmPage,
-  loadBooleanCookie
+  loadBooleanCookie,
+  isMobile
 } from "./utils.ts";
-import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
+import {
+  setProfilePic,
+  updateSelfProfile,
+  setUploadSize,
+  selfName
+} from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
@@ -99,9 +106,9 @@ import {
   setIsOnDm,
   setIsOnGuild
 } from "./router.ts";
-import { initialiseAudio } from "./audio.ts";
+import { earphoneButton, initialiseAudio, microphoneButton } from "./audio.ts";
 import { translations } from "./translations.ts";
-import { setSocketClient, socketClient } from "./socketEvents.ts";
+import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
 
 interface InitialStateData {
@@ -223,7 +230,135 @@ export function initialiseState(data: InitialStateData): void {
   updateGuilds(guilds);
   addKeybinds();
 }
+let isOnLeft = false;
+let isOnRight = false;
+const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
+const toolbarOptions = getId("toolbaroptions") as HTMLElement;
+const navigationBar = getId("navigation-bar") as HTMLElement;
 
+function toggleHamburger(toLeft: boolean, toRight: boolean) {
+  console.log(isOnRight, isOnLeft, toLeft, toRight);
+  if (!userList) return;
+
+  if (isOnRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (isOnLeft && toRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (toRight) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToRight();
+    return;
+  }
+
+  if (toLeft) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToLeft();
+  } else {
+    mobileMoveToCenter();
+  }
+}
+
+function mobileMoveToRight() {
+  if (!userList) return;
+  isOnLeft = false;
+  isOnRight = true;
+  enableElement(userList);
+}
+
+function mobileMoveToCenter() {
+  if (!userList) return;
+
+  isOnRight = false;
+  isOnLeft = false;
+  disableElement(userList);
+
+  getId("channel-list")?.classList.remove("channel-list-mobile-left");
+  getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
+  getId("guild-container")?.classList.remove("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.remove(
+    "message-input-container-mobile-left"
+  );
+  chatContainer.classList.remove("chat-container-mobile-left");
+  disableElement(navigationBar);
+}
+
+function mobileMoveToLeft() {
+  if (!userList) return;
+
+  isOnLeft = true;
+  isOnRight = false;
+  disableElement(userList);
+
+  getId("channel-list")?.classList.add("channel-list-mobile-left");
+  getId("guilds-list")?.classList.add("guilds-list-mobile-left");
+  getId("guild-container")?.classList.add("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.add(
+    "message-input-container-mobile-left"
+  );
+  chatContainer.classList.add("chat-container-mobile-left");
+  enableElement(navigationBar);
+}
+function initialiseMobile() {
+  const earphoneParent = earphoneButton.parentElement;
+  if (earphoneParent) {
+    earphoneParent.remove();
+  }
+
+  const microphoneParent = microphoneButton.parentElement;
+  if (microphoneParent) {
+    microphoneParent.remove();
+  }
+  disableElement(selfName);
+  disableElement("self-status");
+
+  const friendIconSign = getId("friend-icon-sign");
+  if (friendIconSign) {
+    friendIconSign.style.position = "";
+    friendIconSign.classList.add("navigationButton");
+    navigationBar.appendChild(friendIconSign);
+
+    const svgElement = friendIconSign.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+
+  const settingsButton = getId("settings-button");
+  if (settingsButton) {
+    navigationBar.appendChild(settingsButton);
+    settingsButton.classList.add("navigationButton");
+
+    const svgElement = settingsButton.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+  const avatarWrapper = getId("avatar-wrapper");
+  if (avatarWrapper) {
+    navigationBar.appendChild(avatarWrapper);
+    avatarWrapper.classList.add("navigationButton");
+  }
+}
 function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
@@ -244,12 +379,21 @@ function initializeElements() {
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
   const tbShowProfile = getId("tb-showprofile");
-  tbShowProfile?.addEventListener("click", toggleUsersList);
+  tbShowProfile?.addEventListener("click", () => {
+    isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
+  });
 
   const tbPinMessage = getId("tb-pin");
   tbPinMessage?.addEventListener("click", () => {
     pinMessage;
   });
+  const tbHamburger = getId("tb-hamburger");
+  console.log(isUsersOpenGlobal, isOnLeft);
+  tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
+
+  if (isMobile) {
+    initialiseMobile();
+  }
 }
 
 function initializeSettings() {
@@ -281,6 +425,10 @@ function initializeListeners() {
   const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
   avatarWrapper.addEventListener("click", () => {
     if (userStatus) userStatus.showStatusPanel();
+  });
+
+  mobileBlackBg.addEventListener("click", () => {
+    toggleHamburger(!isOnLeft, !isOnRight);
   });
   addContextListeners();
 }
@@ -529,9 +677,12 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     lastDmId = "";
     friendsCache.currentDmId = "";
     enableElement("channel-info-container-for-friend");
-    disableElement("channel-info-container-for-index");
+    if (!isMobile) {
+      disableElement("channel-info-container-for-index");
+    }
     loadMainToolbar();
-    disableElement("chat-container");
+
+    disableElement(chatContainer);
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
     disableElement("channel-container");
@@ -580,7 +731,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   enableElement("dm-container-parent", false, true);
   channelsUl.innerHTML = "";
 
-  enableElement("guild-container", false, true);
+  if (!isMobile) {
+    enableElement("guild-container", false, true);
+  }
 
   const chanList = getId("channel-list") as HTMLElement;
   if (cachedFriMenuContent && chanList) {

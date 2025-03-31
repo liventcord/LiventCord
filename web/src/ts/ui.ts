@@ -17,7 +17,13 @@ import {
 } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
-import { createEl, getId, disableElement, enableElement } from "./utils.ts";
+import {
+  createEl,
+  getId,
+  disableElement,
+  enableElement,
+  isMobile
+} from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMePage, router } from "./router.ts";
@@ -99,11 +105,13 @@ export function handleResize() {
   const isSmallScreen = window.innerWidth < 1200;
 
   if (isSmallScreen) {
-    disableElement(userList);
-    if (userLine) disableElement(userLine);
-    if (activityList) disableElement(activityList);
+    if (!isMobile) {
+      disableElement(userList);
+      if (userLine) disableElement(userLine);
+      if (activityList) disableElement(activityList);
 
-    if (!isOnMePage) setUserListLine();
+      if (!isOnMePage) setUserListLine();
+    }
   } else {
     if (isOnMePage) {
       if (activityList) enableElement(activityList);
@@ -121,8 +129,20 @@ export function handleResize() {
   const addFriendInputButton = getId("addfriendinputbutton");
   if (addFriendInputButton) addFriendInputButton.style.right = inputRightToSet;
 }
-
+function handleMobileToolbar() {
+  getId("toolbaroptions")
+    ?.querySelectorAll(".iconWrapper")
+    .forEach((toolbar) => {
+      toolbar.classList.add("toolbarIconMobile");
+    });
+}
 export function loadMainToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   disableElement("tb-call");
   disableElement("tb-video-call");
   disableElement("tb-pin");
@@ -131,6 +151,12 @@ export function loadMainToolbar() {
   disableElement("tb-search");
 }
 export function loadGuildToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   disableElement("tb-call");
   disableElement("tb-video-call");
   enableElement("tb-pin");
@@ -139,6 +165,12 @@ export function loadGuildToolbar() {
   enableElement("tb-search");
 }
 export function loadDmToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   enableElement("tb-call");
   enableElement("tb-video-call");
   enableElement("tb-pin");
@@ -609,5 +641,8 @@ function setDynamicAnimations() {
     }
   });
 }
-
-setDynamicAnimations();
+document.addEventListener("DOMContentLoaded", () => {
+  if (!isMobile) {
+    setDynamicAnimations();
+  }
+});

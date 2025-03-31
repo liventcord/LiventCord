@@ -1256,7 +1256,6 @@ export function getHistoryFromOneChannel(
       console.warn("No messages found in cache for this channel.");
     }
   }
-  chatContent.innerHTML = "";
   fetchMessagesFromServer(channelId, isDm);
 }
 

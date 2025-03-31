@@ -442,7 +442,6 @@ class GuildCache {
   getGuild(guildId: string): Guild | null {
     if (!guildId) return null;
     if (!this.guilds[guildId]) {
-      console.error("Creating new guild: ", guildId);
       this.guilds[guildId] = new Guild(guildId, "Default Guild", false);
     }
     return this.guilds[guildId];

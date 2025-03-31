@@ -42,8 +42,8 @@ const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 const WIGGLE_DELAY = 500;
 let isInitializedAudio: boolean;
-const microphoneButton = getId("microphone-button") as HTMLImageElement;
-const earphoneButton = getId("earphone-button") as HTMLImageElement;
+export const microphoneButton = getId("microphone-button") as HTMLImageElement;
+export const earphoneButton = getId("earphone-button") as HTMLImageElement;
 
 if (microphoneButton) {
   microphoneButton.addEventListener("click", setMicrophone);
