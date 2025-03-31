@@ -22,6 +22,8 @@ import { alertUser, askUser } from "./ui.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
+import { convertToEditUi } from "./message.ts";
+import { scrollToMessage } from "./chat.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
@@ -91,7 +93,13 @@ function openReactionMenu(messageId: string) {
 }
 
 function openEditMessage(messageId: string) {
-  alertUser("Not implemented: Editing message ");
+  const message = getId(messageId);
+  if (!message) return;
+  convertToEditUi(message);
+  const editMessageButtonContainer = message.querySelector(
+    ".edit-message-button-container"
+  ) as HTMLElement;
+  if (editMessageButtonContainer) scrollToMessage(editMessageButtonContainer);
 }
 
 export function pinMessage(messageId: string) {

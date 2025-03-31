@@ -200,7 +200,10 @@
     "delete-message-prompt": "Are you sure you want to delete this message?",
     "message": "Message",
     "member-since": "Member Since",
-    "edit-profile": "Edit Profile"
+    "edit-profile": "Edit Profile",
+    "save-button-text": "for saving",
+    "exit-button-text": "for exit",
+    "message-edited": "edited"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

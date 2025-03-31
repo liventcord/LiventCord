@@ -54,6 +54,7 @@ import { playNotification } from "./audio.ts";
 import { userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
 import { constructUserData } from "./popups.ts";
+import { createTooltipAtCursor } from "./tooltip.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -270,13 +271,20 @@ function loadObservedContent(targetElement: HTMLElement) {
   }
 }
 
-export interface MessageResponse {
+export interface NewMessageResponse {
   guildId?: string;
   isOldMessages: boolean;
   isDm: boolean;
   messages: Message[];
   channelId: string;
   oldestMessageDate?: string | null;
+}
+export interface EditMessageResponse {
+  guildId?: string;
+  isDm: boolean;
+  messageId: string;
+  content: string;
+  channelId: string;
 }
 
 function clearDateBarAndStartMessageFromChat() {
@@ -299,7 +307,7 @@ function clearDateBarAndStartMessageFromChat() {
   }
 }
 
-export function handleOldMessagesResponse(data: MessageResponse) {
+export function handleOldMessagesResponse(data: NewMessageResponse) {
   console.log("Processing old messages: ", data);
 
   const { messages: history, oldestMessageDate } = data;
@@ -349,7 +357,7 @@ export function handleOldMessagesResponse(data: MessageResponse) {
   }
 }
 
-export function handleMessage(data: MessageResponse): void {
+export function handleNewMessage(data: NewMessageResponse): void {
   try {
     console.warn("Received message data:", data);
 
@@ -395,6 +403,30 @@ export function handleMessage(data: MessageResponse): void {
   }
 }
 
+export function handleEditMessage(data: EditMessageResponse): void {
+  try {
+    console.warn("Received edit message data:", data);
+
+    const { isDm, channelId } = data;
+
+    const idToCompare = isDm
+      ? friendsCache.currentDmId
+      : guildCache.currentChannelId;
+
+    if (data.guildId !== currentGuildId || idToCompare !== channelId) {
+      console.log(
+        `guildId ${data.guildId} does not match currentGuildId ${currentGuildId} or channelId ${channelId} does not match idToCompare ${idToCompare}. Returning.`
+      );
+
+      return;
+    }
+
+    editChatMessage(data);
+  } catch (error) {
+    console.error("Error processing message:", error);
+  }
+}
+
 function isScrolledToBottom() {
   return (
     chatContainer.scrollHeight - chatContainer.scrollTop <=
@@ -413,7 +445,7 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
   });
 }
 
-export function handleHistoryResponse(data: MessageResponse) {
+export function handleHistoryResponse(data: NewMessageResponse) {
   const { messages, channelId, guildId, oldestMessageDate } = data;
 
   if (isChangingPage) {
@@ -503,13 +535,13 @@ function setupScrollHandling(wasAtBottom: boolean) {
   const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
   const mediaLoadedPromises = createMediaLoadPromises(mediaElements);
 
-  const observer = new MutationObserver(() => {
+  const _observer = new MutationObserver(() => {
     if (wasAtBottom && !isUserInteracted) {
       scrollToBottom();
     }
   });
 
-  observer.observe(chatContainer, {
+  _observer.observe(chatContainer, {
     childList: true,
     subtree: true
   });
@@ -526,7 +558,7 @@ function setupScrollHandling(wasAtBottom: boolean) {
 
     if (isAllMediaLoaded(mediaElements)) {
       chatContainer.style.overflow = "";
-      observer.disconnect();
+      _observer.disconnect();
     } else {
       setTimeout(monitorContentSizeChanges, 50);
     }
@@ -534,7 +566,7 @@ function setupScrollHandling(wasAtBottom: boolean) {
 
   Promise.all(mediaLoadedPromises).then(() => {
     chatContainer.style.overflow = "";
-    observer.disconnect();
+    _observer.disconnect();
   });
 
   monitorContentSizeChanges();
@@ -696,6 +728,64 @@ function createOptions3Button(
   button.dataset.m_id = messageId;
   appendToMessageContextList(messageId, userId);
 }
+export function addEditedIndicator(
+  messageElement: HTMLElement,
+  dateString?: string
+): void {
+  const date = dateString || new Date().toISOString();
+  const existingEditedSpan = messageElement.querySelector(
+    ".edited-message-indicator"
+  );
+  if (existingEditedSpan) {
+    existingEditedSpan.remove();
+  }
+
+  const editedSpan = createEl("span", {
+    className: "edited-message-indicator"
+  });
+  editedSpan.textContent = `(${translations.getTranslation("message-edited")})`;
+
+  editedSpan.addEventListener("mouseover", () => {
+    const formattedDate = getFormattedDateForSmall(new Date(date));
+    createTooltipAtCursor(formattedDate);
+  });
+
+  messageElement.appendChild(editedSpan);
+}
+function processMessageContent(content: string): string {
+  let formattedMessage = replaceCustomEmojis(content);
+  if (isURL(content)) formattedMessage = "";
+  return formattedMessage;
+}
+
+function updateMessageContent(element: HTMLElement, content: string): void {
+  const formattedMessage = processMessageContent(content);
+  element.textContent = formattedMessage;
+  element.dataset.content_observe = formattedMessage;
+  requestAnimationFrame(() => observe(element));
+}
+export function editChatMessage(data: EditMessageResponse): void {
+  const { messageId, content } = data;
+  const messageElement = getId(messageId);
+
+  if (!messageElement) {
+    console.error("Message element not found for edit:", messageId);
+    return;
+  }
+
+  const messageContentElement = messageElement.querySelector(
+    "#message-content-element"
+  ) as HTMLElement;
+
+  if (!messageContentElement) {
+    console.error("Message content element not found for edit:", messageId);
+    return;
+  }
+
+  updateMessageContent(messageContentElement, content);
+  addEditedIndicator(messageContentElement);
+}
+
 export function displayChatMessage(data: Message): HTMLElement | null {
   if (!data || !isValidMessage(data)) return null;
 
@@ -761,7 +851,10 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       replyToId ?? undefined
     );
   }
-
+  const isEdited = lastEdited !== null;
+  if (isEdited) {
+    addEditedIndicator(messageContentElement, lastEdited);
+  }
   let formattedMessage = replaceCustomEmojis(content);
   if (isURL(content)) formattedMessage = "";
 

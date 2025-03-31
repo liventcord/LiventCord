@@ -213,7 +213,10 @@
     "delete-message-prompt": "Bu mesajı silmek istediğine emin misin?",
     "message": "Mesaj",
     "member-since": "Şu Tarihten Beri Üye",
-    "edit-profile": "Profili düzenle"
+    "edit-profile": "Profili düzenle",
+    "save-button-text": "kaydetmek için",
+    "exit-button-text": "çıkmak için",
+    "message-edited": "düzenlendi"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

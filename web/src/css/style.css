@@ -688,6 +688,8 @@
   justify-content: flex-start;
   box-sizing: border-box;
 }
+.base-user-input :focus {
+}
 .base-user-input::placeholder {
   white-space: nowrap;
 }
@@ -1682,4 +1684,55 @@ textarea::-webkit-scrollbar-track {
 
 .status-option:active {
   background-color: #232425;
+}
+
+.edit-message-div {
+  height: auto;
+  background-color: #36393f;
+  border: 1px solid #3a3a40;
+  border-radius: 10px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  color: white;
+  padding: 15px;
+  overflow: auto;
+  outline: none;
+  position: relative;
+  width: calc(100% - 90px);
+  margin-left: 0px;
+}
+.base-user-input:focus {
+  border: 1px solid #515255;
+  outline: none;
+}
+
+.edit-message-button-container {
+  position: absolute;
+  top: 80%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: -3px;
+}
+
+.edit-message-button {
+  width: auto;
+  height: auto;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 50px;
+  font-size: 12px;
+}
+
+.edit-message-button .blue-text {
+  color: #7bb1f5;
+}
+
+.edit-message-button .white-text {
+  color: #ffffff;
+}
+.edited-message-indicator {
+  color: #888;
+  margin-left: 4px;
+  font-size: 0.7em;
 }

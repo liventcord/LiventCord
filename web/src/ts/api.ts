@@ -17,6 +17,8 @@ export const EventType = Object.freeze({
   DELETE_GUILD_IMAGE: "DELETE_GUILD_IMAGE",
   SEND_MESSAGE_GUILD: "SEND_MESSAGE_GUILD",
   SEND_MESSAGE_DM: "SEND_MESSAGE_DM",
+  EDIT_MESSAGE_GUILD: "EDIT_MESSAGE_GUILD",
+  EDIT_MESSAGE_DM: "EDIT_MESSAGE_DM",
   DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
   DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
   GET_MEMBERS: "GET_MEMBERS",
@@ -75,6 +77,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   DELETE_GUILD_IMAGE: HttpMethod.DELETE,
   SEND_MESSAGE_GUILD: HttpMethod.POST,
   SEND_MESSAGE_DM: HttpMethod.POST,
+  EDIT_MESSAGE_GUILD: HttpMethod.PUT,
+  EDIT_MESSAGE_DM: HttpMethod.PUT,
   GET_MEMBERS: HttpMethod.GET,
   GET_MESSAGE_DATE: HttpMethod.GET,
   GET_CHANNELS: HttpMethod.GET,
@@ -148,6 +152,10 @@ const EventUrlMap: Record<EventType, string> = {
   REMOVE_DM: "/dm/{friendId}",
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
   SEND_MESSAGE_DM: "/dms/channels/{channelId}/messages",
+  EDIT_MESSAGE_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
+  EDIT_MESSAGE_DM:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
   DELETE_MESSAGE_DM: "/dms/channels/{channelId}/messages/{messageId}",
   DELETE_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",

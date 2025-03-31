@@ -23,8 +23,10 @@ import {
   setBottomestChatDateStr,
   setLastMessageDate,
   lastMessageDate,
-  handleMessage,
-  MessageResponse
+  handleNewMessage,
+  NewMessageResponse,
+  EditMessageResponse,
+  handleEditMessage
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
 import { currentGuildId } from "./guild.ts";
@@ -42,6 +44,8 @@ export const SocketEvent = Object.freeze({
   DELETE_GUILD_IMAGE: "DELETE_GUILD_IMAGE",
   SEND_MESSAGE_GUILD: "SEND_MESSAGE_GUILD",
   SEND_MESSAGE_DM: "SEND_MESSAGE_DM",
+  EDIT_MESSAGE_GUILD: "EDIT_MESSAGE_GUILD",
+  EDIT_MESSAGE_DM: "EDIT_MESSAGE_DM",
   DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
   DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
   UPDATE_GUILD_NAME: "UPDATE_GUILD_NAME",
@@ -303,32 +307,71 @@ interface DMMessageData {
   message: Message[];
   channelId: string;
 }
-const handleGuildMessage = (data: GuildMessageData) => {
-  const messageData: MessageResponse = {
+interface GuildEditMessageData {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  content: string;
+}
+
+interface DMEditMessageData {
+  channelId: string;
+  messageId: string;
+  content: string;
+}
+
+const handleNewGuildMessage = (data: GuildMessageData) => {
+  const messageData: NewMessageResponse = {
     guildId: data.guildId,
     isOldMessages: false,
     isDm: false,
     messages: data.messages,
     channelId: data.channelId
   };
-  handleMessage(messageData);
+  handleNewMessage(messageData);
 };
 
-const handleDmMessage = (data: DMMessageData) => {
-  const messageData: MessageResponse = {
+const handleNewDmMessage = (data: DMMessageData) => {
+  const messageData: NewMessageResponse = {
     isOldMessages: false,
     messages: data.message,
     isDm: true,
     channelId: data.channelId
   };
-  handleMessage(messageData);
+  handleNewMessage(messageData);
 };
 
+const handleEditGuildMessage = (data: GuildEditMessageData) => {
+  const messageData: EditMessageResponse = {
+    guildId: data.guildId,
+    isDm: false,
+    messageId: data.messageId,
+    channelId: data.channelId,
+    content: data.content
+  };
+  handleEditMessage(messageData);
+};
+
+const handleEditDmMessage = (data: DMEditMessageData) => {
+  const messageData: EditMessageResponse = {
+    isDm: true,
+    channelId: data.channelId,
+    messageId: data.messageId,
+    content: data.content
+  };
+  handleEditMessage(messageData);
+};
 socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: any) => {
-  handleGuildMessage(data);
+  handleNewGuildMessage(data);
 });
 socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: any) => {
-  handleDmMessage(data);
+  handleNewDmMessage(data);
+});
+socketClient.on(SocketEvent.EDIT_MESSAGE_GUILD, (data: any) => {
+  handleEditGuildMessage(data);
+});
+socketClient.on(SocketEvent.EDIT_MESSAGE_DM, (data: any) => {
+  handleEditDmMessage(data);
 });
 
 socketClient.on(SocketEvent.UPDATE_USER_NAME, (data: UpdateUserData) => {
