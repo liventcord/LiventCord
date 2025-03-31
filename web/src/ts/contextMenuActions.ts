@@ -13,7 +13,7 @@ import {
   userManager
 } from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
-import { createEl, constructAbsoluteAppPage } from "./utils.ts";
+import { createEl, constructAbsoluteAppPage, getId } from "./utils.ts";
 import { isOnMePage, isOnDm, isOnGuild } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
@@ -80,7 +80,8 @@ const MessagesActionType = {
   PIN_MESSAGE: "PIN_MESSAGE",
   REPLY: "REPLY",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
-  DELETE_MESSAGE: "DELETE_MESSAGE"
+  DELETE_MESSAGE: "DELETE_MESSAGE",
+  COPY_MESSAGE: "COPY_MESSAGE"
 };
 
 let contextMenu: HTMLElement | null;
@@ -103,7 +104,10 @@ function markAsUnread(messageId: string) {
 function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
-
+function copyMessage(event: MouseEvent, messageId: string) {
+  const messageText = getId(messageId)?.getAttribute("data-content");
+  if (messageText) copyText(event, messageText);
+}
 function deleteMessagePrompt(messageId: string) {
   const acceptCallback = () => {
     deleteMessage(messageId);
@@ -455,6 +459,11 @@ function createMessageContext(messageId: string, userId: string) {
   context[MessagesActionType.MARK_AS_UNREAD] = {
     label: MessagesActionType.MARK_AS_UNREAD,
     action: () => markAsUnread(messageId)
+  };
+
+  context[MessagesActionType.COPY_MESSAGE] = {
+    label: MessagesActionType.COPY_MESSAGE,
+    action: (event: MouseEvent) => copyMessage(event, messageId)
   };
 
   if (isOnDm) {

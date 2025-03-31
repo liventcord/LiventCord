@@ -25,6 +25,7 @@
     "REPLY": "Reply",
     "MARK_AS_UNREAD": "Mark As Unread",
     "DELETE_MESSAGE": "Delete Message",
+    "COPY_MESSAGE": "Copy Message",
     "ADD_FRIEND": "Add Friend",
     "ADDED_FRIEND": "Added Friend!",
     "VOICE_CALL": "Start Video Call",
