@@ -16,6 +16,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
+import { handleResize } from "./ui.ts";
 
 export let userList: HTMLElement | null;
 export let userLine: HTMLElement | null;
@@ -101,6 +102,7 @@ export function setUsersList(
   isUsersOpenGlobal = isUsersOpen;
   updateChatWidth();
   updateMediaPanelPosition();
+  handleResize();
 }
 export function updateDmFriendList(friendId: string, friendNick: string) {
   const usersData = [

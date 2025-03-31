@@ -22,7 +22,7 @@ import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe } from "./chat.ts";
+import { observe, updateChatWidth } from "./chat.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
@@ -112,7 +112,8 @@ export function handleResize() {
       if (userLine) disableElement(userLine);
       if (activityList) disableElement(activityList);
 
-      isUsersOpenGlobal ? disableElement(userList) : enableElement(userList);
+      isUsersOpenGlobal ? enableElement(userList) : disableElement(userList);
+      updateChatWidth();
     }
   }
 
