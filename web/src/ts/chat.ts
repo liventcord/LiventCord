@@ -29,7 +29,8 @@ import {
   createEl,
   getFormattedDateForSmall,
   sanitizeHTML,
-  getFormattedDate
+  getFormattedDate,
+  getFormattedDateSelfMessage
 } from "./utils.ts";
 import {
   currentUserId,
@@ -327,7 +328,6 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
   let firstMessageDate = new Date();
 
   clearDateBarAndStartMessageFromChat();
-
   history.forEach((msgData) => {
     const { date, messageId } = msgData;
     msgData.addToTop = true;
@@ -338,8 +338,11 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
       repliesList.add(messageId);
     }
 
-    if (!firstMessageDate || new Date(date) < firstMessageDate) {
-      firstMessageDate = new Date(date);
+    if (date) {
+      const messageDate = new Date(date);
+      if (!firstMessageDate || messageDate < firstMessageDate) {
+        firstMessageDate = messageDate;
+      }
     }
   });
 
@@ -390,10 +393,6 @@ export function handleNewMessage(data: NewMessageResponse): void {
     }
 
     const message = data.messages[0];
-    if (typeof message.date === "string") {
-      message.date = new Date(message.date);
-      console.log("Converted date string to Date object:", message.date);
-    }
 
     displayChatMessage(message);
 
@@ -639,7 +638,7 @@ export function createProfileImageChat(
   nick: string,
   userInfo: UserInfo,
   userId: string,
-  date: string,
+  date: Date,
   isBot: boolean = false,
   isAfterDeleting: boolean = false,
   replyBar: HTMLElement | null = null
@@ -666,20 +665,27 @@ export function createProfileImageChat(
     profileImg.style.borderRadius = "25px";
   });
 
-  const authorAndDate = createEl("div");
-  authorAndDate.classList.add("author-and-date");
-  const nickElement = createEl("span");
-  nickElement.textContent = nick;
-  nickElement.classList.add("nick-element");
+  const authorAndDate = createEl("div", { className: "author-and-date" });
+  const nickElement = createEl("span", {
+    textContent: nick,
+    className: "nick-element"
+  });
   if (isBot) {
     const botSign = createEl("span", { className: "botSign" });
     authorAndDate.appendChild(botSign);
   }
   authorAndDate.appendChild(nickElement);
-  const messageDate = new Date(date);
-  const dateElement = createEl("span");
-  dateElement.textContent = getFormattedDate(messageDate);
-  dateElement.classList.add("date-element");
+
+  console.log(
+    "Displaying date: ",
+    date,
+    " formatted: ",
+    getFormattedDate(date)
+  );
+
+  const dateElement = createEl("span", { className: "date-element" });
+
+  dateElement.textContent = getFormattedDate(date);
   authorAndDate.appendChild(dateElement);
 
   if (replyBar) {
@@ -807,15 +813,15 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     isNotSent,
     replyOf
   } = data;
-
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
   if (!attachmentUrls && content === "" && embeds.length === 0) return null;
   const nick = userManager.getUserNick(userId);
+
   const newMessage = createMessageElement(
     messageId,
     userId,
-    (typeof date === "string" ? new Date(date) : date).toISOString(),
+    date,
     content,
     attachmentUrls,
     replyToId || undefined,
@@ -827,7 +833,6 @@ export function displayChatMessage(data: Message): HTMLElement | null {
 
   const userInfo = constructUserData(userId);
   let isCreatedProfile = false;
-
   if (addToTop) {
     isCreatedProfile = handleAddToTop(
       newMessage,
@@ -835,7 +840,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      (typeof date === "string" ? new Date(date) : date).toISOString(),
+      date,
       isBot,
       willDisplayProfile
     );
@@ -846,7 +851,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      date,
+      new Date(date),
       isBot,
       replyToId ?? undefined
     );
@@ -872,7 +877,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   );
 
   if (!currentLastDate) {
-    currentLastDate = date;
+    currentLastDate = new Date(date);
   }
 
   updateSenderAndButtons(newMessage, userId, addToTop);
@@ -924,6 +929,20 @@ export function handleSelfSentMessage(data: Message) {
       `#${CSS.escape(selfSentMessages[foundMessageIndex].id)}`
     ) as HTMLElement;
     if (element) {
+      const authorAndDate = element.querySelector(".author-and-date");
+      if (authorAndDate && data.date) {
+        const dateElement = authorAndDate.querySelector(".date-element");
+        console.log(data.date, getFormattedDateSelfMessage(data.date));
+        if (dateElement) {
+          dateElement.textContent = getFormattedDateSelfMessage(data.date);
+        }
+        const smallDateElement = element.querySelector(".small-date-element");
+        if (smallDateElement) {
+          smallDateElement.textContent = getFormattedDateForSmall(
+            new Date(data.date)
+          );
+        }
+      }
       element.style.color = "white";
       const messageContentElement = element.querySelector(
         "#message-content-element"
@@ -948,6 +967,7 @@ export function handleSelfSentMessage(data: Message) {
           data.attachmentUrls
         );
       }
+      element.id = data.messageId;
     }
     selfSentMessages.splice(foundMessageIndex, 1);
   }
@@ -1010,7 +1030,7 @@ function handleAddToTop(
       nick,
       userInfo,
       userId,
-      date,
+      new Date(date),
       isBot
     );
   } else {
@@ -1052,7 +1072,7 @@ function handleRegularMessage(
       nick,
       userInfo,
       userId,
-      dateString,
+      date,
       isBot
     );
   } else {
@@ -1063,7 +1083,7 @@ function handleRegularMessage(
         nick,
         userInfo,
         userId,
-        dateString,
+        date,
         isBot
       );
     } else {

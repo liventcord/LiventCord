@@ -6,7 +6,6 @@ import {
   setLastSenderID,
   createProfileImageChat,
   getMessageFromChat,
-  scrollToMessage,
   addEditedIndicator
 } from "./chat.ts";
 import { hasSharedGuild, guildCache } from "./cache.ts";
@@ -45,7 +44,7 @@ interface MessageData {
   userId: string;
   content: string;
   channelId?: string | null;
-  date: string | Date;
+  date: string | null;
   lastEdited?: string | null;
   attachmentUrls?: string | string[];
   replyToId?: string | null;
@@ -70,7 +69,7 @@ export class Message {
   userId: string;
   content: string;
   channelId: string | null;
-  date: Date;
+  date: string | null;
   lastEdited: string | null;
   attachmentUrls: string | string[] | undefined;
   replyToId: string | null | undefined;
@@ -108,7 +107,7 @@ export class Message {
     this.userId = userId;
     this.content = content;
     this.channelId = channelId;
-    this.date = new Date(date);
+    this.date = date;
     this.lastEdited = lastEdited || null;
     this.attachmentUrls = attachmentUrls;
     this.replyToId = replyToId;
@@ -482,7 +481,7 @@ export function deleteLocalMessage(
         nick,
         userInfo,
         userId,
-        date,
+        new Date(date),
         true
       );
       break;
