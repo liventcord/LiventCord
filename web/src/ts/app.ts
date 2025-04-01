@@ -548,67 +548,6 @@ export function readCurrentMessages() {
   newMessagesBar.style.display = "none";
 }
 
-export function createReplyBar(
-  newMessage: HTMLElement,
-  messageId: string,
-  userId: string,
-  attachmentUrls: string | string[] | undefined,
-  content?: string
-) {
-  if (newMessage.querySelector(".replyBar")) {
-    return;
-  }
-  const smallDate = newMessage.querySelector(".small-date-element");
-  if (smallDate) {
-    smallDate.remove();
-  }
-
-  const replyBar = createEl("div", { className: "replyBar" });
-  newMessage.appendChild(replyBar);
-  newMessage.classList.add("replyMessage");
-
-  const nick = userManager.getUserNick(userId);
-  replyBar.style.height = "100px";
-  const replyAvatar = createEl("img", {
-    className: "profile-pic",
-    id: userId
-  }) as HTMLImageElement;
-  replyAvatar.classList.add("reply-avatar");
-  replyAvatar.style.width = "15px";
-  replyAvatar.style.height = "15px";
-
-  setProfilePic(replyAvatar, userId);
-  const replyNick = createEl("span", {
-    textContent: nick,
-    className: "reply-nick"
-  });
-  const textToWrite = content
-    ? content
-    : attachmentUrls
-      ? attachmentUrls
-      : translations.getTranslation("click-to-attachment");
-  const replyContent = createEl("span", {
-    className: "replyContent",
-    textContent: textToWrite
-  });
-
-  replyContent.onclick = () => {
-    const originalMsg = getId(messageId);
-    if (originalMsg) {
-      scrollToMessage(originalMsg);
-    } else {
-      //const replyToId = newMessage.dataset.replyToId;
-      //const message = cacheInterface.getMessage(replyToId);
-      //if(message) {
-      //  fetchReplies(message, null, true);
-      //}
-    }
-  };
-  replyBar.appendChild(replyAvatar);
-  replyBar.appendChild(replyNick);
-  replyBar.appendChild(replyContent);
-}
-
 function initialiseMe() {
   if (!isOnMePage) {
     console.log("Cant initialise me while isOnMePage is false");

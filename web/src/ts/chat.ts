@@ -47,14 +47,14 @@ import {
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
-import { isChangingPage, createReplyBar } from "./app.ts";
+import { isChangingPage } from "./app.ts";
 import { loadingScreen, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
 import { userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
-import { constructUserData } from "./popups.ts";
+import { constructUserData, drawProfilePopId } from "./popups.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
 
 export let bottomestChatDateStr: string;
@@ -125,12 +125,20 @@ function handleReplyMessage(
   if (replyToId) {
     const foundReply = getId(replyToId);
     if (foundReply) {
-      const _messageId = foundReply.dataset.messageId;
+      const _messageId = foundReply.id;
       const userId = foundReply.dataset.userId;
       const content = foundReply.dataset.content;
       const attachmentUrls = foundReply.dataset.attachmentUrls;
       if (_messageId && userId) {
-        createReplyBar(newMessage, _messageId, userId, attachmentUrls, content);
+        console.log("Creatingn reply:");
+        createReplyBar(
+          newMessage,
+          messageId,
+          _messageId,
+          userId,
+          attachmentUrls,
+          content
+        );
       }
       return foundReply;
     } else {
@@ -177,8 +185,97 @@ export function handleReplies() {
   });
 }
 
-export function scrollToMessage(messageElement: HTMLElement) {
-  messageElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+export function createReplyBar(
+  newMessage: HTMLElement,
+  messageId: string,
+  originalId: string,
+  userId: string,
+  attachmentUrls: string | string[] | undefined,
+  content?: string
+) {
+  console.log("Create reply bar: ", newMessage, messageId, userId, content);
+  if (newMessage.querySelector(".replyBar")) {
+    return;
+  }
+  const smallDate = newMessage.querySelector(".small-date-element");
+  if (smallDate) {
+    smallDate.remove();
+  }
+
+  const replyBar = createEl("div", { className: "replyBar" });
+  newMessage.appendChild(replyBar);
+  newMessage.classList.add("replyMessage");
+
+  const nick = userManager.getUserNick(userId);
+  replyBar.style.height = "100px";
+  const replyAvatar = createEl("img", {
+    className: "profile-pic",
+    id: userId
+  }) as HTMLImageElement;
+  replyAvatar.classList.add("reply-avatar");
+  replyAvatar.style.width = "15px";
+  replyAvatar.style.height = "15px";
+
+  setProfilePic(replyAvatar, userId);
+  const replyNick = createEl("span", {
+    textContent: nick,
+    className: "reply-nick"
+  });
+
+  replyAvatar.addEventListener("click", () => {
+    drawProfilePopId(userId);
+  });
+  replyNick.addEventListener("click", () => {
+    drawProfilePopId(userId);
+  });
+
+  const textToWrite = content
+    ? content
+    : attachmentUrls
+      ? attachmentUrls
+      : translations.getTranslation("click-to-attachment");
+  const replyContent = createEl("span", {
+    className: "replyContent",
+    textContent: textToWrite
+  });
+
+  replyContent.onclick = () => {
+    const originalMsg = getId(originalId);
+    if (originalMsg) {
+      scrollToMessage(originalMsg);
+    } else {
+      const replyToId = newMessage.dataset.replyToId;
+      if (!replyToId) return;
+
+      const message = cacheInterface.getMessage(
+        currentGuildId,
+        guildCache.currentChannelId,
+        replyToId
+      );
+      if (message) {
+        fetchReplies([message], new Set<string>(), true);
+      }
+    }
+  };
+  replyBar.appendChild(replyAvatar);
+  replyBar.appendChild(replyNick);
+  replyBar.appendChild(replyContent);
+}
+
+export function scrollToMessage(messageElementToScroll: HTMLElement) {
+  if (!messageElementToScroll) {
+    return;
+  }
+  const oldColor = messageElementToScroll.style.backgroundColor;
+  messageElementToScroll.style.backgroundColor = "rgba(102, 97, 97, 0.5)";
+  setTimeout(() => {
+    messageElementToScroll.style.backgroundColor = oldColor;
+  }, 1000);
+  messageElementToScroll.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest"
+  });
 }
 
 export function scrollToBottom() {

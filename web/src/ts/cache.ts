@@ -711,6 +711,14 @@ class GuildCacheInterface {
   getMessages(guildId: string, channelId: string): Message[] {
     return this.getGuild(guildId)?.messages.getMessages(channelId) || [];
   }
+  getMessage(
+    guildId: string,
+    channelId: string,
+    messageId: string
+  ): Message | null {
+    const messages = this.getMessages(guildId, channelId);
+    return messages.find((msg) => msg.messageId === messageId) || null;
+  }
 
   removeMessage(messageId: string, channelId: string, guildId: string): void {
     this.getGuild(guildId)?.messages.removeMessage(messageId, channelId);
