@@ -17,6 +17,7 @@ import {
   userManager
 } from "./user.ts";
 import { handleResize } from "./ui.ts";
+import { socketClient } from "./socketEvents.ts";
 
 export let userList: HTMLElement | null;
 export let userLine: HTMLElement | null;
@@ -46,6 +47,11 @@ export async function updateMemberList(
   }
   currentUsers.length = 0;
   members.forEach((member) => currentUsers.push(member));
+
+  const userIds = members.map((member) => member.userId);
+  setTimeout(() => {
+    socketClient.getUserStatus(userIds);
+  }, 500);
 }
 
 export function toggleUsersList() {
