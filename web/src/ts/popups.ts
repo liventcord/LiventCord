@@ -303,8 +303,8 @@ function toggleButtonState(isActive: boolean, popAcceptButton: HTMLElement) {
 export function constructUserData(userId: string): UserInfo {
   return {
     userId,
-    discriminator: "0000",
-    nickName: deletedUser
+    discriminator: userManager.getUserDiscriminator(userId),
+    nickName: userManager.getUserDiscriminator(userId)
   };
 }
 
@@ -312,7 +312,7 @@ export async function drawProfilePopId(
   id: string,
   shouldDrawPanel: boolean = false
 ) {
-  const userData: UserInfo = constructUserData(id);
+  const userData = constructUserData(id);
   return await drawProfilePop(userData, shouldDrawPanel);
 }
 let currentProfileDisplay: HTMLElement;

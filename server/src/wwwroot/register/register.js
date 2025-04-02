@@ -37,9 +37,9 @@ function setInputListeners() {
 
           if (response.ok) {
             const data = await response.json();
-            if (data.result && currentInputValue === nickInput.value.trim()) {
+            if (data.discriminator && currentInputValue === nickInput.value.trim()) {
               document.getElementById("discriminatorText").textContent =
-                "#" + data.result;
+                "#" + data.discriminator	;
             }
           } else {
             throw new Error("Network response was not ok.");

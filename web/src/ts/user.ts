@@ -1,9 +1,15 @@
 import store from "../store";
-import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
+import {
+  profileDiscriminator,
+  selfDiscriminator,
+  selfName,
+  updateSelfProfile
+} from "./avatar.ts";
 import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
+import { getId } from "./utils.ts";
 
 export interface Member {
   userId: string;
@@ -346,6 +352,9 @@ export function initializeProfile() {
   currentDiscriminator = initialState.user.discriminator;
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
+  const profileDiscriminator = getId("profile-discriminator");
+  if (profileDiscriminator)
+    profileDiscriminator.textContent = "#" + initialState.user.discriminator;
   userStatus.setSelfStatus(initialState.user.status);
   updateSelfProfile(currentUserId, currentUserNick);
 }
