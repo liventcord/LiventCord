@@ -24,9 +24,9 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> RegisterAuth([FromForm] RegisterRequest request)
         {
             if (!ModelState.IsValid || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
-                return BadRequest(ModelState);
+                return Conflict();
 
-            var discriminator = await _nickDiscriminatorController.GetOrCreateDiscriminator(request.Nickname);
+            var discriminator = await _nickDiscriminatorController.GetCachedOrNewDiscriminator(request.Nickname);
             if (discriminator == null)
                 return BadRequest("Could not generate discriminator");
 

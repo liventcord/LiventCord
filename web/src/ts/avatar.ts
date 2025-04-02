@@ -131,25 +131,27 @@ export function refreshUserProfile(
   }
 
   // from user list
-  const profilesList = userList.querySelectorAll(".profile-pic");
-  profilesList.forEach((user) => {
-    const parentNode = user.parentNode as HTMLElement;
-    const userIdDom = parentNode && parentNode.id;
+  if (userList) {
+    const profilesList = userList.querySelectorAll(".profile-pic");
+    profilesList.forEach((user) => {
+      const parentNode = user.parentNode as HTMLElement;
+      const userIdDom = parentNode && parentNode.id;
 
-    if (userIdDom === userId) {
-      if (userNick) {
-        const profileNameElement = parentNode.querySelector(
-          ".profileName"
-        ) as HTMLElement;
-        if (profileNameElement) {
-          profileNameElement.innerText = userNick;
+      if (userIdDom === userId) {
+        if (userNick) {
+          const profileNameElement = parentNode.querySelector(
+            ".profileName"
+          ) as HTMLElement;
+          if (profileNameElement) {
+            profileNameElement.innerText = userNick;
+          }
+        }
+        if (user instanceof HTMLImageElement) {
+          user.src = `/profiles/${userId}.webp`;
         }
       }
-      if (user instanceof HTMLImageElement) {
-        user.src = `/profiles/${userId}.webp`;
-      }
-    }
-  });
+    });
+  }
 
   // from chat container
   const usersList = chatContainer.querySelectorAll(".profile-pic");
