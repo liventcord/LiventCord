@@ -36,7 +36,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var fileId = await UploadFileInternal(request.Photo, UserId!, null, null);
+                var fileId = await UploadFileInternal(request.Photo, UserId!, false, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -49,7 +49,7 @@ namespace LiventCord.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadGuildImage([FromForm] GuildImageUploadRequest request)
         {
-            if (!await _permissionsController.IsUserAdmin(request.GuildId, UserId!))
+            if (!await _permissionsController.CanManageGuild(UserId!, request.GuildId))
                 return Forbid();
 
             if (!IsFileSizeValid(request.Photo))
@@ -59,7 +59,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var fileId = await UploadFileInternal(request.Photo, UserId!, request.GuildId, null);
+                var fileId = await UploadFileInternal(request.Photo, UserId!, false, request.GuildId, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -67,6 +67,7 @@ namespace LiventCord.Controllers
                 return BadRequest(new { Type = "error", Message = ex.Message });
             }
         }
+
         [NonAction]
         public async Task<IActionResult> UploadImage(IFormFile photo, string userId, string? guildId = null)
         {
@@ -77,7 +78,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                string fileId = await UploadFileInternal(photo, userId, guildId, null);
+                string fileId = await UploadFileInternal(photo, userId, false, guildId, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -91,10 +92,12 @@ namespace LiventCord.Controllers
             long maxSize = SharedAppConfig.GetMaxAttachmentSize();
             return file.Length <= maxSize;
         }
+
         [NonAction]
         public async Task<string> UploadFileInternal(
             IFormFile file,
             string userId,
+            bool isEmoji = false,
             string? guildId = null,
             string? channelId = null
         )
@@ -112,15 +115,40 @@ namespace LiventCord.Controllers
             }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!FileExtensions.IsValidImageExtension(extension) || !file.ContentType.StartsWith("image/"))
+
+            if (string.IsNullOrEmpty(extension) && file.ContentType.StartsWith("image/"))
             {
-                _logger.LogWarning("Invalid file type uploaded. File name: {FileName}, Content type: {ContentType}", file.FileName, file.ContentType);
+                string contentType = file.ContentType.ToLowerInvariant();
+                extension = contentType switch
+                {
+                    "image/jpeg" => ".jpg",
+                    "image/png" => ".png",
+                    "image/gif" => ".gif",
+                    "image/webp" => ".webp",
+                    "image/svg+xml" => ".svg",
+                    "image/bmp" => ".bmp",
+                    "image/tiff" => ".tiff",
+                    _ => ""
+                };
+            }
+
+            bool validExtension = FileExtensions.IsValidImageExtension(extension);
+            bool validContentType = file.ContentType.StartsWith("image/");
+
+            if (!validExtension || !validContentType)
+            {
+                _logger.LogWarning("Invalid file type uploaded. File name: {FileName}, Content type: {ContentType}, Extension: {Extension}", file.FileName, file.ContentType, extension);
                 throw new ArgumentException("Invalid file type. Only images are allowed.");
             }
 
             _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId, guildId, channelId);
 
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
+
+            if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
+            {
+                sanitizedFileName = $"{sanitizedFileName}{extension}";
+            }
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
@@ -133,6 +161,11 @@ namespace LiventCord.Controllers
                 {
                     _logger.LogInformation("Uploading attachment for ChannelId: {ChannelId} in GuildId: {GuildId}", channelId, guildId);
                     await SaveOrUpdateFile(new AttachmentFile(fileId, sanitizedFileName, content, extension, channelId, guildId, userId));
+                }
+                else if (isEmoji)
+                {
+                    _logger.LogInformation("Uploading emoji file for GuildId: {GuildId}", guildId);
+                    await SaveFile(new EmojiFile(fileId, sanitizedFileName, content, extension, guildId, userId));
                 }
                 else
                 {
@@ -252,6 +285,16 @@ namespace LiventCord.Controllers
 
             await _context.SaveChangesAsync();
         }
+        private async Task SaveFile<T>(T newFile)
+            where T : FileBase
+        {
+            await _context.Set<T>().AddAsync(newFile);
+
+            _logger.LogInformation("Added new file: {FileId}, Content Length: {ContentLength}", newFile.FileId, newFile.Content.Length);
+
+
+            await _context.SaveChangesAsync();
+        }
 
 
 
@@ -300,6 +343,13 @@ public class ProfileImageUploadRequest
 
 }
 public class GuildImageUploadRequest
+{
+    public required IFormFile Photo { get; set; }
+
+    [IdLengthValidation]
+    public required string GuildId { get; set; }
+}
+public class GuildEmojiUploadRequest
 {
     public required IFormFile Photo { get; set; }
 

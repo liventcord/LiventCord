@@ -21,6 +21,14 @@ namespace LiventCord.Controllers
                 || await HasPermission(userId, guildId, PermissionFlags.ManageChannels);
         }
 
+        [NonAction]
+        public async Task<bool> CanManageGuild(string userId, string guildId)
+        {
+            var ownerId = await GetGuildOwner(guildId);
+            return ownerId == userId
+                || await HasPermission(userId, guildId, PermissionFlags.ManageGuild);
+        }
+
 
         [NonAction]
         public async Task<bool> CanInvite(string userId, string guildId)

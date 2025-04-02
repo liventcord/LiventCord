@@ -26,7 +26,7 @@ import {
   updateSelfProfile,
   lastConfirmedProfileImg,
   getProfileImage,
-  getGuildImage
+  onEditEmoji
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { availableLanguages, translations } from "./translations.ts";
@@ -41,8 +41,9 @@ import {
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { currentGuildId } from "./guild.ts";
+import { currentGuildId, setGuildImage } from "./guild.ts";
 import { isOnGuild } from "./router.ts";
+import { getGuildEmojiHtml, populateEmojis } from "./emoji.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -185,12 +186,24 @@ const getProfileSettingsConfig = () => {
 };
 
 const getGuildSettingsConfig = () => {
+  const noodle = `
+    <img
+      style="width: 500px;"
+      src="https://raw.githubusercontent.com/liventcord/LiventCordOld/refs/heads/main/static/404_files/noodle.gif"
+    />`;
+
   return createSettingsConfig(GuildCategoryTypes, (category: string) => {
     switch (category) {
       case GuildCategoryTypes.GuildOverview:
         return getGuildOverviewHtml();
+      case GuildCategoryTypes.Emoji:
+        if (currentGuildId) {
+          return getGuildEmojiHtml();
+        } else {
+          return `<h2>${translations.getSettingsTranslation(category)}</h2>${noodle}`;
+        }
       default:
-        return "";
+        return `<h2>${translations.getSettingsTranslation(category)}</h2>${noodle}`;
     }
   });
 };
@@ -441,6 +454,10 @@ function selectSettingCategory(
     settingsContainer,
     settingCategory as keyof typeof ProfileCategoryTypes
   );
+
+  if (settingCategory === GuildCategoryTypes.Emoji) {
+    populateEmojis();
+  }
 }
 
 function getActivityPresenceHtml() {
@@ -494,6 +511,7 @@ function escapeHtml(str: string) {
 
 function getGuildOverviewHtml() {
   return `
+  <h2 >${translations.getSettingsTranslation("GuildOverview")}</h2>
   <div id="guild-settings-rightbar">
     <div id="set-info-title-guild-name">${translations.getSettingsTranslation(
       "GuildName"
@@ -537,7 +555,7 @@ function getAccountSettingsHtml() {
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
                 </form>
                 <span id="settings-self-name">${currentUserNick}</span>
-                <button id="change-password-button" class="settings-buttons">${translations.getSettingsTranslation("ChangePassword")}</button>
+                <button id="change-password-button" class="settings-buttons settings-button">${translations.getSettingsTranslation("ChangePassword")}</button>
                 </div>
 
     `;
@@ -677,7 +695,13 @@ function initialiseSettingComponents(
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
-  const guildImage = getGuildImage();
+  const guildImage = getId("guild-image") as HTMLImageElement;
+  if (guildImage) {
+    guildImage.onerror = () => {
+      guildImage.src = blackImage;
+    };
+    setGuildImage(currentGuildId, guildImage, true);
+  }
   const channelNameInput = getId(
     "channel-overview-name-input"
   ) as HTMLInputElement;
@@ -694,7 +718,7 @@ function initialiseSettingComponents(
     if (permissionManager.canManageGuild()) {
       guildNameInput.addEventListener("input", onEditGuildName);
       guildImage?.addEventListener("click", triggerGuildImageUpdate);
-      if (guildImage && !guildImage.src) guildImage.src = blackImage;
+      if (guildImage) setGuildImage(currentGuildId, guildImage, true);
     } else {
       guildNameInput.disabled = true;
     }
@@ -709,6 +733,18 @@ function initialiseSettingComponents(
 
   const changePasswordButton = getId("change-password-button");
   changePasswordButton?.addEventListener("click", openChangePasswordPop);
+
+  const uploadEmojiButton = getId("upload-emoji-button");
+  const emojiImageInput = getId("emoijImage");
+  function triggerUploadEmoji() {
+    if (!emojiImageInput) return;
+    emojiImageInput.click();
+    emojiImageInput.addEventListener("change", onEditEmoji);
+  }
+
+  if (uploadEmojiButton) {
+    uploadEmojiButton.addEventListener("click", triggerUploadEmoji);
+  }
 }
 
 export function createToggle(id: string, label: string, description: string) {

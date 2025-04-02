@@ -157,9 +157,9 @@ class Translations {
     );
   }
 
-  getAvatarUploadErrorMsg(maxAvatarSize: number): string {
+  getAvatarUploadErrorMsg(maxAvatarSize: string): string {
     return this.replacePlaceholder("avatar-upload-size-error-message", {
-      avatarLimit: maxAvatarSize.toString()
+      avatarLimit: maxAvatarSize
     });
   }
 
