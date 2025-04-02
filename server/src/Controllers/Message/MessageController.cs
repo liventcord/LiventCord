@@ -646,7 +646,7 @@ namespace LiventCord.Controllers
                         return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
                     }
 
-                    string fileId = await _imageController.UploadFileInternal(file, userId, guildId, channelId);
+                    string fileId = await _imageController.UploadFileInternal(file, userId, false, guildId, channelId);
                     attachmentUrls += fileId + ",";
                 }
 

@@ -538,7 +538,7 @@ function createMainLogo() {
   return mainLogo;
 }
 
-function setGuildImage(
+export function setGuildImage(
   guildId: string,
   imageElement: HTMLImageElement,
   isUploaded: boolean

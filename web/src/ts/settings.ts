@@ -14,13 +14,13 @@ import {
 import {
   refreshUserProfile,
   updateSelfName,
-  uploadImage,
   onEditGuildProfile,
   onEditProfile,
   getProfileImageFile,
   getGuildImageFile,
   getGuildImage,
-  clearAvatarInput
+  clearAvatarInput,
+  uploadImageGuildOrProfile
 } from "./avatar.ts";
 import {
   showConfirmationPanel,
@@ -337,14 +337,14 @@ export function applySettings() {
       changeGuildName();
 
       if (permissionManager.canManageGuild()) {
-        uploadImage(true);
+        uploadImageGuildOrProfile(true);
       }
     } else if (isChannelSettings()) {
       changeChannelName();
     } else if (isProfileSettings()) {
       console.log("Applying profile settings");
       changeNickname();
-      uploadImage(false);
+      uploadImageGuildOrProfile(false);
     }
 
     isUnsaved = false;

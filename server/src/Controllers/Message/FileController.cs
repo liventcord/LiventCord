@@ -2,30 +2,34 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using LiventCord.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("")]
-    public class FileController : ControllerBase
+    public class FileController : BaseController
     {
         private readonly AppDbContext _context;
         private readonly FileExtensionContentTypeProvider _fileTypeProvider;
         private readonly IWebHostEnvironment _env;
+        private readonly PermissionsController _permissionsController;
 
         public FileController(
             AppDbContext context,
             FileExtensionContentTypeProvider fileTypeProvider,
-            IWebHostEnvironment env
+            IWebHostEnvironment env,
+            PermissionsController permissionsController
         )
         {
             _context = context;
             _fileTypeProvider = fileTypeProvider ?? new FileExtensionContentTypeProvider();
             _env = env;
+            _permissionsController = permissionsController;
         }
 
         [HttpGet("guilds/{guildId}")]
-        public async Task<IActionResult> GetGuildFile(string guildId)
+        public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
         {
             guildId = RemoveFileExtension(guildId);
 
@@ -37,7 +41,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("profiles/{userId}")]
-        public async Task<IActionResult> GetProfileFile(string userId)
+        public async Task<IActionResult> GetProfileFile([FromRoute][UserIdLengthValidation] string userId)
         {
             userId = RemoveFileExtension(userId);
 
@@ -49,7 +53,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("attachments/{attachmentId}")]
-        public async Task<IActionResult> GetAttachmentFile(string attachmentId)
+        public async Task<IActionResult> GetAttachmentFile([FromRoute][IdLengthValidation] string attachmentId)
         {
             var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
             if (file == null)
@@ -60,25 +64,18 @@ namespace LiventCord.Controllers
             return GetFileResult(file);
         }
 
-        [HttpGet("profiles")]
-        public async Task<IActionResult> GetAllProfileFiles()
+        [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
+        public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {
-            var files = await _context.ProfileFiles.ToListAsync();
-            if (files == null || files.Count == 0)
-                return Content("<h2>No profile files found.</h2>", "text/html");
-
-            var html = "<html><head><title>Profile Files</title></head><body>";
-            html += "<h2>Profile Files</h2><ul>";
-
-            foreach (var file in files)
+            var file = await _context.EmojiFiles.FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
+            if (file == null)
             {
-                html += $"<li>{file.FileName} ({file.UserId})</li>";
+                return NotFound(_context.EmojiFiles);
             }
 
-            html += "</ul></body></html>";
-
-            return Content(html, "text/html");
+            return GetFileResult(file, true);
         }
+
 
 
         private string RemoveFileExtension(string userId)
@@ -91,13 +88,42 @@ namespace LiventCord.Controllers
             return userId;
         }
 
-        private IActionResult GetFileResult(dynamic file)
+        private IActionResult GetFileResult(dynamic file, bool isExtensionManual = false)
         {
             if (file == null)
                 return NotFound(new { Error = "File not found." });
 
-            if (!_fileTypeProvider.TryGetContentType(file.FileName, out string contentType))
-                contentType = "application/octet-stream";
+            string contentType;
+
+            if (isExtensionManual)
+            {
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+                switch (extension)
+                {
+                    case ".jpg":
+                    case ".jpeg":
+                        contentType = "image/jpeg";
+                        break;
+                    case ".png":
+                        contentType = "image/png";
+                        break;
+                    case ".gif":
+                        contentType = "image/gif";
+                        break;
+                    case ".svg":
+                        contentType = "image/svg+xml";
+                        break;
+                    default:
+                        contentType = "application/octet-stream";
+                        break;
+                }
+            }
+            else
+            {
+                if (!_fileTypeProvider.TryGetContentType(file.FileName, out contentType))
+                    contentType = "application/octet-stream";
+            }
 
             var sanitizedFileName = Utils.SanitizeFileName(file.FileName);
             Response.Headers.Append("Content-Disposition", $"inline; filename=\"{sanitizedFileName}\"");

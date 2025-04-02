@@ -51,35 +51,30 @@ public class AttachmentFile : FileBase
     public override bool Matches(string? userId, string? guildId) =>
         UserId == userId && GuildId == guildId;
 
-    public string GetAllPropertiesAsString()
-    {
-        var properties = new List<string>
-        {
-            $"FileId: {FileId}",
-            $"FileName: {FileName}",
-            $"Extension: {Extension}",
-            $"ChannelId: {ChannelId}",
-            $"UserId: {UserId}",
-            $"GuildId: {GuildId}"
-        };
 
-        return string.Join(", ", properties);
-    }
 }
 
 
 public class EmojiFile : FileBase
 {
+    public string UserId { get; set; }
+
     public EmojiFile(
         string fileId,
         string fileName,
         byte[] content,
         string extension,
-        string? guildId
+        string guildId,
+        string userId
     )
-        : base(fileId, fileName, content, extension, "emoji", guildId) { }
+        : base(fileId, fileName, content, extension, "emoji", guildId)
+    {
+        UserId = userId;
+    }
 
-    public override bool Matches(string? userId, string? guildId) => GuildId == guildId;
+
+    public override bool Matches(string? userId, string? guildId) =>
+        UserId == userId && GuildId == guildId;
 }
 
 public class GuildFile : FileBase
