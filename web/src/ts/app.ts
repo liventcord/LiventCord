@@ -10,8 +10,7 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID,
-  scrollToMessage
+  setLastSenderID
 } from "./chat.ts";
 import {
   chatInput,
@@ -75,31 +74,37 @@ import {
   activityList,
   setUserListLine,
   setUsersList,
-  updateDmFriendList
+  updateDmFriendList,
+  isUsersOpenGlobal
 } from "./userList.ts";
 import {
   getId,
   getMaskedEmail,
-  createEl,
   enableElement,
   disableElement,
   constructDmPage,
-  loadBooleanCookie
+  loadBooleanCookie,
+  isMobile
 } from "./utils.ts";
-import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
+import {
+  setProfilePic,
+  updateSelfProfile,
+  setUploadSize,
+  selfName
+} from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
-  isOnMe,
+  isOnMePage,
   router,
   isOnDm,
   isOnGuild,
-  setIsOnMe,
+  setisOnMePage,
   setIsOnDm,
   setIsOnGuild
 } from "./router.ts";
-import { initialiseAudio } from "./audio.ts";
+import { earphoneButton, initialiseAudio, microphoneButton } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
@@ -167,7 +172,6 @@ export function initializeApp() {
 
 export let isDomLoaded = false;
 let cachedFriMenuContent;
-let userListFriActiveHtml: string;
 export let initialState: InitialState;
 
 export function initialiseState(data: InitialStateData): void {
@@ -224,7 +228,135 @@ export function initialiseState(data: InitialStateData): void {
   updateGuilds(guilds);
   addKeybinds();
 }
+let isOnLeft = false;
+let isOnRight = false;
+const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
+const toolbarOptions = getId("toolbaroptions") as HTMLElement;
+const navigationBar = getId("navigation-bar") as HTMLElement;
 
+function toggleHamburger(toLeft: boolean, toRight: boolean) {
+  console.log(isOnRight, isOnLeft, toLeft, toRight);
+  if (!userList) return;
+
+  if (isOnRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (isOnLeft && toRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (toRight) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToRight();
+    return;
+  }
+
+  if (toLeft) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToLeft();
+  } else {
+    mobileMoveToCenter();
+  }
+}
+
+function mobileMoveToRight() {
+  if (!userList) return;
+  isOnLeft = false;
+  isOnRight = true;
+  enableElement(userList);
+}
+
+function mobileMoveToCenter() {
+  if (!userList) return;
+
+  isOnRight = false;
+  isOnLeft = false;
+  disableElement(userList);
+
+  getId("channel-list")?.classList.remove("channel-list-mobile-left");
+  getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
+  getId("guild-container")?.classList.remove("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.remove(
+    "message-input-container-mobile-left"
+  );
+  chatContainer.classList.remove("chat-container-mobile-left");
+  disableElement(navigationBar);
+}
+
+function mobileMoveToLeft() {
+  if (!userList) return;
+
+  isOnLeft = true;
+  isOnRight = false;
+  disableElement(userList);
+
+  getId("channel-list")?.classList.add("channel-list-mobile-left");
+  getId("guilds-list")?.classList.add("guilds-list-mobile-left");
+  getId("guild-container")?.classList.add("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.add(
+    "message-input-container-mobile-left"
+  );
+  chatContainer.classList.add("chat-container-mobile-left");
+  enableElement(navigationBar);
+}
+function initialiseMobile() {
+  const earphoneParent = earphoneButton.parentElement;
+  if (earphoneParent) {
+    earphoneParent.remove();
+  }
+
+  const microphoneParent = microphoneButton.parentElement;
+  if (microphoneParent) {
+    microphoneParent.remove();
+  }
+  disableElement(selfName);
+  disableElement("self-status");
+
+  const friendIconSign = getId("friend-icon-sign");
+  if (friendIconSign) {
+    friendIconSign.style.position = "";
+    friendIconSign.classList.add("navigationButton");
+    navigationBar.appendChild(friendIconSign);
+
+    const svgElement = friendIconSign.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+
+  const settingsButton = getId("settings-button");
+  if (settingsButton) {
+    navigationBar.appendChild(settingsButton);
+    settingsButton.classList.add("navigationButton");
+
+    const svgElement = settingsButton.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+  const avatarWrapper = getId("avatar-wrapper");
+  if (avatarWrapper) {
+    navigationBar.appendChild(avatarWrapper);
+    avatarWrapper.classList.add("navigationButton");
+  }
+}
 function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
@@ -245,12 +377,21 @@ function initializeElements() {
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
   const tbShowProfile = getId("tb-showprofile");
-  tbShowProfile?.addEventListener("click", toggleUsersList);
+  tbShowProfile?.addEventListener("click", () => {
+    isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
+  });
 
   const tbPinMessage = getId("tb-pin");
   tbPinMessage?.addEventListener("click", () => {
     pinMessage;
   });
+  const tbHamburger = getId("tb-hamburger");
+  console.log(isUsersOpenGlobal, isOnLeft);
+  tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
+
+  if (isMobile) {
+    initialiseMobile();
+  }
 }
 
 function initializeSettings() {
@@ -283,6 +424,10 @@ function initializeListeners() {
   avatarWrapper.addEventListener("click", () => {
     if (userStatus) userStatus.showStatusPanel();
   });
+
+  mobileBlackBg.addEventListener("click", () => {
+    toggleHamburger(!isOnLeft, !isOnRight);
+  });
   addContextListeners();
 }
 
@@ -298,7 +443,9 @@ function handleGuildClick(event: MouseEvent) {
 
 function initializeGuild() {
   initialiseMe();
-  disableElement(userList);
+  if (userList) {
+    disableElement(userList);
+  }
   const {
     isValid,
     initialGuildId,
@@ -399,70 +546,9 @@ export function readCurrentMessages() {
   newMessagesBar.style.display = "none";
 }
 
-export function createReplyBar(
-  newMessage: HTMLElement,
-  messageId: string,
-  userId: string,
-  attachmentUrls: string | string[] | undefined,
-  content?: string
-) {
-  if (newMessage.querySelector(".replyBar")) {
-    return;
-  }
-  const smallDate = newMessage.querySelector(".small-date-element");
-  if (smallDate) {
-    smallDate.remove();
-  }
-
-  const replyBar = createEl("div", { className: "replyBar" });
-  newMessage.appendChild(replyBar);
-  newMessage.classList.add("replyMessage");
-
-  const nick = userManager.getUserNick(userId);
-  replyBar.style.height = "100px";
-  const replyAvatar = createEl("img", {
-    className: "profile-pic",
-    id: userId
-  }) as HTMLImageElement;
-  replyAvatar.classList.add("reply-avatar");
-  replyAvatar.style.width = "15px";
-  replyAvatar.style.height = "15px";
-
-  setProfilePic(replyAvatar, userId);
-  const replyNick = createEl("span", {
-    textContent: nick,
-    className: "reply-nick"
-  });
-  const textToWrite = content
-    ? content
-    : attachmentUrls
-    ? attachmentUrls
-    : translations.getTranslation("click-to-attachment");
-  const replyContent = createEl("span", {
-    className: "replyContent",
-    textContent: textToWrite
-  });
-
-  replyContent.onclick = () => {
-    const originalMsg = getId(messageId);
-    if (originalMsg) {
-      scrollToMessage(originalMsg);
-    } else {
-      //const replyToId = newMessage.dataset.replyToId;
-      //const message = cacheInterface.getMessage(replyToId);
-      //if(message) {
-      //  fetchReplies(message, null, true);
-      //}
-    }
-  };
-  replyBar.appendChild(replyAvatar);
-  replyBar.appendChild(replyNick);
-  replyBar.appendChild(replyContent);
-}
-
 function initialiseMe() {
-  if (!isOnMe) {
-    console.log("Cant initialise me while isOnMe is false");
+  if (!isOnMePage) {
+    console.log("Cant initialise me while isOnMePage is false");
     return;
   }
   enableElement("dms-title");
@@ -528,25 +614,27 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     lastDmId = "";
     friendsCache.currentDmId = "";
     enableElement("channel-info-container-for-friend");
-    disableElement("channel-info-container-for-index");
+    if (!isMobile) {
+      disableElement("channel-info-container-for-index");
+    }
     loadMainToolbar();
-    disableElement("chat-container");
+
+    disableElement(chatContainer);
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
+    disableElement("channel-container");
 
     updateUsersActivities();
 
     setUsersList(false);
     setUserListLine();
-    if (userListFriActiveHtml) {
-      userList.innerHTML = userListFriActiveHtml;
-    }
+
     const nowOnlineTitle = getId("nowonline");
     if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
-    if (isOnMe) {
+    if (isOnMePage) {
       return;
     }
-    setIsOnMe(true);
+    setisOnMePage(true);
     setIsOnGuild(false);
     updateFriendMenu();
   }
@@ -580,7 +668,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   enableElement("dm-container-parent", false, true);
   channelsUl.innerHTML = "";
 
-  enableElement("guild-container", false, true);
+  if (!isMobile) {
+    enableElement("guild-container", false, true);
+  }
 
   const chanList = getId("channel-list") as HTMLElement;
   if (cachedFriMenuContent && chanList) {
@@ -592,7 +682,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
 export function changecurrentGuild() {
   isChangingPage = true;
-  setIsOnMe(false);
+  setisOnMePage(false);
   setIsOnGuild(true);
   getChannels();
   fetchMembers();
@@ -604,22 +694,20 @@ export function changecurrentGuild() {
 
   isChangingPage = false;
 }
-
+function updateChatPlaceholder(friendNick: string) {
+  chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
+}
 export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
   }
   isChangingPage = true;
 
-  if (isOnMe) {
-    userListFriActiveHtml = userList.innerHTML;
-  }
-
-  setIsOnMe(false);
+  setisOnMePage(false);
   enableElement("guild-name");
   console.log("Loading app with friend id:", friendId);
 
-  if (!friendId) {
+  function handleGuild() {
     setIsOnGuild(true);
     setIsOnDm(false);
     if (friendsCache.currentDmId) {
@@ -630,7 +718,10 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       getChannels();
     }
     disableElement("dms-title");
-    disableElement(activityList);
+    enableElement("channel-container", false, true);
+    if (activityList) {
+      disableElement(activityList);
+    }
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
@@ -640,7 +731,9 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("dm-profile-sign-bubble");
     disableElement("dm-profile-sign");
     loadGuildToolbar();
-  } else {
+  }
+
+  function handleDm(id: string) {
     loadDmToolbar();
     setIsOnGuild(false);
     setIsOnDm(true);
@@ -648,20 +741,27 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     enableElement("dm-profile-sign");
     enableElement("guild-container", false, true);
     disableElement("guild-settings-button");
-    activateDmContainer(friendId);
-    const friendNick = userManager.getUserNick(friendId);
-    chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
+    activateDmContainer(id);
+    const friendNick = userManager.getUserNick(id);
+
+    updateChatPlaceholder(friendNick);
 
     setChannelTitle(friendNick);
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
     if (dmProfSign) {
-      setProfilePic(dmProfSign, friendId);
-      dmProfSign.dataset.cid = friendId;
+      setProfilePic(dmProfSign, id);
+      dmProfSign.dataset.cid = id;
     }
 
-    updateDmFriendList(friendId, friendNick);
+    updateDmFriendList(id, friendNick);
+  }
+
+  if (friendId) {
+    handleDm(friendId);
+  } else {
+    handleGuild();
   }
 
   disableElement("channel-info-container-for-friend");
@@ -679,7 +779,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
 
 function changeCurrentDm(friendId: string) {
   isChangingPage = true;
-  setIsOnMe(false);
+  setisOnMePage(false);
   setIsOnGuild(false);
   setIsOnDm(true);
   setReachedChannelEnd(false);

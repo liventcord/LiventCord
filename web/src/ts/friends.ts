@@ -387,7 +387,6 @@ export function UpdatePendingCounter() {
       }
     });
   }
-  console.log(pendingCounter, currentFriendInstances);
 
   if (pendingCounter > 0) {
     if (pendingAlertLeft) {

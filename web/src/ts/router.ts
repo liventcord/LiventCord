@@ -3,11 +3,11 @@ import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
 import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
-export let isOnMe = true;
+export let isOnMePage = true;
 export let isOnDm = false;
 export let isOnGuild = false;
-export function setIsOnMe(val: boolean) {
-  isOnMe = val;
+export function setisOnMePage(val: boolean) {
+  isOnMePage = val;
 }
 export function setIsOnDm(val: boolean) {
   isOnDm = val;
@@ -151,7 +151,7 @@ class Router {
 
   shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string) {
     return (
-      (isOnMe && !isPathnameCorrectValue) ||
+      (isOnMePage && !isPathnameCorrectValue) ||
       (isOnGuild && cacheInterface.doesGuildExist(guildId))
     );
   }

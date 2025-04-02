@@ -144,12 +144,12 @@ export function closeReplyMenu() {
   chatInput.classList.remove("reply-opened");
 }
 export function adjustHeight() {
-  const MIN_CHAT_HEIGHT = 60;
+  const MIN_CHAT_HEIGHT = 40;
   chatInput.style.height = "auto";
   chatInput.style.height = chatInput.scrollHeight + "px";
-
   const chatInputHeight = chatInput.scrollHeight;
   chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight;
+
   const adjustChatContainerHeight = () => {
     const viewportHeight = window.innerHeight;
     const maxAllowedHeight = viewportHeight - chatInputHeight - MIN_CHAT_HEIGHT;
@@ -159,10 +159,10 @@ export function adjustHeight() {
   adjustChatContainerHeight();
   window.addEventListener("resize", adjustChatContainerHeight);
 
-  if (chatInputHeight === MIN_CHAT_HEIGHT) {
-    chatInput.style.paddingTop = "-5px";
-    chatInput.style.height = "45px";
+  if (chatInput.value.split("\n").length <= 1 || chatInputHeight <= 40) {
+    chatInput.style.height = `${MIN_CHAT_HEIGHT}px`;
   }
+
   adjustReplyPosition();
 }
 function extractUserIds(message: string) {

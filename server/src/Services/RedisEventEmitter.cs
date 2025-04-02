@@ -27,6 +27,19 @@ public class RedisEventEmitter
             });
         }
     }
+    public async Task EmitGuildMembersToRedis(string guildId)
+    {
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userIds = await dbContext.GetGuildUserIds(guildId, null);
+
+            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+            {
+                await _redisEmitter.EmitGuildMembersToRedisStream(guildId, userIds);
+            });
+        }
+    }
 
     public async Task EmitToFriend(EventType eventType, object payload, string userId, string friendId)
     {
@@ -81,5 +94,6 @@ public enum EventType
     JOIN_VOICE_CHANNEL,
     CHANGE_GUILD_NAME,
     UPDATE_CHANNEL_NAME,
-    UPDATE_MESSAGE
+    EDIT_MESSAGE_GUILD,
+    EDIT_MESSAGE_DM
 }

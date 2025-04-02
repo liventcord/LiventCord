@@ -25,6 +25,7 @@
     "REPLY": "Reply",
     "MARK_AS_UNREAD": "Mark As Unread",
     "DELETE_MESSAGE": "Delete Message",
+    "COPY_MESSAGE": "Copy Message",
     "ADD_FRIEND": "Add Friend",
     "ADDED_FRIEND": "Added Friend!",
     "VOICE_CALL": "Start Video Call",
@@ -99,7 +100,17 @@
     "saveChanges": "Save Changes",
     "ChannelSettings": "Channel Settings",
     "DeleteChannel": "Delete Channel",
-    "Permissions": "Permissions"
+    "Permissions": "Permissions",
+    "ChangePassword": "Change Password",
+    "UpdatePasswordTitle": "Update Password",
+    "UpdatePasswordDescription": "Enter your old and new password.",
+    "UpdatePasswordCurrent": "Current Password",
+    "UpdatePasswordNew": "New Password",
+    "UpdatePasswordNewConfirm": "Confirm New Password",
+    "PasswordconfirmationAlert": "Both new passwords should be same!",
+    "PasswordChangeSuccess": "Password changed succesfully.",
+    "PasswordChangeError": "There was an error while changing password!",
+    "PasswordInvalid": "Password Invalid!"
   },
   "textTranslations": {
     "online": "Online",
@@ -199,7 +210,11 @@
     "delete-message-prompt": "Are you sure you want to delete this message?",
     "message": "Message",
     "member-since": "Member Since",
-    "edit-profile": "Edit Profile"
+    "edit-profile": "Edit Profile",
+    "save-button-text": "for saving",
+    "exit-button-text": "for exit",
+    "message-edited": "edited",
+    "done": "Done"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

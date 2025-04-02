@@ -286,7 +286,9 @@ function resetProfileImageFile() {
   if (profileImgFile) profileImgFile.value = "";
 }
 function getFileSrc(isGuild: boolean): string {
-  return isGuild ? getGuildImage()?.src ?? "" : getProfileImage()?.src ?? "";
+  return isGuild
+    ? (getGuildImage()?.src ?? "")
+    : (getProfileImage()?.src ?? "");
 }
 
 function isValidBase64(file: string): boolean {

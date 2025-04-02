@@ -275,8 +275,8 @@ export function updateDmsList(friends: DmUserInfo[]) {
 
   const friendsRecord: { [key: string]: Friend } = friends.reduce(
     (record, friend) => {
-      async function setupDmUser(friend: DmUserInfo) {
-        const dmUser = await DmUser.create(friend);
+      async function setupDmUser(_friend: DmUserInfo) {
+        const dmUser = await DmUser.create(_friend);
         dmContainerParent.appendChild(dmUser.dmContainer);
         dmContainerParent.appendChild(dmUser.dmContainer);
 
@@ -523,14 +523,12 @@ export function clearActivityList() {
         "activity-detail-2"
       )}</h1>
       <ul></ul>`;
-
-    activityList.innerHTML = activityListEmptyHTML;
+    if (activityList) activityList.innerHTML = activityListEmptyHTML;
   }
 }
 
 export function updateUsersActivities(friends?: Friend[]) {
   if (friends) currentUserActivities = friends;
-  console.error(friends);
   console.log(String(Array.isArray(currentUserActivities)));
   if (currentUserActivities && Array.isArray(currentUserActivities)) {
     clearActivityList();
@@ -542,11 +540,14 @@ export function updateUsersActivities(friends?: Friend[]) {
 
 export function createActivityCard(friend: Friend) {
   if (!userManager.isOnline(friend.userId)) return;
+  if (!activityList) return;
   if (friend.activity === "" || friend.activity === undefined) return;
 
   disableElement("activity-detail");
   disableElement("activity-detail-2");
-  let activityCard = userList.querySelector(`#${CSS.escape(friend.userId)}`);
+  let activityCard = activityList.querySelector(
+    `#${CSS.escape(friend.userId)}`
+  );
 
   if (!activityCard) {
     activityCard = createEl("div", {
@@ -671,6 +672,7 @@ function createAddFriendForm() {
 }
 
 function adjustButtonPosition() {
+  if (!userList) return;
   const inputrighttoset = userList.style.display === "flex" ? "463px" : "76px";
   const addfriendinputbutton = getId("addfriendinputbutton");
   if (addfriendinputbutton) {
@@ -831,8 +833,8 @@ function createFriendCard(
         ? "incoming-friend-request"
         : "outgoing-friend-request"
       : isOnline
-      ? "online"
-      : "offline"
+        ? "online"
+        : "offline"
   );
 
   friendInfo.appendChild(

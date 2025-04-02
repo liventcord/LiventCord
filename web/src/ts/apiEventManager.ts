@@ -9,7 +9,7 @@ import {
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
-  editChannelElement,
+  editChannelName,
   handleChannelDelete,
   handleNewChannel
 } from "./channels.ts";
@@ -193,6 +193,13 @@ apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
 
   cacheInterface.updateMembers(guildId, userInfosToMembers(userInfos));
   updateMemberList(userInfos);
+  userInfos.forEach((userInfo) => {
+    userManager.addUser(
+      userInfo.userId,
+      userInfo.nickName,
+      userInfo.discriminator
+    );
+  });
 });
 
 interface MessageResponse {
@@ -280,7 +287,7 @@ type ChangeChannelResponse = {
 };
 apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
   if (data.guildId === currentGuildId) {
-    editChannelElement(data.channelId, data.channelName);
+    editChannelName(data.channelId, data.channelName);
   }
 });
 

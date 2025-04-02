@@ -5,7 +5,8 @@ import {
   setHasJustFetchedMessagesFalse,
   setLastSenderID,
   createProfileImageChat,
-  getMessageFromChat
+  getMessageFromChat,
+  addEditedIndicator
 } from "./chat.ts";
 import { hasSharedGuild, guildCache } from "./cache.ts";
 import {
@@ -25,7 +26,8 @@ import {
   getBeforeElement,
   formatDate,
   disableElement,
-  createRandomId
+  createRandomId,
+  createEl
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -33,6 +35,7 @@ import { currentGuildId } from "./guild.ts";
 import { constructUserData } from "./popups.ts";
 import { maxAttachmentSize } from "./avatar.ts";
 import { userManager } from "./user.ts";
+import { translations } from "./translations.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -41,7 +44,7 @@ interface MessageData {
   userId: string;
   content: string;
   channelId?: string | null;
-  date: string | Date;
+  date: string | null;
   lastEdited?: string | null;
   attachmentUrls?: string | string[];
   replyToId?: string | null;
@@ -66,7 +69,7 @@ export class Message {
   userId: string;
   content: string;
   channelId: string | null;
-  date: Date;
+  date: string | null;
   lastEdited: string | null;
   attachmentUrls: string | string[] | undefined;
   replyToId: string | null | undefined;
@@ -104,7 +107,7 @@ export class Message {
     this.userId = userId;
     this.content = content;
     this.channelId = channelId;
-    this.date = new Date(date);
+    this.date = date;
     this.lastEdited = lastEdited || null;
     this.attachmentUrls = attachmentUrls;
     this.replyToId = replyToId;
@@ -120,7 +123,7 @@ export class Message {
   }
 }
 
-function createFormData(
+function createNewMessageFormData(
   temporaryId: string,
   content: string,
   user_ids?: string[]
@@ -133,6 +136,12 @@ function createFormData(
     formData.append("replyToId", currentReplyingTo);
   }
 
+  return formData;
+}
+function createEditMessageformData(messageId: string, content: string) {
+  const formData = new FormData();
+  formData.append("content", content);
+  formData.append("messageId", messageId);
   return formData;
 }
 
@@ -185,7 +194,7 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   disableElement(attachmentsTray);
 
   const temporaryId = createRandomId();
-  const formData = createFormData(temporaryId, content, user_ids);
+  const formData = createNewMessageFormData(temporaryId, content, user_ids);
   await processFiles(fileInput.files, formData);
 
   fileInput.value = "";
@@ -198,6 +207,24 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     try {
       await apiClient.sendForm(
         isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
+        formData,
+        additionalData
+      );
+      closeReplyMenu();
+    } catch (error) {
+      console.error("Error Sending File Message:", error);
+    }
+  });
+}
+function sendEditMessageRequest(messageId: string, content: string) {
+  messageQueue = messageQueue.then(async () => {
+    try {
+      const formData = createEditMessageformData(messageId, content);
+      const channelId = getChannelId();
+
+      const additionalData = { guildId: currentGuildId, channelId, messageId };
+      await apiClient.sendForm(
+        isOnGuild ? EventType.EDIT_MESSAGE_GUILD : EventType.EDIT_MESSAGE_DM,
         formData,
         additionalData
       );
@@ -454,7 +481,7 @@ export function deleteLocalMessage(
         nick,
         userInfo,
         userId,
-        date,
+        new Date(date),
         true
       );
       break;
@@ -472,4 +499,96 @@ export function deleteLocalMessage(
   if (chatContent.children.length < 2) {
     displayStartMessage();
   }
+}
+let editMessageCurrentContent: string;
+
+function isThereMultipleMessageContentElements(
+  baseMessage: HTMLElement
+): boolean {
+  // extra condition : if message itself is a profile, return false
+  if (baseMessage.querySelector(".profile-pic")) {
+    return false;
+  }
+  const messages = chatContent.querySelectorAll(".message");
+  const baseMessageIndex = Array.from(messages).indexOf(baseMessage);
+
+  let profilelessBefore = false;
+  let profilelessAfter = false;
+
+  for (let i = 0; i < baseMessageIndex; i++) {
+    if (!messages[i].querySelector(".profile-pic")) {
+      profilelessBefore = true;
+      break;
+    }
+  }
+
+  for (let i = baseMessageIndex + 1; i < messages.length; i++) {
+    if (!messages[i].querySelector(".profile-pic")) {
+      profilelessAfter = true;
+      break;
+    }
+  }
+
+  return profilelessBefore || profilelessAfter;
+}
+export function convertToEditUi(message: HTMLElement) {
+  editMessageCurrentContent = message.outerHTML;
+  const messageContentElement = message.querySelector(
+    "#message-content-element"
+  ) as HTMLElement;
+  if (!messageContentElement) return;
+  const _isThereMultipleMessageContentElements =
+    isThereMultipleMessageContentElements(message);
+
+  const editableDiv = createEl("div", {
+    className: "edit-message-div base-user-input",
+    contentEditable: "true"
+  });
+  editableDiv.innerText =
+    messageContentElement.textContent?.replace(/\s*\([^)]*\)\s*$/, "") || "";
+
+  if (_isThereMultipleMessageContentElements) {
+    editableDiv.style.marginLeft = "50px";
+  }
+  messageContentElement.replaceWith(editableDiv);
+
+  const buttonContainer = createEl("div", {
+    className: "edit-message-button-container"
+  });
+
+  const saveButton = createEl("a", {
+    className: "edit-message-button",
+    innerHTML: `<span class="blue-text">Enter</span> <span class="white-text">${translations.getTranslation("save-button-text")}</span>`
+  });
+  saveButton.onclick = function () {
+    messageContentElement.textContent = editableDiv.innerText;
+    editableDiv.replaceWith(messageContentElement);
+    buttonContainer.remove();
+  };
+
+  const cancelButton = createEl("a", {
+    className: "edit-message-button",
+    innerHTML: `<span class="blue-text">Esc</span> <span class="white-text">${translations.getTranslation("exit-button-text")}</span>`
+  });
+  cancelButton.onclick = function () {
+    message.outerHTML = editMessageCurrentContent;
+  };
+
+  buttonContainer.appendChild(saveButton);
+  buttonContainer.appendChild(cancelButton);
+  message.appendChild(buttonContainer);
+
+  editableDiv.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      message.outerHTML = editMessageCurrentContent;
+      event.preventDefault();
+    } else if (event.key === "Enter" && !event.shiftKey) {
+      messageContentElement.textContent = editableDiv.innerText;
+      sendEditMessageRequest(message.id, editableDiv.innerText);
+      editableDiv.replaceWith(messageContentElement);
+      buttonContainer.remove();
+      addEditedIndicator(messageContentElement);
+      event.preventDefault();
+    }
+  });
 }

@@ -11,8 +11,12 @@
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "cypress"]
   },
-  "include": ["src/ts/**/*", "tsconfig.context.json"],
+  "include": [
+    "src/ts/**/*",
+    "test/cypress/e2e/*.cy.ts",
+    "tsconfig.context.json"
+  ],
   "exclude": ["node_modules"]
 }

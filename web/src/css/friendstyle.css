@@ -78,52 +78,7 @@
   margin-left: 30px;
   pointer-events: none;
 }
-#channel-list {
-  z-index: 1;
-  padding: 36px 47px;
-  width: 140px;
-  scroll-behavior: smooth;
-  overflow-x: hidden;
-  font-weight: bold;
-  background-color: #2b2d31;
-  color: #ffffff;
-  position: relative;
-}
-.channel-button {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  cursor: pointer;
-  margin-top: 2px;
-  width: 50%;
-  height: auto;
-  border-radius: 5px;
-  border: none;
-  font-size: 15px;
-  background-color: transparent;
-  position: relative;
-  padding-right: 20px;
-}
-.channel-users-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-right: 0px;
-}
-.channel-button > span {
-  margin-right: 10px;
-}
-#channel-list::-webkit-scrollbar {
-  width: 6px;
-}
-#channel-list::-webkit-scrollbar-thumb {
-  background-color: #272626;
-  border-radius: 6px;
-}
-#channel-list::-webkit-scrollbar-track {
-  background-color: #2f3136;
-}
+
 .offline {
   filter: brightness(60%);
 }
@@ -212,16 +167,7 @@
 #addfriendinputfield:focus {
   border-color: #377bd3;
 }
-.horizontal-line {
-  border: none;
-  right: 0px;
-  width: 1px;
-  top: 40px;
-  position: relative;
-  z-index: 1;
-  border-top: 100vh solid rgb(63, 66, 71);
-  transform: rotate(180deg);
-}
+
 #friend-menu-buttons {
   display: flex;
   flex-wrap: nowrap;
@@ -427,7 +373,10 @@
   align-items: center;
   cursor: pointer;
   pointer-events: auto;
-  transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+  transition:
+    background-color 0.3s,
+    color 0.3s,
+    box-shadow 0.3s;
 }
 .friend-container:hover {
   background-color: rgb(53, 55, 60);
