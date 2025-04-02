@@ -339,7 +339,10 @@ export async function drawProfilePop(
     !shouldDrawPanel
   );
   const userId = userData.userId;
-  const sharedGuilds = sharedGuildsCache.getFriendGuilds(userId);
+  const sharedGuilds = sharedGuildsCache.getFriendGuilds(
+    userId,
+    currentGuildId
+  );
 
   const popBottomContainer = !shouldDrawPanel
     ? createPopBottomContainer(
@@ -1223,11 +1226,11 @@ function ChangePopUpToGuildJoining(
   const descriptionText = `
     hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
-    window.location.port ? `:${window.location.port}` : ""
-  }/join-guild/hTKzmak<br>
+      window.location.port ? `:${window.location.port}` : ""
+    }/join-guild/hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
-    window.location.port ? `:${window.location.port}` : ""
-  }/join-guild/cool-people
+      window.location.port ? `:${window.location.port}` : ""
+    }/join-guild/cool-people
     `;
   const guildNameDescriptionContent = createEl("h1", {
     innerHTML: descriptionText,

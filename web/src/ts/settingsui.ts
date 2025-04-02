@@ -2,6 +2,7 @@ import {
   alertUser,
   askUser,
   logOutPrompt,
+  openChangePasswordPop,
   openGuildSettingsDropdown,
   toggleEmail
 } from "./ui.ts";
@@ -529,14 +530,16 @@ function getAccountSettingsHtml() {
                 )}</div>
                 <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password"> </i>
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
-            </div>
-            <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" maxlength="32">
-            <img id="settings-self-profile"style="user-select: none;">
-            <form id="profileImageForm" enctype="multipart/form-data">
+                </div>
+                <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" maxlength="32">
+                <img id="settings-self-profile"style="user-select: none;">
+                <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
-            </form>
-            <span id="settings-self-name">${currentUserNick}</span>
-        </div>
+                </form>
+                <span id="settings-self-name">${currentUserNick}</span>
+                <button id="change-password-button" class="settings-buttons">${translations.getSettingsTranslation("ChangePassword")}</button>
+                </div>
+
     `;
 }
 
@@ -697,7 +700,15 @@ function initialiseSettingComponents(
     }
   }
 
-  getId("set-info-email-eye")?.addEventListener("click", toggleEmail);
+  document.body.addEventListener("click", function (event) {
+    const target = event.target as HTMLElement;
+    if (target && target.id === "set-info-email-eye") {
+      toggleEmail();
+    }
+  });
+
+  const changePasswordButton = getId("change-password-button");
+  changePasswordButton?.addEventListener("click", openChangePasswordPop);
 }
 
 export function createToggle(id: string, label: string, description: string) {

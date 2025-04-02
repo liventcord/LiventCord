@@ -69,7 +69,45 @@ public class BaseRedisEmitter
             _reconnectLock.Release();
         }
     }
+    public async Task EmitGuildMembersToRedisStream(string guildId, string[] userIds)
+    {
+        if (_connectionSemaphore == null) return;
+        if (userIds.Length == 0) return;
 
+        if (redis == null || db == null)
+        {
+            Console.WriteLine("Redis connection is not available. Retrying connection...");
+            await ConnectToRedisAsync();
+            return;
+        }
+
+        try
+        {
+            await _connectionSemaphore.WaitAsync();
+
+            try
+            {
+                var membershipsKey = $"guild_memberships:{guildId}";
+                var membershipsJson = JsonSerializer.Serialize(userIds);
+
+                if (db != null)
+                {
+                    await db.StringSetAsync(membershipsKey, membershipsJson, TimeSpan.FromDays(1));
+                }
+
+                Console.WriteLine($"Guild memberships for {guildId} published to Redis.");
+            }
+            finally
+            {
+                _connectionSemaphore.Release();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error publishing guild memberships to Redis: {ex.Message}. Retrying...");
+            await ConnectToRedisAsync();
+        }
+    }
     public async Task EmitToRedisStream(string[] userIds, EventType eventType, object message)
     {
         if (_connectionSemaphore == null) return;

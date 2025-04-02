@@ -19,12 +19,16 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly InviteController _inviteController;
         private readonly ILogger<GuildController> _logger;
+        private readonly ICacheService _cacheService;
+
         public GuildController(
             AppDbContext dbContext,
             ImageController uploadController,
             MessageController messageController,
             MembersController membersController,
-            PermissionsController permissionsController, InviteController inviteController, ILogger<GuildController> logger
+            PermissionsController permissionsController, InviteController inviteController, ILogger<GuildController> logger,
+            ICacheService cacheService
+
         )
         {
             _dbContext = dbContext;
@@ -33,6 +37,8 @@ namespace LiventCord.Controllers
             _membersController = membersController;
             _inviteController = inviteController;
             _logger = logger;
+            _cacheService = cacheService;
+
         }
 
         [HttpGet("")]
@@ -50,12 +56,13 @@ namespace LiventCord.Controllers
             var guild = await _dbContext.Guilds.FindAsync(guildId);
             if (guild == null)
                 return NotFound();
-
-            if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
+            string userId = UserId!;
+            if (!await _permissionsController.IsUserAdmin(guildId, userId))
                 return StatusCode(StatusCodes.Status403Forbidden);
 
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
+            _cacheService.InvalidateCache(userId);
 
             return Ok(new { guildId, request.GuildName });
         }
@@ -137,6 +144,9 @@ namespace LiventCord.Controllers
             string rootChannel = Utils.CreateRandomId();
             string guildId = Utils.CreateRandomId();
 
+            _cacheService.InvalidateCache(userId);
+
+
             var newGuild = await CreateGuild(userId, guildName, rootChannel, guildId, photo, isPublic);
             if (newGuild == null)
                 return Problem("Guild creation failed");
@@ -164,26 +174,43 @@ namespace LiventCord.Controllers
         [HttpDelete("{guildId}")]
         public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
         {
-            var guild = await _dbContext.Guilds.FindAsync(guildId);
-            if (guild == null)
-                return NotFound();
+            try
+            {
+                var guild = await _dbContext.Guilds.FindAsync(guildId);
+                if (guild == null) return NotFound();
 
-            if (!await _permissionsController.IsUserAdmin(guildId, UserId!))
-                return StatusCode(StatusCodes.Status403Forbidden);
+                string userId = UserId!;
+                if (!await _permissionsController.IsUserAdmin(guildId, userId))
+                    return StatusCode(StatusCodes.Status403Forbidden);
 
-            var messages = await _dbContext.Messages
-                .Where(m => _dbContext.Channels.Any(c => c.GuildId == guildId && c.ChannelId == m.ChannelId))
-                .ToListAsync();
+                var messages = await _dbContext.Messages
+                    .Where(m => _dbContext.Channels.Any(c => c.GuildId == guildId && c.ChannelId == m.ChannelId))
+                    .ToListAsync();
 
-            await _imageController.DeleteAttachmentFiles(messages);
+                await _imageController.DeleteAttachmentFiles(messages);
 
+                _dbContext.Guilds.Remove(guild);
 
-            _dbContext.Guilds.Remove(guild);
-            await _dbContext.SaveChangesAsync();
+                try
+                {
+                    await _dbContext.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!await _dbContext.Guilds.AnyAsync(g => g.GuildId == guildId))
+                        return NotFound();
 
-            return Ok(new { guildId });
+                    throw;
+                }
+
+                _cacheService.InvalidateCache(userId);
+                return Ok(new { guildId });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while deleting the guild." });
+            }
         }
-
 
     }
 }

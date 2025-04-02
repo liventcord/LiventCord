@@ -2,7 +2,6 @@ using System.Security.Claims;
 using LiventCord.Controllers;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace LiventCord.Helpers
 {
@@ -55,7 +54,6 @@ namespace LiventCord.Helpers
 
     public class AppLogicService
     {
-        private readonly IMemoryCache _memoryCache;
         private readonly AppDbContext _dbContext;
         private readonly GuildController _guildController;
         private readonly MembersController _membersController;
@@ -64,10 +62,9 @@ namespace LiventCord.Helpers
         private readonly LoginController _loginController;
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
-
+        private readonly ICacheService _cacheService;
 
         public AppLogicService(
-            IMemoryCache memoryCache,
             AppDbContext dbContext,
             FriendController friendController,
             GuildController guildController,
@@ -76,10 +73,10 @@ namespace LiventCord.Helpers
             ILogger<AppLogicService> logger,
             LoginController loginController,
             PermissionsController permissionsController,
-            IConfiguration configuration
+            IConfiguration configuration,
+            ICacheService cacheService
         )
         {
-            _memoryCache = memoryCache;
             _dbContext = dbContext;
             _guildController = guildController;
             _friendController = friendController;
@@ -87,10 +84,12 @@ namespace LiventCord.Helpers
             _loginController = loginController;
             _permissionsController = permissionsController;
             _membersController = membersController;
+            _cacheService = cacheService;
             _logger = logger;
 
             SharedAppConfig.Initialize(configuration);
         }
+
 
         public async Task HandleInitRequest(HttpContext context)
         {
@@ -101,6 +100,7 @@ namespace LiventCord.Helpers
                 );
                 await _loginController.Logout();
             }
+
 
             try
             {
@@ -113,7 +113,7 @@ namespace LiventCord.Helpers
                 }
 
                 var cacheKey = $"UserInitData_{userId}";
-                if (_memoryCache.TryGetValue(cacheKey, out var cachedData))
+                if (_cacheService.TryGet(cacheKey, out var cachedData))
                 {
                     context.Response.ContentType = "application/json";
                     await context.Response.WriteAsJsonAsync(cachedData);
@@ -150,11 +150,7 @@ namespace LiventCord.Helpers
                     wsUrl = SharedAppConfig.WsUrl
                 };
 
-                var cacheOptions = new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1)
-                };
-                _memoryCache.Set(cacheKey, jsonData, cacheOptions);
+                _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(30));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsJsonAsync(jsonData);
@@ -172,6 +168,7 @@ namespace LiventCord.Helpers
                 }
             }
         }
+
         public async Task HandleChannelRequest(HttpContext context)
         {
             try

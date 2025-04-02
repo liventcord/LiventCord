@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,7 @@ namespace LiventCord.Controllers
         private readonly ITokenValidationService _tokenValidationService;
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly ImageController _imageController;
+        private readonly ICacheService _cacheService;
 
         public ChannelController(
             AppDbContext dbContext,
@@ -24,7 +26,8 @@ namespace LiventCord.Controllers
             PermissionsController permissionsController,
             ITokenValidationService tokenValidationService,
             RedisEventEmitter redisEventEmitter,
-            ImageController imageController
+            ImageController imageController,
+            ICacheService cacheService
         )
         {
             _dbContext = dbContext;
@@ -33,6 +36,7 @@ namespace LiventCord.Controllers
             _tokenValidationService = tokenValidationService;
             _redisEventEmitter = redisEventEmitter;
             _imageController = imageController;
+            _cacheService = cacheService;
 
         }
         [Authorize]
@@ -49,33 +53,56 @@ namespace LiventCord.Controllers
 
             return Ok(new { guildId, channels });
         }
-
         [Authorize]
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
             [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId
-        )
+            [FromRoute][IdLengthValidation] string channelId)
         {
+            var userId = UserId!;
             var channel = await _dbContext.Channels.FindAsync(channelId);
             if (channel == null)
                 return NotFound("Channel does not exist.");
 
-            if (!await _membersController.DoesMemberExistInGuild(UserId!, guildId))
+            if (!await _membersController.DoesMemberExistInGuild(userId, guildId))
                 return BadRequest(new { Type = "error", Message = "User not in guild." });
 
-            if (!await _permissionsController.HasPermission(UserId!, guildId, PermissionFlags.ManageChannels))
-            {
+            if (!await _permissionsController.HasPermission(userId, guildId, PermissionFlags.ManageChannels))
                 return Forbid();
+
+            var guildChannels = await _dbContext.Channels
+                .Where(c => c.GuildId == guildId && c.ChannelId != channelId)
+                .ToListAsync();
+
+            if (guildChannels.Count == 0)
+                return BadRequest(new { Type = "error", Message = $"Cannot delete the last channel." });
+
+            if (channel.Guild?.RootChannel == channelId)
+            {
+                var newRootChannel = guildChannels.FirstOrDefault();
+                if (newRootChannel != null)
+                {
+                    channel.Guild.RootChannel = newRootChannel.ChannelId;
+                    await _dbContext.SaveChangesAsync();
+                }
             }
 
             var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
-
             await _imageController.DeleteAttachmentFiles(messages);
 
             _dbContext.Channels.Remove(channel);
-            await _dbContext.SaveChangesAsync();
+
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new { Type = "error", Message = "Concurrency conflict occurred. Please try again." });
+            }
+
             await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, UserId!);
+            _cacheService.InvalidateCache(userId);
 
             return Ok(new { guildId, channelId });
         }
@@ -104,6 +131,7 @@ namespace LiventCord.Controllers
             var channelToEmit = new { channelId, channelName = request.ChannelName, guildId };
 
             await _redisEventEmitter.EmitToGuild(EventType.UPDATE_CHANNEL_NAME, channelToEmit, guildId, UserId!);
+            _cacheService.InvalidateCache(UserId!);
 
             return Ok(new { guildId, channelId, request.ChannelName });
         }
@@ -173,6 +201,7 @@ namespace LiventCord.Controllers
             if (userId != null)
             {
                 await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
+                _cacheService.InvalidateCache(userId);
             }
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();

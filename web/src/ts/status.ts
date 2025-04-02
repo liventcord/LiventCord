@@ -1,6 +1,7 @@
+import store from "../store";
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
-import { createBubble, updateStatusInMembersList } from "./userList.ts";
+import { createBubble } from "./userList.ts";
 import { createEl, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
@@ -28,7 +29,11 @@ export class UserStatus {
   };
   private selfStatus = getId("self-status") as HTMLElement;
 
-  constructor() {}
+  constructor() {
+    this.selfStatus.textContent = this.formatStatusText(
+      this.statusTypes.offline
+    );
+  }
 
   async initStatusPanel() {
     this.createdPanel = await this.createStatusPanel();
@@ -104,7 +109,8 @@ export class UserStatus {
   createStatusBubble(
     status: string = this.currentStatus,
     isMain: boolean = false
-  ): HTMLElement {
+  ): HTMLElement | null {
+    if (!status) return null;
     const statusClass = status.toLowerCase().replace(/\s+/g, "-");
     const bubble = createBubble(statusClass);
     bubble.classList.add("status-button-bubble", "status-button-bubble-main");
@@ -164,10 +170,12 @@ export class UserStatus {
     const button = getId("status-set-button");
     if (button) {
       button.innerHTML = "";
-      button.append(
-        this.createStatusBubble(),
-        document.createTextNode(this.currentStatus)
-      );
+      const bubble = this.createStatusBubble();
+
+      button.append(document.createTextNode(this.currentStatus));
+      if (bubble) {
+        button.append(bubble);
+      }
     }
     const sanitizedStatus = this.currentStatus
       .replace(/\s+/g, "-")
@@ -183,24 +191,25 @@ export class UserStatus {
       this.setSelfStatus(sanitizedStatus);
     }
   }
-
   setSelfStatus(status: string) {
+    if (!status) return;
     this.currentStatus = status;
 
     this.selfStatus.textContent = this.formatStatusText(status);
-    const avatarPanelSelfBubble =
-      this.createdPanel?.querySelector(".status-bubble");
-    updateStatusInMembersList(currentUserId, status);
+    const avatarPanelSelfBubble = getId("self-bubble");
+
+    if (currentUserId) {
+      userManager.updateMemberStatus(currentUserId, status);
+    } else {
+      console.error("currentUserId is not defined");
+    }
+    console.warn(status);
+
     if (avatarPanelSelfBubble) {
       avatarPanelSelfBubble.classList.value = "";
-      avatarPanelSelfBubble.classList.add(
-        "panel-status-bubble",
-        "status-bubble",
-        status
-      );
+      avatarPanelSelfBubble.classList.add(status);
     }
   }
-
   updateSelfStatus(status: string) {
     const selfBubble = getId("self-bubble") as HTMLElement;
 
@@ -217,7 +226,6 @@ export class UserStatus {
     }
     console.log(userId, status);
     userManager.updateMemberStatus(userId, status);
-    console.log(`User ${userId} not found in any guild`);
   }
 
   createSetStatusButton(container: HTMLElement): HTMLElement {
@@ -231,7 +239,10 @@ export class UserStatus {
     );
     this.dropdown = this.createDropdown();
 
-    statusButton.append(bubble, textNode);
+    statusButton.append(textNode);
+    if (bubble) {
+      statusButton.append(bubble);
+    }
     container.append(statusButton);
     document.body.append(this.dropdown);
 
@@ -258,7 +269,11 @@ export class UserStatus {
     return statusButton;
   }
   formatStatusText(status: string) {
-    return translations.getTranslation(status);
+    const statusLower = status.toLowerCase();
+    return (
+      translations.getTranslation(statusLower) ??
+      translations.getTranslation(this.statusTypes.offline)
+    );
   }
 
   createDropdown(): HTMLElement {
@@ -268,7 +283,9 @@ export class UserStatus {
     statuses.forEach((status) => {
       const option = createEl("div", { className: "status-option" });
       const bubble = this.createStatusBubble(status);
-      option.appendChild(bubble);
+      if (bubble) {
+        option.appendChild(bubble);
+      }
       option.appendChild(document.createTextNode(status));
 
       option.addEventListener("click", () => {

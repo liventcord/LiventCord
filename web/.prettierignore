@@ -1,5 +1,6 @@
 package-lock.json
-src/index.html
-src/output
+index.html
+output
+vendor/
 .prettierrc
 public/

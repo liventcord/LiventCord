@@ -36,6 +36,37 @@ namespace LiventCord.Controllers
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
         }
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromForm] ChangePasswordRequest changePasswordRequest)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            var UserId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.UserId.ToString() == UserId);
+
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            var currentPasswordVerification = _passwordHasher.VerifyHashedPassword(user, user.Password, changePasswordRequest.CurrentPassword);
+            if (currentPasswordVerification != PasswordVerificationResult.Success)
+            {
+                return BadRequest(new { message = "Current password is incorrect" });
+            }
+
+            if (changePasswordRequest.NewPassword == changePasswordRequest.CurrentPassword)
+            {
+                return BadRequest(new { message = "New password cannot be the same as the current password" });
+            }
+
+            var hashedNewPassword = _passwordHasher.HashPassword(user, changePasswordRequest.NewPassword);
+
+            user.Password = hashedNewPassword;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> LoginAuth([FromForm] LoginRequest loginRequest)

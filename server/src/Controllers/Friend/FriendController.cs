@@ -30,12 +30,14 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _dbContext;
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly FriendDmService _friendDmService;
+        private readonly ICacheService _cacheService;
 
-        public FriendController(AppDbContext dbContext, RedisEventEmitter redisEventEmitter, FriendDmService friendDmService)
+        public FriendController(AppDbContext dbContext, RedisEventEmitter redisEventEmitter, FriendDmService friendDmService, ICacheService cacheService)
         {
             _dbContext = dbContext;
             _redisEventEmitter = redisEventEmitter;
             _friendDmService = friendDmService;
+            _cacheService = cacheService;
         }
 
         [HttpGet]
@@ -51,7 +53,8 @@ namespace LiventCord.Controllers
         [HttpPost("id/{friendId}")]
         public async Task<IActionResult> SendFriendIdRequest([FromRoute][UserIdLengthValidation] string friendId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var userId = UserId!;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             var friend = await FindUser(friendId);
 
             if (friend == null)
@@ -65,15 +68,15 @@ namespace LiventCord.Controllers
             }
 
 
-            var existingFriendship = await _dbContext.CheckFriendship(UserId!, friendId);
+            var existingFriendship = await _dbContext.CheckFriendship(userId, friendId);
             if (existingFriendship)
             {
                 return Conflict();
             }
 
-            await CreateFriendship(UserId!, friendId, user);
+            await CreateFriendship(userId, friendId, user);
 
-            var friendPublicData = await GetFriendWithStatus(UserId!, friendId, false);
+            var friendPublicData = await GetFriendWithStatus(userId, friendId, false);
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ADD_FRIEND,
                 friend,
@@ -98,6 +101,7 @@ namespace LiventCord.Controllers
 
             await CreateFriendship(UserId!, friend.UserId, user);
 
+
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ADD_FRIEND,
                 user));
@@ -105,7 +109,8 @@ namespace LiventCord.Controllers
         [HttpDelete("deny/{friendId}")]
         public async Task<IActionResult> DenyFriend([FromRoute][UserIdLengthValidation] string friendId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var userId = UserId!;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
                 return Unauthorized();
 
@@ -114,7 +119,7 @@ namespace LiventCord.Controllers
                 return NotFound();
 
             var friendship = await _dbContext.Friends
-                .FirstOrDefaultAsync(f => (f.UserId == UserId && f.FriendId == friendId) || (f.UserId == friendId && f.FriendId == UserId));
+                .FirstOrDefaultAsync(f => (f.UserId == userId && f.FriendId == friendId) || (f.UserId == friendId && f.FriendId == userId));
 
             if (friendship == null)
                 return NotFound();
@@ -129,6 +134,10 @@ namespace LiventCord.Controllers
 
                 _dbContext.Friends.Remove(friendship);
                 await _dbContext.SaveChangesAsync();
+
+                _cacheService.InvalidateCache(friendId);
+                _cacheService.InvalidateCache(userId);
+
 
                 return Ok(CreateFriendResponse(
                     FRIEND_EVENTS.DENY_FRIEND,
@@ -182,6 +191,11 @@ namespace LiventCord.Controllers
 
             var friendPublicData = await GetFriendWithStatus(userId!, friend.UserId, false);
 
+            _cacheService.InvalidateCache(friendId);
+            _cacheService.InvalidateCache(userId);
+
+
+
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ACCEPT_FRIEND,
                 friend,
@@ -191,7 +205,8 @@ namespace LiventCord.Controllers
         [HttpDelete("{friendId}")]
         public async Task<IActionResult> RemoveFriend([FromRoute][UserIdLengthValidation] string friendId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var userId = UserId!;
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             var friend = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == friendId);
 
             if (user == null || friend == null)
@@ -200,8 +215,8 @@ namespace LiventCord.Controllers
 
             var friendships = await _dbContext.Friends
                 .Where(f =>
-                    (f.UserId == UserId && f.FriendId == friendId) ||
-                    (f.UserId == friendId && f.FriendId == UserId)
+                    (f.UserId == userId && f.FriendId == friendId) ||
+                    (f.UserId == friendId && f.FriendId == userId)
                 )
                 .ToListAsync();
 
@@ -219,7 +234,8 @@ namespace LiventCord.Controllers
             var response = CreateFriendResponse(
                 FRIEND_EVENTS.REMOVE_FRIEND,
                 friend);
-
+            _cacheService.InvalidateCache(friendId);
+            _cacheService.InvalidateCache(userId);
             return Ok(response);
         }
 
@@ -278,6 +294,9 @@ namespace LiventCord.Controllers
             var friendPublicData = await GetFriendWithStatus(friendUserId, userId, false);
             var response = CreateFriendResponse(FRIEND_EVENTS.ADD_FRIEND, user, friendPublicData);
             await _redisEventEmitter.EmitToUser(EventType.ADD_FRIEND, response, friendUserId);
+
+            _cacheService.InvalidateCache(friendUserId);
+            _cacheService.InvalidateCache(userId);
 
 
         }

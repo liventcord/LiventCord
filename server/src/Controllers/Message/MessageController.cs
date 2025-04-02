@@ -276,13 +276,12 @@ namespace LiventCord.Controllers
 
 
         [Authorize]
-
         [HttpPut("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public async Task<IActionResult> HandleEditGuildMessage(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId,
             [FromRoute][IdLengthValidation] string messageId,
-            [FromBody] EditMessageRequest request
+            [FromForm] EditMessageRequest request
         )
         {
             if (string.IsNullOrEmpty(request.Content))
@@ -296,8 +295,9 @@ namespace LiventCord.Controllers
             }
 
             await EditMessage(channelId, messageId, request.Content);
-            var editBroadcast = new { guildId, channelId, messageId, request.Content };
-            await _redisEventEmitter.EmitToGuild(EventType.UPDATE_MESSAGE, editBroadcast, guildId, UserId!);
+            bool isDm = false;
+            var editBroadcast = new { isDm, guildId, channelId, messageId, request.Content };
+            await _redisEventEmitter.EmitToGuild(EventType.EDIT_MESSAGE_GUILD, editBroadcast, guildId, UserId!);
             return Ok(editBroadcast);
         }
         [Authorize]
@@ -315,8 +315,9 @@ namespace LiventCord.Controllers
             var userId = UserId!;
             var constructedFriendUserChannel = string.Compare(userId, channelId) < 0 ? $"{userId}_{channelId}" : $"{channelId}_{userId}";
             await EditMessage(constructedFriendUserChannel, messageId, request.Content);
-            var editBroadcast = new { constructedFriendUserChannel, messageId, request.Content };
-            await _redisEventEmitter.EmitToFriend(EventType.UPDATE_MESSAGE, editBroadcast, UserId!, constructedFriendUserChannel);
+            bool isDm = true;
+            var editBroadcast = new { isDm, constructedFriendUserChannel, messageId, request.Content };
+            await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast, UserId!, constructedFriendUserChannel);
             return Ok(editBroadcast);
         }
         [Authorize]

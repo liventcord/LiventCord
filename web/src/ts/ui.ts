@@ -2,6 +2,7 @@
 import DOMPurify from "dompurify";
 import {
   activityList,
+  isUsersOpenGlobal,
   setUserListLine,
   userLine,
   userList
@@ -16,15 +17,22 @@ import {
 } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
-import { createEl, getId, disableElement, enableElement } from "./utils.ts";
+import {
+  createEl,
+  getId,
+  disableElement,
+  enableElement,
+  isMobile
+} from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
-import { isOnMe, router } from "./router.ts";
+import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe } from "./chat.ts";
+import { observe, updateChatWidth } from "./chat.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
+import { changePassword } from "./user.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -93,35 +101,49 @@ export function handleToggleClick(
 
 export function handleResize() {
   handleMediaPanelResize();
+  if (!userList) return;
 
-  if (window.innerWidth < 1200) {
-    if (isOnMe) {
+  const isSmallScreen = window.innerWidth < 1200;
+
+  if (isSmallScreen) {
+    if (!isMobile) {
       disableElement(userList);
-      disableElement(userLine);
-    } else {
-      setUserListLine();
+      if (userLine) disableElement(userLine);
+      if (activityList) disableElement(activityList);
+
+      if (!isOnMePage) setUserListLine();
     }
-    disableElement(activityList);
   } else {
-    if (isOnMe) {
-      disableElement(userList);
-      enableElement(activityList);
-      enableElement(userLine);
+    if (isOnMePage) {
+      if (activityList) enableElement(activityList);
+      if (userLine) enableElement(userLine);
     } else {
-      enableElement(userList);
-      disableElement(activityList);
-      disableElement(userLine);
+      if (userLine) disableElement(userLine);
+      if (activityList) disableElement(activityList);
+
+      isUsersOpenGlobal ? enableElement(userList) : disableElement(userList);
     }
   }
+  updateChatWidth();
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
   const addFriendInputButton = getId("addfriendinputbutton");
-  if (addFriendInputButton) {
-    addFriendInputButton.style.right = inputRightToSet;
-  }
+  if (addFriendInputButton) addFriendInputButton.style.right = inputRightToSet;
 }
-
+function handleMobileToolbar() {
+  getId("toolbaroptions")
+    ?.querySelectorAll(".iconWrapper")
+    .forEach((toolbar) => {
+      toolbar.classList.add("toolbarIconMobile");
+    });
+}
 export function loadMainToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   disableElement("tb-call");
   disableElement("tb-video-call");
   disableElement("tb-pin");
@@ -130,6 +152,12 @@ export function loadMainToolbar() {
   disableElement("tb-search");
 }
 export function loadGuildToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   disableElement("tb-call");
   disableElement("tb-video-call");
   enableElement("tb-pin");
@@ -138,6 +166,12 @@ export function loadGuildToolbar() {
   enableElement("tb-search");
 }
 export function loadDmToolbar() {
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else {
+    disableElement("tb-hamburger");
+  }
   enableElement("tb-call");
   enableElement("tb-video-call");
   enableElement("tb-pin");
@@ -300,6 +334,132 @@ export function askUser(
   isRed = false
 ) {
   createPopupContent(true, subject, content, actionText, acceptCallback, isRed);
+}
+export function openChangePasswordPop() {
+  const title = translations.getSettingsTranslation("UpdatePasswordTitle");
+  const description = translations.getSettingsTranslation(
+    "UpdatePasswordDescription"
+  );
+  const currentPassword = translations.getSettingsTranslation(
+    "UpdatePasswordCurrent"
+  );
+  const newPassword = translations.getSettingsTranslation("UpdatePasswordNew");
+  const newPasswordConfirm = translations.getSettingsTranslation(
+    "UpdatePasswordNewConfirm"
+  );
+
+  const popUpSubject = createEl("h1", {
+    className: "pop-up-subject",
+    textContent: title
+  });
+  const popUpContent = createEl("p", {
+    className: "pop-up-content",
+    textContent: description
+  });
+  popUpContent.style.marginLeft = "50px";
+  popUpContent.style.marginTop = "0px";
+
+  const popAcceptButton = createEl("button", {
+    className: "pop-up-accept",
+    textContent: translations.getTranslation("done")
+  });
+
+  const popRefuseButton = createEl("button", {
+    className: "pop-up-refuse",
+    textContent: translations.getTranslation("cancel")
+  });
+  popRefuseButton.style.marginTop = "60px";
+  popAcceptButton.style.marginTop = "60px";
+
+  const contentElements = [popUpSubject, popUpContent];
+
+  const outerParent = createPopUp({
+    contentElements,
+    id: ""
+  });
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      acceptCallback(event);
+    }
+  };
+  const currentPasswordInputTitle = createEl("p", {
+    id: "current-password-input-title",
+    textContent: currentPassword
+  }) as HTMLParagraphElement;
+  currentPasswordInputTitle.classList.add("password-title");
+
+  const currentInput = createEl("input", {
+    id: "current-password-input",
+    type: "password"
+  }) as HTMLInputElement;
+  currentInput.classList.add("password-input");
+
+  const newInput = createEl("input", {
+    id: "new-password-input",
+    type: "password"
+  }) as HTMLInputElement;
+  newInput.classList.add("password-input");
+
+  const newPasswordInputTitle = createEl("p", {
+    id: "new-password-input-title",
+    textContent: newPassword
+  }) as HTMLParagraphElement;
+  newPasswordInputTitle.classList.add("password-title");
+
+  const newPasswordConfirmTitle = createEl("p", {
+    id: "new-password-input-confirm-title",
+    textContent: newPasswordConfirm
+  }) as HTMLParagraphElement;
+  newPasswordConfirmTitle.classList.add("password-title");
+
+  const newInputConfirm = createEl("input", {
+    id: "new-password-input-confirm",
+    type: "password"
+  }) as HTMLInputElement;
+  newInputConfirm.classList.add("password-input");
+
+  const parentElement = outerParent.firstChild as HTMLElement;
+  parentElement.style.animation = "pop-up-animation-password 0.3s forwards";
+  parentElement.style.backgroundColor = "#37373E";
+
+  parentElement.appendChild(currentPasswordInputTitle);
+  parentElement.appendChild(currentInput);
+  parentElement.appendChild(newPasswordInputTitle);
+  parentElement.appendChild(newInput);
+  parentElement.appendChild(newPasswordConfirmTitle);
+  parentElement.appendChild(newInputConfirm);
+  const successCallback = () => {
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  };
+  const acceptCallback = (event: KeyboardEvent | null) => {
+    changePassword(
+      event,
+      currentInput,
+      newInput,
+      newInputConfirm,
+      successCallback
+    );
+  };
+
+  parentElement.appendChild(popRefuseButton);
+  popRefuseButton.addEventListener("click", function () {
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  });
+
+  parentElement.appendChild(popAcceptButton);
+
+  document.addEventListener("keydown", handleKeyDown);
+
+  popAcceptButton.addEventListener("click", function () {
+    acceptCallback(null);
+  });
 }
 let logoClicked = 0;
 
@@ -608,5 +768,8 @@ function setDynamicAnimations() {
     }
   });
 }
-
-setDynamicAnimations();
+document.addEventListener("DOMContentLoaded", () => {
+  if (!isMobile) {
+    setDynamicAnimations();
+  }
+});

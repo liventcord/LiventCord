@@ -333,7 +333,9 @@
   background-size: 960px 192px;
   margin: 2px;
   border-radius: 50%;
-  transition: transform 0.3s ease, filter 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease;
   transform: scale(0.5);
   background-color: transparent;
   filter: brightness(2.8);

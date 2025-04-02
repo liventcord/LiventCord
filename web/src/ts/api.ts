@@ -1,6 +1,11 @@
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
+import { isOnDm } from "./router.ts";
+import { fetchMessagesFromServer } from "./chat.ts";
+import { friendsCache } from "./friends.ts";
+import { currentGuildId } from "./guild.ts";
+import { guildCache } from "./cache.ts";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -12,6 +17,8 @@ export const EventType = Object.freeze({
   DELETE_GUILD_IMAGE: "DELETE_GUILD_IMAGE",
   SEND_MESSAGE_GUILD: "SEND_MESSAGE_GUILD",
   SEND_MESSAGE_DM: "SEND_MESSAGE_DM",
+  EDIT_MESSAGE_GUILD: "EDIT_MESSAGE_GUILD",
+  EDIT_MESSAGE_DM: "EDIT_MESSAGE_DM",
   DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
   DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
   GET_MEMBERS: "GET_MEMBERS",
@@ -70,6 +77,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   DELETE_GUILD_IMAGE: HttpMethod.DELETE,
   SEND_MESSAGE_GUILD: HttpMethod.POST,
   SEND_MESSAGE_DM: HttpMethod.POST,
+  EDIT_MESSAGE_GUILD: HttpMethod.PUT,
+  EDIT_MESSAGE_DM: HttpMethod.PUT,
   GET_MEMBERS: HttpMethod.GET,
   GET_MESSAGE_DATE: HttpMethod.GET,
   GET_CHANNELS: HttpMethod.GET,
@@ -143,6 +152,10 @@ const EventUrlMap: Record<EventType, string> = {
   REMOVE_DM: "/dm/{friendId}",
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
   SEND_MESSAGE_DM: "/dms/channels/{channelId}/messages",
+  EDIT_MESSAGE_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
+  EDIT_MESSAGE_DM:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
   DELETE_MESSAGE_DM: "/dms/channels/{channelId}/messages/{messageId}",
   DELETE_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
@@ -170,6 +183,15 @@ class ApiClient {
       this.validateEventMaps();
       this.checkFullCrud();
     }
+  }
+  public onWebsocketReconnect() {
+    this.send(EventType.GET_INIT_DATA);
+    this.send(EventType.GET_FRIENDS);
+    fetchMessagesFromServer(
+      isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId,
+      isOnDm
+    );
+    this.send(EventType.GET_MEMBERS, { guildId: currentGuildId });
   }
 
   private validateEventMaps() {

@@ -55,7 +55,7 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const DEFAULT_DISCRIMINATOR = "0000";
-const isMobile = getMobile();
+export const isMobile = getMobile();
 const STATUS_404 = 404;
 export const STATUS_200 = 200;
 export const blackImage =
@@ -88,11 +88,6 @@ function getMobile() {
 
 export function getId(string: string): HTMLElement | null {
   return document.getElementById(string);
-}
-
-function capitalizeFirstCharacter(str: string) {
-  if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export function getMaskedEmail(email: string) {
@@ -195,12 +190,6 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
 export function getEmojiPath(emojiId: string) {
   return `/emojis/${emojiId}.webp`;
 }
-function isId(url: string) {
-  return url.length === router.ID_LENGTH && /^\d+$/.test(url);
-}
-function constructAttachmentUrl(id: string) {
-  return `/attachments/${id}`;
-}
 
 export function kebapToSentence(text: string) {
   return text
@@ -214,34 +203,86 @@ export function getFormattedDate(messageDate: Date) {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (messageDate.toDateString() === today.toDateString()) {
+  const userTimeZoneOffset = today.getTimezoneOffset() * 60000;
+  const localMessageDate = new Date(messageDate.getTime() - userTimeZoneOffset);
+
+  if (localMessageDate.toDateString() === today.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "today"
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: true
     })}`;
-  } else if (messageDate.toDateString() === yesterday.toDateString()) {
+  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "yesterday"
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: true
     })}`;
   } else {
-    return `ㅤ${messageDate.toLocaleDateString(
+    return `ㅤ${localMessageDate.toLocaleDateString(
       translations.getLocale()
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: true
     })}`;
   }
 }
 
-export function getFormattedDateForSmall(messageDate: Date) {
-  return messageDate.toLocaleTimeString(translations.getLocale(), {
+export function getFormattedDateSelfMessage(messageDate: string) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const messageDateObj = new Date(messageDate);
+  const localMessageDate = new Date(
+    messageDateObj.toLocaleString("en-US", {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    })
+  );
+
+  if (localMessageDate.toDateString() === today.toDateString()) {
+    return `${translations.getTranslation(
+      "today"
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })}`;
+  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
+    return `${translations.getTranslation(
+      "yesterday"
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })}`;
+  } else {
+    return `${localMessageDate.toLocaleDateString(
+      translations.getLocale()
+    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })}`;
+  }
+}
+export function getFormattedDateForSmall(messageDate: string | any) {
+  const messageDateObj = new Date(messageDate);
+  const localMessageDate = new Date(
+    messageDateObj.toLocaleString(translations.getLocale(), {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    })
+  );
+
+  return localMessageDate.toLocaleTimeString(translations.getLocale(), {
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    hour12: true
   });
 }
 export function isImageURL(url: string) {
@@ -418,16 +459,7 @@ export function truncateString(str: string, maxLength: number) {
 }
 
 export function createNowDate() {
-  const date = new Date();
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-  const seconds = String(date.getUTCSeconds()).padStart(2, "0");
-  const milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
-  const microseconds = "534260";
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}${microseconds}+00:00`;
+  return new Date().toUTCString();
 }
 
 export function randomInRange(min: number, max: number) {
@@ -518,18 +550,8 @@ function applyStyles(
   element.style.display = isBlock
     ? "block"
     : isInline
-    ? "inline-block"
-    : "flex";
-}
-
-function enableElementHTML(
-  element: HTMLElement,
-  isFlex1: boolean = false,
-  isBlock: boolean = false,
-  isInline: boolean = false
-): void {
-  if (element instanceof HTMLElement)
-    applyStyles(element, isFlex1, isBlock, isInline);
+      ? "inline-block"
+      : "flex";
 }
 
 export function enableElement(
@@ -675,11 +697,14 @@ export const convertKeysToCamelCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(convertKeysToCamelCase);
   } else if (obj !== null && obj !== undefined && typeof obj === "object") {
-    return Object.keys(obj).reduce((acc, key) => {
-      const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
-      acc[camelKey] = convertKeysToCamelCase(obj[key]);
-      return acc;
-    }, {} as Record<string, any>);
+    return Object.keys(obj).reduce(
+      (acc, key) => {
+        const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+        acc[camelKey] = convertKeysToCamelCase(obj[key]);
+        return acc;
+      },
+      {} as Record<string, any>
+    );
   }
   return obj;
 };

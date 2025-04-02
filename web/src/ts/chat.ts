@@ -29,7 +29,8 @@ import {
   createEl,
   getFormattedDateForSmall,
   sanitizeHTML,
-  getFormattedDate
+  getFormattedDate,
+  getFormattedDateSelfMessage
 } from "./utils.ts";
 import {
   currentUserId,
@@ -39,21 +40,22 @@ import {
 } from "./user.ts";
 import { createMediaElement } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
-import { isOnGuild, isOnMe } from "./router.ts";
+import { isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
   appendToMessageContextList
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
-import { isChangingPage, createReplyBar } from "./app.ts";
+import { isChangingPage } from "./app.ts";
 import { loadingScreen, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
 import { userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
-import { constructUserData } from "./popups.ts";
+import { constructUserData, drawProfilePopId } from "./popups.ts";
+import { createTooltipAtCursor } from "./tooltip.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -123,12 +125,20 @@ function handleReplyMessage(
   if (replyToId) {
     const foundReply = getId(replyToId);
     if (foundReply) {
-      const _messageId = foundReply.dataset.messageId;
+      const _messageId = foundReply.id;
       const userId = foundReply.dataset.userId;
       const content = foundReply.dataset.content;
       const attachmentUrls = foundReply.dataset.attachmentUrls;
       if (_messageId && userId) {
-        createReplyBar(newMessage, _messageId, userId, attachmentUrls, content);
+        console.log("Creatingn reply:");
+        createReplyBar(
+          newMessage,
+          messageId,
+          _messageId,
+          userId,
+          attachmentUrls,
+          content
+        );
       }
       return foundReply;
     } else {
@@ -175,8 +185,97 @@ export function handleReplies() {
   });
 }
 
-export function scrollToMessage(messageElement: HTMLElement) {
-  messageElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+export function createReplyBar(
+  newMessage: HTMLElement,
+  messageId: string,
+  originalId: string,
+  userId: string,
+  attachmentUrls: string | string[] | undefined,
+  content?: string
+) {
+  console.log("Create reply bar: ", newMessage, messageId, userId, content);
+  if (newMessage.querySelector(".replyBar")) {
+    return;
+  }
+  const smallDate = newMessage.querySelector(".small-date-element");
+  if (smallDate) {
+    smallDate.remove();
+  }
+
+  const replyBar = createEl("div", { className: "replyBar" });
+  newMessage.appendChild(replyBar);
+  newMessage.classList.add("replyMessage");
+
+  const nick = userManager.getUserNick(userId);
+  replyBar.style.height = "100px";
+  const replyAvatar = createEl("img", {
+    className: "profile-pic",
+    id: userId
+  }) as HTMLImageElement;
+  replyAvatar.classList.add("reply-avatar");
+  replyAvatar.style.width = "15px";
+  replyAvatar.style.height = "15px";
+
+  setProfilePic(replyAvatar, userId);
+  const replyNick = createEl("span", {
+    textContent: nick,
+    className: "reply-nick"
+  });
+
+  replyAvatar.addEventListener("click", () => {
+    drawProfilePopId(userId);
+  });
+  replyNick.addEventListener("click", () => {
+    drawProfilePopId(userId);
+  });
+
+  const textToWrite = content
+    ? content
+    : attachmentUrls
+      ? attachmentUrls
+      : translations.getTranslation("click-to-attachment");
+  const replyContent = createEl("span", {
+    className: "replyContent",
+    textContent: textToWrite
+  });
+
+  replyContent.onclick = () => {
+    const originalMsg = getId(originalId);
+    if (originalMsg) {
+      scrollToMessage(originalMsg);
+    } else {
+      const replyToId = newMessage.dataset.replyToId;
+      if (!replyToId) return;
+
+      const message = cacheInterface.getMessage(
+        currentGuildId,
+        guildCache.currentChannelId,
+        replyToId
+      );
+      if (message) {
+        fetchReplies([message], new Set<string>(), true);
+      }
+    }
+  };
+  replyBar.appendChild(replyAvatar);
+  replyBar.appendChild(replyNick);
+  replyBar.appendChild(replyContent);
+}
+
+export function scrollToMessage(messageElementToScroll: HTMLElement) {
+  if (!messageElementToScroll) {
+    return;
+  }
+  const oldColor = messageElementToScroll.style.backgroundColor;
+  messageElementToScroll.style.backgroundColor = "rgba(102, 97, 97, 0.5)";
+  setTimeout(() => {
+    messageElementToScroll.style.backgroundColor = oldColor;
+  }, 1000);
+  messageElementToScroll.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest"
+  });
 }
 
 export function scrollToBottom() {
@@ -191,7 +290,7 @@ let isFetchingOldMessages = false;
 let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
-  if (isReachedChannelEnd || isOnMe || stopFetching) {
+  if (isReachedChannelEnd || isOnMePage || stopFetching) {
     return;
   }
   const oldestDate = getMessageDate();
@@ -270,13 +369,20 @@ function loadObservedContent(targetElement: HTMLElement) {
   }
 }
 
-export interface MessageResponse {
+export interface NewMessageResponse {
   guildId?: string;
   isOldMessages: boolean;
   isDm: boolean;
   messages: Message[];
   channelId: string;
   oldestMessageDate?: string | null;
+}
+export interface EditMessageResponse {
+  guildId?: string;
+  isDm: boolean;
+  messageId: string;
+  content: string;
+  channelId: string;
 }
 
 function clearDateBarAndStartMessageFromChat() {
@@ -299,7 +405,7 @@ function clearDateBarAndStartMessageFromChat() {
   }
 }
 
-export function handleOldMessagesResponse(data: MessageResponse) {
+export function handleOldMessagesResponse(data: NewMessageResponse) {
   console.log("Processing old messages: ", data);
 
   const { messages: history, oldestMessageDate } = data;
@@ -319,7 +425,6 @@ export function handleOldMessagesResponse(data: MessageResponse) {
   let firstMessageDate = new Date();
 
   clearDateBarAndStartMessageFromChat();
-
   history.forEach((msgData) => {
     const { date, messageId } = msgData;
     msgData.addToTop = true;
@@ -330,8 +435,11 @@ export function handleOldMessagesResponse(data: MessageResponse) {
       repliesList.add(messageId);
     }
 
-    if (!firstMessageDate || new Date(date) < firstMessageDate) {
-      firstMessageDate = new Date(date);
+    if (date) {
+      const messageDate = new Date(date);
+      if (!firstMessageDate || messageDate < firstMessageDate) {
+        firstMessageDate = messageDate;
+      }
     }
   });
 
@@ -349,7 +457,7 @@ export function handleOldMessagesResponse(data: MessageResponse) {
   }
 }
 
-export function handleMessage(data: MessageResponse): void {
+export function handleNewMessage(data: NewMessageResponse): void {
   try {
     console.warn("Received message data:", data);
 
@@ -382,14 +490,34 @@ export function handleMessage(data: MessageResponse): void {
     }
 
     const message = data.messages[0];
-    if (typeof message.date === "string") {
-      message.date = new Date(message.date);
-      console.log("Converted date string to Date object:", message.date);
-    }
 
     displayChatMessage(message);
 
     fetchReplies(data.messages, new Set<string>());
+  } catch (error) {
+    console.error("Error processing message:", error);
+  }
+}
+
+export function handleEditMessage(data: EditMessageResponse): void {
+  try {
+    console.warn("Received edit message data:", data);
+
+    const { isDm, channelId } = data;
+
+    const idToCompare = isDm
+      ? friendsCache.currentDmId
+      : guildCache.currentChannelId;
+
+    if (data.guildId !== currentGuildId || idToCompare !== channelId) {
+      console.log(
+        `guildId ${data.guildId} does not match currentGuildId ${currentGuildId} or channelId ${channelId} does not match idToCompare ${idToCompare}. Returning.`
+      );
+
+      return;
+    }
+
+    editChatMessage(data);
   } catch (error) {
     console.error("Error processing message:", error);
   }
@@ -413,7 +541,7 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
   });
 }
 
-export function handleHistoryResponse(data: MessageResponse) {
+export function handleHistoryResponse(data: NewMessageResponse) {
   const { messages, channelId, guildId, oldestMessageDate } = data;
 
   if (isChangingPage) {
@@ -503,13 +631,13 @@ function setupScrollHandling(wasAtBottom: boolean) {
   const mediaElements = chatContainer.querySelectorAll("img, video, iframe");
   const mediaLoadedPromises = createMediaLoadPromises(mediaElements);
 
-  const observer = new MutationObserver(() => {
+  const _observer = new MutationObserver(() => {
     if (wasAtBottom && !isUserInteracted) {
       scrollToBottom();
     }
   });
 
-  observer.observe(chatContainer, {
+  _observer.observe(chatContainer, {
     childList: true,
     subtree: true
   });
@@ -526,7 +654,7 @@ function setupScrollHandling(wasAtBottom: boolean) {
 
     if (isAllMediaLoaded(mediaElements)) {
       chatContainer.style.overflow = "";
-      observer.disconnect();
+      _observer.disconnect();
     } else {
       setTimeout(monitorContentSizeChanges, 50);
     }
@@ -534,7 +662,7 @@ function setupScrollHandling(wasAtBottom: boolean) {
 
   Promise.all(mediaLoadedPromises).then(() => {
     chatContainer.style.overflow = "";
-    observer.disconnect();
+    _observer.disconnect();
   });
 
   monitorContentSizeChanges();
@@ -607,7 +735,7 @@ export function createProfileImageChat(
   nick: string,
   userInfo: UserInfo,
   userId: string,
-  date: string,
+  date: Date,
   isBot: boolean = false,
   isAfterDeleting: boolean = false,
   replyBar: HTMLElement | null = null
@@ -634,20 +762,27 @@ export function createProfileImageChat(
     profileImg.style.borderRadius = "25px";
   });
 
-  const authorAndDate = createEl("div");
-  authorAndDate.classList.add("author-and-date");
-  const nickElement = createEl("span");
-  nickElement.textContent = nick;
-  nickElement.classList.add("nick-element");
+  const authorAndDate = createEl("div", { className: "author-and-date" });
+  const nickElement = createEl("span", {
+    textContent: nick,
+    className: "nick-element"
+  });
   if (isBot) {
     const botSign = createEl("span", { className: "botSign" });
     authorAndDate.appendChild(botSign);
   }
   authorAndDate.appendChild(nickElement);
-  const messageDate = new Date(date);
-  const dateElement = createEl("span");
-  dateElement.textContent = getFormattedDate(messageDate);
-  dateElement.classList.add("date-element");
+
+  console.log(
+    "Displaying date: ",
+    date,
+    " formatted: ",
+    getFormattedDate(date)
+  );
+
+  const dateElement = createEl("span", { className: "date-element" });
+
+  dateElement.textContent = getFormattedDate(date);
   authorAndDate.appendChild(dateElement);
 
   if (replyBar) {
@@ -696,6 +831,64 @@ function createOptions3Button(
   button.dataset.m_id = messageId;
   appendToMessageContextList(messageId, userId);
 }
+export function addEditedIndicator(
+  messageElement: HTMLElement,
+  dateString?: string
+): void {
+  const date = dateString || new Date().toISOString();
+  const existingEditedSpan = messageElement.querySelector(
+    ".edited-message-indicator"
+  );
+  if (existingEditedSpan) {
+    existingEditedSpan.remove();
+  }
+
+  const editedSpan = createEl("span", {
+    className: "edited-message-indicator"
+  });
+  editedSpan.textContent = `(${translations.getTranslation("message-edited")})`;
+
+  editedSpan.addEventListener("mouseover", () => {
+    const formattedDate = getFormattedDateForSmall(new Date(date));
+    createTooltipAtCursor(formattedDate);
+  });
+
+  messageElement.appendChild(editedSpan);
+}
+function processMessageContent(content: string): string {
+  let formattedMessage = replaceCustomEmojis(content);
+  if (isURL(content)) formattedMessage = "";
+  return formattedMessage;
+}
+
+function updateMessageContent(element: HTMLElement, content: string): void {
+  const formattedMessage = processMessageContent(content);
+  element.textContent = formattedMessage;
+  element.dataset.content_observe = formattedMessage;
+  requestAnimationFrame(() => observe(element));
+}
+export function editChatMessage(data: EditMessageResponse): void {
+  const { messageId, content } = data;
+  const messageElement = getId(messageId);
+
+  if (!messageElement) {
+    console.error("Message element not found for edit:", messageId);
+    return;
+  }
+
+  const messageContentElement = messageElement.querySelector(
+    "#message-content-element"
+  ) as HTMLElement;
+
+  if (!messageContentElement) {
+    console.error("Message content element not found for edit:", messageId);
+    return;
+  }
+
+  updateMessageContent(messageContentElement, content);
+  addEditedIndicator(messageContentElement);
+}
+
 export function displayChatMessage(data: Message): HTMLElement | null {
   if (!data || !isValidMessage(data)) return null;
 
@@ -717,15 +910,15 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     isNotSent,
     replyOf
   } = data;
-
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
   if (!attachmentUrls && content === "" && embeds.length === 0) return null;
   const nick = userManager.getUserNick(userId);
+
   const newMessage = createMessageElement(
     messageId,
     userId,
-    (typeof date === "string" ? new Date(date) : date).toISOString(),
+    date,
     content,
     attachmentUrls,
     replyToId || undefined,
@@ -737,7 +930,6 @@ export function displayChatMessage(data: Message): HTMLElement | null {
 
   const userInfo = constructUserData(userId);
   let isCreatedProfile = false;
-
   if (addToTop) {
     isCreatedProfile = handleAddToTop(
       newMessage,
@@ -745,7 +937,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      (typeof date === "string" ? new Date(date) : date).toISOString(),
+      date,
       isBot,
       willDisplayProfile
     );
@@ -756,12 +948,15 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      date,
+      new Date(date),
       isBot,
       replyToId ?? undefined
     );
   }
-
+  const isEdited = lastEdited !== null;
+  if (isEdited) {
+    addEditedIndicator(messageContentElement, lastEdited);
+  }
   let formattedMessage = replaceCustomEmojis(content);
   if (isURL(content)) formattedMessage = "";
 
@@ -779,7 +974,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   );
 
   if (!currentLastDate) {
-    currentLastDate = date;
+    currentLastDate = new Date(date);
   }
 
   updateSenderAndButtons(newMessage, userId, addToTop);
@@ -831,6 +1026,20 @@ export function handleSelfSentMessage(data: Message) {
       `#${CSS.escape(selfSentMessages[foundMessageIndex].id)}`
     ) as HTMLElement;
     if (element) {
+      const authorAndDate = element.querySelector(".author-and-date");
+      if (authorAndDate && data.date) {
+        const dateElement = authorAndDate.querySelector(".date-element");
+        console.log(data.date, getFormattedDateSelfMessage(data.date));
+        if (dateElement) {
+          dateElement.textContent = getFormattedDateSelfMessage(data.date);
+        }
+        const smallDateElement = element.querySelector(".small-date-element");
+        if (smallDateElement) {
+          smallDateElement.textContent = getFormattedDateForSmall(
+            new Date(data.date)
+          );
+        }
+      }
       element.style.color = "white";
       const messageContentElement = element.querySelector(
         "#message-content-element"
@@ -855,6 +1064,7 @@ export function handleSelfSentMessage(data: Message) {
           data.attachmentUrls
         );
       }
+      element.id = data.messageId;
     }
     selfSentMessages.splice(foundMessageIndex, 1);
   }
@@ -917,7 +1127,7 @@ function handleAddToTop(
       nick,
       userInfo,
       userId,
-      date,
+      new Date(date),
       isBot
     );
   } else {
@@ -959,7 +1169,7 @@ function handleRegularMessage(
       nick,
       userInfo,
       userId,
-      dateString,
+      date,
       isBot
     );
   } else {
@@ -970,7 +1180,7 @@ function handleRegularMessage(
         nick,
         userInfo,
         userId,
-        dateString,
+        date,
         isBot
       );
     } else {
@@ -1097,6 +1307,7 @@ function fetchReplies(
 }
 
 export function updateChatWidth() {
+  if (!userList) return;
   if (userList.style.display === "none") {
     chatInput.classList.add("user-list-hidden");
     replyInfo.classList.add("reply-user-list-open");
@@ -1162,13 +1373,12 @@ export function getHistoryFromOneChannel(
       console.warn("No messages found in cache for this channel.");
     }
   }
-  chatContent.innerHTML = "";
   fetchMessagesFromServer(channelId, isDm);
 }
 
 let timeoutId: number | null = null;
 
-function fetchMessagesFromServer(channelId: string, isDm = false) {
+export function fetchMessagesFromServer(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 
   const requestData = {

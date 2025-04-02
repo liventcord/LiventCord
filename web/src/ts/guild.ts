@@ -13,7 +13,7 @@ import {
   loadApp,
   changecurrentGuild
 } from "./app.ts";
-import { isOnGuild, isOnMe, isOnDm } from "./router.ts";
+import { isOnGuild, isOnMePage, isOnDm } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
 import { validateAvatar, resetImageInput } from "./avatar.ts";
@@ -176,7 +176,7 @@ export function loadGuild(
 
   guildCache.currentChannelId = channelId;
 
-  if (isOnMe) {
+  if (isOnMePage) {
     loadApp("", isInitial);
   } else if (isOnDm) {
     loadApp("", isInitial);
@@ -386,48 +386,51 @@ export const createGuildListItem = (
   return listItem;
 };
 export function updateGuilds(guildsJson: Array<any>) {
-  if (!guildsJson) return;
-  if (Array.isArray(guildsJson)) {
-    guildsList.innerHTML = "";
+  if (!guildsJson || !Array.isArray(guildsJson)) {
+    console.error("Invalid guild data");
+    return;
+  }
 
-    const mainLogoItem = createMainLogo();
-    guildsList.appendChild(mainLogoItem);
+  const fragment = document.createDocumentFragment();
+  guildsList.innerHTML = "";
 
-    wrapWhiteRod(mainLogoItem);
+  const mainLogoItem = createMainLogo();
+  fragment.appendChild(mainLogoItem);
 
-    guildsJson.forEach(
-      ({
+  wrapWhiteRod(mainLogoItem);
+
+  guildsJson.forEach(
+    ({
+      guildId,
+      guildName,
+      isGuildUploadedImg,
+      rootChannel,
+      guildMembers,
+      ownerId
+    }) => {
+      const listItem = createGuildListItem(
         guildId,
+        rootChannel,
         guildName,
         isGuildUploadedImg,
-        rootChannel,
-        guildMembers
-      }) => {
-        const listItem = createGuildListItem(
-          guildId,
-          rootChannel,
-          guildName,
-          isGuildUploadedImg,
-          true
-        );
-        guildsList.appendChild(listItem);
+        true
+      );
+      fragment.appendChild(listItem);
 
-        cacheInterface.setName(guildId, guildName);
-        cacheInterface.setMemberIds(guildId, guildMembers);
-      }
-    );
-
-    const createGuildButton = createNewGuildButton();
-    guildsList.appendChild(createGuildButton);
-
-    const selectedGuild = guildsList.querySelector(
-      `img[id="${currentGuildId}"]`
-    );
-    if (selectedGuild) {
-      (selectedGuild.parentNode as HTMLElement).classList.add("selected-guild");
+      cacheInterface.setName(guildId, guildName);
+      cacheInterface.setGuildOwner(guildId, ownerId);
+      cacheInterface.setMemberIds(guildId, guildMembers);
     }
-  } else {
-    console.error("Non-array guild data");
+  );
+
+  const createGuildButton = createNewGuildButton();
+  fragment.appendChild(createGuildButton);
+
+  guildsList.appendChild(fragment);
+
+  const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
+  if (selectedGuild) {
+    (selectedGuild.parentNode as HTMLElement).classList.add("selected-guild");
   }
 }
 
