@@ -2,6 +2,8 @@ import store from "../store";
 import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
 import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
+import { alertUser } from "./ui.ts";
+import { translations } from "./translations.ts";
 
 export interface Member {
   userId: string;
@@ -36,6 +38,83 @@ export function setLastTopSenderId(id: string) {
   if (!id) return;
   lastTopSenderId = id;
 }
+
+function validatePassword(password: string) {
+  return password && password.length >= 5;
+}
+
+export function changePassword(
+  event: KeyboardEvent | null,
+  currentInput: HTMLInputElement,
+  newPasswordInput: HTMLInputElement,
+  newPasswordConfirmInput: HTMLInputElement,
+  successCallback: CallableFunction
+) {
+  const currentPasswordValue = currentInput.value;
+  const passwordValue = newPasswordInput.value;
+  const newPasswordConfirm = newPasswordConfirmInput.value;
+
+  if (!currentPasswordValue || !passwordValue || !newPasswordConfirm) {
+    alertUser(translations.getSettingsTranslation("PasswordInvalid"));
+    return;
+  }
+
+  if (passwordValue !== newPasswordConfirm) {
+    alertUser(translations.getSettingsTranslation("PasswordConfirmationAlert"));
+    return;
+  }
+
+  if (event) {
+    event.preventDefault();
+  }
+
+  currentInput.setCustomValidity("");
+  newPasswordInput.setCustomValidity("");
+  newPasswordConfirmInput.setCustomValidity("");
+
+  if (!validatePassword(passwordValue)) {
+    setInputValidity(
+      newPasswordInput,
+      translations.getSettingsTranslation("PasswordInvalid")
+    );
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("CurrentPassword", currentPasswordValue);
+  formData.append("NewPassword", passwordValue);
+
+  fetch("/auth/change-password", {
+    method: "POST",
+    body: formData
+  })
+    .then((response) => {
+      if (!response.ok) {
+        if (response.status === 400) {
+          return response.text().then((text) => {
+            if (text === "Current password is incorrect") {
+              alertUser(translations.getSettingsTranslation("PasswordInvalid"));
+            }
+          });
+        } else {
+          alertUser(String(response.status));
+        }
+        return;
+      }
+      successCallback();
+      alertUser(translations.getSettingsTranslation("PasswordChangeSuccess"));
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      alertUser(translations.getSettingsTranslation("PasswordChangeError"));
+    });
+}
+
+function setInputValidity(input: HTMLInputElement, message: string) {
+  input.setCustomValidity(message);
+  input.reportValidity();
+}
+
 class UserManager {
   private userNames: { [userId: string]: UserInfo } = {};
   private isSelfOnline: boolean = false;

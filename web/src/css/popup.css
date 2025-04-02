@@ -173,6 +173,16 @@
     margin: 0;
   }
 }
+@keyframes pop-up-animation-password {
+  0% {
+    width: 0;
+    height: 0;
+  }
+  100% {
+    width: 440px;
+    height: 450px;
+  }
+}
 .pop-up-content {
   color: white;
   overflow-y: scroll;
@@ -597,4 +607,29 @@
 .profile-content {
   font-size: 0.8em;
   margin-left: 15px;
+}
+
+.password-title {
+  background-color: transparent;
+  border: none;
+  box-sizing: border-box;
+  color: #fff;
+  position: relative;
+  width: 255px;
+  margin-left: 25px;
+  padding: 20px;
+  margin-top: -20px;
+}
+
+.password-input {
+  background-color: #333339;
+  border: none;
+  box-sizing: border-box;
+  color: #fff;
+  padding: 12px;
+  position: relative;
+  width: 88%;
+  margin-left: 25px;
+  outline: #37373e;
+  margin-top: -30px;
 }

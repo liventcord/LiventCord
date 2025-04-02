@@ -509,14 +509,25 @@ th {
   padding: 10px 15px;
   width: 100%;
   color: lightgray;
-  background-color: transparent;
   border: none;
+  background-color: transparent;
   border-radius: 5px;
   text-align: left;
   transition:
     background-color 0.2s,
     color 0.2s;
   cursor: pointer;
+}
+#change-password-button {
+  background-color: #5865f2;
+  width: 130px;
+  margin-top: 250px;
+  height: 35px;
+  font-size: 0.9em;
+  padding: 5px;
+}
+#change-password-button:hover {
+  background-color: #4654c0;
 }
 
 #settings-leftbar .settings-buttons:last-child {

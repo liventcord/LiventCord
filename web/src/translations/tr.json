@@ -113,7 +113,17 @@
     "saveChanges": "Değişiklikleri Kaydet",
     "ChannelSettings": "Kanal Ayarları",
     "DeleteChannel": "Kanalı Sil",
-    "Permissions": "İzinler"
+    "Permissions": "İzinler",
+    "ChangePassword": "Şifreyi Değiştir",
+    "UpdatePasswordTitle": "Şifreni güncelle",
+    "UpdatePasswordDescription": "Mevcut şifreni ve yeni şifreni gir.",
+    "UpdatePasswordCurrent": "Mevcut Şifren",
+    "UpdatePasswordNew": "Yeni Şifre",
+    "UpdatePasswordNewConfirm": "Yeni Şifre'yi onayla",
+    "PasswordconfirmationAlert": "İki yeni şifre de aynı olmalı!",
+    "PasswordChangeSuccess": "Şifre başarıyla değiştirildi!",
+    "PasswordChangeError": "Şifre değiştirilirken bir hata oluştu!",
+    "PasswordInvalid": "Şifre Geçersiz!,"
   },
   "textTranslations": {
     "online": "Çevrim İçi",
@@ -216,7 +226,8 @@
     "edit-profile": "Profili düzenle",
     "save-button-text": "kaydetmek için",
     "exit-button-text": "çıkmak için",
-    "message-edited": "düzenlendi"
+    "message-edited": "düzenlendi",
+    "done": "Bitti"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

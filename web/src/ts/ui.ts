@@ -32,6 +32,7 @@ import { observe, updateChatWidth } from "./chat.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
+import { changePassword } from "./user.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -333,6 +334,132 @@ export function askUser(
   isRed = false
 ) {
   createPopupContent(true, subject, content, actionText, acceptCallback, isRed);
+}
+export function openChangePasswordPop() {
+  const title = translations.getSettingsTranslation("UpdatePasswordTitle");
+  const description = translations.getSettingsTranslation(
+    "UpdatePasswordDescription"
+  );
+  const currentPassword = translations.getSettingsTranslation(
+    "UpdatePasswordCurrent"
+  );
+  const newPassword = translations.getSettingsTranslation("UpdatePasswordNew");
+  const newPasswordConfirm = translations.getSettingsTranslation(
+    "UpdatePasswordNewConfirm"
+  );
+
+  const popUpSubject = createEl("h1", {
+    className: "pop-up-subject",
+    textContent: title
+  });
+  const popUpContent = createEl("p", {
+    className: "pop-up-content",
+    textContent: description
+  });
+  popUpContent.style.marginLeft = "50px";
+  popUpContent.style.marginTop = "0px";
+
+  const popAcceptButton = createEl("button", {
+    className: "pop-up-accept",
+    textContent: translations.getTranslation("done")
+  });
+
+  const popRefuseButton = createEl("button", {
+    className: "pop-up-refuse",
+    textContent: translations.getTranslation("cancel")
+  });
+  popRefuseButton.style.marginTop = "60px";
+  popAcceptButton.style.marginTop = "60px";
+
+  const contentElements = [popUpSubject, popUpContent];
+
+  const outerParent = createPopUp({
+    contentElements,
+    id: ""
+  });
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      acceptCallback(event);
+    }
+  };
+  const currentPasswordInputTitle = createEl("p", {
+    id: "current-password-input-title",
+    textContent: currentPassword
+  }) as HTMLParagraphElement;
+  currentPasswordInputTitle.classList.add("password-title");
+
+  const currentInput = createEl("input", {
+    id: "current-password-input",
+    type: "password"
+  }) as HTMLInputElement;
+  currentInput.classList.add("password-input");
+
+  const newInput = createEl("input", {
+    id: "new-password-input",
+    type: "password"
+  }) as HTMLInputElement;
+  newInput.classList.add("password-input");
+
+  const newPasswordInputTitle = createEl("p", {
+    id: "new-password-input-title",
+    textContent: newPassword
+  }) as HTMLParagraphElement;
+  newPasswordInputTitle.classList.add("password-title");
+
+  const newPasswordConfirmTitle = createEl("p", {
+    id: "new-password-input-confirm-title",
+    textContent: newPasswordConfirm
+  }) as HTMLParagraphElement;
+  newPasswordConfirmTitle.classList.add("password-title");
+
+  const newInputConfirm = createEl("input", {
+    id: "new-password-input-confirm",
+    type: "password"
+  }) as HTMLInputElement;
+  newInputConfirm.classList.add("password-input");
+
+  const parentElement = outerParent.firstChild as HTMLElement;
+  parentElement.style.animation = "pop-up-animation-password 0.3s forwards";
+  parentElement.style.backgroundColor = "#37373E";
+
+  parentElement.appendChild(currentPasswordInputTitle);
+  parentElement.appendChild(currentInput);
+  parentElement.appendChild(newPasswordInputTitle);
+  parentElement.appendChild(newInput);
+  parentElement.appendChild(newPasswordConfirmTitle);
+  parentElement.appendChild(newInputConfirm);
+  const successCallback = () => {
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  };
+  const acceptCallback = (event: KeyboardEvent | null) => {
+    changePassword(
+      event,
+      currentInput,
+      newInput,
+      newInputConfirm,
+      successCallback
+    );
+  };
+
+  parentElement.appendChild(popRefuseButton);
+  popRefuseButton.addEventListener("click", function () {
+    if (outerParent && outerParent.firstChild) {
+      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
+      document.removeEventListener("keydown", handleKeyDown);
+    }
+  });
+
+  parentElement.appendChild(popAcceptButton);
+
+  document.addEventListener("keydown", handleKeyDown);
+
+  popAcceptButton.addEventListener("click", function () {
+    acceptCallback(null);
+  });
 }
 let logoClicked = 0;
 

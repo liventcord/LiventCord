@@ -10,8 +10,7 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID,
-  scrollToMessage
+  setLastSenderID
 } from "./chat.ts";
 import {
   chatInput,
@@ -81,7 +80,6 @@ import {
 import {
   getId,
   getMaskedEmail,
-  createEl,
   enableElement,
   disableElement,
   constructDmPage,

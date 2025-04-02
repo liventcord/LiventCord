@@ -316,7 +316,7 @@ namespace LiventCord.Controllers
             var constructedFriendUserChannel = string.Compare(userId, channelId) < 0 ? $"{userId}_{channelId}" : $"{channelId}_{userId}";
             await EditMessage(constructedFriendUserChannel, messageId, request.Content);
             bool isDm = true;
-            var editBroadcast = new { isDm,constructedFriendUserChannel, messageId, request.Content };
+            var editBroadcast = new { isDm, constructedFriendUserChannel, messageId, request.Content };
             await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast, UserId!, constructedFriendUserChannel);
             return Ok(editBroadcast);
         }
