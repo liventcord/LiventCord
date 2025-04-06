@@ -3,6 +3,25 @@ import { translations } from "./translations";
 import { userManager } from "./user";
 import { getId, IMAGE_SRCS } from "./utils";
 
+function escapeHtml(unsafe: string): string {
+  return unsafe.replace(/[&<"']/g, function (m) {
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#039;';
+      default:
+        return m;
+    }
+  });
+}
+
 let currentEmojiCount = 0;
 
 function generateEmojiRowHTML(emoji: Emoji): string {
@@ -26,19 +45,19 @@ function generateEmojiRowHTML(emoji: Emoji): string {
   const html = `
   <tr class="table-row" id="emoji-row-${emoji.fileId}">
     <td class="table-cell">
-      <img src="/guilds/${emoji.guildId}/emojis/${emoji.fileId}" alt="${emoji.fileName}" class="emoji-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC}';">
+      <img src="/guilds/${emoji.guildId}/emojis/${emoji.fileId}" alt="${escapeHtml(emoji.fileName)}" class="emoji-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC}';">
     </td>
     <td class="table-cell emoji-name-cell">
       <div style="display: flex; align-items: center;">
         <div class="colon" style="margin-bottom: 5px">:</div>
-        <textarea class="textarea" id="emoji-${emoji.fileId}" style="flex: 1; margin-left: 0; padding-top: 10px;">${emoji.fileName}</textarea>
+        <textarea class="textarea" id="emoji-${emoji.fileId}" style="flex: 1; margin-left: 0; padding-top: 10px;">${escapeHtml(emoji.fileName)}</textarea>
         <div class="colon" style=" margin-bottom: 5px">:</div>
       </div>
     </td>
     <td class="table-cell">
       <div style="display: flex; align-items: center; justify-content: center;">
-        <img src="/profiles/${emoji.userId}" alt="${userManager.getUserNick(emoji.userId)}" class="profile-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC}';">
-        <span style="margin-left: 8px;">${userManager.getUserNick(emoji.userId)}</span>
+        <img src="/profiles/${emoji.userId}" alt="${escapeHtml(userManager.getUserNick(emoji.userId))}" class="profile-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC}';">
+        <span style="margin-left: 8px;">${escapeHtml(userManager.getUserNick(emoji.userId))}</span>
       </div>
     </td>
     <td class="table-cell">
