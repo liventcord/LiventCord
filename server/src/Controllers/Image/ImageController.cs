@@ -141,7 +141,7 @@ namespace LiventCord.Controllers
                 throw new ArgumentException("Invalid file type. Only images are allowed.");
             }
 
-            _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId, guildId, channelId);
+            _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), channelId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
 
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
@@ -159,24 +159,24 @@ namespace LiventCord.Controllers
             {
                 if (!string.IsNullOrEmpty(channelId))
                 {
-                    _logger.LogInformation("Uploading attachment for ChannelId: {ChannelId} in GuildId: {GuildId}", channelId, guildId);
+                    _logger.LogInformation("Uploading attachment for ChannelId: {ChannelId} in GuildId: {GuildId}", channelId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                     await SaveOrUpdateFile(new AttachmentFile(fileId, sanitizedFileName, content, extension, channelId, guildId, userId));
                 }
                 else if (isEmoji)
                 {
-                    _logger.LogInformation("Uploading emoji file for GuildId: {GuildId}", guildId);
+                    _logger.LogInformation("Uploading emoji file for GuildId: {GuildId}", guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                     await SaveFile(new EmojiFile(fileId, sanitizedFileName, content, extension, guildId, userId));
                 }
                 else
                 {
-                    _logger.LogInformation("Uploading guild file for GuildId: {GuildId}", guildId);
+                    _logger.LogInformation("Uploading guild file for GuildId: {GuildId}", guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                     await SaveOrUpdateFile(new GuildFile(fileId, sanitizedFileName, content, extension, guildId, userId));
                     await SetIsUploadedGuildImg(guildId);
                 }
             }
             else
             {
-                _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId);
+                _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                 await SaveOrUpdateFile(new ProfileFile(fileId, sanitizedFileName, content, extension, userId));
             }
 
