@@ -740,6 +740,7 @@ namespace LiventCord.Controllers
             try
             {
                 await _imageController.DeleteAttachmentFile(message);
+                _context.Messages.Attach(message);
                 _context.Messages.Remove(message);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
