@@ -23,7 +23,6 @@ import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
 import { isOnMePage, isOnDm } from "./router.ts";
 import { Member, userManager } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
-import { CreateChannelData } from "./socketEvents.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 
@@ -342,6 +341,9 @@ export function editChannelName(channelId: string, channelName: string) {
     channelId,
     channelName
   });
+  if (guildCache.currentChannelId === channelId) {
+    setChannelTitle(channelName);
+  }
 }
 
 function addChannelsOnState(channels: Channel[]) {

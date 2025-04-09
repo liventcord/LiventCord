@@ -1,26 +1,7 @@
 import { currentGuildId } from "./guild";
 import { translations } from "./translations";
 import { userManager } from "./user";
-import { getId, IMAGE_SRCS } from "./utils";
-
-function escapeHtml(unsafe: string): string {
-  return unsafe.replace(/[&<"']/g, function (m) {
-    switch (m) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case "'":
-        return '&#039;';
-      default:
-        return m;
-    }
-  });
-}
+import { escapeHtml, getId, getProfileUrl, IMAGE_SRCS } from "./utils";
 
 let currentEmojiCount = 0;
 
@@ -56,7 +37,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     </td>
     <td class="table-cell">
       <div style="display: flex; align-items: center; justify-content: center;">
-        <img src="/profiles/${emoji.userId}" alt="${escapeHtml(userManager.getUserNick(emoji.userId))}" class="profile-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC}';">
+        <img src=${getProfileUrl(emoji.userId)} alt="${escapeHtml(userManager.getUserNick(emoji.userId))}" class="profile-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC}';">
         <span style="margin-left: 8px;">${escapeHtml(userManager.getUserNick(emoji.userId))}</span>
       </div>
     </td>

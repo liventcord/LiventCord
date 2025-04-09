@@ -134,5 +134,25 @@ public static class RouteConfig
                 });
             }
         );
+        app.MapGet(
+            "/api/download",
+            async (HttpContext context) =>
+            {
+                var platform = context.Request.Query["platform"].ToString().ToLower();
+                var url = platform switch
+                {
+                    "android" => "https://github.com/liventcord/Mobile/releases/download/v1.0.0/app-release.apk",
+                    "windows" => "https://github.com/liventcord/Desktop/releases/download/v1.0.0/liventcord-win_x64.exe.zip",
+                    "mac" => "https://github.com/liventcord/Desktop/releases/download/v1.0.0/liventcord-mac_universal.zip",
+                    "linux" => "https://github.com/liventcord/Desktop/releases",
+                    _ => "https://github.com/liventcord/Desktop/releases/tag/v1.0.0"
+                };
+                context.Response.Redirect(url);
+                await Task.CompletedTask;
+            }
+        );
+
+
+
     }
 }

@@ -109,7 +109,6 @@ table {
   height: 100%;
   width: 100%;
   background-color: #2f3136;
-  border-radius: 10px;
   overflow: hidden;
 }
 @keyframes settings-menu-scale-appear {
@@ -305,7 +304,7 @@ table {
   left: -20px;
 }
 .create-guild-title {
-  top: 50%;
+  top: 60%;
   text-transform: uppercase;
   color: rgb(209, 204, 204);
   left: 10px;
@@ -486,6 +485,38 @@ table {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+@media (max-width: 600px) {
+  #settings-button {
+    margin-top: -12px !important;
+  }
+  #settings-leftbar {
+    padding: 10px;
+    width: 100%;
+    flex: unset;
+  }
+  .settings-buttons {
+    padding: 10px 90px;
+  }
+  #settings-rightbar {
+    width: 90vw !important;
+  }
+  #settings-light-rightbar {
+    width: 80vw !important;
+  }
+  #settings-rightbartop {
+    width: 90vw !important;
+  }
+  #guild-settings-rightbar {
+    width: 90vw !important;
+  }
+  #guild-overview-name-input,
+  #set-info-title-guild-name {
+    margin-left: 0px !important;
+  }
+  #set-info-title-guild-name {
+    margin-top: 0px;
+  }
 }
 
 #settings-leftbar > div {
@@ -732,7 +763,7 @@ table {
 }
 #guild-overview-name-input {
   margin-bottom: 100px;
-  margin-left: 355px;
+  margin-left: 335px;
 }
 #channel-overview-name-input {
   margin-bottom: 100px;

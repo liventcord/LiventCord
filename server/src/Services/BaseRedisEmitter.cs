@@ -31,6 +31,8 @@ public class BaseRedisEmitter
 
         Task.Run(ConnectToRedisAsync);
     }
+    private static int failedAttempts = 0;
+    private const int MaxFailedAttemptsBeforeSuppressingLogs = 3;
 
     private async Task ConnectToRedisAsync()
     {
@@ -49,25 +51,44 @@ public class BaseRedisEmitter
                     var config = ConfigurationOptions.Parse(redisConnectionString);
                     config.AbortOnConnectFail = false;
                     redis = await ConnectionMultiplexer.ConnectAsync(config);
-                    db = redis.GetDatabase();
-                    Console.WriteLine("Connected to Redis.");
-                    return;
+
+                    if (redis.IsConnected)
+                    {
+                        db = redis.GetDatabase();
+                        Console.WriteLine("Connected to Redis.");
+                        return;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Failed to connect to Redis.");
+                    }
                 }
                 catch (Exception ex)
                 {
                     attempt++;
                     int delay = Math.Min(InitialDelayMilliseconds * attempt, MaxBackoffMilliseconds);
-                    Console.WriteLine($"Error: {ex.Message}. Retrying in {delay}ms...");
+
+                    if (failedAttempts < MaxFailedAttemptsBeforeSuppressingLogs)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}. Retrying in {delay}ms...");
+                    }
+
+                    failedAttempts++;
+
                     await Task.Delay(delay, _cts.Token);
                 }
             }
 
-            Console.WriteLine("Max retries reached. Could not connect to Redis.");
+            if (failedAttempts < MaxFailedAttemptsBeforeSuppressingLogs)
+            {
+                Console.WriteLine("Max retries reached. Could not connect to Redis.");
+            }
         }
         finally
         {
             _reconnectLock.Release();
         }
+
     }
     public async Task EmitGuildMembersToRedisStream(string guildId, string[] userIds)
     {
