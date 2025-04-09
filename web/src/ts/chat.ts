@@ -28,7 +28,6 @@ import {
   getId,
   createEl,
   getFormattedDateForSmall,
-  sanitizeHTML,
   getFormattedDate,
   getFormattedDateSelfMessage
 } from "./utils.ts";
@@ -38,7 +37,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { createMediaElement } from "./mediaElements.ts";
+import { createMediaElement, handleLink } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
 import { isOnGuild, isOnMePage } from "./router.ts";
 import {
@@ -359,16 +358,10 @@ export function observe(element: HTMLElement) {
 function loadObservedContent(targetElement: HTMLElement) {
   const jsonData = targetElement.dataset.content_observe;
   if (jsonData && targetElement.dataset.contentLoaded !== "true") {
-    const sanitizedHTML = sanitizeHTML(jsonData);
-    const tempDiv = createEl("div");
-    tempDiv.innerHTML = sanitizedHTML;
-    const nodes = Array.from(tempDiv.childNodes);
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      targetElement.insertBefore(nodes[i], targetElement.firstChild);
-    }
+    handleLink(targetElement, jsonData);
+    targetElement.dataset.contentLoaded = "true";
   }
 }
-
 export interface NewMessageResponse {
   guildId?: string;
   isOldMessages: boolean;

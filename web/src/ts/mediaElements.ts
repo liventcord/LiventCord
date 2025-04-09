@@ -446,26 +446,41 @@ function attachMediaElement(
   messageContentElement.appendChild(mediaElement);
 }
 
-function handleLink(messageContentElement: HTMLElement, content: string) {
+export function handleLink(
+  messageContentElement: HTMLElement,
+  content: string
+) {
+  messageContentElement.textContent = "";
   const urlPattern = /https?:\/\/[^\s]+/g;
-  const parts = content.split(urlPattern);
-  const urls = content.match(urlPattern) || [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-  parts.forEach((part, index) => {
-    if (part) {
-      const normalSpan = createEl("span", { textContent: part });
+  while ((match = urlPattern.exec(content)) !== null) {
+    const start = match.index;
+    const end = start + match[0].length;
+
+    if (start > lastIndex) {
+      const text = content.slice(lastIndex, start);
+      const normalSpan = createEl("span", { textContent: text });
       messageContentElement.appendChild(normalSpan);
     }
 
-    if (index < urls.length) {
-      const urlSpan = createEl("a", { textContent: urls[index] });
-      urlSpan.classList.add("url-link");
-      urlSpan.addEventListener("click", () => {
-        openExternalUrl(urls[index]);
-      });
-      messageContentElement.appendChild(urlSpan);
-    }
-  });
+    const url = match[0];
+    const urlSpan = createEl("a", { textContent: url });
+    urlSpan.classList.add("url-link");
+    urlSpan.addEventListener("click", () => {
+      openExternalUrl(url);
+    });
+    messageContentElement.appendChild(urlSpan);
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < content.length) {
+    const remainingText = content.slice(lastIndex);
+    const finalSpan = createEl("span", { textContent: remainingText });
+    messageContentElement.appendChild(finalSpan);
+  }
 }
 
 function applyBorderColor(element: HTMLElement, decimalColor: number) {
