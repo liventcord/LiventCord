@@ -92,7 +92,6 @@ namespace LiventCord.Controllers
             long maxSize = SharedAppConfig.GetMaxAttachmentSize();
             return file.Length <= maxSize;
         }
-
         [NonAction]
         public async Task<string> UploadFileInternal(
             IFormFile file,
@@ -141,7 +140,7 @@ namespace LiventCord.Controllers
                 throw new ArgumentException("Invalid file type. Only images are allowed.");
             }
 
-            _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), channelId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
+            _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), guildId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), channelId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
 
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
@@ -183,7 +182,6 @@ namespace LiventCord.Controllers
             _logger.LogInformation("File uploaded successfully. FileId: {FileId}", fileId);
             return fileId;
         }
-
 
         private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
         {
@@ -307,6 +305,7 @@ namespace LiventCord.Controllers
                             ?? (newFile as AttachmentFile)?.UserId;
 
             string? guildId = newFile.GuildId;
+            string? fileId = newFile.FileId;
 
             var query = _context.Set<T>().AsQueryable();
 
@@ -326,6 +325,7 @@ namespace LiventCord.Controllers
                 query = query.Where(file =>
                     ((AttachmentFile)(object)file).UserId == userId
                     && ((AttachmentFile)(object)file).GuildId == guildId
+                    && ((AttachmentFile)(object)file).FileId == fileId
                 );
             }
 

@@ -152,7 +152,7 @@ export function refreshUserProfile(
           }
         }
         if (user instanceof HTMLImageElement) {
-          user.src = `/profiles/${userId}.webp`;
+          user.src = getProfileUrl(userId);
         }
       }
     });
@@ -179,7 +179,7 @@ export function refreshUserProfile(
       const datasetUserId = (user as HTMLElement).dataset.userId;
       if (datasetUserId === userId) {
         if (user instanceof HTMLImageElement) {
-          user.src = `/profiles/${userId}.webp`;
+          user.src = getProfileUrl(userId);
         }
       }
     }
@@ -234,8 +234,7 @@ export function updateSelfProfile(
   isAfterUploading?: boolean
 ) {
   if (!userId) return;
-  const timestamp = `?ts=${new Date().getTime()}`;
-  const selfimagepath = `/profiles/${userId}.webp${timestamp}`;
+  const selfimagepath = getProfileUrl(userId, true);
 
   updateImageSource(selfProfileImage, selfimagepath);
 

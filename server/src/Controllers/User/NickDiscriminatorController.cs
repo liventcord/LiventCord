@@ -34,7 +34,7 @@ namespace LiventCord.Controllers
             _discriminatorCache[nick] = discriminator;
             return Ok(new { discriminator });
         }
-
+        [NonAction]
         public async Task<string?> GetCachedOrNewDiscriminator(string nickName)
         {
             if (_discriminatorCache.TryGetValue(nickName, out var cachedDiscriminator))

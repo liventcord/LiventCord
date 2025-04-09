@@ -36,7 +36,8 @@ import {
   getAverageRGB,
   disableElement,
   enableElement,
-  blackImage
+  blackImage,
+  escapeHtml
 } from "./utils.ts";
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
@@ -499,14 +500,6 @@ function getActivityPresenceHtml() {
             </div>
         </div>
     `;
-}
-function escapeHtml(str: string) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 function getGuildOverviewHtml() {

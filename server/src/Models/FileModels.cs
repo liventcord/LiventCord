@@ -45,16 +45,11 @@ public class AttachmentFile : FileBase
     {
         ChannelId = channelId;
         UserId = userId;
-        GuildId = guildId;
     }
 
     public override bool Matches(string? userId, string? guildId) =>
-        UserId == userId && GuildId == guildId;
-
-
+        UserId == userId && GuildId == guildId && FileId == FileId;
 }
-
-
 public class EmojiFile : FileBase
 {
     public string UserId { get; set; }
