@@ -37,7 +37,8 @@ import {
   disableElement,
   enableElement,
   blackImage,
-  escapeHtml
+  escapeHtml,
+  isMobile
 } from "./utils.ts";
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
@@ -99,7 +100,7 @@ export function isProfileSettings() {
 
 let currentSettings: Settings;
 
-const settingsMenu = getId("settings-menu");
+const settingsMenu = getId("settings-menu") as HTMLElement;
 let resetTimeout: number;
 
 const GuildCategoryTypes = Object.freeze({
@@ -275,10 +276,17 @@ function generateSettingsHtml(settings: Setting[], isProfile = false) {
   settings.forEach((setting) => {
     const button = createEl("button", {
       className: "settings-buttons",
-      textContent: translations.getSettingsTranslation(setting.category)
+      textContent: translations.getSettingsTranslation(setting.category),
+      id: setting.category
     });
     button.addEventListener("click", () => {
       selectSettingCategory(setting.category);
+      const settingsContainer = getId("settings-rightcontainer");
+      if (!settingsContainer) return;
+      if (isMobile) {
+        enableElement(settingsContainer);
+        disableElement("settings-leftbar");
+      }
     });
     container.appendChild(button);
   });
@@ -404,7 +412,7 @@ function selectSettingCategory(
     | keyof typeof GuildCategoryTypes
     | keyof typeof ChannelCategoryTypes
 ) {
-  console.log("Called category: ", settingCategory);
+  console.log("Selecting settings category: ", settingCategory);
 
   if (settingCategory === GuildCategoryTypes.DeleteGuild) {
     createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
@@ -420,7 +428,7 @@ function selectSettingCategory(
     return;
   }
 
-  if (settingCategory === "MyAccount") {
+  if (settingCategory === ProfileCategoryTypes.MyAccount) {
     updateSelfProfile(currentUserId, currentUserNick, true);
   }
 
@@ -434,7 +442,7 @@ function selectSettingCategory(
 
   if (!settingType) {
     console.error(
-      `ERROR: Unable to find setting type for category: ${settingCategory}`
+      `Unable to find setting type for category: ${settingCategory}`
     );
     alertUser(
       "Error",
@@ -680,9 +688,10 @@ function initialiseSettingComponents(
 
   initializeLanguageDropdown();
 
-  const closeButton = getCloseButtonElement();
-  closeButton.addEventListener("click", closeSettings);
-  settingsContainer.insertBefore(closeButton, settingsContainer.firstChild);
+  const closeButton = getId("close-settings-button");
+  if (closeButton) {
+    closeButton.addEventListener("click", closeSettings);
+  }
 
   toggleManager.setupToggles();
 
@@ -798,6 +807,10 @@ export function openSettings(settingType: SettingType) {
   }
 
   setIsSettingsOpen(true);
+  if (isMobile) {
+    disableElement("settings-rightcontainer");
+    enableElement("settings-leftbar");
+  }
 }
 
 export function closeSettings() {
@@ -818,24 +831,6 @@ export function closeSettings() {
     disableElement("settings-overlay");
   }, 300);
   setIsSettingsOpen(false);
-}
-
-function getCloseButtonElement() {
-  const button = createEl("button", {
-    id: "close-settings-button",
-    ariaLabel: "Close settings",
-    role: "button",
-    tabindex: "0"
-  });
-
-  button.innerHTML = `
-        <svg aria-hidden="true" role="img" width="18" height="18" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
-        </svg>
-        <span id="close-keybind">ESC</span>
-    `;
-
-  return button;
 }
 
 function reconstructSettings(categoryType: SettingType) {
