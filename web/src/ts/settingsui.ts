@@ -188,10 +188,11 @@ const getProfileSettingsConfig = () => {
 
 const getGuildSettingsConfig = () => {
   const noodle = `
-    <img
-      style="width: 500px;"
-      src="https://raw.githubusercontent.com/liventcord/LiventCordOld/refs/heads/main/static/404_files/noodle.gif"
-    />`;
+  <img
+    style="width: 100%; max-width: 500px;"
+    src="https://raw.githubusercontent.com/liventcord/LiventCordOld/refs/heads/main/static/404_files/noodle.gif"
+  />
+`;
 
   return createSettingsConfig(GuildCategoryTypes, (category: string) => {
     switch (category) {
@@ -501,7 +502,6 @@ function getActivityPresenceHtml() {
         </div>
     `;
 }
-
 function getGuildOverviewHtml() {
   return `
   <h2 >${translations.getSettingsTranslation("GuildOverview")}</h2>
@@ -513,10 +513,14 @@ function getGuildOverviewHtml() {
            value="${escapeHtml(
              guildCache.currentGuildName || ""
            )}" maxlength="32">
-    <img id="guild-image" style="user-select: none;">
-    <p id="guild-image-remove" style="display:none">${translations.getSettingsTranslation(
-      "Remove"
-    )}</p>
+    <div id="guild-image-container">
+      <img id="guild-image" style="user-select: none;">
+      <button class="popup-close">
+        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
+        </svg>
+      </button>
+    </div>
     <form id="guildImageForm" enctype="multipart/form-data">
       <input type="file" name="guildImage" id="guildImage" accept="image/*" style="display: none;">
     </form>
@@ -699,12 +703,16 @@ function initialiseSettingComponents(
     "channel-overview-name-input"
   ) as HTMLInputElement;
 
+  const canManageGuild = permissionManager.canManageGuild();
   if (channelNameInput) {
     channelNameInput.value = currentSettingsChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
     if (!channelNameInput.disabled) {
       channelNameInput.addEventListener("input", onEditChannelName);
     }
+  }
+  if (canManageGuild) {
+    enableElement("guild-image-remove");
   }
 
   if (isOnGuild && guildNameInput) {

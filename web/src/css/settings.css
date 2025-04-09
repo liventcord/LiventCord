@@ -109,7 +109,6 @@ table {
   height: 100%;
   width: 100%;
   background-color: #2f3136;
-  border-radius: 10px;
   overflow: hidden;
 }
 @keyframes settings-menu-scale-appear {
@@ -305,7 +304,7 @@ table {
   left: -20px;
 }
 .create-guild-title {
-  top: 50%;
+  top: 60%;
   text-transform: uppercase;
   color: rgb(209, 204, 204);
   left: 10px;

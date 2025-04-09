@@ -235,7 +235,6 @@ const toolbarOptions = getId("toolbaroptions") as HTMLElement;
 const navigationBar = getId("navigation-bar") as HTMLElement;
 
 function toggleHamburger(toLeft: boolean, toRight: boolean) {
-  console.log(isOnRight, isOnLeft, toLeft, toRight);
   if (!userList) return;
 
   if (isOnRight) {
@@ -378,6 +377,10 @@ function initializeElements() {
   friendContainerItem.addEventListener("click", () => loadDmHome());
   const tbShowProfile = getId("tb-showprofile");
   tbShowProfile?.addEventListener("click", () => {
+    if (isOnLeft) {
+      toggleHamburger(!isOnLeft, !isOnRight);
+      return;
+    }
     isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
   });
 

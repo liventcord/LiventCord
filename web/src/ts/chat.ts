@@ -544,6 +544,7 @@ export function handleHistoryResponse(data: NewMessageResponse) {
 
   isLastMessageStart = false;
   clearMessagesCache();
+  chatContent.innerHTML = "";
 
   if (!Array.isArray(messages) || messages.length === 0) {
     displayStartMessage();
