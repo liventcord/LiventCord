@@ -15,9 +15,11 @@
   color: #fff;
   animation: slide-up 0.5s ease-in-out forwards;
 }
+
 #settings-unsaved-popup.slide-out {
   animation: slide-down 0.5s ease-in-out forwards;
 }
+
 @keyframes slide-up {
   from {
     transform: translate(-50%, 100%);
@@ -26,6 +28,7 @@
     transform: translate(-50%, 0);
   }
 }
+
 @keyframes slide-down {
   from {
     transform: translate(-50%, 0);
@@ -34,6 +37,27 @@
     transform: translate(-50%, 300%);
   }
 }
+
+@media (max-width: 600px) {
+  #settings-unsaved-popup {
+    width: 90%;
+    height: auto;
+    font-size: 12px;
+    padding: 15px 10px;
+    white-space: wrap;
+  }
+  #settings-unsaved-popup-applybutton {
+    font-size: 1em;
+  }
+  #settings-unsaved-popup-text {
+    width: 40%;
+    margin-left: 0px !important;
+  }
+  #guildImg {
+    top: 180px !important;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -91,14 +115,15 @@
   justify-content: center;
   text-align: center;
 }
+
 @keyframes guild-pop-up-animation {
   0% {
     width: 0;
     height: 0;
   }
   100% {
-    width: 440px;
-    height: 560px;
+    width: 40vw;
+    height: 60vh;
   }
 }
 @keyframes guild-pop-up-create-guild-animation {
@@ -121,26 +146,29 @@
     height: 425px;
   }
 }
+
 @keyframes pop-up-animation {
   0% {
     width: 0;
     height: 0;
   }
   100% {
-    width: 440px;
-    height: 205px;
+    width: 30vw;
+    height: 30vh;
   }
 }
+
 @keyframes pop-up-animation-profile {
   0% {
     width: 0;
     height: 0;
   }
   100% {
-    width: 600px;
-    height: 780px;
+    width: 31vw;
+    height: 83vh;
   }
 }
+
 @keyframes pop-up-animation-invite {
   0% {
     width: 0;
@@ -183,12 +211,66 @@
     height: 450px;
   }
 }
+
+@media (max-width: 600px) {
+  @keyframes pop-up-animation {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 95%;
+      height: 60vh;
+    }
+  }
+  @keyframes pop-up-animation-profile {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 100vw;
+      height: 80vh;
+    }
+  }
+  @keyframes guild-pop-up-animation {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 95%;
+      height: 60vh;
+    }
+  }
+  @keyframes guild-pop-up-create-guild-animation {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 95%;
+      height: 60vh;
+    }
+  }
+  @keyframes guild-pop-up-join-guild-animation {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 95%;
+      height: 60vh;
+    }
+  }
+}
+
 .pop-up-content {
   color: white;
   overflow-y: scroll;
   max-height: calc(100% - 38px);
   padding: 50px;
-  margin-top: 30px;
+  margin-top: 50px;
   margin-bottom: 38px;
 }
 
@@ -419,14 +501,14 @@
   transform: translate(-50%, -50%);
 }
 .guild-pop-up-content {
-  width: 400px;
   text-align: center;
   font-size: 16px;
   color: #c2bebe;
   position: fixed;
-  top: 15%;
+  top: 18%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: 80%;
 }
 #guild-popup-option2-title {
   color: white;
@@ -471,7 +553,7 @@
 }
 #profile-popup-bottom-container {
   height: 53%;
-  top: 71.5%;
+  top: 73.5%;
   width: 94.5%;
   border-radius: 10px;
   background-color: rgb(35 37 40);

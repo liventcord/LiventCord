@@ -427,8 +427,12 @@ export function isURL(str: string) {
   return urlPattern.test(str);
 }
 
-export function getProfileUrl(userId: string) {
-  return `/profiles/${userId}.webp`;
+export function getProfileUrl(userId: string, addTimestamp?: boolean) {
+  const timestamp = `?ts=${new Date().getTime()}`;
+
+  return addTimestamp
+    ? `/profiles/${userId}` + timestamp
+    : `/profiles/${userId}`;
 }
 
 function pad(number: number, length: number) {
@@ -708,3 +712,12 @@ export const convertKeysToCamelCase = (obj: any): any => {
   }
   return obj;
 };
+
+export function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}

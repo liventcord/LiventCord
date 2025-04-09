@@ -124,7 +124,7 @@
     "PasswordChangeSuccess": "Şifre başarıyla değiştirildi!",
     "PasswordChangeError": "Şifre değiştirilirken bir hata oluştu!",
     "PasswordInvalid": "Şifre Geçersiz!",
-    "EmojiDescription": "Herkesin bu sunucuda kullanabileceği 50 adet özel emoji ekle.",
+    "EmojiDescription": "Herkesin bu sunucuda kullanabileceği 100 adet özel emoji ekle.",
     "EmojiRequirements": "YÜKLEME GEREKSİNİMLERİ",
     "EmojiRequirementDetails1": "Dosya türü: JPEG, PNG, GIF, WEBP",
     "EmojiRequirementDetails2": "Önerilen dosya boyutu: 256 KB",

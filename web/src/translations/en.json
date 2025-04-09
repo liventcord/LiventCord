@@ -111,7 +111,7 @@
     "PasswordChangeSuccess": "Password changed succesfully.",
     "PasswordChangeError": "There was an error while changing password!",
     "PasswordInvalid": "Password Invalid!",
-    "EmojiDescription": "Add up to 50 custom emojis that anyone can use in this server.",
+    "EmojiDescription": "Add up to 100 custom emojis that anyone can use in this server.",
     "EmojiRequirements": "UPLOAD REQUIREMENTS",
     "EmojiRequirementDetails1": "File type: JPEG, PNG, GIF, WEBP",
     "EmojiRequirementDetails2": "Recommended file size: 256 KB ",

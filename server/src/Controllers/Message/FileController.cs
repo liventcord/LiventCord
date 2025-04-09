@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using LiventCord.Helpers;
-using Microsoft.AspNetCore.Authorization;
 
 namespace LiventCord.Controllers
 {
@@ -41,9 +40,14 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("profiles/{userId}")]
-        public async Task<IActionResult> GetProfileFile([FromRoute][UserIdLengthValidation] string userId)
+        public async Task<IActionResult> GetProfileFile([FromRoute] string userId)
         {
+            userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
+            if (userId.Length != 18)
+            {
+                return BadRequest("Invalid userId length.");
+            }
 
             var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
             if (file == null)
@@ -75,8 +79,6 @@ namespace LiventCord.Controllers
 
             return GetFileResult(file, true);
         }
-
-
 
         private string RemoveFileExtension(string userId)
         {
@@ -133,16 +135,5 @@ namespace LiventCord.Controllers
 
             return File(file.Content, contentType);
         }
-
-
     }
-
-
-
-
 }
-
-
-
-
-

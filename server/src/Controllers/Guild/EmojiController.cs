@@ -44,14 +44,17 @@ namespace LiventCord.Controllers
         {
             return formFile.Length <= 256 * 1024;
         }
-
-
         [Authorize]
         [HttpPost("guilds/emojis")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadEmojiImage([FromForm] GuildEmojiUploadRequest request)
         {
-            if (!await _permissionsController.CanManageGuild(UserId!, request.GuildId))
+            if (request == null || request.GuildId == null || request.Photo == null || UserId == null)
+            {
+                return BadRequest(new { Type = "error", Message = "Invalid request data." });
+            }
+
+            if (!await _permissionsController.CanManageGuild(UserId, request.GuildId))
                 return Forbid();
 
             if (!isEmojiSizeValid(request.Photo))
@@ -61,7 +64,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var fileId = await _imageController.UploadFileInternal(request.Photo, UserId!, true, request.GuildId, null);
+                var fileId = await _imageController.UploadFileInternal(request.Photo, UserId, true, request.GuildId, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
