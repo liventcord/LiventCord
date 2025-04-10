@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <url>
+    <loc>https://liventcord.koyeb.app/</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>1.00</priority>
+  </url>
+  <url>
+    <loc>https://liventcord.koyeb.app/download</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://liventcord.koyeb.app/docs/index.html</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://liventcord.koyeb.app/docs/</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://liventcord.koyeb.app/login</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://liventcord.koyeb.app/register</loc>
+    <lastmod>2025-04-10T12:17:23+00:00</lastmod>
+    <priority>0.80</priority>
+  </url>
+</urlset>
