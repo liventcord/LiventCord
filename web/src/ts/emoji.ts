@@ -169,7 +169,7 @@ export function getGuildEmojiHtml(): string {
         <li class="emoji-requirement">${translations.getSettingsTranslation("EmojiRequirementDetails4")}</li>
       </ul>
       <button id="upload-emoji-button" class="settings-button">${translations.getSettingsTranslation("UploadEmoji")}</button>
-      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input">
+      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input" multiple>
       <hr class="emoji-divider">
       <h4 id="emoji-count"></h4>
       <div class="emoji-table-container">

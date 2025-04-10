@@ -282,29 +282,43 @@ export function uploadImageGuildOrProfile(isGuild: boolean): void {
     return;
   }
 
-  const file = new File([blob], `profile-image.${blob.type.split("/")[1]}`, {
+  const file = new File([blob], `image.${blob.type.split("/")[1]}`, {
     type: blob.type
   });
 
-  sendImageUploadRequest(isGuild, blob, file);
+  sendImageUploadRequest(isGuild, [blob], [file]);
 }
+
 function getMaxEmojiBytes(): number {
   return 256 * 1024;
 }
 function getMaxEmojiMegaBytes() {
   return 256;
 }
-export function uploadImageEmoji(blob: File): void {
-  if (blob.size > getMaxEmojiBytes()) {
-    handleFileSizeError(blob.size, false);
-    return;
+export function uploadImageEmoji(blobs: File[]): void {
+  const validFiles: File[] = [];
+
+  for (const blob of blobs) {
+    if (blob.size > getMaxEmojiBytes()) {
+      handleFileSizeError(blob.size, false);
+      continue;
+    }
+
+    const file = new File([blob], `emoji-${createRandomId()}`, {
+      type: blob.type
+    });
+
+    validFiles.push(file);
   }
 
-  const file = new File([blob], `image.${blob.type.split("/")[1]}`, {
-    type: blob.type
-  });
+  if (validFiles.length === 0) return;
 
-  sendImageUploadRequest(false, blob, file, true);
+  sendImageUploadRequest(
+    false,
+    validFiles.map((f) => new Blob([f], { type: f.type })),
+    validFiles,
+    true
+  );
 }
 
 function resetProfileImageFile() {
@@ -343,19 +357,21 @@ function handleFileSizeError(size: number, isAvatar: boolean) {
 
 function sendImageUploadRequest(
   isGuild: boolean,
-  blob: Blob,
-  file: File,
+  blobs: Blob[],
+  files: File[],
   isEmoji?: boolean
 ) {
   const formData = new FormData();
-  const fileName = isEmoji
-    ? `emoji-${createRandomId()}`
-    : `image.${blob.type.split("/")[1]}`;
-  formData.append("photo", blob, fileName);
-  if (isGuild) {
-    formData.append("guildId", currentGuildId);
+
+  for (let i = 0; i < files.length; i++) {
+    const fileName = isEmoji
+      ? `emoji-${createRandomId()}.${blobs[i].type.split("/")[1]}`
+      : `image.${blobs[i].type.split("/")[1]}`;
+
+    formData.append("photos", blobs[i], fileName);
   }
-  if (isEmoji) {
+
+  if (isGuild || isEmoji) {
     formData.append("guildId", currentGuildId);
   }
 
@@ -368,15 +384,16 @@ function sendImageUploadRequest(
         ? "/api/images/guild"
         : "/api/images/profile"
   );
-  xhr.onload = () => handleUploadResponse(xhr, isGuild, file, blob, isEmoji);
-  xhr.onerror = () => () => {
-    alertUser(xhr.responseText);
 
+  xhr.onload = () =>
+    handleUploadResponse(xhr, isGuild, files[0], blobs[0], isEmoji);
+  xhr.onerror = () => {
+    alertUser(xhr.responseText);
     revertToLastConfirmedImage(isGuild);
   };
+
   xhr.send(formData);
 }
-
 function handleUploadResponse(
   xhr: XMLHttpRequest,
   isGuild: boolean,
@@ -517,19 +534,16 @@ export function onEditProfile() {
 
 export async function onEditEmoji() {
   const emojiFileInput = getId("emoijImage") as HTMLInputElement;
-  if (!emojiFileInput || !emojiFileInput.files || !emojiFileInput.files[0])
+  if (
+    !emojiFileInput ||
+    !emojiFileInput.files ||
+    emojiFileInput.files.length === 0
+  )
     return;
-  const filedata = emojiFileInput.files[0];
 
-  const reader = new FileReader();
+  const files: File[] = Array.from(emojiFileInput.files);
 
-  reader.onerror = (error) => {
-    console.error("Error reading file:", error);
-  };
-
-  reader.readAsDataURL(filedata);
-
-  await uploadImageEmoji(filedata);
+  uploadImageEmoji(files);
 }
 
 export function onEditGuildProfile() {

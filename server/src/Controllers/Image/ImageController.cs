@@ -351,7 +351,7 @@ public class GuildImageUploadRequest
 }
 public class GuildEmojiUploadRequest
 {
-    public required IFormFile Photo { get; set; }
+    public required List<IFormFile> Photos { get; set; }
 
     [IdLengthValidation]
     public required string GuildId { get; set; }
