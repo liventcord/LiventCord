@@ -1,4 +1,3 @@
-import store from "../store";
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
@@ -146,7 +145,7 @@ export class UserStatus {
     editButton.appendChild(this.createEditStatusSvg());
     editButton.innerHTML += translations.getTranslation("edit-profile");
     editButton.addEventListener("click", () =>
-      openSettings(SettingType.PROFILE)
+      openSettings(SettingType.PROFILE, true)
     );
     return editButton;
   }

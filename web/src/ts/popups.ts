@@ -20,8 +20,8 @@ import {
   currentUserId,
   currentUserNick,
   UserInfo,
-  deletedUser,
-  userManager
+  userManager,
+  currentDiscriminator
 } from "./user.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
@@ -389,10 +389,14 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
     id: "profile-title",
     textContent: userManager.getUserNick(userData.userId)
   });
+  if (userData.userId === currentUserId) {
+    userData.discriminator = currentDiscriminator;
+  }
   const profileDiscriminator = createEl("p", {
     id: "profile-discriminator",
     textContent: "#" + userData.discriminator
   });
+  console.error(profileDiscriminator);
 
   container.appendChild(profileTitle);
   container.appendChild(profileDiscriminator);

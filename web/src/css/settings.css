@@ -100,9 +100,12 @@ table {
   z-index: 5;
   background-color: #000000b4;
 }
-#settings-menu button:hover {
+#settings-menu button:hover,
+#settings-menu button:active,
+#settings-menu button.touch-hover {
   background-color: #677bc4;
 }
+
 #settings-menu {
   display: flex;
   flex-direction: row;
@@ -553,9 +556,12 @@ table {
 #change-password-button {
   margin-top: 250px;
 }
-#change-password-button:hover {
+#change-password-button:hover,
+#change-password-button:active,
+#change-password-button.touch-hover {
   background-color: #4654c0;
 }
+
 #upload-emoji-button {
   margin-top: 50px;
   margin-bottom: 20px;
