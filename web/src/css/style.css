@@ -960,6 +960,11 @@
     background-color: transparent;
     left: 0px;
   }
+  .status-dropdown {
+    left: 0px !important;
+    width: 100% !important;
+    top: 65% !important;
+  }
 }
 
 #navigation-bar {
@@ -1983,7 +1988,9 @@ textarea::-webkit-scrollbar-track {
   margin: 0;
 }
 
-.status-option:hover {
+.status-option:hover,
+.status-option:active,
+.status-option:touch-hover {
   background-color: #232425;
 }
 

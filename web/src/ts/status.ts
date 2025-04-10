@@ -1,11 +1,12 @@
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
-import { createEl, getId } from "./utils.ts";
+import { createEl, getId, isMobile } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copySelfName } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
+import { alertUser } from "./ui.ts";
 
 export class UserStatus {
   private createdPanel: HTMLElement | undefined;
@@ -52,15 +53,30 @@ export class UserStatus {
   }
 
   private handleOutsideClick = (event: MouseEvent) => {
+    console.log(
+      event.target,
+      this.createdPanel,
+      this.createdPanel === this.createdPanel
+    );
+    const target = event.target as HTMLElement;
+    if (!target) return;
     if (
       this.createdPanel &&
+      target.className !== "status-option" &&
       !this.createdPanel.contains(event.target as Node)
     ) {
       this.createdPanel.remove();
       document.removeEventListener("mousedown", this.handleOutsideClick);
     }
   };
-
+  updateSelfStatusbubble(statusBubble: HTMLElement) {
+    statusBubble.classList.value = "";
+    statusBubble.classList.add(
+      "panel-status-bubble",
+      "status-bubble",
+      this.currentStatus
+    );
+  }
   async createStatusPanel() {
     const createdPanel = await drawProfilePopId(currentUserId, true);
     if (!createdPanel) return;
@@ -71,18 +87,12 @@ export class UserStatus {
     const profileDisplay = createdPanel.querySelector(".profile-display");
     profileDisplay?.classList.add("status-profile");
 
-    const statusBubble = createdPanel.querySelector(".status-bubble");
+    const statusBubble = createdPanel.querySelector(
+      ".status-bubble"
+    ) as HTMLElement;
     if (!statusBubble) return;
-    statusBubble.classList.add("panel-status-bubble");
 
-    if (statusBubble) {
-      statusBubble.classList.value = "";
-      statusBubble.classList.add(
-        "panel-status-bubble",
-        "status-bubble",
-        this.currentStatus
-      );
-    }
+    this.updateSelfStatusbubble(statusBubble);
 
     createdPanel.appendChild(statusBubble);
 
@@ -208,6 +218,12 @@ export class UserStatus {
       avatarPanelSelfBubble.classList.value = "";
       avatarPanelSelfBubble.classList.add(status);
     }
+    if (this.createdPanel) {
+      const statusBubble = this.createdPanel.querySelector(
+        ".status-bubble"
+      ) as HTMLElement;
+      this.updateSelfStatusbubble(statusBubble);
+    }
   }
   updateSelfStatus(status: string) {
     const selfBubble = getId("self-bubble") as HTMLElement;
@@ -245,12 +261,12 @@ export class UserStatus {
     container.append(statusButton);
     document.body.append(this.dropdown);
 
-    statusButton.addEventListener("mouseenter", () => {
+    const showDropdown = () => {
       if (this.dropdown) this.dropdown.style.display = "block";
       this.clearTimeoutIfNecessary();
-    });
+    };
 
-    statusButton.addEventListener("mouseleave", (event) => {
+    const hideDropdown = (event: MouseEvent) => {
       if (this.timeoutId) clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(() => {
         if (
@@ -263,10 +279,30 @@ export class UserStatus {
         this.isTimeoutPending = false;
       }, 100);
       this.isTimeoutPending = true;
+    };
+
+    statusButton.addEventListener("mouseenter", showDropdown);
+    statusButton.addEventListener("mouseleave", hideDropdown);
+
+    let isDropdownVisible = false;
+
+    statusButton.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      isDropdownVisible = !isDropdownVisible;
+      if (isDropdownVisible) {
+        if (this.dropdown) this.dropdown.style.display = "block";
+      } else {
+        if (this.dropdown) this.dropdown.style.display = "none";
+      }
+    });
+
+    statusButton.addEventListener("touchend", (event) => {
+      event.preventDefault();
     });
 
     return statusButton;
   }
+
   formatStatusText(status: string) {
     const statusLower = status.toLowerCase();
     return (
