@@ -170,7 +170,7 @@ const getProfileSettingsConfig = () => {
   return createSettingsConfig(ProfileCategoryTypes, (category: string) => {
     switch (category) {
       case ProfileCategoryTypes.SoundAndVideo:
-        return '<select class="dropdown"></select><select class="dropdown"></select><select class="dropdown"></select>';
+        return getSoundAndVideoHtml();
       case ProfileCategoryTypes.MyAccount:
         return getAccountSettingsHtml();
       case ProfileCategoryTypes.Notifications:
@@ -281,12 +281,6 @@ function generateSettingsHtml(settings: Setting[], isProfile = false) {
     });
     button.addEventListener("click", () => {
       selectSettingCategory(setting.category);
-      const settingsContainer = getId("settings-rightcontainer");
-      if (!settingsContainer) return;
-      if (isMobile) {
-        enableElement(settingsContainer);
-        disableElement("settings-leftbar");
-      }
     });
     container.appendChild(button);
   });
@@ -468,6 +462,10 @@ function selectSettingCategory(
   if (settingCategory === GuildCategoryTypes.Emoji) {
     populateEmojis();
   }
+  if (isMobile) {
+    enableElement(settingsContainer);
+    disableElement("settings-leftbar");
+  }
 }
 
 function getActivityPresenceHtml() {
@@ -535,7 +533,13 @@ function getGuildOverviewHtml() {
   </div>
 `;
 }
-
+function getSoundAndVideoHtml() {
+  return `
+  <h3>${translations.getSettingsTranslation("SoundAndVideo")}</h3>
+  <select id="microphone-dropdown" class="dropdown"></select>
+  <select id="earphones-dropdown" class="dropdown"></select>
+  <select id="speakers-dropdown" class="dropdown"></select>`;
+}
 function getAccountSettingsHtml() {
   return `
         <div id="settings-rightbartop"></div>
@@ -793,10 +797,13 @@ export function openChannelSettings(channelId: string, channelName: string) {
   currentSettingsChannelId = channelId;
   openSettings(SettingType.CHANNEL);
 }
-export function openSettings(settingType: SettingType) {
+export function openSettings(
+  settingType: SettingType,
+  focusToCategory: boolean = false
+) {
   if (!settingsMenu) return;
   currentSettingsType = settingType;
-  reconstructSettings(settingType);
+  reconstructSettings(settingType, focusToCategory);
 
   enableElement("settings-overlay");
 
@@ -807,10 +814,6 @@ export function openSettings(settingType: SettingType) {
   }
 
   setIsSettingsOpen(true);
-  if (isMobile) {
-    disableElement("settings-rightcontainer");
-    enableElement("settings-leftbar");
-  }
 }
 
 export function closeSettings() {
@@ -833,11 +836,14 @@ export function closeSettings() {
   setIsSettingsOpen(false);
 }
 
-function reconstructSettings(categoryType: SettingType) {
+function reconstructSettings(
+  settingType: SettingType,
+  focusToCategory: boolean = false
+) {
   const leftBar = getId("settings-leftbar");
   if (!leftBar) return;
   leftBar.innerHTML = "";
-  switch (categoryType) {
+  switch (settingType) {
     case SettingType.GUILD:
       leftBar.appendChild(getGuildSettingsHTML());
       selectSettingCategory(GuildCategoryTypes.GuildOverview);
@@ -852,8 +858,18 @@ function reconstructSettings(categoryType: SettingType) {
       break;
 
     default:
-      console.error("Unknown settings category type: ", categoryType);
+      console.error("Unknown settings setting type: ", settingType);
       break;
+  }
+  const settingsContainer = getId("settings-rightcontainer");
+  if (!settingsContainer) return;
+
+  if (isMobile && focusToCategory) {
+    enableElement("settings-rightcontainer");
+    disableElement("settings-leftbar");
+  } else if (isMobile && !focusToCategory) {
+    disableElement("settings-rightcontainer");
+    enableElement("settings-leftbar");
   }
 }
 

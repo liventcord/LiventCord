@@ -1,10 +1,5 @@
 import store from "../store";
-import {
-  profileDiscriminator,
-  selfDiscriminator,
-  selfName,
-  updateSelfProfile
-} from "./avatar.ts";
+import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
 import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { alertUser } from "./ui.ts";
@@ -150,10 +145,7 @@ class UserManager {
   }
 
   getUserNick(userId: string): string {
-    if (userId && currentUserId && currentUserId === userId) {
-      return currentUserNick;
-    }
-    return this.userNames[userId]?.nickName ?? "Deleted User";
+    return this.userNames[userId]?.nickName ?? deletedUser;
   }
 
   getUserDiscriminator(userId: string): string {
@@ -346,6 +338,12 @@ export const userManager = new UserManager();
 
 export function initializeProfile() {
   userManager.setCurrentUserId(initialState.user.userId);
+  userManager.addUser(
+    initialState.user.userId,
+    initialState.user.nickname,
+    initialState.user.discriminator,
+    false
+  );
   socketClient.onUserIdAvailable();
 
   currentUserNick = initialState.user.nickname;
