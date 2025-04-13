@@ -21,7 +21,7 @@ import { guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
-import { createEmojiImgTag, currentEmojis } from "./emoji.ts";
+import { createEmojiImgTag, currentEmojis, regexIdEmojis } from "./emoji.ts";
 
 export let currentReplyingTo = "";
 
@@ -595,7 +595,17 @@ function triggerEmojiSuggestionDisplay(
       className: "mention-option",
       innerHTML: createEmojiImgTag(emoji.fileId) + emoji.fileName
     });
+
     suggestion.dataset.id = emoji.fileId;
+
+    suggestion.addEventListener("click", () => {
+      emojiSuggestionDropdown
+        .querySelectorAll(".mention-option")
+        .forEach((el) => el.classList.remove("active"));
+      suggestion.classList.add("active");
+      applyActiveEmojiSuggestion();
+    });
+
     emojiSuggestionDropdown.appendChild(suggestion);
   });
 
@@ -816,7 +826,7 @@ function handleSpace(event: KeyboardEvent) {
 
   if ((isAtEndOfText || isEmptyTextNode) && (isPrevNodeImg || isLastNode)) {
     event.preventDefault();
-    document.execCommand("insertText", false, "   ");
+    document.execCommand("insertText", false, " ");
 
     requestAnimationFrame(() => {
       state.rawContent = preserveEmojiContent(chatInput);
@@ -836,13 +846,12 @@ function handleSpace(event: KeyboardEvent) {
 }
 
 function processEmojisWithPositions(content: string): string {
-  const emojiRegex = /:(\d+):/g;
   const positions = [];
   let lastIndex = 0,
     result = "",
     match;
 
-  while ((match = emojiRegex.exec(content)) !== null) {
+  while ((match = regexIdEmojis.exec(content)) !== null) {
     const emojiId = match[1];
     result += content.slice(lastIndex, match.index);
 
@@ -1076,15 +1085,6 @@ export function monitorInputForEmojis() {
     }
     toggleShowEmojiSuggestions();
   }
-
-  chatInput.addEventListener("keydown", (event: KeyboardEvent) => {
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      handleEmojiJump(event);
-    } else if (event.key === " ") {
-      handleSpace(event);
-    }
-    requestAnimationFrame(syncCursorPosition);
-  });
 
   chatInput.addEventListener("input", handleChatInput);
   chatInput.addEventListener("click", () => {

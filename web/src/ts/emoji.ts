@@ -11,6 +11,7 @@ import {
 } from "./utils";
 
 export let currentEmojis: Emoji[];
+export const regexIdEmojis = /:(\d+):/g;
 
 function generateEmojiRowHTML(emoji: Emoji): string {
   const debounceTimeout: number = 1000;
@@ -198,8 +199,6 @@ export function getGuildEmojiHtml(): string {
   return initialHtml;
 }
 
-const regexIdEmojis = /:(\d+):/g;
-
 export function createEmojiImgTag(fileId: string): string {
   return `<img data-id="${fileId}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${getEmojiName(fileId)}" />`;
 }
@@ -207,7 +206,9 @@ export function createEmojiImgTag(fileId: string): string {
 export function replaceCustomEmojisForChatContainer(content: string): string {
   if (!content || !currentEmojis) return content;
 
-  return content.replace(regexIdEmojis, (match, emojiId) => {
+  const escaped = escapeHtml(content);
+
+  return escaped.replace(regexIdEmojis, (match, emojiId) => {
     const emoji = currentEmojis.find((e) => e.fileId === emojiId);
     if (emoji) return createEmojiImgTag(emoji.fileId);
     return match;
