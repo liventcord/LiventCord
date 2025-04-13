@@ -518,7 +518,6 @@ function handleUserKeydown(event: KeyboardEvent) {
   if (event.key === " ") {
     handleSpace(event);
   }
-  const rawMessage = chatInput.innerHTML;
   if (event.key === "Enter" && event.shiftKey) {
     event.preventDefault();
     const startPos = chatInput.selectionStart as number;
@@ -533,8 +532,8 @@ function handleUserKeydown(event: KeyboardEvent) {
     chatInput.dispatchEvent(new Event("input"));
   } else if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
-    const userIdsInMessage = extractUserIds(rawMessage);
-    sendMessage(rawMessage, userIdsInMessage).then(() => {
+    const userIdsInMessage = extractUserIds(chatInput.innerHTML);
+    sendMessage(state.rawContent, userIdsInMessage).then(() => {
       chatInput.value = "";
       isAttachmentsAdded = false;
       adjustHeight();
@@ -604,8 +603,6 @@ function triggerEmojiSuggestionDisplay(
   emojiSuggestionDropdown.style.display = "flex";
   highlightSuggestion(0);
 }
-
-// Emojji input navigation
 
 function handleEmojiJump(event: KeyboardEvent) {
   const selection = window.getSelection();
@@ -740,7 +737,15 @@ function calculatePositionFromNode(node: Node, offset: number): number {
     ) {
       const element = currentNode as HTMLElement;
       const emojiMatch = element.getAttribute("alt")?.match(/Emoji (\d+)/);
-      position += emojiMatch ? `:${emojiMatch[1]}:`.length : 1;
+      const emojiId = element.getAttribute("data-emoji-id");
+
+      if (emojiId) {
+        position += `:${emojiId}:`.length;
+      } else if (emojiMatch) {
+        position += `:${emojiMatch[1]}:`.length;
+      } else {
+        position += 1;
+      }
     }
 
     if (currentNode.hasChildNodes()) {
@@ -811,7 +816,7 @@ function handleSpace(event: KeyboardEvent) {
 
   if ((isAtEndOfText || isEmptyTextNode) && (isPrevNodeImg || isLastNode)) {
     event.preventDefault();
-    document.execCommand("insertText", false, "  ");
+    document.execCommand("insertText", false, "   ");
 
     requestAnimationFrame(() => {
       state.rawContent = preserveEmojiContent(chatInput);
@@ -863,7 +868,6 @@ export function resetChatInputState() {
   state.selectionStart = 0;
   state.selectionEnd = 0;
 }
-
 function preserveEmojiContent(element: HTMLElement): string {
   let result = "";
   const walkNode = (node: Node) => {
@@ -872,8 +876,21 @@ function preserveEmojiContent(element: HTMLElement): string {
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       if (node.nodeName === "IMG") {
         const img = node as HTMLImageElement;
-        const emojiMatch = img.getAttribute("alt")?.match(/Emoji (\d+)/);
-        if (emojiMatch) result += `:${emojiMatch[1]}:`;
+        const dataId = img.getAttribute("data-id");
+
+        const altMatch = img.getAttribute("alt")?.match(/Emoji emoji-(\d+)/);
+
+        const srcMatch = img.getAttribute("src")?.match(/\/emojis\/(\d+)/);
+
+        if (dataId) {
+          result += `:${dataId}:`;
+        } else if (altMatch) {
+          result += `:${altMatch[1]}:`;
+        } else if (srcMatch) {
+          result += `:${srcMatch[1]}:`;
+        } else if (img.classList.contains("chat-emoji")) {
+          console.warn("Failed to extract emoji ID from image", img);
+        }
       } else if (node.hasChildNodes()) {
         Array.from(node.childNodes).forEach(walkNode);
       }
@@ -961,7 +978,18 @@ function restoreSelection(
           endRange.setEndAfter(node);
           foundEnd = true;
         }
-        charIndex += 1;
+        const img = node as HTMLImageElement;
+        const emojiId = img.getAttribute("data-emoji-id");
+        if (emojiId) {
+          charIndex += `:${emojiId}:`.length;
+        } else {
+          const emojiMatch = img.getAttribute("alt")?.match(/Emoji (\d+)/);
+          if (emojiMatch) {
+            charIndex += `:${emojiMatch[1]}:`.length;
+          } else {
+            charIndex += 1;
+          }
+        }
       }
       if (node.hasChildNodes())
         Array.from(node.childNodes).forEach(traverseNodes);
@@ -1000,7 +1028,16 @@ export function monitorInputForEmojis() {
       if (event instanceof InputEvent) {
         state.isProcessing = true;
 
+        const previousRawContent = state.rawContent;
         state.rawContent = preserveEmojiContent(chatInput);
+
+        if (
+          state.rawContent.trim() === "" &&
+          previousRawContent.match(/:\d+:/)
+        ) {
+          state.rawContent = previousRawContent;
+        }
+
         syncCursorPosition();
 
         if (
@@ -1014,10 +1051,12 @@ export function monitorInputForEmojis() {
               start: state.selectionStart,
               end: state.selectionEnd
             };
+
             chatInput.innerHTML =
               formattedContent && formattedContent.trim() !== ""
                 ? formattedContent
                 : "\u2800";
+
             ensureTextNodeAfterImage(chatInput);
             restoreSelection(chatInput, savedSelection);
 
@@ -1038,13 +1077,24 @@ export function monitorInputForEmojis() {
     toggleShowEmojiSuggestions();
   }
 
-  chatInput.addEventListener("input", handleChatInput);
-  chatInput.addEventListener("keydown", () => {
+  chatInput.addEventListener("keydown", (event: KeyboardEvent) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      handleEmojiJump(event);
+    } else if (event.key === " ") {
+      handleSpace(event);
+    }
     requestAnimationFrame(syncCursorPosition);
   });
+
+  chatInput.addEventListener("input", handleChatInput);
   chatInput.addEventListener("click", () => {
     requestAnimationFrame(syncCursorPosition);
   });
+
+  chatInput.addEventListener("focus", () => {
+    requestAnimationFrame(syncCursorPosition);
+  });
+
   updatePlaceholderVisibility();
 }
 
@@ -1061,6 +1111,16 @@ function ensureTextNodeAfterImage(element: HTMLElement) {
       img.previousSibling.nodeType !== Node.TEXT_NODE
     ) {
       img.parentNode?.insertBefore(document.createTextNode("\u200B"), img);
+    }
+
+    if (
+      !img.hasAttribute("data-emoji-id") &&
+      img.classList.contains("chat-emoji")
+    ) {
+      const emojiMatch = img.getAttribute("alt")?.match(/Emoji (\d+)/);
+      if (emojiMatch) {
+        img.setAttribute("data-emoji-id", emojiMatch[1]);
+      }
     }
   });
 }
