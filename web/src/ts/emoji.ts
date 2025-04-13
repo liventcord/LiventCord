@@ -1,9 +1,15 @@
 import { currentGuildId } from "./guild";
 import { translations } from "./translations";
 import { userManager } from "./user";
-import { escapeHtml, getId, getProfileUrl, IMAGE_SRCS } from "./utils";
+import {
+  escapeHtml,
+  getEmojiPath,
+  getId,
+  getProfileUrl,
+  IMAGE_SRCS
+} from "./utils";
 
-let currentEmojiCount = 0;
+export let currentEmojis: Emoji[];
 
 function generateEmojiRowHTML(emoji: Emoji): string {
   const debounceTimeout: number = 1000;
@@ -95,7 +101,7 @@ function deleteEmoji(guildId: string, emojiId: string) {
   }).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
     if (row) row.remove();
-    currentEmojiCount -= 1;
+    currentEmojis = currentEmojis.filter((e) => e.fileId !== emojiId);
     generateEmojiCount();
   });
 }
@@ -103,7 +109,9 @@ function deleteEmoji(guildId: string, emojiId: string) {
 function generateEmojiCount(): void {
   const emojiCount = getId("emoji-count");
   const maxEmojis = 100;
-  const availableCount = maxEmojis - currentEmojiCount;
+  const availableCount = currentEmojis
+    ? maxEmojis - currentEmojis.length
+    : maxEmojis;
   const countText = `Emoji — ${availableCount} ${translations.getSettingsTranslation("EmojiCount")}`;
   if (emojiCount) {
     emojiCount.textContent = countText;
@@ -120,7 +128,7 @@ export function populateEmojis(): void {
       return response.json();
     })
     .then((emojis: Array<Emoji>) => {
-      currentEmojiCount = emojis.length;
+      currentEmojis = emojis;
       generateEmojiCount();
 
       const emojiTableBody = getId("emoji-table-body");
@@ -187,4 +195,32 @@ export function getGuildEmojiHtml(): string {
     </div>
   `;
   return initialHtml;
+}
+
+const regexIdEmojis = /:(\d+):/g;
+export function createEmojiImgTag(fileId: string, alt: string): string {
+  return `<img class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="${alt}" />`;
+}
+export function replaceCustomEmojisForChatContainer(content: string): string {
+  if (!content) return content;
+
+  if (!currentEmojis) return content;
+
+  let formatted = content;
+
+  formatted = formatted.replace(regexIdEmojis, (match, emojiId) => {
+    const emoji = currentEmojis.find((e) => e.fileId === emojiId);
+    if (emoji) return createEmojiImgTag(emoji.fileId, emojiId);
+    return match;
+  });
+
+  return formatted;
+}
+export function getIdFromEmojiName(name: string): string {
+  currentEmojis.forEach((emoji) => {
+    if (emoji.fileName === name) {
+      return emoji.fileId;
+    }
+  });
+  return "";
 }

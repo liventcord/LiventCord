@@ -1,5 +1,4 @@
 import store from "../store.ts";
-import { apiClient, EventType } from "./api.ts";
 import {
   constructAppPage,
   disableElement,
@@ -7,14 +6,14 @@ import {
   createEl,
   MINUS_INDEX
 } from "./utils.ts";
+import { apiClient, EventType } from "./api.ts";
 import {
   getHistoryFromOneChannel,
   setLastSenderID,
   setReachedChannelEnd,
   clearLastDate
 } from "./chat.ts";
-import { translations } from "./translations.ts";
-import { closeReplyMenu, chatInput } from "./chatbar.ts";
+import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
 import { muteHtml, inviteVoiceHtml } from "./ui.ts";
 import { createUserContext } from "./contextMenuActions.ts";
@@ -25,13 +24,13 @@ import { Member, userManager } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
+import { translations } from "./translations.ts";
 
 export const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
 const channelList = getId("channel-list") as HTMLElement;
 export const channelsUl = channelList.querySelector("ul") as HTMLElement;
 export let currentChannelName: string;
-const CHANNEL_HOVER_DELAY = 50;
 
 export let currentVoiceChannelId: string;
 
@@ -48,6 +47,9 @@ export function setChannelTitle(channelTitleText: string) {
     console.error("Channel title called with null title");
   }
   channelTitle.textContent = channelTitleText;
+  updatePlaceholderVisibility(
+    translations.getMessagePlaceholder(channelTitleText)
+  );
 }
 
 let isKeyDown = false;
@@ -139,8 +141,7 @@ export async function changeChannel(newChannel?: ChannelData) {
 
     if (newChannelName) {
       currentChannelName = newChannelName;
-      chatInput.placeholder =
-        translations.getMessagePlaceholder(newChannelName);
+
       setChannelTitle(newChannelName);
     }
 

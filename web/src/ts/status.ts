@@ -1,17 +1,16 @@
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
-import { createEl, getId, isMobile } from "./utils.ts";
+import { createEl, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copySelfName } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
-import { alertUser } from "./ui.ts";
 
 export class UserStatus {
   private createdPanel: HTMLElement | undefined;
   public isSelfStatusOnline = false;
-  private currentStatus = "Offline";
+  public currentStatus = "Offline";
   private dropdown: HTMLElement | null = null;
   private timeoutId: any = null;
   private isTimeoutPending = false;

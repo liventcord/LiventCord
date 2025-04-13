@@ -117,7 +117,7 @@ const ChannelCategoryTypes = Object.freeze({
   DeleteChannel: "DeleteChannel"
 });
 
-const ProfileCategoryTypes = Object.freeze({
+export const ProfileCategoryTypes = Object.freeze({
   SoundAndVideo: "SoundAndVideo",
   MyAccount: "MyAccount",
   Notifications: "Notifications",

@@ -7,35 +7,25 @@ import {
   userMentionDropdown
 } from "./search.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentChannelName } from "./channels.ts";
 import { friendsCache } from "./friends.ts";
-import {
-  scrollToBottom,
-  displayChatMessage,
-  CLYDE_ID,
-  setIsLastMessageStart,
-  updateChatWidth,
-  appendtoSelfSentMessages
-} from "./chat.ts";
-import { Message, sendMessage } from "./message.ts";
+import { scrollToBottom, updateChatWidth } from "./chat.ts";
+import { sendMessage } from "./message.ts";
 import { isDomLoaded, readCurrentMessages } from "./app.ts";
 import { toggleManager } from "./settings.ts";
 import { popKeyboardConfetti } from "./extras.ts";
-import {
-  getId,
-  createEl,
-  createRandomId,
-  createNowDate,
-  disableElement,
-  enableElement
-} from "./utils.ts";
+import { getId, createEl, disableElement, enableElement } from "./utils.ts";
 import { alertUser, displayImagePreview } from "./ui.ts";
-import { isOnDm } from "./router.ts";
-import { maxAttachmentSize, setProfilePic } from "./avatar.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { isOnDm, router } from "./router.ts";
+import { maxAttachmentSize } from "./avatar.ts";
+import { guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
-import { currentUserId, userManager } from "./user.ts";
+import { userManager } from "./user.ts";
+import {
+  createEmojiImgTag,
+  currentEmojis,
+  getIdFromEmojiName
+} from "./emoji.ts";
 
 export let currentReplyingTo = "";
 
@@ -51,8 +41,30 @@ export const newMessagesBar = getId("newMessagesBar") as HTMLElement;
 const newMessagesText = getId("newMessagesText") as HTMLSpanElement;
 const replyCloseButton = getId("reply-close-button") as HTMLButtonElement;
 
-const channelHTML =
-  '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="rgb(255, 255, 255)" viewBox="0 0 24 24"><path fill="var(--white)" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
+interface EmojiPosition {
+  start: number;
+  end: number;
+}
+
+interface InputState {
+  rawContent: string;
+  renderedContent: string;
+  cursorPosition: number;
+  isProcessing: boolean;
+  emojiSuggestionsVisible: boolean;
+  selectionStart: number;
+  selectionEnd: number;
+}
+
+const state: InputState = {
+  rawContent: "",
+  renderedContent: "",
+  cursorPosition: 0,
+  isProcessing: false,
+  emojiSuggestionsVisible: false,
+  selectionStart: 0,
+  selectionEnd: 0
+};
 
 if (replyCloseButton) {
   replyCloseButton.addEventListener("click", closeReplyMenu);
@@ -77,6 +89,7 @@ export function initialiseReadUi() {
     newMessagesText.textContent = getReadText();
   }
 }
+
 export function initialiseChatInput() {
   chatInput.addEventListener("input", adjustHeight);
   chatInput.addEventListener("keydown", handleUserKeydown);
@@ -144,7 +157,7 @@ export function closeReplyMenu() {
   chatInput.classList.remove("reply-opened");
 }
 export function adjustHeight() {
-  const MIN_CHAT_HEIGHT = 40;
+  const MIN_CHAT_HEIGHT = 45;
   chatInput.style.height = "auto";
   chatInput.style.height = chatInput.scrollHeight + "px";
   const chatInputHeight = chatInput.scrollHeight;
@@ -159,7 +172,10 @@ export function adjustHeight() {
   adjustChatContainerHeight();
   window.addEventListener("resize", adjustChatContainerHeight);
 
-  if (chatInput.value.split("\n").length <= 1 || chatInputHeight <= 40) {
+  if (
+    (chatInput.textContent && chatInput.textContent.split("\n").length <= 1) ||
+    chatInputHeight <= MIN_CHAT_HEIGHT
+  ) {
     chatInput.style.height = `${MIN_CHAT_HEIGHT}px`;
   }
 
@@ -181,7 +197,8 @@ function extractUserIds(message: string) {
 let typingTimeout: number;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
-async function handleUserKeydown(event: KeyboardEvent) {
+const sendTypingData = false;
+function handleTypingRequest() {
   if (chatInput.value !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
@@ -209,37 +226,108 @@ async function handleUserKeydown(event: KeyboardEvent) {
       });
     }, TYPING_COOLDOWN);
   }
+}
 
+async function handleUserKeydown(event: KeyboardEvent) {
+  if (sendTypingData) {
+    handleTypingRequest();
+  }
+
+  if (event.key === "Enter") {
+    if (state.emojiSuggestionsVisible) {
+      event.preventDefault();
+      applyActiveEmojiSuggestion();
+      return;
+    }
+  }
+  if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+    handleEmojiSuggestions(event);
+    return;
+  }
+
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    handleEmojiJump(event);
+  }
+  const rawMessage = chatInput.innerHTML;
   if (event.key === "Enter" && event.shiftKey) {
     event.preventDefault();
     const startPos = chatInput.selectionStart as number;
-    const endPos = chatInput.selectionEnd as number;
-    chatInput.value =
-      chatInput.value.substring(0, startPos) +
-      "\n" +
-      chatInput.value.substring(endPos);
     chatInput.selectionStart = chatInput.selectionEnd = startPos + 1;
     const difference =
       chatContainer.scrollHeight -
       (chatContainer.scrollTop + chatContainer.clientHeight);
-    console.log(difference);
     const SMALL_DIFF = 10;
     if (difference < SMALL_DIFF) {
       scrollToBottom();
     }
     chatInput.dispatchEvent(new Event("input"));
   } else if (event.key === "Enter" && !event.shiftKey) {
+    console.log(state, emojiSuggestionDropdown.style.display);
     event.preventDefault();
-    const message = chatInput.value;
-    const userIdsInMessage = extractUserIds(message);
-    await sendMessage(message, userIdsInMessage);
+    const userIdsInMessage = extractUserIds(rawMessage);
+    await sendMessage(rawMessage, userIdsInMessage);
+    chatInput.value = "";
     isAttachmentsAdded = false;
     adjustHeight();
   }
-
   if (isDomLoaded && toggleManager.states["party-toggle"]) {
     popKeyboardConfetti();
   }
+}
+function applyActiveEmojiSuggestion() {
+  if (!emojiSuggestionDropdown) return;
+
+  const activeItem = emojiSuggestionDropdown.querySelector(
+    ".mention-option.active"
+  ) as HTMLElement;
+  if (!activeItem) return;
+
+  const emojiId = activeItem.dataset.id;
+  if (!emojiId) return;
+
+  const insertedText = `:${emojiId}:`;
+
+  const successful = document.execCommand("insertText", false, insertedText);
+  if (!successful) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(insertedText));
+
+    range.setStartAfter(range.endContainer);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+  setTimeout(() => {
+    hideEmojiSuggestions();
+  }, 50);
+}
+
+function handleEmojiSuggestions(event: KeyboardEvent) {
+  if (!state.emojiSuggestionsVisible || !emojiSuggestionDropdown) return;
+
+  const items = Array.from(emojiSuggestionDropdown.children) as HTMLElement[];
+  const currentIndex = items.findIndex((el) => el.classList.contains("active"));
+  const direction = event.key === "ArrowDown" ? 1 : -1;
+  let newIndex = currentIndex + direction;
+
+  if (newIndex < 0) newIndex = items.length - 1;
+  if (newIndex >= items.length) newIndex = 0;
+
+  highlightSuggestion(newIndex);
+}
+
+function highlightSuggestion(index: number) {
+  const items = Array.from(emojiSuggestionDropdown.children) as HTMLElement[];
+
+  items.forEach((el, i) => {
+    el.classList.toggle("active", i === index);
+    if (i === index) el.scrollIntoView({ block: "nearest" });
+  });
 }
 
 // upload media
@@ -373,7 +461,7 @@ function toggleSpoilerImage(img: HTMLImageElement): void {
     img.style.filter = "blur(5px)";
   }
 }
-
+adjustHeight();
 function editImage(img: HTMLImageElement): void {
   alertUser("Image edit is not implemented!");
 }
@@ -451,151 +539,412 @@ export function setDropHandler() {
   }
 }
 
-export function displayLocalMessage(
-  messageId: string,
-  channelId: string,
-  content: string
-) {
-  appendtoSelfSentMessages(messageId);
-
-  const preMessage = new Message({
-    messageId,
-    userId: currentUserId,
-    content,
-    channelId,
-    date: createNowDate(),
-    lastEdited: null,
-    attachmentUrls: [],
-    replyToId: null,
-    isBot: false,
-    reactionEmojisIds: [],
-    metadata: {},
-    embeds: [],
-    willDisplayProfile: false,
-    isNotSent: true,
-    replyOf: undefined,
-    replies: []
-  });
-
-  displayChatMessage(preMessage);
+export function updatePlaceholderVisibility(newPlaceholder?: string) {
+  const text = chatInput.textContent?.trim();
+  text
+    ? chatInput.removeAttribute("data-placeholder")
+    : chatInput.setAttribute(
+        "data-placeholder",
+        newPlaceholder || "Type a message..."
+      );
 }
 
-export function displayCannotSendMessage(channelId: string, content: string) {
-  if (!isOnDm) {
+function showEmojiSuggestions() {
+  console.log("showEmojiSuggestions");
+
+  const currentCursorPos = state.cursorPosition;
+  const textUpToCursor = state.rawContent.substring(0, currentCursorPos);
+  triggerEmojiSuggestionDisplay(textUpToCursor, state.cursorPosition);
+}
+
+function hideEmojiSuggestions() {
+  console.log("hideEmojiSuggestions");
+
+  state.emojiSuggestionsVisible = false;
+  disableElement("emojiSuggestionDropdown");
+  const dd = getId("emojiSuggestionDropdown");
+  if (dd) dd.innerHTML = "";
+}
+const emojiSuggestionDropdown = getId(
+  "emojiSuggestionDropdown"
+) as HTMLSelectElement;
+
+function triggerEmojiSuggestionDisplay(
+  textContext: string,
+  cursorPosition: number
+) {
+  const relevantText = textContext.slice(0, cursorPosition);
+  const lastColonIndex = relevantText.lastIndexOf(":");
+  const emojiQuery =
+    lastColonIndex !== -1 ? relevantText.slice(lastColonIndex + 1) : "";
+
+  if (!emojiQuery || !emojiSuggestionDropdown) return;
+
+  emojiSuggestionDropdown.innerHTML = "";
+  state.emojiSuggestionsVisible = false;
+
+  const matching = currentEmojis.filter((emoji) =>
+    emoji.fileName.startsWith(emojiQuery)
+  );
+
+  if (matching.length === 0) {
+    state.emojiSuggestionsVisible = false;
+    emojiSuggestionDropdown.style.display = "none";
     return;
   }
-  const randomId = createRandomId();
 
-  displayLocalMessage(randomId, channelId, content);
-  const failedId = createRandomId();
-
-  const failedMsg = getId(failedId);
-  if (failedMsg) {
-    const foundMsgContent = failedMsg.querySelector("#message-content-element");
-    if (foundMsgContent) {
-      foundMsgContent.classList.add("failed");
-    }
-  }
-  const cannotSendMsg = new Message({
-    messageId: createRandomId(),
-    userId: CLYDE_ID,
-    content: translations.getTranslation("fail-message-text"),
-    channelId,
-    date: createNowDate(),
-    lastEdited: "",
-    attachmentUrls: "",
-    replyToId: "",
-    isBot: true,
-    reactionEmojisIds: [],
-    metadata: {},
-    embeds: [],
-    willDisplayProfile: true,
-    isNotSent: true,
-    replyOf: "",
-    replies: []
+  matching.forEach((emoji) => {
+    const suggestion = createEl("div", {
+      className: "mention-option",
+      innerHTML:
+        createEmojiImgTag(emoji.fileId, emoji.fileName) + emoji.fileName
+    });
+    suggestion.dataset.id = emoji.fileId;
+    emojiSuggestionDropdown.appendChild(suggestion);
   });
 
-  displayChatMessage(cannotSendMsg);
-
-  scrollToBottom();
+  state.emojiSuggestionsVisible = true;
+  emojiSuggestionDropdown.style.display = "flex";
+  highlightSuggestion(0);
 }
 
-export function displayStartMessage() {
-  if (!isOnDm) {
-    const isGuildBorn = cacheInterface.isRootChannel(
-      currentGuildId,
-      guildCache.currentChannelId
-    );
-    if (
-      chatContent.querySelector(".startmessage") ||
-      chatContent.querySelector("#guildBornTitle")
-    ) {
-      return;
-    }
-    const message = createEl("div", { className: "startmessage" });
-    const titleToWrite = isGuildBorn
-      ? guildCache.currentGuildName
-      : translations.getWelcomeChannel(currentChannelName);
-    const msgtitle = createEl("h1", {
-      id: isGuildBorn ? "guildBornTitle" : "msgTitle",
-      textContent: titleToWrite
-    });
-    const startChannelText = translations.getBirthChannel(currentChannelName);
-    const startGuildText = translations.getTranslation("start-of-guild");
-    const textToWrite = isGuildBorn ? startGuildText : startChannelText;
-    const channelicon = createEl("div", { className: "channelIcon" });
+function processEmojisWithPositions(content: string): string {
+  const emojiRegex = /:(\d+):/g;
+  const positions: EmojiPosition[] = [];
+  let lastIndex = 0,
+    result = "",
+    match;
 
-    channelicon.innerHTML = channelHTML;
-    const msgdescription = createEl("div", {
-      id: isGuildBorn ? "guildBornDescription" : "msgDescription",
-      textContent: textToWrite
-    });
+  while ((match = emojiRegex.exec(content)) !== null) {
+    const emojiId = match[1];
+    result += content.slice(lastIndex, match.index);
 
-    if (!isGuildBorn) {
-      message.appendChild(channelicon);
-      message.appendChild(msgtitle);
-      msgtitle.appendChild(msgdescription);
+    if (emojiId.length === router.ID_LENGTH) {
+      const start = result.length;
+      const imgTag = createEmojiImgTag(emojiId, `Emoji ${emojiId}`);
+      result += imgTag;
+      positions.push({ start, end: start + imgTag.length });
     } else {
-      const guildBornParent = createEl("div", { id: "guildBornTitle-wrapper" });
-      guildBornParent.appendChild(msgtitle);
-      const guildBornFinishText = createEl("p", {
-        id: "guildBornTitle",
-        textContent: translations.getTranslation("guild-born-title")
-      });
-      guildBornParent.appendChild(guildBornFinishText);
-      guildBornParent.appendChild(msgdescription);
-      message.appendChild(guildBornParent);
+      result += match[0];
     }
-    chatContent.insertBefore(message, chatContent.firstChild);
-    setIsLastMessageStart(true);
-    scrollToBottom();
-  } else {
-    if (chatContent.querySelector(".startmessage")) {
-      return;
-    }
-    const message = createEl("div", { className: "startmessage" });
-    const titleToWrite = userManager.getUserNick(friendsCache.currentDmId);
-    const msgtitle = createEl("h1", {
-      id: "msgTitle",
-      textContent: titleToWrite
-    });
-    const startChannelText = translations.getDmStartText(
-      userManager.getUserNick(friendsCache.currentDmId)
-    );
-    const profileImg = createEl("img", {
-      className: "channelIcon"
-    }) as HTMLImageElement;
-    setProfilePic(profileImg, friendsCache.currentDmId);
-    const msgdescription = createEl("div", {
-      id: "msgDescription",
-      textContent: startChannelText
-    });
-
-    message.appendChild(profileImg);
-    message.appendChild(msgtitle);
-    msgtitle.appendChild(msgdescription);
-
-    chatContent.insertBefore(message, chatContent.firstChild);
-    setIsLastMessageStart(true);
+    lastIndex = match.index + match[0].length;
   }
+  result += content.slice(lastIndex);
+  return result;
+}
+
+export function resetChatInputState() {
+  state.rawContent = "";
+  state.renderedContent = "";
+  state.cursorPosition = 0;
+  state.isProcessing = false;
+  state.selectionStart = 0;
+  state.selectionEnd = 0;
+}
+
+function preserveEmojiContent(element: HTMLElement): string {
+  let result = "";
+  const walkNode = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      result += node.textContent || "";
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.nodeName === "IMG") {
+        const img = node as HTMLImageElement;
+        const emojiMatch = img.getAttribute("alt")?.match(/Emoji (\d+)/);
+        if (emojiMatch) result += `:${emojiMatch[1]}:`;
+      } else if (node.hasChildNodes()) {
+        Array.from(node.childNodes).forEach(walkNode);
+      }
+    }
+  };
+  Array.from(element.childNodes).forEach(walkNode);
+  return result;
+}
+
+function syncCursorPosition() {
+  if (state.emojiSuggestionsVisible) return;
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  const cursorNode = range.startContainer;
+  const cursorOffset = range.startOffset;
+  let position = 0;
+
+  const walkNode = (node: Node): boolean => {
+    if (node === cursorNode) {
+      position += cursorOffset;
+      return true;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      position += node.textContent?.length || 0;
+    } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === "IMG") {
+      const element = node as HTMLElement;
+      const emojiMatch = element.getAttribute("alt")?.match(/Emoji (\d+)/);
+      position += emojiMatch ? `<:${emojiMatch[1]}>`.length : 1;
+    }
+
+    if (node.hasChildNodes()) {
+      for (let i = 0; i < node.childNodes.length; i++)
+        if (walkNode(node.childNodes[i])) return true;
+    }
+    return false;
+  };
+
+  for (let i = 0; i < chatInput.childNodes.length; i++)
+    if (walkNode(chatInput.childNodes[i])) break;
+
+  state.cursorPosition = position;
+
+  if (selection.rangeCount > 0) {
+    const startRange = selection.getRangeAt(0).cloneRange();
+    startRange.collapse(true);
+    let startPos = 0;
+
+    const walkNodeForStart = (node: Node): boolean => {
+      if (node === startRange.startContainer) {
+        startPos += startRange.startOffset;
+        return true;
+      }
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        startPos += node.textContent?.length || 0;
+      } else if (
+        node.nodeType === Node.ELEMENT_NODE &&
+        node.nodeName === "IMG"
+      ) {
+        startPos += 1;
+      }
+
+      if (node.hasChildNodes()) {
+        for (let i = 0; i < node.childNodes.length; i++)
+          if (walkNodeForStart(node.childNodes[i])) return true;
+      }
+      return false;
+    };
+
+    for (let i = 0; i < chatInput.childNodes.length; i++)
+      if (walkNodeForStart(chatInput.childNodes[i])) break;
+
+    state.selectionStart = startPos;
+    state.selectionEnd = position;
+  }
+  toggleShowEmojiSuggestions();
+}
+function toggleShowEmojiSuggestions() {
+  const start = Math.max(0, state.cursorPosition - 30);
+  const textBeforeCursor = state.rawContent.slice(start, state.cursorPosition);
+  textBeforeCursor.trimStart().startsWith(":")
+    ? showEmojiSuggestions()
+    : hideEmojiSuggestions();
+}
+function restoreSelection(
+  containerEl: HTMLElement,
+  savedSel: { start: number; end: number }
+) {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  let charIndex = 0;
+  let foundStart = false,
+    foundEnd = false;
+  const startRange = document.createRange();
+  let endRange = document.createRange();
+
+  function traverseNodes(node: Node) {
+    if (foundStart && foundEnd) return;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nextCharIndex = charIndex + (node.textContent?.length || 0);
+
+      if (
+        !foundStart &&
+        savedSel.start >= charIndex &&
+        savedSel.start <= nextCharIndex
+      ) {
+        startRange.setStart(node, savedSel.start - charIndex);
+        foundStart = true;
+      }
+
+      if (
+        !foundEnd &&
+        savedSel.end >= charIndex &&
+        savedSel.end <= nextCharIndex
+      ) {
+        endRange.setEnd(node, savedSel.end - charIndex);
+        foundEnd = true;
+      }
+      charIndex = nextCharIndex;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.nodeName === "IMG") {
+        if (!foundStart && charIndex === savedSel.start) {
+          startRange.setStartBefore(node);
+          foundStart = true;
+        }
+        if (!foundEnd && charIndex === savedSel.end) {
+          endRange.setEndAfter(node);
+          foundEnd = true;
+        }
+        charIndex += 1;
+      }
+      if (node.hasChildNodes())
+        Array.from(node.childNodes).forEach(traverseNodes);
+    }
+  }
+
+  Array.from(containerEl.childNodes).forEach(traverseNodes);
+
+  if (foundStart) {
+    if (!foundEnd) {
+      endRange = startRange.cloneRange();
+      endRange.collapse(false);
+    }
+    const newRange = document.createRange();
+    newRange.setStart(startRange.startContainer, startRange.startOffset);
+    newRange.setEnd(endRange.endContainer, endRange.endOffset);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+  } else {
+    const lastNode = findLastTextNode(containerEl) || containerEl;
+    const range = document.createRange();
+    range.selectNodeContents(lastNode);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+}
+
+function handleEmojiJump(event: KeyboardEvent) {
+  const selection = window.getSelection();
+  if (
+    !selection ||
+    selection.rangeCount === 0 ||
+    !selection.getRangeAt(0).collapsed
+  )
+    return;
+
+  const range = selection.getRangeAt(0);
+  syncCursorPosition();
+
+  if (event.key === "ArrowRight") {
+    const currentNode = range.startContainer;
+    const currentOffset = range.startOffset;
+
+    if (
+      currentNode.nodeType === Node.TEXT_NODE &&
+      currentOffset === (currentNode.textContent?.length || 0)
+    ) {
+      const nextNode = findNextNode(currentNode) as HTMLElement;
+      if (
+        nextNode &&
+        nextNode.nodeName === "IMG" &&
+        nextNode.classList?.contains("chat-emoji")
+      ) {
+        const nodeAfterImg = findNextNode(nextNode);
+        if (nodeAfterImg) {
+          const newRange = document.createRange();
+          if (nodeAfterImg.nodeType === Node.TEXT_NODE) {
+            newRange.setStart(nodeAfterImg, 0);
+          } else {
+            newRange.setStartBefore(nodeAfterImg);
+          }
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } else {
+          const textNode = document.createTextNode("");
+          chatInput.appendChild(textNode);
+          const newRange = document.createRange();
+          newRange.setStart(textNode, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+        setTimeout(syncCursorPosition, 0);
+      }
+    }
+  }
+}
+
+function findNextNode(node: Node): Node | null {
+  if (node.firstChild) return node.firstChild;
+  if (node.nextSibling) return node.nextSibling;
+
+  let current = node;
+  while (current.parentNode && !current.nextSibling)
+    current = current.parentNode;
+  return current.nextSibling;
+}
+
+export function monitorInputForEmojis() {
+  if (!chatInput) return;
+  updatePlaceholderVisibility();
+
+  function handleChatInput() {
+    try {
+      if (state.isProcessing) return;
+
+      if (event instanceof InputEvent) {
+        state.isProcessing = true;
+        syncCursorPosition();
+
+        if (
+          event.inputType.startsWith("insert") ||
+          event.inputType.startsWith("delete")
+        ) {
+          state.rawContent = preserveEmojiContent(chatInput);
+          const formattedContent = processEmojisWithPositions(state.rawContent);
+
+          if (formattedContent !== chatInput.innerHTML) {
+            const savedSelection = {
+              start: state.selectionStart,
+              end: state.selectionEnd
+            };
+            chatInput.innerHTML =
+              formattedContent && formattedContent.trim() !== ""
+                ? formattedContent
+                : "\u2800";
+            ensureTextNodeAfterImage(chatInput);
+            restoreSelection(chatInput, savedSelection);
+          }
+
+          updatePlaceholderVisibility();
+          state.renderedContent = formattedContent;
+        }
+        state.isProcessing = false;
+      }
+    } catch (error) {
+      console.error("Error in input handling:", error);
+      state.isProcessing = false;
+    }
+    toggleShowEmojiSuggestions();
+  }
+
+  chatInput.addEventListener("input", handleChatInput);
+  chatInput.addEventListener("keydown", () =>
+    setTimeout(syncCursorPosition, 0)
+  );
+  chatInput.addEventListener("click", () => setTimeout(syncCursorPosition, 0));
+  updatePlaceholderVisibility();
+}
+
+function ensureTextNodeAfterImage(element: HTMLElement) {
+  element.querySelectorAll("img").forEach((img) => {
+    if (!img.nextSibling || img.nextSibling.nodeType !== Node.TEXT_NODE)
+      img.parentNode?.insertBefore(
+        document.createTextNode(""),
+        img.nextSibling
+      );
+  });
+}
+
+function findLastTextNode(node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE) return node;
+
+  for (let i = node.childNodes.length - 1; i >= 0; i--) {
+    const lastTextNode = findLastTextNode(node.childNodes[i]);
+    if (lastTextNode) return lastTextNode;
+  }
+  return null;
 }

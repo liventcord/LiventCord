@@ -107,8 +107,11 @@
             <button id="emojibtn" class="emojibtn-base selected"></button>
             
             <button id="gifbtn" >GIF</button>
-            <textarea  type="text" id="user-input" class="base-user-input" autocomplete="off" class="autofit" ></textarea>
-            <div id="userMentionDropdown"></div>
+            <div id="user-input" class="base-user-input" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Type a message..."> </div>
+
+              
+            <div id="userMentionDropdown" class="suggestions-dropdown"></div>
+            <div id="emojiSuggestionDropdown" class="suggestions-dropdown"></div>
             <textarea id="reply-info" readonly autocomplete="off" class="autofit" placeholder="Responding to user"></textarea>
             <button id="reply-close-button">
                 <svg aria-hidden="true" role="img" width="18" height="18" fill="none" viewBox="0 0 24 24">

@@ -142,6 +142,11 @@ namespace LiventCord.Controllers
 
             _logger.LogInformation("Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), guildId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""), channelId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
 
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var content = memoryStream.ToArray();
+            var fileId = Utils.CreateRandomId();
+
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
             if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
@@ -149,10 +154,6 @@ namespace LiventCord.Controllers
                 sanitizedFileName = $"{sanitizedFileName}{extension}";
             }
 
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream);
-            var content = memoryStream.ToArray();
-            var fileId = Utils.CreateRandomId();
 
             if (!string.IsNullOrEmpty(guildId))
             {
@@ -164,7 +165,7 @@ namespace LiventCord.Controllers
                 else if (isEmoji)
                 {
                     _logger.LogInformation("Uploading emoji file for GuildId: {GuildId}", guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
-                    await SaveFile(new EmojiFile(fileId, sanitizedFileName, content, extension, guildId, userId));
+                    await SaveFile(new EmojiFile(fileId, "emoji-" + fileId, content, extension, guildId, userId));
                 }
                 else
                 {

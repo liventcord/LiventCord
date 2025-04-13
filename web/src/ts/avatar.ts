@@ -12,7 +12,6 @@ import {
 } from "./utils.ts";
 import {
   isSettingsOpen,
-  settingTypes,
   currentPopUp,
   isChangedImage,
   setUnsaved,
@@ -21,6 +20,7 @@ import {
 } from "./settings.ts";
 import {
   currentSettingsCategory,
+  ProfileCategoryTypes,
   showConfirmationPanel,
   updateSettingsProfileColor
 } from "./settingsui.ts";
@@ -228,6 +228,7 @@ export function updateSelfName(nickName: string) {
     selfNameText.innerText = nickName;
   }
 }
+
 export function updateSelfProfile(
   userId: string,
   nickName: string,
@@ -238,7 +239,10 @@ export function updateSelfProfile(
 
   updateImageSource(selfProfileImage, selfimagepath);
 
-  if (isSettingsOpen && currentSettingsCategory === settingTypes.MyAccount) {
+  if (
+    isSettingsOpen &&
+    currentSettingsCategory === ProfileCategoryTypes.MyAccount
+  ) {
     const settingsSelfProfile = getProfileImage();
 
     if (!settingsSelfProfile) return;
@@ -403,7 +407,7 @@ function handleUploadResponse(
 ) {
   if (xhr.status === STATUS_200) {
     if (isEmoji) {
-      alertUser("Emoji uploaded succesfully!");
+      alertUser(translations.getSettingsTranslation("SuccessEmoji"));
       populateEmojis();
     } else {
       if (isGuild) {

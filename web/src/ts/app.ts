@@ -20,7 +20,9 @@ import {
   adjustHeight,
   setDropHandler,
   newMessagesBar,
-  chatContainer
+  chatContainer,
+  monitorInputForEmojis,
+  updatePlaceholderVisibility
 } from "./chatbar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -364,7 +366,7 @@ function initializeElements() {
   closeReplyMenu();
   adjustHeight();
   setDropHandler();
-
+  monitorInputForEmojis();
   guildContainer.addEventListener(
     "mouseover",
     () => (guildContainer.style.backgroundColor = "#333538")
@@ -697,9 +699,7 @@ export function changecurrentGuild() {
 
   isChangingPage = false;
 }
-function updateChatPlaceholder(friendNick: string) {
-  chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
-}
+
 export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
@@ -747,8 +747,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     activateDmContainer(id);
     const friendNick = userManager.getUserNick(id);
 
-    updateChatPlaceholder(friendNick);
-
+    updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
     setChannelTitle(friendNick);
     disableElement("hash-sign");
     enableElement("dm-profile-sign");
@@ -789,7 +788,7 @@ function changeCurrentDm(friendId: string) {
 
   const friendNick = userManager.getUserNick(friendId);
   setChannelTitle(friendNick);
-  chatInput.placeholder = translations.getDmPlaceHolder(friendNick);
+  updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
   const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
   if (dmProfSign) {
     setProfilePic(dmProfSign, friendId);

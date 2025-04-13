@@ -17,6 +17,7 @@ import {
 } from "./utils.ts";
 import { initialState } from "./app.ts";
 import { router } from "./router.ts";
+import { replaceCustomEmojisForChatContainer } from "./emoji.ts";
 
 interface Embed {
   id: string;
@@ -461,16 +462,15 @@ export function handleLink(
 
     if (start > lastIndex) {
       const text = content.slice(lastIndex, start);
-      const normalSpan = createEl("span", { textContent: text });
-      messageContentElement.appendChild(normalSpan);
+      const span = createEl("span");
+      span.innerHTML = replaceCustomEmojisForChatContainer(text);
+      messageContentElement.appendChild(span);
     }
 
     const url = match[0];
     const urlSpan = createEl("a", { textContent: url });
     urlSpan.classList.add("url-link");
-    urlSpan.addEventListener("click", () => {
-      openExternalUrl(url);
-    });
+    urlSpan.addEventListener("click", () => openExternalUrl(url));
     messageContentElement.appendChild(urlSpan);
 
     lastIndex = end;
@@ -478,8 +478,9 @@ export function handleLink(
 
   if (lastIndex < content.length) {
     const remainingText = content.slice(lastIndex);
-    const finalSpan = createEl("span", { textContent: remainingText });
-    messageContentElement.appendChild(finalSpan);
+    const span = createEl("span");
+    span.innerHTML = replaceCustomEmojisForChatContainer(remainingText);
+    messageContentElement.appendChild(span);
   }
 }
 

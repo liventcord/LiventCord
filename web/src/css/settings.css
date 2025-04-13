@@ -1086,3 +1086,101 @@ table {
   cursor: pointer !important;
   border-radius: 0 !important;
 }
+
+.textarea:focus {
+  outline: none;
+}
+.emoji-colon {
+  margin-bottom: 10px;
+}
+
+.table-row {
+  border-bottom: 1px solid #3f3f45;
+}
+
+.table-cell {
+  padding: 10px;
+  text-align: center;
+}
+
+.emoji-name-cell {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.emoji-container {
+  color: #d8d8db;
+  font-size: smaller;
+  overflow-y: auto;
+  margin-left: 20px;
+  max-width: 70%;
+  width: 100%;
+}
+
+.emoji-description {
+  font-size: 1em;
+}
+
+.emoji-requirements {
+  font-size: 0.9em;
+}
+
+.emoji-requirement-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.emoji-requirement {
+  font-size: 0.85em;
+  margin-left: 15px;
+  margin-top: 5px;
+}
+
+.emoji-file-input {
+  display: none;
+}
+
+.emoji-divider {
+  border: 1px solid #3f3f45;
+  margin: 10px 0;
+}
+
+.emoji-table-container {
+  overflow-x: auto;
+}
+
+.emoji-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.emoji-table-header {
+  text-align: center;
+  padding: 8px;
+}
+
+.emoji-delete-button {
+  background-color: #242429;
+  color: #ed4245;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+}
+
+.emoji-delete-button:hover {
+  background-color: #2e2e34;
+}
+
+.emoji-delete-button svg {
+  pointer-events: none;
+}
+
+#emoji-count {
+  color: white;
+}
