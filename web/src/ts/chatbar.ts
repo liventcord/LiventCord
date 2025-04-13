@@ -21,11 +21,7 @@ import { guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
-import {
-  createEmojiImgTag,
-  currentEmojis,
-  getIdFromEmojiName
-} from "./emoji.ts";
+import { createEmojiImgTag, currentEmojis } from "./emoji.ts";
 
 export let currentReplyingTo = "";
 
@@ -228,52 +224,6 @@ function handleTypingRequest() {
   }
 }
 
-async function handleUserKeydown(event: KeyboardEvent) {
-  if (sendTypingData) {
-    handleTypingRequest();
-  }
-
-  if (event.key === "Enter") {
-    if (state.emojiSuggestionsVisible) {
-      event.preventDefault();
-      applyActiveEmojiSuggestion();
-      return;
-    }
-  }
-  if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-    handleEmojiSuggestions(event);
-    return;
-  }
-
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-    handleEmojiJump(event);
-  }
-  const rawMessage = chatInput.innerHTML;
-  if (event.key === "Enter" && event.shiftKey) {
-    event.preventDefault();
-    const startPos = chatInput.selectionStart as number;
-    chatInput.selectionStart = chatInput.selectionEnd = startPos + 1;
-    const difference =
-      chatContainer.scrollHeight -
-      (chatContainer.scrollTop + chatContainer.clientHeight);
-    const SMALL_DIFF = 10;
-    if (difference < SMALL_DIFF) {
-      scrollToBottom();
-    }
-    chatInput.dispatchEvent(new Event("input"));
-  } else if (event.key === "Enter" && !event.shiftKey) {
-    console.log(state, emojiSuggestionDropdown.style.display);
-    event.preventDefault();
-    const userIdsInMessage = extractUserIds(rawMessage);
-    await sendMessage(rawMessage, userIdsInMessage);
-    chatInput.value = "";
-    isAttachmentsAdded = false;
-    adjustHeight();
-  }
-  if (isDomLoaded && toggleManager.states["party-toggle"]) {
-    popKeyboardConfetti();
-  }
-}
 function applyActiveEmojiSuggestion() {
   if (!emojiSuggestionDropdown) return;
 
@@ -549,6 +499,59 @@ export function updatePlaceholderVisibility(newPlaceholder?: string) {
       );
 }
 
+function handleUserKeydown(event: KeyboardEvent) {
+  if (sendTypingData) {
+    handleTypingRequest();
+  }
+
+  if (event.key === "Enter") {
+    if (state.emojiSuggestionsVisible) {
+      event.preventDefault();
+      applyActiveEmojiSuggestion();
+      return;
+    }
+  }
+  if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+    handleEmojiSuggestions(event);
+    return;
+  }
+
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    handleEmojiJump(event);
+  }
+
+  if (event.key === " ") {
+    handleSpace(event);
+  }
+  const rawMessage = chatInput.innerHTML;
+  if (event.key === "Enter" && event.shiftKey) {
+    event.preventDefault();
+    const startPos = chatInput.selectionStart as number;
+    chatInput.selectionStart = chatInput.selectionEnd = startPos + 1;
+    const difference =
+      chatContainer.scrollHeight -
+      (chatContainer.scrollTop + chatContainer.clientHeight);
+    const SMALL_DIFF = 10;
+    if (difference < SMALL_DIFF) {
+      scrollToBottom();
+    }
+    chatInput.dispatchEvent(new Event("input"));
+  } else if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    const userIdsInMessage = extractUserIds(rawMessage);
+    sendMessage(rawMessage, userIdsInMessage).then(() => {
+      chatInput.value = "";
+      isAttachmentsAdded = false;
+      adjustHeight();
+    });
+  }
+
+  if (isDomLoaded && toggleManager.states["party-toggle"]) {
+    popKeyboardConfetti();
+  }
+}
+
+// Suggestions
 function showEmojiSuggestions() {
   console.log("showEmojiSuggestions");
 
@@ -608,9 +611,234 @@ function triggerEmojiSuggestionDisplay(
   highlightSuggestion(0);
 }
 
+// Emojji input navigation
+
+function handleEmojiJump(event: KeyboardEvent) {
+  const selection = window.getSelection();
+  if (
+    !selection ||
+    selection.rangeCount === 0 ||
+    !selection.getRangeAt(0).collapsed
+  )
+    return;
+
+  const range = selection.getRangeAt(0);
+  const currentNode = range.startContainer;
+  const currentOffset = range.startOffset;
+
+  if (event.key === "ArrowRight") {
+    if (
+      currentNode.nodeType === Node.TEXT_NODE &&
+      currentOffset === (currentNode.textContent?.length || 0)
+    ) {
+      const nextNode = findNextNode(currentNode) as HTMLElement;
+      if (
+        nextNode &&
+        nextNode.nodeName === "IMG" &&
+        nextNode.classList?.contains("chat-emoji")
+      ) {
+        const nodeAfterImg = findNextNode(nextNode);
+        if (nodeAfterImg) {
+          const newRange = document.createRange();
+          if (nodeAfterImg.nodeType === Node.TEXT_NODE) {
+            newRange.setStart(nodeAfterImg, 0);
+          } else {
+            newRange.setStartBefore(nodeAfterImg);
+          }
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+
+          event.preventDefault();
+
+          requestAnimationFrame(() => {
+            state.rawContent = preserveEmojiContent(chatInput);
+            const currentSelection = window.getSelection();
+            if (currentSelection && currentSelection.rangeCount > 0) {
+              const newPos = calculatePositionFromNode(
+                currentSelection.getRangeAt(0).startContainer,
+                currentSelection.getRangeAt(0).startOffset
+              );
+              state.cursorPosition = newPos;
+              state.selectionStart = newPos;
+              state.selectionEnd = newPos;
+            }
+          });
+        } else {
+          const textNode = document.createTextNode("\u200B");
+          chatInput.appendChild(textNode);
+          const newRange = document.createRange();
+          newRange.setStart(textNode, 0);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+
+          event.preventDefault();
+
+          requestAnimationFrame(() => {
+            state.rawContent = preserveEmojiContent(chatInput);
+            state.cursorPosition = state.rawContent.length;
+            state.selectionStart = state.cursorPosition;
+            state.selectionEnd = state.cursorPosition;
+          });
+        }
+      }
+    }
+  } else if (event.key === "ArrowLeft") {
+    if (currentNode.nodeType === Node.TEXT_NODE && currentOffset === 0) {
+      const prevNode = findPreviousNode(currentNode);
+      if (
+        prevNode &&
+        prevNode.nodeName === "IMG" &&
+        (prevNode as HTMLElement).classList?.contains("chat-emoji")
+      ) {
+        const nodeBeforeImg = findPreviousNode(prevNode);
+        if (nodeBeforeImg && nodeBeforeImg.nodeType === Node.TEXT_NODE) {
+          const newRange = document.createRange();
+          newRange.setStart(
+            nodeBeforeImg,
+            nodeBeforeImg.textContent?.length || 0
+          );
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } else {
+          const newRange = document.createRange();
+          newRange.setStartBefore(prevNode);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+
+        event.preventDefault();
+
+        requestAnimationFrame(() => {
+          state.rawContent = preserveEmojiContent(chatInput);
+          const currentSelection = window.getSelection();
+          if (currentSelection && currentSelection.rangeCount > 0) {
+            const newPos = calculatePositionFromNode(
+              currentSelection.getRangeAt(0).startContainer,
+              currentSelection.getRangeAt(0).startOffset
+            );
+            state.cursorPosition = newPos;
+            state.selectionStart = newPos;
+            state.selectionEnd = newPos;
+          }
+        });
+      }
+    }
+  }
+}
+
+function calculatePositionFromNode(node: Node, offset: number): number {
+  let position = 0;
+
+  const walkNodeUntil = (currentNode: Node, targetNode: Node): boolean => {
+    if (currentNode === targetNode) {
+      return true;
+    }
+
+    if (currentNode.nodeType === Node.TEXT_NODE) {
+      position += currentNode.textContent?.length || 0;
+    } else if (
+      currentNode.nodeType === Node.ELEMENT_NODE &&
+      currentNode.nodeName === "IMG"
+    ) {
+      const element = currentNode as HTMLElement;
+      const emojiMatch = element.getAttribute("alt")?.match(/Emoji (\d+)/);
+      position += emojiMatch ? `:${emojiMatch[1]}:`.length : 1;
+    }
+
+    if (currentNode.hasChildNodes()) {
+      for (let i = 0; i < currentNode.childNodes.length; i++) {
+        if (walkNodeUntil(currentNode.childNodes[i], targetNode)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  for (let i = 0; i < chatInput.childNodes.length; i++) {
+    if (walkNodeUntil(chatInput.childNodes[i], node)) {
+      break;
+    }
+  }
+
+  return position + offset;
+}
+
+function findPreviousNode(node: Node): Node | null {
+  if (node.previousSibling) {
+    let current = node.previousSibling;
+    while (current.lastChild) {
+      current = current.lastChild;
+    }
+    return current;
+  }
+  return node.parentNode;
+}
+
+function findNextNode(node: Node): Node | null {
+  if (node.firstChild) return node.firstChild;
+  if (node.nextSibling) return node.nextSibling;
+
+  let current = node;
+  while (current.parentNode && !current.nextSibling)
+    current = current.parentNode;
+  return current.nextSibling;
+}
+
+function handleSpace(event: KeyboardEvent) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  if (!range.collapsed) return;
+
+  const currentNode = range.startContainer;
+  const currentOffset = range.startOffset;
+
+  const isEmptyTextNode =
+    currentNode.nodeType === Node.TEXT_NODE &&
+    (currentNode.textContent === "\u200B" || currentNode.textContent === "");
+
+  const isAtEndOfText =
+    currentNode.nodeType === Node.TEXT_NODE &&
+    currentOffset === (currentNode.textContent?.length || 0);
+
+  const isPrevNodeImg =
+    currentNode.previousSibling?.nodeName === "IMG" ||
+    (currentNode.parentNode &&
+      currentNode.parentNode.previousSibling?.nodeName === "IMG");
+
+  const isLastNode = !currentNode.nextSibling;
+
+  if ((isAtEndOfText || isEmptyTextNode) && (isPrevNodeImg || isLastNode)) {
+    event.preventDefault();
+    document.execCommand("insertText", false, "  ");
+
+    requestAnimationFrame(() => {
+      state.rawContent = preserveEmojiContent(chatInput);
+      const currentSelection = window.getSelection();
+      if (currentSelection && currentSelection.rangeCount > 0) {
+        const newPos = calculatePositionFromNode(
+          currentSelection.getRangeAt(0).startContainer,
+          currentSelection.getRangeAt(0).startOffset
+        );
+        state.cursorPosition = newPos;
+        state.selectionStart = newPos;
+        state.selectionEnd = newPos;
+      }
+      syncCursorPosition();
+    });
+  }
+}
+
 function processEmojisWithPositions(content: string): string {
   const emojiRegex = /:(\d+):/g;
-  const positions: EmojiPosition[] = [];
+  const positions = [];
   let lastIndex = 0,
     result = "",
     match;
@@ -669,69 +897,21 @@ function syncCursorPosition() {
   const range = selection.getRangeAt(0);
   const cursorNode = range.startContainer;
   const cursorOffset = range.startOffset;
-  let position = 0;
-
-  const walkNode = (node: Node): boolean => {
-    if (node === cursorNode) {
-      position += cursorOffset;
-      return true;
-    }
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      position += node.textContent?.length || 0;
-    } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName === "IMG") {
-      const element = node as HTMLElement;
-      const emojiMatch = element.getAttribute("alt")?.match(/Emoji (\d+)/);
-      position += emojiMatch ? `<:${emojiMatch[1]}>`.length : 1;
-    }
-
-    if (node.hasChildNodes()) {
-      for (let i = 0; i < node.childNodes.length; i++)
-        if (walkNode(node.childNodes[i])) return true;
-    }
-    return false;
-  };
-
-  for (let i = 0; i < chatInput.childNodes.length; i++)
-    if (walkNode(chatInput.childNodes[i])) break;
-
-  state.cursorPosition = position;
+  state.cursorPosition = calculatePositionFromNode(cursorNode, cursorOffset);
 
   if (selection.rangeCount > 0) {
     const startRange = selection.getRangeAt(0).cloneRange();
     startRange.collapse(true);
-    let startPos = 0;
-
-    const walkNodeForStart = (node: Node): boolean => {
-      if (node === startRange.startContainer) {
-        startPos += startRange.startOffset;
-        return true;
-      }
-
-      if (node.nodeType === Node.TEXT_NODE) {
-        startPos += node.textContent?.length || 0;
-      } else if (
-        node.nodeType === Node.ELEMENT_NODE &&
-        node.nodeName === "IMG"
-      ) {
-        startPos += 1;
-      }
-
-      if (node.hasChildNodes()) {
-        for (let i = 0; i < node.childNodes.length; i++)
-          if (walkNodeForStart(node.childNodes[i])) return true;
-      }
-      return false;
-    };
-
-    for (let i = 0; i < chatInput.childNodes.length; i++)
-      if (walkNodeForStart(chatInput.childNodes[i])) break;
-
-    state.selectionStart = startPos;
-    state.selectionEnd = position;
+    state.selectionStart = calculatePositionFromNode(
+      startRange.startContainer,
+      startRange.startOffset
+    );
+    state.selectionEnd = state.cursorPosition;
   }
+
   toggleShowEmojiSuggestions();
 }
+
 function toggleShowEmojiSuggestions() {
   const start = Math.max(0, state.cursorPosition - 30);
   const textBeforeCursor = state.rawContent.slice(start, state.cursorPosition);
@@ -739,6 +919,7 @@ function toggleShowEmojiSuggestions() {
     ? showEmojiSuggestions()
     : hideEmojiSuggestions();
 }
+
 function restoreSelection(
   containerEl: HTMLElement,
   savedSel: { start: number; end: number }
@@ -815,85 +996,23 @@ function restoreSelection(
   }
 }
 
-function handleEmojiJump(event: KeyboardEvent) {
-  const selection = window.getSelection();
-  if (
-    !selection ||
-    selection.rangeCount === 0 ||
-    !selection.getRangeAt(0).collapsed
-  )
-    return;
-
-  const range = selection.getRangeAt(0);
-  syncCursorPosition();
-
-  if (event.key === "ArrowRight") {
-    const currentNode = range.startContainer;
-    const currentOffset = range.startOffset;
-
-    if (
-      currentNode.nodeType === Node.TEXT_NODE &&
-      currentOffset === (currentNode.textContent?.length || 0)
-    ) {
-      const nextNode = findNextNode(currentNode) as HTMLElement;
-      if (
-        nextNode &&
-        nextNode.nodeName === "IMG" &&
-        nextNode.classList?.contains("chat-emoji")
-      ) {
-        const nodeAfterImg = findNextNode(nextNode);
-        if (nodeAfterImg) {
-          const newRange = document.createRange();
-          if (nodeAfterImg.nodeType === Node.TEXT_NODE) {
-            newRange.setStart(nodeAfterImg, 0);
-          } else {
-            newRange.setStartBefore(nodeAfterImg);
-          }
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } else {
-          const textNode = document.createTextNode("");
-          chatInput.appendChild(textNode);
-          const newRange = document.createRange();
-          newRange.setStart(textNode, 0);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
-        setTimeout(syncCursorPosition, 0);
-      }
-    }
-  }
-}
-
-function findNextNode(node: Node): Node | null {
-  if (node.firstChild) return node.firstChild;
-  if (node.nextSibling) return node.nextSibling;
-
-  let current = node;
-  while (current.parentNode && !current.nextSibling)
-    current = current.parentNode;
-  return current.nextSibling;
-}
-
 export function monitorInputForEmojis() {
-  if (!chatInput) return;
   updatePlaceholderVisibility();
 
-  function handleChatInput() {
+  function handleChatInput(event: Event) {
     try {
       if (state.isProcessing) return;
 
       if (event instanceof InputEvent) {
         state.isProcessing = true;
+
+        state.rawContent = preserveEmojiContent(chatInput);
         syncCursorPosition();
 
         if (
           event.inputType.startsWith("insert") ||
           event.inputType.startsWith("delete")
         ) {
-          state.rawContent = preserveEmojiContent(chatInput);
           const formattedContent = processEmojisWithPositions(state.rawContent);
 
           if (formattedContent !== chatInput.innerHTML) {
@@ -907,6 +1026,10 @@ export function monitorInputForEmojis() {
                 : "\u2800";
             ensureTextNodeAfterImage(chatInput);
             restoreSelection(chatInput, savedSelection);
+
+            requestAnimationFrame(() => {
+              syncCursorPosition();
+            });
           }
 
           updatePlaceholderVisibility();
@@ -922,20 +1045,29 @@ export function monitorInputForEmojis() {
   }
 
   chatInput.addEventListener("input", handleChatInput);
-  chatInput.addEventListener("keydown", () =>
-    setTimeout(syncCursorPosition, 0)
-  );
-  chatInput.addEventListener("click", () => setTimeout(syncCursorPosition, 0));
+  chatInput.addEventListener("keydown", () => {
+    requestAnimationFrame(syncCursorPosition);
+  });
+  chatInput.addEventListener("click", () => {
+    requestAnimationFrame(syncCursorPosition);
+  });
   updatePlaceholderVisibility();
 }
 
 function ensureTextNodeAfterImage(element: HTMLElement) {
   element.querySelectorAll("img").forEach((img) => {
-    if (!img.nextSibling || img.nextSibling.nodeType !== Node.TEXT_NODE)
+    if (!img.nextSibling || img.nextSibling.nodeType !== Node.TEXT_NODE) {
       img.parentNode?.insertBefore(
-        document.createTextNode(""),
+        document.createTextNode("\u200B"),
         img.nextSibling
       );
+    }
+    if (
+      !img.previousSibling ||
+      img.previousSibling.nodeType !== Node.TEXT_NODE
+    ) {
+      img.parentNode?.insertBefore(document.createTextNode("\u200B"), img);
+    }
   });
 }
 
