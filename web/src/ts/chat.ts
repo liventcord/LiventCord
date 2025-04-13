@@ -55,7 +55,10 @@ import { userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
 import { constructUserData, drawProfilePopId } from "./popups.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
-import { replaceCustomEmojisForChatContainer } from "./emoji.ts";
+import {
+  replaceCustomEmojisForChatContainer,
+  setupEmojiListeners
+} from "./emoji.ts";
 import { currentChannelName } from "./channels.ts";
 
 export let bottomestChatDateStr: string;
@@ -854,6 +857,7 @@ function updateMessageContent(element: HTMLElement, content: string): void {
   element.textContent = formattedMessage;
   element.dataset.content_observe = formattedMessage;
   requestAnimationFrame(() => observe(element));
+  setupEmojiListeners(element);
 }
 export function editChatMessage(data: EditMessageResponse): void {
   const { messageId, content } = data;

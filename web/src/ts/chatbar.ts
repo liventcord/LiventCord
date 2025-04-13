@@ -37,11 +37,6 @@ export const newMessagesBar = getId("newMessagesBar") as HTMLElement;
 const newMessagesText = getId("newMessagesText") as HTMLSpanElement;
 const replyCloseButton = getId("reply-close-button") as HTMLButtonElement;
 
-interface EmojiPosition {
-  start: number;
-  end: number;
-}
-
 interface InputState {
   rawContent: string;
   renderedContent: string;
@@ -599,8 +594,7 @@ function triggerEmojiSuggestionDisplay(
   matching.forEach((emoji) => {
     const suggestion = createEl("div", {
       className: "mention-option",
-      innerHTML:
-        createEmojiImgTag(emoji.fileId, emoji.fileName) + emoji.fileName
+      innerHTML: createEmojiImgTag(emoji.fileId) + emoji.fileName
     });
     suggestion.dataset.id = emoji.fileId;
     emojiSuggestionDropdown.appendChild(suggestion);
@@ -849,7 +843,7 @@ function processEmojisWithPositions(content: string): string {
 
     if (emojiId.length === router.ID_LENGTH) {
       const start = result.length;
-      const imgTag = createEmojiImgTag(emojiId, `Emoji ${emojiId}`);
+      const imgTag = createEmojiImgTag(emojiId);
       result += imgTag;
       positions.push({ start, end: start + imgTag.length });
     } else {

@@ -17,7 +17,10 @@ import {
 } from "./utils.ts";
 import { initialState } from "./app.ts";
 import { router } from "./router.ts";
-import { replaceCustomEmojisForChatContainer } from "./emoji.ts";
+import {
+  replaceCustomEmojisForChatContainer,
+  setupEmojiListeners
+} from "./emoji.ts";
 
 interface Embed {
   id: string;
@@ -482,6 +485,7 @@ export function handleLink(
     span.innerHTML = replaceCustomEmojisForChatContainer(remainingText);
     messageContentElement.appendChild(span);
   }
+  setupEmojiListeners(messageContentElement);
 }
 
 function applyBorderColor(element: HTMLElement, decimalColor: number) {

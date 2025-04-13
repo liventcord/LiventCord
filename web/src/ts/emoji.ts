@@ -1,4 +1,5 @@
 import { currentGuildId } from "./guild";
+import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
 import {
@@ -198,29 +199,52 @@ export function getGuildEmojiHtml(): string {
 }
 
 const regexIdEmojis = /:(\d+):/g;
-export function createEmojiImgTag(fileId: string, alt: string): string {
-  return `<img class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="${alt}" />`;
+
+export function createEmojiImgTag(fileId: string): string {
+  return `<img data-id="${fileId}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${getEmojiName(fileId)}" />`;
 }
+
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  if (!content) return content;
+  if (!content || !currentEmojis) return content;
 
-  if (!currentEmojis) return content;
-
-  let formatted = content;
-
-  formatted = formatted.replace(regexIdEmojis, (match, emojiId) => {
+  return content.replace(regexIdEmojis, (match, emojiId) => {
     const emoji = currentEmojis.find((e) => e.fileId === emojiId);
-    if (emoji) return createEmojiImgTag(emoji.fileId, emojiId);
+    if (emoji) return createEmojiImgTag(emoji.fileId);
     return match;
   });
-
-  return formatted;
 }
-export function getIdFromEmojiName(name: string): string {
-  currentEmojis.forEach((emoji) => {
-    if (emoji.fileName === name) {
-      return emoji.fileId;
+
+function getEmojiName(emojiId: string): string {
+  return (
+    currentEmojis.find((emoji) => emoji.fileId === emojiId)?.fileName || ""
+  );
+}
+
+function handleEmojiHover(element: HTMLElement, emojiName: string): void {
+  console.log("Clicked emoji:", element, emojiName);
+  createTooltip(element, emojiName);
+}
+
+function handleEmojiListener(element: HTMLElement, emojiId: string): void {
+  const emojiName = getEmojiName(emojiId);
+  element.addEventListener("mouseover", () =>
+    handleEmojiHover(element, emojiName)
+  );
+}
+
+export function setupEmojiListeners(container: HTMLElement): void {
+  const emojiElements = container.querySelectorAll(
+    ".chat-emoji"
+  ) as NodeListOf<HTMLElement>;
+
+  emojiElements.forEach((el) => {
+    const dataId = el.getAttribute("data-id");
+    if (dataId) {
+      handleEmojiListener(el, dataId);
     }
   });
-  return "";
+}
+
+export function getIdFromEmojiName(name: string): string {
+  return currentEmojis.find((emoji) => emoji.fileName === name)?.fileId || "";
 }
