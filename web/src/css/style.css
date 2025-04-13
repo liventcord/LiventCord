@@ -439,6 +439,9 @@
   display: none;
   flex-direction: column;
 }
+#chat-content {
+  margin-bottom: 50px;
+}
 #chat-container::-webkit-scrollbar,
 #channel-list::-webkit-scrollbar,
 #activity-list::-webkit-scrollbar,
@@ -671,10 +674,7 @@
   top: -255px;
 }
 .base-user-input {
-  padding-right: 100px;
-  padding-left: 55px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 10px 100px 15px 55px;
   color: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
   background-color: #36393f;
@@ -964,6 +964,9 @@
     left: 0px !important;
     width: 100% !important;
     top: 65% !important;
+  }
+  .suggestions-dropdown {
+    width: 100%;
   }
 }
 
@@ -1726,22 +1729,29 @@ textarea::-webkit-scrollbar-track {
   border-style: solid;
   border-color: rgb(17, 18, 20);
 }
-#userMentionDropdown {
-  border: 1px solid #3c3e42;
+.suggestions-dropdown {
   display: none;
+
+  flex-direction: column;
   background: #2b2d31;
-  max-height: 150px;
-  width: calc(100vw - 585px);
+  border: 1px solid #3c3e42;
+  max-height: 300px;
+  height: auto;
   overflow-y: auto;
+  width: 70vw;
   z-index: 1000;
   bottom: 100%;
-  left: 0;
-  margin-bottom: 4px;
+  position: absolute;
 }
 .mention-option {
-  padding: 8px;
+  padding: 10px;
   cursor: pointer;
+  color: white;
 }
+.mention-option.active {
+  background-color: #3c3e42;
+}
+
 .mention-option:hover {
   background-color: #232427;
 }
@@ -2097,101 +2107,4 @@ textarea::-webkit-scrollbar-track {
   overflow-x: hidden;
   white-space: nowrap;
   resize: none;
-}
-.textarea:focus {
-  outline: none;
-}
-.emoji-colon {
-  margin-bottom: 10px;
-}
-
-.table-row {
-  border-bottom: 1px solid #3f3f45;
-}
-
-.table-cell {
-  padding: 10px;
-  text-align: center;
-}
-
-.emoji-name-cell {
-  text-align: left;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-}
-
-.emoji-container {
-  color: #d8d8db;
-  font-size: smaller;
-  overflow-y: auto;
-  margin-left: 20px;
-  max-width: 70%;
-  width: 100%;
-}
-
-.emoji-description {
-  font-size: 1em;
-}
-
-.emoji-requirements {
-  font-size: 0.9em;
-}
-
-.emoji-requirement-list {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-.emoji-requirement {
-  font-size: 0.85em;
-  margin-left: 15px;
-  margin-top: 5px;
-}
-
-.emoji-file-input {
-  display: none;
-}
-
-.emoji-divider {
-  border: 1px solid #3f3f45;
-  margin: 10px 0;
-}
-
-.emoji-table-container {
-  overflow-x: auto;
-}
-
-.emoji-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.emoji-table-header {
-  text-align: center;
-  padding: 8px;
-}
-
-.emoji-delete-button {
-  background-color: #242429;
-  color: #ed4245;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px;
-}
-
-.emoji-delete-button:hover {
-  background-color: #2e2e34;
-}
-
-.emoji-delete-button svg {
-  pointer-events: none;
-}
-
-#emoji-count {
-  color: white;
 }

@@ -70,7 +70,7 @@ function getTooltipClassName(target: HTMLElement): string | undefined {
   );
 }
 
-function createTooltip(
+export function createTooltip(
   target: HTMLElement,
   tooltipText: string,
   positionOffset: { x: number; y: number } = { x: 0, y: 0 }

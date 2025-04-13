@@ -44,12 +44,11 @@ namespace LiventCord.Controllers
         {
             return formFile.Length <= 256 * 1024;
         }
-        [Authorize]
         [HttpPost("guilds/emojis")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadEmojiImage([FromForm] GuildEmojiUploadRequest request)
+        public async Task<IActionResult> UploadEmojiImages([FromForm] GuildEmojiUploadRequest request)
         {
-            if (request == null || request.GuildId == null || request.Photo == null || UserId == null)
+            if (request == null || request.GuildId == null || request.Photos == null || !request.Photos.Any() || UserId == null)
             {
                 return BadRequest(new { Type = "error", Message = "Invalid request data." });
             }
@@ -57,23 +56,29 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.CanManageGuild(UserId, request.GuildId))
                 return Forbid();
 
-            if (!isEmojiSizeValid(request.Photo))
+            var fileIds = new List<string>();
+
+            foreach (var photo in request.Photos)
             {
-                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
+                if (!isEmojiSizeValid(photo))
+                {
+                    return BadRequest(new { Type = "error", Message = "One or more files exceed the maximum size limit." });
+                }
+
+                try
+                {
+                    var fileId = await _imageController.UploadFileInternal(photo, UserId, true, request.GuildId, null);
+                    fileIds.Add(fileId);
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest(new { Type = "error", Message = ex.Message });
+                }
             }
 
-            try
-            {
-                var fileId = await _imageController.UploadFileInternal(request.Photo, UserId, true, request.GuildId, null);
-                return Ok(new { fileId });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Type = "error", Message = ex.Message });
-            }
+            return Ok(new { fileIds });
         }
 
-        [Authorize]
         [HttpPut("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> RenameEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId, [FromBody] string name)
         {
@@ -99,7 +104,6 @@ namespace LiventCord.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-        [Authorize]
         [HttpDelete("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> DeleteEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {

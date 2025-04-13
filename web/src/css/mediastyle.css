@@ -385,3 +385,9 @@
   color: #02a8fc;
   cursor: pointer;
 }
+
+.chat-emoji {
+  height: 38px;
+  vertical-align: middle;
+  padding: 6px;
+}

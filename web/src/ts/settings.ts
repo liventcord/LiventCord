@@ -44,14 +44,6 @@ import { guildCache } from "./cache.ts";
 const isImagePreviewOpen = false;
 const CHANGE_NAME_COOLDOWN = 1000;
 
-export const settingTypes = {
-  MyAccount: "MyAccount",
-  SoundAndVideo: "SoundAndVideo",
-  Notifications: "Notifications",
-  ActivityPresence: "ActivityPresence",
-  Appearance: "Appearance"
-};
-
 let changeNicknameTimeout: number;
 let changeGuildNameTimeout: number;
 let changeChannelNameTimeout: number;

@@ -6,23 +6,23 @@ import {
   setLastSenderID,
   createProfileImageChat,
   getMessageFromChat,
-  addEditedIndicator
+  addEditedIndicator,
+  displayCannotSendMessage,
+  displayLocalMessage,
+  displayStartMessage
 } from "./chat.ts";
 import { hasSharedGuild, guildCache } from "./cache.ts";
 import {
-  displayCannotSendMessage,
   closeReplyMenu,
-  displayStartMessage,
   chatInput,
   chatContent,
   attachmentsTray,
   fileInput,
   currentReplyingTo,
-  displayLocalMessage
+  resetChatInputState
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
-  getEmojiPath,
   getBeforeElement,
   formatDate,
   disableElement,
@@ -189,7 +189,8 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   const channelId = getChannelId();
   setTimeout(scrollToBottom, 10);
 
-  chatInput.value = "";
+  chatInput.textContent = "";
+  resetChatInputState();
   attachmentsTray.innerHTML = "";
   disableElement(attachmentsTray);
 
@@ -313,24 +314,6 @@ function tryConvertToFormat(
   });
 }
 
-export function replaceCustomEmojis(content: string) {
-  const currentCustomEmojis: { [emojiName: string]: string } = {};
-
-  if (content) {
-    const regex = /<:([^:>]+):(\d+)>/g;
-    const message1 = content.replace(regex, (match, emojiName, emojiId) => {
-      if (currentCustomEmojis.hasOwnProperty(emojiName)) {
-        return `<img src="${getEmojiPath(
-          currentCustomEmojis[emojiName]
-        )}" alt="${emojiName}" style="width: 64px; height: 38px; vertical-align: middle;" />`;
-      } else {
-        return match;
-      }
-    });
-    return message1;
-  }
-  return content;
-}
 class GetMessagesRequest {
   date: string;
   friendId?: string;
