@@ -1,9 +1,17 @@
 import { currentGuildId } from "./guild";
+import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
-import { escapeHtml, getId, getProfileUrl, IMAGE_SRCS } from "./utils";
+import {
+  escapeHtml,
+  getEmojiPath,
+  getId,
+  getProfileUrl,
+  IMAGE_SRCS
+} from "./utils";
 
-let currentEmojiCount = 0;
+export let currentEmojis: Emoji[];
+export const regexIdEmojis = /:(\d+):/g;
 
 function generateEmojiRowHTML(emoji: Emoji): string {
   const debounceTimeout: number = 1000;
@@ -95,7 +103,7 @@ function deleteEmoji(guildId: string, emojiId: string) {
   }).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
     if (row) row.remove();
-    currentEmojiCount -= 1;
+    currentEmojis = currentEmojis.filter((e) => e.fileId !== emojiId);
     generateEmojiCount();
   });
 }
@@ -103,7 +111,9 @@ function deleteEmoji(guildId: string, emojiId: string) {
 function generateEmojiCount(): void {
   const emojiCount = getId("emoji-count");
   const maxEmojis = 100;
-  const availableCount = maxEmojis - currentEmojiCount;
+  const availableCount = currentEmojis
+    ? maxEmojis - currentEmojis.length
+    : maxEmojis;
   const countText = `Emoji — ${availableCount} ${translations.getSettingsTranslation("EmojiCount")}`;
   if (emojiCount) {
     emojiCount.textContent = countText;
@@ -120,7 +130,7 @@ export function populateEmojis(): void {
       return response.json();
     })
     .then((emojis: Array<Emoji>) => {
-      currentEmojiCount = emojis.length;
+      currentEmojis = emojis;
       generateEmojiCount();
 
       const emojiTableBody = getId("emoji-table-body");
@@ -169,7 +179,7 @@ export function getGuildEmojiHtml(): string {
         <li class="emoji-requirement">${translations.getSettingsTranslation("EmojiRequirementDetails4")}</li>
       </ul>
       <button id="upload-emoji-button" class="settings-button">${translations.getSettingsTranslation("UploadEmoji")}</button>
-      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input">
+      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input" multiple>
       <hr class="emoji-divider">
       <h4 id="emoji-count"></h4>
       <div class="emoji-table-container">
@@ -187,4 +197,55 @@ export function getGuildEmojiHtml(): string {
     </div>
   `;
   return initialHtml;
+}
+
+export function createEmojiImgTag(fileId: string): string {
+  return `<img data-id="${fileId}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${getEmojiName(fileId)}" />`;
+}
+
+export function replaceCustomEmojisForChatContainer(content: string): string {
+  if (!content || !currentEmojis) return content;
+
+  const escaped = escapeHtml(content);
+
+  return escaped.replace(regexIdEmojis, (match, emojiId) => {
+    const emoji = currentEmojis.find((e) => e.fileId === emojiId);
+    if (emoji) return createEmojiImgTag(emoji.fileId);
+    return match;
+  });
+}
+
+function getEmojiName(emojiId: string): string {
+  return (
+    currentEmojis.find((emoji) => emoji.fileId === emojiId)?.fileName || ""
+  );
+}
+
+function handleEmojiHover(element: HTMLElement, emojiName: string): void {
+  console.log("Clicked emoji:", element, emojiName);
+  createTooltip(element, emojiName);
+}
+
+function handleEmojiListener(element: HTMLElement, emojiId: string): void {
+  const emojiName = getEmojiName(emojiId);
+  element.addEventListener("mouseover", () =>
+    handleEmojiHover(element, emojiName)
+  );
+}
+
+export function setupEmojiListeners(container: HTMLElement): void {
+  const emojiElements = container.querySelectorAll(
+    ".chat-emoji"
+  ) as NodeListOf<HTMLElement>;
+
+  emojiElements.forEach((el) => {
+    const dataId = el.getAttribute("data-id");
+    if (dataId) {
+      handleEmojiListener(el, dataId);
+    }
+  });
+}
+
+export function getIdFromEmojiName(name: string): string {
+  return currentEmojis.find((emoji) => emoji.fileName === name)?.fileId || "";
 }

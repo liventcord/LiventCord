@@ -28,6 +28,7 @@ import { currentVoiceChannelId, getRootChannel } from "./channels.ts";
 import { createFireWorks } from "./extras.ts";
 import { UserInfo } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
+import { populateEmojis } from "./emoji.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
@@ -152,6 +153,8 @@ export function loadGuild(
   addKeybinds();
 
   currentGuildId = guildId;
+  populateEmojis();
+
   console.log(initialState.permissionsMap);
   const permissionsObject: PermissionsRecord = Object.fromEntries(
     Object.entries(initialState.permissionsMap).map(

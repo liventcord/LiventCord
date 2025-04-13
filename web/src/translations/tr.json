@@ -134,7 +134,8 @@
     "Name": "İSİM",
     "Image": "RESİM",
     "UploadEmoji": "Emoji Yükle",
-    "EmojiCount": "slot mevcut"
+    "EmojiCount": "slot mevcut",
+    "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!"
   },
   "textTranslations": {
     "online": "Çevrim İçi",

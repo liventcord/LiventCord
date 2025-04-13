@@ -187,8 +187,8 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
   return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
 }
 
-export function getEmojiPath(emojiId: string) {
-  return `/emojis/${emojiId}.webp`;
+export function getEmojiPath(emojiId: string, guildId: string) {
+  return `/guilds/${guildId}/emojis/${emojiId}`;
 }
 
 export function kebapToSentence(text: string) {
@@ -715,7 +715,7 @@ export const convertKeysToCamelCase = (obj: any): any => {
 
 export function escapeHtml(str: string) {
   return str
-    .replace(/&/g, "&amp;")
+    .replace(/&(?![a-zA-Z]+;|#\d+;)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")

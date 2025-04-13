@@ -121,7 +121,8 @@
     "Name": "NAME",
     "Image": "IMAGE",
     "UploadEmoji": "Upload Emoji",
-    "EmojiCount": "slot available"
+    "EmojiCount": "slot available",
+    "SuccessEmoji": "Emoji(ler) Uploaded Succesfully!"
   },
   "textTranslations": {
     "online": "Online",

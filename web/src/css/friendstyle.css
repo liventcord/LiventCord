@@ -461,9 +461,6 @@
 .offline {
   background-color: white;
 }
-.hidden {
-  display: none;
-}
 #users-list-button,
 #closeUsersButton {
   position: absolute;

@@ -178,7 +178,10 @@ class UserManager {
       discriminator,
       isBlocked: Boolean(isBlocked),
       userId,
-      status: "offline",
+      status:
+        userId === currentUserId
+          ? userStatus.currentStatus.toLowerCase()
+          : "offline",
       description: ""
     };
   }
