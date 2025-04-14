@@ -6,16 +6,11 @@ import {
   currentGuildId,
   createGuild,
   joinToGuild,
-  createGuildListItem,
-  loadGuild
+  createGuildListItem
 } from "./guild.ts";
 import { getId, getAverageRGB, createEl } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import {
-  createChannel,
-  currentChannelName,
-  getRootChannel
-} from "./channels.ts";
+import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -396,7 +391,6 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
     id: "profile-discriminator",
     textContent: "#" + userData.discriminator
   });
-  console.error(profileDiscriminator);
 
   container.appendChild(profileTitle);
   container.appendChild(profileDiscriminator);
@@ -548,12 +542,13 @@ function createPopBottomContainer(
       id: "guilds-list"
     });
     sharedGuilds.forEach((guildId: string) => {
-      const rootChannel = cacheInterface.getRootChannel(guildId) as string;
+      const rootChannel = cacheInterface.getRootChannel(guildId);
+      if (!rootChannel) return;
       const guildName = cacheInterface.getGuildName(guildId) as string;
       const isUploaded = cacheInterface.getIsUploaded(guildId) as boolean;
       const guildImage = createGuildListItem(
         guildId,
-        rootChannel,
+        rootChannel.channelId,
         guildName,
         isUploaded,
         false
@@ -563,7 +558,6 @@ function createPopBottomContainer(
       guildsList.appendChild(guildImage);
 
       guildsList.addEventListener("click", () => {
-        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
         closeCurrentProfileDisplay();
       });
     });

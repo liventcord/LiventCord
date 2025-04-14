@@ -277,24 +277,24 @@ class SharedGuildsCache extends BaseCache {
   private guildFriendIdsMap: Map<string, string[]> = new Map();
 
   getFriendGuilds(friendId: string, guildId?: string): string[] {
-    const guilds: string[] = [];
-    1;
-    this.guildFriendIdsMap.forEach((friendIds, guildId) => {
+    const guilds = new Set<string>();
+
+    this.guildFriendIdsMap.forEach((friendIds, currentGuildId) => {
       if (friendIds.includes(friendId)) {
-        guilds.push(guildId);
+        guilds.add(currentGuildId);
       }
     });
+
     if (guildId) {
-      guildCache
+      const memberIds = guildCache
         .getGuild(guildId)
-        ?.members.getMemberIds(guildId)
-        .forEach((memberId) => {
-          if (memberId === friendId) {
-            guilds.push(guildId);
-          }
-        });
+        ?.members.getMemberIds(guildId);
+      if (memberIds?.includes(friendId)) {
+        guilds.add(guildId);
+      }
     }
-    return guilds;
+
+    return [...guilds];
   }
 
   getFriendIds(guildId: string): string[] {
@@ -347,7 +347,7 @@ class Guild {
   invites: InviteIdsCache;
   voiceChannels?: VoiceChannelCache;
   ownerId: string | null;
-  private rootChannel: string | null = null;
+  rootChannel: string | null = null;
 
   constructor(guildId: string, guildName: string, isUploaded: boolean) {
     this.guildId = guildId;

@@ -24,7 +24,7 @@ import {
   PermissionsRecord
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentVoiceChannelId, getRootChannel } from "./channels.ts";
+import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
 import { createFireWorks } from "./extras.ts";
 import { UserInfo } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
@@ -362,7 +362,7 @@ export const createGuildListItem = (
   rootChannel: string,
   guildName: string,
   isUploaded: boolean,
-  isInteractable: boolean
+  isOnLeftGuildList: boolean
 ) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
@@ -375,15 +375,14 @@ export const createGuildListItem = (
   imgElement.onerror = () => {
     imgElement.src = blackImage;
   };
-  if (isInteractable) {
-    imgElement.addEventListener("click", () => {
-      try {
-        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
-      } catch (error) {
-        console.error("Error while loading guild:", error);
-      }
-    });
-  }
+  const elementToAddListener = isOnLeftGuildList ? imgElement : listItem;
+  elementToAddListener.addEventListener("click", () => {
+    try {
+      loadGuild(guildId, getSeletedChannel(guildId, rootChannel), guildName);
+    } catch (error) {
+      console.error("Error while loading guild:", error);
+    }
+  });
 
   listItem.appendChild(imgElement);
   return listItem;
@@ -421,6 +420,7 @@ export function updateGuilds(guildsJson: Array<any>) {
       fragment.appendChild(listItem);
 
       cacheInterface.setName(guildId, guildName);
+      cacheInterface.setRootChannel(guildId, rootChannel);
       cacheInterface.setGuildOwner(guildId, ownerId);
       cacheInterface.setMemberIds(guildId, guildMembers);
     }

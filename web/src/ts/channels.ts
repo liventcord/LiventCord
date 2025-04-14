@@ -94,7 +94,7 @@ function selectChannel(guildId: string, channelId: string) {
   currentSelectedChannels[guildId] = channelId;
 }
 
-export function getRootChannel(guildId: string, rootChannel: string) {
+export function getSeletedChannel(guildId: string, rootChannel: string) {
   if (
     currentSelectedChannels[guildId] &&
     currentSelectedChannels[guildId] !== rootChannel
