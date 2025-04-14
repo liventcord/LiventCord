@@ -570,6 +570,7 @@ function triggerEmojiSuggestionDisplay(
   textContext: string,
   cursorPosition: number
 ) {
+  if(!currentEmojis) return;
   const relevantText = textContext.slice(0, cursorPosition);
   const lastColonIndex = relevantText.lastIndexOf(":");
   const emojiQuery =
