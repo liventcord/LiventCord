@@ -15,14 +15,13 @@ import {
 import {
   chatInput,
   initialiseChatInput,
-  initialiseReadUi,
   closeReplyMenu,
   adjustHeight,
-  setDropHandler,
   newMessagesBar,
   chatContainer,
-  monitorInputForEmojis,
-  updatePlaceholderVisibility
+  updatePlaceholderVisibility,
+  FileHandler,
+  ReadenMessagesManager
 } from "./chatbar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -62,7 +61,6 @@ import {
 import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
 import {
   updateChannels,
-  channelsUl,
   getChannels,
   currentChannelName,
   Channel,
@@ -230,11 +228,21 @@ export function initialiseState(data: InitialStateData): void {
   updateGuilds(guilds);
   addKeybinds();
 }
-let isOnLeft = false;
-let isOnRight = false;
-const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
-const toolbarOptions = getId("toolbaroptions") as HTMLElement;
-const navigationBar = getId("navigation-bar") as HTMLElement;
+export function handleRightCenterCheck() {
+  if (isOnLeft) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+  }
+  return isOnLeft;
+}
+export let isOnLeft = false;
+export let isOnRight = false;
+export const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
+export const toolbarOptions = getId("toolbaroptions") as HTMLElement;
+export const navigationBar = getId("navigation-bar") as HTMLElement;
 
 function toggleHamburger(toLeft: boolean, toRight: boolean) {
   if (!userList) return;
@@ -275,31 +283,42 @@ function toggleHamburger(toLeft: boolean, toRight: boolean) {
   }
 }
 
-function mobileMoveToRight() {
+export function mobileMoveToRight() {
   if (!userList) return;
   isOnLeft = false;
   isOnRight = true;
   enableElement(userList);
 }
 
-function mobileMoveToCenter() {
+export function mobileMoveToCenter(excludeChannelList: boolean = false) {
   if (!userList) return;
 
   isOnRight = false;
   isOnLeft = false;
   disableElement(userList);
-
-  getId("channel-list")?.classList.remove("channel-list-mobile-left");
+  if (excludeChannelList) {
+    setTimeout(() => {
+      getId("channel-list")?.classList.remove("channel-list-mobile-left");
+    }, 120);
+  } else {
+    getId("channel-list")?.classList.remove("channel-list-mobile-left");
+  }
   getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
   getId("guild-container")?.classList.remove("guilds-list-mobile-left");
   getId("message-input-container")?.classList.remove(
     "message-input-container-mobile-left"
   );
+  guildContainer.classList.remove("visible");
+
   chatContainer.classList.remove("chat-container-mobile-left");
+  disableElement("hash-sign");
+  disableElement("channel-info");
+
+  disableElement(mobileBlackBg);
   disableElement(navigationBar);
 }
 
-function mobileMoveToLeft() {
+export function mobileMoveToLeft() {
   if (!userList) return;
 
   isOnLeft = true;
@@ -362,11 +381,10 @@ function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
-  initialiseReadUi();
+  ReadenMessagesManager.initialiseReadUi();
   closeReplyMenu();
   adjustHeight();
-  setDropHandler();
-  monitorInputForEmojis();
+  FileHandler.setDropHandler();
   guildContainer.addEventListener(
     "mouseover",
     () => (guildContainer.style.backgroundColor = "#333538")
@@ -396,6 +414,7 @@ function initializeElements() {
 
   if (isMobile) {
     initialiseMobile();
+    toggleHamburger(true, false);
   }
 }
 
@@ -628,10 +647,12 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
     disableElement("channel-container");
+    disableElement("channel-info");
 
     updateUsersActivities();
 
     setUsersList(false);
+    if (userList) disableElement(userList);
     setUserListLine();
 
     const nowOnlineTitle = getId("nowonline");
@@ -639,6 +660,8 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     if (isOnMePage) {
       return;
     }
+
+    closeDropdown();
     setisOnMePage(true);
     setIsOnGuild(false);
     updateFriendMenu();
@@ -662,7 +685,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   } else {
     handleMenu();
   }
-
+  disableElement("channel-container");
   enableElement("friend-container-item");
   setGuildNameText("");
   disableElement("guild-settings-button");
@@ -671,7 +694,6 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
   enableElement("dms-title");
   enableElement("dm-container-parent", false, true);
-  channelsUl.innerHTML = "";
 
   if (!isMobile) {
     enableElement("guild-container", false, true);
@@ -715,6 +737,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     setIsOnDm(false);
     if (friendsCache.currentDmId) {
       lastDmId = friendsCache.currentDmId;
+      getHistoryFromOneChannel(guildCache.currentChannelId);
     }
     if (!isInitial) {
       fetchMembers();
@@ -729,6 +752,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
     enableElement("hash-sign");
+    enableElement("channel-info");
     setGuildNameText(guildCache.currentGuildName);
     disableElement("global-search-input");
     disableElement("dm-profile-sign-bubble");
@@ -750,6 +774,8 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
     setChannelTitle(friendNick);
     disableElement("hash-sign");
+    enableElement("channel-info");
+
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
     if (dmProfSign) {

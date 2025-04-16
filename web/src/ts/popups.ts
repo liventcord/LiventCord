@@ -538,8 +538,7 @@ function createPopBottomContainer(
       style: "display: none; overflow-y: auto; max-height: 200px;"
     });
     const guildsList = createEl("ul", {
-      className: "guilds-list shared-guilds-list",
-      id: "guilds-list"
+      className: "guilds-list shared-guilds-list"
     });
     sharedGuilds.forEach((guildId: string) => {
       const rootChannel = cacheInterface.getRootChannel(guildId);

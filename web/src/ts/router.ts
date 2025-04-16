@@ -73,7 +73,7 @@ class Router {
       .then((response) => {
         if (response.ok) {
           document.body.innerHTML = "";
-          window.location.href = "/";
+          window.location.href = "/login";
         } else {
           console.error("Logout failed:", response.statusText);
         }
@@ -81,10 +81,6 @@ class Router {
       .catch((error) => {
         console.error("Error during logout:", error);
       });
-  }
-
-  changePageToGuild() {
-    window.location.href = "/";
   }
 
   isIdDefined(id: string) {

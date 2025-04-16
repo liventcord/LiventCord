@@ -972,7 +972,7 @@ export function shakeScreen() {
 
   return;
 }
-function createDeleteChannelPrompt(
+export function createDeleteChannelPrompt(
   guildId: string,
   channelId: string,
   channelName: string

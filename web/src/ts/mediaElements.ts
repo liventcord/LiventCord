@@ -287,7 +287,7 @@ export async function createMediaElement(
   ];
   let mediaCount = 0;
   let linksProcessed = 0;
-  const maxLinks = 4;
+  const maxLinks = 10;
 
   if (embeds.length) {
     try {
@@ -297,6 +297,7 @@ export async function createMediaElement(
     }
   }
 
+  messageContentElement.textContent = "";
   if (links.length) {
     await processLinks();
   }
@@ -454,7 +455,6 @@ export function handleLink(
   messageContentElement: HTMLElement,
   content: string
 ) {
-  messageContentElement.textContent = "";
   const urlPattern = /https?:\/\/[^\s]+/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;

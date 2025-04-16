@@ -416,6 +416,7 @@ namespace LiventCord.Controllers
         {
             IQueryable<Message> query = _context.Messages.AsQueryable();
             DateTime? parsedDate = null;
+
             if (date != null)
             {
                 if (DateTime.TryParse(date, out DateTime tempParsedDate))
@@ -451,11 +452,21 @@ namespace LiventCord.Controllers
                 query = query.Where(m => m.MessageId == messageId);
             }
 
-            return await query
+            var messages = await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
+
+            foreach (var message in messages)
+            {
+                if (!message.ShouldSerializeMetadata())
+                {
+                    message.Metadata = null;
+                }
+            }
+
+            return messages;
         }
 
 

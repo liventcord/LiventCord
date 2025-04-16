@@ -721,3 +721,41 @@ export function escapeHtml(str: string) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+export function findPreviousNode(node: Node): Node | null {
+  if (node.previousSibling) {
+    let current = node.previousSibling;
+    while (current.lastChild) {
+      current = current.lastChild;
+    }
+    return current;
+  }
+  return node.parentNode;
+}
+
+export function findNextNode(node: Node): Node | null {
+  if (node.firstChild) return node.firstChild;
+  if (node.nextSibling) return node.nextSibling;
+
+  let current = node;
+  while (current.parentNode && !current.nextSibling)
+    current = current.parentNode;
+  return current.nextSibling;
+}
+
+export function findLastTextNode(node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE) return node;
+
+  for (let i = node.childNodes.length - 1; i >= 0; i--) {
+    const lastTextNode = findLastTextNode(node.childNodes[i]);
+    if (lastTextNode) return lastTextNode;
+  }
+  return null;
+}
+
+export function sanitizeHtmlInput(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

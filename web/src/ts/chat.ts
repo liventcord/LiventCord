@@ -808,9 +808,9 @@ export function createProfileImageChat(
     }
   }
   setProfilePic(profileImg, userId);
-
   messageContentElement.classList.add("onsmallprofile");
 }
+
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
@@ -1030,7 +1030,7 @@ export function handleSelfSentMessage(data: Message) {
           );
         }
       }
-      element.style.color = "white";
+      element.style.color = "unset";
       const messageContentElement = element.querySelector(
         "#message-content-element"
       ) as HTMLElement;
@@ -1085,6 +1085,12 @@ function createMessageElement(
   }
   if (isNotSent) {
     newMessage.style.color = "gray";
+  }
+
+  const messages = chatContent.querySelectorAll(".message");
+  if (messages && messages.length === 0) {
+    // Start of chat
+    newMessage.classList.add("start-chat-message");
   }
   return newMessage;
 }

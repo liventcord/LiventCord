@@ -613,6 +613,8 @@ class GuildCacheInterface {
     );
   }
 
+  //Channel
+
   getChannels(guildId: string): CachedChannel[] {
     return this.getGuild(guildId)?.channels.getChannels(guildId) || [];
   }
@@ -623,6 +625,9 @@ class GuildCacheInterface {
         ?.channels.getChannels(guildId)
         .find((channel) => channel.channelId === channelId) || null
     );
+  }
+  getChannelName(guildId: string, channelId: string): string {
+    return this.getChannel(guildId, channelId)?.channelName || "";
   }
 
   removeChannel(guildId: string, channelId: string): void {

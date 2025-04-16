@@ -24,6 +24,7 @@ import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
 import { convertToEditUi } from "./message.ts";
 import { scrollToMessage } from "./chat.ts";
+import { createDeleteChannelPrompt } from "./settingsui.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
@@ -421,7 +422,12 @@ function createChannelsContext(channelId: string) {
       action: () => onChangeChannel(channelId)
     };
     context[ChannelsActionType.DELETE_CHANNEL] = {
-      action: () => deleteChannel(channelId, currentGuildId)
+      action: () =>
+        createDeleteChannelPrompt(
+          currentGuildId,
+          channelId,
+          cacheInterface.getChannelName(currentGuildId, channelId)
+        )
     };
   }
 

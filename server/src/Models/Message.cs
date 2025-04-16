@@ -33,6 +33,10 @@ namespace LiventCord.Models
 
         public Metadata? Metadata { get; set; }
 
+        public bool ShouldSerializeMetadata()
+        {
+            return Metadata != null && !Metadata.IsEmpty();
+        }
         [JsonIgnore]
         public virtual User User { get; set; } = null!;
 

@@ -6,11 +6,11 @@ import {
   setCurrentVoiceChannelId,
   setCurrentVoiceChannelGuild,
   currentChannelName,
-  channelsUl,
   handleChannelDelete,
   ChannelData,
   editChannelName,
-  handleNewChannel
+  handleNewChannel,
+  getChannelsUl
 } from "./channels.ts";
 import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
 import {
@@ -515,7 +515,7 @@ socketClient.on(
     const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
     soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
 
-    const buttonContainer = channelsUl.querySelector(
+    const buttonContainer = getChannelsUl().querySelector(
       `li[id="${currentVoiceChannelId}"]`
     ) as HTMLElement;
     const channelSpan = buttonContainer.querySelector(

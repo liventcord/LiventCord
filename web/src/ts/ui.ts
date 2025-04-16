@@ -7,7 +7,17 @@ import {
   userLine,
   userList
 } from "./userList.ts";
-import { loadDmHome, initialState } from "./app.ts";
+import {
+  loadDmHome,
+  initialState,
+  mobileMoveToRight,
+  mobileMoveToLeft,
+  isOnLeft,
+  toolbarOptions,
+  mobileBlackBg,
+  mobileMoveToCenter,
+  isOnRight
+} from "./app.ts";
 import {
   closePopUp,
   createPopUp,
@@ -16,7 +26,12 @@ import {
   createInviteUsersPop
 } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
-import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
+import {
+  currentGuildId,
+  guildContainer,
+  leaveCurrentGuild,
+  wrapWhiteRod
+} from "./guild.ts";
 import {
   createEl,
   getId,
@@ -29,10 +44,10 @@ import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { observe, updateChatWidth } from "./chat.ts";
-import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
 import { changePassword } from "./user.ts";
+import { chatContainer, chatContent } from "./chatbar.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -264,7 +279,6 @@ function createPopupContent(
   };
 
   const handleAccept = () => {
-    console.log(acceptCallback);
     if (acceptCallback) acceptCallback();
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
@@ -509,6 +523,7 @@ export function beautifyJson(jsonData: string) {
 }
 
 export function displayImagePreview(imageElement: HTMLImageElement): void {
+  console.log("Displaying image preview: ", imageElement.src);
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
@@ -604,7 +619,7 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
   });
 }
 
-function isImagePreviewOpen() {
+export function isImagePreviewOpen() {
   return imagePreviewContainer.style.display === "flex";
 }
 let currentPreviewIndex = 0;
@@ -612,16 +627,10 @@ let currentPreviewIndex = 0;
 function addNavigationListeners() {
   document.addEventListener("keydown", (event) => {
     if (isImagePreviewOpen()) {
-      const chatImages = Array.from(
-        chatContainer.querySelectorAll(".chat-image")
-      ).filter(
-        (img) => (img as HTMLImageElement).src !== ""
-      ) as HTMLImageElement[];
-
       if (event.key === "ArrowRight") {
-        moveToNextImage(chatImages);
+        moveToNextImage();
       } else if (event.key === "ArrowLeft") {
-        moveToPreviousImage(chatImages);
+        moveToPreviousImage();
       }
     }
   });
@@ -633,20 +642,30 @@ function movePreviewImg(chatImages: HTMLImageElement[]) {
     displayImagePreview(img);
   }
 }
-
-function moveToNextImage(chatImages: HTMLImageElement[]) {
+function getChatImages() {
+  return Array.from(chatContent.querySelectorAll(".chat-image")).filter(
+    (img) => (img as HTMLImageElement).src !== ""
+  ) as HTMLImageElement[];
+}
+function moveToNextImage() {
+  console.log("Move to next img");
+  const chatImages = getChatImages();
   currentPreviewIndex = (currentPreviewIndex + 1) % chatImages.length;
   movePreviewImg(chatImages);
+  console.log(chatImages);
 }
 
-function moveToPreviousImage(chatImages: HTMLImageElement[]) {
+function moveToPreviousImage() {
+  console.log("Move to previous img");
+
+  const chatImages = getChatImages();
   currentPreviewIndex =
     (currentPreviewIndex - 1 + chatImages.length) % chatImages.length;
   movePreviewImg(chatImages);
 }
 function updateCurrentIndex(sourceimg: string) {
   const chatImages = Array.from(
-    chatContainer.querySelectorAll(".chat-image")
+    chatContent.querySelectorAll(".chat-image")
   ).filter((img) => (img as HTMLImageElement).src !== "") as HTMLImageElement[];
 
   const newIndex = chatImages.findIndex((img) => img.src === sourceimg);
@@ -773,3 +792,78 @@ document.addEventListener("DOMContentLoaded", () => {
     setDynamicAnimations();
   }
 });
+
+let startX = 0;
+let endX = 0;
+
+const channelList = getId("channel-list") as HTMLElement;
+
+document.addEventListener("touchstart", (e: TouchEvent) => {
+  startX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", (e: TouchEvent) => {
+  endX = e.changedTouches[0].clientX;
+  const diff = endX - startX;
+
+  if (Math.abs(diff) < 50) return;
+
+  console.log(diff);
+  if (isImagePreviewOpen()) {
+    if (diff > 50) {
+      moveToPreviousImage();
+    } else if (diff < -50) {
+      moveToNextImage();
+    }
+    return;
+  }
+
+  handleSwapNavigation(e);
+});
+
+function handleSwapNavigation(e: TouchEvent) {
+  endX = e.changedTouches[0].clientX;
+  const diff = endX - startX;
+
+  if (Math.abs(diff) < 50) return;
+
+  if (diff > 0) {
+    if (isOnRight) {
+      mobileMoveToCenter(true);
+      return;
+    }
+
+    guildContainer.classList.add("visible");
+    enableElement(mobileBlackBg);
+    enableElement("channel-info");
+    enableElement("hash-sign");
+
+    setTimeout(() => {
+      channelList.classList.add("visible");
+      mobileMoveToLeft();
+    }, 100);
+  } else {
+    disableElement(mobileBlackBg);
+    disableElement("channel-info");
+    disableElement("hash-sign");
+
+    if (isOnLeft) {
+      chatContainer.style.flexDirection = "";
+      toolbarOptions.style.zIndex = "1";
+      mobileMoveToCenter(true);
+    } else {
+      mobileMoveToCenter(true);
+      mobileMoveToRight();
+      enableElement(mobileBlackBg);
+      enableElement("channel-info");
+      enableElement("hash-sign");
+      return;
+    }
+
+    channelList.classList.remove("visible");
+    guildContainer.classList.remove("visible");
+  }
+}
+
+channelList.classList.add("visible");
+guildContainer.classList.add("visible");

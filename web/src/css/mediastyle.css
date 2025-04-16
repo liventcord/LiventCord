@@ -1,3 +1,15 @@
+@media screen and (max-width: 768px) {
+  #emojibtn {
+    right: 0px !important;
+  }
+  #gifbtn {
+    right: 50px !important;
+  }
+  #file-button {
+    left: 10px;
+  }
+}
+
 .users-open {
   right: 50px !important;
 }

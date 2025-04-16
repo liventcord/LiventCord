@@ -1,9 +1,9 @@
 import { selfProfileImage } from "./avatar.ts";
 import {
-  channelsUl,
   currentVoiceChannelId,
   setCurrentVoiceChannelGuild,
-  currentVoiceChannelGuild
+  currentVoiceChannelGuild,
+  getChannelsUl
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import { getId, createEl, IMAGE_SRCS } from "./utils.ts";
@@ -589,7 +589,7 @@ function closeCurrentCall() {
   if (isOnGuild) {
     setCurrentVoiceChannelGuild("");
   }
-  const buttonContainer = channelsUl.querySelector(
+  const buttonContainer = getChannelsUl().querySelector(
     `li[id="${oldVoiceId}"]`
   ) as HTMLElement;
 
@@ -600,7 +600,7 @@ function closeCurrentCall() {
   apiClient.send(EventType.LEAVE_VOICE_CHANNEL, data);
 }
 export function clearVoiceChannel(channelId: string) {
-  const channelButton = channelsUl.querySelector(`li[id="${channelId}"]`);
+  const channelButton = getChannelsUl().querySelector(`li[id="${channelId}"]`);
   if (!channelButton) {
     return;
   }
