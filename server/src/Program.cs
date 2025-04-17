@@ -200,7 +200,7 @@ app.Lifetime.ApplicationStarted.Register(async () =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
     var configf = builder.Configuration["AppSettings:BuildFrontend"];
-    if (env.IsDevelopment() && builder.Configuration["AppSettings:BuildFrontend"] == "true")
+    if (!env.IsDevelopment() && builder.Configuration["AppSettings:BuildFrontend"] != "false")
     {
         await Task.Run(() => BuilderService.StartFrontendBuild());
     }

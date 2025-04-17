@@ -3,4 +3,5 @@ index.html
 output
 vendor/
 .prettierrc
+pnpm-lock.yaml
 public/
