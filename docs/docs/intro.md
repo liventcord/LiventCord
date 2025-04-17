@@ -28,6 +28,12 @@ git clone https://github.com/liventcord/Liventcord && cd Liventcord
 ### Run the Server (API)
 ```bash
 cd server/src
+```
+Create database
+```bash
+dotnet ef migrations add InitialCreate
+```
+```bash
 dotnet run
 ```
 .NET server runs at `http://localhost:5005`

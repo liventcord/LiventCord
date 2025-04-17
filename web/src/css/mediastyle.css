@@ -403,3 +403,47 @@
   vertical-align: middle;
   padding: 6px;
 }
+
+.attachment-preview-file {
+  width: 120px;
+  height: 120px;
+  color: gray;
+  margin-left: 40px;
+}
+
+.attachment-file-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  background-color: oklab(0.350188 0.00196286 -0.0120083);
+  width: 300px;
+  height: auto;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.attachment-file {
+  width: 40px;
+  height: 40px;
+  color: #b9b8b8;
+  flex-shrink: 0;
+}
+
+.attachment-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.attachment-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #02a8fc;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: oklab(0.751847 0.00128341 -0.00849503);
+  margin-top: 4px;
+}

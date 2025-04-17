@@ -204,15 +204,21 @@ export function createEmojiImgTag(fileId: string): string {
 }
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  if (!content || !currentEmojis) return content;
+  if (!content || !currentEmojis) return escapeHtml(content);
 
-  const escaped = escapeHtml(content);
-
-  return escaped.replace(regexIdEmojis, (match, emojiId) => {
-    const emoji = currentEmojis.find((e) => e.fileId === emojiId);
-    if (emoji) return createEmojiImgTag(emoji.fileId);
-    return match;
-  });
+  return content
+    .replace(regexIdEmojis, (match, emojiId) => {
+      const emoji = currentEmojis.find((e) => e.fileId === emojiId);
+      if (emoji) return `%%__EMOJI__${emoji.fileId}__%%`;
+      return escapeHtml(match);
+    })
+    .split(/(%%__EMOJI__.*?__%%)/g)
+    .map((part) => {
+      const match = part.match(/^%%__EMOJI__(.*?)__%%$/);
+      if (match) return createEmojiImgTag(match[1]);
+      return escapeHtml(part);
+    })
+    .join("");
 }
 
 function getEmojiName(emojiId: string): string {

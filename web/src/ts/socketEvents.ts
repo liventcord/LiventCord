@@ -188,7 +188,6 @@ class WebSocketClient {
     }
     this.heartbeatTimer = window.setInterval(() => {
       if (this.socket.readyState === WebSocket.OPEN) {
-        console.log("Sending heartbeat");
         this.socket.send(JSON.stringify({ type: "ping" }));
       }
     }, this.heartbeatInterval);

@@ -13,14 +13,16 @@ import {
   extractLinks,
   createEl,
   getYouTubeEmbedURL,
-  IMAGE_SRCS
+  IMAGE_SRCS,
+  formatFileSize
 } from "./utils.ts";
 import { initialState } from "./app.ts";
-import { router } from "./router.ts";
 import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
+import { Attachment } from "./message.ts";
+import { FileHandler } from "./chatbar.ts";
 
 interface Embed {
   id: string;
@@ -76,11 +78,14 @@ class MetaData {
 
 const maxWidth = 512;
 const maxHeight = 384;
-
+export const maxAttachmentsCount = 10;
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
 const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
 const IgnoreProxies = ["i.redd.it", ...tenorHosts];
+
+const getAttachmentUrl = (attachmentId: string) =>
+  `${location.origin}/attachments/${attachmentId}`;
 
 function createTenorElement(
   msgContentElement: HTMLElement,
@@ -172,7 +177,8 @@ function preloadImage(src: string): Promise<string> {
 
 function createImageElement(
   inputText: string,
-  urlSrc: string
+  urlSrc: string,
+  isSpoiler = false
 ): HTMLImageElement {
   const imgElement = createEl("img", {
     className: "chat-image",
@@ -182,11 +188,28 @@ function createImageElement(
       maxHeight: `${maxHeight}px`
     }
   }) as HTMLImageElement;
-
+  requestAnimationFrame(() => {
+    if (isSpoiler) {
+      FileHandler.blurImage(imgElement);
+    }
+  });
   imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
+
   imgElement.setAttribute("data-original-src", urlSrc);
-  imgElement.addEventListener("click", () => displayImagePreview(imgElement));
+  let isClicked: boolean;
+  imgElement.addEventListener("click", () => {
+    if (isSpoiler) {
+      if (isClicked) {
+        displayImagePreview(imgElement);
+      } else {
+        FileHandler.unBlurImage(imgElement);
+      }
+      isClicked = true;
+    } else {
+      displayImagePreview(imgElement);
+    }
+  });
 
   preloadImage(getProxy(urlSrc))
     .catch(() => preloadImage(getProxy(urlSrc)))
@@ -279,15 +302,19 @@ export async function createMediaElement(
   newMessage: HTMLElement,
   metadata: MetaData,
   embeds: Embed[],
-  attachmentUrls?: string | string[]
+  attachments?: Attachment[]
 ) {
-  const links: string[] = [
-    ...extractLinks(content),
-    ...processAttachments(attachmentUrls)
-  ];
+  const attachmentsToUse = processAttachments(attachments);
+
+  if (attachmentsToUse.length) {
+    newMessage.dataset.attachmentUrls = attachmentsToUse
+      .map((a) => getAttachmentUrl(a.fileId))
+      .join(",");
+  }
+
+  const links: string[] = [...extractLinks(content)];
   let mediaCount = 0;
   let linksProcessed = 0;
-  const maxLinks = 10;
 
   if (embeds.length) {
     try {
@@ -298,66 +325,97 @@ export async function createMediaElement(
   }
 
   messageContentElement.textContent = "";
-  if (links.length) {
-    await processLinks();
-  }
 
+  await processLinks();
   async function processLinks() {
-    while (linksProcessed < links.length && mediaCount < maxLinks) {
+    while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
       try {
         const isError = await processMediaLink(
           links[linksProcessed],
-          newMessage,
+          null,
           messageContentElement,
           content,
           metadata,
           embeds
         );
-
-        if (!isError) {
-          mediaCount++;
-        }
+        if (!isError) mediaCount++;
       } catch (error) {
         console.error("Error processing media link:", error);
       }
       linksProcessed++;
     }
+
+    for (const attachment of attachmentsToUse) {
+      try {
+        if (attachment.isImageFile) {
+          await processMediaLink(
+            getAttachmentUrl(attachment.fileId),
+            attachment,
+            messageContentElement,
+            content,
+            metadata,
+            embeds
+          );
+        } else {
+          const previewElement = createFileAttachmentPreview(attachment);
+          messageContentElement.appendChild(previewElement);
+        }
+        mediaCount++;
+      } catch (error) {
+        console.error("Error processing attachment:", error);
+      }
+    }
   }
 }
 
-function processAttachments(attachmentUrls?: string | string[]): string[] {
-  if (!attachmentUrls) return [];
+function processAttachments(attachments?: Attachment[]): Attachment[] {
+  if (!attachments || !Array.isArray(attachments)) return [];
+  return attachments.map((attachment) => ({
+    ...attachment,
+    url: getAttachmentUrl(attachment.fileId)
+  }));
+}
 
-  const toUrl = (url: string) =>
-    url.startsWith("http") ? url : `${location.origin}/attachments/${url}`;
+function createFileAttachmentPreview(
+  attachment: Attachment | null
+): HTMLElement {
+  const container = createEl("div", { className: "attachment-file-container" });
+  const file = createEl("i", {
+    className: "fa-solid fa-file attachment-file"
+  }) as HTMLImageElement;
 
-  if (typeof attachmentUrls === "string") {
-    if (
-      attachmentUrls.length === router.ID_LENGTH &&
-      !isNaN(Number(attachmentUrls))
-    ) {
-      return [`/attachments/${attachmentUrls}`];
-    }
-    try {
-      return JSON.parse(attachmentUrls) as string[];
-    } catch {
-      return attachmentUrls
-        .split(",")
-        .map((url) => url.trim())
-        .map(toUrl);
-    }
+  if (attachment) {
+    const attachmentUrl = getAttachmentUrl(attachment.fileId);
+
+    const textWrapper = createEl("div", { className: "attachment-text" });
+
+    const title = createEl("a", {
+      className: "attachment-title",
+      textContent: attachment.fileName,
+      href: attachmentUrl,
+      download: ""
+    }) as HTMLAnchorElement;
+
+    const readableSize = formatFileSize(attachment.fileSize);
+
+    const size = createEl("span", {
+      className: "attachment-size",
+      textContent: readableSize
+    });
+
+    textWrapper.appendChild(title);
+    textWrapper.appendChild(size);
+
+    container.appendChild(file);
+    container.appendChild(textWrapper);
   }
 
-  if (Array.isArray(attachmentUrls)) {
-    return attachmentUrls.map(toUrl);
-  }
-
-  return [];
+  return container;
 }
 
 function processMediaLink(
   link: string,
-  newMessage: HTMLElement,
+  attachment: Attachment | null,
   messageContentElement: HTMLElement,
   content: string,
   metadata: MetaData,
@@ -365,8 +423,6 @@ function processMediaLink(
 ): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
-    newMessage.setAttribute("data-attachment_url", link);
-
     const handleLoad = () => {
       resolve(false);
     };
@@ -375,10 +431,10 @@ function processMediaLink(
       console.error("Error loading media element");
       resolve(true);
     };
-
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        mediaElement = createImageElement("", link);
+        console.log(attachment);
+        mediaElement = createImageElement("", link, attachment?.isSpoiler);
       }
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(messageContentElement, content, link);
@@ -398,7 +454,7 @@ function processMediaLink(
     } else if (isURL(link)) {
       handleLink(messageContentElement, content);
     } else {
-      messageContentElement.innerHTML = content;
+      messageContentElement.textContent = content;
       resolve(false);
       return;
     }
@@ -459,32 +515,40 @@ export function handleLink(
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
+  const appendToMessage = (el: HTMLElement) => {
+    messageContentElement.insertBefore(el, messageContentElement.firstChild);
+  };
+
+  const insertTextOrHTML = (text: string) => {
+    const replaced = replaceCustomEmojisForChatContainer(text);
+    const span = createEl("span");
+    span.innerHTML = replaced;
+    appendToMessage(span);
+  };
+
   while ((match = urlPattern.exec(content)) !== null) {
     const start = match.index;
     const end = start + match[0].length;
 
     if (start > lastIndex) {
       const text = content.slice(lastIndex, start);
-      const span = createEl("span");
-      span.innerHTML = replaceCustomEmojisForChatContainer(text);
-      messageContentElement.appendChild(span);
+      insertTextOrHTML(text);
     }
 
     const url = match[0];
     const urlSpan = createEl("a", { textContent: url });
     urlSpan.classList.add("url-link");
     urlSpan.addEventListener("click", () => openExternalUrl(url));
-    messageContentElement.appendChild(urlSpan);
+    appendToMessage(urlSpan);
 
     lastIndex = end;
   }
 
   if (lastIndex < content.length) {
     const remainingText = content.slice(lastIndex);
-    const span = createEl("span");
-    span.innerHTML = replaceCustomEmojisForChatContainer(remainingText);
-    messageContentElement.appendChild(span);
+    insertTextOrHTML(remainingText);
   }
+
   setupEmojiListeners(messageContentElement);
 }
 

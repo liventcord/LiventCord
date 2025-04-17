@@ -167,8 +167,8 @@ export function handleReplies() {
     console.log(replierElements, message.replies);
     replierElements.forEach((replier) => {
       message.replies.forEach((msg) => {
-        const attachmentUrls = msg.attachmentUrls
-          ? msg.attachmentUrls.toString()
+        const attachmentUrls = msg.attachments
+          ? msg.attachments.toString()
           : "";
         createReplyBar(
           replier,
@@ -891,7 +891,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     channelId,
     date,
     lastEdited,
-    attachmentUrls,
+    attachments,
     replyToId,
     isBot,
     reactionEmojisIds,
@@ -904,7 +904,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   } = data;
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
-  if (!attachmentUrls && content === "" && embeds.length === 0) return null;
+  if (!attachments && content === "" && embeds.length === 0) return null;
   const nick = userManager.getUserNick(userId);
 
   const newMessage = createMessageElement(
@@ -912,7 +912,6 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     userId,
     date,
     content,
-    attachmentUrls,
     replyToId || undefined,
     isNotSent
   );
@@ -960,7 +959,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     newMessage,
     metadata,
     embeds,
-    attachmentUrls
+    attachments
   );
 
   if (!currentLastDate) {
@@ -1035,7 +1034,7 @@ export function handleSelfSentMessage(data: Message) {
         "#message-content-element"
       ) as HTMLElement;
       console.log(messageContentElement);
-      if (messageContentElement && data.attachmentUrls) {
+      if (messageContentElement && data.attachments) {
         console.log(
           "Create media element: ",
           data.content,
@@ -1043,7 +1042,7 @@ export function handleSelfSentMessage(data: Message) {
           element,
           data.metadata,
           data.embeds,
-          data.attachmentUrls
+          data.attachments
         );
         createMediaElement(
           data.content,
@@ -1051,7 +1050,7 @@ export function handleSelfSentMessage(data: Message) {
           element,
           data.metadata,
           data.embeds,
-          data.attachmentUrls
+          data.attachments
         );
       }
       element.id = data.messageId;
@@ -1065,7 +1064,6 @@ function createMessageElement(
   userId: string,
   date: string,
   content: string,
-  attachmentUrls: string | string[] | undefined,
   replyToId?: string,
   isNotSent?: boolean
 ) {
@@ -1075,11 +1073,6 @@ function createMessageElement(
   newMessage.dataset.date = date;
   newMessage.dataset.content = content;
 
-  if (attachmentUrls) {
-    newMessage.dataset.attachmentUrls = Array.isArray(attachmentUrls)
-      ? attachmentUrls.join(",")
-      : attachmentUrls;
-  }
   if (replyToId) {
     newMessage.dataset.replyToId = replyToId;
   }
@@ -1477,7 +1470,7 @@ export function displayLocalMessage(
     channelId,
     date: createNowDate(),
     lastEdited: null,
-    attachmentUrls: [],
+    attachments: [],
     replyToId: null,
     isBot: false,
     reactionEmojisIds: [],
@@ -1515,7 +1508,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     channelId,
     date: createNowDate(),
     lastEdited: "",
-    attachmentUrls: "",
+    attachments: [],
     replyToId: "",
     isBot: true,
     reactionEmojisIds: [],

@@ -19,7 +19,9 @@ import {
   attachmentsTray,
   fileInput,
   currentReplyingTo,
-  resetChatInputState
+  resetChatInputState,
+  FileHandler,
+  fileSpoilerMap
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -36,6 +38,7 @@ import { constructUserData } from "./popups.ts";
 import { maxAttachmentSize } from "./avatar.ts";
 import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
+import { maxAttachmentsCount } from "./mediaElements.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -46,7 +49,7 @@ interface MessageData {
   channelId?: string | null;
   date: string | null;
   lastEdited?: string | null;
-  attachmentUrls?: string | string[];
+  attachments?: Attachment[];
   replyToId?: string | null;
   isBot: boolean;
   addToTop?: boolean;
@@ -64,6 +67,14 @@ export interface MessageReply {
   messageId: string;
   replies: Message[];
 }
+export interface Attachment {
+  fileId: string;
+  fileName: string;
+  fileSize: number;
+  isImageFile: boolean;
+  isSpoiler: boolean;
+}
+
 export class Message {
   messageId: string;
   userId: string;
@@ -71,7 +82,7 @@ export class Message {
   channelId: string | null;
   date: string | null;
   lastEdited: string | null;
-  attachmentUrls: string | string[] | undefined;
+  attachments: Attachment[] | undefined;
   replyToId: string | null | undefined;
   isBot: boolean;
   reactionEmojisIds: string[] | undefined;
@@ -91,7 +102,7 @@ export class Message {
     channelId = null,
     date,
     lastEdited,
-    attachmentUrls,
+    attachments,
     replyToId,
     isBot,
     reactionEmojisIds,
@@ -109,7 +120,7 @@ export class Message {
     this.channelId = channelId;
     this.date = date;
     this.lastEdited = lastEdited || null;
-    this.attachmentUrls = attachmentUrls;
+    this.attachments = attachments;
     this.replyToId = replyToId;
     this.isBot = isBot;
     this.reactionEmojisIds = reactionEmojisIds;
@@ -145,24 +156,27 @@ function createEditMessageformData(messageId: string, content: string) {
   return formData;
 }
 
-function handleFileProcessing(file: File, formData: FormData): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (file.type === "image/webp") {
+async function handleFileProcessing(
+  file: File,
+  formData: FormData
+): Promise<void> {
+  if (file.type === "image/webp") {
+    formData.append("files[]", file, file.name);
+    return;
+  }
+
+  const isImage = await FileHandler.isImageFile(file);
+
+  if (isImage) {
+    try {
+      const convertedFile = await tryCompressAndConvert(file);
+      formData.append("files[]", convertedFile, convertedFile.name);
+    } catch {
       formData.append("files[]", file, file.name);
-      resolve();
-    } else {
-      tryCompressAndConvert(file)
-        .then((convertedFile: File) => {
-          formData.append("files[]", convertedFile, convertedFile.name);
-          resolve();
-        })
-        .catch((error) => {
-          console.error(`Failed to process file: ${file.name}`, error);
-          formData.append("files[]", file, file.name);
-          resolve();
-        });
     }
-  });
+  } else {
+    formData.append("files[]", file, file.name);
+  }
 }
 
 async function processFiles(
@@ -170,8 +184,18 @@ async function processFiles(
   formData: FormData
 ): Promise<void> {
   if (files) {
-    for (let i = 0; i < files.length; i++) {
-      await handleFileProcessing(files[i], formData);
+    const fileCount = Math.min(files.length, maxAttachmentsCount);
+    const uploadedFiles: File[] = [];
+
+    for (let i = 0; i < fileCount; i++) {
+      const file = files[i];
+      await handleFileProcessing(file, formData);
+      uploadedFiles.push(file);
+    }
+
+    for (const file of uploadedFiles) {
+      const isSpoiler = fileSpoilerMap.get(file) ?? false;
+      formData.append("isSpoiler[]", String(isSpoiler));
     }
   }
 }
@@ -191,14 +215,13 @@ export async function sendMessage(content: string, user_ids?: string[]) {
 
   chatInput.textContent = "";
   resetChatInputState();
+
   attachmentsTray.innerHTML = "";
   disableElement(attachmentsTray);
 
   const temporaryId = createRandomId();
   const formData = createNewMessageFormData(temporaryId, content, user_ids);
   await processFiles(fileInput.files, formData);
-
-  fileInput.value = "";
 
   const additionalData = { guildId: currentGuildId, channelId };
 

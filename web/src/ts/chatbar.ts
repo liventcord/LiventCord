@@ -1,3 +1,4 @@
+import { fileTypeFromBuffer } from "file-type";
 import {
   currentSearchUiIndex,
   setCurrentSearchUiIndex,
@@ -21,7 +22,8 @@ import {
   findLastTextNode,
   sanitizeHtmlInput,
   findPreviousNode,
-  findNextNode
+  findNextNode,
+  formatFileSize
 } from "./utils.ts";
 import { alertUser, displayImagePreview } from "./ui.ts";
 import { isOnDm, router } from "./router.ts";
@@ -31,6 +33,7 @@ import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
 import { createEmojiImgTag, currentEmojis, regexIdEmojis } from "./emoji.ts";
+import { maxAttachmentsCount } from "./mediaElements.ts";
 
 export let currentReplyingTo = "";
 
@@ -62,6 +65,46 @@ const state = {
 if (replyCloseButton) {
   replyCloseButton.addEventListener("click", closeReplyMenu);
 }
+const getImageactionsHtml = (isImage: boolean): string => {
+  return `
+    <div class="image-actions">
+      ${
+        isImage
+          ? `
+        <div class="action-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M15.56 11.77c.2-.1.44.02.44.23a4 4 0 1 1-4-4c.21 0 .33.25.23.44a2.5 2.5 0 0 0 3.32 3.32Z" />
+            <path fill="currentColor" fill-rule="evenodd" d="M22.89 11.7c.07.2.07.4 0 .6C22.27 13.9 19.1 21 12 21c-7.11 0-10.27-7.11-10.89-8.7a.83.83 0 0 1 0-.6C1.73 10.1 4.9 3 12 3c7.11 0 10.27 7.11 10.89 8.7Zm-4.5-3.62A15.11 15.11 0 0 1 20.85 12c-.38.88-1.18 2.47-2.46 3.92C16.87 17.62 14.8 19 12 19c-2.8 0-4.87-1.38-6.39-3.08A15.11 15.11 0 0 1 3.15 12c.38-.88 1.18-2.47 2.46-3.92C7.13 6.38 9.2 5 12 5c2.8 0 4.87 1.38 6.39 3.08Z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="action-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" />
+          </svg>
+        </div>
+      `
+          : ""
+      }
+      <div class="action-button remove">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5Z" />
+          <path fill="currentColor" fill-rule="evenodd" d="M5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07ZM11 12a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0v-6Zm3-1a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
+        </svg>
+      </div>
+    </div>
+  `;
+};
+
+export function updatePlaceholderVisibility(newPlaceholder?: string) {
+  const text = chatInput.textContent?.trim();
+  text
+    ? chatInput.removeAttribute("data-placeholder")
+    : chatInput.setAttribute(
+        "data-placeholder",
+        newPlaceholder || "Type a message..."
+      );
+}
+
 export class ReadenMessagesManager {
   static getReadText() {
     const currentDate = new Date();
@@ -167,10 +210,11 @@ export function closeReplyMenu() {
 
 //#region Reply
 
-let typingTimeout: number;
+let typingTimeout: ReturnType<typeof setTimeout>;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
 const sendTypingData = false;
+
 function handleTypingRequest() {
   if (chatInput.value !== "") {
     if (typingTimeout) {
@@ -200,35 +244,49 @@ function handleTypingRequest() {
     }, TYPING_COOLDOWN);
   }
 }
+
 //#endregion
-
-// upload media
-
 let isAttachmentsAdded: boolean;
-const maxFiles = 8;
 let fileList: File[] = [];
+export const fileSpoilerMap: WeakMap<File, boolean> = new WeakMap();
 
 export class FileHandler {
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
   ): void {
-    let filesToProcess = FileHandler.extractFiles(eventOrFiles);
-    filesToProcess = FileHandler.filterValidFiles(filesToProcess);
+    console.log("File input changed. files: ", eventOrFiles);
+    const max = maxAttachmentSize * 1024 * 1024;
 
-    if (fileList.length + filesToProcess.length > maxFiles) {
-      filesToProcess = filesToProcess.slice(0, maxFiles - fileList.length);
+    const filesToProcessOriginal = FileHandler.extractFiles(eventOrFiles);
+    const validFiles = FileHandler.filterValidFiles(filesToProcessOriginal);
+
+    let remainingSize =
+      max - fileList.reduce((acc, file) => acc + file.size, 0);
+    const filteredFiles: File[] = [];
+
+    for (const file of validFiles) {
+      if (file.size <= remainingSize && file.size <= max) {
+        filteredFiles.push(file);
+        remainingSize -= file.size;
+      }
     }
 
-    filesToProcess.forEach((file) => {
+    if (fileList.length + filteredFiles.length > maxAttachmentsCount) {
+      filteredFiles.splice(maxAttachmentsCount - fileList.length);
+    }
+
+    for (const file of filteredFiles) {
       fileList.push(file);
       FileHandler.processFile(file);
-    });
+    }
 
     adjustHeight();
 
-    if (fileList.length > maxFiles) {
-      fileList = fileList.slice(0, maxFiles);
+    if (fileList.length > maxAttachmentsCount) {
+      fileList = fileList.slice(0, maxAttachmentsCount);
     }
+
+    FileHandler.syncFileInputWithFileList();
   }
 
   static extractFiles(eventOrFiles: Event | FileList | File[] | null): File[] {
@@ -251,47 +309,57 @@ export class FileHandler {
     );
   }
 
-  static processFile(file: File): void {
-    const fileURL = URL.createObjectURL(file);
-    FileHandler.renderFilePreview(fileURL, file.name);
+  static async processFile(file: File) {
+    const isImage = await FileHandler.isImageFile(file);
+    const fileURL = isImage ? URL.createObjectURL(file) : "";
+    FileHandler.renderFilePreview(fileURL, file.name, isImage, file);
     isAttachmentsAdded = true;
   }
 
-  static renderFilePreview(src: string, fileName: string): void {
+  static async isImageFile(file: File): Promise<boolean> {
+    const arrayBuffer = await file.slice(0, 4100).arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    const result = await fileTypeFromBuffer(buffer);
+    if (result && result.mime.startsWith("image/")) return true;
+    return false;
+  }
+
+  static async renderFilePreview(
+    src: string,
+    fileName: string,
+    isImage: boolean,
+    file: File
+  ) {
     const container = createEl("div", { className: "image-container" });
-    const img = createEl("img", { src }) as HTMLImageElement;
+    (container as any)._file = file;
+    let img: HTMLImageElement;
+
+    if (isImage) {
+      img = createEl("img", { src }) as HTMLImageElement;
+    } else {
+      img = createEl("i", {
+        className: "fa-solid fa-file attachment-preview-file"
+      }) as HTMLImageElement;
+    }
+
     const imageText = createEl("div", {
       className: "image-text",
       textContent: fileName
     });
+    const sizeText = createEl("div", {
+      className: "image-text right",
+      textContent: formatFileSize(file.size)
+    });
     container.appendChild(img);
-
-    const imageActionsHTML = `
-      <div class="image-actions">
-        <div class="action-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M15.56 11.77c.2-.1.44.02.44.23a4 4 0 1 1-4-4c.21 0 .33.25.23.44a2.5 2.5 0 0 0 3.32 3.32Z" />
-            <path fill="currentColor" fill-rule="evenodd" d="M22.89 11.7c.07.2.07.4 0 .6C22.27 13.9 19.1 21 12 21c-7.11 0-10.27-7.11-10.89-8.7a.83.83 0 0 1 0-.6C1.73 10.1 4.9 3 12 3c7.11 0 10.27 7.11 10.89 8.7Zm-4.5-3.62A15.11 15.11 0 0 1 20.85 12c-.38.88-1.18 2.47-2.46 3.92C16.87 17.62 14.8 19 12 19c-2.8 0-4.87-1.38-6.39-3.08A15.11 15.11 0 0 1 3.15 12c.38-.88 1.18-2.47 2.46-3.92C7.13 6.38 9.2 5 12 5c2.8 0 4.87 1.38 6.39 3.08Z" clip-rule="evenodd" />
-          </svg>
-        </div>
-        <div class="action-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" />
-          </svg>
-        </div>
-        <div class="action-button remove">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5Z" />
-            <path fill="currentColor" fill-rule="evenodd" d="M5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07ZM11 12a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0v-6Zm3-1a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      </div>
-    `;
-
-    const imageActions = createEl("div", { innerHTML: imageActionsHTML });
+    const isImageFile = await FileHandler.isImageFile(file);
+    const imageActions = createEl("div", {
+      innerHTML: getImageactionsHtml(isImageFile)
+    });
     container.appendChild(imageActions);
 
     container.appendChild(imageText);
+    container.appendChild(sizeText);
     attachmentsTray.appendChild(container);
     enableElement(attachmentsTray);
 
@@ -312,7 +380,7 @@ export class FileHandler {
     );
     editButton?.addEventListener("click", () => FileHandler.editImage(img));
     removeButton?.addEventListener("click", () => {
-      FileHandler.removeImage(container);
+      FileHandler.removeImage(container, file);
       if (attachmentsTray.children.length === 0) {
         disableElement(attachmentsTray);
       }
@@ -321,29 +389,86 @@ export class FileHandler {
     updateChatWidth();
   }
 
+  static blurImage(img: HTMLImageElement) {
+    const text = createEl("span", {
+      textContent: "SPOILER",
+      className: "spoiler-text"
+    });
+    const imgWrapper = img.parentElement;
+
+    imgWrapper?.appendChild(text);
+    img.style.filter = "blur(5px)";
+  }
+  static unBlurImage(img: HTMLImageElement) {
+    img.style.filter = "";
+    const imgWrapper = img.parentElement;
+    const spoilerText = imgWrapper?.querySelector(".spoiler-text");
+    if (spoilerText) {
+      spoilerText.remove();
+    }
+  }
   static toggleSpoilerImage(img: HTMLImageElement): void {
     const imgWrapper = img.parentElement;
     const spoilerText = imgWrapper?.querySelector(".spoiler-text");
+    const file = (imgWrapper as any)?._file as File;
+    const isSpoiler = fileSpoilerMap.get(file) ?? false;
 
-    if (spoilerText) {
-      spoilerText.remove();
+    if (isSpoiler) {
+      spoilerText?.remove();
       img.style.filter = "";
+      fileSpoilerMap.set(file, false);
     } else {
-      const text = createEl("span", {
-        textContent: "SPOILER",
-        className: "spoiler-text"
-      });
+      FileHandler.blurImage(img);
 
-      imgWrapper?.appendChild(text);
-      img.style.filter = "blur(5px)";
+      fileSpoilerMap.set(file, true);
     }
   }
+
   static editImage(img: HTMLImageElement): void {
     alertUser("Image edit is not implemented!");
   }
 
-  static removeImage(container: HTMLElement): void {
+  static async removeImage(container: HTMLElement, file: File) {
+    const index = fileList.indexOf(file);
+    if (index !== -1) {
+      fileList.splice(index, 1);
+      FileHandler.syncFileInputWithFileList();
+    }
+    const isImageFile = await FileHandler.isImageFile(file);
+    if (isImageFile) {
+      const img = container.querySelector("img");
+      if (img && img.src) {
+        URL.revokeObjectURL(img.src);
+      }
+    }
+    if (fileList.length === 0) {
+      disableElement(attachmentsTray);
+    }
+    console.log(fileList.length);
+
     container.remove();
+    FileHandler.syncFileInputWithFileList();
+  }
+
+  static resetFileInput(): void {
+    if (fileInput) {
+      fileInput.value = "";
+      fileInput.files = null;
+      fileList = [];
+    }
+  }
+
+  static syncFileInputWithFileList(): void {
+    if (fileInput) {
+      if (!fileList.length) {
+        fileInput.value = "";
+        fileInput.files = null;
+      } else {
+        const dataTransfer = new DataTransfer();
+        fileList.forEach((file) => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+      }
+    }
   }
 
   static setDropHandler() {
@@ -414,16 +539,6 @@ export class FileHandler {
       }
     }
   }
-}
-
-export function updatePlaceholderVisibility(newPlaceholder?: string) {
-  const text = chatInput.textContent?.trim();
-  text
-    ? chatInput.removeAttribute("data-placeholder")
-    : chatInput.setAttribute(
-        "data-placeholder",
-        newPlaceholder || "Type a message..."
-      );
 }
 //#region Input emoji handling
 

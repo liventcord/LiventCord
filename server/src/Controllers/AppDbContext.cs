@@ -26,6 +26,7 @@ namespace LiventCord.Controllers
         public DbSet<GuildFile> GuildFiles { get; set; }
         public DbSet<UserChannel> UserChannels { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
 
@@ -278,7 +279,6 @@ namespace LiventCord.Controllers
                     .HasMaxLength(2000);
                 entity.Property(m => m.Date).IsRequired();
                 entity.Property(m => m.LastEdited);
-                entity.Property(m => m.AttachmentUrls);
                 entity.Property(m => m.ReplyToId);
                 entity.Property(m => m.ReactionEmojisIds).HasMaxLength(512);
 
@@ -287,6 +287,11 @@ namespace LiventCord.Controllers
                 entity.HasOne(m => m.User)
                     .WithMany()
                     .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(m => m.Attachments)
+                    .WithOne(a => a.Message)
+                    .HasForeignKey(a => a.MessageId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(m => m.Channel)

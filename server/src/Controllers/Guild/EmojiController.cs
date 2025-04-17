@@ -67,7 +67,7 @@ namespace LiventCord.Controllers
 
                 try
                 {
-                    var fileId = await _imageController.UploadFileInternal(photo, UserId, true, request.GuildId, null);
+                    var fileId = await _imageController.UploadFileInternal(photo, UserId, false, true, request.GuildId, null);
                     fileIds.Add(fileId);
                 }
                 catch (Exception ex)

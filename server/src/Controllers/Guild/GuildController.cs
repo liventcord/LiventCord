@@ -153,7 +153,7 @@ namespace LiventCord.Controllers
 
             if (photo != null)
             {
-                var uploadResult = await _imageController.UploadImage(photo, userId, newGuild.GuildId);
+                var uploadResult = await _imageController.UploadImageOnGuildCreation(photo, userId, newGuild.GuildId);
                 if (uploadResult is not OkObjectResult uploadResultOk)
                     return uploadResult;
             }

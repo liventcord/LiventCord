@@ -232,7 +232,7 @@ namespace LiventCord.Controllers
         {
             message.Content = request.Content;
             message.LastEdited = DateTime.UtcNow;
-            message.AttachmentUrls = request.AttachmentUrls;
+            message.Attachments = request.Attachments;
             message.ReplyToId = request.ReplyToId;
             message.ReactionEmojisIds = request.ReactionEmojisIds;
 
@@ -259,7 +259,7 @@ namespace LiventCord.Controllers
                 Date = request.Date,
                 ChannelId = channelId,
                 LastEdited = request.LastEdited,
-                AttachmentUrls = request.AttachmentUrls,
+                Attachments = request.Attachments,
                 ReplyToId = request.ReplyToId,
                 ReactionEmojisIds = request.ReactionEmojisIds,
                 Embeds = request.Embeds?.Select(embed =>
@@ -410,11 +410,13 @@ namespace LiventCord.Controllers
 
             return await queryable.ToListAsync();
         }
-
         [NonAction]
         private async Task<List<Message>> GetMessages(string? date = null, string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null, string? messageId = null)
         {
-            IQueryable<Message> query = _context.Messages.AsQueryable();
+            IQueryable<Message> query = _context.Messages
+                .Include(m => m.Attachments)
+                .AsQueryable();
+
             DateTime? parsedDate = null;
 
             if (date != null)
@@ -493,7 +495,7 @@ namespace LiventCord.Controllers
                 request.Content,
                 request.Date,
                 request.LastEdited,
-                request.AttachmentUrls,
+                request.Attachments,
                 request.ReplyToId,
                 request.ReactionEmojisIds,
                 embeds
@@ -509,91 +511,119 @@ namespace LiventCord.Controllers
             string? content,
             DateTime date,
             DateTime? lastEdited,
-            string? attachmentUrls,
+            List<Attachment>? attachments,
             string? replyToId,
             string? reactionEmojisIds,
             List<Embed>? embeds)
         {
-            var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
-            if (!userExists)
-            {
-                User newUser = _context.CreateDummyUser(userId);
-                await _context.Users.AddAsync(newUser);
-                await _context.SaveChangesAsync();
-            }
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            string constructedFriendUserChannel = channelId;
-            if (guildId == null)
+            try
             {
-                var userIds = channelId.Split('_');
-                if (userIds.Length != 2 || !userIds.Contains(userId))
+                var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
+                if (!userExists)
                 {
-                    return BadRequest();
+                    User newUser = _context.CreateDummyUser(userId);
+                    await _context.Users.AddAsync(newUser);
+                    await _context.SaveChangesAsync();
                 }
 
-                string recipientId = userIds.First(id => id != userId);
-                constructedFriendUserChannel = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
-            }
-
-            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
-            if (!channelExists)
-            {
+                string constructedFriendUserChannel = channelId;
                 if (guildId == null)
                 {
-                    await _channelController.CreateChannelInternal(userId, null, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
+                    var userIds = channelId.Split('_');
+                    if (userIds.Length != 2 || !userIds.Contains(userId))
+                    {
+                        return BadRequest();
+                    }
+                    string recipientId = userIds.First(id => id != userId);
+                    constructedFriendUserChannel = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
                 }
-                else
+
+                var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
+                if (!channelExists)
+                {
+                    if (guildId == null)
+                    {
+                        await _channelController.CreateChannelInternal(userId, null, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
+                    }
+                    else
+                    {
+                        return BadRequest();
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
                 {
                     return BadRequest();
                 }
-            }
 
-            if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
-            {
-                return BadRequest();
-            }
-
-            await Task.Run(async () =>
-            {
-                var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
-                await SaveMetadataAsync(messageId, metadata);
-            });
-
-            var message = new Message
-            {
-                MessageId = messageId,
-                UserId = userId,
-                Content = content,
-                ChannelId = constructedFriendUserChannel,
-                Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
-                LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
-                AttachmentUrls = attachmentUrls,
-                ReplyToId = replyToId,
-                ReactionEmojisIds = reactionEmojisIds,
-                Embeds = embeds ?? new List<Embed>(),
-                Metadata = new Metadata()
-            };
-            if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
-            {
-                message.TemporaryId = temporaryId;
-            }
-
-            await _context.Messages.AddAsync(message).ConfigureAwait(false);
-            await _context.SaveChangesAsync().ConfigureAwait(false);
-
-            if (guildId != null)
-            {
-                var broadcastMessage = new
+                await Task.Run(async () =>
                 {
-                    guildId,
-                    messages = new[] { message },
-                    channelId,
-                    userId
-                };
-                await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
-            }
+                    var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
+                    await SaveMetadataAsync(messageId, metadata);
+                });
 
-            return Ok(message);
+                var message = new Message
+                {
+                    MessageId = messageId,
+                    UserId = userId,
+                    Content = content,
+                    ChannelId = constructedFriendUserChannel,
+                    Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
+                    LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
+                    ReplyToId = replyToId,
+                    ReactionEmojisIds = reactionEmojisIds,
+                    Embeds = embeds ?? new List<Embed>(),
+                    Metadata = new Metadata(),
+                    Attachments = new List<Attachment>()
+                };
+
+                if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
+                {
+                    message.TemporaryId = temporaryId;
+                }
+
+                if (attachments != null && attachments.Any())
+                {
+                    foreach (var attachment in attachments)
+                    {
+                        message.Attachments.Add(new Attachment
+                        {
+                            FileId = attachment.FileId,
+                            IsImageFile = attachment.IsImageFile,
+                            MessageId = messageId,
+                            FileName = attachment.FileName,
+                            FileSize = attachment.FileSize,
+                            IsSpoiler = attachment.IsSpoiler
+                        });
+                    }
+                }
+
+                await _context.Messages.AddAsync(message);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                if (guildId != null)
+                {
+                    var broadcastMessage = new
+                    {
+                        guildId,
+                        messages = new[] { message },
+                        channelId,
+                        userId
+                    };
+                    await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
+                }
+
+                return Ok(message);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
 
@@ -607,14 +637,13 @@ namespace LiventCord.Controllers
             }
         }
 
-
         [NonAction]
         private async Task<IActionResult> HandleMessage(
-             MessageType mode,
-             string? guildId,
-             string channelId,
-             string userId,
-             NewMessageRequest request)
+            MessageType mode,
+            string? guildId,
+            string channelId,
+            string userId,
+            NewMessageRequest request)
         {
             if (mode == MessageType.Guilds)
             {
@@ -640,31 +669,47 @@ namespace LiventCord.Controllers
 
             long MAX_TOTAL_SIZE = SharedAppConfig.GetMaxAttachmentSize();
             long totalSize = 0;
-            string attachmentUrls = "";
+
+            var messageId = Utils.CreateRandomId();
+            List<Attachment> attachments = new();
 
             if (request.Files != null && request.Files.Any())
             {
-                foreach (var file in request.Files)
+                var files = request.Files.ToList();
+                var spoilerFlags = request.IsSpoilerFlags ?? new List<bool>();
+
+                for (int i = 0; i < files.Count; i++)
                 {
+                    var file = files[i];
+
                     if (file.Length > MAX_TOTAL_SIZE)
                     {
                         return BadRequest(new { Type = "error", Message = "One of the files exceeds the size limit." });
                     }
-                    totalSize += file.Length;
 
+                    totalSize += file.Length;
                     if (totalSize > MAX_TOTAL_SIZE)
                     {
                         return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
                     }
 
-                    string fileId = await _imageController.UploadFileInternal(file, userId, false, guildId, channelId);
-                    attachmentUrls += fileId + ",";
-                }
+                    string fileId = await _imageController.UploadFileInternal(file, userId, true, false, guildId, channelId);
 
-                attachmentUrls = attachmentUrls.TrimEnd(',');
+                    bool isImageFile = file.ContentType.StartsWith("image/");
+                    bool isSpoiler = spoilerFlags.ElementAtOrDefault(i);
+
+                    attachments.Add(new Attachment
+                    {
+                        FileId = fileId,
+                        IsImageFile = isImageFile,
+                        MessageId = messageId,
+                        FileName = file.FileName,
+                        FileSize = file.Length,
+                        IsSpoiler = isSpoiler
+                    });
+                }
             }
 
-            var messageId = Utils.CreateRandomId();
 
             return await NewMessage(
                 messageId,
@@ -675,7 +720,7 @@ namespace LiventCord.Controllers
                 request.Content,
                 DateTime.UtcNow,
                 null,
-                attachmentUrls,
+                attachments,
                 request.ReplyToId,
                 null,
                 null
@@ -773,7 +818,7 @@ public class NewBotMessageRequest
     public string? Content { get; set; }
     public required DateTime Date { get; set; }
     public DateTime? LastEdited { get; set; }
-    public string? AttachmentUrls { get; set; }
+    public List<Attachment>? Attachments { get; set; }
     public string? ReplyToId { get; set; }
     public string? ReactionEmojisIds { get; set; }
     public List<Embed>? Embeds { get; set; } = new List<Embed>();
@@ -789,14 +834,15 @@ public class NewMessageRequest
     [BindProperty(Name = "files[]")]
     public IEnumerable<IFormFile>? Files { get; set; }
 
+    [BindProperty(Name = "isSpoiler[]")]
+    public List<bool>? IsSpoilerFlags { get; set; }
+
     [BindProperty(Name = "replyToId")]
     public string? ReplyToId { get; set; }
+
     [BindProperty(Name = "temporaryId")]
     public string? TemporaryId { get; set; }
-
-
 }
-
 
 
 public class EditMessageRequest

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -141,7 +142,7 @@ Console.WriteLine($"Is running in development: {isDevelopment}");
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
+    RelationalDatabaseFacadeExtensions.Migrate(context.Database);
 }
 if (isDevelopment)
 {
@@ -200,21 +201,39 @@ app.Lifetime.ApplicationStarted.Register(async () =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
     var configf = builder.Configuration["AppSettings:BuildFrontend"];
-    if (!env.IsDevelopment() && builder.Configuration["AppSettings:BuildFrontend"] != "false")
+    if (!env.IsDevelopment() && configf != "false")
     {
         await Task.Run(() => BuilderService.StartFrontendBuild());
     }
 
     using (var scope = app.Services.CreateScope())
     {
-        var redisEventEmitter = scope.ServiceProvider.GetRequiredService<RedisEventEmitter>();
-        var guildIds = await scope.ServiceProvider.GetRequiredService<AppDbContext>().GetAllGuildIds();
-        foreach (var guildId in guildIds)
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
         {
-            await redisEventEmitter.EmitGuildMembersToRedis(guildId);
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var redisEventEmitter = scope.ServiceProvider.GetRequiredService<RedisEventEmitter>();
+            var guildIds = await context.GetAllGuildIds();
+            foreach (var guildId in guildIds)
+            {
+                await redisEventEmitter.EmitGuildMembersToRedis(guildId);
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogWarning(ex, "Guild table may not be available yet, skipping Redis sync");
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogWarning(ex, "EF Core operation failed, possibly due to missing table. Skipping Redis sync");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Unexpected error during Redis sync");
         }
     }
 });
+
 
 
 app.Run();

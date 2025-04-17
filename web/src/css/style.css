@@ -314,7 +314,6 @@
 
 .image-container {
   width: 200px;
-  height: 200px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -379,9 +378,16 @@
 
 .image-actions {
   display: flex;
-  justify-content: space-between;
+  padding: 3px;
+  background-color: #35373d;
+  flex-direction: row;
+  position: absolute;
+  top: 0px;
+  right: 5px;
+  z-index: 2;
+  justify-content: flex-start;
   align-items: center;
-  padding: 5px;
+  height: auto;
 }
 
 .image-text {
@@ -394,25 +400,14 @@
   text-overflow: ellipsis;
 }
 
-.image-actions {
-  display: flex;
-  background-color: #35373d;
-  flex-direction: row;
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  z-index: 2;
-  gap: 5px;
-  justify-content: flex-start;
-  align-items: center;
-  height: auto;
+.image-text.right {
+  text-align: right;
 }
-
 .action-button {
   background-color: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   color: white;
   border-radius: 50%;
   transition: background-color 0.2s ease;
