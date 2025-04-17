@@ -175,13 +175,22 @@ function preloadImage(src: string): Promise<string> {
   });
 }
 
+const spoileredImages: Record<string, boolean> = {};
+export function isImageSpoilered(id: string) {
+  return Boolean(spoileredImages[id]);
+}
+export function setImageUnspoilered(id: string) {
+  delete spoileredImages[id];
+}
 function createImageElement(
   inputText: string,
   urlSrc: string,
+  attachmentId = "",
   isSpoiler = false
 ): HTMLImageElement {
   const imgElement = createEl("img", {
     className: "chat-image",
+    id: attachmentId,
     src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       maxWidth: `${maxWidth}px`,
@@ -191,6 +200,7 @@ function createImageElement(
   requestAnimationFrame(() => {
     if (isSpoiler) {
       FileHandler.blurImage(imgElement);
+      spoileredImages[attachmentId] = true;
     }
   });
   imgElement.crossOrigin = "anonymous";
@@ -204,10 +214,11 @@ function createImageElement(
         displayImagePreview(imgElement);
       } else {
         FileHandler.unBlurImage(imgElement);
+        spoileredImages[attachmentId] = false;
       }
       isClicked = true;
     } else {
-      displayImagePreview(imgElement);
+      displayImagePreview(imgElement, isSpoiler);
     }
   });
 
@@ -434,7 +445,12 @@ function processMediaLink(
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
         console.log(attachment);
-        mediaElement = createImageElement("", link, attachment?.isSpoiler);
+        mediaElement = createImageElement(
+          "",
+          link,
+          attachment?.fileId,
+          attachment?.isSpoiler
+        );
       }
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(messageContentElement, content, link);

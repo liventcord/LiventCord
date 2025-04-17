@@ -397,7 +397,7 @@ export class FileHandler {
     const imgWrapper = img.parentElement;
 
     imgWrapper?.appendChild(text);
-    img.style.filter = "blur(5px)";
+    img.style.filter = "blur(10px)";
   }
   static unBlurImage(img: HTMLImageElement) {
     img.style.filter = "";

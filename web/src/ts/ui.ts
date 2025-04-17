@@ -47,7 +47,8 @@ import { observe, updateChatWidth } from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
 import { changePassword } from "./user.ts";
-import { chatContainer, chatContent } from "./chatbar.ts";
+import { chatContainer, chatContent, FileHandler } from "./chatbar.ts";
+import { isImageSpoilered, setImageUnspoilered } from "./mediaElements.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -522,7 +523,10 @@ export function beautifyJson(jsonData: string) {
   }
 }
 
-export function displayImagePreview(imageElement: HTMLImageElement): void {
+export function displayImagePreview(
+  imageElement: HTMLImageElement,
+  isSpoiler = false
+): void {
   console.log("Displaying image preview: ", imageElement.src);
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
@@ -532,12 +536,14 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
       imageElement.getAttribute("data-original-src") ||
       imageElement.getAttribute("src")) ??
     "";
-
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = imageElement.src;
   updateCurrentIndex(sanitizedSourceImage);
-
-  console.log(imageElement, sanitizedSourceImage);
+  if (isSpoiler) {
+    FileHandler.blurImage(previewImage);
+  } else {
+    FileHandler.unBlurImage(previewImage);
+  }
 
   let isPreviewZoomed = false;
   let isDragging = false;
@@ -563,9 +569,26 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     }
   }
 
-  previewImage.addEventListener("click", () => {
-    toggleZoom();
-  });
+  function handlePreviewClick() {
+    console.log(isSpoiler);
+    if (isSpoiler) {
+      FileHandler.unBlurImage(previewImage);
+      setImageUnspoilered(imageElement.id);
+      isSpoiler = false;
+    } else {
+      toggleZoom();
+    }
+  }
+
+  const spoilerText = previewImage.querySelector(".spoiler-text");
+  if (spoilerText) {
+    spoilerText.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handlePreviewClick();
+    });
+  }
+
+  previewImage.addEventListener("click", handlePreviewClick);
 
   const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
   if (previewOpenButton) {
@@ -573,7 +596,6 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     const newPreviewOpenButton = getId(
       "preview-image-open"
     ) as HTMLButtonElement;
-
     newPreviewOpenButton.addEventListener("click", () => {
       if (sanitizedSourceImage) {
         console.log("Going to: ", sanitizedSourceImage);
@@ -589,8 +611,12 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     });
   }
 
+  previewImage.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+
   previewImage.addEventListener("mousedown", (event) => {
-    if (event.button === 1 && isPreviewZoomed) {
+    if (event.button === 2 && isPreviewZoomed) {
       event.preventDefault();
       isDragging = true;
       startX = event.clientX - previewImage.offsetLeft;
@@ -602,12 +628,22 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     if (isDragging) {
       const newX = event.clientX - startX;
       const newY = event.clientY - startY;
+      const imagePreviewContainer = getId(
+        "image-preview-container"
+      ) as HTMLElement;
 
-      const maxX = imagePreviewContainer.clientWidth - previewImage.width;
-      const maxY = imagePreviewContainer.clientHeight - previewImage.height;
+      const overflowX = previewImage.width * 0.8;
+      const overflowY = previewImage.height * 0.8;
 
-      const clampedX = Math.min(Math.max(newX, 0), maxX);
-      const clampedY = Math.min(Math.max(newY, 0), maxY);
+      const minX = -overflowX;
+      const minY = -overflowY;
+      const maxX =
+        imagePreviewContainer.clientWidth - previewImage.width + overflowX;
+      const maxY =
+        imagePreviewContainer.clientHeight - previewImage.height + overflowY;
+
+      const clampedX = Math.min(Math.max(newX, minX), maxX);
+      const clampedY = Math.min(Math.max(newY, minY), maxY);
 
       previewImage.style.left = `${clampedX}px`;
       previewImage.style.top = `${clampedY}px`;
@@ -639,7 +675,7 @@ function addNavigationListeners() {
 function movePreviewImg(chatImages: HTMLImageElement[]) {
   const img = chatImages[currentPreviewIndex] ?? null;
   if (img) {
-    displayImagePreview(img);
+    displayImagePreview(img, isImageSpoilered(img.id));
   }
 }
 function getChatImages() {
