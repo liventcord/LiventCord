@@ -29,7 +29,8 @@ import {
 import {
   textChanHtml,
   fillDropDownContent,
-  isImagePreviewOpen, hideImagePreview
+  isImagePreviewOpen,
+  hideImagePreview
 } from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";

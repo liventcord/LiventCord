@@ -27,7 +27,11 @@ import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
 import { currentUserId, Member, UserInfo, userManager } from "./user.ts";
-import { updateFriendsList, handleFriendEventResponse } from "./friends.ts";
+import {
+  updateFriendsList,
+  handleFriendEventResponse,
+  friendsCache
+} from "./friends.ts";
 import { refreshUserProfile, selfName } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { Permission, permissionManager } from "./guildPermissions.ts";
@@ -292,6 +296,7 @@ apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
 });
 
 apiClient.on(EventType.GET_FRIENDS, (data) => {
+  friendsCache.initialiseFriends(data as any);
   updateFriendsList(data);
 });
 

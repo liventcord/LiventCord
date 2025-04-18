@@ -107,6 +107,7 @@ class FriendsCache {
       );
     }
   }
+
   removeDmFriend(friendId: string) {
     delete this.dmFriends[friendId];
   }
@@ -128,6 +129,7 @@ class FriendsCache {
   }
 
   addFriend(friendOrArray: Friend | UserInfo | any) {
+    this.fetchFriends();
     if (Array.isArray(friendOrArray)) {
       for (const friendItem of friendOrArray) {
         this.addSingleFriend(friendItem);
@@ -135,7 +137,14 @@ class FriendsCache {
     } else {
       this.addSingleFriend(friendOrArray);
     }
+    updateFriendsList(Object.values(this.friendsCache));
+
+    UpdatePendingCounter();
   }
+  fetchFriends() {
+    apiClient.send(EventType.GET_FRIENDS);
+  }
+
   getFriend(friendId: string) {
     return this.friendsCache[friendId] || null;
   }
@@ -144,12 +153,13 @@ class FriendsCache {
     const updatedFriend = { ...friend, isPending: true };
     this.addSingleFriend(updatedFriend);
   }
+
   addFriendNonPending(friend: UserInfo) {
     const updatedFriend = { ...friend, isPending: false };
     this.addSingleFriend(updatedFriend);
   }
-  private addSingleFriend(friend: Friend | UserInfo) {
-    console.log(friend);
+
+  private addSingleFriend(friend: Friend | UserInfo | any) {
     if (!friend || !friend.userId) {
       console.error("Invalid friend data:", friend);
       return;
@@ -158,26 +168,24 @@ class FriendsCache {
     const userId = friend.userId;
     if (userId === currentUserId) {
       console.error("User id is same as friend!");
+      return;
     }
 
     const defaultFriendData: FriendData = {
       userId,
-      nickName: "",
-      discriminator: "",
-      isFriendsRequestToUser: false,
-      isPending: false
+      nickName: friend.nickName || "",
+      discriminator: friend.discriminator || "",
+      isFriendsRequestToUser: friend.isFriendsRequestToUser || false,
+      isPending: friend.isPending || false
     };
 
-    const friendData: FriendData = {
-      ...defaultFriendData,
-      ...friend
-    };
+    const friendData = { ...defaultFriendData, ...friend };
 
     this.friendsCache[userId] = this.friendsCache[userId]
       ? { ...this.friendsCache[userId], ...friendData }
       : new Friend(friendData);
 
-    console.warn("Added/Updated friend:", this.friendsCache);
+    console.log("Added/Updated friend:", this.friendsCache[userId]);
   }
 
   removeFriend(userId: string) {
@@ -200,7 +208,6 @@ class FriendsCache {
     );
   }
 
-  //Did we sent request to this user
   hasRequestToFriend(userId: string) {
     return (
       userId !== currentUserId &&
@@ -262,13 +269,14 @@ interface FriendMessage {
 }
 function handleAddFriendResponse(message: FriendMessage): void {
   const { friendNick, isSuccess, friendData } = message;
-  console.log(message);
+  console.log("add friend response:", message);
+  const pendingButton = getId("pending-button");
+  if (pendingButton) pendingButton.click();
   displayFriendActionMessage(
     friendNick,
     isSuccess,
     FriendErrorType.ERR_FRIEND_REQUEST_EXISTS
   );
-
   if (friendData) {
     friendsCache.addFriend(friendData);
   }
@@ -371,11 +379,6 @@ export function addDm(friendId: string) {
   apiClient.send(EventType.ADD_DM, { friendId });
 }
 
-interface FriendData {
-  userId: string;
-  nickName: string;
-}
-
 let currentFriendInstances: FriendData[];
 
 export function UpdatePendingCounter() {
@@ -420,14 +423,12 @@ export function updateFriendsList(friends: FriendData[]): void {
   if (isAddFriendsOpen) return;
 
   currentFriendInstances = friends;
-  console.warn(currentFriendInstances);
 
   populateFriendsContainer(
     currentFriendInstances,
     currentSelectedFriendMenu === "pending"
   );
 }
-
 export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
   if (friend.isFriendsRequestToUser) {
     const acceptButton = createButtonWithBubblesImg(
