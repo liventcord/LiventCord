@@ -270,15 +270,26 @@ export function scrollToMessage(messageElementToScroll: HTMLElement) {
   if (!messageElementToScroll) {
     return;
   }
-  const oldColor = messageElementToScroll.style.backgroundColor;
+
   messageElementToScroll.style.backgroundColor = "rgba(102, 97, 97, 0.5)";
+
   setTimeout(() => {
-    messageElementToScroll.style.backgroundColor = oldColor;
+    messageElementToScroll.style.backgroundColor = "unset";
   }, 1000);
-  messageElementToScroll.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-    inline: "nearest"
+
+  const messageRect = messageElementToScroll.getBoundingClientRect();
+  const containerRect = chatContent.getBoundingClientRect();
+
+  const offset =
+    messageRect.top -
+    containerRect.top +
+    chatContent.scrollTop -
+    chatContent.clientHeight / 2 +
+    messageRect.height / 2;
+
+  chatContent.scrollBy({
+    top: offset,
+    behavior: "smooth"
   });
 }
 
@@ -959,6 +970,8 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     newMessage,
     metadata,
     embeds,
+    userId,
+    new Date(date),
     attachments
   );
 
@@ -1050,6 +1063,8 @@ export function handleSelfSentMessage(data: Message) {
           element,
           data.metadata,
           data.embeds,
+          data.userId,
+          data.date ? new Date(data.date) : new Date(),
           data.attachments
         );
       }

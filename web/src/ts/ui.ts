@@ -37,18 +37,27 @@ import {
   getId,
   disableElement,
   enableElement,
-  isMobile
+  isMobile,
+  formatDateGood,
+  formatFileSize
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe, updateChatWidth } from "./chat.ts";
+import { observe, scrollToMessage, updateChatWidth } from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
-import { changePassword } from "./user.ts";
-import { chatContainer, chatContent, FileHandler } from "./chatbar.ts";
+import { changePassword, userManager } from "./user.ts";
+import {
+  chatContainer,
+  chatContent,
+  FileHandler,
+  showReplyMenu
+} from "./chatbar.ts";
 import { isImageSpoilered, setImageUnspoilered } from "./mediaElements.ts";
+import { setProfilePic } from "./avatar.ts";
+import { createTooltip } from "./tooltip.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -68,6 +77,13 @@ export const hoveredChanColor = "rgb(53, 55, 60";
 const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
+
+const imagePreviewContainer = getId(
+  "image-preview-container"
+) as HTMLImageElement;
+if (imagePreviewContainer) {
+  imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
+}
 
 export let loadingScreen: HTMLElement;
 function enableLoadingScreen() {
@@ -522,9 +538,13 @@ export function beautifyJson(jsonData: string) {
     return null;
   }
 }
-
+function getResolution(image: HTMLImageElement): string {
+  return `${image.naturalWidth}x${image.naturalHeight}`;
+}
 export function displayImagePreview(
   imageElement: HTMLImageElement,
+  senderId?: string,
+  date?: Date,
   isSpoiler = false
 ): void {
   console.log("Displaying image preview: ", imageElement.src);
@@ -543,6 +563,49 @@ export function displayImagePreview(
     FileHandler.blurImage(previewImage);
   } else {
     FileHandler.unBlurImage(previewImage);
+  }
+
+  const previewAuthor = getId("preview-author");
+  const senderAvatar = previewAuthor?.querySelector(
+    ".preview-avatar"
+  ) as HTMLImageElement;
+  if (senderId) setProfilePic(senderAvatar, senderId);
+  const previewNick = getId("preview-nick");
+  if (previewNick && senderId) {
+    previewNick.textContent = userManager.getUserNick(senderId);
+  }
+
+  const descriptionName = getId("details-container-description-1");
+  const filename = imageElement.dataset.filename;
+  if (descriptionName && filename) {
+    descriptionName.textContent = filename;
+    descriptionName.addEventListener("mouseover", () => {
+      createTooltip(descriptionName, filename);
+    });
+  }
+  const descriptionSize = getId("details-container-description-2");
+  const size = Number(imageElement.dataset.filesize);
+  if (descriptionSize && size) {
+    const sizeText = `${getResolution(imageElement)} (${formatFileSize(size)})`;
+    descriptionSize.textContent = sizeText;
+    descriptionSize.addEventListener("mouseover", () => {
+      createTooltip(descriptionSize, sizeText);
+    });
+  }
+  const previewDate = getId("preview-date");
+  if (previewDate && date) {
+    previewDate.textContent = formatDateGood(date);
+
+    previewDate.addEventListener("click", () => {
+      hideImagePreview();
+      setTimeout(() => {
+        const imagesMessage = imageElement.parentNode
+          ?.parentNode as HTMLElement;
+        if (imagesMessage) {
+          scrollToMessage(imagesMessage);
+        }
+      }, 50);
+    });
   }
 
   let isPreviewZoomed = false;
@@ -610,6 +673,20 @@ export function displayImagePreview(
       toggleZoom();
     });
   }
+  const previewReplyButton = getId("preview-image-reply") as HTMLButtonElement;
+  if (previewReplyButton) {
+    previewReplyButton.addEventListener("click", () => {
+      hideImagePreview();
+      const imagesMessage = imageElement.parentNode?.parentNode as HTMLElement;
+      if (imagesMessage) {
+        scrollToMessage(imagesMessage);
+        const messageId = (
+          imageElement.parentElement?.parentElement as HTMLElement
+        ).id;
+        if (senderId && messageId) showReplyMenu(messageId, senderId);
+      }
+    });
+  }
 
   previewImage.addEventListener("contextmenu", (event) => {
     event.preventDefault();
@@ -659,7 +736,10 @@ export function isImagePreviewOpen() {
   return imagePreviewContainer.style.display === "flex";
 }
 let currentPreviewIndex = 0;
-
+const popUpClose = getId("popup-close");
+if (popUpClose) {
+  popUpClose.addEventListener("click", hideImagePreview);
+}
 function addNavigationListeners() {
   document.addEventListener("keydown", (event) => {
     if (isImagePreviewOpen()) {
@@ -675,7 +755,12 @@ function addNavigationListeners() {
 function movePreviewImg(chatImages: HTMLImageElement[]) {
   const img = chatImages[currentPreviewIndex] ?? null;
   if (img) {
-    displayImagePreview(img, isImageSpoilered(img.id));
+    displayImagePreview(
+      img,
+      img.dataset.userid ?? "",
+      img.dataset.date ? new Date(img.dataset.date) : new Date(),
+      isImageSpoilered(img.id)
+    );
   }
 }
 function getChatImages() {
@@ -710,8 +795,6 @@ function updateCurrentIndex(sourceimg: string) {
   }
 }
 
-addNavigationListeners();
-
 export function displayJsonPreview(sourceJson: string) {
   jsonPreviewContainer.style.display = "flex";
 
@@ -734,7 +817,7 @@ function hideImagePreview() {
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
   setTimeout(() => {
-    disableElement("image-preview-container");
+    disableElement(imagePreviewContainer);
 
     previewImage.src = "";
   }, 150);
@@ -785,12 +868,6 @@ export function openGuildSettingsDropdown(event: Event) {
   }
 }
 
-const imagePreviewContainer = getId(
-  "image-preview-container"
-) as HTMLImageElement;
-if (imagePreviewContainer) {
-  imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
-}
 function setDynamicAnimations() {
   const dynamicAnimElements =
     "#tb-inbox, #tb-pin, #tb-showprofile, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
@@ -903,3 +980,5 @@ function handleSwapNavigation(e: TouchEvent) {
 
 channelList.classList.add("visible");
 guildContainer.classList.add("visible");
+
+addNavigationListeners();

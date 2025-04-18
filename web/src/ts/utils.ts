@@ -443,7 +443,7 @@ function pad(number: number, length: number) {
   return str;
 }
 
-export function formatDate(date: Date) {
+export function formatDate(date: Date): string {
   const year = date.getUTCFullYear();
   const month = pad(date.getUTCMonth() + 1, 2);
   const day = pad(date.getUTCDate(), 2);
@@ -454,6 +454,14 @@ export function formatDate(date: Date) {
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}+00:00`;
 }
+export function formatDateGood(date: Date): string {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear().toString();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${day}/${month}/${year}, ${hours}:${minutes}`;
+}
 
 export function truncateString(str: string, maxLength: number) {
   if (str.length <= maxLength) {
@@ -462,7 +470,7 @@ export function truncateString(str: string, maxLength: number) {
   return str.slice(0, maxLength) + "...";
 }
 
-export function createNowDate() {
+export function createNowDate(): string {
   return new Date().toUTCString();
 }
 

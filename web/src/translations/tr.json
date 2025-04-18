@@ -63,7 +63,7 @@
     "dm_start_text": "Bu {{friendNick}} kullanıcısıyla olan direkt mesaj geçmişinin başlangıcıdır.",
     "birth_of_channel": "{{channelName}} kanalının doğuşu!",
     "welcome_channel": "{{channelName}} kanalına hoşgeldin!",
-    "replying_to": "{{replyId}} kişisine yanıt veriliyor",
+    "replying_to": "{{userName}} kişisine yanıt veriliyor",
     "sent_request": "{{userNick}} kullanıcısına arkadaşlık isteği gönderildi.",
     "accept_request": "{{userNick}} kullanıcısından gelen arkadaşlık isteği kabul edildi.",
     "remove_friend": "{{userNick}} kullanıcısı arkadaşlıktan çıkarıldı.",
@@ -239,7 +239,9 @@
     "save-button-text": "kaydetmek için",
     "exit-button-text": "çıkmak için",
     "message-edited": "düzenlendi",
-    "done": "Bitti"
+    "done": "Bitti",
+    "details-container-title-1": "Dosya adı",
+    "details-container-title-2": "Boyut"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
