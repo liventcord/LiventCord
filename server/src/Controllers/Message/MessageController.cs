@@ -648,7 +648,7 @@ namespace LiventCord.Controllers
                 {
                     return BadRequest(new { Type = "error", Message = "Missing guildId" });
                 }
-                if (!await _permissionsController.CanSendMessages(UserId!, guildId))
+                if (!await _permissionsController.CanSendMessages(userId!, guildId))
                 {
                     return StatusCode(StatusCodes.Status403Forbidden);
                 }

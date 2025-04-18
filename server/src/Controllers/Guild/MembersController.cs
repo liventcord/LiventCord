@@ -122,10 +122,8 @@ namespace LiventCord.Controllers
                     }
                 );
             }
-
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.ReadMessages);
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.SendMessages);
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.MentionEveryone);
+            PermissionFlags combinedPermissions = PermissionFlags.ReadMessages | PermissionFlags.SendMessages | PermissionFlags.MentionEveryone;
+            await _permissionsController.AddPermissions(guildId, userId, combinedPermissions);
 
             await _dbContext.SaveChangesAsync();
 

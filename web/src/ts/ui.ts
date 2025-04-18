@@ -1085,7 +1085,7 @@ guildContainer.classList.add("visible");
 
 addNavigationListeners();
 
-function initialiseMobile() {
+export function initialiseMobile() {
   const earphoneParent = earphoneButton.parentElement;
   if (earphoneParent) {
     earphoneParent.remove();
@@ -1128,6 +1128,9 @@ function initialiseMobile() {
     avatarWrapper.classList.add("navigationButton");
   }
   initialiseMobileListeners();
+  if (isMobile) {
+    toggleHamburger(true, false);
+  }
 }
 function initialiseMobileListeners() {
   const tbShowProfile = getId("tb-showprofile");
@@ -1148,8 +1151,4 @@ function initialiseMobileListeners() {
   mobileBlackBg.addEventListener("click", () => {
     toggleHamburger(!isOnLeft, !isOnRight);
   });
-  if (isMobile) {
-    initialiseMobile();
-    toggleHamburger(true, false);
-  }
 }

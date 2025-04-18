@@ -118,7 +118,7 @@ namespace LiventCord.Controllers
 
             _dbContext.Guilds.Add(guild);
 
-            await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
+            await _permissionsController.AddPermissions(guildId, ownerId, PermissionFlags.All);
 
             await _dbContext.SaveChangesAsync();
 

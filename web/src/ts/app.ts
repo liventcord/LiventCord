@@ -3,7 +3,8 @@ import {
   loadMainToolbar,
   handleResize,
   loadGuildToolbar,
-  loadDmToolbar
+  loadDmToolbar,
+  initialiseMobile
 } from "./ui.ts";
 import {
   getHistoryFromOneChannel,
@@ -162,6 +163,9 @@ export function initializeApp() {
   initializeProfile();
   initialiseAudio();
   initializeCookies();
+  if (isMobile) {
+    initialiseMobile();
+  }
   handleResize();
   isDomLoaded = true;
 }
