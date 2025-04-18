@@ -58,7 +58,7 @@ import {
   currentUserNick,
   userManager
 } from "./user.ts";
-import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
+import { addContextListeners } from "./contextMenuActions.ts";
 import {
   updateChannels,
   getChannels,
@@ -69,13 +69,11 @@ import {
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
-  toggleUsersList,
   userList,
   activityList,
   setUserListLine,
   setUsersList,
-  updateDmFriendList,
-  isUsersOpenGlobal
+  updateDmFriendList
 } from "./userList.ts";
 import {
   getId,
@@ -86,12 +84,7 @@ import {
   loadBooleanCookie,
   isMobile
 } from "./utils.ts";
-import {
-  setProfilePic,
-  updateSelfProfile,
-  setUploadSize,
-  selfName
-} from "./avatar.ts";
+import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
@@ -104,7 +97,7 @@ import {
   setIsOnDm,
   setIsOnGuild
 } from "./router.ts";
-import { earphoneButton, initialiseAudio, microphoneButton } from "./audio.ts";
+import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
@@ -228,155 +221,7 @@ export function initialiseState(data: InitialStateData): void {
   updateGuilds(guilds);
   addKeybinds();
 }
-export function handleRightCenterCheck() {
-  if (isOnLeft) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
 
-    mobileMoveToCenter();
-  }
-  return isOnLeft;
-}
-export let isOnLeft = false;
-export let isOnRight = false;
-export const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
-export const toolbarOptions = getId("toolbaroptions") as HTMLElement;
-export const navigationBar = getId("navigation-bar") as HTMLElement;
-
-function toggleHamburger(toLeft: boolean, toRight: boolean) {
-  if (!userList) return;
-
-  if (isOnRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
-    mobileMoveToCenter();
-    return;
-  }
-  if (isOnLeft && toRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
-    mobileMoveToCenter();
-    return;
-  }
-  if (toRight) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToRight();
-    return;
-  }
-
-  if (toLeft) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToLeft();
-  } else {
-    mobileMoveToCenter();
-  }
-}
-
-export function mobileMoveToRight() {
-  if (!userList) return;
-  isOnLeft = false;
-  isOnRight = true;
-  enableElement(userList);
-}
-
-export function mobileMoveToCenter(excludeChannelList: boolean = false) {
-  if (!userList) return;
-
-  isOnRight = false;
-  isOnLeft = false;
-  disableElement(userList);
-  if (excludeChannelList) {
-    setTimeout(() => {
-      getId("channel-list")?.classList.remove("channel-list-mobile-left");
-    }, 120);
-  } else {
-    getId("channel-list")?.classList.remove("channel-list-mobile-left");
-  }
-  getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
-  getId("guild-container")?.classList.remove("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.remove(
-    "message-input-container-mobile-left"
-  );
-  guildContainer.classList.remove("visible");
-
-  chatContainer.classList.remove("chat-container-mobile-left");
-  disableElement("hash-sign");
-  disableElement("channel-info");
-
-  disableElement(mobileBlackBg);
-  disableElement(navigationBar);
-}
-
-export function mobileMoveToLeft() {
-  if (!userList) return;
-
-  isOnLeft = true;
-  isOnRight = false;
-  disableElement(userList);
-
-  getId("channel-list")?.classList.add("channel-list-mobile-left");
-  getId("guilds-list")?.classList.add("guilds-list-mobile-left");
-  getId("guild-container")?.classList.add("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.add(
-    "message-input-container-mobile-left"
-  );
-  chatContainer.classList.add("chat-container-mobile-left");
-  enableElement(navigationBar);
-}
-function initialiseMobile() {
-  const earphoneParent = earphoneButton.parentElement;
-  if (earphoneParent) {
-    earphoneParent.remove();
-  }
-
-  const microphoneParent = microphoneButton.parentElement;
-  if (microphoneParent) {
-    microphoneParent.remove();
-  }
-  disableElement(selfName);
-  disableElement("self-status");
-
-  const friendIconSign = getId("friend-icon-sign");
-  if (friendIconSign) {
-    friendIconSign.style.position = "";
-    friendIconSign.classList.add("navigationButton");
-    navigationBar.appendChild(friendIconSign);
-
-    const svgElement = friendIconSign.querySelector("svg") as SVGElement;
-    if (svgElement) {
-      svgElement.style.width = "30px";
-      svgElement.style.height = "30px";
-    }
-  }
-
-  const settingsButton = getId("settings-button");
-  if (settingsButton) {
-    navigationBar.appendChild(settingsButton);
-    settingsButton.classList.add("navigationButton");
-
-    const svgElement = settingsButton.querySelector("svg") as SVGElement;
-    if (svgElement) {
-      svgElement.style.width = "30px";
-      svgElement.style.height = "30px";
-    }
-  }
-  const avatarWrapper = getId("avatar-wrapper");
-  if (avatarWrapper) {
-    navigationBar.appendChild(avatarWrapper);
-    avatarWrapper.classList.add("navigationButton");
-  }
-}
 function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
@@ -395,27 +240,6 @@ function initializeElements() {
   );
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
-  const tbShowProfile = getId("tb-showprofile");
-  tbShowProfile?.addEventListener("click", () => {
-    if (isOnLeft) {
-      toggleHamburger(!isOnLeft, !isOnRight);
-      return;
-    }
-    isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
-  });
-
-  const tbPinMessage = getId("tb-pin");
-  tbPinMessage?.addEventListener("click", () => {
-    pinMessage;
-  });
-  const tbHamburger = getId("tb-hamburger");
-  console.log(isUsersOpenGlobal, isOnLeft);
-  tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
-
-  if (isMobile) {
-    initialiseMobile();
-    toggleHamburger(true, false);
-  }
 }
 
 function initializeSettings() {
@@ -449,9 +273,6 @@ function initializeListeners() {
     if (userStatus) userStatus.showStatusPanel();
   });
 
-  mobileBlackBg.addEventListener("click", () => {
-    toggleHamburger(!isOnLeft, !isOnRight);
-  });
   addContextListeners();
 }
 

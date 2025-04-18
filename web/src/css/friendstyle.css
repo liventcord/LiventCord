@@ -7,14 +7,10 @@
   left: 353px;
   position: absolute;
 }
-.dm-profile-img {
-  left: 8px;
-  position: absolute;
-  border-radius: 25px;
-  width: 32px;
-  height: 32px;
-}
 .dm-container {
+  display: flex;
+  align-items: center;
+  position: relative;
   background-color: #2b2d31;
   border-radius: 5px;
   right: 45px;
@@ -22,12 +18,49 @@
   margin-top: 10px;
   width: 225px;
   height: 40px;
-  position: relative;
-  text-indent: -75px;
-  justify-content: center;
-  align-items: center;
-  display: flex;
+  padding-left: 8px;
+  gap: 10px;
 }
+
+.dm-profile-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 25px;
+  position: relative;
+}
+
+.dm-bubble {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+  border: 2px solid #2f3136;
+  z-index: 2;
+
+  top: 24px;
+  left: 27px;
+}
+.content {
+  font-size: 15px;
+  color: #949ba4;
+  text-align: left;
+  pointer-events: none;
+}
+
+#dm-profile-sign {
+  width: 24px;
+  height: 24px;
+  top: 12px;
+  left: 328px;
+  color: rgb(128, 132, 142);
+  position: absolute;
+  display: none;
+}
+#dm-profile-sign-bubble {
+  left: 343px;
+}
+
 .dm-container:hover {
   user-select: none;
   background-color: #35373c;
@@ -70,13 +103,6 @@
 }
 .dm-selected .content {
   color: white;
-}
-.content {
-  font-size: 15px;
-  color: #949ba4;
-  text-align: left;
-  margin-left: 30px;
-  pointer-events: none;
 }
 
 .offline {
@@ -445,16 +471,7 @@
   margin-left: 30px;
   margin-top: 30px;
 }
-.dm-bubble {
-  color: white;
-  padding: 5px;
-  border-radius: 20px;
-  position: absolute;
-  margin-right: 155px;
-  z-index: 1;
-  margin-top: 25px;
-  border: 3px solid #2f3136;
-}
+
 .online {
   background-color: #23a55a;
 }

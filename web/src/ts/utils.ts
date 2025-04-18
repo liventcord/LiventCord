@@ -245,38 +245,35 @@ export function getFormattedDateSelfMessage(messageDate: string) {
     })
   );
 
+  const timeString = localMessageDate.toLocaleTimeString(
+    translations.getLocale(),
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    }
+  );
+
   if (localMessageDate.toDateString() === today.toDateString()) {
-    return `${translations.getTranslation(
-      "today"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    })}`;
-  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
-    return `${translations.getTranslation(
-      "yesterday"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    })}`;
-  } else {
-    return `${localMessageDate.toLocaleDateString(
-      translations.getLocale()
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    })}`;
+    return `${translations.getTranslation("today")} at ${timeString}`;
   }
+
+  if (localMessageDate.toDateString() === yesterday.toDateString()) {
+    return `${translations.getTranslation("yesterday")} at ${timeString}`;
+  }
+
+  const dateString = localMessageDate.toLocaleDateString(
+    translations.getLocale()
+  );
+  return `${dateString} at ${timeString}`;
 }
-export function getFormattedDateForSmall(messageDate: string | any) {
+
+export function getFormattedDateForSmall(messageDate: string) {
   const messageDateObj = new Date(messageDate);
+  const today = new Date();
+  const userTimeZoneOffset = today.getTimezoneOffset() * 60000;
   const localMessageDate = new Date(
-    messageDateObj.toLocaleString(translations.getLocale(), {
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })
+    messageDateObj.getTime() - userTimeZoneOffset
   );
 
   return localMessageDate.toLocaleTimeString(translations.getLocale(), {
@@ -617,7 +614,6 @@ function applyCustomStyles(html: string): string {
 export function getBase64Image(
   imgElement: HTMLImageElement
 ): string | undefined {
-  console.log(imgElement);
   const canvas = createEl("canvas") as HTMLCanvasElement;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");

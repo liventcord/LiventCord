@@ -57,14 +57,18 @@ namespace LiventCord.Controllers
                 .Select(g => g.GuildId)
                 .ToArrayAsync();
         }
-        public async Task<List<string>> GetUserGuildIds(string userId)
+        public async Task<bool> AreUsersSharingGuild(string userId, string friendId)
         {
-            return await GuildMembers
-                .Where(gu => gu.MemberId == userId)
-                .Select(gu => gu.GuildId)
+            var sharedGuildIds = await Set<GuildMember>()
+                .Where(gm => gm.MemberId == userId || gm.MemberId == friendId)
+                .GroupBy(gm => gm.GuildId)
+                .Where(group => group.Any(g => g.MemberId == userId) && group.Any(g => g.MemberId == friendId))
+                .Select(g => g.Key)
+                .Distinct()
                 .ToListAsync();
-        }
 
+            return sharedGuildIds.Any();
+        }
         public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
         {
             var query = Set<GuildMember>().Where(gm => gm.GuildId == guildId);

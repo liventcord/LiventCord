@@ -479,6 +479,15 @@
   align-items: center;
   background-color: #050505cc;
 }
+
+@media (max-width: 768px) {
+  #image-preview-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+}
+
 #json-preview-container {
   position: fixed;
   z-index: 10;

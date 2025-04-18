@@ -210,9 +210,6 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     return;
   }
 
-  const channelId = getChannelId();
-  setTimeout(scrollToBottom, 10);
-
   chatInput.textContent = "";
   resetChatInputState();
 
@@ -223,10 +220,26 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   const formData = createNewMessageFormData(temporaryId, content, user_ids);
   await processFiles(fileInput.files, formData);
 
-  const additionalData = { guildId: currentGuildId, channelId };
-
+  const additionalData = constructMessagePayload();
+  const channelId = getChannelId();
   displayLocalMessage(temporaryId, channelId, content);
 
+  sendNewMessageRequest(formData, additionalData);
+  scrollToBottom();
+  setTimeout(scrollToBottom, 130);
+}
+
+function constructMessagePayload(messageId?: string) {
+  const channelId = getChannelId();
+  return {
+    guildId: currentGuildId,
+    channelId,
+    friendId: friendsCache.currentDmId,
+    messageId
+  };
+}
+
+function sendNewMessageRequest(formData: FormData, additionalData: any) {
   messageQueue = messageQueue.then(async () => {
     try {
       await apiClient.sendForm(
@@ -240,16 +253,27 @@ export async function sendMessage(content: string, user_ids?: string[]) {
     }
   });
 }
-function sendEditMessageRequest(messageId: string, content: string) {
+
+export function sendEditMessageRequest(messageId: string, content: string) {
   messageQueue = messageQueue.then(async () => {
     try {
-      const formData = createEditMessageformData(messageId, content);
-      const channelId = getChannelId();
+      let additionalData: any = {
+        messageId,
+        friendId: friendsCache.currentDmId,
+        content
+      };
 
-      const additionalData = { guildId: currentGuildId, channelId, messageId };
-      await apiClient.sendForm(
+      if (isOnGuild) {
+        const channelId = getChannelId();
+        additionalData = {
+          ...additionalData,
+          channelId,
+          guildId: currentGuildId
+        };
+      }
+
+      await apiClient.send(
         isOnGuild ? EventType.EDIT_MESSAGE_GUILD : EventType.EDIT_MESSAGE_DM,
-        formData,
         additionalData
       );
       closeReplyMenu();
@@ -257,6 +281,19 @@ function sendEditMessageRequest(messageId: string, content: string) {
       console.error("Error Sending File Message:", error);
     }
   });
+}
+
+export function deleteMessage(messageId: string) {
+  console.log("Deleting message ", messageId);
+  const data = constructMessagePayload(messageId);
+  if (isOnGuild) {
+    data["guildId"] = currentGuildId;
+  }
+
+  const _eventType = isOnGuild
+    ? EventType.DELETE_MESSAGE_GUILD
+    : EventType.DELETE_MESSAGE_DM;
+  apiClient.send(_eventType, data);
 }
 
 function canSendMessageToDm(dmId: string): boolean {
@@ -566,10 +603,19 @@ export function convertToEditUi(message: HTMLElement) {
     className: "edit-message-button",
     innerHTML: `<span class="blue-text">Enter</span> <span class="white-text">${translations.getTranslation("save-button-text")}</span>`
   });
-  saveButton.onclick = function () {
+  function editMessageContent() {
     messageContentElement.textContent = editableDiv.innerText;
     editableDiv.replaceWith(messageContentElement);
     buttonContainer.remove();
+    messageContentElement.textContent = editableDiv.innerText;
+    sendEditMessageRequest(message.id, editableDiv.innerText);
+    editableDiv.replaceWith(messageContentElement);
+    buttonContainer.remove();
+    addEditedIndicator(messageContentElement);
+  }
+
+  saveButton.onclick = function () {
+    editMessageContent();
   };
 
   const cancelButton = createEl("a", {
@@ -589,12 +635,8 @@ export function convertToEditUi(message: HTMLElement) {
       message.outerHTML = editMessageCurrentContent;
       event.preventDefault();
     } else if (event.key === "Enter" && !event.shiftKey) {
-      messageContentElement.textContent = editableDiv.innerText;
-      sendEditMessageRequest(message.id, editableDiv.innerText);
-      editableDiv.replaceWith(messageContentElement);
-      buttonContainer.remove();
-      addEditedIndicator(messageContentElement);
       event.preventDefault();
+      editMessageContent();
     }
   });
 }

@@ -305,13 +305,16 @@ apiClient.on(EventType.SEND_MESSAGE_DM, (data: Message) => {
 //friend
 apiClient.on(EventType.ADD_FRIEND, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 apiClient.on(EventType.ADD_FRIEND_ID, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 
 apiClient.on(EventType.ACCEPT_FRIEND, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 
 apiClient.on(EventType.REMOVE_FRIEND, function (message) {

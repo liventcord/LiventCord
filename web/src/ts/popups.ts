@@ -26,7 +26,11 @@ import {
   contextList,
   appendToProfileContextList
 } from "./contextMenuActions.ts";
-import { textChanHtml, fillDropDownContent } from "./ui.ts";
+import {
+  textChanHtml,
+  fillDropDownContent,
+  isImagePreviewOpen, hideImagePreview
+} from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
@@ -325,6 +329,9 @@ export async function drawProfilePop(
     console.error("Null user data requested profile draw", userData);
     return null;
   }
+  if (isImagePreviewOpen()) {
+    hideImagePreview();
+  }
 
   const profileContainer = createProfileContainer(userData);
   const profileImg = createProfileImage(userData);
@@ -520,7 +527,7 @@ function createPopBottomContainer(
                   "member-since"
                 )}:</p><p id="profile-member-since">${new Date(
                   memberSince
-                ).toLocaleDateString("en-US", {
+                ).toLocaleDateString(translations.getLocale(), {
                   year: "numeric",
                   month: "long",
                   day: "numeric"

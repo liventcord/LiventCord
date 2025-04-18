@@ -19,10 +19,10 @@ import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser, askUser } from "./ui.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { cacheInterface } from "./cache.ts";
 import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
-import { convertToEditUi } from "./message.ts";
+import { convertToEditUi, deleteMessage } from "./message.ts";
 import { scrollToMessage } from "./chat.ts";
 import { createDeleteChannelPrompt } from "./settingsui.ts";
 
@@ -128,25 +128,6 @@ function deleteMessagePrompt(messageId: string) {
     acceptCallback,
     true
   );
-}
-
-function deleteMessage(messageId: string) {
-  console.log("Deleting message ", messageId);
-  const data = {
-    isDm: isOnDm,
-    messageId,
-    channelId: isOnGuild
-      ? guildCache.currentChannelId
-      : friendsCache.currentDmId,
-    guildId: ""
-  };
-  if (isOnGuild) {
-    data["guildId"] = currentGuildId;
-  }
-  const _eventType = isOnGuild
-    ? EventType.DELETE_MESSAGE_GUILD
-    : EventType.DELETE_MESSAGE_DM;
-  apiClient.send(_eventType, data);
 }
 
 function blockUser(userId: string) {
