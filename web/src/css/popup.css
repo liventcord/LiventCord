@@ -213,6 +213,18 @@
 }
 
 @media (max-width: 600px) {
+  #create-channel-send-input {
+    bottom: 188px !important;
+  }
+  #private-channel-icon {
+    bottom: 167px !important;
+  }
+  .radio-bar {
+    margin-top: -58px;
+  }
+  .pop-up {
+    padding: 10px;
+  }
   @keyframes pop-up-animation {
     0% {
       width: 0;
@@ -261,6 +273,27 @@
     100% {
       width: 95%;
       height: 60vh;
+    }
+  }
+  @keyframes pop-up-animation-channel {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 95%;
+      height: 60vh;
+    }
+  }
+
+  @keyframes pop-up-animation-invite {
+    0% {
+      width: 0;
+      height: 0;
+    }
+    100% {
+      width: 90%;
+      height: 50vh;
     }
   }
 }

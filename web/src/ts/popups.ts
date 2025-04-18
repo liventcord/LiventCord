@@ -8,7 +8,7 @@ import {
   joinToGuild,
   createGuildListItem
 } from "./guild.ts";
-import { getId, getAverageRGB, createEl } from "./utils.ts";
+import { getId, getAverageRGB, createEl, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
 import {
@@ -111,7 +111,7 @@ function createPrivateChannelToggle() {
     .querySelector(".toggle-card")
     ?.querySelector(".toggle-box") as HTMLElement;
   if (toggleBox) {
-    toggleBox.style.bottom = "40px";
+    toggleBox.style.bottom = isMobile ? "50px" : "40px";
     toggleBox.style.right = "20px";
   }
 
@@ -1358,7 +1358,11 @@ export function createCropPop(
   const cropPopContainer = getId("cropPopContainer");
   if (cropPopContainer) {
     cropPopContainer.style.setProperty("height", "600px", "important");
-    cropPopContainer.style.setProperty("width", "600px", "important");
+    cropPopContainer.style.setProperty(
+      "width",
+      isMobile ? "400px" : "600px",
+      "important"
+    );
   }
 
   const sliderWrap = imageContainer.querySelector(".cr-slider-wrap");
