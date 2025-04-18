@@ -842,18 +842,18 @@ export function openGuildSettingsDropdown(event: Event) {
       askUser(
         translations.getTranslation("exit-dropdown-button"),
         translations.getTranslation("leave-guild-detail"),
-        translations.getTranslation("leave-from-guild"),
+        translations.getTranslation("exit-dropdown-button"),
         leaveCurrentGuild
       );
     }
   };
 
-  const clicked_id = (event.target as HTMLElement).id;
+  const clickedId = (event.target as HTMLElement).id;
 
   toggleDropdown();
 
-  if (clicked_id in handlers) {
-    handlers[clicked_id as keyof typeof handlers]();
+  if (clickedId in handlers) {
+    handlers[clickedId as keyof typeof handlers]();
   }
 }
 
@@ -975,7 +975,13 @@ export let isOnRight = false;
 export const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
 export const toolbarOptions = getId("toolbaroptions") as HTMLElement;
 export const navigationBar = getId("navigation-bar") as HTMLElement;
-
+export function handleMembersClick() {
+  if (isOnLeft) {
+    toggleHamburger(true, false);
+    return;
+  }
+  isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
+}
 function toggleHamburger(toLeft: boolean, toRight: boolean) {
   if (!userList) return;
 
@@ -1133,15 +1139,6 @@ export function initialiseMobile() {
   }
 }
 function initialiseMobileListeners() {
-  const tbShowProfile = getId("tb-showprofile");
-  tbShowProfile?.addEventListener("click", () => {
-    if (isOnLeft) {
-      toggleHamburger(true, false);
-      return;
-    }
-    isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
-  });
-
   const tbPinMessage = getId("tb-pin");
   tbPinMessage?.addEventListener("click", () => {
     pinMessage("");

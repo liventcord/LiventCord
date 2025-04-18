@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -80,8 +81,16 @@ namespace LiventCord.Controllers
         }
 
         [HttpPut("guilds/{guildId}/emojis/{emojiId}")]
-        public async Task<IActionResult> RenameEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId, [FromBody] string name)
+        public async Task<IActionResult> RenameEmojiFile(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string emojiId,
+            [FromBody] string name)
         {
+            if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || !Regex.IsMatch(name, @"^[a-zA-Z0-9_]+$"))
+            {
+                return BadRequest("Emoji name must be at least 2 characters long and contain only alphanumeric characters and underscores.");
+            }
+
             bool canManageGuild = await _permissionsController.CanManageGuild(UserId!, guildId);
             if (!canManageGuild)
             {
@@ -104,6 +113,7 @@ namespace LiventCord.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
         [HttpDelete("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> DeleteEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {

@@ -260,7 +260,12 @@ export function joinToGuild(inviteId: string) {
   apiClient.send(EventType.JOIN_GUILD, { inviteId: id });
 }
 
+const leftGuilds = new Set<string>();
+
 export function leaveCurrentGuild() {
+  if (leftGuilds.has(currentGuildId)) return;
+
+  leftGuilds.add(currentGuildId);
   apiClient.send(EventType.LEAVE_GUILD, { guildId: currentGuildId });
 }
 
@@ -314,7 +319,8 @@ export function addKeybinds() {
 }
 
 export function removeFromGuildList(guildId: string) {
-  const guildImg = getId(guildId);
+  const guildImg = getGuildFromBar(guildId);
+  console.log(guildsList, guildImg);
   if (guildImg) {
     const parentLi = guildImg.closest("li");
     if (parentLi) parentLi.remove();
@@ -322,8 +328,8 @@ export function removeFromGuildList(guildId: string) {
 }
 
 export function updateGuildImage(uploadedGuildId: string) {
-  const guildList = guildsList.querySelectorAll("img");
-  guildList.forEach((img) => {
+  const guildImages = guildsList.querySelectorAll("img");
+  guildImages.forEach((img) => {
     if (img.id === uploadedGuildId) {
       setGuildImage(uploadedGuildId, img, true);
     }
@@ -431,7 +437,7 @@ export function updateGuilds(guildsJson: Array<any>) {
 
   guildsList.appendChild(fragment);
 
-  const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
+  const selectedGuild = getGuildFromBar(currentGuildId);
   if (selectedGuild) {
     (selectedGuild.parentNode as HTMLElement).classList.add("selected-guild");
   }
@@ -452,7 +458,7 @@ function removeWhiteRod(element: HTMLElement) {
 }
 
 function appendToGuildList(guild: Guild) {
-  if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
+  if (getGuildFromBar(guild.guildId)) return;
 
   const listItem = createGuildListItem(
     guild.guildId,
@@ -548,7 +554,9 @@ export function setGuildImage(
 ) {
   imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
 }
-
-function doesGuildExistInBar(guildId: string) {
-  return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
+function getGuildFromBar(guildId: string): HTMLElement | null {
+  return (
+    document.querySelector(`#guilds-list li img[id='${guildId}']`)
+      ?.parentElement ?? null
+  );
 }

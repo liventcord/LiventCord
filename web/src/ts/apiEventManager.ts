@@ -93,11 +93,13 @@ apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
   }
 });
 
-apiClient.on(EventType.LEAVE_GUILD, (guildId: string) => {
+apiClient.on(EventType.LEAVE_GUILD, (data: any) => {
   closeSettings();
-  removeFromGuildList(guildId);
+  const guildId = data.guildId;
   cacheInterface.removeGuild(guildId);
+  console.log(guildId);
   loadDmHome();
+  removeFromGuildList(guildId);
 });
 
 apiClient.on(EventType.DELETE_GUILD, (data) => {

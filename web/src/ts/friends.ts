@@ -123,6 +123,9 @@ class FriendsCache {
     requestAnimationFrame(() => {
       const friends = this.cacheFriendToFriendConverter();
       updateUsersActivities(friends);
+      friends.forEach((f) => {
+        userManager.addUser(f.userId, f.nickName, f.discriminator);
+      });
     });
 
     UpdatePendingCounter();

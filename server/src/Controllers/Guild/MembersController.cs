@@ -85,16 +85,9 @@ namespace LiventCord.Controllers
         [HttpDelete("/api/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGuildLeave([FromRoute][IdLengthValidation] string guildId)
         {
-            try
-            {
-                await RemoveMemberFromGuild(UserId!, guildId);
-                _cacheService.InvalidateCache(UserId!);
-                return Ok(new { guildId });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
+            await RemoveMemberFromGuild(UserId!, guildId);
+            _cacheService.InvalidateCache(UserId!);
+            return Ok(new { guildId });
         }
 
 

@@ -4,7 +4,8 @@ import {
   handleResize,
   loadGuildToolbar,
   loadDmToolbar,
-  initialiseMobile
+  initialiseMobile,
+  handleMembersClick
 } from "./ui.ts";
 import {
   getHistoryFromOneChannel,
@@ -247,6 +248,9 @@ function initializeElements() {
   );
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
+
+  const tbShowProfile = getId("tb-showprofile");
+  tbShowProfile?.addEventListener("click", handleMembersClick);
 }
 
 function initializeSettings() {
@@ -433,9 +437,11 @@ export function openDm(friendId: string) {
     }
   }
   loadApp(friendId);
-  if (wasOnDm) {
-    changeCurrentDm(friendId);
-  }
+  setTimeout(() => {
+    if (wasOnDm) {
+      changeCurrentDm(friendId);
+    }
+  }, 0);
   try {
     getHistoryFromOneChannel(friendId, true);
   } catch (e) {
