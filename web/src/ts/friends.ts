@@ -303,12 +303,7 @@ function handleAcceptFriendRequestResponse(message: FriendMessage): void {
     if (currentSelectedFriendMenu === "pending") {
       removeFriendCard(friendId);
     }
-
-    handleAddDm(friendData);
   }
-}
-function handleAddDm(friendData: UserInfo) {
-  alertUser(String(friendData));
 }
 
 function handleRemoveFriendResponse(message: FriendMessage): void {

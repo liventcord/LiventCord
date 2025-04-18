@@ -103,7 +103,7 @@ export function getSeletedChannel(guildId: string, rootChannel: string) {
   return rootChannel;
 }
 
-export function handleNewChannel(data: any) {
+export function handleNewChannel(data: Channel) {
   const guildId = data.guildId;
   const isTextChannel = data.isTextChannel;
 

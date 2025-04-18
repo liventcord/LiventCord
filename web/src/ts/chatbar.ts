@@ -32,7 +32,7 @@ import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
-import { createEmojiImgTag, currentEmojis, regexIdEmojis } from "./emoji.ts";
+import { createEmojiImgTag, getCurrentEmojis, regexIdEmojis } from "./emoji.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 
 export let currentReplyingTo = "";
@@ -52,6 +52,15 @@ const emojiSuggestionDropdown = getId(
   "emojiSuggestionDropdown"
 ) as HTMLSelectElement;
 
+export interface ChatBarState {
+  rawContent: string;
+  renderedContent: string;
+  cursorPosition: number;
+  isProcessing: boolean;
+  emojiSuggestionsVisible: boolean;
+  selectionStart: number;
+  selectionEnd: number;
+}
 const state = {
   rawContent: "",
   renderedContent: "",
@@ -61,6 +70,17 @@ const state = {
   selectionStart: 0,
   selectionEnd: 0
 };
+export function getChatBarState() {
+  return state;
+}
+export function setChatBarState(_state: ChatBarState) {
+  state.rawContent = _state.rawContent;
+  state.renderedContent = _state.renderedContent;
+  chatInput.innerText = state.rawContent;
+  setTimeout(() => {
+    chatInput.dispatchEvent(new Event("input"));
+  }, 50);
+}
 
 if (replyCloseButton) {
   replyCloseButton.addEventListener("click", closeReplyMenu);
@@ -796,11 +816,19 @@ function processEmojisWithPositions(content: string): string {
     match;
   const sanitizedContent = sanitizeHtmlInput(content);
 
+  const emojis = getCurrentEmojis();
+  if (!emojis) {
+    return content;
+  }
+
   while ((match = regexIdEmojis.exec(sanitizedContent)) !== null) {
     const emojiId = match[1];
     result += sanitizedContent.slice(lastIndex, match.index);
 
-    if (emojiId.length === router.ID_LENGTH) {
+    if (
+      emojiId.length === router.ID_LENGTH &&
+      emojis.find((e) => e.fileId === emojiId)
+    ) {
       const start = result.length;
       const imgTag = createEmojiImgTag(emojiId);
       result += imgTag;
@@ -1225,7 +1253,7 @@ function showEmojiSuggestions() {
     currentOffset
   );
   const safe = sanitizeHtmlInput(textUpToCursor);
-  triggerEmojiSuggestionDisplay(safe, state.cursorPosition);
+  triggerEmojiSuggestionDisplay(safe);
 }
 
 function toggleShowEmojiSuggestions() {
@@ -1236,10 +1264,8 @@ function toggleShowEmojiSuggestions() {
     : hideEmojiSuggestions();
 }
 
-function triggerEmojiSuggestionDisplay(
-  textContext: string,
-  cursorPosition: number
-) {
+function triggerEmojiSuggestionDisplay(textContext: string) {
+  const currentEmojis = getCurrentEmojis();
   if (!currentEmojis) return;
 
   const lastColonIndex = textContext.lastIndexOf(":");

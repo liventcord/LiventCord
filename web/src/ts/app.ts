@@ -21,7 +21,10 @@ import {
   chatContainer,
   updatePlaceholderVisibility,
   FileHandler,
-  ReadenMessagesManager
+  ReadenMessagesManager,
+  setChatBarState,
+  ChatBarState,
+  getChatBarState
 } from "./chatbar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -528,7 +531,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   handleResize();
 }
 
-export function changecurrentGuild() {
+export function changeCurrentGuild() {
   isChangingPage = true;
   setisOnMePage(false);
   setIsOnGuild(true);
@@ -542,7 +545,7 @@ export function changecurrentGuild() {
 
   isChangingPage = false;
 }
-
+const channelInputStates: { [guildId: string]: ChatBarState } = {};
 export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
@@ -579,6 +582,11 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("dm-profile-sign-bubble");
     disableElement("dm-profile-sign");
     loadGuildToolbar();
+
+    const oldState = getChatBarState();
+    setChatBarState(oldState);
+    chatInput.innerHTML = oldState.renderedContent ?? "";
+    channelInputStates[guildCache.currentChannelId] = getChatBarState();
   }
 
   function handleDm(id: string) {
@@ -603,6 +611,10 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
       setProfilePic(dmProfSign, id);
       dmProfSign.dataset.cid = id;
     }
+    const oldState = getChatBarState();
+    setChatBarState(oldState);
+    chatInput.innerText = oldState.rawContent ?? "";
+    channelInputStates[id] = getChatBarState();
 
     updateDmFriendList(id, friendNick);
   }

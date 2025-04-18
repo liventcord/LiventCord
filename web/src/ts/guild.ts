@@ -11,7 +11,7 @@ import {
   isChangingPage,
   initialState,
   loadApp,
-  changecurrentGuild
+  changeCurrentGuild
 } from "./app.ts";
 import { isOnGuild, isOnMePage, isOnDm } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
@@ -184,7 +184,7 @@ export function loadGuild(
   } else if (isOnDm) {
     loadApp("", isInitial);
   } else if (isOnGuild) {
-    changecurrentGuild();
+    changeCurrentGuild();
   }
 }
 

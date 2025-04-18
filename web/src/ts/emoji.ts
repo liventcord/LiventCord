@@ -1,4 +1,5 @@
 import { currentGuildId } from "./guild";
+import { isOnGuild } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
@@ -10,7 +11,14 @@ import {
   IMAGE_SRCS
 } from "./utils";
 
-export let currentEmojis: Emoji[];
+let currentEmojis: Emoji[];
+export function getCurrentEmojis(): Emoji[] | null {
+  if (isOnGuild) {
+    return currentEmojis;
+  } else {
+    return null;
+  }
+}
 export const regexIdEmojis = /:(\d+):/g;
 
 function generateEmojiRowHTML(emoji: Emoji): string {
@@ -204,11 +212,12 @@ export function createEmojiImgTag(fileId: string): string {
 }
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  if (!content || !currentEmojis) return escapeHtml(content);
+  const emojisToUse = isOnGuild ? currentEmojis : null;
+  if (!content || !emojisToUse) return escapeHtml(content);
 
   return content
     .replace(regexIdEmojis, (match, emojiId) => {
-      const emoji = currentEmojis.find((e) => e.fileId === emojiId);
+      const emoji = emojisToUse.find((e) => e.fileId === emojiId);
       if (emoji) return `%%__EMOJI__${emoji.fileId}__%%`;
       return escapeHtml(match);
     })

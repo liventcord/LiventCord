@@ -456,7 +456,8 @@
 #activity-list::-webkit-scrollbar,
 #user-list::-webkit-scrollbar,
 .emoji-container::-webkit-scrollbar,
-.base-user-input::-webkit-scrollbar {
+.base-user-input::-webkit-scrollbar,
+.suggestions-dropdown::-webkit-scrollbar {
   width: 8px;
   margin-left: 10px;
   border-radius: 5px;
@@ -467,7 +468,8 @@
 #user-list::-webkit-scrollbar-thumb,
 #activity-list::-webkit-scrollbar-thumb,
 .emoji-container::-webkit-scrollbar-thumb,
-.base-user-input::-webkit-scrollbar-thumb {
+.base-user-input::-webkit-scrollbar-thumb,
+.suggestions-dropdown::-webkit-scrollbar-thumb {
   background-color: #212222;
   border-radius: 6px;
 }
@@ -476,7 +478,8 @@
 #user-list::-webkit-scrollbar-track,
 #activity-list::-webkit-scrollbar-track,
 .emoji-container::-webkit-scrollbar-track,
-.base-user-input::-webkit-scrollbar-track {
+.base-user-input::-webkit-scrollbar-track,
+.suggestions-dropdown::-webkit-scrollbar-track {
   background-color: #2b2d31;
   border-radius: 5px;
 }
@@ -486,23 +489,12 @@
 }
 
 @supports (-moz-appearance: none) {
-  #chat-container {
-    scrollbar-width: auto;
-    scrollbar-color: #212222 #2b2d31;
-  }
-  #channel-list {
-    scrollbar-width: auto;
-    scrollbar-color: #212222 #2f3136;
-  }
-  #user-list {
-    scrollbar-width: auto;
-    scrollbar-color: #212222 #2b2d31;
-  }
-  #activity-list {
-    scrollbar-width: auto;
-    scrollbar-color: #212222 #2b2d31;
-  }
-  .base-user-input {
+  #chat-container,
+  #channel-list,
+  #user-list,
+  #activity-list,
+  .base-user-input,
+  .suggestions-dropdown {
     scrollbar-width: auto;
     scrollbar-color: #212222 #2b2d31;
   }

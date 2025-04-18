@@ -461,6 +461,7 @@ export function formatDateGood(date: Date): string {
 }
 
 export function truncateString(str: string, maxLength: number) {
+  if (!str) return "";
   if (str.length <= maxLength) {
     return str;
   }
