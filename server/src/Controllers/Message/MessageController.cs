@@ -48,7 +48,8 @@ namespace LiventCord.Controllers
             [FromQuery] string? messageId
         )
         {
-            bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
+            var userId = UserId!;
+            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
             if (!userExists)
             {
                 return NotFound();
@@ -63,8 +64,13 @@ namespace LiventCord.Controllers
                 }
                 parsedDate = tempParsedDate;
             }
+            var canReadMessages = await _permissionsController.CanReadMessages(userId, guildId);
+            if (canReadMessages)
+            {
+                return Forbid();
+            }
 
-            var messages = await GetMessages(parsedDate?.ToString("o"), UserId!, null, channelId, guildId, messageId);
+            var messages = await GetMessages(parsedDate?.ToString("o"), userId, null, channelId, guildId, messageId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
             bool isOldMessages = date != null;
             return Ok(new { messages, channelId, guildId, oldestMessageDate, isOldMessages });

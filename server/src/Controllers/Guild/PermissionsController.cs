@@ -14,80 +14,46 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<bool> CanManageChannels(string userId, string guildId)
+        public async Task<bool> CheckPermission(string userId, string guildId, PermissionFlags permission, string? oldSenderId = null)
         {
-            var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId
-                || await HasPermission(userId, guildId, PermissionFlags.ManageChannels);
-        }
-
-        [NonAction]
-        public async Task<bool> CanManageGuild(string userId, string guildId)
-        {
-            var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId
-                || await HasPermission(userId, guildId, PermissionFlags.ManageGuild);
-        }
-
-
-        [NonAction]
-        public async Task<bool> CanInvite(string userId, string guildId)
-        {
-            var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId
-                || await HasPermission(userId, guildId, PermissionFlags.CanInvite);
-        }
-        [NonAction]
-        public async Task<bool> CanDeleteMessages(
-            string userId,
-            string guildId,
-            string? oldSenderId = null
-        )
-        {
-            if (oldSenderId != null && oldSenderId != userId)
+            if (oldSenderId != null && permission == PermissionFlags.DeleteMessages && oldSenderId != userId)
             {
                 return false;
             }
+
             var ownerId = await GetGuildOwner(guildId);
             if (ownerId == userId)
                 return true;
 
-            bool canSendMessages = await HasPermission(
-                userId,
-                guildId,
-                PermissionFlags.SendMessages
-            );
-
-            return canSendMessages;
+            return await HasPermission(userId, guildId, permission);
         }
 
         [NonAction]
-        public async Task<bool> CanSendMessages(
-            string userId,
-            string guildId
-        )
-        {
-            var ownerId = await GetGuildOwner(guildId);
-            if (ownerId == userId)
-                return true;
+        public async Task<bool> CanManageChannels(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.ManageChannels);
 
-            bool canSendMessages = await HasPermission(
-                userId,
-                guildId,
-                PermissionFlags.SendMessages
-            );
+        [NonAction]
+        public async Task<bool> CanManageGuild(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.ManageGuild);
 
-            return canSendMessages;
-        }
+        [NonAction]
+        public async Task<bool> CanInvite(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.CanInvite);
 
-        public async Task<bool> IsUserAdmin(string guildId, string userId)
-        {
-            var ownerId = await GetGuildOwner(guildId);
-            return ownerId == userId
-                || await HasPermission(userId, guildId, PermissionFlags.IsAdmin);
-        }
+        [NonAction]
+        public async Task<bool> CanDeleteMessages(string userId, string guildId, string? oldSenderId = null)
+            => await CheckPermission(userId, guildId, PermissionFlags.SendMessages, oldSenderId);
 
+        [NonAction]
+        public async Task<bool> CanSendMessages(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.SendMessages);
 
+        [NonAction]
+        public async Task<bool> CanReadMessages(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.ReadMessages);
+
+        public async Task<bool> IsUserAdmin(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.IsAdmin);
 
         private async Task<string> GetGuildOwner(string guildId)
         {
@@ -114,6 +80,7 @@ namespace LiventCord.Controllers
 
             return userPermissions.Permissions.HasFlag(permission);
         }
+
         private Dictionary<string, int> GetPermissionsDictionary(PermissionFlags permissions)
         {
             var permissionsDict = new Dictionary<string, int>();
@@ -149,6 +116,7 @@ namespace LiventCord.Controllers
 
             return permissionsMap;
         }
+
         public async Task AddPermissions(
             string guildId,
             string userId,
@@ -177,7 +145,6 @@ namespace LiventCord.Controllers
             await _dbContext.SaveChangesAsync();
         }
 
-
         public async Task RemovePermissions(string guildId, string userId, PermissionFlags permissionsToRemove)
         {
             var existingPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
@@ -191,7 +158,6 @@ namespace LiventCord.Controllers
                 await _dbContext.SaveChangesAsync();
             }
         }
-
     }
 }
 
@@ -211,5 +177,6 @@ public enum PermissionFlags
     CanInvite = 1 << 9,
     ManageGuild = 1 << 11,
     ManageMessages = 1 << 12,
-    All = 1 << 13
+    DeleteMessages = 1 << 13,
+    All = 1 << 14
 }
