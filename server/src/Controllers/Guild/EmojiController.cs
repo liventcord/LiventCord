@@ -57,7 +57,7 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.CanManageGuild(UserId, request.GuildId))
                 return Forbid();
 
-            var fileIds = new List<string>();
+            var emojiIds = new List<string>();
 
             foreach (var photo in request.Photos)
             {
@@ -69,7 +69,7 @@ namespace LiventCord.Controllers
                 try
                 {
                     var fileId = await _imageController.UploadFileInternal(photo, UserId, false, true, request.GuildId, null);
-                    fileIds.Add(fileId);
+                    emojiIds.Add(fileId);
                 }
                 catch (Exception ex)
                 {
@@ -77,7 +77,7 @@ namespace LiventCord.Controllers
                 }
             }
 
-            return Ok(new { fileIds });
+            return Ok(new { emojiIds, request.GuildId });
         }
 
         [HttpPut("guilds/{guildId}/emojis/{emojiId}")]

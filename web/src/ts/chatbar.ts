@@ -33,7 +33,11 @@ import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
-import { createEmojiImgTag, getCurrentEmojis, regexIdEmojis } from "./emoji.ts";
+import {
+  generateEmojiImageTag,
+  getCurrentEmojis,
+  regexIdEmojis
+} from "./emoji.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 
 export let currentReplyingTo = "";
@@ -831,7 +835,7 @@ function processEmojisWithPositions(content: string): string {
       emojis.find((e) => e.fileId === emojiId)
     ) {
       const start = result.length;
-      const imgTag = createEmojiImgTag(emojiId);
+      const imgTag = generateEmojiImageTag(emojiId);
       result += imgTag;
       positions.push({ start, end: start + imgTag.length });
     } else {
@@ -1331,7 +1335,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
   matching.forEach((emoji) => {
     const suggestion = createEl("div", {
       className: "mention-option",
-      innerHTML: createEmojiImgTag(emoji.fileId) + emoji.fileName
+      innerHTML: generateEmojiImageTag(emoji.fileId) + emoji.fileName
     });
 
     suggestion.dataset.id = emoji.fileId;
