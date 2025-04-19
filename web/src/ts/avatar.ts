@@ -31,6 +31,7 @@ import { currentUserId, currentUserNick } from "./user.ts";
 import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
 import { populateEmojis } from "./emoji.ts";
+import { cacheInterface } from "./cache.ts";
 
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
@@ -408,6 +409,9 @@ function handleUploadResponse(
   if (xhr.status === STATUS_200) {
     if (isEmoji) {
       alertUser(translations.getSettingsTranslation("SuccessEmoji"));
+      const data = JSON.parse(xhr.responseText);
+
+      cacheInterface.addUploadedEmojis(data.guildId, data.emojiIds);
       populateEmojis();
     } else {
       if (isGuild) {

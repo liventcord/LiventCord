@@ -1,6 +1,7 @@
+import { cacheInterface } from "./cache";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
-import { isOnGuild, router } from "./router";
+import { isOnGuild } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
@@ -9,13 +10,13 @@ import {
   getEmojiPath,
   getId,
   getProfileUrl,
-  IMAGE_SRCS
+  IMAGE_SRCS,
+  sanitizeInput
 } from "./utils";
 
-let currentEmojis: Emoji[];
 export function getCurrentEmojis(): Emoji[] | null {
   if (isOnGuild) {
-    return currentEmojis;
+    return cacheInterface.getEmojis(currentGuildId);
   } else {
     return null;
   }
@@ -113,7 +114,7 @@ function deleteEmoji(guildId: string, emojiId: string) {
   }).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
     if (row) row.remove();
-    currentEmojis = currentEmojis.filter((e) => e.fileId !== emojiId);
+    cacheInterface.removeEmojis(guildId, emojiId);
     generateEmojiCount();
   });
 }
@@ -121,6 +122,7 @@ function deleteEmoji(guildId: string, emojiId: string) {
 function generateEmojiCount(): void {
   const emojiCount = getId("emoji-count");
   const maxEmojis = 100;
+  const currentEmojis = getCurrentEmojis();
   const availableCount = currentEmojis
     ? maxEmojis - currentEmojis.length
     : maxEmojis;
@@ -130,36 +132,59 @@ function generateEmojiCount(): void {
   }
 }
 
+function renderEmojis(emojis: Array<Emoji>): void {
+  const emojiTableBody = getId("emoji-table-body");
+  const emojiTableHeader = document.querySelector("thead");
+
+  if (emojiTableBody && emojiTableHeader) {
+    const headerHTML = generateHeaderHTML();
+    emojiTableHeader.innerHTML = headerHTML;
+
+    const bodyHTML = emojis.map(generateEmojiRowHTML).join("");
+    emojiTableBody.innerHTML = bodyHTML;
+  }
+}
+
 export function populateEmojis(): void {
+  generateEmojiCount();
+
+  if (cacheInterface.doesEmojisForGuildExist(currentGuildId)) {
+    const emojis = cacheInterface.getEmojis(currentGuildId);
+    if (emojis) {
+      renderEmojis(emojis);
+    }
+    return;
+  }
+
+  if (cacheInterface.isEmojisLoading(currentGuildId)) {
+    return;
+  }
+
+  cacheInterface.setEmojisLoading(currentGuildId, true);
+
   fetch(`/api/guilds/${currentGuildId}/emojis`)
     .then((response) => {
       if (response.status === 404) {
-        generateEmojiCount();
         return Promise.reject("Emojis not found");
       }
       return response.json();
     })
     .then((emojis: Array<Emoji>) => {
-      currentEmojis = emojis;
+      cacheInterface.setEmojis(currentGuildId, emojis);
+      cacheInterface.setEmojisLoading(currentGuildId, false);
       generateEmojiCount();
-
-      const emojiTableBody = getId("emoji-table-body");
-      const emojiTableHeader = document.querySelector("thead");
-
-      if (emojiTableBody && emojiTableHeader) {
-        const headerHTML = generateHeaderHTML();
-        emojiTableHeader.innerHTML = headerHTML;
-
-        const bodyHTML = emojis.map(generateEmojiRowHTML).join("");
-        emojiTableBody.innerHTML = bodyHTML;
-      }
+      renderEmojis(emojis);
     })
     .catch((error) => {
       console.error("Error fetching emojis:", error);
+
+      if (error !== "Emojis not found") {
+        cacheInterface.setEmojisLoading(currentGuildId, false);
+      }
     });
 }
 
-type Emoji = {
+export type Emoji = {
   guildId: string;
   userId: string;
   fileId: string;
@@ -210,15 +235,12 @@ export function getGuildEmojiHtml(): string {
   return initialHtml;
 }
 
-export function createEmojiImgTag(fileId: string): string {
-  if (fileId.length !== router.ID_LENGTH || !/^\d+$/.test(fileId)) {
-    return "";
-  }
-  return `<img data-id="${fileId}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${getEmojiName(fileId)}" />`;
+export function generateEmojiImageTag(fileId: string): string {
+  return `<img data-id="${sanitizeInput(fileId)}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(fileId))}" />`;
 }
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  const emojisToUse = isOnGuild ? currentEmojis : null;
+  const emojisToUse = getCurrentEmojis();
   if (!content || !emojisToUse) return escapeHtml(content);
 
   return content
@@ -230,16 +252,10 @@ export function replaceCustomEmojisForChatContainer(content: string): string {
     .split(/(%%__EMOJI__.*?__%%)/g)
     .map((part) => {
       const match = part.match(/^%%__EMOJI__(.*?)__%%$/);
-      if (match) return createEmojiImgTag(match[1]);
+      if (match) return generateEmojiImageTag(match[1]);
       return escapeHtml(part);
     })
     .join("");
-}
-
-function getEmojiName(emojiId: string): string {
-  return (
-    currentEmojis.find((emoji) => emoji.fileId === emojiId)?.fileName || ""
-  );
 }
 
 function handleEmojiHover(element: HTMLElement, emojiName: string): void {
@@ -248,7 +264,7 @@ function handleEmojiHover(element: HTMLElement, emojiName: string): void {
 }
 
 function handleEmojiListener(element: HTMLElement, emojiId: string): void {
-  const emojiName = getEmojiName(emojiId);
+  const emojiName = cacheInterface.getEmojiName(emojiId);
   element.addEventListener("mouseover", () =>
     handleEmojiHover(element, emojiName)
   );
@@ -265,8 +281,4 @@ export function setupEmojiListeners(container: HTMLElement): void {
       handleEmojiListener(el, dataId);
     }
   });
-}
-
-export function getIdFromEmojiName(name: string): string {
-  return currentEmojis.find((emoji) => emoji.fileName === name)?.fileId || "";
 }

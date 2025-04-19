@@ -1,6 +1,7 @@
 import { initialState } from "./app.ts";
+import { Emoji } from "./emoji.ts";
 import { Message, MessageReply } from "./message.ts";
-import { Member } from "./user.ts";
+import { currentUserId, Member } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
 
 export interface CachedChannel {
@@ -229,6 +230,46 @@ class MessagesCache extends BaseCache {
     this.setMessages(channelId, messages);
   }
 }
+class EmojisCache extends BaseCache {
+  setEmojis(guildId: string, emojis: Emoji[]): void {
+    this.setArray(guildId, emojis);
+  }
+
+  addUploadedEmojis(guildId: string, emojiIds: string[]): void {
+    const emojis = this.getEmojis(guildId);
+
+    emojiIds.forEach((fileId) => {
+      const fileName = `emoji-${fileId}`;
+      const emoji: Emoji = {
+        guildId,
+        userId: currentUserId,
+        fileId,
+        fileName
+      };
+
+      const index = emojis.findIndex((e) => e.fileId === fileId);
+
+      if (index !== -1) {
+        emojis[index] = emoji;
+      } else {
+        emojis.push(emoji);
+      }
+    });
+
+    this.setEmojis(guildId, emojis);
+  }
+
+  getEmojis(channelId: string): Emoji[] {
+    return this.get(channelId) || [];
+  }
+
+  removeEmojis(emojiId: string, guildId: string): void {
+    const messages = this.getEmojis(guildId).filter(
+      (e) => e.fileId !== emojiId
+    );
+    this.setEmojis(guildId, messages);
+  }
+}
 
 class InviteIdsCache extends BaseCache {
   assignInviteId(guildId: string, inviteId: string): void {
@@ -345,6 +386,7 @@ class Guild {
   members: GuildMembersCache;
   messages: MessagesCache;
   invites: InviteIdsCache;
+  emojis: EmojisCache;
   voiceChannels?: VoiceChannelCache;
   ownerId: string | null;
   rootChannel: string | null = null;
@@ -357,6 +399,7 @@ class Guild {
     this.members = new GuildMembersCache();
     this.messages = new MessagesCache();
     this.invites = new InviteIdsCache();
+    this.emojis = new EmojisCache();
     this.ownerId = null;
     if (initialState.sharedGuildsMap) {
       const sharedGuildsMap = new Map<string, string[]>(
@@ -727,6 +770,48 @@ class GuildCacheInterface {
 
   removeMessage(messageId: string, channelId: string, guildId: string): void {
     this.getGuild(guildId)?.messages.removeMessage(messageId, channelId);
+  }
+  //Emojis
+  private loadingCache: { [key: string]: boolean } = {}; // Track emoji loading state per guild
+
+  getEmojis(guildId: string): Emoji[] {
+    return this.getGuild(guildId)?.emojis.getEmojis(guildId) || [];
+  }
+
+  setEmojis(guildId: string, emojis: Emoji[]): void {
+    this.getGuild(guildId)?.emojis.setEmojis(guildId, emojis) || [];
+  }
+  addUploadedEmojis(guildId: string, emojiIds: string[]): void {
+    this.getGuild(guildId)?.emojis.addUploadedEmojis(guildId, emojiIds) || [];
+  }
+
+  removeEmojis(guildId: string, emojiId: string): void {
+    this.getGuild(guildId)?.emojis.removeEmojis(emojiId, guildId) || [];
+  }
+
+  getEmojiName(emojiId: string): string {
+    const guilds = Object.values(this.guildCache.guilds);
+    for (const guild of guilds) {
+      const emojis = this.getEmojis(guild.guildId);
+      const emoji = emojis.find((e) => e.fileId === emojiId);
+      if (emoji) {
+        return emojiId;
+      }
+    }
+    return "";
+  }
+
+  doesEmojisForGuildExist(guildId: string): boolean {
+    const emojis = this.getEmojis(guildId);
+    return emojis && emojis.length > 0;
+  }
+
+  isEmojisLoading(guildId: string): boolean {
+    return this.loadingCache[guildId] || false;
+  }
+
+  setEmojisLoading(guildId: string, isLoading: boolean): void {
+    this.loadingCache[guildId] = isLoading;
   }
 }
 

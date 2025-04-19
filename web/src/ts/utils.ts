@@ -187,8 +187,27 @@ export function constructAbsoluteAppPage(guildId: string, channelId: string) {
   return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
 }
 
-export function getEmojiPath(emojiId: string, guildId: string) {
-  return `/guilds/${guildId}/emojis/${emojiId}`;
+export function sanitizeInput(input: string): string {
+  return input.replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&#039;";
+      default:
+        return char;
+    }
+  });
+}
+
+export function getEmojiPath(emojiId: string, guildId: string): string {
+  return `/guilds/${sanitizeInput(guildId)}/emojis/${sanitizeInput(emojiId)}`;
 }
 
 export function kebapToSentence(text: string) {
