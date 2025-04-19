@@ -48,7 +48,8 @@ namespace LiventCord.Controllers
             [FromQuery] string? messageId
         )
         {
-            bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
+            var userId = UserId!;
+            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
             if (!userExists)
             {
                 return NotFound();
@@ -63,8 +64,13 @@ namespace LiventCord.Controllers
                 }
                 parsedDate = tempParsedDate;
             }
+            var canReadMessages = await _permissionsController.CanReadMessages(userId, guildId);
+            if (!canReadMessages)
+            {
+                return Forbid();
+            }
 
-            var messages = await GetMessages(parsedDate?.ToString("o"), UserId!, null, channelId, guildId, messageId);
+            var messages = await GetMessages(parsedDate?.ToString("o"), userId, null, channelId, guildId, messageId);
             var oldestMessageDate = messages.Any() ? messages.Min(m => m.Date) : (DateTime?)null;
             bool isOldMessages = date != null;
             return Ok(new { messages, channelId, guildId, oldestMessageDate, isOldMessages });
@@ -501,126 +507,110 @@ namespace LiventCord.Controllers
 
         [NonAction]
         private async Task<IActionResult> NewMessage(
-            string messageId,
-            string? temporaryId,
-            string userId,
-            string channelId,
-            string? guildId,
-            string? content,
-            DateTime date,
-            DateTime? lastEdited,
-            List<Attachment>? attachments,
-            string? replyToId,
-            string? reactionEmojisIds,
-            List<Embed>? embeds)
+             string messageId,
+             string? temporaryId,
+             string userId,
+             string channelId,
+             string? guildId,
+             string? content,
+             DateTime date,
+             DateTime? lastEdited,
+             List<Attachment>? attachments,
+             string? replyToId,
+             string? reactionEmojisIds,
+             List<Embed>? embeds)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
+            var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
+            if (!userExists)
             {
-                var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
-                if (!userExists)
-                {
-                    User newUser = _context.CreateDummyUser(userId);
-                    await _context.Users.AddAsync(newUser);
-                    await _context.SaveChangesAsync();
-                }
+                var newUser = _context.CreateDummyUser(userId);
+                await _context.Users.AddAsync(newUser);
+                await _context.SaveChangesAsync();
+            }
 
-                string constructedFriendUserChannel = channelId;
+            var constructedFriendUserChannel = channelId;
+            if (guildId == null)
+            {
+                var userIds = channelId.Split('_');
+                if (userIds.Length != 2 || !userIds.Contains(userId))
+                    return BadRequest();
+
+                var recipientId = userIds.First(id => id != userId);
+                constructedFriendUserChannel = string.Compare(userId, recipientId) < 0
+                    ? $"{userId}_{recipientId}"
+                    : $"{recipientId}_{userId}";
+            }
+
+            var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
+            if (!channelExists)
+            {
                 if (guildId == null)
                 {
-                    var userIds = channelId.Split('_');
-                    if (userIds.Length != 2 || !userIds.Contains(userId))
-                    {
-                        return BadRequest();
-                    }
-                    string recipientId = userIds.First(id => id != userId);
-                    constructedFriendUserChannel = string.Compare(userId, recipientId) < 0 ? $"{userId}_{recipientId}" : $"{recipientId}_{userId}";
+                    await _channelController.CreateChannelInternal(userId, null, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
                 }
-
-                var channelExists = await _context.Channels.AnyAsync(c => c.ChannelId == constructedFriendUserChannel);
-                if (!channelExists)
-                {
-                    if (guildId == null)
-                    {
-                        await _channelController.CreateChannelInternal(userId, null, constructedFriendUserChannel, constructedFriendUserChannel, true, false, constructedFriendUserChannel, false);
-                    }
-                    else
-                    {
-                        return BadRequest();
-                    }
-                }
-                if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
+                else
                 {
                     return BadRequest();
                 }
-
-                await Task.Run(async () =>
-                {
-                    var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
-                    await SaveMetadataAsync(messageId, metadata);
-                });
-
-                var message = new Message
-                {
-                    MessageId = messageId,
-                    UserId = userId,
-                    Content = content,
-                    ChannelId = channelId,
-                    Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
-                    LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
-                    ReplyToId = replyToId,
-                    ReactionEmojisIds = reactionEmojisIds,
-                    Embeds = embeds ?? new List<Embed>(),
-                    Metadata = new Metadata(),
-                    Attachments = new List<Attachment>()
-                };
-
-                if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
-                {
-                    message.TemporaryId = temporaryId;
-                }
-
-                if (attachments != null && attachments.Any())
-                {
-                    foreach (var attachment in attachments)
-                    {
-                        message.Attachments.Add(new Attachment
-                        {
-                            FileId = attachment.FileId,
-                            IsImageFile = attachment.IsImageFile,
-                            MessageId = messageId,
-                            FileName = attachment.FileName,
-                            FileSize = attachment.FileSize,
-                            IsSpoiler = attachment.IsSpoiler
-                        });
-                    }
-                }
-
-                await _context.Messages.AddAsync(message);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                if (guildId != null)
-                {
-                    var broadcastMessage = new
-                    {
-                        guildId,
-                        messages = new[] { message },
-                        channelId,
-                        userId
-                    };
-                    await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
-                }
-
-                return Ok(message);
             }
-            catch (Exception)
+
+            if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
+                return BadRequest();
+
+            var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
+            await SaveMetadataAsync(messageId, metadata);
+
+
+            var message = new Message
             {
-                await transaction.RollbackAsync();
-                throw;
+                MessageId = messageId,
+                UserId = userId,
+                Content = content,
+                ChannelId = channelId,
+                Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
+                LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
+                ReplyToId = replyToId,
+                ReactionEmojisIds = reactionEmojisIds,
+                Embeds = embeds ?? new List<Embed>(),
+                Metadata = new Metadata(),
+                Attachments = new List<Attachment>()
+            };
+
+            if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
+                message.TemporaryId = temporaryId;
+
+            if (attachments != null && attachments.Any())
+            {
+                foreach (var attachment in attachments)
+                {
+                    message.Attachments.Add(new Attachment
+                    {
+                        FileId = attachment.FileId,
+                        IsImageFile = attachment.IsImageFile,
+                        MessageId = messageId,
+                        FileName = attachment.FileName,
+                        FileSize = attachment.FileSize,
+                        IsSpoiler = attachment.IsSpoiler
+                    });
+                }
             }
+
+            await _context.Messages.AddAsync(message);
+            await _context.SaveChangesAsync();
+
+            if (guildId != null)
+            {
+                var broadcastMessage = new
+                {
+                    guildId,
+                    messages = new[] { message },
+                    channelId,
+                    userId
+                };
+                await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
+            }
+
+            return Ok(message);
         }
 
 

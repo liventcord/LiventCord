@@ -1,6 +1,6 @@
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
-import { isOnGuild } from "./router";
+import { isOnGuild, router } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
@@ -211,6 +211,9 @@ export function getGuildEmojiHtml(): string {
 }
 
 export function createEmojiImgTag(fileId: string): string {
+  if (fileId.length !== router.ID_LENGTH || !/^\d+$/.test(fileId)) {
+    return "";
+  }
   return `<img data-id="${fileId}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${getEmojiName(fileId)}" />`;
 }
 

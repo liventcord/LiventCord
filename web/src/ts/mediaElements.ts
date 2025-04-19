@@ -358,8 +358,6 @@ export async function createMediaElement(
     }
   }
 
-  messageContentElement.textContent = "";
-
   await processLinks();
   async function processLinks() {
     while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
