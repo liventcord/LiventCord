@@ -232,6 +232,20 @@ export function getFormattedDate(messageDate: Date) {
     })}`;
   }
 }
+export function getFormattedDateForSmall(messageDate: string) {
+  const date = new Date(
+    /([zZ]|[+-]\d{2}:\d{2})$/.test(messageDate)
+      ? messageDate
+      : messageDate + "Z"
+  );
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
+}
 
 export function getFormattedDateSelfMessage(messageDate: string) {
   const today = new Date();
@@ -268,20 +282,6 @@ export function getFormattedDateSelfMessage(messageDate: string) {
   return `${dateString} at ${timeString}`;
 }
 
-export function getFormattedDateForSmall(messageDate: string) {
-  const messageDateObj = new Date(messageDate);
-  const today = new Date();
-  const userTimeZoneOffset = today.getTimezoneOffset() * 60000;
-  const localMessageDate = new Date(
-    messageDateObj.getTime() - userTimeZoneOffset
-  );
-
-  return localMessageDate.toLocaleTimeString(translations.getLocale(), {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
-}
 export function isImageURL(url: string) {
   const imageUrlRegex = /\.(gif|jpe?g|png|bmp|webp|tiff|svg|ico)(\?.*)?$/i;
   return imageUrlRegex.test(url);

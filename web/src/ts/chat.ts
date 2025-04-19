@@ -1036,10 +1036,10 @@ export function handleSelfSentMessage(data: Message) {
         if (dateElement) {
           dateElement.textContent = getFormattedDateSelfMessage(data.date);
         }
-        const smallDateElement = element.querySelector(".small-date-element");
-        if (smallDateElement) {
-          smallDateElement.textContent = getFormattedDateForSmall(data.date);
-        }
+      }
+      const smallDateElement = element.querySelector(".small-date-element");
+      if (smallDateElement && data.date) {
+        smallDateElement.textContent = getFormattedDateForSmall(data.date);
       }
       element.style.color = "unset";
       const messageContentElement = element.querySelector(

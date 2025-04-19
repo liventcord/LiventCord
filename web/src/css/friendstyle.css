@@ -46,6 +46,10 @@
   color: #949ba4;
   text-align: left;
   pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 70%;
 }
 
 #dm-profile-sign {

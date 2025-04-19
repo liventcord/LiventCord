@@ -320,7 +320,7 @@ class ApiClient {
       this.listeners[event].forEach((callback) => callback(data));
     }
   }
-
+  // Run listener callback when request success
   on(event: EventType, callback: ListenerCallback) {
     if (!Object.values(EventType).includes(event)) {
       console.error("Event type doesn't include: ", event);

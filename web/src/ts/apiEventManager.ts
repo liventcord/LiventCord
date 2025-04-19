@@ -44,6 +44,8 @@ import {
 } from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
 
+// Events triggered upon successful requests to endpoints
+
 interface JoinGuildData {
   success: boolean;
   joinedChannelId: string;
