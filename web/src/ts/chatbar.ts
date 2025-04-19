@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { fileTypeFromBuffer } from "file-type";
 import {
   currentSearchUiIndex,
@@ -1064,6 +1065,33 @@ function handleEmojiJump(event: KeyboardEvent) {
   }
 }
 
+export function manuallyRenderEmojis(rawContent: string) {
+  state.isProcessing = true;
+
+  state.rawContent = rawContent;
+  const formattedContent = processEmojisWithPositions(rawContent);
+
+  chatInput.innerHTML =
+    formattedContent && formattedContent.trim() !== ""
+      ? formattedContent
+      : "\u2800";
+
+  DomUtils.ensureTextNodeAfterImage(chatInput);
+
+  const savedSelection = {
+    start: rawContent.length,
+    end: rawContent.length
+  };
+
+  DomUtils.restoreSelection(chatInput, savedSelection);
+
+  state.renderedContent = formattedContent;
+  updatePlaceholderVisibility();
+  state.isProcessing = false;
+
+  DomUtils.syncCursorPosition();
+  toggleShowEmojiSuggestions();
+}
 function updateCursorStateAfterNavigation() {
   requestAnimationFrame(() => {
     state.rawContent = preserveEmojiContent(chatInput);
@@ -1207,10 +1235,11 @@ function handleChatInput(event: Event) {
           end: cursorPosition
         };
 
-        chatInput.innerHTML =
+        chatInput.innerHTML = DOMPurify.sanitize(
           formattedContent && formattedContent.trim() !== ""
             ? formattedContent
-            : "\u2800";
+            : "\u2800"
+        );
 
         DomUtils.ensureTextNodeAfterImage(chatInput);
         DomUtils.restoreSelection(chatInput, savedSelection);

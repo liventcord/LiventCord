@@ -26,7 +26,8 @@ import {
   ReadenMessagesManager,
   setChatBarState,
   ChatBarState,
-  getChatBarState
+  getChatBarState,
+  manuallyRenderEmojis
 } from "./chatbar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -87,7 +88,8 @@ import {
   disableElement,
   constructDmPage,
   loadBooleanCookie,
-  isMobile
+  isMobile,
+  escapeHtml
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
@@ -595,8 +597,9 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
 
     const oldState = getChatBarState();
     setChatBarState(oldState);
-    chatInput.innerHTML = oldState.renderedContent ?? "";
+    chatInput.innerHTML = escapeHtml(oldState.rawContent) ?? "";
     channelInputStates[guildCache.currentChannelId] = getChatBarState();
+    manuallyRenderEmojis(oldState.rawContent);
   }
 
   function handleDm(id: string) {

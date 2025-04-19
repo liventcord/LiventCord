@@ -744,15 +744,18 @@ function initialiseSettingComponents(
   const changePasswordButton = getId("change-password-button");
   changePasswordButton?.addEventListener("click", openChangePasswordPop);
 
-  const uploadEmojiButton = getId("upload-emoji-button");
-  const emojiImageInput = getId("emoijImage");
-  function triggerUploadEmoji() {
+  const uploadEmojiButton = getId(
+    "upload-emoji-button"
+  ) as HTMLButtonElement | null;
+  const emojiImageInput = getId("emoijImage") as HTMLInputElement | null;
+
+  function triggerUploadEmoji(): void {
     if (!emojiImageInput) return;
     emojiImageInput.click();
     emojiImageInput.addEventListener("change", onEditEmoji);
   }
 
-  if (uploadEmojiButton) {
+  if (permissionManager.canManageGuild() && uploadEmojiButton) {
     uploadEmojiButton.addEventListener("click", triggerUploadEmoji);
   }
 }
