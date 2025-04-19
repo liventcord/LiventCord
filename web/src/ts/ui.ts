@@ -609,20 +609,67 @@ export function displayImagePreview(
       createTooltip(descriptionSize, sizeText);
     });
   }
+  function focusOnMessage() {
+    hideImagePreview();
+    console.log(isOnMediaPanel, imageElement);
+    if (isOnMediaPanel) {
+      setTimeout(() => {
+        const imagesParent = imageElement.parentElement;
+        if (imagesParent && imagesParent.dataset.messageid) {
+          const imagesMessage = chatContent.querySelector(
+            `div[id=${CSS.escape(imagesParent.dataset.messageid)}]`
+          ) as HTMLElement;
+          if (imagesMessage) scrollToMessage(imagesMessage);
+        }
+      }, 50);
+    } else {
+      setTimeout(() => {
+        const imagesParent = imageElement.parentElement?.parentElement;
+        console.log(imagesParent);
+        if (imagesParent) {
+          const imagesMessage = chatContent.querySelector(
+            `div[id=${CSS.escape(imagesParent.id)}]`
+          ) as HTMLElement;
 
+          if (imagesMessage) {
+            scrollToMessage(imagesMessage);
+          }
+        }
+      }, 50);
+    }
+  }
   const previewDate = getId("preview-date");
   if (previewDate && date) {
     previewDate.textContent = formatDateGood(date);
 
-    previewDate.addEventListener("click", () => {
-      hideImagePreview();
-      setTimeout(() => {
-        const imagesMessage = imageElement.parentNode
-          ?.parentNode as HTMLElement;
-        if (imagesMessage) {
-          scrollToMessage(imagesMessage);
-        }
-      }, 50);
+    previewDate.addEventListener("click", (event: MouseEvent) => {
+      event?.preventDefault();
+      focusOnMessage();
+    });
+  }
+  let content: string | undefined;
+
+  if (isOnMediaPanel) {
+    if (imageElement.parentElement) {
+      content = (imageElement.parentElement as HTMLElement).dataset.content;
+    }
+  } else {
+    const grandParent = imageElement.parentNode
+      ?.parentNode as HTMLElement | null;
+    if (grandParent?.dataset) {
+      content = grandParent.dataset.content;
+    }
+  }
+
+  const previewContent = getId("preview-content");
+  if (previewContent) previewContent.textContent = "";
+
+  if (previewContent && content) {
+    previewContent.textContent = content;
+
+    previewContent.addEventListener("click", (event: MouseEvent) => {
+      event?.preventDefault();
+      focusOnMessage();
     });
   }
 
@@ -824,6 +871,8 @@ function updateCurrentIndex(sourceimg: string, isFromMediaPanel: boolean) {
   const images = getImages();
   if (isFromMediaPanel) {
     isOnMediaPanel = true;
+  } else {
+    isOnMediaPanel = false;
   }
   const newIndex = images.findIndex((img) => img.src === sourceimg);
   if (newIndex !== -1) {
@@ -861,7 +910,6 @@ export function hideImagePreview() {
 
     previewImage.src = "";
   }, 150);
-  isOnMediaPanel = false;
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;

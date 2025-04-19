@@ -148,19 +148,19 @@ watch(currentAttachments, (newAttachments) => {
 watch(
   () => store.state.attachments,
   (attachments) => {
-    console.log(attachments);
     setTimeout(() => {
       attachments.forEach((attachment) => {
         const element = getId("media-grid").querySelector(
           "#" + CSS.escape(attachment.attachment.fileId)
         );
-        console.log(attachment);
         if (element) {
-          const image = element.querySelector("img");
-          console.log(attachment.date, image);
           element.setAttribute("data-date", attachment.date);
           element.setAttribute("data-userid", attachment.userId);
           element.setAttribute("data-content", attachment.content);
+          element.setAttribute(
+            "data-messageid",
+            attachment.attachment.messageId
+          );
         }
       });
     }, 0);
