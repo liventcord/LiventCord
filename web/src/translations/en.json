@@ -226,7 +226,9 @@
     "save-button-text": "for saving",
     "exit-button-text": "for exit",
     "message-edited": "edited",
-    "done": "Done"
+    "done": "Done",
+    "details-container-title-1": "Filename",
+    "details-container-title-2": "Size"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

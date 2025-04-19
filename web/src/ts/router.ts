@@ -73,7 +73,9 @@ class Router {
       .then((response) => {
         if (response.ok) {
           document.body.innerHTML = "";
-          window.location.href = "/";
+          const window2 = window as any;
+          const isWebview = window2.ReactNativeWebView;
+          window.location.href = isWebview ? "/login" : "/";
         } else {
           console.error("Logout failed:", response.statusText);
         }
@@ -81,10 +83,6 @@ class Router {
       .catch((error) => {
         console.error("Error during logout:", error);
       });
-  }
-
-  changePageToGuild() {
-    window.location.href = "/";
   }
 
   isIdDefined(id: string) {

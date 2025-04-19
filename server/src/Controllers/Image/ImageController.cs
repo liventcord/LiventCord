@@ -36,7 +36,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var fileId = await UploadFileInternal(request.Photo, UserId!, false, null);
+                var fileId = await UploadFileInternal(request.Photo, UserId!, false, false, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -59,7 +59,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var fileId = await UploadFileInternal(request.Photo, UserId!, false, request.GuildId, null);
+                var fileId = await UploadFileInternal(request.Photo, UserId!, false, false, request.GuildId, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -69,7 +69,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<IActionResult> UploadImage(IFormFile photo, string userId, string? guildId = null)
+        public async Task<IActionResult> UploadImageOnGuildCreation(IFormFile photo, string userId, string? guildId = null)
         {
             if (!IsFileSizeValid(photo))
             {
@@ -78,7 +78,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                string fileId = await UploadFileInternal(photo, userId, false, guildId, null);
+                string fileId = await UploadFileInternal(photo, userId, false, false, guildId, null);
                 return Ok(new { fileId });
             }
             catch (Exception ex)
@@ -96,6 +96,7 @@ namespace LiventCord.Controllers
         public async Task<string> UploadFileInternal(
             IFormFile file,
             string userId,
+            bool isAttachment = false,
             bool isEmoji = false,
             string? guildId = null,
             string? channelId = null
@@ -132,9 +133,9 @@ namespace LiventCord.Controllers
             }
 
             bool validExtension = FileExtensions.IsValidImageExtension(extension);
-            bool validContentType = file.ContentType.StartsWith("image/");
+            bool isImageFile = file.ContentType.StartsWith("image/");
 
-            if (!validExtension || !validContentType)
+            if (!isAttachment && (!validExtension || !isImageFile)) // Disallow non images outside attachment files
             {
                 _logger.LogWarning("Invalid file type uploaded. File name: {FileName}, Content type: {ContentType}, Extension: {Extension}", file.FileName, file.ContentType, extension);
                 throw new ArgumentException("Invalid file type. Only images are allowed.");
@@ -219,12 +220,20 @@ namespace LiventCord.Controllers
         [NonAction]
         public async Task DeleteAttachmentFile(Message message)
         {
-            if (!string.IsNullOrEmpty(message.AttachmentUrls))
+            if (message.Attachments != null && message.Attachments.Any())
             {
-                var attachmentIds = message.AttachmentUrls.Split(',').ToList();
-                await DeleteAttachmentFilesByIds(attachmentIds);
+                var attachmentIds = message.Attachments
+                    .Where(a => !string.IsNullOrEmpty(a.FileId))
+                    .Select(a => a.FileId)
+                    .ToList();
+
+                if (attachmentIds.Any())
+                {
+                    await DeleteAttachmentFilesByIds(attachmentIds);
+                }
             }
         }
+
 
         [NonAction]
         public async Task DeleteAttachmentFiles(List<Message> messages)
@@ -233,9 +242,11 @@ namespace LiventCord.Controllers
 
             foreach (var message in messages)
             {
-                if (!string.IsNullOrEmpty(message.AttachmentUrls))
+                if (message.Attachments != null)
                 {
-                    attachmentIds.AddRange(message.AttachmentUrls.Split(','));
+                    attachmentIds.AddRange(message.Attachments
+                        .Where(a => !string.IsNullOrEmpty(a.FileId))
+                        .Select(a => a.FileId));
                 }
             }
 
@@ -244,6 +255,7 @@ namespace LiventCord.Controllers
                 await DeleteAttachmentFilesByIds(attachmentIds);
             }
         }
+
 
         private async Task SetIsUploadedGuildImg(string guildId)
         {

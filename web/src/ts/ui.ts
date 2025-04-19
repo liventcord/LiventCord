@@ -4,6 +4,7 @@ import {
   activityList,
   isUsersOpenGlobal,
   setUserListLine,
+  toggleUsersList,
   userLine,
   userList
 } from "./userList.ts";
@@ -16,23 +17,40 @@ import {
   createInviteUsersPop
 } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
-import { currentGuildId, leaveCurrentGuild, wrapWhiteRod } from "./guild.ts";
+import {
+  currentGuildId,
+  guildContainer,
+  leaveCurrentGuild,
+  wrapWhiteRod
+} from "./guild.ts";
 import {
   createEl,
   getId,
   disableElement,
   enableElement,
-  isMobile
+  isMobile,
+  formatDateGood,
+  formatFileSize
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe, updateChatWidth } from "./chat.ts";
-import { chatContainer } from "./chatbar.ts";
+import { observe, scrollToMessage, updateChatWidth } from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
-import { changePassword } from "./user.ts";
+import { changePassword, userManager } from "./user.ts";
+import {
+  chatContainer,
+  chatContent,
+  FileHandler,
+  showReplyMenu
+} from "./chatbar.ts";
+import { isImageSpoilered, setImageUnspoilered } from "./mediaElements.ts";
+import { selfName, setProfilePic } from "./avatar.ts";
+import { createTooltip } from "./tooltip.ts";
+import { pinMessage } from "./contextMenuActions.ts";
+import { earphoneButton, microphoneButton } from "./audio.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -52,6 +70,13 @@ export const hoveredChanColor = "rgb(53, 55, 60";
 const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
+
+const imagePreviewContainer = getId(
+  "image-preview-container"
+) as HTMLImageElement;
+if (imagePreviewContainer) {
+  imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
+}
 
 export let loadingScreen: HTMLElement;
 function enableLoadingScreen() {
@@ -264,7 +289,6 @@ function createPopupContent(
   };
 
   const handleAccept = () => {
-    console.log(acceptCallback);
     if (acceptCallback) acceptCallback();
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
@@ -507,8 +531,15 @@ export function beautifyJson(jsonData: string) {
     return null;
   }
 }
-
-export function displayImagePreview(imageElement: HTMLImageElement): void {
+function getResolution(image: HTMLImageElement): string {
+  return `${image.naturalWidth}x${image.naturalHeight}`;
+}
+export function displayImagePreview(
+  imageElement: HTMLImageElement,
+  senderId?: string,
+  date?: Date,
+  isSpoiler = false
+): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
@@ -517,12 +548,59 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
       imageElement.getAttribute("data-original-src") ||
       imageElement.getAttribute("src")) ??
     "";
-
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = imageElement.src;
   updateCurrentIndex(sanitizedSourceImage);
+  if (isSpoiler) {
+    FileHandler.blurImage(previewImage);
+  } else {
+    FileHandler.unBlurImage(previewImage);
+  }
 
-  console.log(imageElement, sanitizedSourceImage);
+  const previewAuthor = getId("preview-author");
+  const senderAvatar = previewAuthor?.querySelector(
+    ".preview-avatar"
+  ) as HTMLImageElement;
+  if (senderId) {
+    (senderAvatar.id = senderId), setProfilePic(senderAvatar, senderId);
+  }
+  const previewNick = getId("preview-nick");
+  if (previewNick && senderId) {
+    previewNick.textContent = userManager.getUserNick(senderId);
+  }
+
+  const descriptionName = getId("details-container-description-1");
+  const filename = imageElement.dataset.filename;
+  if (descriptionName && filename) {
+    descriptionName.textContent = filename;
+    descriptionName.addEventListener("mouseover", () => {
+      createTooltip(descriptionName, filename);
+    });
+  }
+  const descriptionSize = getId("details-container-description-2");
+  const size = Number(imageElement.dataset.filesize);
+  if (descriptionSize && size) {
+    const sizeText = `${getResolution(imageElement)} (${formatFileSize(size)})`;
+    descriptionSize.textContent = sizeText;
+    descriptionSize.addEventListener("mouseover", () => {
+      createTooltip(descriptionSize, sizeText);
+    });
+  }
+  const previewDate = getId("preview-date");
+  if (previewDate && date) {
+    previewDate.textContent = formatDateGood(date);
+
+    previewDate.addEventListener("click", () => {
+      hideImagePreview();
+      setTimeout(() => {
+        const imagesMessage = imageElement.parentNode
+          ?.parentNode as HTMLElement;
+        if (imagesMessage) {
+          scrollToMessage(imagesMessage);
+        }
+      }, 50);
+    });
+  }
 
   let isPreviewZoomed = false;
   let isDragging = false;
@@ -548,9 +626,25 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     }
   }
 
-  previewImage.addEventListener("click", () => {
-    toggleZoom();
-  });
+  function handlePreviewClick() {
+    if (isSpoiler) {
+      FileHandler.unBlurImage(previewImage);
+      setImageUnspoilered(imageElement.id);
+      isSpoiler = false;
+    } else {
+      toggleZoom();
+    }
+  }
+
+  const spoilerText = previewImage.querySelector(".spoiler-text");
+  if (spoilerText) {
+    spoilerText.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handlePreviewClick();
+    });
+  }
+
+  previewImage.addEventListener("click", handlePreviewClick);
 
   const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
   if (previewOpenButton) {
@@ -558,7 +652,6 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     const newPreviewOpenButton = getId(
       "preview-image-open"
     ) as HTMLButtonElement;
-
     newPreviewOpenButton.addEventListener("click", () => {
       if (sanitizedSourceImage) {
         console.log("Going to: ", sanitizedSourceImage);
@@ -573,9 +666,27 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
       toggleZoom();
     });
   }
+  const previewReplyButton = getId("preview-image-reply") as HTMLButtonElement;
+  if (previewReplyButton) {
+    previewReplyButton.addEventListener("click", () => {
+      hideImagePreview();
+      const imagesMessage = imageElement.parentNode?.parentNode as HTMLElement;
+      if (imagesMessage) {
+        scrollToMessage(imagesMessage);
+        const messageId = (
+          imageElement.parentElement?.parentElement as HTMLElement
+        ).id;
+        if (senderId && messageId) showReplyMenu(messageId, senderId);
+      }
+    });
+  }
+
+  previewImage.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
 
   previewImage.addEventListener("mousedown", (event) => {
-    if (event.button === 1 && isPreviewZoomed) {
+    if (event.button === 2 && isPreviewZoomed) {
       event.preventDefault();
       isDragging = true;
       startX = event.clientX - previewImage.offsetLeft;
@@ -587,12 +698,22 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
     if (isDragging) {
       const newX = event.clientX - startX;
       const newY = event.clientY - startY;
+      const imagePreviewContainer = getId(
+        "image-preview-container"
+      ) as HTMLElement;
 
-      const maxX = imagePreviewContainer.clientWidth - previewImage.width;
-      const maxY = imagePreviewContainer.clientHeight - previewImage.height;
+      const overflowX = previewImage.width * 0.8;
+      const overflowY = previewImage.height * 0.8;
 
-      const clampedX = Math.min(Math.max(newX, 0), maxX);
-      const clampedY = Math.min(Math.max(newY, 0), maxY);
+      const minX = -overflowX;
+      const minY = -overflowY;
+      const maxX =
+        imagePreviewContainer.clientWidth - previewImage.width + overflowX;
+      const maxY =
+        imagePreviewContainer.clientHeight - previewImage.height + overflowY;
+
+      const clampedX = Math.min(Math.max(newX, minX), maxX);
+      const clampedY = Math.min(Math.max(newY, minY), maxY);
 
       previewImage.style.left = `${clampedX}px`;
       previewImage.style.top = `${clampedY}px`;
@@ -604,24 +725,21 @@ export function displayImagePreview(imageElement: HTMLImageElement): void {
   });
 }
 
-function isImagePreviewOpen() {
+export function isImagePreviewOpen() {
   return imagePreviewContainer.style.display === "flex";
 }
 let currentPreviewIndex = 0;
-
+const popUpClose = getId("popup-close");
+if (popUpClose) {
+  popUpClose.addEventListener("click", hideImagePreview);
+}
 function addNavigationListeners() {
   document.addEventListener("keydown", (event) => {
     if (isImagePreviewOpen()) {
-      const chatImages = Array.from(
-        chatContainer.querySelectorAll(".chat-image")
-      ).filter(
-        (img) => (img as HTMLImageElement).src !== ""
-      ) as HTMLImageElement[];
-
       if (event.key === "ArrowRight") {
-        moveToNextImage(chatImages);
+        moveToNextImage();
       } else if (event.key === "ArrowLeft") {
-        moveToPreviousImage(chatImages);
+        moveToPreviousImage();
       }
     }
   });
@@ -630,23 +748,34 @@ function addNavigationListeners() {
 function movePreviewImg(chatImages: HTMLImageElement[]) {
   const img = chatImages[currentPreviewIndex] ?? null;
   if (img) {
-    displayImagePreview(img);
+    displayImagePreview(
+      img,
+      img.dataset.userid ?? "",
+      img.dataset.date ? new Date(img.dataset.date) : new Date(),
+      isImageSpoilered(img.id)
+    );
   }
 }
-
-function moveToNextImage(chatImages: HTMLImageElement[]) {
+function getChatImages() {
+  return Array.from(chatContent.querySelectorAll(".chat-image")).filter(
+    (img) => (img as HTMLImageElement).src !== ""
+  ) as HTMLImageElement[];
+}
+function moveToNextImage() {
+  const chatImages = getChatImages();
   currentPreviewIndex = (currentPreviewIndex + 1) % chatImages.length;
   movePreviewImg(chatImages);
 }
 
-function moveToPreviousImage(chatImages: HTMLImageElement[]) {
+function moveToPreviousImage() {
+  const chatImages = getChatImages();
   currentPreviewIndex =
     (currentPreviewIndex - 1 + chatImages.length) % chatImages.length;
   movePreviewImg(chatImages);
 }
 function updateCurrentIndex(sourceimg: string) {
   const chatImages = Array.from(
-    chatContainer.querySelectorAll(".chat-image")
+    chatContent.querySelectorAll(".chat-image")
   ).filter((img) => (img as HTMLImageElement).src !== "") as HTMLImageElement[];
 
   const newIndex = chatImages.findIndex((img) => img.src === sourceimg);
@@ -654,8 +783,6 @@ function updateCurrentIndex(sourceimg: string) {
     currentPreviewIndex = newIndex;
   }
 }
-
-addNavigationListeners();
 
 export function displayJsonPreview(sourceJson: string) {
   jsonPreviewContainer.style.display = "flex";
@@ -674,12 +801,12 @@ export function hideImagePreviewRequest(event: Event) {
   }
 }
 
-function hideImagePreview() {
+export function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
   setTimeout(() => {
-    disableElement("image-preview-container");
+    disableElement(imagePreviewContainer);
 
     previewImage.src = "";
   }, 150);
@@ -715,27 +842,21 @@ export function openGuildSettingsDropdown(event: Event) {
       askUser(
         translations.getTranslation("exit-dropdown-button"),
         translations.getTranslation("leave-guild-detail"),
-        translations.getTranslation("leave-from-guild"),
+        translations.getTranslation("exit-dropdown-button"),
         leaveCurrentGuild
       );
     }
   };
 
-  const clicked_id = (event.target as HTMLElement).id;
+  const clickedId = (event.target as HTMLElement).id;
 
   toggleDropdown();
 
-  if (clicked_id in handlers) {
-    handlers[clicked_id as keyof typeof handlers]();
+  if (clickedId in handlers) {
+    handlers[clickedId as keyof typeof handlers]();
   }
 }
 
-const imagePreviewContainer = getId(
-  "image-preview-container"
-) as HTMLImageElement;
-if (imagePreviewContainer) {
-  imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
-}
 function setDynamicAnimations() {
   const dynamicAnimElements =
     "#tb-inbox, #tb-pin, #tb-showprofile, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
@@ -773,3 +894,258 @@ document.addEventListener("DOMContentLoaded", () => {
     setDynamicAnimations();
   }
 });
+
+let startX = 0;
+let endX = 0;
+
+const channelList = getId("channel-list") as HTMLElement;
+
+document.addEventListener("touchstart", (e: TouchEvent) => {
+  startX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", (e: TouchEvent) => {
+  endX = e.changedTouches[0].clientX;
+  const diff = endX - startX;
+
+  if (Math.abs(diff) < 50) return;
+
+  if (isImagePreviewOpen()) {
+    if (diff > 50) {
+      moveToPreviousImage();
+    } else if (diff < -50) {
+      moveToNextImage();
+    }
+    return;
+  }
+
+  handleSwapNavigation(e);
+});
+
+function handleSwapNavigation(e: TouchEvent) {
+  endX = e.changedTouches[0].clientX;
+  const diff = endX - startX;
+
+  if (Math.abs(diff) < 50) return;
+
+  if (diff > 0) {
+    if (isOnRight) {
+      mobileMoveToCenter(true);
+      return;
+    }
+    enableElement(mobileBlackBg);
+    enableElement("channel-info");
+    enableElement("hash-sign");
+
+    mobileMoveToLeft();
+  } else {
+    disableElement(mobileBlackBg);
+    disableElement("channel-info");
+    disableElement("hash-sign");
+
+    if (isOnLeft) {
+      chatContainer.style.flexDirection = "";
+      toolbarOptions.style.zIndex = "1";
+      mobileMoveToCenter(true);
+    } else {
+      mobileMoveToCenter(true);
+      mobileMoveToRight();
+      enableElement(mobileBlackBg);
+      enableElement("channel-info");
+      enableElement("hash-sign");
+      return;
+    }
+
+    channelList.classList.remove("visible");
+    guildContainer.classList.remove("visible");
+  }
+}
+export function handleRightCenterCheck() {
+  if (isOnLeft) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+  }
+  return isOnLeft;
+}
+export let isOnLeft = false;
+export let isOnRight = false;
+export const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
+export const toolbarOptions = getId("toolbaroptions") as HTMLElement;
+export const navigationBar = getId("navigation-bar") as HTMLElement;
+export function handleMembersClick() {
+  if (isOnLeft) {
+    toggleHamburger(true, false);
+    return;
+  }
+  isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
+}
+function toggleHamburger(toLeft: boolean, toRight: boolean) {
+  if (!userList) return;
+
+  if (isOnRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (isOnLeft && toRight) {
+    disableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "";
+    toolbarOptions.style.zIndex = "1";
+
+    mobileMoveToCenter();
+    return;
+  }
+  if (toRight) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToRight();
+    return;
+  }
+
+  if (toLeft) {
+    enableElement(mobileBlackBg);
+    chatContainer.style.flexDirection = "column";
+    toolbarOptions.style.zIndex = "";
+
+    mobileMoveToLeft();
+  } else {
+    mobileMoveToCenter();
+  }
+}
+
+export function mobileMoveToRight() {
+  if (!userList) return;
+  isOnLeft = false;
+  isOnRight = true;
+  enableElement(userList);
+}
+
+export function mobileMoveToCenter(excludeChannelList: boolean = false) {
+  if (!userList) return;
+
+  isOnRight = false;
+  isOnLeft = false;
+  disableElement(userList);
+  if (excludeChannelList) {
+    setTimeout(() => {
+      disableElement(channelList);
+    }, 100);
+  } else {
+    disableElement(channelList);
+  }
+  getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
+  getId("guild-container")?.classList.remove("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.remove(
+    "message-input-container-mobile-left"
+  );
+  guildContainer.classList.remove("visible");
+
+  chatContainer.classList.remove("chat-container-mobile-left");
+  enableElement("hash-sign");
+  enableElement("channel-info");
+
+  disableElement(mobileBlackBg);
+  disableElement(navigationBar);
+}
+
+export function mobileMoveToLeft() {
+  if (!userList) return;
+
+  isOnLeft = true;
+  isOnRight = false;
+  disableElement(userList);
+
+  channelList.classList.remove("visible");
+  guildContainer.classList.add("visible");
+
+  chatContainer.classList.add("chat-container-mobile-left");
+  getId("guilds-list")?.classList.add("guilds-list-mobile-left");
+  getId("message-input-container")?.classList.add(
+    "message-input-container-mobile-left"
+  );
+
+  enableElement(channelList, false, true);
+
+  requestAnimationFrame(() => {
+    channelList.classList.add("visible");
+  });
+
+  setTimeout(() => {
+    getId("guild-container")?.classList.add("guilds-list-mobile-left");
+    channelList.classList.add("channel-list-mobile-left");
+  }, 200);
+
+  enableElement(navigationBar);
+}
+
+channelList.classList.add("visible");
+guildContainer.classList.add("visible");
+
+addNavigationListeners();
+
+export function initialiseMobile() {
+  const earphoneParent = earphoneButton.parentElement;
+  if (earphoneParent) {
+    earphoneParent.remove();
+  }
+
+  const microphoneParent = microphoneButton.parentElement;
+  if (microphoneParent) {
+    microphoneParent.remove();
+  }
+  disableElement(selfName);
+  disableElement("self-status");
+
+  const friendIconSign = getId("friend-icon-sign");
+  if (friendIconSign) {
+    friendIconSign.style.position = "";
+    friendIconSign.classList.add("navigationButton");
+    navigationBar.appendChild(friendIconSign);
+
+    const svgElement = friendIconSign.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+
+  const settingsButton = getId("settings-button");
+  if (settingsButton) {
+    navigationBar.appendChild(settingsButton);
+    settingsButton.classList.add("navigationButton");
+
+    const svgElement = settingsButton.querySelector("svg") as SVGElement;
+    if (svgElement) {
+      svgElement.style.width = "30px";
+      svgElement.style.height = "30px";
+    }
+  }
+  const avatarWrapper = getId("avatar-wrapper");
+  if (avatarWrapper) {
+    navigationBar.appendChild(avatarWrapper);
+    avatarWrapper.classList.add("navigationButton");
+  }
+  initialiseMobileListeners();
+  if (isMobile) {
+    toggleHamburger(true, false);
+  }
+}
+function initialiseMobileListeners() {
+  const tbPinMessage = getId("tb-pin");
+  tbPinMessage?.addEventListener("click", () => {
+    pinMessage("");
+  });
+  const tbHamburger = getId("tb-hamburger");
+  tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
+  mobileBlackBg.addEventListener("click", () => {
+    toggleHamburger(!isOnLeft, !isOnRight);
+  });
+}

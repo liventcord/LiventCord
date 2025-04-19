@@ -151,12 +151,11 @@ const EventUrlMap: Record<EventType, string> = {
   ADD_DM: "/dm/{friendId}",
   REMOVE_DM: "/dm/{friendId}",
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
-  SEND_MESSAGE_DM: "/dms/channels/{channelId}/messages",
+  SEND_MESSAGE_DM: "/dms/channels/{friendId}/messages",
   EDIT_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
-  EDIT_MESSAGE_DM:
-    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
-  DELETE_MESSAGE_DM: "/dms/channels/{channelId}/messages/{messageId}",
+  EDIT_MESSAGE_DM: "/dms/channels/{friendId}/messages/{messageId}",
+  DELETE_MESSAGE_DM: "/dms/channels/{friendId}/messages/{messageId}",
   DELETE_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
 
@@ -321,7 +320,7 @@ class ApiClient {
       this.listeners[event].forEach((callback) => callback(data));
     }
   }
-
+  // Run listener callback when request success
   on(event: EventType, callback: ListenerCallback) {
     if (!Object.values(EventType).includes(event)) {
       console.error("Event type doesn't include: ", event);

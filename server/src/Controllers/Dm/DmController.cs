@@ -38,8 +38,9 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> AddDmEndpoint([FromRoute][UserIdLengthValidation] string friendId)
         {
             var result = await _friendDmService.AddDmBetweenUsers(UserId!, friendId);
+            var result2 = await _friendDmService.AddDmBetweenUsers(friendId!, UserId!);
             var friend = await _friendDmService.GetUserDetails(friendId);
-            return result ? Ok(friend) : Conflict("Direct message relationship already exists.");
+            return result || result2 ? Ok(friend) : Conflict("Direct message relationship already exists.");
         }
 
 

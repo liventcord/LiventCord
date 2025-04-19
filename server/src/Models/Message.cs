@@ -25,7 +25,7 @@ namespace LiventCord.Models
 
         public DateTime? LastEdited { get; set; }
 
-        public string? AttachmentUrls { get; set; }
+        public virtual List<Attachment>? Attachments { get; set; } = new();
 
         public string? ReplyToId { get; set; }
 
@@ -33,6 +33,10 @@ namespace LiventCord.Models
 
         public Metadata? Metadata { get; set; }
 
+        public bool ShouldSerializeMetadata()
+        {
+            return Metadata != null && !Metadata.IsEmpty();
+        }
         [JsonIgnore]
         public virtual User User { get; set; } = null!;
 
@@ -42,4 +46,21 @@ namespace LiventCord.Models
         public List<Embed> Embeds { get; set; } = new();
 
     }
+    public class Attachment
+    {
+        [Key]
+        public required string FileId { get; set; }
+
+        public required bool IsImageFile { get; set; }
+
+        public required string MessageId { get; set; }
+        public required string FileName { get; set; }
+        public required long FileSize { get; set; }
+        public required bool IsSpoiler { get; set; }
+
+        [JsonIgnore]
+        public Message Message { get; set; } = null!;
+    }
+
+
 }

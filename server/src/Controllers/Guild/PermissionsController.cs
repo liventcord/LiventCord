@@ -149,10 +149,10 @@ namespace LiventCord.Controllers
 
             return permissionsMap;
         }
-        public async Task AssignPermissions(
+        public async Task AddPermissions(
             string guildId,
             string userId,
-            PermissionFlags permissions
+            PermissionFlags permissionsToAdd
         )
         {
             var existingPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
@@ -161,7 +161,7 @@ namespace LiventCord.Controllers
 
             if (existingPermissions != null)
             {
-                existingPermissions.Permissions = permissions;
+                existingPermissions.Permissions |= permissionsToAdd;
                 _dbContext.GuildPermissions.Update(existingPermissions);
             }
             else
@@ -170,13 +170,12 @@ namespace LiventCord.Controllers
                 {
                     GuildId = guildId,
                     UserId = userId,
-                    Permissions = permissions,
+                    Permissions = permissionsToAdd,
                 };
                 _dbContext.GuildPermissions.Add(guildPermissions);
             }
             await _dbContext.SaveChangesAsync();
         }
-
 
 
         public async Task RemovePermissions(string guildId, string userId, PermissionFlags permissionsToRemove)

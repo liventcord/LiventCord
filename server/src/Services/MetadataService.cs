@@ -1,9 +1,7 @@
 using System.Text.RegularExpressions;
 using LiventCord.Controllers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using HtmlAgilityPack;
-
 public class Metadata
 {
     public string? Title { get; set; }
@@ -14,7 +12,20 @@ public class Metadata
     public string? Type { get; set; }
     public string? Keywords { get; set; }
     public string? Author { get; set; }
+
+    public bool IsEmpty()
+    {
+        return string.IsNullOrWhiteSpace(Title) &&
+               string.IsNullOrWhiteSpace(Description) &&
+               string.IsNullOrWhiteSpace(SiteName) &&
+               string.IsNullOrWhiteSpace(Image) &&
+               string.IsNullOrWhiteSpace(Url) &&
+               string.IsNullOrWhiteSpace(Type) &&
+               string.IsNullOrWhiteSpace(Keywords) &&
+               string.IsNullOrWhiteSpace(Author);
+    }
 }
+
 
 public class UrlMetadata : Metadata
 {

@@ -632,7 +632,7 @@ function createAddFriendForm() {
     placeholder: translations.getTranslation("addfrienddetailtext"),
     autocomplete: "off"
   }) as HTMLInputElement;
-  addfriendinput.value = "Reeyuki#0000";
+  addfriendinput.value = "Nick#0000";
 
   const addfriendinputbutton = createEl("button", {
     id: "addfriendinputbutton",

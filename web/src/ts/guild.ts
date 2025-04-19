@@ -11,7 +11,7 @@ import {
   isChangingPage,
   initialState,
   loadApp,
-  changecurrentGuild
+  changeCurrentGuild
 } from "./app.ts";
 import { isOnGuild, isOnMePage, isOnDm } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
@@ -24,7 +24,7 @@ import {
   PermissionsRecord
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentVoiceChannelId, getRootChannel } from "./channels.ts";
+import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
 import { createFireWorks } from "./extras.ts";
 import { UserInfo } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
@@ -184,7 +184,7 @@ export function loadGuild(
   } else if (isOnDm) {
     loadApp("", isInitial);
   } else if (isOnGuild) {
-    changecurrentGuild();
+    changeCurrentGuild();
   }
 }
 
@@ -260,7 +260,12 @@ export function joinToGuild(inviteId: string) {
   apiClient.send(EventType.JOIN_GUILD, { inviteId: id });
 }
 
+const leftGuilds = new Set<string>();
+
 export function leaveCurrentGuild() {
+  if (leftGuilds.has(currentGuildId)) return;
+
+  leftGuilds.add(currentGuildId);
   apiClient.send(EventType.LEAVE_GUILD, { guildId: currentGuildId });
 }
 
@@ -314,7 +319,8 @@ export function addKeybinds() {
 }
 
 export function removeFromGuildList(guildId: string) {
-  const guildImg = getId(guildId);
+  const guildImg = getGuildFromBar(guildId);
+  console.log(guildsList, guildImg);
   if (guildImg) {
     const parentLi = guildImg.closest("li");
     if (parentLi) parentLi.remove();
@@ -322,8 +328,8 @@ export function removeFromGuildList(guildId: string) {
 }
 
 export function updateGuildImage(uploadedGuildId: string) {
-  const guildList = guildsList.querySelectorAll("img");
-  guildList.forEach((img) => {
+  const guildImages = guildsList.querySelectorAll("img");
+  guildImages.forEach((img) => {
     if (img.id === uploadedGuildId) {
       setGuildImage(uploadedGuildId, img, true);
     }
@@ -362,7 +368,7 @@ export const createGuildListItem = (
   rootChannel: string,
   guildName: string,
   isUploaded: boolean,
-  isInteractable: boolean
+  isOnLeftGuildList: boolean
 ) => {
   const listItem = createEl("li");
   const imgElement = createEl("img", {
@@ -375,15 +381,14 @@ export const createGuildListItem = (
   imgElement.onerror = () => {
     imgElement.src = blackImage;
   };
-  if (isInteractable) {
-    imgElement.addEventListener("click", () => {
-      try {
-        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
-      } catch (error) {
-        console.error("Error while loading guild:", error);
-      }
-    });
-  }
+  const elementToAddListener = isOnLeftGuildList ? imgElement : listItem;
+  elementToAddListener.addEventListener("click", () => {
+    try {
+      loadGuild(guildId, getSeletedChannel(guildId, rootChannel), guildName);
+    } catch (error) {
+      console.error("Error while loading guild:", error);
+    }
+  });
 
   listItem.appendChild(imgElement);
   return listItem;
@@ -421,6 +426,7 @@ export function updateGuilds(guildsJson: Array<any>) {
       fragment.appendChild(listItem);
 
       cacheInterface.setName(guildId, guildName);
+      cacheInterface.setRootChannel(guildId, rootChannel);
       cacheInterface.setGuildOwner(guildId, ownerId);
       cacheInterface.setMemberIds(guildId, guildMembers);
     }
@@ -431,7 +437,7 @@ export function updateGuilds(guildsJson: Array<any>) {
 
   guildsList.appendChild(fragment);
 
-  const selectedGuild = guildsList.querySelector(`img[id="${currentGuildId}"]`);
+  const selectedGuild = getGuildFromBar(currentGuildId);
   if (selectedGuild) {
     (selectedGuild.parentNode as HTMLElement).classList.add("selected-guild");
   }
@@ -452,7 +458,7 @@ function removeWhiteRod(element: HTMLElement) {
 }
 
 function appendToGuildList(guild: Guild) {
-  if (guildsList.querySelector(`#${CSS.escape(guild.guildId)}`)) return;
+  if (getGuildFromBar(guild.guildId)) return;
 
   const listItem = createGuildListItem(
     guild.guildId,
@@ -548,7 +554,9 @@ export function setGuildImage(
 ) {
   imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
 }
-
-function doesGuildExistInBar(guildId: string) {
-  return Boolean(guildsList.querySelector(`#${CSS.escape(guildId)}`));
+function getGuildFromBar(guildId: string): HTMLElement | null {
+  return (
+    document.querySelector(`#guilds-list li img[id='${guildId}']`)
+      ?.parentElement ?? null
+  );
 }

@@ -1,4 +1,6 @@
 import { currentGuildId } from "./guild";
+import { permissionManager } from "./guildPermissions";
+import { isOnGuild } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
@@ -10,10 +12,18 @@ import {
   IMAGE_SRCS
 } from "./utils";
 
-export let currentEmojis: Emoji[];
+let currentEmojis: Emoji[];
+export function getCurrentEmojis(): Emoji[] | null {
+  if (isOnGuild) {
+    return currentEmojis;
+  } else {
+    return null;
+  }
+}
 export const regexIdEmojis = /:(\d+):/g;
 
 function generateEmojiRowHTML(emoji: Emoji): string {
+  const canManageEmojis = permissionManager.canManageGuild();
   const debounceTimeout: number = 1000;
   let debounceTimer: number;
 
@@ -39,7 +49,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     <td class="table-cell emoji-name-cell">
       <div style="display: flex; align-items: center;">
         <div class="colon" style="margin-bottom: 5px">:</div>
-        <textarea class="textarea" id="emoji-${emoji.fileId}" style="flex: 1; margin-left: 0; padding-top: 10px;">${escapeHtml(emoji.fileName)}</textarea>
+        <textarea class="textarea" id="emoji-${emoji.fileId}" style="flex: 1; margin-left: 0; padding-top: 10px;" ${canManageEmojis ? "" : "readonly"}>${escapeHtml(emoji.fileName)}</textarea>
         <div class="colon" style=" margin-bottom: 5px">:</div>
       </div>
     </td>
@@ -50,7 +60,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
       </div>
     </td>
     <td class="table-cell">
-      <button class="emoji-delete-button" data-guild-id="${emoji.guildId}" data-emoji-id="${emoji.fileId}">
+      <button class="emoji-delete-button" data-guild-id="${emoji.guildId}" data-emoji-id="${emoji.fileId}" ${canManageEmojis ? "" : "disabled style='opacity: 0.5; pointer-events: none;'"} >
         <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
           <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
         </svg>
@@ -63,7 +73,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     const textarea = document.getElementById(
       `emoji-${emoji.fileId}`
     ) as HTMLTextAreaElement;
-    if (textarea) {
+    if (textarea && canManageEmojis) {
       const span = document.createElement("span");
       span.style.visibility = "hidden";
       span.style.whiteSpace = "pre";
@@ -87,7 +97,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     const deleteButton = document.querySelector(
       `button[data-emoji-id="${emoji.fileId}"]`
     );
-    if (deleteButton) {
+    if (deleteButton && canManageEmojis) {
       deleteButton.addEventListener("click", () => {
         deleteEmoji(emoji.guildId, emoji.fileId);
       });
@@ -167,6 +177,7 @@ function generateHeaderHTML(): string {
 }
 
 export function getGuildEmojiHtml(): string {
+  const canManageEmojis = permissionManager.canManageGuild();
   const initialHtml = `
     <h2>Emoji</h2>
     <div class="emoji-container">
@@ -178,8 +189,8 @@ export function getGuildEmojiHtml(): string {
         <li class="emoji-requirement">${translations.getSettingsTranslation("EmojiRequirementDetails3")}</li>
         <li class="emoji-requirement">${translations.getSettingsTranslation("EmojiRequirementDetails4")}</li>
       </ul>
-      <button id="upload-emoji-button" class="settings-button">${translations.getSettingsTranslation("UploadEmoji")}</button>
-      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input" multiple>
+      <button id="upload-emoji-button" class="settings-button" ${canManageEmojis ? "" : "disabled style='opacity: 0.5; pointer-events: none;'"}>${translations.getSettingsTranslation("UploadEmoji")}</button>
+      <input type="file" name="emojiImage" id="emoijImage" accept="image/*" class="emoji-file-input" multiple ${canManageEmojis ? "" : "disabled"}>
       <hr class="emoji-divider">
       <h4 id="emoji-count"></h4>
       <div class="emoji-table-container">
@@ -204,15 +215,22 @@ export function createEmojiImgTag(fileId: string): string {
 }
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  if (!content || !currentEmojis) return content;
+  const emojisToUse = isOnGuild ? currentEmojis : null;
+  if (!content || !emojisToUse) return escapeHtml(content);
 
-  const escaped = escapeHtml(content);
-
-  return escaped.replace(regexIdEmojis, (match, emojiId) => {
-    const emoji = currentEmojis.find((e) => e.fileId === emojiId);
-    if (emoji) return createEmojiImgTag(emoji.fileId);
-    return match;
-  });
+  return content
+    .replace(regexIdEmojis, (match, emojiId) => {
+      const emoji = emojisToUse.find((e) => e.fileId === emojiId);
+      if (emoji) return `%%__EMOJI__${emoji.fileId}__%%`;
+      return escapeHtml(match);
+    })
+    .split(/(%%__EMOJI__.*?__%%)/g)
+    .map((part) => {
+      const match = part.match(/^%%__EMOJI__(.*?)__%%$/);
+      if (match) return createEmojiImgTag(match[1]);
+      return escapeHtml(part);
+    })
+    .join("");
 }
 
 function getEmojiName(emojiId: string): string {

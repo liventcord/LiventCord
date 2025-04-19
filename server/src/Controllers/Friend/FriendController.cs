@@ -104,7 +104,7 @@ namespace LiventCord.Controllers
 
             return Ok(CreateFriendResponse(
                 FRIEND_EVENTS.ADD_FRIEND,
-                user));
+                friend));
         }
         [HttpDelete("deny/{friendId}")]
         public async Task<IActionResult> DenyFriend([FromRoute][UserIdLengthValidation] string friendId)

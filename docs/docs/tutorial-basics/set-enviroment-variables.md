@@ -85,7 +85,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
   
   - **BuildFrontend**:
     Whether to build frontend assets on .net server start or not.
-    **Defaults to** `none`
+    **Defaults to** `true`
 
   - **RedisConnectionString**:
     Connection string for connecting redis.
