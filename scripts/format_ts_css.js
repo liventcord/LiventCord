@@ -1,8 +1,10 @@
-// Script to run prettier for each uncommited file on web/src
-
 import { execSync, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import { resolve, join, relative, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const rootDir = resolve(__dirname, '..')
 const srcDir = join(rootDir, 'web', 'src')
@@ -20,7 +22,7 @@ function getChangedFiles() {
     }
 }
 
-function runPrettier(projDir,file){
+function runPrettier(projDir, file) {
     return new Promise((resolve, reject) => {
         if (!existsSync(projDir)) {
             console.warn(`Project directory does not exist: ${projDir}`)

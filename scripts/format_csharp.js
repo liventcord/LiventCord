@@ -1,8 +1,10 @@
-// Script to run dotnet format for each uncommited file on server/src directory
-
 import { execSync, spawn } from 'child_process'
 import { readdirSync, existsSync } from 'fs'
 import { dirname, resolve, join, relative } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const rootDir = resolve(__dirname, '..')
 const srcDir = join(rootDir, 'server', 'src')
