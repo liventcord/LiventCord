@@ -827,14 +827,15 @@ export function getImageExtension(img: HTMLImageElement): string {
   return match ? match[1].toLowerCase() : "";
 }
 export function getFileNameFromUrl(url: string): string {
-  const path = new URL(url).pathname;
+  const baseUrl = window.location.origin;
+  const absoluteUrl = new URL(url, baseUrl);
+  const path = absoluteUrl.pathname;
   const parts = path.split("/");
-  const fileName = parts.pop() || ""; // Get the last part, which should be the file name
+  const fileName = parts.pop() || "";
 
-  // Check if the file name has an extension (e.g., .jpg, .png)
   if (fileName && /\.[a-zA-Z0-9]+$/.test(fileName)) {
     return fileName;
   }
 
-  return ""; // Return empty string if no valid file name or extension found
+  return "";
 }

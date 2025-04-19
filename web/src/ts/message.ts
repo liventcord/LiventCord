@@ -74,6 +74,12 @@ export interface Attachment {
   isImageFile: boolean;
   isSpoiler: boolean;
 }
+export interface AttachmentWithMetaData {
+  attachment: Attachment;
+  userId: string;
+  content: string;
+  date: string;
+}
 
 export class Message {
   messageId: string;

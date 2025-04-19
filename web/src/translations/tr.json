@@ -241,7 +241,8 @@
     "message-edited": "düzenlendi",
     "done": "Bitti",
     "details-container-title-1": "Dosya adı",
-    "details-container-title-2": "Boyut"
+    "details-container-title-2": "Boyut",
+    "media-title": "Medya"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

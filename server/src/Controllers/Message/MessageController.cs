@@ -793,7 +793,27 @@ namespace LiventCord.Controllers
                 _logger.LogError(ex, "Error deleting message. " + ex.Message);
             }
         }
+        [Authorize]
+        [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/attachments")]
+        public async Task<IActionResult> GetAttachments([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId) 
+        {
+            var channelAttachments = await _context.Attachments
+                .Join(
+                    _context.Messages,
+                    attachment => attachment.MessageId,
+                    message => message.MessageId,
+                    (attachment, message) => new {
+                        attachment,
+                        message.UserId,
+                        message.Content,
+                        message.Date,
+                        message.ChannelId
+                    })
+                .Where(result => result.ChannelId == channelId)
+                .ToListAsync();
 
+            return Ok(channelAttachments);
+        }
 
     }
 }

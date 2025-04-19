@@ -575,6 +575,15 @@
   flex-direction: column;
 }
 
+@media (max-width: 600px) {
+  .details-container {
+    width: 150px;
+    left: 78%;
+    top: 5%;
+    transform: translateX(-50%);
+  }
+}
+
 .details-blob {
   display: flex;
   flex-direction: column;

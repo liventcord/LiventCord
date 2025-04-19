@@ -540,7 +540,8 @@ export function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
   date?: Date,
-  isSpoiler = false
+  isSpoiler = false,
+  isFromMediaPanel = false
 ): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
@@ -552,7 +553,7 @@ export function displayImagePreview(
     "";
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = imageElement.src;
-  updateCurrentIndex(sanitizedSourceImage);
+  updateCurrentIndex(sanitizedSourceImage, isFromMediaPanel);
   if (isSpoiler) {
     FileHandler.blurImage(previewImage);
   } else {
@@ -751,7 +752,9 @@ export function displayImagePreview(
 export function isImagePreviewOpen() {
   return imagePreviewContainer.style.display === "flex";
 }
-let currentPreviewIndex = 0;
+let currentChatPreviewIndex = 0;
+let currentMediaPreviewIndex = 0;
+
 const popUpClose = getId("popup-close");
 if (popUpClose) {
   popUpClose.addEventListener("click", hideImagePreview);
@@ -767,9 +770,13 @@ function addNavigationListeners() {
     }
   });
 }
-
-function movePreviewImg(chatImages: HTMLImageElement[]) {
-  const img = chatImages[currentPreviewIndex] ?? null;
+let isOnMediaPanel = false;
+function movePreviewImg(images: HTMLImageElement[]) {
+  const img =
+    images[
+      isOnMediaPanel ? currentMediaPreviewIndex : currentChatPreviewIndex
+    ] ?? null;
+  console.log(images, img);
   if (img) {
     displayImagePreview(
       img,
@@ -779,31 +786,52 @@ function movePreviewImg(chatImages: HTMLImageElement[]) {
     );
   }
 }
-function getChatImages() {
-  return Array.from(chatContent.querySelectorAll(".chat-image")).filter(
-    (img) => (img as HTMLImageElement).src !== ""
-  ) as HTMLImageElement[];
+function getImages(): HTMLImageElement[] {
+  const mediaGrid = getId("media-grid") as HTMLElement;
+  const container = isOnMediaPanel ? mediaGrid : chatContent;
+  if (isOnMediaPanel) {
+    return Array.from(container.querySelectorAll(".image-box"))
+      .map((box) => box.querySelector<HTMLImageElement>("img"))
+      .filter((img): img is HTMLImageElement => img !== null && img.src !== "");
+  }
+  return Array.from(
+    container.querySelectorAll<HTMLImageElement>(".chat-image")
+  ).filter((img) => img.src !== "");
 }
+
 function moveToNextImage() {
-  const chatImages = getChatImages();
-  currentPreviewIndex = (currentPreviewIndex + 1) % chatImages.length;
-  movePreviewImg(chatImages);
+  const images = getImages();
+  if (isOnMediaPanel) {
+    currentMediaPreviewIndex = (currentMediaPreviewIndex + 1) % images.length;
+  } else {
+    currentChatPreviewIndex = (currentChatPreviewIndex + 1) % images.length;
+  }
+  movePreviewImg(images);
 }
 
 function moveToPreviousImage() {
-  const chatImages = getChatImages();
-  currentPreviewIndex =
-    (currentPreviewIndex - 1 + chatImages.length) % chatImages.length;
-  movePreviewImg(chatImages);
+  const images = getImages();
+  if (isOnMediaPanel) {
+    currentMediaPreviewIndex =
+      (currentMediaPreviewIndex - 1 + images.length) % images.length;
+  } else {
+    currentChatPreviewIndex =
+      (currentChatPreviewIndex - 1 + images.length) % images.length;
+  }
+  movePreviewImg(images);
 }
-function updateCurrentIndex(sourceimg: string) {
-  const chatImages = Array.from(
-    chatContent.querySelectorAll(".chat-image")
-  ).filter((img) => (img as HTMLImageElement).src !== "") as HTMLImageElement[];
-
-  const newIndex = chatImages.findIndex((img) => img.src === sourceimg);
+function updateCurrentIndex(sourceimg: string, isFromMediaPanel: boolean) {
+  const images = getImages();
+  if (isFromMediaPanel) {
+    isOnMediaPanel = true;
+  }
+  const newIndex = images.findIndex((img) => img.src === sourceimg);
   if (newIndex !== -1) {
-    currentPreviewIndex = newIndex;
+    if (isFromMediaPanel) {
+      currentChatPreviewIndex = newIndex;
+    } else {
+      currentMediaPreviewIndex = newIndex;
+    }
   }
 }
 
@@ -833,6 +861,7 @@ export function hideImagePreview() {
 
     previewImage.src = "";
   }, 150);
+  isOnMediaPanel = false;
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;

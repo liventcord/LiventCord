@@ -2,7 +2,7 @@ import { createStore } from "vuex";
 import { userManager } from "./ts/user";
 import { Channel } from "./ts/channels";
 import { guildCache } from "./ts/cache";
-
+import { AttachmentWithMetaData } from "./ts/message";
 interface UserMember {
   userId: string;
   status: string;
@@ -27,6 +27,7 @@ interface RootState {
   hoveredChannels: Record<string, ChannelHoverInfo>;
   selectedChannelId: string | null;
   selectedChannelType: boolean | null;
+  attachments: AttachmentWithMetaData[];
 }
 
 export default createStore<RootState>({
@@ -39,9 +40,14 @@ export default createStore<RootState>({
     channels: [],
     hoveredChannels: {},
     selectedChannelId: null,
-    selectedChannelType: null
+    selectedChannelType: null,
+    attachments: []
   },
   mutations: {
+    setAttachments(state, attachments: AttachmentWithMetaData[]) {
+      console.log(state.attachments);
+      state.attachments = attachments;
+    },
     setChannels(state, channels: Channel[]) {
       state.channels = channels;
     },
@@ -170,6 +176,10 @@ export default createStore<RootState>({
 
     async setChannels({ commit }, channels) {
       commit("setChannels", channels);
+    },
+
+    async setAttachments({ commit }, attachments) {
+      commit("setAttachments", attachments);
     },
 
     async setChannel({ commit }, channel) {

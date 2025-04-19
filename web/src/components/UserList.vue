@@ -1,6 +1,36 @@
 <template>
   <div>
     <div id="user-list" ref="userList">
+      <div id="media-table-wrapper" class="user-table-wrapper">
+        <div
+          id="media-title"
+          style="align-self: center; margin-top: -5px"
+        ></div>
+        <div id="media-grid">
+          <div
+            v-for="attachment in attachments"
+            :key="attachment.attachment.fileId"
+            :id="attachment.attachment.fileId"
+            class="image-box"
+            :data-isspoiler="attachment.attachment.isSpoiler"
+          >
+            <img
+              :src="
+                attachment.attachment.isImageFile
+                  ? '/attachments/' + attachment.attachment.fileId
+                  : '/images/guest.webp'
+              "
+              alt="Image"
+              :data-filesize="attachment.attachment.fileSize"
+              @click="handleImageClick(attachment)"
+              ref="imageBox"
+              :style="{
+                filter: attachment.attachment.isSpoiler ? 'blur(15px)' : 'none'
+              }"
+            />
+          </div>
+        </div>
+      </div>
       <div v-if="loading"></div>
       <div v-else class="user-table-wrapper">
         <table class="user-table">
@@ -40,8 +70,9 @@
     </div>
   </div>
 </template>
+
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
 import CategoryTitle from "./CategoryTitle.vue";
@@ -50,6 +81,9 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
+import { getId } from "../ts/utils.ts";
+import { displayImagePreview } from "../ts/ui.ts";
+import { currentAttachments } from "../ts/chat.ts";
 const props = defineProps({
   members: {
     type: Array,
@@ -64,6 +98,25 @@ const props = defineProps({
 const store = useStore();
 const loading = ref(true);
 
+const handleImageClick = (attachment) => {
+  const mediaGrid = getId("media-grid");
+  const parent = mediaGrid.querySelector(
+    `div[id='${attachment.attachment.fileId}']`
+  );
+  const isSpoiler = parent.dataset.isspoiler === "true" || false;
+  const imgElement = parent.firstChild;
+  if (imgElement) {
+    displayImagePreview(
+      imgElement,
+      attachment.userId,
+      new Date(attachment.date),
+      isSpoiler,
+      true
+    );
+  }
+};
+
+const attachments = computed(() => store.state.attachments);
 const onlineUsers = computed(() => store.state.user.onlineUsers);
 const offlineUsers = computed(() => store.state.user.offlineUsers);
 
@@ -74,7 +127,10 @@ const processMembers = async (newMembers) => {
   await store.dispatch("categorizeUsers", newMembers);
   loading.value = false;
 };
-
+const processAttachments = async (newAttachments) => {
+  console.log(newAttachments);
+  await store.dispatch("setAttachments", newAttachments);
+};
 watch(
   currentUsers,
   (newUsers) => {
@@ -84,7 +140,32 @@ watch(
   },
   { immediate: true, deep: true }
 );
-
+watch(currentAttachments, (newAttachments) => {
+  if (newAttachments.length) {
+    processAttachments(newAttachments);
+  }
+});
+watch(
+  () => store.state.attachments,
+  (attachments) => {
+    console.log(attachments);
+    setTimeout(() => {
+      attachments.forEach((attachment) => {
+        const element = getId("media-grid").querySelector(
+          "#" + CSS.escape(attachment.attachment.fileId)
+        );
+        console.log(attachment);
+        if (element) {
+          const image = element.querySelector("img");
+          console.log(attachment.date, image);
+          element.setAttribute("data-date", attachment.date);
+          element.setAttribute("data-userid", attachment.userId);
+          element.setAttribute("data-content", attachment.content);
+        }
+      });
+    }, 0);
+  }
+);
 watch(
   () => store.state.user,
   (newUserState) => {
@@ -127,7 +208,7 @@ watch(
 }
 #user-list,
 #activity-list {
-  padding-top: 65px;
+  padding-top: 55px;
   width: 238px;
   display: flex;
   flex-direction: column;
@@ -148,6 +229,55 @@ watch(
   padding: 0;
   flex-grow: 1;
 }
+#media-table-wrapper {
+  max-height: 25vh;
+  min-height: 25vh;
+  margin-bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  margin-left: 9px;
+}
+
+#media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+}
+
+.image-box {
+  background-color: #2f3136;
+  padding: 5px;
+  border-radius: 5px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  aspect-ratio: 1;
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.image-box:hover {
+  background-color: #3a3b41;
+  transform: scale(1.05);
+}
+
+.image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+  transition: opacity 0.3s ease;
+}
+
+.image-box:hover img {
+  opacity: 0.8;
+}
+
 .user-table-wrapper::-webkit-scrollbar {
   width: 4px;
 }
