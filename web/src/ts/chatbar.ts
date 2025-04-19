@@ -1071,10 +1071,11 @@ export function manuallyRenderEmojis(rawContent: string) {
   state.rawContent = rawContent;
   const formattedContent = processEmojisWithPositions(rawContent);
 
-  chatInput.innerHTML =
+  chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== ""
       ? formattedContent
-      : "\u2800";
+      : "\u2800"
+  );
 
   DomUtils.ensureTextNodeAfterImage(chatInput);
 
