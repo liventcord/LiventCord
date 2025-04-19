@@ -232,6 +232,20 @@ export function getFormattedDate(messageDate: Date) {
     })}`;
   }
 }
+export function getFormattedDateForSmall(messageDate: string) {
+  const date = new Date(
+    /([zZ]|[+-]\d{2}:\d{2})$/.test(messageDate)
+      ? messageDate
+      : messageDate + "Z"
+  );
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
+}
 
 export function getFormattedDateSelfMessage(messageDate: string) {
   const today = new Date();
@@ -245,46 +259,29 @@ export function getFormattedDateSelfMessage(messageDate: string) {
     })
   );
 
-  if (localMessageDate.toDateString() === today.toDateString()) {
-    return `${translations.getTranslation(
-      "today"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+  const timeString = localMessageDate.toLocaleTimeString(
+    translations.getLocale(),
+    {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true
-    })}`;
-  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
-    return `${translations.getTranslation(
-      "yesterday"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    })}`;
-  } else {
-    return `${localMessageDate.toLocaleDateString(
-      translations.getLocale()
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    })}`;
-  }
-}
-export function getFormattedDateForSmall(messageDate: string | any) {
-  const messageDateObj = new Date(messageDate);
-  const localMessageDate = new Date(
-    messageDateObj.toLocaleString(translations.getLocale(), {
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })
+    }
   );
 
-  return localMessageDate.toLocaleTimeString(translations.getLocale(), {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true
-  });
+  if (localMessageDate.toDateString() === today.toDateString()) {
+    return `${translations.getTranslation("today")} at ${timeString}`;
+  }
+
+  if (localMessageDate.toDateString() === yesterday.toDateString()) {
+    return `${translations.getTranslation("yesterday")} at ${timeString}`;
+  }
+
+  const dateString = localMessageDate.toLocaleDateString(
+    translations.getLocale()
+  );
+  return `${dateString} at ${timeString}`;
 }
+
 export function isImageURL(url: string) {
   const imageUrlRegex = /\.(gif|jpe?g|png|bmp|webp|tiff|svg|ico)(\?.*)?$/i;
   return imageUrlRegex.test(url);
@@ -443,7 +440,7 @@ function pad(number: number, length: number) {
   return str;
 }
 
-export function formatDate(date: Date) {
+export function formatDate(date: Date): string {
   const year = date.getUTCFullYear();
   const month = pad(date.getUTCMonth() + 1, 2);
   const day = pad(date.getUTCDate(), 2);
@@ -454,15 +451,24 @@ export function formatDate(date: Date) {
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${microseconds}+00:00`;
 }
+export function formatDateGood(date: Date): string {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear().toString();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${day}/${month}/${year}, ${hours}:${minutes}`;
+}
 
 export function truncateString(str: string, maxLength: number) {
+  if (!str) return "";
   if (str.length <= maxLength) {
     return str;
   }
   return str.slice(0, maxLength) + "...";
 }
 
-export function createNowDate() {
+export function createNowDate(): string {
   return new Date().toUTCString();
 }
 
@@ -609,7 +615,6 @@ function applyCustomStyles(html: string): string {
 export function getBase64Image(
   imgElement: HTMLImageElement
 ): string | undefined {
-  console.log(imgElement);
   const canvas = createEl("canvas") as HTMLCanvasElement;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -720,4 +725,53 @@ export function escapeHtml(str: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+export function findPreviousNode(node: Node): Node | null {
+  if (node.previousSibling) {
+    let current = node.previousSibling;
+    while (current.lastChild) {
+      current = current.lastChild;
+    }
+    return current;
+  }
+  return node.parentNode;
+}
+
+export function findNextNode(node: Node): Node | null {
+  if (node.firstChild) return node.firstChild;
+  if (node.nextSibling) return node.nextSibling;
+
+  let current = node;
+  while (current.parentNode && !current.nextSibling)
+    current = current.parentNode;
+  return current.nextSibling;
+}
+
+export function findLastTextNode(node: Node): Node | null {
+  if (node.nodeType === Node.TEXT_NODE) return node;
+
+  for (let i = node.childNodes.length - 1; i >= 0; i--) {
+    const lastTextNode = findLastTextNode(node.childNodes[i]);
+    if (lastTextNode) return lastTextNode;
+  }
+  return null;
+}
+
+export function sanitizeHtmlInput(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export function formatFileSize(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let size = bytes;
+  while (size >= 1024 && i < units.length - 1) {
+    size /= 1024;
+    i++;
+  }
+  return `${size.toFixed(2)} ${units[i]}`;
 }

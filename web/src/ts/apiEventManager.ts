@@ -27,7 +27,11 @@ import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import { alertUser } from "./ui.ts";
 import { currentUserId, Member, UserInfo, userManager } from "./user.ts";
-import { updateFriendsList, handleFriendEventResponse } from "./friends.ts";
+import {
+  updateFriendsList,
+  handleFriendEventResponse,
+  friendsCache
+} from "./friends.ts";
 import { refreshUserProfile, selfName } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { Permission, permissionManager } from "./guildPermissions.ts";
@@ -39,6 +43,8 @@ import {
   handleDeleteMessageResponse
 } from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
+
+// Events triggered upon successful requests to endpoints
 
 interface JoinGuildData {
   success: boolean;
@@ -89,11 +95,13 @@ apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
   }
 });
 
-apiClient.on(EventType.LEAVE_GUILD, (guildId: string) => {
+apiClient.on(EventType.LEAVE_GUILD, (data: any) => {
   closeSettings();
-  removeFromGuildList(guildId);
+  const guildId = data.guildId;
   cacheInterface.removeGuild(guildId);
+  console.log(guildId);
   loadDmHome();
+  removeFromGuildList(guildId);
 });
 
 apiClient.on(EventType.DELETE_GUILD, (data) => {
@@ -292,6 +300,7 @@ apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
 });
 
 apiClient.on(EventType.GET_FRIENDS, (data) => {
+  friendsCache.initialiseFriends(data as any);
   updateFriendsList(data);
 });
 
@@ -305,13 +314,16 @@ apiClient.on(EventType.SEND_MESSAGE_DM, (data: Message) => {
 //friend
 apiClient.on(EventType.ADD_FRIEND, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 apiClient.on(EventType.ADD_FRIEND_ID, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 
 apiClient.on(EventType.ACCEPT_FRIEND, function (message) {
   handleFriendEventResponse(message);
+  apiClient.send(EventType.GET_FRIENDS);
 });
 
 apiClient.on(EventType.REMOVE_FRIEND, function (message) {

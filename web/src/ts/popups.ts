@@ -6,16 +6,11 @@ import {
   currentGuildId,
   createGuild,
   joinToGuild,
-  createGuildListItem,
-  loadGuild
+  createGuildListItem
 } from "./guild.ts";
-import { getId, getAverageRGB, createEl } from "./utils.ts";
+import { getId, getAverageRGB, createEl, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import {
-  createChannel,
-  currentChannelName,
-  getRootChannel
-} from "./channels.ts";
+import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -31,7 +26,12 @@ import {
   contextList,
   appendToProfileContextList
 } from "./contextMenuActions.ts";
-import { textChanHtml, fillDropDownContent } from "./ui.ts";
+import {
+  textChanHtml,
+  fillDropDownContent,
+  isImagePreviewOpen,
+  hideImagePreview
+} from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
@@ -111,7 +111,7 @@ function createPrivateChannelToggle() {
     .querySelector(".toggle-card")
     ?.querySelector(".toggle-box") as HTMLElement;
   if (toggleBox) {
-    toggleBox.style.bottom = "40px";
+    toggleBox.style.bottom = isMobile ? "50px" : "40px";
     toggleBox.style.right = "20px";
   }
 
@@ -330,6 +330,9 @@ export async function drawProfilePop(
     console.error("Null user data requested profile draw", userData);
     return null;
   }
+  if (isImagePreviewOpen()) {
+    hideImagePreview();
+  }
 
   const profileContainer = createProfileContainer(userData);
   const profileImg = createProfileImage(userData);
@@ -396,7 +399,6 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
     id: "profile-discriminator",
     textContent: "#" + userData.discriminator
   });
-  console.error(profileDiscriminator);
 
   container.appendChild(profileTitle);
   container.appendChild(profileDiscriminator);
@@ -526,7 +528,7 @@ function createPopBottomContainer(
                   "member-since"
                 )}:</p><p id="profile-member-since">${new Date(
                   memberSince
-                ).toLocaleDateString("en-US", {
+                ).toLocaleDateString(translations.getLocale(), {
                   year: "numeric",
                   month: "long",
                   day: "numeric"
@@ -544,16 +546,16 @@ function createPopBottomContainer(
       style: "display: none; overflow-y: auto; max-height: 200px;"
     });
     const guildsList = createEl("ul", {
-      className: "guilds-list shared-guilds-list",
-      id: "guilds-list"
+      className: "guilds-list shared-guilds-list"
     });
     sharedGuilds.forEach((guildId: string) => {
-      const rootChannel = cacheInterface.getRootChannel(guildId) as string;
+      const rootChannel = cacheInterface.getRootChannel(guildId);
+      if (!rootChannel) return;
       const guildName = cacheInterface.getGuildName(guildId) as string;
       const isUploaded = cacheInterface.getIsUploaded(guildId) as boolean;
       const guildImage = createGuildListItem(
         guildId,
-        rootChannel,
+        rootChannel.channelId,
         guildName,
         isUploaded,
         false
@@ -563,7 +565,6 @@ function createPopBottomContainer(
       guildsList.appendChild(guildImage);
 
       guildsList.addEventListener("click", () => {
-        loadGuild(guildId, getRootChannel(guildId, rootChannel), guildName);
         closeCurrentProfileDisplay();
       });
     });
@@ -1357,7 +1358,11 @@ export function createCropPop(
   const cropPopContainer = getId("cropPopContainer");
   if (cropPopContainer) {
     cropPopContainer.style.setProperty("height", "600px", "important");
-    cropPopContainer.style.setProperty("width", "600px", "important");
+    cropPopContainer.style.setProperty(
+      "width",
+      isMobile ? "400px" : "600px",
+      "important"
+    );
   }
 
   const sliderWrap = imageContainer.querySelector(".cr-slider-wrap");

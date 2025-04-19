@@ -3,7 +3,9 @@ import {
   loadMainToolbar,
   handleResize,
   loadGuildToolbar,
-  loadDmToolbar
+  loadDmToolbar,
+  initialiseMobile,
+  handleMembersClick
 } from "./ui.ts";
 import {
   getHistoryFromOneChannel,
@@ -15,14 +17,17 @@ import {
 import {
   chatInput,
   initialiseChatInput,
-  initialiseReadUi,
   closeReplyMenu,
   adjustHeight,
-  setDropHandler,
   newMessagesBar,
   chatContainer,
-  monitorInputForEmojis,
-  updatePlaceholderVisibility
+  updatePlaceholderVisibility,
+  FileHandler,
+  ReadenMessagesManager,
+  setChatBarState,
+  ChatBarState,
+  getChatBarState,
+  manuallyRenderEmojis
 } from "./chatbar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -59,10 +64,9 @@ import {
   currentUserNick,
   userManager
 } from "./user.ts";
-import { addContextListeners, pinMessage } from "./contextMenuActions.ts";
+import { addContextListeners } from "./contextMenuActions.ts";
 import {
   updateChannels,
-  channelsUl,
   getChannels,
   currentChannelName,
   Channel,
@@ -71,13 +75,11 @@ import {
 } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
-  toggleUsersList,
   userList,
   activityList,
   setUserListLine,
   setUsersList,
-  updateDmFriendList,
-  isUsersOpenGlobal
+  updateDmFriendList
 } from "./userList.ts";
 import {
   getId,
@@ -86,14 +88,10 @@ import {
   disableElement,
   constructDmPage,
   loadBooleanCookie,
-  isMobile
+  isMobile,
+  escapeHtml
 } from "./utils.ts";
-import {
-  setProfilePic,
-  updateSelfProfile,
-  setUploadSize,
-  selfName
-} from "./avatar.ts";
+import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
 import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
@@ -106,7 +104,7 @@ import {
   setIsOnDm,
   setIsOnGuild
 } from "./router.ts";
-import { earphoneButton, initialiseAudio, microphoneButton } from "./audio.ts";
+import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
@@ -168,6 +166,9 @@ export function initializeApp() {
   initializeProfile();
   initialiseAudio();
   initializeCookies();
+  if (isMobile) {
+    initialiseMobile();
+  }
   handleResize();
   isDomLoaded = true;
 }
@@ -230,143 +231,15 @@ export function initialiseState(data: InitialStateData): void {
   updateGuilds(guilds);
   addKeybinds();
 }
-let isOnLeft = false;
-let isOnRight = false;
-const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
-const toolbarOptions = getId("toolbaroptions") as HTMLElement;
-const navigationBar = getId("navigation-bar") as HTMLElement;
 
-function toggleHamburger(toLeft: boolean, toRight: boolean) {
-  if (!userList) return;
-
-  if (isOnRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
-    mobileMoveToCenter();
-    return;
-  }
-  if (isOnLeft && toRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
-    mobileMoveToCenter();
-    return;
-  }
-  if (toRight) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToRight();
-    return;
-  }
-
-  if (toLeft) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToLeft();
-  } else {
-    mobileMoveToCenter();
-  }
-}
-
-function mobileMoveToRight() {
-  if (!userList) return;
-  isOnLeft = false;
-  isOnRight = true;
-  enableElement(userList);
-}
-
-function mobileMoveToCenter() {
-  if (!userList) return;
-
-  isOnRight = false;
-  isOnLeft = false;
-  disableElement(userList);
-
-  getId("channel-list")?.classList.remove("channel-list-mobile-left");
-  getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
-  getId("guild-container")?.classList.remove("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.remove(
-    "message-input-container-mobile-left"
-  );
-  chatContainer.classList.remove("chat-container-mobile-left");
-  disableElement(navigationBar);
-}
-
-function mobileMoveToLeft() {
-  if (!userList) return;
-
-  isOnLeft = true;
-  isOnRight = false;
-  disableElement(userList);
-
-  getId("channel-list")?.classList.add("channel-list-mobile-left");
-  getId("guilds-list")?.classList.add("guilds-list-mobile-left");
-  getId("guild-container")?.classList.add("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.add(
-    "message-input-container-mobile-left"
-  );
-  chatContainer.classList.add("chat-container-mobile-left");
-  enableElement(navigationBar);
-}
-function initialiseMobile() {
-  const earphoneParent = earphoneButton.parentElement;
-  if (earphoneParent) {
-    earphoneParent.remove();
-  }
-
-  const microphoneParent = microphoneButton.parentElement;
-  if (microphoneParent) {
-    microphoneParent.remove();
-  }
-  disableElement(selfName);
-  disableElement("self-status");
-
-  const friendIconSign = getId("friend-icon-sign");
-  if (friendIconSign) {
-    friendIconSign.style.position = "";
-    friendIconSign.classList.add("navigationButton");
-    navigationBar.appendChild(friendIconSign);
-
-    const svgElement = friendIconSign.querySelector("svg") as SVGElement;
-    if (svgElement) {
-      svgElement.style.width = "30px";
-      svgElement.style.height = "30px";
-    }
-  }
-
-  const settingsButton = getId("settings-button");
-  if (settingsButton) {
-    navigationBar.appendChild(settingsButton);
-    settingsButton.classList.add("navigationButton");
-
-    const svgElement = settingsButton.querySelector("svg") as SVGElement;
-    if (svgElement) {
-      svgElement.style.width = "30px";
-      svgElement.style.height = "30px";
-    }
-  }
-  const avatarWrapper = getId("avatar-wrapper");
-  if (avatarWrapper) {
-    navigationBar.appendChild(avatarWrapper);
-    avatarWrapper.classList.add("navigationButton");
-  }
-}
 function initializeElements() {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
-  initialiseReadUi();
+  ReadenMessagesManager.initialiseReadUi();
   closeReplyMenu();
   adjustHeight();
-  setDropHandler();
-  monitorInputForEmojis();
+  FileHandler.setDropHandler();
   guildContainer.addEventListener(
     "mouseover",
     () => (guildContainer.style.backgroundColor = "#333538")
@@ -377,26 +250,9 @@ function initializeElements() {
   );
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
+
   const tbShowProfile = getId("tb-showprofile");
-  tbShowProfile?.addEventListener("click", () => {
-    if (isOnLeft) {
-      toggleHamburger(!isOnLeft, !isOnRight);
-      return;
-    }
-    isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
-  });
-
-  const tbPinMessage = getId("tb-pin");
-  tbPinMessage?.addEventListener("click", () => {
-    pinMessage;
-  });
-  const tbHamburger = getId("tb-hamburger");
-  console.log(isUsersOpenGlobal, isOnLeft);
-  tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
-
-  if (isMobile) {
-    initialiseMobile();
-  }
+  tbShowProfile?.addEventListener("click", handleMembersClick);
 }
 
 function initializeSettings() {
@@ -430,9 +286,6 @@ function initializeListeners() {
     if (userStatus) userStatus.showStatusPanel();
   });
 
-  mobileBlackBg.addEventListener("click", () => {
-    toggleHamburger(!isOnLeft, !isOnRight);
-  });
   addContextListeners();
 }
 
@@ -586,9 +439,11 @@ export function openDm(friendId: string) {
     }
   }
   loadApp(friendId);
-  if (wasOnDm) {
-    changeCurrentDm(friendId);
-  }
+  setTimeout(() => {
+    if (wasOnDm) {
+      changeCurrentDm(friendId);
+    }
+  }, 0);
   try {
     getHistoryFromOneChannel(friendId, true);
   } catch (e) {
@@ -628,10 +483,12 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     disableElement("message-input-container");
     friendContainerItem.style.color = "white";
     disableElement("channel-container");
+    disableElement("channel-info");
 
     updateUsersActivities();
 
     setUsersList(false);
+    if (userList) disableElement(userList);
     setUserListLine();
 
     const nowOnlineTitle = getId("nowonline");
@@ -639,6 +496,8 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     if (isOnMePage) {
       return;
     }
+
+    closeDropdown();
     setisOnMePage(true);
     setIsOnGuild(false);
     updateFriendMenu();
@@ -662,7 +521,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   } else {
     handleMenu();
   }
-
+  disableElement("channel-container");
   enableElement("friend-container-item");
   setGuildNameText("");
   disableElement("guild-settings-button");
@@ -671,7 +530,6 @@ export function loadDmHome(isChangingUrl?: boolean): void {
 
   enableElement("dms-title");
   enableElement("dm-container-parent", false, true);
-  channelsUl.innerHTML = "";
 
   if (!isMobile) {
     enableElement("guild-container", false, true);
@@ -685,7 +543,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   handleResize();
 }
 
-export function changecurrentGuild() {
+export function changeCurrentGuild() {
   isChangingPage = true;
   setisOnMePage(false);
   setIsOnGuild(true);
@@ -699,7 +557,7 @@ export function changecurrentGuild() {
 
   isChangingPage = false;
 }
-
+const channelInputStates: { [guildId: string]: ChatBarState } = {};
 export function loadApp(friendId?: string, isInitial?: boolean) {
   if (isChangingPage) {
     return;
@@ -715,6 +573,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     setIsOnDm(false);
     if (friendsCache.currentDmId) {
       lastDmId = friendsCache.currentDmId;
+      getHistoryFromOneChannel(guildCache.currentChannelId);
     }
     if (!isInitial) {
       fetchMembers();
@@ -729,11 +588,18 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
     enableElement("hash-sign");
+    enableElement("channel-info");
     setGuildNameText(guildCache.currentGuildName);
     disableElement("global-search-input");
     disableElement("dm-profile-sign-bubble");
     disableElement("dm-profile-sign");
     loadGuildToolbar();
+
+    const oldState = getChatBarState();
+    setChatBarState(oldState);
+    chatInput.innerHTML = escapeHtml(oldState.rawContent) ?? "";
+    channelInputStates[guildCache.currentChannelId] = getChatBarState();
+    manuallyRenderEmojis(oldState.rawContent);
   }
 
   function handleDm(id: string) {
@@ -750,12 +616,18 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
     setChannelTitle(friendNick);
     disableElement("hash-sign");
+    enableElement("channel-info");
+
     enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
     if (dmProfSign) {
       setProfilePic(dmProfSign, id);
       dmProfSign.dataset.cid = id;
     }
+    const oldState = getChatBarState();
+    setChatBarState(oldState);
+    chatInput.innerText = oldState.rawContent ?? "";
+    channelInputStates[id] = getChatBarState();
 
     updateDmFriendList(id, friendNick);
   }

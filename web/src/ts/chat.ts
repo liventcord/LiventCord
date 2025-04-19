@@ -167,8 +167,8 @@ export function handleReplies() {
     console.log(replierElements, message.replies);
     replierElements.forEach((replier) => {
       message.replies.forEach((msg) => {
-        const attachmentUrls = msg.attachmentUrls
-          ? msg.attachmentUrls.toString()
+        const attachmentUrls = msg.attachments
+          ? msg.attachments.toString()
           : "";
         createReplyBar(
           replier,
@@ -270,15 +270,26 @@ export function scrollToMessage(messageElementToScroll: HTMLElement) {
   if (!messageElementToScroll) {
     return;
   }
-  const oldColor = messageElementToScroll.style.backgroundColor;
+
   messageElementToScroll.style.backgroundColor = "rgba(102, 97, 97, 0.5)";
+
   setTimeout(() => {
-    messageElementToScroll.style.backgroundColor = oldColor;
+    messageElementToScroll.style.backgroundColor = "";
   }, 1000);
-  messageElementToScroll.scrollIntoView({
-    behavior: "smooth",
-    block: "center",
-    inline: "nearest"
+
+  const messageRect = messageElementToScroll.getBoundingClientRect();
+  const containerRect = chatContent.getBoundingClientRect();
+
+  const offset =
+    messageRect.top -
+    containerRect.top +
+    chatContent.scrollTop -
+    chatContent.clientHeight / 2 +
+    messageRect.height / 2;
+
+  chatContent.scrollBy({
+    top: offset,
+    behavior: "smooth"
   });
 }
 
@@ -448,7 +459,7 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
       !isNaN(firstMessageDate.getTime()) &&
       firstMessageDate.getTime() === oldestMessageDateOnChannel.getTime()
     ) {
-      displayStartMessage();
+      displayStartMessage(true);
     }
   } else {
     console.error("Invalid oldest message date received.");
@@ -722,6 +733,7 @@ function createDateBar(currentDate: string) {
       year: "numeric"
     }
   );
+
   const datebar = createEl("span", {
     className: "dateBar",
     textContent: formattedDate
@@ -808,9 +820,9 @@ export function createProfileImageChat(
     }
   }
   setProfilePic(profileImg, userId);
-
   messageContentElement.classList.add("onsmallprofile");
 }
+
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
@@ -841,7 +853,7 @@ export function addEditedIndicator(
   editedSpan.textContent = `(${translations.getTranslation("message-edited")})`;
 
   editedSpan.addEventListener("mouseover", () => {
-    const formattedDate = getFormattedDateForSmall(new Date(date));
+    const formattedDate = getFormattedDateForSmall(date);
     createTooltipAtCursor(formattedDate);
   });
 
@@ -891,7 +903,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     channelId,
     date,
     lastEdited,
-    attachmentUrls,
+    attachments,
     replyToId,
     isBot,
     reactionEmojisIds,
@@ -904,7 +916,7 @@ export function displayChatMessage(data: Message): HTMLElement | null {
   } = data;
   if (currentMessagesCache[messageId]) return null;
   if (!channelId || !date) return null;
-  if (!attachmentUrls && content === "" && embeds.length === 0) return null;
+  if (!attachments && content === "" && embeds.length === 0) return null;
   const nick = userManager.getUserNick(userId);
 
   const newMessage = createMessageElement(
@@ -912,7 +924,6 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     userId,
     date,
     content,
-    attachmentUrls,
     replyToId || undefined,
     isNotSent
   );
@@ -940,14 +951,10 @@ export function displayChatMessage(data: Message): HTMLElement | null {
       nick,
       userId,
       userInfo,
-      new Date(date),
+      date,
       isBot,
       replyToId ?? undefined
     );
-  }
-  const isEdited = lastEdited !== null;
-  if (isEdited) {
-    addEditedIndicator(messageContentElement, lastEdited);
   }
 
   messageContentElement.dataset.content_observe = isURL(content) ? "" : content;
@@ -960,11 +967,18 @@ export function displayChatMessage(data: Message): HTMLElement | null {
     newMessage,
     metadata,
     embeds,
-    attachmentUrls
+    userId,
+    new Date(date),
+    attachments
   );
 
   if (!currentLastDate) {
     currentLastDate = new Date(date);
+  }
+
+  const isEdited = lastEdited !== null;
+  if (isEdited) {
+    addEditedIndicator(messageContentElement, lastEdited);
   }
 
   updateSenderAndButtons(newMessage, userId, addToTop);
@@ -1019,23 +1033,20 @@ export function handleSelfSentMessage(data: Message) {
       const authorAndDate = element.querySelector(".author-and-date");
       if (authorAndDate && data.date) {
         const dateElement = authorAndDate.querySelector(".date-element");
-        console.log(data.date, getFormattedDateSelfMessage(data.date));
         if (dateElement) {
           dateElement.textContent = getFormattedDateSelfMessage(data.date);
         }
-        const smallDateElement = element.querySelector(".small-date-element");
-        if (smallDateElement) {
-          smallDateElement.textContent = getFormattedDateForSmall(
-            new Date(data.date)
-          );
-        }
       }
-      element.style.color = "white";
+      const smallDateElement = element.querySelector(".small-date-element");
+      if (smallDateElement && data.date) {
+        smallDateElement.textContent = getFormattedDateForSmall(data.date);
+      }
+      element.style.color = "unset";
       const messageContentElement = element.querySelector(
         "#message-content-element"
       ) as HTMLElement;
       console.log(messageContentElement);
-      if (messageContentElement && data.attachmentUrls) {
+      if (messageContentElement && data.attachments) {
         console.log(
           "Create media element: ",
           data.content,
@@ -1043,7 +1054,7 @@ export function handleSelfSentMessage(data: Message) {
           element,
           data.metadata,
           data.embeds,
-          data.attachmentUrls
+          data.attachments
         );
         createMediaElement(
           data.content,
@@ -1051,7 +1062,9 @@ export function handleSelfSentMessage(data: Message) {
           element,
           data.metadata,
           data.embeds,
-          data.attachmentUrls
+          data.userId,
+          data.date ? new Date(data.date) : new Date(),
+          data.attachments
         );
       }
       element.id = data.messageId;
@@ -1065,7 +1078,6 @@ function createMessageElement(
   userId: string,
   date: string,
   content: string,
-  attachmentUrls: string | string[] | undefined,
   replyToId?: string,
   isNotSent?: boolean
 ) {
@@ -1075,16 +1087,17 @@ function createMessageElement(
   newMessage.dataset.date = date;
   newMessage.dataset.content = content;
 
-  if (attachmentUrls) {
-    newMessage.dataset.attachmentUrls = Array.isArray(attachmentUrls)
-      ? attachmentUrls.join(",")
-      : attachmentUrls;
-  }
   if (replyToId) {
     newMessage.dataset.replyToId = replyToId;
   }
   if (isNotSent) {
     newMessage.style.color = "gray";
+  }
+
+  const messages = chatContent.querySelectorAll(".message");
+  if (messages && messages.length === 0) {
+    // Start of chat
+    newMessage.classList.add("start-chat-message");
   }
   return newMessage;
 }
@@ -1132,7 +1145,7 @@ function handleRegularMessage(
   nick: string,
   userId: string,
   userInfo: UserInfo,
-  date: Date,
+  date: string,
   isBot: boolean,
   replyToId?: string
 ) {
@@ -1150,7 +1163,7 @@ function handleRegularMessage(
       new Date(bottomestChatDateStr).getTime() - new Date(date).getTime()
     ) / MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
-  const dateString = new Date(date).toISOString();
+  const dateObject = new Date(date);
 
   if (!lastSenderID || isTimeGap || replyToId) {
     createProfileImageChat(
@@ -1159,7 +1172,7 @@ function handleRegularMessage(
       nick,
       userInfo,
       userId,
-      date,
+      dateObject,
       isBot
     );
   } else {
@@ -1170,11 +1183,11 @@ function handleRegularMessage(
         nick,
         userInfo,
         userId,
-        date,
+        dateObject,
         isBot
       );
     } else {
-      createNonProfileImage(newMessage, dateString);
+      createNonProfileImage(newMessage, date);
     }
   }
   bottomestChatDateStr = date.toString();
@@ -1445,10 +1458,9 @@ function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
 }
 
 function createNonProfileImage(newMessage: HTMLElement, date: string) {
-  const messageDate = new Date(date);
   const smallDateElement = createEl("p", {
     className: "small-date-element",
-    textContent: getFormattedDateForSmall(messageDate)
+    textContent: getFormattedDateForSmall(date)
   });
   newMessage.appendChild(smallDateElement);
   smallDateElement.style.position = "absolute";
@@ -1471,7 +1483,7 @@ export function displayLocalMessage(
     channelId,
     date: createNowDate(),
     lastEdited: null,
-    attachmentUrls: [],
+    attachments: [],
     replyToId: null,
     isBot: false,
     reactionEmojisIds: [],
@@ -1509,7 +1521,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     channelId,
     date: createNowDate(),
     lastEdited: "",
-    attachmentUrls: "",
+    attachments: [],
     replyToId: "",
     isBot: true,
     reactionEmojisIds: [],
@@ -1526,7 +1538,9 @@ export function displayCannotSendMessage(channelId: string, content: string) {
   scrollToBottom();
 }
 
-export function displayStartMessage() {
+export function displayStartMessage(
+  isOldestMessageDateOnChannel: boolean = false
+) {
   const channelHashSvg =
     '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="rgb(255, 255, 255)" viewBox="0 0 24 24"><path fill="var(--white)" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
 
@@ -1577,7 +1591,7 @@ export function displayStartMessage() {
     }
     chatContent.insertBefore(message, chatContent.firstChild);
     setIsLastMessageStart(true);
-    scrollToBottom();
+    if (!isOldestMessageDateOnChannel) scrollToBottom();
   } else {
     if (chatContent.querySelector(".startmessage")) {
       return;

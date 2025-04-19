@@ -85,16 +85,9 @@ namespace LiventCord.Controllers
         [HttpDelete("/api/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGuildLeave([FromRoute][IdLengthValidation] string guildId)
         {
-            try
-            {
-                await RemoveMemberFromGuild(UserId!, guildId);
-                _cacheService.InvalidateCache(UserId!);
-                return Ok(new { guildId });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
+            await RemoveMemberFromGuild(UserId!, guildId);
+            _cacheService.InvalidateCache(UserId!);
+            return Ok(new { guildId });
         }
 
 
@@ -122,10 +115,8 @@ namespace LiventCord.Controllers
                     }
                 );
             }
-
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.ReadMessages);
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.SendMessages);
-            await _permissionsController.AssignPermissions(guildId, userId, PermissionFlags.MentionEveryone);
+            PermissionFlags combinedPermissions = PermissionFlags.ReadMessages | PermissionFlags.SendMessages | PermissionFlags.MentionEveryone;
+            await _permissionsController.AddPermissions(guildId, userId, combinedPermissions);
 
             await _dbContext.SaveChangesAsync();
 

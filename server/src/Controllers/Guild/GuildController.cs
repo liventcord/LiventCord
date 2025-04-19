@@ -118,7 +118,7 @@ namespace LiventCord.Controllers
 
             _dbContext.Guilds.Add(guild);
 
-            await _permissionsController.AssignPermissions(guildId, ownerId, PermissionFlags.All);
+            await _permissionsController.AddPermissions(guildId, ownerId, PermissionFlags.All);
 
             await _dbContext.SaveChangesAsync();
 
@@ -153,7 +153,7 @@ namespace LiventCord.Controllers
 
             if (photo != null)
             {
-                var uploadResult = await _imageController.UploadImage(photo, userId, newGuild.GuildId);
+                var uploadResult = await _imageController.UploadImageOnGuildCreation(photo, userId, newGuild.GuildId);
                 if (uploadResult is not OkObjectResult uploadResultOk)
                     return uploadResult;
             }

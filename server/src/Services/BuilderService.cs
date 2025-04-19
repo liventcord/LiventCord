@@ -6,17 +6,17 @@ public class BuilderService
         {
             string workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "web");
 
-            if (!IsNpmInstallRequired(workingDirectory))
+            if (!IsPnpmInstallRequired(workingDirectory))
             {
-                Console.WriteLine("Node modules already exist. Skipping npm install.");
+                Console.WriteLine("Pnpm folder already exist. Skipping pnpm install.");
             }
             else
             {
-                Console.WriteLine("Running npm install...");
-                RunCommand("npm", "install", workingDirectory);
+                Console.WriteLine("Running pnpm install...");
+                RunCommand("pnpm", "install", workingDirectory);
             }
 
-            RunCommand("npm", "run build", workingDirectory);
+            RunCommand("pnpm", "run build", workingDirectory);
 
             string sourcePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "web", "src", "output");
             string destinationPath = Path.Combine("wwwroot");
@@ -28,9 +28,9 @@ public class BuilderService
         }
     }
 
-    private static bool IsNpmInstallRequired(string workingDirectory)
+    private static bool IsPnpmInstallRequired(string workingDirectory)
     {
-        string nodeModulesPath = Path.Combine(workingDirectory, "node_modules");
+        string nodeModulesPath = Path.Combine(workingDirectory, "pnpm-store");
 
         if (!Directory.Exists(nodeModulesPath))
         {

@@ -26,6 +26,7 @@ namespace LiventCord.Controllers
         public DbSet<GuildFile> GuildFiles { get; set; }
         public DbSet<UserChannel> UserChannels { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
 
@@ -56,14 +57,18 @@ namespace LiventCord.Controllers
                 .Select(g => g.GuildId)
                 .ToArrayAsync();
         }
-        public async Task<List<string>> GetUserGuildIds(string userId)
+        public async Task<bool> AreUsersSharingGuild(string userId, string friendId)
         {
-            return await GuildMembers
-                .Where(gu => gu.MemberId == userId)
-                .Select(gu => gu.GuildId)
+            var sharedGuildIds = await Set<GuildMember>()
+                .Where(gm => gm.MemberId == userId || gm.MemberId == friendId)
+                .GroupBy(gm => gm.GuildId)
+                .Where(group => group.Any(g => g.MemberId == userId) && group.Any(g => g.MemberId == friendId))
+                .Select(g => g.Key)
+                .Distinct()
                 .ToListAsync();
-        }
 
+            return sharedGuildIds.Any();
+        }
         public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
         {
             var query = Set<GuildMember>().Where(gm => gm.GuildId == guildId);
@@ -278,7 +283,6 @@ namespace LiventCord.Controllers
                     .HasMaxLength(2000);
                 entity.Property(m => m.Date).IsRequired();
                 entity.Property(m => m.LastEdited);
-                entity.Property(m => m.AttachmentUrls);
                 entity.Property(m => m.ReplyToId);
                 entity.Property(m => m.ReactionEmojisIds).HasMaxLength(512);
 
@@ -287,6 +291,11 @@ namespace LiventCord.Controllers
                 entity.HasOne(m => m.User)
                     .WithMany()
                     .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(m => m.Attachments)
+                    .WithOne(a => a.Message)
+                    .HasForeignKey(a => a.MessageId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(m => m.Channel)

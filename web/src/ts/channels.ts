@@ -15,7 +15,7 @@ import {
 } from "./chat.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
-import { muteHtml, inviteVoiceHtml } from "./ui.ts";
+import { muteHtml, inviteVoiceHtml, selectedChanColor } from "./ui.ts";
 import { createUserContext } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
@@ -29,7 +29,6 @@ import { translations } from "./translations.ts";
 export const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
 const channelList = getId("channel-list") as HTMLElement;
-export const channelsUl = channelList.querySelector("ul") as HTMLElement;
 export let currentChannelName: string;
 
 export let currentVoiceChannelId: string;
@@ -94,7 +93,7 @@ function selectChannel(guildId: string, channelId: string) {
   currentSelectedChannels[guildId] = channelId;
 }
 
-export function getRootChannel(guildId: string, rootChannel: string) {
+export function getSeletedChannel(guildId: string, rootChannel: string) {
   if (
     currentSelectedChannels[guildId] &&
     currentSelectedChannels[guildId] !== rootChannel
@@ -104,7 +103,7 @@ export function getRootChannel(guildId: string, rootChannel: string) {
   return rootChannel;
 }
 
-export function handleNewChannel(data: any) {
+export function handleNewChannel(data: Channel) {
   const guildId = data.guildId;
   const isTextChannel = data.isTextChannel;
 
@@ -117,7 +116,16 @@ export function handleNewChannel(data: any) {
   cacheInterface.addChannel(guildId, data);
   createFireWorks();
 }
-
+function selectChannelElement(channelId: string) {
+  const channelsUl = getChannelsUl();
+  if (!channelsUl) return;
+  const channel = channelsUl.querySelector(
+    `#${CSS.escape(channelId)}`
+  ) as HTMLElement;
+  console.log(channel);
+  if (!channel) return;
+  channel.style.backgroundColor = selectedChanColor;
+}
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) return;
   if (!newChannel.isTextChannel) return;
@@ -148,6 +156,7 @@ export async function changeChannel(newChannel?: ChannelData) {
     setLastSenderID("");
 
     clearLastDate();
+    selectChannelElement(channelId);
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
   } else {
@@ -160,10 +169,15 @@ export async function changeChannel(newChannel?: ChannelData) {
 
   setCurrentChannel(channelId);
 }
+export function getChannelsUl() {
+  const container = getId("channel-container");
+
+  return container?.querySelector("#channelul") as HTMLElement;
+}
 //channels
 function setCurrentChannel(channelId: string) {
   currentChannels.forEach((channel) => {
-    const channelButton = channelsUl.querySelector(
+    const channelButton = getChannelsUl().querySelector(
       `li[id="${channel.channelId}"]`
     ) as HTMLElement;
 
@@ -220,7 +234,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function removeChannelElement(channelId: string) {
-  const existingChannelButton = channelsUl.querySelector(
+  const existingChannelButton = getChannelsUl().querySelector(
     `li[id="${channelId}"]`
   );
   if (!existingChannelButton) {

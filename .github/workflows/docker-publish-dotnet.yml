@@ -49,9 +49,8 @@ jobs:
           cache-to: type=inline
 
   deploy-koyeb:
-    runs-on: ubuntu-latest
     needs: build-and-push
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -63,28 +62,20 @@ jobs:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           SERVICE_ID: ${{ github.event.inputs.SERVICE_ID }}
         run: |
-          #!/bin/bash
           set -e
-
           KOYEB_API_URL="https://app.koyeb.com/v1/services/${SERVICE_ID}/redeploy"
-
           if [ -z "$KOYEB_API_TOKEN" ]; then
             echo "KOYEB_API_TOKEN environment variable is not set"
             exit 1
           fi
-
           PAYLOAD=$(echo '{"image": "'"$IMAGE_NAME"'"}')
-
           RESPONSE=$(curl --silent --write-out "HTTPSTATUS:%{http_code}" -X POST "$KOYEB_API_URL" \
             -H "Authorization: Bearer $KOYEB_API_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
-
           HTTP_STATUS=$(echo "$RESPONSE" | awk -F'HTTPSTATUS:' '{print $2}')
-
           if [ "$HTTP_STATUS" -ne 200 ]; then
             echo "Failed to trigger redeployment for service $SERVICE_ID. HTTP Status: $HTTP_STATUS"
             exit 1
           fi
-
           echo "Successfully triggered redeployment for service $SERVICE_ID with image $IMAGE_NAME"

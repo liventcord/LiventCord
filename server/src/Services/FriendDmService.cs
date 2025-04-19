@@ -13,6 +13,8 @@ public class FriendDmService
 
     public async Task<bool> AddDmBetweenUsers(string userId, string friendId)
     {
+        if (userId == friendId) return false;
+
         var user = await _dbContext.Users.FindAsync(userId);
         var friend = await _dbContext.Users.FindAsync(friendId);
 
@@ -21,25 +23,25 @@ public class FriendDmService
             return false;
         }
 
-        var existingFriendship = await _dbContext.UserDms
+        var existingDm1 = await _dbContext.UserDms
             .FirstOrDefaultAsync(d => d.UserId == userId && d.FriendId == friendId);
+        var existingDm2 = await _dbContext.UserDms
+            .FirstOrDefaultAsync(d => d.UserId == friendId && d.FriendId == userId);
 
-        if (existingFriendship != null)
+        if (existingDm1 != null || existingDm2 != null)
         {
             return false;
         }
 
-        var newFriendship = new UserDm
-        {
-            UserId = userId,
-            FriendId = friendId
-        };
+        _dbContext.UserDms.AddRange(
+            new UserDm { UserId = userId, FriendId = friendId },
+            new UserDm { UserId = friendId, FriendId = userId }
+        );
 
-        _dbContext.UserDms.Add(newFriendship);
         await _dbContext.SaveChangesAsync();
-
         return true;
     }
+
     public async Task<List<PublicUser>> GetDmUsers(string userId)
     {
         return await _dbContext
