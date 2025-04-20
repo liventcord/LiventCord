@@ -827,13 +827,11 @@ export function getImageExtension(img: HTMLImageElement): string {
   return match ? match[1].toLowerCase() : "";
 }
 export function getFileNameFromUrl(url: string): string {
-  const baseUrl = window.location.origin;
-  const absoluteUrl = new URL(url, baseUrl);
-  const path = absoluteUrl.pathname;
+  const path = url.split("?")[0].split("#")[0];
   const parts = path.split("/");
   const fileName = parts.pop() || "";
 
-  if (fileName && /\.[a-zA-Z0-9]+$/.test(fileName)) {
+  if (/\.[a-zA-Z0-9]+$/.test(fileName)) {
     return fileName;
   }
 

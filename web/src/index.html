@@ -565,31 +565,55 @@ ref="userLine"
     <video id="video-background" autoplay muted loop></video>
 
     <div class="wrapper">
-      <form id="login-form">
-        <h2 data-i18n="login"></h2>
-        <div class="input-field">
-          <input id="email" name="email" type="text" required tabindex="1" />
-          <label for="email" data-i18n="emailLabel"></label>
-        </div>
-        <div class="input-field">
-          <input id="pass" name="pass" type="password" required tabindex="2" />
-          <label for="pass" data-i18n="passwordLabel"></label>
-        </div>
-        <div class="forget">
-          <a href="#" data-i18n="forgotPassword" tabindex="3"></a>
-        </div>
-        <button class="login-button" type="submit" data-i18n="login" tabindex="4"></button>
-        <div class="register">
-          <p data-i18n="registerPrompt">
-            <a href="/register" data-i18n="register" tabindex="5"></a>
-          </p>
-        </div>
-      </form>
-    </div>
-
+        <form id="login-form">
+          <h2 data-i18n="login"></h2>
+          <div class="input-field">
+            <input id="login-email" name="email" type="text" required tabindex="1" />
+            <label for="login-email" data-i18n="emailLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="login-pass" name="pass" type="password" required tabindex="2" />
+            <label for="login-pass" data-i18n="passwordLabel"></label>
+          </div>
+          <div class="forget">
+            <a href="#" data-i18n="forgotPassword" tabindex="3"></a>
+          </div>
+          <button class="login-button" type="submit" data-i18n="login" tabindex="4"></button>
+          <div class="register">
+            <p data-i18n="registerPrompt">
+              <a id="register-link" data-i18n="register" tabindex="5"></a>
+            </p>
+          </div>
+        </form>
+        <form id="register-form" style="display: none;">
+          <h2 data-i18n="register"></h2>
+          <div class="input-field">
+            <input id="register-email" name="email" type="text" required tabindex="1" />
+            <label for="register-email" data-i18n="emailLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="register-nick" name="nick" type="text" required tabindex="2" />
+            <p id="discriminatorText"></p>
+            <label for="register-nick" data-i18n="nickLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="register-pass" name="pass" type="password" required tabindex="3" />
+            <label for="register-pass" data-i18n="passwordLabel"></label>
+          </div>
+          <div class="forget">
+            <a data-i18n="forgotPassword" tabindex="4"></a>
+          </div>
+          <button class="login-button" type="submit" data-i18n="register" tabindex="5"></button>
+          <div class="login">
+            <p data-i18n="loginPrompt">
+              <a id="login-link" data-i18n="login" tabindex="6"></a>
+            </p>
+          </div>
+        </form>
+      </div>
     <div class="language-selector">
-      <button onclick="setLanguage('en')" tabindex="6">English</button>
-      <button onclick="setLanguage('tr')" tabindex="7">Turkish</button>
+      <button id="en-button" tabindex="6">English</button>
+      <button id="tr-button" tabindex="7">Turkish</button>
     </div>
 </html>
 

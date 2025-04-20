@@ -3,7 +3,7 @@ import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
 import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
-import { enableElement } from "./utils.ts";
+import { disableElement, enableElement } from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
 export let isOnMePage = true;
 export let isOnDm = false;
@@ -64,25 +64,30 @@ class Router {
   }
 
   async openLogin() {
-    enableElement("login-panel")
-    initialiseLoginPage(false)
+    enableElement("login-panel");
+    initialiseLoginPage(false);
+  }
+  closeLogin() {
+    disableElement("login-panel");
+  }
+  switchToRegister() {
+    disableElement("login-form");
+    enableElement("register-form");
+  }
+  switchToLogin() {
+    enableElement("login-form");
+    disableElement("register-form");
   }
   async logOutApp() {
-    fetch("/auth/logout", {
+    fetch(import.meta.env.VITE_BACKEND_URL + "/auth/logout", {
       method: "POST",
-      credentials: "same-origin"
+      credentials: "include"
     })
-      .then((response) => {
-        if (response.ok) {
-          document.body.innerHTML = "";
-          const window2 = window as any;
-          const isWebview = window2.ReactNativeWebView;
-          window.location.href = isWebview ? "/login" : "/";
-        } else {
-          console.error("Logout failed:", response.statusText);
-        }
+      .then(() => {
+        window.location.reload();
       })
       .catch((error) => {
+        window.location.reload();
         console.error("Error during logout:", error);
       });
   }
