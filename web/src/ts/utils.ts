@@ -207,7 +207,7 @@ export function sanitizeInput(input: string): string {
 }
 
 export function getEmojiPath(emojiId: string, guildId: string): string {
-  return `/api/proxy/backend/guilds/${sanitizeInput(guildId)}/emojis/${sanitizeInput(emojiId)}`;
+  return `https://leventcord.bsite.net/api/proxy/backend/guilds/${sanitizeInput(guildId)}/emojis/${sanitizeInput(emojiId)}`;
 }
 
 export function kebapToSentence(text: string) {
@@ -447,8 +447,8 @@ export function getProfileUrl(userId: string, addTimestamp?: boolean) {
   const timestamp = `?ts=${new Date().getTime()}`;
 
   return addTimestamp
-    ? `/api/proxy/backend/profiles/${userId}` + timestamp
-    : `/api/proxy/backend/profiles/${userId}`;
+    ? `https://leventcord.bsite.net/api/proxy/backend/profiles/${userId}` + timestamp
+    : `https://leventcord.bsite.net/api/proxy/backend/profiles/${userId}`;
 }
 
 function pad(number: number, length: number) {
