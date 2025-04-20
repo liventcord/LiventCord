@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: "./src",
     publicDir: "../public",
-    base: "/api/proxy/backend/",
+    base: "https://leventcord.bsite.net/api/proxy/backend",
 
     build: {
       outDir: "output",

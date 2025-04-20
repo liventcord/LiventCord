@@ -553,7 +553,7 @@ export function setGuildImage(
   isUploaded: boolean
 ) {
   imageElement.src = isUploaded
-    ? `/api/proxy/backend/guilds/${guildId}`
+    ? `https://leventcord.bsite.net/api/proxy/backend/guilds/${guildId}`
     : blackImage;
 }
 function getGuildFromBar(guildId: string): HTMLElement | null {

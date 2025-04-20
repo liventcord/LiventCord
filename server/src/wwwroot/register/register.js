@@ -1,4 +1,4 @@
-import { initialisePage } from "/login/loginutils.js";
+import { initialisePage } from "/api/proxy/backend/login/loginutils.js";
 
 let isFetching = false;
 let debounceTimer;
