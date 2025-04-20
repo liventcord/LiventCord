@@ -24,24 +24,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'  # We will cache npm dependencies here for the Docusaurus project
           
-      # Install pnpm globally
+      # Install pnpm globally for the web directory
       - name: Install pnpm
         run: |
           npm install -g pnpm
           pnpm --version  # Verify pnpm is installed
 
-      # Cache pnpm dependencies separately (if using pnpm-lock.yaml)
-      - name: Cache pnpm dependencies
-        uses: actions/cache@v4
+      # Cache pnpm dependencies for the web folder
+      - name: Cache pnpm dependencies (web)
+        uses: actions/cache@v2
         with:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('web/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      # Install WebApp dependencies
+      # Install WebApp dependencies using pnpm
       - name: Install WebApp dependencies
         run: |
           cd web
@@ -53,13 +52,13 @@ jobs:
           cd web
           pnpm build
 
-      # Inject WebApp into Docusaurus static folder
+      # Inject WebApp build output into Docusaurus static folder
       - name: Inject WebApp into Docusaurus static folder
         run: |
           rm -rf docs/static/app
           cp -r web/src/output docs/static/app
 
-      # Install Docusaurus dependencies
+      # Install Docusaurus dependencies using yarn
       - name: Install Docusaurus dependencies
         run: |
           cd docs
