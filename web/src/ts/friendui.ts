@@ -283,7 +283,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
         existingFriendsDmContainers.add({
           dmContainer: dmUser.dmContainer,
           remove() {
-            this.dmContainer.remove();
+            dmUser.dmContainer.remove();
           }
         });
       }

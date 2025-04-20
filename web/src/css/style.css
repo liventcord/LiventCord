@@ -2022,36 +2022,6 @@ textarea::-webkit-scrollbar-track {
   top: 0;
   left: 0;
   z-index: 100;
-
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Comic Sans", sans-serif !important;
-  font-weight: bold;
-  color: white;
-}
-
-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  width: 100%;
-  padding: 0 10px;
-}
-
-body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #000;
-  z-index: -1;
 }
 
 #video-background {
@@ -2088,6 +2058,7 @@ h2 {
   position: relative;
   border-bottom: 2px solid #ccc;
   margin: 15px 0;
+  color: white;
 }
 
 .input-field label {
@@ -2101,7 +2072,7 @@ h2 {
 }
 
 .input-field input {
-  width: 100%;
+  width: 80%;
   height: 40px;
   background: transparent;
   border: none;
@@ -2178,7 +2149,7 @@ h2 {
 }
 .login {
   margin-top: 30px;
-  color: black;
+  color: white;
   text-align: center;
 }
 .register {
@@ -2205,7 +2176,7 @@ h2 {
 
 .language-selector button {
   background-color: #f0f0f0;
-  color:black;
+  color: black;
   border: none;
   padding: 8px 15px;
   margin: 0 10px;
@@ -2226,7 +2197,7 @@ h2 {
   width: 600px;
   height: 90px;
   background-color: #2fdd2c;
-  z-index: 15;
+  z-index: 500;
   border-radius: 25px;
   position: fixed;
   top: 100px;
@@ -2238,7 +2209,7 @@ h2 {
   width: 600px;
   height: 90px;
   background-color: #dd2c2c;
-  z-index: 15;
+  z-index: 500;
   border-radius: 25px;
   position: fixed;
   top: 100px;

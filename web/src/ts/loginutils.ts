@@ -1,12 +1,13 @@
+import { router } from "./router";
 import { getId } from "./utils";
 
-//loginutils.js
 let currentLanguage = "en";
 
 const loginTranslations = {
   en: {
     emailInvalid: "Please enter a valid email address.",
     passwordInvalid: "Password must be at least 5 characters long.",
+    nickInvalid: "Nickname must be between 1 and 32 characters.",
     unauthorized: "Invalid email or password!",
     errorOccurred: "An error occurred! ",
     login: "Login",
@@ -25,6 +26,7 @@ const loginTranslations = {
   tr: {
     emailInvalid: "Geçerli bir e-posta adresi girin.",
     passwordInvalid: "Şifre en az 5 karakter uzunluğunda olmalıdır.",
+    nickInvalid: "Kullanıcı adı 1 ile 32 karakter arasında olmalıdır.",
     unauthorized: "E-posta veya şifre geçersiz!",
     errorOccurred: "Bir hata oluştu! ",
     login: "Giriş Yap",
@@ -41,6 +43,7 @@ const loginTranslations = {
     successRegister: "Başarıyla kayıt olundu!"
   }
 } as any;
+
 function updateDOM() {
   const elements = document.querySelectorAll("[data-i18n]");
   elements.forEach((element) => {
@@ -59,46 +62,118 @@ function updateDOM() {
     }
   });
 }
-function setLanguage(language:string) {
+
+function setLanguage(language: string) {
   currentLanguage = language;
   const languageChangeEvent = new CustomEvent("languageChanged");
   window.dispatchEvent(languageChangeEvent);
 }
-export function initialiseLoginPage(isRegister:boolean) {
+
+export function initialiseLoginPage(isRegister: boolean) {
   const browserLanguage = navigator.language || navigator.language;
   const languageToSet = browserLanguage.startsWith("tr") ? "tr" : "en";
 
   setLanguage(languageToSet);
   updateDOM();
+
   const loginForm = getId("login-form");
-  if(!loginForm) return;
-  loginForm .addEventListener("submit", (event:SubmitEvent) => submitForm(event, isRegister));
+  const registerForm = getId("register-form");
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitForm(loginForm, false);
+    });
+
+    const loginEmailInput = loginForm.querySelector(
+      'input[name="email"]'
+    ) as HTMLInputElement;
+    const loginPassInput = loginForm.querySelector(
+      'input[name="pass"]'
+    ) as HTMLInputElement;
+
+    if (loginEmailInput && loginPassInput) {
+      loginEmailInput.addEventListener("input", () => {
+        loginEmailInput.setCustomValidity("");
+      });
+
+      loginPassInput.addEventListener("input", () => {
+        loginPassInput.setCustomValidity("");
+      });
+
+      loginEmailInput.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          loginPassInput.focus();
+        }
+      });
+
+      loginPassInput.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          submitForm(loginForm, false);
+        }
+      });
+    }
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitForm(registerForm, true);
+    });
+
+    setRegisterInputListeners(registerForm);
+  }
 
   window.addEventListener("languageChanged", updateDOM);
 
-  const wallpaper = document.getElementById("video-background") as HTMLImageElement
+  const wallpaper = document.getElementById(
+    "video-background"
+  ) as HTMLVideoElement;
   if (wallpaper) {
     const width = window.innerWidth;
-
-    console.log("Window Width: " + width);
 
     if (width > 1280) {
       wallpaper.src =
         "https://motionbgs.com/media/492/nier-automata.3840x2160.mp4";
-      console.log("4K video loaded");
     } else {
       wallpaper.src =
         "https://motionbgs.com/media/492/nier-automata.1920x1080.mp4";
-      console.log("Full HD video loaded");
     }
   }
+
+  const registerLink = getId("register-link");
+  if (registerLink) {
+    registerLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      router.switchToRegister();
+    });
+  }
+
+  const loginLink = getId("login-link");
+  if (loginLink) {
+    loginLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      router.switchToLogin();
+    });
+  }
+
+  const enButton = getId("en-button");
+  const trButton = getId("tr-button");
+  enButton?.addEventListener("click", () => {
+    setLanguage("en");
+  });
+  trButton?.addEventListener("click", () => {
+    setLanguage("tr");
+  });
 }
 
-function getTranslation(key:string) {
+function getTranslation(key: string) {
   return loginTranslations[currentLanguage][key] || key;
 }
 
-function alertUser(text:string, isSuccess = false) {
+function alertUser(text: string, isSuccess = false) {
   const container = document.createElement("div");
   container.classList.add(
     isSuccess ? "info-container" : "error-container",
@@ -120,27 +195,40 @@ function alertUser(text:string, isSuccess = false) {
     container.remove();
   }, 5000);
 }
-function submitForm(event:SubmitEvent, isRegister:boolean) {
-  event.preventDefault();
 
-  const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
-  const passwordInput = document.querySelector('input[name="pass"]') as HTMLInputElement
-  const nickInput = document.querySelector('input[name="nick"]') as HTMLInputElement
-  const emailValue = emailInput.value;
-  const passwordValue = passwordInput.value;
-  let nickValue
-  if (isRegister) {
-    nickValue = nickInput.value;
+function submitForm(form: HTMLElement, isRegister: boolean) {
+  const emailInput = form.querySelector(
+    'input[name="email"]'
+  ) as HTMLInputElement;
+  const passwordInput = form.querySelector(
+    'input[name="pass"]'
+  ) as HTMLInputElement;
+  let nickInput: HTMLInputElement | null = null;
+
+  if (!emailInput || !passwordInput) {
+    console.error("Required form inputs not found");
+    return;
   }
 
-  const setInputValidity = (input:HTMLInputElement, message:string) => {
+  const emailValue = emailInput.value;
+  const passwordValue = passwordInput.value;
+  let nickValue = "";
+
+  if (isRegister) {
+    nickInput = form.querySelector('input[name="nick"]') as HTMLInputElement;
+    if (nickInput) {
+      nickValue = nickInput.value;
+    }
+  }
+
+  const setInputValidity = (input: HTMLInputElement, message: string) => {
     input.setCustomValidity(message);
     input.reportValidity();
   };
 
   emailInput.setCustomValidity("");
   passwordInput.setCustomValidity("");
-  if (isRegister) nickInput.setCustomValidity("");
+  if (nickInput) nickInput.setCustomValidity("");
 
   if (!validateEmail(emailValue)) {
     setInputValidity(emailInput, getTranslation("emailInvalid"));
@@ -152,30 +240,30 @@ function submitForm(event:SubmitEvent, isRegister:boolean) {
     return;
   }
 
-  if (isRegister && !validateNick(nickValue)) {
+  if (isRegister && nickInput && !validateNick(nickValue)) {
     setInputValidity(nickInput, getTranslation("nickInvalid"));
     return;
   }
 
-  let data = {
+  const data = {
     email: emailValue,
     password: passwordValue
   } as any;
 
-  if (isRegister) {
+  if (isRegister && nickValue) {
     data.nickname = nickValue;
   }
 
-  const base = import.meta.env.VITE_BACKEND_URL
+  const base = import.meta.env.VITE_BACKEND_URL;
 
-  fetch(isRegister ? base + "/auth/register" : base + "/auth/login", {
+  fetch(isRegister ? `${base}/auth/register` : `${base}/auth/login`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json", 
-      "Accept": "application/json"
+      "Content-Type": "application/json",
+      Accept: "application/json"
     },
     body: JSON.stringify(data),
-    credentials: "include" 
+    credentials: "include"
   })
     .then((response) => {
       if (!response.ok) {
@@ -194,15 +282,16 @@ function submitForm(event:SubmitEvent, isRegister:boolean) {
           response.status === 401 ? "Unauthorized" : "Error occurred"
         );
       }
+      return response;
     })
     .then(() => {
       if (isRegister) {
         alertUser(getTranslation("successRegister"), true);
         setTimeout(() => {
-          window.location.href = "/app";
+          router.openLogin();
         }, 5000);
       } else {
-        window.location.href = "/app";
+        router.closeLogin();
       }
     })
     .catch((error) => {
@@ -210,18 +299,110 @@ function submitForm(event:SubmitEvent, isRegister:boolean) {
     });
 }
 
+let isFetching = false;
+let debounceTimer = 0;
+let currentInputValue = "";
 
-function validateEmail(email:string) {
+function setRegisterInputListeners(registerForm: HTMLElement) {
+  if (!registerForm) return;
+
+  const emailInput = registerForm.querySelector(
+    'input[name="email"]'
+  ) as HTMLInputElement;
+  const nickInput = registerForm.querySelector(
+    'input[name="nick"]'
+  ) as HTMLInputElement;
+  const passInput = registerForm.querySelector(
+    'input[name="pass"]'
+  ) as HTMLInputElement;
+
+  if (!emailInput || !nickInput || !passInput) return;
+
+  emailInput.addEventListener("input", () => {
+    emailInput.setCustomValidity("");
+  });
+
+  nickInput.addEventListener("input", () => {
+    nickInput.setCustomValidity("");
+
+    const newInputValue = nickInput.value.trim();
+
+    if (newInputValue && newInputValue !== currentInputValue && !isFetching) {
+      currentInputValue = newInputValue;
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        try {
+          isFetching = true;
+          const base = import.meta.env.VITE_BACKEND_URL;
+          const response = await fetch(
+            `${base}/api/discriminators?nick=${encodeURIComponent(newInputValue)}`,
+            {
+              method: "GET"
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (
+              data.discriminator &&
+              newInputValue === nickInput.value.trim()
+            ) {
+              const discriminatorText = getId(
+                "discriminatorText"
+              ) as HTMLElement;
+              if (discriminatorText) {
+                discriminatorText.textContent = "#" + data.discriminator;
+              }
+            }
+          } else {
+            throw new Error("Network response was not ok.");
+          }
+        } catch (error) {
+          console.error("Fetch Error:", error);
+        } finally {
+          isFetching = false;
+        }
+      }, 500);
+    }
+  });
+
+  passInput.addEventListener("input", () => {
+    passInput.setCustomValidity("");
+  });
+
+  emailInput.addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      nickInput.focus();
+    }
+  });
+
+  nickInput.addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      passInput.focus();
+    }
+  });
+
+  passInput.addEventListener("keypress", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitForm(registerForm, true);
+    }
+  });
+}
+
+function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validatePassword(password:string) {
+function validatePassword(password: string) {
   return password && password.length >= 5;
 }
 
-function validateNick(value?:string) {
-  if(!value) return false;
+function validateNick(value?: string) {
+  if (!value) return false;
   const nick = value.trim();
   return nick.length >= 1 && nick.length <= 32;
 }
-
