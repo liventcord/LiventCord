@@ -69,7 +69,7 @@ module.exports = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/LiventCord/',
+              href: 'https://github.com/liventcord/',
             },
           ],
         },
