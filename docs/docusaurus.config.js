@@ -14,7 +14,6 @@ module.exports = {
   projectName: 'LiventCord',
 
   trailingSlash: false,
-
   presets: [
     [
       '@docusaurus/preset-classic',
