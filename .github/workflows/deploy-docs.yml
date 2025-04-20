@@ -46,6 +46,10 @@ jobs:
           cd web
           pnpm install --frozen-lockfile
 
+      - name: Create .env file
+        run: |
+          echo "APPSETTINGS__FRONTENDURL=https://liventcord.vercel.app;http://localhost:5173;https://liventcord.github.io" > .env
+
       # Build WebApp
       - name: Build WebApp
         run: |
