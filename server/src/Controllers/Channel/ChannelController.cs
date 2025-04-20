@@ -17,7 +17,7 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly ITokenValidationService _tokenValidationService;
         private readonly RedisEventEmitter _redisEventEmitter;
-        private readonly ImageController _imageController;
+        private readonly FileController _imageController;
         private readonly ICacheService _cacheService;
 
         public ChannelController(
@@ -26,7 +26,7 @@ namespace LiventCord.Controllers
             PermissionsController permissionsController,
             ITokenValidationService tokenValidationService,
             RedisEventEmitter redisEventEmitter,
-            ImageController imageController,
+            FileController imageController,
             ICacheService cacheService
         )
         {

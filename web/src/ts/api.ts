@@ -2,7 +2,7 @@ import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
 import { isOnDm } from "./router.ts";
-import { fetchMessagesFromServer } from "./chat.ts";
+import { fetchMessages } from "./chat.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
 import { guildCache } from "./cache.ts";
@@ -34,6 +34,8 @@ export const EventType = Object.freeze({
   GET_SCROLL_HISTORY_DM: "GET_SCROLL_HISTORY_DM",
   GET_GUILDS: "GET_GUILDS",
   GET_INVITES: "GET_INVITES",
+  GET_ATTACHMENTS_GUILD: "GET_ATTACHMENTS_GUILD",
+  GET_ATTACHMENTS_DM: "GET_ATTACHMENTS_DM",
   START_TYPING: "START_TYPING",
   STOP_TYPING: "STOP_TYPING",
   ADD_FRIEND: "ADD_FRIEND",
@@ -89,6 +91,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_SCROLL_HISTORY_DM: HttpMethod.GET,
   GET_GUILDS: HttpMethod.GET,
   GET_INVITES: HttpMethod.GET,
+  GET_ATTACHMENTS_GUILD: HttpMethod.GET,
+  GET_ATTACHMENTS_DM: HttpMethod.GET,
   GET_MESSAGE_DATES: HttpMethod.GET,
   START_TYPING: HttpMethod.POST,
   STOP_TYPING: HttpMethod.POST,
@@ -124,7 +128,9 @@ const EventUrlMap: Record<EventType, string> = {
   UPDATE_CHANNEL_NAME: "/guilds/{guildId}/channels/{channelId}",
   GET_MEMBERS: "/guilds/{guildId}/members",
   GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
-
+  GET_ATTACHMENTS_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages/attachments",
+  GET_ATTACHMENTS_DM: "/dms/channels/{friendId}/messages/attachments",
   GET_HISTORY_DM:
     "/dms/channels/{channelId}/messages?date={date}&messageId={messageId}",
   GET_HISTORY_GUILD:
@@ -186,7 +192,7 @@ class ApiClient {
   public onWebsocketReconnect() {
     this.send(EventType.GET_INIT_DATA);
     this.send(EventType.GET_FRIENDS);
-    fetchMessagesFromServer(
+    fetchMessages(
       isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId,
       isOnDm
     );

@@ -150,7 +150,7 @@ namespace LiventCord.Helpers
                     wsUrl = SharedAppConfig.WsUrl
                 };
 
-                _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(30));
+                _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(100));
 
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsJsonAsync(jsonData);

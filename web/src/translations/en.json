@@ -228,7 +228,8 @@
     "message-edited": "edited",
     "done": "Done",
     "details-container-title-1": "Filename",
-    "details-container-title-2": "Size"
+    "details-container-title-2": "Size",
+    "media-title": "Media"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
