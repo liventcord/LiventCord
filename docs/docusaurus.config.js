@@ -12,7 +12,6 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'liventcord',
   projectName: 'LiventCord',
-
   trailingSlash: false,
   presets: [
     [
