@@ -794,3 +794,48 @@ export function formatFileSize(bytes: number): string {
   }
   return `${size.toFixed(2)} ${units[i]}`;
 }
+
+export function getResolution(image: HTMLImageElement): string {
+  return `${image.naturalWidth}x${image.naturalHeight}`;
+}
+export function estimateImageSizeBytes(
+  width: number,
+  height: number,
+  format: string
+): number {
+  const totalPixels = width * height;
+  switch (format.toLowerCase()) {
+    case "jpeg":
+    case "jpg":
+      return totalPixels * 0.1;
+    case "png":
+      return totalPixels * 0.5;
+    case "webp":
+      return totalPixels * 0.15;
+    case "bmp":
+      return totalPixels * 3;
+    default:
+      return totalPixels * 0.25;
+  }
+}
+export function getImageExtension(img: HTMLImageElement): string {
+  const src = img.src;
+
+  const url = new URL(src, window.location.href);
+  const pathname = url.pathname;
+  const match = pathname.match(/\.([a-zA-Z0-9]+)(?:[\?#]|$)/);
+  return match ? match[1].toLowerCase() : "";
+}
+export function getFileNameFromUrl(url: string): string {
+  const baseUrl = window.location.origin;
+  const absoluteUrl = new URL(url, baseUrl);
+  const path = absoluteUrl.pathname;
+  const parts = path.split("/");
+  const fileName = parts.pop() || "";
+
+  if (fileName && /\.[a-zA-Z0-9]+$/.test(fileName)) {
+    return fileName;
+  }
+
+  return "";
+}

@@ -36,7 +36,7 @@ builder.Services.AddScoped<AppLogicService>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
-builder.Services.AddScoped<ImageController>();
+builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<LoginController>();
 builder.Services.AddScoped<MetadataService>();

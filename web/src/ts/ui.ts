@@ -30,7 +30,11 @@ import {
   enableElement,
   isMobile,
   formatDateGood,
-  formatFileSize
+  formatFileSize,
+  getImageExtension,
+  estimateImageSizeBytes,
+  getResolution,
+  getFileNameFromUrl
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -531,14 +535,13 @@ export function beautifyJson(jsonData: string) {
     return null;
   }
 }
-function getResolution(image: HTMLImageElement): string {
-  return `${image.naturalWidth}x${image.naturalHeight}`;
-}
+
 export function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
   date?: Date,
-  isSpoiler = false
+  isSpoiler = false,
+  isFromMediaPanel = false
 ): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
@@ -550,7 +553,7 @@ export function displayImagePreview(
     "";
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
   previewImage.src = imageElement.src;
-  updateCurrentIndex(sanitizedSourceImage);
+  updateCurrentIndex(sanitizedSourceImage, isFromMediaPanel);
   if (isSpoiler) {
     FileHandler.blurImage(previewImage);
   } else {
@@ -570,35 +573,103 @@ export function displayImagePreview(
   }
 
   const descriptionName = getId("details-container-description-1");
-  const filename = imageElement.dataset.filename;
+  const filename =
+    imageElement.dataset.filename ||
+    getFileNameFromUrl(sourceimage) ||
+    sourceimage;
+
   if (descriptionName && filename) {
     descriptionName.textContent = filename;
     descriptionName.addEventListener("mouseover", () => {
       createTooltip(descriptionName, filename);
     });
   }
+
   const descriptionSize = getId("details-container-description-2");
-  const size = Number(imageElement.dataset.filesize);
-  if (descriptionSize && size) {
-    const sizeText = `${getResolution(imageElement)} (${formatFileSize(size)})`;
+  const dataFileSize = imageElement.dataset.filesize;
+  const extension = getImageExtension(imageElement);
+
+  let size = Number(dataFileSize);
+  let isEstimated = false;
+
+  if (!size || isNaN(size)) {
+    size = estimateImageSizeBytes(
+      imageElement.naturalWidth,
+      imageElement.naturalHeight,
+      extension
+    );
+    isEstimated = true;
+  }
+
+  if (descriptionSize) {
+    const formattedSize = formatFileSize(size);
+    const sizeText = `${getResolution(imageElement)} (${formattedSize}${isEstimated ? " roughly" : ""})`;
     descriptionSize.textContent = sizeText;
     descriptionSize.addEventListener("mouseover", () => {
       createTooltip(descriptionSize, sizeText);
     });
   }
+  function focusOnMessage() {
+    hideImagePreview();
+    console.log(isOnMediaPanel, imageElement);
+    if (isOnMediaPanel) {
+      setTimeout(() => {
+        const imagesParent = imageElement.parentElement;
+        if (imagesParent && imagesParent.dataset.messageid) {
+          const imagesMessage = chatContent.querySelector(
+            `div[id=${CSS.escape(imagesParent.dataset.messageid)}]`
+          ) as HTMLElement;
+          if (imagesMessage) scrollToMessage(imagesMessage);
+        }
+      }, 50);
+    } else {
+      setTimeout(() => {
+        const imagesParent = imageElement.parentElement?.parentElement;
+        console.log(imagesParent);
+        if (imagesParent) {
+          const imagesMessage = chatContent.querySelector(
+            `div[id=${CSS.escape(imagesParent.id)}]`
+          ) as HTMLElement;
+
+          if (imagesMessage) {
+            scrollToMessage(imagesMessage);
+          }
+        }
+      }, 50);
+    }
+  }
   const previewDate = getId("preview-date");
   if (previewDate && date) {
     previewDate.textContent = formatDateGood(date);
 
-    previewDate.addEventListener("click", () => {
-      hideImagePreview();
-      setTimeout(() => {
-        const imagesMessage = imageElement.parentNode
-          ?.parentNode as HTMLElement;
-        if (imagesMessage) {
-          scrollToMessage(imagesMessage);
-        }
-      }, 50);
+    previewDate.addEventListener("click", (event: MouseEvent) => {
+      event?.preventDefault();
+      focusOnMessage();
+    });
+  }
+  let content: string | undefined;
+
+  if (isOnMediaPanel) {
+    if (imageElement.parentElement) {
+      content = (imageElement.parentElement as HTMLElement).dataset.content;
+    }
+  } else {
+    const grandParent = imageElement.parentNode
+      ?.parentNode as HTMLElement | null;
+    if (grandParent?.dataset) {
+      content = grandParent.dataset.content;
+    }
+  }
+
+  const previewContent = getId("preview-content");
+  if (previewContent) previewContent.textContent = "";
+
+  if (previewContent && content) {
+    previewContent.textContent = content;
+
+    previewContent.addEventListener("click", (event: MouseEvent) => {
+      event?.preventDefault();
+      focusOnMessage();
     });
   }
 
@@ -728,7 +799,9 @@ export function displayImagePreview(
 export function isImagePreviewOpen() {
   return imagePreviewContainer.style.display === "flex";
 }
-let currentPreviewIndex = 0;
+let currentChatPreviewIndex = 0;
+let currentMediaPreviewIndex = 0;
+
 const popUpClose = getId("popup-close");
 if (popUpClose) {
   popUpClose.addEventListener("click", hideImagePreview);
@@ -744,9 +817,13 @@ function addNavigationListeners() {
     }
   });
 }
-
-function movePreviewImg(chatImages: HTMLImageElement[]) {
-  const img = chatImages[currentPreviewIndex] ?? null;
+let isOnMediaPanel = false;
+function movePreviewImg(images: HTMLImageElement[]) {
+  const img =
+    images[
+      isOnMediaPanel ? currentMediaPreviewIndex : currentChatPreviewIndex
+    ] ?? null;
+  console.log(images, img);
   if (img) {
     displayImagePreview(
       img,
@@ -756,31 +833,54 @@ function movePreviewImg(chatImages: HTMLImageElement[]) {
     );
   }
 }
-function getChatImages() {
-  return Array.from(chatContent.querySelectorAll(".chat-image")).filter(
-    (img) => (img as HTMLImageElement).src !== ""
-  ) as HTMLImageElement[];
+function getImages(): HTMLImageElement[] {
+  const mediaGrid = getId("media-grid") as HTMLElement;
+  const container = isOnMediaPanel ? mediaGrid : chatContent;
+  if (isOnMediaPanel) {
+    return Array.from(container.querySelectorAll(".image-box"))
+      .map((box) => box.querySelector<HTMLImageElement>("img"))
+      .filter((img): img is HTMLImageElement => img !== null && img.src !== "");
+  }
+  return Array.from(
+    container.querySelectorAll<HTMLImageElement>(".chat-image")
+  ).filter((img) => img.src !== "");
 }
+
 function moveToNextImage() {
-  const chatImages = getChatImages();
-  currentPreviewIndex = (currentPreviewIndex + 1) % chatImages.length;
-  movePreviewImg(chatImages);
+  const images = getImages();
+  if (isOnMediaPanel) {
+    currentMediaPreviewIndex = (currentMediaPreviewIndex + 1) % images.length;
+  } else {
+    currentChatPreviewIndex = (currentChatPreviewIndex + 1) % images.length;
+  }
+  movePreviewImg(images);
 }
 
 function moveToPreviousImage() {
-  const chatImages = getChatImages();
-  currentPreviewIndex =
-    (currentPreviewIndex - 1 + chatImages.length) % chatImages.length;
-  movePreviewImg(chatImages);
+  const images = getImages();
+  if (isOnMediaPanel) {
+    currentMediaPreviewIndex =
+      (currentMediaPreviewIndex - 1 + images.length) % images.length;
+  } else {
+    currentChatPreviewIndex =
+      (currentChatPreviewIndex - 1 + images.length) % images.length;
+  }
+  movePreviewImg(images);
 }
-function updateCurrentIndex(sourceimg: string) {
-  const chatImages = Array.from(
-    chatContent.querySelectorAll(".chat-image")
-  ).filter((img) => (img as HTMLImageElement).src !== "") as HTMLImageElement[];
-
-  const newIndex = chatImages.findIndex((img) => img.src === sourceimg);
+function updateCurrentIndex(sourceimg: string, isFromMediaPanel: boolean) {
+  const images = getImages();
+  if (isFromMediaPanel) {
+    isOnMediaPanel = true;
+  } else {
+    isOnMediaPanel = false;
+  }
+  const newIndex = images.findIndex((img) => img.src === sourceimg);
   if (newIndex !== -1) {
-    currentPreviewIndex = newIndex;
+    if (isFromMediaPanel) {
+      currentChatPreviewIndex = newIndex;
+    } else {
+      currentMediaPreviewIndex = newIndex;
+    }
   }
 }
 

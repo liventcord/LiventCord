@@ -7,14 +7,14 @@ namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("")]
-    public class FileController : BaseController
+    public class FileServeController : BaseController
     {
         private readonly AppDbContext _context;
         private readonly FileExtensionContentTypeProvider _fileTypeProvider;
         private readonly IWebHostEnvironment _env;
         private readonly PermissionsController _permissionsController;
 
-        public FileController(
+        public FileServeController(
             AppDbContext context,
             FileExtensionContentTypeProvider fileTypeProvider,
             IWebHostEnvironment env,
@@ -97,43 +97,74 @@ namespace LiventCord.Controllers
 
             string contentType;
 
-            if (isExtensionManual)
-            {
-                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-                switch (extension)
+            string[] archiveExtensions = [".tar.gz", ".tgz", ".gz", ".zip", ".rar", ".7z"];
+
+            if (extension == ".gz")
+            {
+                string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                string originalExtension = Path.GetExtension(originalFileName).ToLowerInvariant();
+
+                if (!archiveExtensions.Contains($".{originalExtension.TrimStart('.')}") && originalExtension != ".tar")
                 {
-                    case ".jpg":
-                    case ".jpeg":
-                        contentType = "image/jpeg";
-                        break;
-                    case ".png":
-                        contentType = "image/png";
-                        break;
-                    case ".gif":
-                        contentType = "image/gif";
-                        break;
-                    case ".svg":
-                        contentType = "image/svg+xml";
-                        break;
-                    default:
-                        contentType = "application/octet-stream";
-                        break;
+                    try
+                    {
+                        file.Content = FileDecompressor.DecompressGzip(file.Content);
+                        file.FileName = originalFileName;
+
+                        if (!_fileTypeProvider.TryGetContentType(originalFileName, out contentType))
+                            contentType = "application/octet-stream";
+                    }
+                    catch
+                    {
+                        return BadRequest(new { Error = "Failed to decompress file." });
+                    }
+                }
+                else
+                {
+                    contentType = "application/gzip";
                 }
             }
+
             else
             {
-                if (!_fileTypeProvider.TryGetContentType(file.FileName, out contentType))
-                    contentType = "application/octet-stream";
+                if (isExtensionManual)
+                {
+                    switch (extension)
+                    {
+                        case ".jpg":
+                        case ".jpeg":
+                            contentType = "image/jpeg";
+                            break;
+                        case ".png":
+                            contentType = "image/png";
+                            break;
+                        case ".gif":
+                            contentType = "image/gif";
+                            break;
+                        case ".svg":
+                            contentType = "image/svg+xml";
+                            break;
+                        default:
+                            contentType = "application/octet-stream";
+                            break;
+                    }
+                }
+                else
+                {
+                    if (!_fileTypeProvider.TryGetContentType(file.FileName, out contentType))
+                        contentType = "application/octet-stream";
+                }
             }
 
             var sanitizedFileName = Utils.SanitizeFileName(file.FileName);
             Response.Headers.Append("Content-Disposition", $"inline; filename=\"{sanitizedFileName}\"");
-
             Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             Response.Headers["Expires"] = DateTime.UtcNow.AddYears(1).ToString("R");
 
             return File(file.Content, contentType);
         }
+
     }
 }

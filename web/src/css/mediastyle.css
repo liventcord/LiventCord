@@ -462,6 +462,20 @@
   font-size: 12px;
   color: #767676;
 }
+#preview-content {
+  position: absolute;
+  left: 210px;
+  top: 25px;
+  font-size: 16px;
+  color: #767676;
+  width: 71vw;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
 .preview-avatar {
   position: absolute;
   left: 20px;
@@ -573,6 +587,15 @@
   border-radius: 8px;
   padding: 10px;
   flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .details-container {
+    width: 150px;
+    left: 78%;
+    top: 5%;
+    transform: translateX(-50%);
+  }
 }
 
 .details-blob {

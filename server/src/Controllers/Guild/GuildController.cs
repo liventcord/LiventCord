@@ -14,7 +14,7 @@ namespace LiventCord.Controllers
     {
         private string DEFAULT_CHANNEL_NAME = "general";
         private readonly AppDbContext _dbContext;
-        private readonly ImageController _imageController;
+        private readonly FileController _imageController;
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
         private readonly InviteController _inviteController;
@@ -23,7 +23,7 @@ namespace LiventCord.Controllers
 
         public GuildController(
             AppDbContext dbContext,
-            ImageController uploadController,
+            FileController uploadController,
             MessageController messageController,
             MembersController membersController,
             PermissionsController permissionsController, InviteController inviteController, ILogger<GuildController> logger,

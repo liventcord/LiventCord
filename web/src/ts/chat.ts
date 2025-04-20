@@ -1,4 +1,7 @@
+import { reactive } from "vue";
 import {
+  Attachment,
+  AttachmentWithMetaData,
   getMessageDate,
   getOldMessages,
   Message,
@@ -1376,12 +1379,12 @@ export function getHistoryFromOneChannel(
       console.warn("No messages found in cache for this channel.");
     }
   }
-  fetchMessagesFromServer(channelId, isDm);
+  fetchMessages(channelId, isDm);
 }
 
 let timeoutId: number | null = null;
 
-export function fetchMessagesFromServer(channelId: string, isDm = false) {
+export function fetchMessages(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 
   const requestData = {
@@ -1408,8 +1411,18 @@ export function fetchMessagesFromServer(channelId: string, isDm = false) {
     ? EventType.GET_HISTORY_GUILD
     : EventType.GET_HISTORY_DM;
   apiClient.send(typeToUse, requestData);
-}
 
+  const attachmentType = isOnGuild
+    ? EventType.GET_ATTACHMENTS_GUILD
+    : EventType.GET_ATTACHMENTS_DM;
+
+  apiClient.send(attachmentType, requestData);
+}
+export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
+
+export function setCurrentAttachments(attachments: AttachmentWithMetaData[]) {
+  currentAttachments.splice(0, currentAttachments.length, ...attachments);
+}
 function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
   const textc = isReply ? "↪" : "⋯";
 

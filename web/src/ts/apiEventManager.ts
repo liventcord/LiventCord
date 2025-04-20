@@ -1,11 +1,17 @@
-import { getOldMessages, Message } from "./message.ts";
+import {
+  Attachment,
+  AttachmentWithMetaData,
+  getOldMessages,
+  Message
+} from "./message.ts";
 import {
   currentLastDate,
   handleReplies,
   messageDates,
   handleHistoryResponse,
   handleSelfSentMessage,
-  handleOldMessagesResponse
+  handleOldMessagesResponse,
+  setCurrentAttachments
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
@@ -258,6 +264,13 @@ interface MessageDatesResponse {
   messageId: string;
   messageDate: Date;
 }
+
+apiClient.on(
+  EventType.GET_ATTACHMENTS_GUILD,
+  (data: AttachmentWithMetaData[]) => {
+    setCurrentAttachments([...data]);
+  }
+);
 
 apiClient.on(EventType.GET_MESSAGE_DATES, (data: MessageDatesResponse) => {
   const message_date = data.messageDate;

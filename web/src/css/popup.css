@@ -56,6 +56,11 @@
   #guildImg {
     top: 180px !important;
   }
+  #profile-popup-bottom-container {
+    height: 47%;
+    top: 75%;
+    width: 94%;
+  }
 }
 
 @keyframes fadeIn {
