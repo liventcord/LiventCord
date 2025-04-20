@@ -165,7 +165,7 @@ function submitForm(event, isRegister) {
     data.nickname = nickValue;
   }
 
-  const base = "/api/proxy/backend";
+  const base = "https://leventcord.bsite.net/api/proxy/backend";
 
   fetch(isRegister ? base + "/auth/register" : base + "/auth/login", {
     method: "POST",

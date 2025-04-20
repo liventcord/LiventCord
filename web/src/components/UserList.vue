@@ -17,7 +17,7 @@
             <img
               :src="
                 attachment.attachment.isImageFile
-                  ? '/api/proxy/backend/attachments/' +
+                  ? 'https://leventcord.bsite.net/api/proxy/backend/attachments/' +
                     attachment.attachment.fileId
                   : '/images/defaultmediaimage.webp'
               "
