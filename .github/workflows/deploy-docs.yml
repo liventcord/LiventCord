@@ -27,7 +27,9 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: |
+          npm install -g pnpm
+          pnpm --version  # Verify pnpm is installed
 
       - name: Install WebApp dependencies
         run: |
