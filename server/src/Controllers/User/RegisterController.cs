@@ -21,7 +21,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterAuth([FromForm] RegisterRequest request)
+        public async Task<IActionResult> RegisterAuth([FromBody] RegisterRequest request)
         {
             if (!ModelState.IsValid || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
                 return Conflict();
@@ -38,9 +38,5 @@ namespace LiventCord.Controllers
 
             return Ok();
         }
-
-
-
-
     }
 }

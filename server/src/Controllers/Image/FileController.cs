@@ -185,22 +185,22 @@ namespace LiventCord.Controllers
             bool shouldCompress = extension switch
             {
                 ".txt" or ".html" or ".css" or ".xml" or ".json" or ".csv" or ".log" or ".md" or
-                ".rtf" or ".yml" or ".yaml" or ".toml" or ".conf" or ".ini" or ".php" or ".js" or 
+                ".rtf" or ".yml" or ".yaml" or ".toml" or ".conf" or ".ini" or ".php" or ".js" or
                 ".ts" or ".java" or ".py" or ".rb" or ".go" or ".cpp" or ".h" or ".swift" or ".dart" => true,
 
                 ".sql" or ".db" or ".bak" => true,
 
-                ".tar" => true, 
+                ".tar" => true,
 
                 ".psd" or ".ai" => true,
 
-                _ => false 
+                _ => false
             };
 
             if (shouldCompress)
             {
-                content = FileCompressor.CompressToGzip(content); 
-                extension = ".gz"; 
+                content = FileCompressor.CompressToGzip(content);
+                extension = ".gz";
             }
 
 

@@ -17,7 +17,8 @@
             <img
               :src="
                 attachment.attachment.isImageFile
-                  ? '/attachments/' + attachment.attachment.fileId
+                  ? '/api/proxy/backend/attachments/' +
+                    attachment.attachment.fileId
                   : '/images/defaultmediaimage.webp'
               "
               alt="Image"

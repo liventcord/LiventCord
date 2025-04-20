@@ -2,10 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Security.Cryptography;
 using System.Collections.Concurrent;
-using Microsoft.AspNetCore.StaticFiles;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-using MimeKit;
 
 [Route("api/proxy/media")]
 [ApiController]

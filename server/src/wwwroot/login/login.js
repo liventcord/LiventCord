@@ -1,4 +1,4 @@
-import { initialisePage } from "/login/loginutils.js";
+import { initialisePage } from "/api/proxy/backend/login/loginutils.js";
 
 const emailInput = document.querySelector('input[name="email"]');
 const passwordInput = document.querySelector('input[name="pass"]');

@@ -499,7 +499,7 @@ ref="userLine"
         </div>
     </div>
     <script>
-        const useCDN = false;
+        const useCDN = true;
 
         function loadFontStyles() {
             const styles = `
@@ -541,7 +541,7 @@ ref="userLine"
 
         loadFontStyles();
 
-        const cdnConfettiUrl = "https://cdn.tsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js";
+        const cdnConfettiUrl = "https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js";
         const localConfettiUrl = "/vendor/confetti.browser.min.js";
         const confettiUrl = useCDN ? cdnConfettiUrl : localConfettiUrl;
 
