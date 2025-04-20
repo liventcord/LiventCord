@@ -3,6 +3,8 @@ import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
 import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
+import { enableElement } from "./utils.ts";
+import { initialiseLoginPage } from "./loginutils.ts";
 export let isOnMePage = true;
 export let isOnDm = false;
 export let isOnGuild = false;
@@ -61,9 +63,9 @@ class Router {
     }
   }
 
-  async changeToLogin() {
-    await fetch("/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+  async openLogin() {
+    enableElement("login-panel")
+    initialiseLoginPage(false)
   }
   async logOutApp() {
     fetch("/auth/logout", {

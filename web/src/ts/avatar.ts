@@ -98,7 +98,7 @@ async function setPicture(
 
   const timestamp = new Date().getTime();
   const imageUrl = !isProfile
-    ? `https://leventcord.bsite.net/api/proxy/backend/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
+    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
     : `${getProfileUrl(srcId)}${isTimestamp ? `?ts=${timestamp}` : ""}`;
 
   try {
