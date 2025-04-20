@@ -33,7 +33,7 @@ jobs:
 
       # Cache pnpm dependencies for the web folder
       - name: Cache pnpm dependencies (web)
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('web/pnpm-lock.yaml') }}
