@@ -19,43 +19,59 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'  
-          cache-dependency-path: '**/package-lock.json' 
-
+          cache: 'npm'  # We will cache npm dependencies here for the Docusaurus project
+          
+      # Install pnpm globally
       - name: Install pnpm
         run: |
           npm install -g pnpm
           pnpm --version  # Verify pnpm is installed
 
+      # Cache pnpm dependencies separately (if using pnpm-lock.yaml)
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('web/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      # Install WebApp dependencies
       - name: Install WebApp dependencies
         run: |
           cd web
           pnpm install --frozen-lockfile
 
+      # Build WebApp
       - name: Build WebApp
         run: |
           cd web
           pnpm build
 
+      # Inject WebApp into Docusaurus static folder
       - name: Inject WebApp into Docusaurus static folder
         run: |
           rm -rf docs/static/app
           cp -r web/src/output docs/static/app
 
+      # Install Docusaurus dependencies
       - name: Install Docusaurus dependencies
         run: |
           cd docs
           yarn install --frozen-lockfile
 
+      # Build Docusaurus site
       - name: Build Docusaurus site
         run: |
           cd docs
           yarn build
 
+      # Upload GitHub Pages Artifact
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
