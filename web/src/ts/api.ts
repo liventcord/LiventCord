@@ -262,7 +262,8 @@ class ApiClient {
     data: Record<string, any> = {},
     queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } {
-    const basePath = "https://leventcord.bsite.net/api/proxy/backend/api";
+    
+    const basePath = import.meta.env.VITE_BACKEND_URL + "/api";
     const urlTemplate = EventUrlMap[event];
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);
@@ -358,7 +359,7 @@ class ApiClient {
         method,
         headers,
         body,
-        credentials: "same-origin"
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -394,7 +395,7 @@ class ApiClient {
       const response = await fetch(url, {
         method,
         body: formData,
-        credentials: "same-origin"
+        credentials: "include"
       });
 
       if (!response.ok) {

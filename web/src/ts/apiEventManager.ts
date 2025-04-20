@@ -61,13 +61,10 @@ apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   if (
     initData.message === "User session is no longer valid. Please log in again."
   ) {
-    if (import.meta.env.MODE === "development") {
-      alertUser(
-        "User session is not valid. Please log in at localhost:5005/login."
-      );
-      return;
-    }
-    await router.changeToLogin();
+    console.error(
+      "User session is not valid"
+    );
+    await router.openLogin();
     return;
   }
   initialiseState(initData);

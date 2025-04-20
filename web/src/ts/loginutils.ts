@@ -1,7 +1,9 @@
+import { getId } from "./utils";
+
 //loginutils.js
 let currentLanguage = "en";
 
-const translations = {
+const loginTranslations = {
   en: {
     emailInvalid: "Please enter a valid email address.",
     passwordInvalid: "Password must be at least 5 characters long.",
@@ -38,11 +40,11 @@ const translations = {
     emailExists: "Bu e posta adresi zaten kayıtlı",
     successRegister: "Başarıyla kayıt olundu!"
   }
-};
+} as any;
 function updateDOM() {
   const elements = document.querySelectorAll("[data-i18n]");
   elements.forEach((element) => {
-    const key = element.getAttribute("data-i18n");
+    const key = element.getAttribute("data-i18n") as string;
     const translation = getTranslation(key);
 
     if (element.tagName === "A") {
@@ -57,25 +59,24 @@ function updateDOM() {
     }
   });
 }
-function setLanguage(language) {
+function setLanguage(language:string) {
   currentLanguage = language;
   const languageChangeEvent = new CustomEvent("languageChanged");
   window.dispatchEvent(languageChangeEvent);
 }
-export function initialisePage(isRegister) {
-  const browserLanguage = navigator.language || navigator.userLanguage;
+export function initialiseLoginPage(isRegister:boolean) {
+  const browserLanguage = navigator.language || navigator.language;
   const languageToSet = browserLanguage.startsWith("tr") ? "tr" : "en";
 
   setLanguage(languageToSet);
   updateDOM();
-
-  document
-    .querySelector("form")
-    .addEventListener("submit", (event) => submitForm(event, isRegister));
+  const loginForm = getId("login-form");
+  if(!loginForm) return;
+  loginForm .addEventListener("submit", (event:SubmitEvent) => submitForm(event, isRegister));
 
   window.addEventListener("languageChanged", updateDOM);
 
-  const wallpaper = document.getElementById("video-background");
+  const wallpaper = document.getElementById("video-background") as HTMLImageElement
   if (wallpaper) {
     const width = window.innerWidth;
 
@@ -93,11 +94,11 @@ export function initialisePage(isRegister) {
   }
 }
 
-function getTranslation(key) {
-  return translations[currentLanguage][key] || key;
+function getTranslation(key:string) {
+  return loginTranslations[currentLanguage][key] || key;
 }
 
-function alertUser(text, isSuccess = false) {
+function alertUser(text:string, isSuccess = false) {
   const container = document.createElement("div");
   container.classList.add(
     isSuccess ? "info-container" : "error-container",
@@ -119,20 +120,20 @@ function alertUser(text, isSuccess = false) {
     container.remove();
   }, 5000);
 }
-function submitForm(event, isRegister) {
+function submitForm(event:SubmitEvent, isRegister:boolean) {
   event.preventDefault();
 
-  const emailInput = document.querySelector('input[name="email"]');
-  const passwordInput = document.querySelector('input[name="pass"]');
-  const nickInput = document.querySelector('input[name="nick"]');
+  const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement
+  const passwordInput = document.querySelector('input[name="pass"]') as HTMLInputElement
+  const nickInput = document.querySelector('input[name="nick"]') as HTMLInputElement
   const emailValue = emailInput.value;
   const passwordValue = passwordInput.value;
-  let nickValue;
+  let nickValue
   if (isRegister) {
     nickValue = nickInput.value;
   }
 
-  const setInputValidity = (input, message) => {
+  const setInputValidity = (input:HTMLInputElement, message:string) => {
     input.setCustomValidity(message);
     input.reportValidity();
   };
@@ -156,16 +157,16 @@ function submitForm(event, isRegister) {
     return;
   }
 
-  const data = {
+  let data = {
     email: emailValue,
     password: passwordValue
-  };
+  } as any;
 
   if (isRegister) {
     data.nickname = nickValue;
   }
 
-  const base = "https://leventcord.bsite.net/api/proxy/backend";
+  const base = import.meta.env.VITE_BACKEND_URL
 
   fetch(isRegister ? base + "/auth/register" : base + "/auth/login", {
     method: "POST",
@@ -209,19 +210,18 @@ function submitForm(event, isRegister) {
     });
 }
 
-window.submitForm = submitForm;
 
-function validateEmail(email) {
+function validateEmail(email:string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validatePassword(password) {
+function validatePassword(password:string) {
   return password && password.length >= 5;
 }
 
-function validateNick(value) {
+function validateNick(value?:string) {
+  if(!value) return false;
   const nick = value.trim();
   return nick.length >= 1 && nick.length <= 32;
 }
 
-window.setLanguage = setLanguage;
