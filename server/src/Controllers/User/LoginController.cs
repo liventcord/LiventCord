@@ -37,7 +37,7 @@ namespace LiventCord.Controllers
             _passwordHasher = new PasswordHasher<User>();
         }
         [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromForm] ChangePasswordRequest changePasswordRequest)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -69,7 +69,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> LoginAuth([FromForm] LoginRequest loginRequest)
+        public async Task<IActionResult> LoginAuth([FromBody] LoginRequest loginRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
