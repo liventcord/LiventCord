@@ -6,7 +6,7 @@ module.exports = {
   title: 'LiventCord Docs',
   tagline: 'Dinosaurs are cool',
   url: 'https://liventcord.github.io',
-  baseUrl: '/LiventCord', 
+  baseUrl: '/LiventCord/', 
   onBrokenLinks: 'ignore',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
