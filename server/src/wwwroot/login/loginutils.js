@@ -119,7 +119,6 @@ function alertUser(text, isSuccess = false) {
     container.remove();
   }, 5000);
 }
-
 function submitForm(event, isRegister) {
   event.preventDefault();
 
@@ -153,18 +152,29 @@ function submitForm(event, isRegister) {
   }
 
   if (isRegister && !validateNick(nickValue)) {
-    setInputValidity(nickValue, getTranslation("nickInvalid"));
+    setInputValidity(nickInput, getTranslation("nickInvalid"));
     return;
   }
 
-  const formData = new FormData();
-  formData.append("email", emailValue);
-  formData.append("password", passwordValue);
-  if (isRegister) formData.append("nickname", nickValue);
+  const data = {
+    email: emailValue,
+    password: passwordValue
+  };
 
-  fetch(isRegister ? "/auth/register" : "/auth/login", {
+  if (isRegister) {
+    data.nickname = nickValue;
+  }
+
+  const base = "/api/proxy/backend";
+
+  fetch(isRegister ? base + "/auth/register" : base + "/auth/login", {
     method: "POST",
-    body: formData
+    headers: {
+      "Content-Type": "application/json", 
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(data),
+    credentials: "include" 
   })
     .then((response) => {
       if (!response.ok) {
@@ -198,6 +208,7 @@ function submitForm(event, isRegister) {
       console.error("Error:", error);
     });
 }
+
 window.submitForm = submitForm;
 
 function validateEmail(email) {

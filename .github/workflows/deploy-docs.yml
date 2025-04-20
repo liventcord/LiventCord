@@ -5,34 +5,56 @@ on:
     branches:
       - main
     paths:
-      - "docs**"
+      - "docs/**"
+      - "web/**"
 
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Docusaurus
+    name: Build Docusaurus with WebApp
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
-      - name: Use Node.js ${{ matrix.node-version }}
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
 
-      - name: Install dependencies
-        run: cd docs/ && yarn install --frozen-lockfile
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-      - name: Build website
-        run: cd docs/ && yarn build
-        working-directory: docs
+      - name: Install WebApp dependencies
+        run: |
+          cd web
+          pnpm install --frozen-lockfile
 
-      - name: Upload Build Artifact
+      - name: Build WebApp
+        run: |
+          cd web
+          pnpm build
+
+      - name: Inject WebApp into Docusaurus static folder
+        run: |
+          rm -rf docs/static/app
+          cp -r web/src/output docs/static/app
+
+      - name: Install Docusaurus dependencies
+        run: |
+          cd docs
+          yarn install --frozen-lockfile
+
+      - name: Build Docusaurus site
+        run: |
+          cd docs
+          yarn build
+
+      - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/build

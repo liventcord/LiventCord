@@ -262,7 +262,7 @@ class ApiClient {
     data: Record<string, any> = {},
     queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } {
-    const basePath = "/api";
+    const basePath = "/api/proxy/backend/api";
     const urlTemplate = EventUrlMap[event];
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);

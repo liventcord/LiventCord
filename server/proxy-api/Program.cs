@@ -1,18 +1,22 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
 using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Host.UseSerilog();
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .CreateLogger();
 
+builder.Host.UseSerilog();
+builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
+
+builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<MediaProxyController>();
+builder.Services.AddSingleton<ApiProxyController>();
 builder.Services.AddSingleton<MediaStorageInitializer>();
 builder.Services.AddSingleton<MediaCacheSettings>();
 builder.Services.AddEndpointsApiExplorer();
@@ -35,13 +39,13 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
+string? FrontendUrl = builder.Configuration["AppSettings:FrontendUrl"];
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policy =>
     {
-        if (FRONTEND_URL == "*")
+        if (FrontendUrl == "*")
         {
             policy.AllowAnyOrigin()
                 .AllowAnyHeader()
@@ -49,13 +53,13 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            var allowedOrigins = FrontendUrl?.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
             if (allowedOrigins != null && allowedOrigins.Length > 0)
             {
                 policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod().AllowCredentials();
             }
         }
     });
@@ -70,11 +74,13 @@ Console.WriteLine($"Is running in development: {isDevelopment}");
 app.UseExceptionHandler("/error");
 
 app.UseCors("AllowSpecificOrigin");
+
 app.UseSerilogRequestLogging();
+
 app.UseHttpsRedirection();
 app.UseRouting();
-app.UseResponseCompression();
 
+app.UseResponseCompression();
 
 app.UseSwagger(c =>
 {
@@ -106,8 +112,5 @@ app.MapGet("/", async context =>
     await context.Response.WriteAsync(responseHtml);
 });
 
-
-
 app.MapControllers();
 app.Run();
-

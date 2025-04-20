@@ -85,7 +85,7 @@ const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
 const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 
 const getAttachmentUrl = (attachmentId: string) =>
-  `${location.origin}/attachments/${attachmentId}`;
+  `/api/proxy/backend/attachments/${attachmentId}`;
 
 function createTenorElement(
   msgContentElement: HTMLElement,

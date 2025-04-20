@@ -552,7 +552,9 @@ export function setGuildImage(
   imageElement: HTMLImageElement,
   isUploaded: boolean
 ) {
-  imageElement.src = isUploaded ? `/guilds/${guildId}` : blackImage;
+  imageElement.src = isUploaded
+    ? `/api/proxy/backend/guilds/${guildId}`
+    : blackImage;
 }
 function getGuildFromBar(guildId: string): HTMLElement | null {
   return (

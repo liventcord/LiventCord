@@ -44,30 +44,32 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 
-builder
-    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+        options.LoginPath = "/auth/login";
+        options.LogoutPath = "/auth/logout";
+        options.AccessDeniedPath = null;
+        options.Events = new CookieAuthenticationEvents
         {
-            options.Cookie.HttpOnly = true;
-            options.ExpireTimeSpan = TimeSpan.FromDays(7);
-            options.SlidingExpiration = true;
-            options.LoginPath = "/auth/login";
-            options.LogoutPath = "/auth/logout";
-            options.AccessDeniedPath = null;
-            options.Events = new CookieAuthenticationEvents
+            OnRedirectToLogin = context =>
             {
-                OnRedirectToLogin = context =>
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return Task.CompletedTask;
-                },
-                OnRedirectToAccessDenied = context =>
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    return Task.CompletedTask;
-                }
-            };
-        });
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+        };
+    });
+
 
 builder
     .Services.AddControllers()
@@ -126,7 +128,8 @@ builder.Services.AddCors(options =>
             {
                 policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             }
         }
     });
@@ -201,7 +204,7 @@ app.Lifetime.ApplicationStarted.Register(async () =>
 {
     var env = app.Services.GetRequiredService<IHostEnvironment>();
     var configf = builder.Configuration["AppSettings:BuildFrontend"];
-    if (!env.IsDevelopment() && configf != "false")
+    if (configf != "false")
     {
         await Task.Run(() => BuilderService.StartFrontendBuild());
     }

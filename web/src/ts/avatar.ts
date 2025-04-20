@@ -98,7 +98,7 @@ async function setPicture(
 
   const timestamp = new Date().getTime();
   const imageUrl = !isProfile
-    ? `/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
+    ? `/api/proxy/backend/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
     : `${getProfileUrl(srcId)}${isTimestamp ? `?ts=${timestamp}` : ""}`;
 
   try {
