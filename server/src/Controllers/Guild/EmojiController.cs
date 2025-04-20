@@ -12,9 +12,9 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly PermissionsController _permissionsController;
-        private readonly ImageController _imageController;
+        private readonly FileController _imageController;
 
-        public EmojiController(AppDbContext dbContext, PermissionsController permissionsController, ImageController imageController)
+        public EmojiController(AppDbContext dbContext, PermissionsController permissionsController, FileController imageController)
         {
             _dbContext = dbContext;
             _permissionsController = permissionsController;

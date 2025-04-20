@@ -16,7 +16,7 @@ namespace LiventCord.Controllers
         private readonly MetadataService _metadataService;
         private readonly ITokenValidationService _tokenValidationService;
 
-        private readonly ImageController _imageController;
+        private readonly FileController _imageController;
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly ChannelController _channelController;
         private readonly FriendDmService _friendDmService;
@@ -25,7 +25,7 @@ namespace LiventCord.Controllers
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService, ImageController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger, ChannelController channelController, FriendDmService friendDmService
+            MetadataService metadataService, ITokenValidationService tokenValidationService, FileController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger, ChannelController channelController, FriendDmService friendDmService
         )
         {
             _tokenValidationService = tokenValidationService;
@@ -255,12 +255,44 @@ namespace LiventCord.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
         }
+        private List<Attachment> CreateAttachmentsFromUrls(string urls, string messageId)
+        {
+            List<Attachment> attachments = new();
+            List<string> parsedUrls = urls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+            foreach (var url in parsedUrls)
+            {
+                var fileName = url;
+                var fileId = Utils.CreateRandomId();
+                var fileSize = 0;
+                var isImage = true;
+                var isSpoiler = false;
+
+                var attachment = new Attachment
+                {
+                    FileId = fileId,
+                    IsImageFile = isImage,
+                    MessageId = messageId,
+                    FileName = fileName,
+                    FileSize = fileSize,
+                    IsSpoiler = isSpoiler
+                };
+
+                attachments.Add(attachment);
+            }
+
+            return attachments;
+        }
 
         private void UpdateMessage(Message message, NewBotMessageRequest request)
         {
             message.Content = request.Content;
             message.LastEdited = DateTime.UtcNow;
-            message.Attachments = request.Attachments;
+            if (request.AttachmentUrls != null)
+            {
+                message.Attachments = CreateAttachmentsFromUrls(request.AttachmentUrls, message.MessageId);
+
+            }
             message.ReplyToId = request.ReplyToId;
             message.ReactionEmojisIds = request.ReactionEmojisIds;
 
@@ -287,7 +319,7 @@ namespace LiventCord.Controllers
                 Date = request.Date,
                 ChannelId = channelId,
                 LastEdited = request.LastEdited,
-                Attachments = request.Attachments,
+                Attachments = request.AttachmentUrls != null ? CreateAttachmentsFromUrls(request.AttachmentUrls, request.MessageId) : null,
                 ReplyToId = request.ReplyToId,
                 ReactionEmojisIds = request.ReactionEmojisIds,
                 Embeds = request.Embeds?.Select(embed =>
@@ -795,14 +827,15 @@ namespace LiventCord.Controllers
         }
         [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/attachments")]
-        public async Task<IActionResult> GetAttachments([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId) 
+        public async Task<IActionResult> GetAttachments([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId)
         {
             var channelAttachments = await _context.Attachments
                 .Join(
                     _context.Messages,
                     attachment => attachment.MessageId,
                     message => message.MessageId,
-                    (attachment, message) => new {
+                    (attachment, message) => new
+                    {
                         attachment,
                         message.UserId,
                         message.Content,
@@ -823,14 +856,27 @@ public class NewBotMessageRequest
     public required string MessageId { get; set; }
     public required string UserId { get; set; }
     public string? Content { get; set; }
-    public required DateTime Date { get; set; }
-    public DateTime? LastEdited { get; set; }
-    public List<Attachment>? Attachments { get; set; }
+
+    private DateTime _date;
+    public required DateTime Date
+    {
+        get => _date;
+        set => _date = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
+
+    private DateTime? _lastEdited;
+    public DateTime? LastEdited
+    {
+        get => _lastEdited;
+        set => _lastEdited = value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null;
+    }
+
+    public string? AttachmentUrls { get; set; }
     public string? ReplyToId { get; set; }
     public string? ReactionEmojisIds { get; set; }
     public List<Embed>? Embeds { get; set; } = new List<Embed>();
-
 }
+
 
 public class NewMessageRequest
 {

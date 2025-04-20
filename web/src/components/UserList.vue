@@ -18,7 +18,7 @@
               :src="
                 attachment.attachment.isImageFile
                   ? '/attachments/' + attachment.attachment.fileId
-                  : '/images/guest.webp'
+                  : '/images/defaultmediaimage.webp'
               "
               alt="Image"
               :data-filesize="attachment.attachment.fileSize"

@@ -3,6 +3,33 @@ using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.IO.Compression;
+
+public static class FileDecompressor
+{
+    public static byte[] DecompressGzip(byte[] compressedData)
+    {
+        using var input = new MemoryStream(compressedData);
+        using var gzip = new GZipStream(input, CompressionMode.Decompress);
+        using var output = new MemoryStream();
+        gzip.CopyTo(output);
+        return output.ToArray();
+    }
+}
+
+public static class FileCompressor
+{
+    public static byte[] CompressToGzip(byte[] fileContent)
+    {
+        using var compressedStream = new MemoryStream();
+        using (var gzipStream = new GZipStream(compressedStream, CompressionLevel.Optimal))
+        {
+            gzipStream.Write(fileContent, 0, fileContent.Length);
+        }
+
+        return compressedStream.ToArray();
+    }
+}
 
 
 namespace LiventCord.Controllers
@@ -10,13 +37,13 @@ namespace LiventCord.Controllers
     [ApiController]
     [Route("api/images")]
     [Authorize]
-    public class ImageController : BaseController
+    public class FileController : BaseController
     {
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
-        private readonly ILogger<ImageController> _logger;
+        private readonly ILogger<FileController> _logger;
 
-        public ImageController(AppDbContext context, ILogger<ImageController> logger, PermissionsController permissionsController)
+        public FileController(AppDbContext context, ILogger<FileController> logger, PermissionsController permissionsController)
         {
             _context = context;
             _logger = logger;
@@ -154,6 +181,28 @@ namespace LiventCord.Controllers
             {
                 sanitizedFileName = $"{sanitizedFileName}{extension}";
             }
+
+            bool shouldCompress = extension switch
+            {
+                ".txt" or ".html" or ".css" or ".xml" or ".json" or ".csv" or ".log" or ".md" or
+                ".rtf" or ".yml" or ".yaml" or ".toml" or ".conf" or ".ini" or ".php" or ".js" or 
+                ".ts" or ".java" or ".py" or ".rb" or ".go" or ".cpp" or ".h" or ".swift" or ".dart" => true,
+
+                ".sql" or ".db" or ".bak" => true,
+
+                ".tar" => true, 
+
+                ".psd" or ".ai" => true,
+
+                _ => false 
+            };
+
+            if (shouldCompress)
+            {
+                content = FileCompressor.CompressToGzip(content); 
+                extension = ".gz"; 
+            }
+
 
 
             if (!string.IsNullOrEmpty(guildId))
