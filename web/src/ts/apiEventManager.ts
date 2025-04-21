@@ -1,5 +1,4 @@
 import {
-  Attachment,
   AttachmentWithMetaData,
   getOldMessages,
   Message
@@ -31,7 +30,6 @@ import {
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
-import { alertUser } from "./ui.ts";
 import { currentUserId, Member, UserInfo, userManager } from "./user.ts";
 import {
   updateFriendsList,

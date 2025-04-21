@@ -264,3 +264,24 @@
     return e[i].call(t.exports, t, t.exports, n), t.exports;
   })(3257).initLocalizeJS)();
 })();
+
+const applink = "https://liventcord.github.io/LiventCord/app"
+
+const setupButton = () => {
+  const loginButton = document.querySelector(".nav_button-wrap");
+  if (loginButton) {
+    loginButton.setAttribute("href", applink)
+    loginButton.addEventListener("click", (event) => {
+      event.preventDefault()
+      window.location.href = applink
+    }, { once: true })
+  } else {
+    requestAnimationFrame(setupButton)
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupButton)
+} else {
+  setupButton()
+}

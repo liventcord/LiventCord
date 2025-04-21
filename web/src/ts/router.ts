@@ -37,6 +37,8 @@ class Router {
       this.handleVisibilityChange.bind(this)
     );
     window.addEventListener("popstate", this.handlePopState.bind(this));
+
+    this.processQueryParameters();
   }
 
   handleVisibilityChange() {
@@ -66,6 +68,7 @@ class Router {
   async openLogin() {
     enableElement("login-panel");
     initialiseLoginPage(false);
+    this.switchToLogin();
   }
   closeLogin() {
     disableElement("login-panel");
@@ -97,9 +100,28 @@ class Router {
   }
 
   parsePath() {
-    const pathStr = window.location.pathname;
+    const pathStr =
+      window.location.pathname !== "/channels/@me"
+        ? window.location.pathname
+        : window.location.search;
     const parts = pathStr.split("/");
     return { pathStr, parts };
+  }
+  processQueryParameters() {
+    switch (window.location.search) {
+      case "login":
+        this.openLogin();
+        break;
+      case "register":
+        this.openLogin();
+        this.switchToRegister();
+      default:
+        const url = new URL(window.location.href);
+        url.search = "";
+        window.history.replaceState({}, "", url.toString());
+
+        break;
+    }
   }
 
   validateRoute() {
