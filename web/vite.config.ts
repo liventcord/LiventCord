@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: "./src",
     publicDir: "../public",
-    base: "/",
+    base: "/LiventCord/app/",
 
     build: {
       outDir: "output",
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
               return "vendor";
             }
           },
-          entryFileNames: "assets/[name].js", 
+          entryFileNames: "assets/[name].js",
           chunkFileNames: "assets/[name].js",
           assetFileNames: "assets/[name].[ext]"
         }
