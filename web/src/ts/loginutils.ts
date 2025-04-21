@@ -1,3 +1,4 @@
+import { initialiseApp } from "./app";
 import { router } from "./router";
 import { getId } from "./utils";
 
@@ -292,6 +293,7 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
         }, 5000);
       } else {
         router.closeLogin();
+        initialiseApp();
       }
     })
     .catch((error) => {

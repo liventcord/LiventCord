@@ -671,7 +671,9 @@ function changeCurrentDm(friendId: string) {
   isChangingPage = false;
 }
 
-apiClient.send(EventType.GET_INIT_DATA);
+export function initialiseApp() {
+  apiClient.send(EventType.GET_INIT_DATA);
+}
 
 window.onerror = (message, source, lineno, colno, error) => {
   const msg = `Error: ${message} at ${source}:${lineno}:${colno}`;
@@ -680,3 +682,5 @@ window.onerror = (message, source, lineno, colno, error) => {
 };
 
 setTimeout(() => window.scrollTo(0, 0), 20);
+
+initialiseApp();
