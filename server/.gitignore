@@ -23,10 +23,8 @@ LiventCord.sln
 *.pdb
 
 MediaCache
-# Exclude build-copied files
-src/wwwroot/app/*
+src/wwwroot/assets
 src/wwwroot/ts/
 src/wwwroot/vendor/
-src/wwwroot/*.webp
 src/wwwroot/images/
 src/wwwroot/index.html
