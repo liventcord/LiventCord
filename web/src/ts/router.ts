@@ -21,6 +21,7 @@ export function setIsOnGuild(val: boolean) {
 const hasNotifications = false;
 
 class Router {
+  shouldClearQuery = false;
   constructor() {
     this.init();
   }
@@ -103,6 +104,10 @@ class Router {
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get("page");
 
+    if (this.shouldClearQuery) {
+      this.clearQuery();
+    }
+
     const pathStr = pageParam
       ? decodeURIComponent(pageParam)
       : window.location.pathname;
@@ -110,6 +115,11 @@ class Router {
     const parts = pathStr.split("/").filter((part) => part !== "");
 
     return { pathStr, parts };
+  }
+  clearQuery() {
+    const url = new URL(window.location.href);
+    url.search = "";
+    window.history.replaceState({}, "", url.toString());
   }
 
   processQueryParameters() {
@@ -121,9 +131,7 @@ class Router {
         this.openLogin();
         this.switchToRegister();
       default:
-        const url = new URL(window.location.href);
-        url.search = "";
-        window.history.replaceState({}, "", url.toString());
+        this.shouldClearQuery = true;
 
         break;
     }
