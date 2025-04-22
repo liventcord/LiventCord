@@ -2,7 +2,6 @@ import {
   getId,
   createEl,
   blackImage,
-  constructAppPage,
   getProfileUrl,
   IMAGE_SRCS
 } from "./utils.ts";
@@ -13,7 +12,7 @@ import {
   loadApp,
   changeCurrentGuild
 } from "./app.ts";
-import { isOnGuild, isOnMePage, isOnDm } from "./router.ts";
+import { isOnGuild, isOnMePage, isOnDm, router } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
 import { validateAvatar, resetImageInput } from "./avatar.ts";
@@ -141,10 +140,7 @@ export function loadGuild(
   console.log("Loading guild: ", guildId, channelId, guildName);
 
   if (isChangingUrl) {
-    const state = constructAppPage(guildId, channelId);
-    if (window.location.pathname !== state) {
-      window.history.pushState(null, "", state);
-    }
+    router.switchToGuild(guildId, channelId);
   }
   if (isChangingPage) {
     console.warn(" Already changing guild! can not change guild");

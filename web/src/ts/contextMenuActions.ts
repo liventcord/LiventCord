@@ -13,8 +13,8 @@ import {
   userManager
 } from "./user.ts";
 import { getManageableGuilds, currentGuildId } from "./guild.ts";
-import { createEl, constructAbsoluteAppPage, getId } from "./utils.ts";
-import { isOnMePage, isOnDm, isOnGuild } from "./router.ts";
+import { createEl, getId } from "./utils.ts";
+import { isOnMePage, isOnDm, isOnGuild, router } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
@@ -172,7 +172,7 @@ function copyChannelLink(
   channelId: string,
   event: MouseEvent
 ) {
-  const content = constructAbsoluteAppPage(guildId, channelId);
+  const content = router.constructAbsoluteAppPage(guildId, channelId);
   copyText(event, content);
 }
 export function copySelfName(event: MouseEvent) {

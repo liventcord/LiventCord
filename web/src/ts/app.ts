@@ -86,7 +86,6 @@ import {
   getMaskedEmail,
   enableElement,
   disableElement,
-  constructDmPage,
   loadBooleanCookie,
   isMobile,
   escapeHtml
@@ -425,10 +424,7 @@ export function openDm(friendId: string) {
     activateDmContainer(friendId);
   }, 100);
   unselectFriendContainer();
-  const url = constructDmPage(friendId);
-  if (url !== window.location.pathname) {
-    window.history.pushState(null, "", url);
-  }
+  router.switchToDm(friendId);
   if (!friendsCache.userExistsDm(friendId)) {
     try {
       addDm(friendId);
@@ -466,7 +462,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
   function handleMenu() {
     selectGuildList("main-logo");
     if (isChangingUrl) {
-      window.history.pushState(null, "", "/channels/@me");
+      router.resetRoute();
     }
     enableElement("friends-container", false, true);
     friendContainerItem.classList.add("dm-selected");
