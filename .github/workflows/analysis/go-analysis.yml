@@ -1,0 +1,51 @@
+name: "Go CodeQL Analysis"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "server/go-ws-api/**"
+      - "server/go-yt-stream-api/**"
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '17 1 * * 2'
+
+jobs:
+  analyze:
+    name: Analyze Go Code
+
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: go
+            build-mode: autobuild
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+
+    - if: matrix.build-mode == 'manual'
+      shell: bash
+      run: |
+        echo 'Replace with build commands if needed'
+        exit 1
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
