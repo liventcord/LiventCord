@@ -1,11 +1,3 @@
-# --- Frontend Build Stage ---
-
-FROM node:20-alpine AS frontend
-WORKDIR /source/web
-COPY --link ./web/ ./
-RUN npm install
-RUN npm run build
-    
 # --- Backend Build Stage ---
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 ARG TARGETARCH
@@ -21,7 +13,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 COPY --from=build /source/published /app/
-COPY --from=frontend /source/web/src/output /app/wwwroot
 RUN chown -R appuser:appgroup /app
 RUN chmod +x /app/LiventCord
 USER appuser

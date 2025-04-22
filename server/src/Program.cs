@@ -202,13 +202,6 @@ app.MapControllers();
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
-    var env = app.Services.GetRequiredService<IHostEnvironment>();
-    var configf = builder.Configuration["AppSettings:BuildFrontend"];
-    if (configf != "false")
-    {
-        await Task.Run(() => BuilderService.StartFrontendBuild());
-    }
-
     using (var scope = app.Services.CreateScope())
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
