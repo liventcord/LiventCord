@@ -24,13 +24,19 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-Cypress.Commands.add("login", () => {
-  const email = "test@gmail.com";
-  const password = "testt";
-  cy.visit("http://localhost:5005/login");
-  cy.get("#email").type(email);
-  cy.get("#pass").type(password);
-  cy.get('button[type="submit"]').click();
+Cypress.Commands.add('login', () => {
+  cy.visit("http://localhost:5173/LiventCord/app/");
+  console.log("Visit app")
+
+  cy.get("#login-email").type("test@gmail.com");
+  cy.get("#login-pass").type("testt");
+
+  
+  cy.get('#login-button')
+  .should('be.visible')
+  .click();
+
+
   cy.url().should("include", "/channels/@me");
   cy.get("#loading-screen").should("not.be.visible");
 });

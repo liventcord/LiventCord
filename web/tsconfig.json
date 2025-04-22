@@ -13,10 +13,6 @@
     "resolveJsonModule": true,
     "types": ["vite/client", "cypress"]
   },
-  "include": [
-    "src/ts/**/*",
-    "test/cypress/e2e/*.cy.ts",
-    "tsconfig.context.json"
-  ],
+  "include": ["src/ts/**/*", "cypress/e2e/*.cy.ts"],
   "exclude": ["node_modules"]
 }

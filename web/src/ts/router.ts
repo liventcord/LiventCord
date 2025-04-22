@@ -170,7 +170,8 @@ class Router {
     }
 
     const isPathnameCorrectValue = this.isPathnameCorrect(pathStr);
-    if (guildId && this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
+    console.log(isPathnameCorrectValue);
+    if (!guildId && this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
       this.resetRoute();
       return { isValid: false };
     }
@@ -207,10 +208,13 @@ class Router {
     return [guildId, channelId, friendId, inviteId];
   }
 
-  shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string) {
+  shouldResetRoute(
+    isPathnameCorrectValue: boolean,
+    guildId: string | undefined
+  ) {
     return (
       (isOnMePage && !isPathnameCorrectValue) ||
-      (isOnGuild && !cacheInterface.doesGuildExist(guildId))
+      (isOnGuild && guildId && !cacheInterface.doesGuildExist(guildId))
     );
   }
   switchToDm(friendId: string) {
@@ -228,7 +232,7 @@ class Router {
 
   resetRoute() {
     console.error("Resetting route");
-    window.history.pushState(null, "", "/channels/@me");
+    window.history.pushState(null, "", "/LiventCord/app/channels/@me");
     selectGuildList("a");
   }
 }

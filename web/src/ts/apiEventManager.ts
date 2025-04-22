@@ -1,8 +1,4 @@
-import {
-  AttachmentWithMetaData,
-  getOldMessages,
-  Message
-} from "./message.ts";
+import { AttachmentWithMetaData, getOldMessages, Message } from "./message.ts";
 import {
   currentLastDate,
   handleReplies,
@@ -59,9 +55,7 @@ apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   if (
     initData.message === "User session is no longer valid. Please log in again."
   ) {
-    console.error(
-      "User session is not valid"
-    );
+    console.error("User session is not valid");
     await router.openLogin();
     return;
   }

@@ -668,7 +668,9 @@ function changeCurrentDm(friendId: string) {
 }
 
 export function initialiseApp() {
-  apiClient.send(EventType.GET_INIT_DATA);
+  setTimeout(() => {
+    apiClient.send(EventType.GET_INIT_DATA);
+  }, 0);
 }
 
 window.onerror = (message, source, lineno, colno, error) => {

@@ -5,7 +5,7 @@ describe("Delete Channel", () => {
 
   it("Deletes channel", () => {
     cy.clickFirstGuild();
-    cy.intercept("DELETE", "/api/guilds/*/channels").as("channelDeleteRequest");
+    cy.intercept("DELETE", "**/api/guilds/*/channels").as("channelDeleteRequest");
 
     cy.get("#channelul")
       .children()

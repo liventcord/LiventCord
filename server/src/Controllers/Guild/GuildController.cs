@@ -57,7 +57,7 @@ namespace LiventCord.Controllers
             if (guild == null)
                 return NotFound();
             string userId = UserId!;
-            if (!await _permissionsController.IsUserAdmin(guildId, userId))
+            if (!await _permissionsController.IsUserAdmin(userId, guildId))
                 return StatusCode(StatusCodes.Status403Forbidden);
 
             guild.GuildName = request.GuildName;
