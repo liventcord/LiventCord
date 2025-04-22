@@ -153,6 +153,9 @@ class DmUser {
   private static async createDmContainer(
     friend: DmUserInfo
   ): Promise<HTMLElement> {
+    const existing = document.getElementById(friend.userId);
+    if (existing) return existing;
+
     const dmContainer = createEl("div", {
       className: "dm-container",
       id: friend.userId
@@ -165,9 +168,7 @@ class DmUser {
     const profileImg = createEl("img", {
       className: "dm-profile-img"
     }) as HTMLImageElement;
-    if (profileImg) {
-      setProfilePic(profileImg, friend.userId);
-    }
+    setProfilePic(profileImg, friend.userId);
 
     const status = await userManager.getStatusString(friend.userId);
     const bubble = createDmBubble(status);
@@ -177,24 +178,20 @@ class DmUser {
     let hoverTimeout: number;
     profileImg.addEventListener("mouseover", () => {
       profileImg.style.borderRadius = "0px";
-      if (bubble) {
-        clearTimeout(hoverTimeout);
-        bubble.style.opacity = "0";
-        hoverTimeout = setTimeout(() => {
-          bubble.style.display = "none";
-        }, HOVER_BUBBLE_TIME);
-      }
+      clearTimeout(hoverTimeout);
+      bubble.style.opacity = "0";
+      hoverTimeout = setTimeout(() => {
+        bubble.style.display = "none";
+      }, HOVER_BUBBLE_TIME);
     });
 
     profileImg.addEventListener("mouseout", () => {
       profileImg.style.borderRadius = "25px";
-      if (bubble) {
-        clearTimeout(hoverTimeout);
-        bubble.style.display = "block";
-        setTimeout(() => {
-          bubble.style.opacity = "1";
-        }, 10);
-      }
+      clearTimeout(hoverTimeout);
+      bubble.style.display = "block";
+      setTimeout(() => {
+        bubble.style.opacity = "1";
+      }, 10);
     });
 
     dmContainer.addEventListener("click", () => {

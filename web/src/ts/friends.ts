@@ -13,7 +13,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { alertUser, handleResize } from "./ui.ts";
+import { handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
   isAddFriendsOpen,

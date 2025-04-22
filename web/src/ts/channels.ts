@@ -1,11 +1,5 @@
 import store from "../store.ts";
-import {
-  constructAppPage,
-  disableElement,
-  getId,
-  createEl,
-  MINUS_INDEX
-} from "./utils.ts";
+import { disableElement, getId, createEl, MINUS_INDEX } from "./utils.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   getHistoryFromOneChannel,
@@ -19,7 +13,7 @@ import { muteHtml, inviteVoiceHtml, selectedChanColor } from "./ui.ts";
 import { createUserContext } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
-import { isOnMePage, isOnDm } from "./router.ts";
+import { isOnMePage, isOnDm, router } from "./router.ts";
 import { Member, userManager } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
@@ -135,10 +129,7 @@ export async function changeChannel(newChannel?: ChannelData) {
   }
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
-  const url = constructAppPage(currentGuildId, channelId);
-  if (url !== window.location.pathname && isTextChannel) {
-    window.history.pushState(null, "", url);
-  }
+  if (isTextChannel) router.switchToGuild(currentGuildId, channelId);
   const newChannelName = newChannel.channelName;
   setReachedChannelEnd(false);
 

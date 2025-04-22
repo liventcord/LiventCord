@@ -176,17 +176,6 @@ export function extractLinks(content: string): string[] {
   return content.match(urlRegex) || [];
 }
 
-export function constructAppPage(guildId: string, channelId: string) {
-  return `/channels/${guildId}/${channelId}`;
-}
-export function constructDmPage(channelId: string) {
-  return `/channels/@me/${channelId}`;
-}
-export function constructAbsoluteAppPage(guildId: string, channelId: string) {
-  const port = window.location.port ? `:${window.location.port}` : "";
-  return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
-}
-
 export function sanitizeInput(input: string): string {
   return input.replace(/[&<>"']/g, (char) => {
     switch (char) {

@@ -28,7 +28,8 @@ class Router {
   public ID_LENGTH = 19;
 
   isPathnameCorrect(url: string) {
-    const regex = new RegExp(`^/channels/\\d+/\\d+$`);
+    const regex = /\/channels\/\d{18,19}\/\d{18,19}/;
+    console.log(url, regex.test(url));
     return regex.test(url);
   }
 
@@ -99,7 +100,16 @@ class Router {
   isIdDefined(id: string) {
     return id;
   }
-
+  constructAppPage(guildId: string, channelId: string) {
+    return `/LiventCord/app/channels/${guildId}/${channelId}`;
+  }
+  constructDmPage(channelId: string) {
+    return `/LiventCord/app/channels/@me/${channelId}`;
+  }
+  constructAbsoluteAppPage(guildId: string, channelId: string) {
+    const port = window.location.port ? `:${window.location.port}` : "";
+    return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
+  }
   parsePath() {
     const urlParams = new URLSearchParams(window.location.search);
     const pageParam = urlParams.get("page");
@@ -160,7 +170,6 @@ class Router {
     }
 
     const isPathnameCorrectValue = this.isPathnameCorrect(pathStr);
-
     if (guildId && this.shouldResetRoute(isPathnameCorrectValue, guildId)) {
       this.resetRoute();
       return { isValid: false };
@@ -177,12 +186,22 @@ class Router {
   getRouteIds(pathStr: string, parts: string[]) {
     let guildId, channelId, friendId, inviteId;
 
-    if (pathStr.startsWith("/channels/@me/")) friendId = parts[3];
-    else if (pathStr.startsWith("/channels/") && parts.length === 4) {
-      guildId = parts[2];
-      channelId = parts[3];
-    } else if (pathStr.startsWith("/join-guild")) {
-      inviteId = parts[2];
+    const channelIndex = parts.indexOf("channels");
+    const joinGuildIndex = parts.indexOf("join-guild");
+
+    if (channelIndex !== -1) {
+      if (parts[channelIndex + 1] === "@me" && parts[channelIndex + 2]) {
+        friendId = parts[channelIndex + 2];
+      } else if (
+        parts.length > channelIndex + 2 &&
+        parts[channelIndex + 1] &&
+        parts[channelIndex + 2]
+      ) {
+        guildId = parts[channelIndex + 1];
+        channelId = parts[channelIndex + 2];
+      }
+    } else if (joinGuildIndex !== -1 && parts[joinGuildIndex + 1]) {
+      inviteId = parts[joinGuildIndex + 1];
     }
 
     return [guildId, channelId, friendId, inviteId];
@@ -191,11 +210,24 @@ class Router {
   shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string) {
     return (
       (isOnMePage && !isPathnameCorrectValue) ||
-      (isOnGuild && cacheInterface.doesGuildExist(guildId))
+      (isOnGuild && !cacheInterface.doesGuildExist(guildId))
     );
+  }
+  switchToDm(friendId: string) {
+    const url = this.constructDmPage(friendId);
+    if (url !== window.location.pathname) {
+      window.history.pushState(null, "", url);
+    }
+  }
+  switchToGuild(guildId: string, channelId: string) {
+    const url = this.constructAppPage(guildId, channelId);
+    if (url !== window.location.pathname) {
+      window.history.pushState(null, "", url);
+    }
   }
 
   resetRoute() {
+    console.error("Resetting route");
     window.history.pushState(null, "", "/channels/@me");
     selectGuildList("a");
   }
