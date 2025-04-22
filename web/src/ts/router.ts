@@ -100,13 +100,18 @@ class Router {
   }
 
   parsePath() {
-    const pathStr =
-      window.location.pathname !== "/channels/@me"
-        ? window.location.pathname
-        : window.location.search;
-    const parts = pathStr.split("/");
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get("page");
+
+    const pathStr = pageParam
+      ? decodeURIComponent(pageParam)
+      : window.location.pathname;
+
+    const parts = pathStr.split("/").filter((part) => part !== "");
+
     return { pathStr, parts };
   }
+
   processQueryParameters() {
     switch (window.location.search) {
       case "login":
