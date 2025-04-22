@@ -45,7 +45,7 @@ module.exports = {
           label: 'Tutorial',
         },
         {
-          to: '/app/',
+          to: 'https://liventcord.github.io/LiventCord/app',
           label: 'App',
           position: 'left',
         },
