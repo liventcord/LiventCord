@@ -384,10 +384,10 @@ function sendImageUploadRequest(
   xhr.open(
     "POST",
     isEmoji
-      ? "/api/guilds/emojis"
+      ? import.meta.env.VITE_BACKEND_URL + "/api/guilds/emojis"
       : isGuild
-        ? "/api/images/guild"
-        : "/api/images/profile"
+        ? import.meta.env.VITE_BACKEND_URL + "/api/images/guild"
+        : import.meta.env.VITE_BACKEND_URL + "/api/images/profile"
   );
 
   xhr.onload = () =>

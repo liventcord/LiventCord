@@ -92,7 +92,7 @@ export function createGuild() {
   }
   formData.append("GuildName", guildName);
 
-  fetch("/api/guilds", {
+  fetch(import.meta.env.VITE_BACKEND_URL + "/api/guilds", {
     method: "POST",
     body: formData
   })

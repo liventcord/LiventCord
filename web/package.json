@@ -5,19 +5,20 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "lint": "npx eslint src/ts/* --fix",
+    "lint": "pnpm eslint src/ts/* --fix",
     "build": "vite build",
     "serve": "vite preview",
-    "format": "npx prettier --write --ignore-unknown ."
+    "format": "pnpm prettier --write --ignore-unknown .",
+    "test": "pnpm cypress run"
   },
   "type": "module",
   "lint-staged": {
     "*.ts": [
-      "npx prettier --write --ignore-unknown",
-      "npx eslint --fix"
+      "pnpm prettier --write --ignore-unknown",
+      "pnpm eslint --fix"
     ],
-    "*.css": "npx prettier --write --ignore-unknown",
-    "*.json": "npx prettier --write --ignore-unknown"
+    "*.css": "pnpm prettier --write --ignore-unknown",
+    "*.json": "pnpm prettier --write --ignore-unknown"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",

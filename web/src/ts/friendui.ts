@@ -118,7 +118,6 @@ export function disableDmContainers() {
     dmContainer.classList.remove("dm-selected");
   });
 }
-
 interface DmUserInfo {
   userId: string;
   status: string;
@@ -132,6 +131,7 @@ interface DmUserInfo {
 interface ExistingDmContainer {
   dmContainer: HTMLElement;
 }
+
 class DmUser {
   friend: DmUserInfo;
   friendId: string;
@@ -146,6 +146,9 @@ class DmUser {
   }
 
   static async create(friend: DmUserInfo): Promise<DmUser> {
+    const existing = document.getElementById(friend.userId);
+    if (existing) return new DmUser(friend, existing);
+
     const dmContainer = await DmUser.createDmContainer(friend);
     return new DmUser(friend, dmContainer);
   }
@@ -153,9 +156,6 @@ class DmUser {
   private static async createDmContainer(
     friend: DmUserInfo
   ): Promise<HTMLElement> {
-    const existing = document.getElementById(friend.userId);
-    if (existing) return existing;
-
     const dmContainer = createEl("div", {
       className: "dm-container",
       id: friend.userId
@@ -221,6 +221,7 @@ class DmUser {
     return dmContainer;
   }
 }
+
 interface DmUserAddResponse {
   userId: string;
   nickName: string;

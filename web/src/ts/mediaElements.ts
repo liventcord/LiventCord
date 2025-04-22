@@ -158,6 +158,7 @@ function getProxy(url: string): string {
 
     return (
       initialState.mediaProxyApiUrl +
+      import.meta.env.VITE_BACKEND_URL +
       `/api/proxy/media?url=${encodeURIComponent(url)}`
     );
 

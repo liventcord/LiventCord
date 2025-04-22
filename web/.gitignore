@@ -24,3 +24,13 @@ output
 *.njsproj
 *.sln
 *.sw?
+
+cypress/screenshots
+
+.env
+.env.test
+.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

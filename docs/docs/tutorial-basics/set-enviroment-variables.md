@@ -4,6 +4,13 @@ sidebar_position: 1
 
 # Set Enviroment Variables
 
+## Vite Frontend Configuration
+1. Move .env.example to .env
+
+##### Configuration Options
+  - **VITE_BACKEND_URL**:
+    The URL of the .NET backend server that the frontend will use for API requests.
+
 ## .NET Server Configuration
 1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
 ```bash

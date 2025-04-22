@@ -43,6 +43,7 @@ Note : This would automatically run pnpm install and build/serve frontend
 ```bash
 cd web
 ppm install
+mv .env.example .env
 pnpm run dev
 ```
 Vite runs at `http://localhost:5173`.

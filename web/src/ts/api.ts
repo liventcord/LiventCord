@@ -190,6 +190,7 @@ class ApiClient {
     }
   }
   public onWebsocketReconnect() {
+    console.log("Websocket reconnected!");
     this.send(EventType.GET_INIT_DATA);
     this.send(EventType.GET_FRIENDS);
     fetchMessages(
@@ -257,13 +258,28 @@ class ApiClient {
     }
     return method;
   }
+  getBackendUrl(): string | null {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    if (!backendUrl) {
+      alertUser(
+        "Environment variable VITE_BACKEND_URL is unset!",
+        "Cant communicate with api"
+      );
+
+      return null;
+    }
+    return backendUrl;
+  }
+
   getUrlForEvent(
     event: EventType,
     data: Record<string, any> = {},
     queryParams: Record<string, any> = {}
-  ): { method: HttpMethod; url: string } {
-    
-    const basePath = import.meta.env.VITE_BACKEND_URL + "/api";
+  ): { method: HttpMethod; url: string } | null {
+    const url = this.getBackendUrl();
+    if (!url) return null;
+    const basePath = url + "/api";
+
     const urlTemplate = EventUrlMap[event];
     if (!urlTemplate) {
       throw new Error(`Unknown event: ${event}`);
@@ -390,7 +406,13 @@ class ApiClient {
     }
 
     try {
-      const { url, method } = this.getUrlForEvent(event, additionalData);
+      const result = this.getUrlForEvent(event, additionalData);
+      if (!result) {
+        console.error("URL and method could not be retrieved");
+        return;
+      }
+
+      const { url, method } = result;
 
       const response = await fetch(url, {
         method,
@@ -419,6 +441,7 @@ class ApiClient {
 
   async send(event: EventType, data: any = {}) {
     console.log(data);
+
     if (!event) {
       console.error("Event is required");
       return;
@@ -427,7 +450,14 @@ class ApiClient {
     const expectsResponse = !this.nonResponseEvents.includes(event);
 
     try {
-      const { url, method } = this.getUrlForEvent(event, data);
+      const result = this.getUrlForEvent(event, data);
+      if (!result) {
+        console.error(`Failed to get URL and method for event: ${event}`);
+        return;
+      }
+
+      const { url, method } = result;
+
       const response = await this.sendRequest(
         data,
         url,

@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/ts/**/*", "global.d.ts"]
+  "include": ["src/ts/**/*", "cypress/e2e/*.cy.ts", "global.d.ts"]
 }

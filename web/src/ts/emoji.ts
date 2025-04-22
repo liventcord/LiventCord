@@ -32,13 +32,16 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       const name = (event.target as HTMLTextAreaElement).value;
-      fetch(`/api/guilds/${guildId}/emojis/${emojiId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(name)
-      });
+      fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${guildId}/emojis/${emojiId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(name)
+        }
+      );
     }, debounceTimeout);
   };
 
@@ -109,9 +112,12 @@ function generateEmojiRowHTML(emoji: Emoji): string {
 }
 
 function deleteEmoji(guildId: string, emojiId: string) {
-  fetch(`/api/guilds/${guildId}/emojis/${emojiId}`, {
-    method: "DELETE"
-  }).then(() => {
+  fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${guildId}/emojis/${emojiId}`,
+    {
+      method: "DELETE"
+    }
+  ).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
     if (row) row.remove();
     cacheInterface.removeEmojis(guildId, emojiId);
@@ -162,7 +168,9 @@ export function populateEmojis(): void {
 
   cacheInterface.setEmojisLoading(currentGuildId, true);
 
-  fetch(`/api/guilds/${currentGuildId}/emojis`)
+  fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${currentGuildId}/emojis`
+  )
     .then((response) => {
       if (response.status === 404) {
         return Promise.reject("Emojis not found");

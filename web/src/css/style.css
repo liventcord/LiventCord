@@ -2130,7 +2130,7 @@ h2 {
   text-decoration: underline;
 }
 
-.login-button {
+.auth-button {
   background: #fff;
   color: #000;
   font-weight: 600;
@@ -2143,7 +2143,7 @@ h2 {
   transition: 0.3s ease;
 }
 
-.login-button:hover {
+.auth-button:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.15);
 }
