@@ -114,6 +114,7 @@ class Router {
 
     const parts = pathStr.split("/").filter((part) => part !== "");
 
+    console.log(window.location.href, window.location.pathname, pathStr, parts);
     return { pathStr, parts };
   }
   clearQuery() {
@@ -149,8 +150,6 @@ class Router {
     if (inviteId) {
       showGuildPop(inviteId);
     }
-
-    //apiClient.send(EventType.JOIN_GUILD,{ inviteId });
 
     if (
       (guildId && !this.isIdDefined(guildId)) ||
