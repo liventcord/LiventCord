@@ -1,5 +1,4 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches:
@@ -7,92 +6,70 @@ on:
     paths:
       - "docs/**"
       - "web/**"
-
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Docusaurus with WebApp
+    name: Build and Deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+          
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
+          
       - name: Install pnpm
-        run: |
-          npm install -g pnpm
-          pnpm --version
-
-      - name: Cache pnpm dependencies (web)
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('web/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install WebApp dependencies
-        run: |
-          cd web
-          pnpm install --frozen-lockfile
-
-      - name: Create .env file
-        run: |
-          cd web/src
-          echo "VITE_BACKEND_URL=https://liventcord.koyeb.app" > .env
-
-      - name: Build WebApp
-        run: |
-          cd web
-          pnpm build
-
-      - name: Inject WebApp into Docusaurus static folder
-        run: |
-          rm -rf docs/static/app
-          cp -r web/src/output docs/static/app
-
-      - name: Cache yarn dependencies (docs)
+        run: npm install -g pnpm
+          
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
+            ~/.pnpm-store
             ~/.cache/yarn
             docs/node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('docs/yarn.lock') }}
+          key: ${{ runner.os }}-deps-${{ hashFiles('web/pnpm-lock.yaml', 'docs/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install Docusaurus dependencies
+            ${{ runner.os }}-deps-
+            
+      - name: Create WebApp .env file
+        run: echo "VITE_BACKEND_URL=https://liventcord.koyeb.app" > web/src/.env
+          
+      - name: Parallel build
         run: |
-          cd docs
-          yarn install --frozen-lockfile
-
-      - name: Build Docusaurus site
-        run: |
-          cd docs
-          yarn build
-
+          (cd web && pnpm install --frozen-lockfile && pnpm build) &
+          WEB_PID=$!
+          
+          (cd docs && yarn install --frozen-lockfile) &
+          DOCS_PID=$!
+          
+          wait $WEB_PID
+          wait $DOCS_PID
+          
+          rm -rf docs/static/app
+          mkdir -p docs/static/app
+          cp -r web/src/output/* docs/static/app/
+          
+          cd docs && yarn build
+          
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/build
-
+          
   deploy:
     name: Deploy to GitHub Pages
     needs: build
     permissions:
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
