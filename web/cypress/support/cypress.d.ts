@@ -1,6 +1,5 @@
 declare namespace Cypress {
-    interface Chainable {
-      clickFirstGuild()
-    }
+  interface Chainable {
+    clickFirstGuild();
   }
-  
+}

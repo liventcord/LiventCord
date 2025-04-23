@@ -6,11 +6,8 @@ describe("Login Test", () => {
     cy.get("#login-pass").type("testt");
 
     cy.intercept("POST", "**/auth/login").as("loginRequest");
-    
-    cy.get('#login-button')
-    .should('be.visible')
-    .click();
-  
+
+    cy.get("#login-button").should("be.visible").click();
 
     cy.wait("@loginRequest").its("response.statusCode").should("eq", 200);
   });
