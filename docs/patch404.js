@@ -36,3 +36,5 @@ export default function NotFoundContent({ className }) {
 
 `.trim()
 
+fs.writeFileSync(filePath, modifiedContent, 'utf-8')
+console.log('✅ Not found page updated with redirect logic.')
