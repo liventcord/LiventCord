@@ -3,10 +3,10 @@ name: Run Cypress Tests
 on:
   push:
     paths:
-      - 'web/**'
+      - 'web/'
   pull_request:
     paths:
-      - 'web/**'
+      - 'web/'
   workflow_dispatch:
 
 jobs:
@@ -33,21 +33,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
       - run: pnpm install
       - run: pnpm cypress install
 
-     
       - name: Set up database and apply migrations
         run: |
-
-        echo "Waiting for the backend to be ready..."
+          echo "Waiting for the backend to be ready..."
           while ! curl --silent --fail localhost:5005/health; do
             sleep 1
           done
+
           docker exec -t backend dotnet ef migrations add InitialCreate --no-build || echo "Migration already exists"
           docker exec -t backend dotnet ef database update
 
@@ -55,5 +54,4 @@ jobs:
           nohup pnpm run dev &  
           sleep 10
 
-      
       - run: pnpm run test
