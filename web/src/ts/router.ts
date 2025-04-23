@@ -5,6 +5,7 @@ import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
 import { disableElement, enableElement } from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
+import { apiClient } from "./api.ts";
 export let isOnMePage = true;
 export let isOnDm = false;
 export let isOnGuild = false;
@@ -84,10 +85,8 @@ class Router {
     disableElement("register-form");
   }
   async logOutApp() {
-    fetch(import.meta.env.VITE_BACKEND_URL + "/auth/logout", {
-      method: "POST",
-      credentials: "include"
-    })
+    apiClient
+      .fetch("/auth/logout", { method: "POST" })
       .then(() => {
         window.location.reload();
       })
@@ -95,6 +94,9 @@ class Router {
         window.location.reload();
         console.error("Error during logout:", error);
       });
+  }
+  reloadLocation() {
+    window.location.reload();
   }
 
   isIdDefined(id: string) {

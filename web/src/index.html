@@ -542,22 +542,6 @@ ref="userLine"
 
         loadFontStyles();
 
-        const cdnConfettiUrl = "https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js";
-        const localConfettiUrl = "/vendor/confetti.browser.min.js";
-        const confettiUrl = useCDN ? cdnConfettiUrl : localConfettiUrl;
-
-
-        function loadScript(url) {
-            const script = document.createElement('script');
-            script.src = url;
-            script.onerror = () => {
-                console.error("Failed to load confetti script.");
-            };
-            document.body.appendChild(script);
-        }
-
-        loadScript(confettiUrl);
-
 
     </script>
 

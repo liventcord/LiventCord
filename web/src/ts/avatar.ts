@@ -1,5 +1,5 @@
 import { CLYDE_ID } from "./chat.ts";
-import { updateGuildImage, currentGuildId } from "./guild.ts";
+import { currentGuildId } from "./guild.ts";
 import {
   getProfileUrl,
   getBase64Image,
@@ -27,18 +27,35 @@ import {
 import { userList } from "./userList.ts";
 import { createCropPop } from "./popups.ts";
 import { translations } from "./translations.ts";
-import { currentUserId, currentUserNick } from "./user.ts";
+import { currentUserId } from "./user.ts";
 import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
-import { populateEmojis } from "./emoji.ts";
-import { cacheInterface } from "./cache.ts";
+import { apiClient, EventType } from "./api.ts";
 
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
 
 export let lastConfirmedProfileImg: Blob;
-let lastConfirmedGuildImg: Blob;
+export let lastConfirmedGuildImg: Blob;
+
+export function setLastGuildImg(newBlob: Blob) {
+  lastGuildImage = newBlob;
+}
+let lastProfileImage: Blob;
+let lastGuildImage: Blob;
+export function setLastProfileImg(newBlob: Blob) {
+  lastProfileImage = newBlob;
+}
+
+export function setLastConfirmedGuildImage() {
+  lastConfirmedGuildImg = lastGuildImage;
+}
+
+export function setLastConfirmedProfileImage() {
+  lastConfirmedProfileImg = lastProfileImage;
+}
+
 export let maxAttachmentSize: number; // mb
 let maxAvatarSize: number; // mb
 
@@ -373,59 +390,26 @@ function sendImageUploadRequest(
       ? `emoji-${createRandomId()}.${blobs[i].type.split("/")[1]}`
       : `image.${blobs[i].type.split("/")[1]}`;
 
-    formData.append("photos", blobs[i], fileName);
+    formData.append(isEmoji ? "photos" : "photo", blobs[i], fileName);
   }
 
   if (isGuild || isEmoji) {
     formData.append("guildId", currentGuildId);
   }
 
-  const xhr = new XMLHttpRequest();
-  xhr.open(
-    "POST",
-    isEmoji
-      ? import.meta.env.VITE_BACKEND_URL + "/api/guilds/emojis"
-      : isGuild
-        ? import.meta.env.VITE_BACKEND_URL + "/api/images/guild"
-        : import.meta.env.VITE_BACKEND_URL + "/api/images/profile"
-  );
-
-  xhr.onload = () =>
-    handleUploadResponse(xhr, isGuild, files[0], blobs[0], isEmoji);
-  xhr.onerror = () => {
-    alertUser(xhr.responseText);
-    revertToLastConfirmedImage(isGuild);
-  };
-
-  xhr.send(formData);
-}
-function handleUploadResponse(
-  xhr: XMLHttpRequest,
-  isGuild: boolean,
-  file: File,
-  blob: Blob,
-  isEmoji?: boolean
-) {
-  if (xhr.status === STATUS_200) {
-    if (isEmoji) {
-      alertUser(translations.getSettingsTranslation("SuccessEmoji"));
-      const data = JSON.parse(xhr.responseText);
-
-      cacheInterface.addUploadedEmojis(data.guildId, data.emojiIds);
-      populateEmojis();
-    } else {
-      if (isGuild) {
-        updateGuildImage(currentGuildId);
-        lastConfirmedGuildImg = blob;
-      } else {
-        refreshUserProfile(currentUserId, currentUserNick);
-        lastConfirmedProfileImg = blob;
-      }
-    }
-  } else {
-    console.error("Error uploading profile pic!");
+  if (isGuild) {
+    lastGuildImage = blobs[0];
+  } else if (!isEmoji) {
+    lastProfileImage = blobs[0];
   }
+  const eventType = isGuild
+    ? EventType.UPLOAD_GUILD_IMAGE
+    : isEmoji
+      ? EventType.UPLOAD_EMOJI_IMAGE
+      : EventType.UPLOAD_PROFILE_IMAGE;
+  apiClient.sendForm(eventType, formData);
 }
+
 /**
  * Get the guild profile image element.
  * @returns {HTMLImageElement} The image element.
@@ -479,7 +463,7 @@ export function clearAvatarInput(isGuild: boolean) {
   if (fileInput) fileInput.value = "";
 }
 
-function revertToLastConfirmedImage(isGuild: boolean) {
+export function revertToLastConfirmedImage(isGuild: boolean) {
   if (isGuild) {
     if (lastConfirmedGuildImg) {
       const guildImage = getGuildImage();

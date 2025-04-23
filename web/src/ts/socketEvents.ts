@@ -265,10 +265,7 @@ class WebSocketClient {
 let authCookie: string;
 async function getAuthCookie(): Promise<string> {
   if (authCookie) return encodeURIComponent(authCookie);
-  const response = await fetch(
-    import.meta.env.VITE_BACKEND_URL + "/auth/ws-token",
-    { credentials: "include" }
-  );
+  const response = await apiClient.fetch("/auth/ws-token");
   if (!response.ok) throw new Error("Failed to retrieve cookie");
   const data = await response.json();
   authCookie = data.cookieValue;

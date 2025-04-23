@@ -26,15 +26,26 @@ import {
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
-import { currentUserId, Member, UserInfo, userManager } from "./user.ts";
+import {
+  currentUserId,
+  currentUserNick,
+  Member,
+  UserInfo,
+  userManager
+} from "./user.ts";
 import {
   updateFriendsList,
   handleFriendEventResponse,
   friendsCache
 } from "./friends.ts";
-import { refreshUserProfile, selfName } from "./avatar.ts";
+import {
+  refreshUserProfile,
+  selfName,
+  setLastConfirmedGuildImage,
+  setLastConfirmedProfileImage
+} from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { Permission, permissionManager } from "./guildPermissions.ts";
+import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
@@ -43,6 +54,10 @@ import {
   handleDeleteMessageResponse
 } from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
+import { createFireWorks } from "./extras.ts";
+import { appendToGuildContextList } from "./contextMenuActions.ts";
+import { alertUser } from "./ui.ts";
+import { populateEmojis } from "./emoji.ts";
 
 // Events triggered upon successful requests to endpoints
 
@@ -62,8 +77,22 @@ apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   initialiseState(initData);
   initializeApp();
 });
+
+apiClient.on(EventType.UPLOAD_EMOJI_IMAGE, (data: any) => {
+  alertUser(translations.getSettingsTranslation("SuccessEmoji"));
+  cacheInterface.addUploadedEmojis(data.guildId, data.emojiIds);
+  populateEmojis();
+});
+apiClient.on(EventType.UPLOAD_GUILD_IMAGE, () => {
+  updateGuildImage(currentGuildId);
+  setLastConfirmedGuildImage();
+});
+apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, () => {
+  refreshUserProfile(currentUserId, currentUserNick);
+  setLastConfirmedProfileImage();
+});
+
 apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
-  const guild = data.guild;
   if (!data.success) {
     const errormsg = translations.getTranslation("join-error-response");
     const createGuildTitle = getId("create-guild-title") as HTMLElement;
@@ -73,18 +102,11 @@ apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
     return;
   }
 
-  const permissionsMap = permissionManager.permissionsMap;
-
-  if (!permissionsMap.has(guild.guildId)) {
-    permissionsMap.set(guild.guildId, new Set<Permission>());
-  }
-
-  //permissionsMap.set(guild.guildId, data.permissionsMap);
+  permissionManager.initialiseGuild(data.guild.guildId);
 
   loadGuild(data.guild.guildId, data.joinedChannelId, data.guild.guildName);
 
-  location.reload();
-
+  router.reloadLocation();
   if (closeCurrentJoinPop) {
     closeCurrentJoinPop();
   }
@@ -133,6 +155,29 @@ apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
 
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   handleNewChannel(data);
+});
+function handleGuildCreationResponse(data: Guild) {
+  const popup = getId("guild-pop-up");
+  if (popup) {
+    const parentNode = popup.parentNode as HTMLElement;
+    if (parentNode) {
+      parentNode.remove();
+    }
+  }
+
+  cacheInterface.addGuild(
+    data.guildId,
+    data.guildName,
+    data.isGuildUploadedImg
+  );
+
+  createFireWorks();
+  appendToGuildContextList(data.guildId);
+  loadGuild(data.guildId, data.rootChannel, data.guildName, true);
+}
+
+apiClient.on(EventType.CREATE_GUILD, (data: Guild) => {
+  handleGuildCreationResponse(data);
 });
 
 apiClient.on(EventType.DELETE_CHANNEL, (data) => {

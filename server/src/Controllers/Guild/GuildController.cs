@@ -125,6 +125,9 @@ namespace LiventCord.Controllers
             return guild;
         }
 
+
+
+
         private GuildDto MapToGuildDto(Guild guild)
         {
             return new GuildDto
@@ -139,27 +142,6 @@ namespace LiventCord.Controllers
             };
         }
 
-        private async Task<IActionResult> HandleGuildCreation(string userId, string guildName, IFormFile? photo, bool? isPublic)
-        {
-            string rootChannel = Utils.CreateRandomId();
-            string guildId = Utils.CreateRandomId();
-
-            _cacheService.InvalidateCache(userId);
-
-
-            var newGuild = await CreateGuild(userId, guildName, rootChannel, guildId, photo, isPublic);
-            if (newGuild == null)
-                return Problem("Guild creation failed");
-
-            if (photo != null)
-            {
-                var uploadResult = await _imageController.UploadImageOnGuildCreation(photo, userId, newGuild.GuildId);
-                if (uploadResult is not OkObjectResult uploadResultOk)
-                    return uploadResult;
-            }
-
-            return StatusCode(201, MapToGuildDto(newGuild));
-        }
 
 
         [HttpPost("")]
@@ -167,8 +149,22 @@ namespace LiventCord.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest();
+            var userId = UserId!;
+            var guildName = request.GuildName;
+            var photo = request.Photo;
+            var isPublic = request.IsPublic;
+            string rootChannel = Utils.CreateRandomId();
+            string guildId = Utils.CreateRandomId();
 
-            return await HandleGuildCreation(UserId!, request.GuildName, request.Photo, request.IsPublic);
+            _cacheService.InvalidateCache(userId);
+
+            var newGuild = await CreateGuild(userId, guildName, rootChannel, guildId, photo, isPublic);
+            if (newGuild == null)
+                return Problem("Guild creation failed");
+
+            var guildDto = MapToGuildDto(newGuild);
+
+            return StatusCode(201, guildDto);
         }
 
         [HttpDelete("{guildId}")]

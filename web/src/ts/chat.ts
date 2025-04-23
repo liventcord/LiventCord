@@ -1,6 +1,5 @@
 import { reactive } from "vue";
 import {
-  Attachment,
   AttachmentWithMetaData,
   getMessageDate,
   getOldMessages,

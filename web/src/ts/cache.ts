@@ -378,10 +378,10 @@ class SharedGuildsCache extends BaseCache {
   }
 }
 
-class Guild {
+class CacheGuild {
   guildId: string;
   guildName: string;
-  isUploaded: boolean;
+  isGuildUploadedImg: boolean;
   channels: ChannelCache;
   members: GuildMembersCache;
   messages: MessagesCache;
@@ -391,10 +391,10 @@ class Guild {
   ownerId: string | null;
   rootChannel: string | null = null;
 
-  constructor(guildId: string, guildName: string, isUploaded: boolean) {
+  constructor(guildId: string, guildName: string, isGuildUploadedImg: boolean) {
     this.guildId = guildId;
     this.guildName = guildName;
-    this.isUploaded = isUploaded;
+    this.isGuildUploadedImg = isGuildUploadedImg;
     this.channels = new ChannelCache();
     this.members = new GuildMembersCache();
     this.messages = new MessagesCache();
@@ -452,12 +452,12 @@ class Guild {
   }
 }
 interface GuildCache {
-  guilds: { [key: string]: Guild };
+  guilds: { [key: string]: CacheGuild };
 }
 export const sharedGuildsCache = new SharedGuildsCache();
 
 class GuildCache {
-  public guilds!: { [key: string]: Guild };
+  public guilds!: { [key: string]: CacheGuild };
   public currentGuildId!: string;
   public currentChannelId!: string;
   public currentGuildName!: string;
@@ -482,10 +482,10 @@ class GuildCache {
     return GuildCache.instance;
   }
 
-  getGuild(guildId: string): Guild | null {
+  getGuild(guildId: string): CacheGuild | null {
     if (!guildId) return null;
     if (!this.guilds[guildId]) {
-      this.guilds[guildId] = new Guild(guildId, "Default Guild", false);
+      this.guilds[guildId] = new CacheGuild(guildId, "Default Guild", false);
     }
     return this.guilds[guildId];
   }
@@ -493,14 +493,14 @@ class GuildCache {
   addGuild(guildData?: {
     guildId: string;
     guildName: string;
-    isUploaded: boolean;
+    isGuildUploadedImg: boolean;
   }): void {
     console.log(guildData);
     if (guildData && !this.guilds[guildData.guildId]) {
-      this.guilds[guildData.guildId] = new Guild(
+      this.guilds[guildData.guildId] = new CacheGuild(
         guildData.guildId,
         guildData.guildName,
-        guildData.isUploaded
+        guildData.isGuildUploadedImg
       );
     }
   }
@@ -523,18 +523,22 @@ class GuildCacheInterface {
   }
 
   // Guild
-  addGuild(guildData: {
-    guildId: string;
-    guildName: string;
-    isUploaded: boolean;
-  }): void {
-    this.guildCache.addGuild(guildData);
+  addGuild(
+    guildId: string,
+    guildName: string,
+    isGuildUploadedImg: boolean
+  ): void {
+    this.guildCache.addGuild({
+      guildId,
+      guildName,
+      isGuildUploadedImg: isGuildUploadedImg
+    });
   }
   removeGuild(guildId: string) {
     this.guildCache.removeGuild(guildId);
   }
 
-  getGuild(guildId: string): Guild | null {
+  getGuild(guildId: string): CacheGuild | null {
     return this.guildCache.getGuild(guildId);
   }
 
@@ -560,7 +564,7 @@ class GuildCacheInterface {
   }
   getIsUploaded(guildId: string): boolean | null {
     const guild = this.getGuild(guildId);
-    return guild ? guild.isUploaded : null;
+    return guild ? guild.isGuildUploadedImg : null;
   }
 
   // Invite

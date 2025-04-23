@@ -1,3 +1,4 @@
+import { apiClient, EventType } from "./api";
 import { cacheInterface } from "./cache";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
@@ -6,6 +7,7 @@ import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
 import {
+  createEl,
   escapeHtml,
   getEmojiPath,
   getId,
@@ -23,27 +25,20 @@ export function getCurrentEmojis(): Emoji[] | null {
 }
 export const regexIdEmojis = /:(\d+):/g;
 
+const debounceTimeout: number = 1000;
+let debounceTimer: number;
+
+const changeEmojiName = (event: Event, guildId: string, emojiId: string) => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const name = (event.target as HTMLTextAreaElement).value;
+    const data = { guildId, emojiId, name };
+    apiClient.send(EventType.CHANGE_EMOJI_NAME, data);
+  }, debounceTimeout);
+};
+
 function generateEmojiRowHTML(emoji: Emoji): string {
   const canManageEmojis = permissionManager.canManageGuild();
-  const debounceTimeout: number = 1000;
-  let debounceTimer: number;
-
-  const changeEmojiName = (event: Event, guildId: string, emojiId: string) => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const name = (event.target as HTMLTextAreaElement).value;
-      fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${guildId}/emojis/${emojiId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(name)
-        }
-      );
-    }, debounceTimeout);
-  };
 
   const html = `
   <tr class="table-row" id="emoji-row-${emoji.fileId}">
@@ -78,11 +73,15 @@ function generateEmojiRowHTML(emoji: Emoji): string {
       `emoji-${emoji.fileId}`
     ) as HTMLTextAreaElement;
     if (textarea && canManageEmojis) {
-      const span = document.createElement("span");
-      span.style.visibility = "hidden";
-      span.style.whiteSpace = "pre";
-      span.style.position = "absolute";
-      span.style.font = getComputedStyle(textarea).font;
+      const span = createEl("span", {
+        style: {
+          visibility: "hidden",
+          whiteSpace: "pre",
+          position: "absolute",
+          font: getComputedStyle(textarea).font
+        }
+      });
+
       document.body.appendChild(span);
 
       const adjustWidth = () => {
@@ -112,12 +111,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
 }
 
 function deleteEmoji(guildId: string, emojiId: string) {
-  fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${guildId}/emojis/${emojiId}`,
-    {
-      method: "DELETE"
-    }
-  ).then(() => {
+  apiClient.send(EventType.DELETE_EMOJI, { guildId, emojiId }).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
     if (row) row.remove();
     cacheInterface.removeEmojis(guildId, emojiId);
@@ -168,9 +162,8 @@ export function populateEmojis(): void {
 
   cacheInterface.setEmojisLoading(currentGuildId, true);
 
-  fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/api/guilds/${currentGuildId}/emojis`
-  )
+  apiClient
+    .getEmojis()
     .then((response) => {
       if (response.status === 404) {
         return Promise.reject("Emojis not found");
