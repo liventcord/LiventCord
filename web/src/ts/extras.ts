@@ -1,4 +1,4 @@
-declare var confetti: any;
+import confetti from "canvas-confetti";
 
 import { createEl } from "./utils.ts";
 import { chatInput } from "./chatbar.ts";

@@ -5,8 +5,10 @@ on:
     paths:
       - 'web/'
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'web/'
+
   workflow_dispatch:
 
 jobs:

@@ -9,23 +9,22 @@ import { router } from "./router.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/icon.webp",
+    "https://liventcord.github.io/LiventCord/app/images/icons/icon.webp",
   WUMPUS_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/wumpusalone.webp",
+    "https://liventcord.github.io/LiventCord/app/images/wumpusalone.webp",
   WHITEMIC_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whitemic.webp",
+    "https://liventcord.github.io/LiventCord/app/images/icons/whitemic.webp",
   REDMIC_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redmic.webp",
+    "https://liventcord.github.io/LiventCord/app/images/icons/redmic.webp",
   WHITEEARPHONES_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/whiteearphones.webp",
+    "https://liventcord.github.io/LiventCord/app/images/icons/whiteearphones.webp",
   REDEARPHONES_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/icons/redearphones.webp",
+    "https://liventcord.github.io/LiventCord/app/images/icons/redearphones.webp",
   DEFAULT_MEDIA_IMG_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp",
-  CLYDE_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/clyde.webp",
+    "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp",
+  CLYDE_SRC: "https://liventcord.github.io/LiventCord/app/images/clyde.webp",
   DEFAULT_PROFILE_IMG_SRC:
-    "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/guest.webp"
+    "https://liventcord.github.io/LiventCord/app/images/guest.webp"
 };
 
 export const MINUS_INDEX = -1;
@@ -363,6 +362,7 @@ export function getAverageRGB(imgEl: HTMLImageElement): string {
   if (imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
     return "#e7e7e7";
   }
+  imgEl.crossOrigin = "anonymous";
 
   const blockSize = 5;
   const RGBA_COMPONENTS = 4;

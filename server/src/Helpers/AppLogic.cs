@@ -19,7 +19,7 @@ namespace LiventCord.Helpers
         {
             GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
             ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
-            MediaProxyApiUrl = "https://ymemwaf.bsite.net";
+            MediaProxyApiUrl = "https://leventcord.bsite.net";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080/ws";

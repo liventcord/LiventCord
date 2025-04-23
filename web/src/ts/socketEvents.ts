@@ -266,7 +266,7 @@ let authCookie: string;
 async function getAuthCookie(): Promise<string> {
   if (authCookie) return encodeURIComponent(authCookie);
   const response = await apiClient.fetch("/auth/ws-token");
-  if (!response.ok) throw new Error("Failed to retrieve cookie");
+  if (!response.ok) console.error("Failed to retrieve cookie for ws");
   const data = await response.json();
   authCookie = data.cookieValue;
   return encodeURIComponent(data.cookieValue);
