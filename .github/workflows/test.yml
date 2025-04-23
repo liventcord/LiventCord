@@ -1,4 +1,4 @@
-name: Run Web Tests
+name: Run Cypress Tests
 
 on:
   push:
@@ -10,12 +10,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-web:
+  test:
     runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: web
+
+    services:
+      backend:
+        image: thelp281/liventcord:latest
+        ports:
+          - 5005:5005
+        options: --health-cmd="curl --silent --fail localhost:5000/health" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +38,11 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
 
       - run: pnpm install
-
       - run: pnpm cypress install
 
+      
+      - run: |
+          nohup pnpm run dev &  
+          sleep 10
+      
       - run: pnpm run test
