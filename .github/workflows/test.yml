@@ -22,7 +22,7 @@ jobs:
         image: thelp281/liventcord:latest
         ports:
           - 5005:5005
-        options: --health-cmd="curl --silent --fail localhost:5000/health" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="curl --silent --fail localhost:5005/health" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - uses: actions/checkout@v4
