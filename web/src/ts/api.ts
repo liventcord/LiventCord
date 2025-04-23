@@ -194,8 +194,9 @@ type ListenerCallback = (data: any) => void;
 
 class ApiClient {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    if (init) init.credentials = "include";
-    return window.fetch(import.meta.env.VITE_BACKEND_URL + input, init);
+    const initToUse = init ?? {};
+    initToUse.credentials = "include";
+    return window.fetch(import.meta.env.VITE_BACKEND_URL + input, initToUse);
   }
 
   private listeners: Record<string, ListenerCallback[]>;

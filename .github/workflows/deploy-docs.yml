@@ -54,7 +54,7 @@ jobs:
           mkdir -p docs/static/app
           cp -r web/src/output/* docs/static/app/
           
-          cd docs && yarn build
+          cd docs && node patch404.js && yarn build
           
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3
