@@ -47,7 +47,7 @@ jobs:
 
       - name: Run migrations using .NET SDK container
         run: |
-          docker run --rm --network backend_network mcr.microsoft.com/dotnet/sdk:6.0 bash -c \
+          docker run --rm --network backend_network mcr.microsoft.com/dotnet/sdk:8.0-alpine bash -c \
             "dotnet ef migrations add InitialCreate --no-build || echo 'Migration already exists' && dotnet ef database update"
 
       - name: Start the backend server
