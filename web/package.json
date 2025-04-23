@@ -21,19 +21,19 @@
     "*.json": "pnpm prettier --write --ignore-unknown"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.14.1",
-    "@typescript-eslint/eslint-plugin": "^8.30.1",
-    "@typescript-eslint/parser": "^8.30.1",
+    "@typescript-eslint/eslint-plugin": "^8.31.0",
+    "@typescript-eslint/parser": "^8.31.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.21",
     "babel-plugin-import-resolver": "^0.1.2",
     "cssnano": "^7.0.6",
     "dompurify": "^3.2.5",
-    "eslint": "^9.25.0",
+    "eslint": "^9.25.1",
     "eslint-config-eslint": "^11.0.0",
     "eslint-config-prettier": "^10.1.2",
-    "eslint-define-config": "^2.1.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
@@ -45,8 +45,8 @@
     "vite": "^6.3.2",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-inspect": "^11.0.1",
-    "vitest": "^3.1.1",
-    "vue-tsc": "^2.2.8"
+    "vitest": "^3.1.2",
+    "vue-tsc": "^2.2.10"
   },
   "dependencies": {
     "@types/croppie": "^2.6.4",
@@ -60,6 +60,6 @@
     "vuex": "^4.1.0"
   },
   "optionalDependencies": {
-    "cypress": "^14.3.1"
+    "cypress": "^14.3.2"
   }
 }

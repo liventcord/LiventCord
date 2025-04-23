@@ -176,7 +176,7 @@ namespace LiventCord.Controllers
                 if (guild == null) return NotFound();
 
                 string userId = UserId!;
-                if (!await _permissionsController.IsUserAdmin(guildId, userId))
+                if (!await _permissionsController.IsUserAdmin(userId, guildId))
                     return StatusCode(StatusCodes.Status403Forbidden);
 
                 var messages = await _dbContext.Messages
@@ -202,8 +202,9 @@ namespace LiventCord.Controllers
                 _cacheService.InvalidateCache(userId);
                 return Ok(new { guildId });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while deleting the guild." });
             }
         }

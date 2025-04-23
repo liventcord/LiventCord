@@ -18,7 +18,7 @@
               :src="
                 attachment.attachment.isImageFile
                   ? '/attachments/' + attachment.attachment.fileId
-                  : 'https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/images/defaultmediaimage.webp'
+                  : 'https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp'
               "
               alt="Image"
               :data-filesize="attachment.attachment.fileSize"

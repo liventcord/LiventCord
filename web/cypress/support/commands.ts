@@ -24,21 +24,21 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-Cypress.Commands.add('login', () => {
-  cy.visit("http://localhost:5173/LiventCord/app/");
-  console.log("Visit app")
-
-  cy.get("#login-email").type("test@gmail.com");
-  cy.get("#login-pass").type("testt");
-
-  
-  cy.get('#login-button')
-  .should('be.visible')
-  .click();
-
-
-  cy.url().should("include", "/channels/@me");
-  cy.get("#loading-screen").should("not.be.visible");
+Cypress.Commands.add("login", () => {
+  cy.session(
+    "login",
+    () => {
+      cy.visit(Cypress.env("frontendUrl"));
+      cy.get("#login-email").type("test@gmail.com");
+      cy.get("#login-pass").type("testt");
+      cy.get("#login-button").should("be.visible").click();
+      cy.url().should("include", "/channels/@me");
+      cy.get("#loading-screen").should("not.be.visible");
+    },
+    {
+      cacheAcrossSpecs: true
+    }
+  );
 });
 
 Cypress.Commands.add("clickFirstGuild", () => {

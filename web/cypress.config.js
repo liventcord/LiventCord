@@ -1,18 +1,18 @@
-import { defineConfig } from 'cypress'
+import { defineConfig } from "cypress";
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173/LiventCord/app/',
+    baseUrl: "http://localhost:5173/LiventCord/app/",
     env: {
-      frontendUrl: 'http://localhost:5173/LiventCord/app/',
-      backendUrl: 'https://liventcord.koyeb.app'
+      frontendUrl: "http://localhost:5173/LiventCord/app/",
+      backendUrl: "https://liventcord.koyeb.app"
     },
-    defaultCommandTimeout: 10000,
+    responseTimeout: 10000,
   },
   component: {
     devServer: {
-      framework: 'vue',
-      bundler: 'vite'
+      framework: "vue",
+      bundler: "vite"
     }
   }
-})
+});

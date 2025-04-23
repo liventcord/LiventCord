@@ -7,9 +7,10 @@ sidebar_position: 1
 ## Vite Frontend Configuration
 1. Move .env.example to .env
 
-##### Configuration Options
+#### Configuration Options
   - **VITE_BACKEND_URL**:
     The URL of the .NET backend server that the frontend will use for API requests.
+    Note : for cypress tests, use 127.0.0.1 instead of localhost since cypress blocks localhost weirdly
 
 ## .NET Server Configuration
 1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
@@ -67,7 +68,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
 
   - **MediaProxyApiUrl**:
     Url of the Media Proxy url for proxying external resources on media previews.
-    **Defaults to** `ymemwaf.bsite.net`
+    **Defaults to** `leventcord.bsite.net`
     
 
   - **MaxAvatarSize**:
