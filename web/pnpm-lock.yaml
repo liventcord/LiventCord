@@ -36,6 +36,9 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(vue@3.5.13(typescript@5.8.3))
     devDependencies:
+      '@types/canvas-confetti':
+        specifier: ^1.9.0
+        version: 1.9.0
       '@types/node':
         specifier: ^22.14.1
         version: 22.14.1
@@ -533,6 +536,9 @@ packages:
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
     engines: {node: '>=10.13.0'}
+
+  '@types/canvas-confetti@1.9.0':
+    resolution: {integrity: sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg==}
 
   '@types/croppie@2.6.4':
     resolution: {integrity: sha512-rxKLA5S+QarlaMVlsMqhn2fMMC5XlvogFzTYdMlkeupPgxT1mWaheucdZNzkUJACn61+JjN/eJYt5dS9GMoeXw==}
@@ -3446,6 +3452,8 @@ snapshots:
   '@tokenizer/token@0.3.0': {}
 
   '@trysound/sax@0.2.0': {}
+
+  '@types/canvas-confetti@1.9.0': {}
 
   '@types/croppie@2.6.4': {}
 
