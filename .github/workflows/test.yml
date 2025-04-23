@@ -45,10 +45,13 @@ jobs:
           echo "Waiting for the backend container to be ready..."
           sleep 5
 
-      - name: Run migrations using .NET SDK container
-        run: |
-          docker run --rm --network backend_network mcr.microsoft.com/dotnet/sdk:8.0-alpine sh -c \
-            "dotnet ef migrations add InitialCreate --no-build || echo 'Migration already exists' && dotnet ef database update"
+       - name: Run migrations using .NET SDK container
+         run: |
+           docker run --rm --network backend_network -v ${{ github.workspace }}/web:/app -w /app mcr.microsoft.com/dotnet/sdk:8.0 bash -c \
+      "dotnet tool install --global dotnet-ef && \
+       export PATH=\"/root/.dotnet/tools:$PATH\" && \
+       dotnet ef database update"
+
 
       - name: Start the backend server
         run: |
