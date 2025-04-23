@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "server/src/**"
-      - "web/**"
   workflow_dispatch:
     inputs:
       IMAGE_NAME:
