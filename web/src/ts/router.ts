@@ -103,10 +103,10 @@ class Router {
     return id;
   }
   constructAppPage(guildId: string, channelId: string) {
-    return `/LiventCord/app/channels/${guildId}/${channelId}`;
+    return `/channels/${guildId}/${channelId}`;
   }
   constructDmPage(channelId: string) {
-    return `/LiventCord/app/channels/@me/${channelId}`;
+    return `/channels/@me/${channelId}`;
   }
   constructAbsoluteAppPage(guildId: string, channelId: string) {
     const port = window.location.port ? `:${window.location.port}` : "";
@@ -234,7 +234,7 @@ class Router {
 
   resetRoute() {
     console.error("Resetting route");
-    window.history.pushState(null, "", "/LiventCord/app/channels/@me");
+    window.history.pushState(null, "", "/channels/@me");
     selectGuildList("a");
   }
 }
