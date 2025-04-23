@@ -17,13 +17,6 @@ jobs:
       run:
         working-directory: web
 
-    services:
-      backend:
-        image: thelp281/liventcord:latest
-        ports:
-          - 5005:5005
-        options: --health-cmd="curl --silent --fail localhost:5005/health" --health-interval=10s --health-timeout=5s --health-retries=3
-
     steps:
       - uses: actions/checkout@v4
 
@@ -40,18 +33,37 @@ jobs:
       - run: pnpm install
       - run: pnpm cypress install
 
-      - name: Set up database and apply migrations
+      
+      - name: Start backend service container
         run: |
-          echo "Waiting for the backend to be ready..."
+          docker-compose up -d backend
+          echo "Waiting for the backend container to be ready (health check is not yet active)..."
+          sleep 5
+
+      
+      - name: Apply database migrations
+        run: |
+          echo "Running migrations on the backend container..."
+          docker exec -t backend dotnet ef migrations add InitialCreate --no-build || echo "Migration already exists"
+          docker exec -t backend dotnet ef database update
+
+   
+      - name: Start the backend server
+        run: |
+          echo "Starting the backend server..."
+          docker exec -d backend dotnet run
+
+      
+      - name: Wait for the backend server to be ready
+        run: |
+          echo "Waiting for the backend server to be fully up..."
           while ! curl --silent --fail localhost:5005/health; do
             sleep 1
           done
 
-          docker exec -t backend dotnet ef migrations add InitialCreate --no-build || echo "Migration already exists"
-          docker exec -t backend dotnet ef database update
-
+      
       - run: |
           nohup pnpm run dev &  
           sleep 10
-
+      
       - run: pnpm run test
