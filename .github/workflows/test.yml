@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
@@ -61,7 +61,7 @@ jobs:
 
       - name: Wait for the backend server to be ready
         run: |
-          until curl --silent --fail localhost:5005/health; do
+          until curl --silent --fail localhost:5005; do
             sleep 1
           done
 
