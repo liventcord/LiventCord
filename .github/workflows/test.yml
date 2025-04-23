@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'web/**'
+  workflow_dispatch:
 
 jobs:
   test-web:
@@ -29,6 +30,8 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
-      - run: pnpm install --include-optional
+      - run: pnpm install
+
+      - run: pnpm cypress install
 
       - run: pnpm run test
