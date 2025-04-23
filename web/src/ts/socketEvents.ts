@@ -90,8 +90,10 @@ class WebSocketClient {
 
   private async connectSocket() {
     const cookie = await getAuthCookie();
-    this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
-    this.attachHandlers();
+    if (cookie) {
+      this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
+      this.attachHandlers();
+    }
   }
 
   getUserStatus(userIds: string[]) {
