@@ -18,9 +18,6 @@ RUN chmod +x /app/LiventCord
 USER appuser
 EXPOSE 5005
 
-# Run migrations at container startup
-ENTRYPOINT ["sh", "-c", "dotnet ef database update && exec ./LiventCord"]
-
 
 ARG Host
 ARG Port
