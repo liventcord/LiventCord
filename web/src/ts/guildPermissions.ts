@@ -27,6 +27,13 @@ class PermissionManager {
   constructor(permissionsMap: Map<string, Set<Permission>> = new Map()) {
     this.permissionsMap = permissionsMap;
   }
+  initialiseGuild(guildId: string) {
+    const permissionsMap = this.permissionsMap;
+
+    if (!permissionsMap.has(guildId)) {
+      permissionsMap.set(guildId, new Set<Permission>());
+    }
+  }
 
   updatePermissions(guildId: string, newPermissions: PermissionsRecord) {
     console.log("updatePermissions called with:", { guildId, newPermissions });

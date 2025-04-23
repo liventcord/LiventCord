@@ -1,7 +1,7 @@
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
-import { createEl, getId } from "./utils.ts";
+import { createEl, disableElement, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copySelfName } from "./contextMenuActions.ts";
@@ -68,14 +68,15 @@ export class UserStatus {
       document.removeEventListener("mousedown", this.handleOutsideClick);
     }
   };
-  updateSelfStatusbubble(statusBubble: HTMLElement) {
+  updateSelfStatusBubble(statusBubble: HTMLElement) {
     statusBubble.classList.value = "";
     statusBubble.classList.add(
       "panel-status-bubble",
       "status-bubble",
-      this.currentStatus
+      this.currentStatus.toLowerCase()
     );
   }
+
   async createStatusPanel() {
     const createdPanel = await drawProfilePopId(currentUserId, true);
     if (!createdPanel) return;
@@ -91,7 +92,7 @@ export class UserStatus {
     ) as HTMLElement;
     if (!statusBubble) return;
 
-    this.updateSelfStatusbubble(statusBubble);
+    this.updateSelfStatusBubble(statusBubble);
 
     createdPanel.appendChild(statusBubble);
 
@@ -221,7 +222,7 @@ export class UserStatus {
       const statusBubble = this.createdPanel.querySelector(
         ".status-bubble"
       ) as HTMLElement;
-      this.updateSelfStatusbubble(statusBubble);
+      this.updateSelfStatusBubble(statusBubble);
     }
   }
   updateSelfStatus(status: string) {

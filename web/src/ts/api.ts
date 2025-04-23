@@ -6,6 +6,7 @@ import { fetchMessages } from "./chat.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
 import { guildCache } from "./cache.ts";
+import { revertToLastConfirmedImage } from "./avatar.ts";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -44,6 +45,11 @@ export const EventType = Object.freeze({
   DENY_FRIEND: "DENY_FRIEND",
   ADD_FRIEND_ID: "ADD_FRIEND_ID",
   CHANGE_NICK: "CHANGE_NICK",
+  CHANGE_EMOJI_NAME: "CHANGE_EMOJI_NAME",
+  DELETE_EMOJI: "DELETE_EMOJI",
+  UPLOAD_GUILD_IMAGE: "UPLOAD_GUILD_IMAGE",
+  UPLOAD_PROFILE_IMAGE: "UPLOAD_PROFILE_IMAGE",
+  UPLOAD_EMOJI_IMAGE: "UPLOAD_EMOJI_IMAGE",
   ADD_DM: "ADD_DM",
   REMOVE_DM: "REMOVE_DM",
   LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
@@ -113,7 +119,12 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   DELETE_MESSAGE_GUILD: HttpMethod.DELETE,
   UPDATE_GUILD_IMAGE: HttpMethod.PUT,
   READ_MESSAGE: HttpMethod.POST,
-  UPDATE_CHANNEL_NAME: HttpMethod.POST
+  UPDATE_CHANNEL_NAME: HttpMethod.POST,
+  CHANGE_EMOJI_NAME: HttpMethod.PUT,
+  DELETE_EMOJI: HttpMethod.DELETE,
+  UPLOAD_GUILD_IMAGE: HttpMethod.POST,
+  UPLOAD_PROFILE_IMAGE: HttpMethod.POST,
+  UPLOAD_EMOJI_IMAGE: HttpMethod.POST
 };
 
 const EventUrlMap: Record<EventType, string> = {
@@ -171,12 +182,30 @@ const EventUrlMap: Record<EventType, string> = {
   ACCEPT_FRIEND: "/friends/accept/{friendId}",
   DENY_FRIEND: "/friends/deny/{friendId}",
   GET_MESSAGE_DATES: "",
-  READ_MESSAGE: ""
+  READ_MESSAGE: "",
+  CHANGE_EMOJI_NAME: "/guilds/{guildId}/emojis/{emojiId}",
+  DELETE_EMOJI: "/guilds/{guildId}/emojis/{emojiId}",
+  UPLOAD_EMOJI_IMAGE: "/guilds/emojis",
+  UPLOAD_GUILD_IMAGE: "/images/guild",
+  UPLOAD_PROFILE_IMAGE: "/images/profile"
 };
 
 type ListenerCallback = (data: any) => void;
 
+interface RequestOptions {
+  event: EventType;
+  data?: any;
+  formData?: FormData;
+  expectsResponse?: boolean;
+  isFormData?: boolean;
+  additionalData?: any;
+}
 class ApiClient {
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    if (init) init.credentials = "include";
+    return window.fetch(import.meta.env.VITE_BACKEND_URL + input, init);
+  }
+
   private listeners: Record<string, ListenerCallback[]>;
   private nonResponseEvents: EventType[];
 
@@ -188,6 +217,9 @@ class ApiClient {
       this.validateEventMaps();
       this.checkFullCrud();
     }
+  }
+  public getEmojis() {
+    return this.fetch("/api/guilds/${currentGuildId}/emojis");
   }
   public onWebsocketReconnect() {
     console.log("Websocket reconnected!");
@@ -355,42 +387,107 @@ class ApiClient {
     }
     this.listeners[event].push(callback);
   }
+
   async sendRequest(
-    data: Record<string, any>,
     url: string,
     method: HttpMethod,
-    event: EventType,
-    expectsResponse: boolean = true
+    body?: BodyInit | null,
+    expectsResponse: boolean = true,
+    event?: EventType
   ): Promise<any | null> {
-    const body: string | undefined =
-      method !== HttpMethod.GET && data ? JSON.stringify(data) : undefined;
-
-    const headers: HeadersInit | undefined =
-      method === HttpMethod.GET
-        ? undefined
-        : { "Content-Type": "application/json" };
+    const headers: HeadersInit =
+      method !== HttpMethod.GET && body && !(body instanceof FormData)
+        ? { "Content-Type": "application/json" }
+        : {};
 
     try {
-      const response: Response = await fetch(url, {
+      const response = await fetch(url, {
         method,
-        headers,
+        headers: Object.keys(headers).length ? headers : undefined,
         body,
         credentials: "include"
       });
 
       if (!response.ok) {
-        await this.handleError(response, event);
+        if (event) {
+          await this.handleError(response, event);
+        }
         return null;
       }
 
-      if (!expectsResponse) {
-        return null;
-      }
+      if (!expectsResponse) return null;
 
-      const responseBody: string = await response.text();
+      const responseBody = await response.text();
       return responseBody ? JSON.parse(responseBody) : null;
     } catch (error) {
-      console.error(`Failed to send request for event "${event}":`, error);
+      console.error(
+        `Failed to send request${event ? ` for event "${event}"` : ""}:`,
+        error
+      );
+      throw error;
+    }
+  }
+  private async processRequest({
+    event,
+    data = {},
+    expectsResponse = true,
+    isFormData = false,
+    additionalData = {} // Added default for additionalData
+  }: RequestOptions): Promise<any | null> {
+    if (!event) {
+      throw new Error("Event is required");
+    }
+
+    // Only include additionalData if it's formData, else just use data
+    const result = this.getUrlForEvent(
+      event,
+      isFormData ? { ...data, ...additionalData } : data
+    );
+
+    if (!result) {
+      throw new Error(`Failed to get URL and method for event: ${event}`);
+    }
+
+    const { url, method } = result;
+
+    const body = isFormData
+      ? data // If it's FormData, use the formData directly
+      : method !== HttpMethod.GET && data
+        ? JSON.stringify(data) // Otherwise, serialize the data as JSON
+        : undefined;
+
+    try {
+      const response = await this.sendRequest(
+        url,
+        method,
+        body,
+        expectsResponse,
+        event
+      );
+
+      if (response) {
+        this.handleMessage(event, response);
+        this.handleError(response, event);
+      }
+
+      return response;
+    } catch (error: any) {
+      const isNetworkError =
+        error.message.includes("NetworkError") ||
+        error.message.includes("Failed to fetch");
+
+      const errorMessage = isNetworkError
+        ? `Network error when trying to request event: ${event}`
+        : `Error during request for event "${event}"`;
+
+      console.error(errorMessage);
+      console.error(error);
+
+      alertUser(
+        `Error during request for event "${event}"`,
+        `${error} ${event} ${JSON.stringify(data)}`
+      );
+
       throw error;
     }
   }
@@ -398,97 +495,28 @@ class ApiClient {
   async sendForm(
     event: EventType,
     formData: FormData,
-    additionalData: Record<string, any>
-  ) {
-    if (!event) {
-      console.error("Event is required");
-      return;
-    }
-
-    try {
-      const result = this.getUrlForEvent(event, additionalData);
-      if (!result) {
-        console.error("URL and method could not be retrieved");
-        return;
-      }
-
-      const { url, method } = result;
-
-      const response = await fetch(url, {
-        method,
-        body: formData,
-        credentials: "include"
-      });
-
-      if (!response.ok) {
-        await this.handleError(response, event);
-        return null;
-      }
-
-      const responseBody = await response.text();
-      const parsedResponse = responseBody ? JSON.parse(responseBody) : null;
-
-      if (parsedResponse) {
-        this.handleMessage(event, parsedResponse);
-      }
-
-      return parsedResponse;
-    } catch (error) {
-      console.error(`Failed to send form request for event "${event}":`, error);
-      throw error;
-    }
+    additionalData: any = {}
+  ): Promise<any | null> {
+    return this.processRequest({
+      event,
+      data: formData,
+      expectsResponse: true,
+      isFormData: true,
+      additionalData // Pass additionalData to processRequest
+    });
   }
 
-  async send(event: EventType, data: any = {}) {
-    console.log(data);
-
-    if (!event) {
-      console.error("Event is required");
-      return;
-    }
-
+  async send(event: EventType, data: any = {}): Promise<void> {
     const expectsResponse = !this.nonResponseEvents.includes(event);
-
-    try {
-      const result = this.getUrlForEvent(event, data);
-      if (!result) {
-        console.error(`Failed to get URL and method for event: ${event}`);
-        return;
-      }
-
-      const { url, method } = result;
-
-      const response = await this.sendRequest(
-        data,
-        url,
-        method,
-        event,
-        expectsResponse
-      );
-
-      if (response) {
-        this.handleMessage(event, response);
-      }
-    } catch (error: any) {
-      console.error(error);
-
-      if (
-        error.message.includes("NetworkError") ||
-        error.message.includes("Failed to fetch")
-      ) {
-        console.error(`Network error when trying to request event: ${event}`);
-      } else {
-        console.error(`Error during request for event "${event}"`);
-      }
-
-      alertUser(
-        `Error during request for event "${event}"`,
-        `${error} ${event} ${JSON.stringify(data)}`
-      );
-    }
+    await this.processRequest({
+      event,
+      data,
+      expectsResponse,
+      isFormData: false
+    });
   }
-
   async handleError(response: Response, event: EventType) {
+    if (response.ok) return;
     if (friendEvents.includes(event)) {
       const predefinedMessage =
         translations.getFriendErrorMessage(String(response.status)) ||
@@ -498,6 +526,16 @@ class ApiClient {
       console.error(
         `Error [${response.status}] for event "${event}": ${predefinedMessage}`
       );
+    }
+    switch (event) {
+      case EventType.UPLOAD_GUILD_IMAGE:
+        revertToLastConfirmedImage(true);
+        break;
+      case EventType.UPLOAD_PROFILE_IMAGE:
+        revertToLastConfirmedImage(false);
+        break;
+      default:
+        break;
     }
   }
 }

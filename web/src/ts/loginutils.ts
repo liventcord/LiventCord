@@ -1,3 +1,4 @@
+import { apiClient } from "./api";
 import { initialiseApp } from "./app";
 import { router } from "./router";
 import { getId } from "./utils";
@@ -255,17 +256,15 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
     data.nickname = nickValue;
   }
 
-  const base = import.meta.env.VITE_BACKEND_URL;
-
-  fetch(isRegister ? `${base}/auth/register` : `${base}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify(data),
-    credentials: "include"
-  })
+  apiClient
+    .fetch(isRegister ? "/auth/register" : "/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      }
+    })
     .then((response) => {
       if (!response.ok) {
         let errorMsg = "";
@@ -336,12 +335,8 @@ function setRegisterInputListeners(registerForm: HTMLElement) {
       debounceTimer = setTimeout(async () => {
         try {
           isFetching = true;
-          const base = import.meta.env.VITE_BACKEND_URL;
-          const response = await fetch(
-            `${base}/api/discriminators?nick=${encodeURIComponent(newInputValue)}`,
-            {
-              method: "GET"
-            }
+          const response = await apiClient.fetch(
+            "/api/discriminators?nick=" + encodeURIComponent(newInputValue)
           );
 
           if (response.ok) {

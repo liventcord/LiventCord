@@ -5,7 +5,7 @@ import {
   getProfileUrl,
   IMAGE_SRCS
 } from "./utils.ts";
-import { clickMainLogo, alertUser, preventDrag } from "./ui.ts";
+import { clickMainLogo, preventDrag } from "./ui.ts";
 import {
   isChangingPage,
   initialState,
@@ -24,7 +24,6 @@ import {
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
-import { createFireWorks } from "./extras.ts";
 import { UserInfo } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
@@ -85,45 +84,15 @@ export function createGuild() {
     resetImageInput("guildImageInput", "guildImg");
     return;
   }
-
   const formData = new FormData();
   if (guildPhotoFile) {
     formData.append("Photo", guildPhotoFile);
   }
   formData.append("GuildName", guildName);
 
-  fetch(import.meta.env.VITE_BACKEND_URL + "/api/guilds", {
-    method: "POST",
-    body: formData
-  })
-    .then((response) => {
-      if (response.ok) return response.json();
-      return response.text();
-    })
-    .then((data) => {
-      console.log("Guild creation response:", data);
-      if (typeof data === "object") {
-        const popup = getId("guild-pop-up");
-        if (popup) {
-          const parentNode = popup.parentNode as HTMLElement;
-          if (parentNode) {
-            parentNode.remove();
-          }
-        }
-
-        cacheInterface.addGuild(data);
-
-        createFireWorks();
-        appendToGuildList(data);
-        loadGuild(data.guildId, data.rootChannel, guildName, true);
-        location.reload();
-      } else {
-        alertUser(data);
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    });
+  apiClient.sendForm(EventType.CREATE_GUILD, formData, {
+    GuildName: guildName
+  });
 }
 
 export function loadGuild(

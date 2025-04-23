@@ -51,6 +51,7 @@
   "dependencies": {
     "@types/croppie": "^2.6.4",
     "browser-image-compression": "^2.0.2",
+    "canvas-confetti": "^1.9.3",
     "croppie": "^2.6.5",
     "dotenv": "^16.5.0",
     "file-type": "^20.4.1",
