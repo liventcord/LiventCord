@@ -36,15 +36,18 @@ jobs:
       - name: Pull backend Docker image
         run: docker pull thelp281/liventcord:latest
 
+      - name: Create user-defined network
+        run: docker network create backend_network
+
       - name: Start backend container
         run: |
-          docker run -d --name backend -p 5005:5005 thelp281/liventcord:latest
-          echo "Waiting for the backend container to be ready (health check is not yet active)..."
+          docker run -d --name backend --network backend_network -p 5005:5005 thelp281/liventcord:latest
+          echo "Waiting for the backend container to be ready..."
           sleep 5
 
       - name: Run migrations using .NET SDK container
         run: |
-          docker run --rm --link backend --network container:backend mcr.microsoft.com/dotnet/sdk:6.0 bash -c \
+          docker run --rm --network backend_network mcr.microsoft.com/dotnet/sdk:6.0 bash -c \
             "dotnet ef migrations add InitialCreate --no-build || echo 'Migration already exists' && dotnet ef database update"
 
       - name: Start the backend server
