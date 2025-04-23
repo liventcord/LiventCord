@@ -23,6 +23,7 @@ yarn.lock
 *.swp
 /node_modules
 /build
+static/app
 .docusaurus
 .cache-loader
 .DS_Store

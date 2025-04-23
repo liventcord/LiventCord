@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: "./src",
     publicDir: "../public",
-    base: "/",
+    base: "/LiventCord/app/",
 
     build: {
       outDir: "output",
