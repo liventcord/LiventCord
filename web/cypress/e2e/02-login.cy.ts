@@ -1,6 +1,6 @@
 describe("Login Test", () => {
   it("Fills out the form and logs in", () => {
-    cy.visit("http://localhost:5173/LiventCord/app/");
+    cy.visit(Cypress.env("frontendUrl"));
 
     cy.get("#login-email").type("test@gmail.com");
     cy.get("#login-pass").type("testt");

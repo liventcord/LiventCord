@@ -423,7 +423,7 @@ class ApiClient {
   async sendForm(
     event: EventType,
     formData: FormData,
-    additionalData: Record<string, any>
+    additionalData: Record<string, any> = {}
   ) {
     if (!event) {
       console.error("Event is required");

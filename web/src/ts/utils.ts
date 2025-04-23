@@ -362,6 +362,7 @@ export function getAverageRGB(imgEl: HTMLImageElement): string {
   if (imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
     return "#e7e7e7";
   }
+  imgEl.crossOrigin = "anonymous";
 
   const blockSize = 5;
   const RGBA_COMPONENTS = 4;

@@ -555,7 +555,7 @@ function getAccountSettingsHtml() {
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
                 </div>
                 <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" maxlength="32">
-                <img id="settings-self-profile"style="user-select: none;">
+                <img id="settings-self-profile" style="user-select: none;">
                 <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
                 </form>

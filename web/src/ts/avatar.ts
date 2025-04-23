@@ -35,7 +35,7 @@ import { apiClient, EventType } from "./api.ts";
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
-
+selfProfileImage.crossOrigin = "anonymous";
 export let lastConfirmedProfileImg: Blob;
 export let lastConfirmedGuildImg: Blob;
 
