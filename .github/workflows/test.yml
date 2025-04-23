@@ -48,12 +48,12 @@ jobs:
         run: |
           docker run --rm \
             --network backend_network \
-            -v ${{ github.workspace }}/web:/app \
+            -v ${{ github.workspace }}/server:/app \
             -w /app \
             mcr.microsoft.com/dotnet/sdk:8.0 bash -c "
               dotnet tool install --global dotnet-ef &&
               export PATH=\"/root/.dotnet/tools:\$PATH\" &&
-              dotnet ef database update
+              dotnet ef database update --project src
             "
 
       - name: Start the backend server
