@@ -16,21 +16,20 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          
-      - name: Install pnpm
-        run: npm install -g pnpm
-          
-      - name: Cache dependencies
+          node-version: 22
+
+
+      - name: Cache dependencies for pnpm and yarn
         uses: actions/cache@v4
         with:
           path: |
             ~/.pnpm-store
             ~/.cache/yarn
+            web/node_modules
             docs/node_modules
           key: ${{ runner.os }}-deps-${{ hashFiles('web/pnpm-lock.yaml', 'docs/yarn.lock') }}
           restore-keys: |
@@ -38,8 +37,7 @@ jobs:
             
       - name: Create WebApp .env file
         run: echo "VITE_BACKEND_URL=https://liventcord.koyeb.app" > web/src/.env
-          
-      - name: Parallel build
+      - name: Parallel build and deploy
         run: |
           (cd web && pnpm install --frozen-lockfile && pnpm build) &
           WEB_PID=$!
