@@ -22,7 +22,7 @@
             <img
               :src="
                 attachment.attachment.isImageFile
-                  ? '/attachments/' + attachment.attachment.fileId
+                  ? `${apiClient.getBackendUrl()}/attachments/${attachment.attachment.fileId}`
                   : 'https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp'
               "
               alt="Image"
@@ -93,6 +93,7 @@ import {
   currentAttachments,
   openMediaPanel
 } from "../ts/chat.ts";
+import { apiClient } from "../ts/api.ts";
 const props = defineProps({
   members: {
     type: Array,
