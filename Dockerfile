@@ -18,6 +18,7 @@ RUN chmod +x /app/LiventCord
 USER appuser
 EXPOSE 5005
 
+ENTRYPOINT ["./LiventCord"]
 
 ARG Host
 ARG Port
