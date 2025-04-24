@@ -11,7 +11,7 @@ import {
   displayLocalMessage,
   displayStartMessage
 } from "./chat.ts";
-import { hasSharedGuild, guildCache } from "./cache.ts";
+import { cacheInterface, guildCache } from "./cache.ts";
 import {
   closeReplyMenu,
   chatInput,
@@ -303,7 +303,7 @@ export function deleteMessage(messageId: string) {
 }
 
 function canSendMessageToDm(dmId: string): boolean {
-  return friendsCache.isFriend(dmId) || hasSharedGuild(dmId);
+  return friendsCache.isFriend(dmId) || cacheInterface.hasSharedGuild(dmId);
 }
 
 function getChannelId(): string {

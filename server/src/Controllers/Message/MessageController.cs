@@ -341,23 +341,14 @@ namespace LiventCord.Controllers
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId,
             [FromRoute][IdLengthValidation] string messageId,
-            [FromForm] EditMessageRequest request
+            [FromBody] EditMessageRequest request
         )
         {
-            if (string.IsNullOrEmpty(request.Content))
-            {
-                return BadRequest(new { Type = "error", Message = "Content is required." });
-            }
-
-            if (!await _permissionsController.CanManageChannels(UserId!, guildId))
-            {
-                return StatusCode(StatusCodes.Status403Forbidden);
-            }
-
-            await EditMessage(channelId, messageId, request.Content);
+            var userId = UserId!;
+            await EditMessage(userId,channelId, messageId, request.Content);
             bool isDm = false;
             var editBroadcast = new { isDm, guildId, channelId, messageId, request.Content };
-            await _redisEventEmitter.EmitToGuild(EventType.EDIT_MESSAGE_GUILD, editBroadcast, guildId, UserId!);
+            await _redisEventEmitter.EmitToGuild(EventType.EDIT_MESSAGE_GUILD, editBroadcast, guildId, userId);
             return Ok(editBroadcast);
         }
         [Authorize]
@@ -368,16 +359,12 @@ namespace LiventCord.Controllers
             [FromBody] EditMessageRequest request
         )
         {
-            if (string.IsNullOrEmpty(request.Content))
-            {
-                return BadRequest(new { Type = "error", Message = "Content is required." });
-            }
             var userId = UserId!;
             var constructedFriendUserChannel = ConstructDmId(userId, friendId);
-            await EditMessage(constructedFriendUserChannel, messageId, request.Content);
+            await EditMessage(userId,constructedFriendUserChannel, messageId, request.Content);
             bool isDm = true;
             var editBroadcast = new { isDm, constructedFriendUserChannel, messageId, request.Content };
-            await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast, UserId!, constructedFriendUserChannel);
+            await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast,userId, constructedFriendUserChannel);
             return Ok(editBroadcast);
         }
 
@@ -676,9 +663,9 @@ namespace LiventCord.Controllers
                 }
             }
 
-            if (string.IsNullOrEmpty(channelId) || string.IsNullOrEmpty(request.Content))
+            if (string.IsNullOrEmpty(channelId))
             {
-                return BadRequest(new { Type = "error", Message = "Required properties (channelId, content) are missing." });
+                return BadRequest(new { Type = "error", Message = "Required property channel id is missing." });
             }
 
             if (!string.IsNullOrEmpty(request.ReplyToId) && request.ReplyToId.Length != Utils.ID_LENGTH)
@@ -774,10 +761,10 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task EditMessage(string channelId, string messageId, string newContent)
+        private async Task EditMessage(string userId, string channelId, string messageId, string newContent)
         {
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
-                m.MessageId == messageId && m.ChannelId == channelId
+                m.MessageId == messageId && m.ChannelId == channelId && m.UserId == userId
             );
 
             if (message != null)

@@ -1,5 +1,6 @@
 import { initialState } from "./app.ts";
 import { Emoji } from "./emoji.ts";
+import { currentGuildId } from "./guild.ts";
 import { Message, MessageReply } from "./message.ts";
 import { currentUserId, Member } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
@@ -316,6 +317,17 @@ class VoiceChannelCache extends BaseCache {
 
 class SharedGuildsCache extends BaseCache {
   private guildFriendIdsMap: Map<string, string[]> = new Map();
+
+  hasSharedGuild(friendId: string): boolean {
+    const friendGuildIds = new Set<string>(
+      this.getFriendGuilds(friendId).map((guild) => guild)
+    );
+    return Object.values(guildCache.guilds).some(
+      (guild) =>
+        guild.members.getMemberIds(guild.guildId).includes(friendId) ||
+        friendGuildIds.has(guild.guildId)
+    );
+  }
 
   getFriendGuilds(friendId: string, guildId?: string): string[] {
     const guilds = new Set<string>();
@@ -817,6 +829,10 @@ class GuildCacheInterface {
   setEmojisLoading(guildId: string, isLoading: boolean): void {
     this.loadingCache[guildId] = isLoading;
   }
+  // Shared guilds
+  hasSharedGuild(friendId: string): boolean {
+    return sharedGuildsCache.hasSharedGuild(friendId);
+  }
 }
 
 export let currentMessagesCache: { [messageId: string]: HTMLElement } = {};
@@ -829,19 +845,10 @@ export function clearMessagesCache() {
   currentMessagesCache = {};
 }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-interface Reply {
-  userId: string;
-  content: string;
-  attachmentUrls: string[];
-}
 
 export const replyCache: Record<string, MessageReply> = {};
 
 const guildChatMessages: { [channelId: string]: Message[] } = {};
 
-const shared_guilds_map: Record<string, any> = {};
-export function hasSharedGuild(friend_id: string): boolean {
-  return shared_guilds_map.hasOwnProperty(friend_id);
-}
 export const guildCache = new GuildCache();
 export const cacheInterface = new GuildCacheInterface();
