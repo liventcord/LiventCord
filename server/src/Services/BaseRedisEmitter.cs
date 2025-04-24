@@ -53,6 +53,7 @@ public class BaseRedisEmitter
                     {
                         config.Ssl = true;
                     }
+                    config.AbortOnConnectFail = false;
                     redis = await ConnectionMultiplexer.ConnectAsync(config);
 
                     if (redis.IsConnected)
