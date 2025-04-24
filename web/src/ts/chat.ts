@@ -31,7 +31,10 @@ import {
   getFormattedDate,
   getFormattedDateSelfMessage,
   createRandomId,
-  createNowDate
+  createNowDate,
+  enableElement,
+  disableElement,
+  isMobile
 } from "./utils.ts";
 import {
   currentUserId,
@@ -49,7 +52,7 @@ import {
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage } from "./app.ts";
-import { loadingScreen, setActiveIcon } from "./ui.ts";
+import { loadingScreen, setActiveIcon, toggleHamburger } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
@@ -550,6 +553,46 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
     }
     return true;
   });
+}
+export function closeMediaPanel() {
+  const wrapper = getId("media-table-wrapper");
+  const userList = getId("user-list");
+  if (!wrapper) return;
+  if (!userList) return;
+
+  if (!userList.contains(wrapper)) {
+    userList.insertBefore(wrapper, userList.firstChild);
+  }
+  const mediaTitle = getId("media-title");
+  if (mediaTitle) wrapper.insertBefore(mediaTitle, wrapper.firstChild);
+
+  wrapper.classList.add("media-table-wrapper-on-right");
+  enableElement(chatContent, false, true);
+}
+export function openMediaPanel() {
+  const wrapper = getId("media-table-wrapper");
+  const chatContainer = getId("chat-container");
+  const mediaTitle = getId("media-title");
+  const channelInfo = getId("channel-info");
+  if (!wrapper) return;
+  if (!chatContainer) return;
+
+  if (!channelInfo) return;
+  if (!mediaTitle) return;
+
+  if (!channelInfo) return;
+  if (!chatContainer.contains(wrapper)) {
+    chatContainer.appendChild(wrapper);
+  }
+
+  wrapper.classList.remove("media-table-wrapper-on-right");
+  disableElement("chat-content");
+  channelInfo.appendChild(mediaTitle);
+  mediaTitle.classList.add("media-open-metadata");
+
+  if (isMobile) {
+    toggleHamburger(true, false);
+  }
 }
 
 export function handleHistoryResponse(data: NewMessageResponse) {

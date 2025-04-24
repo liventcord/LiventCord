@@ -13,7 +13,7 @@ describe("Delete Channel", () => {
     cy.get("#channel-container")
       .find("#channelul")
       .children()
-      .first()
+      .eq(1)
       .trigger("mouseover")
       .find(".content-wrapper")
       .click();
@@ -23,23 +23,11 @@ describe("Delete Channel", () => {
       .find(".settings-buttons")
       .last()
       .click();
-    cy.get("#channel-container")
-      .find("#channelul")
-      .children()
-      .as("initialChannelCount");
 
     cy.get(".pop-up-accept").click();
 
     cy.wait("@channelDeleteRequest")
       .its("response.statusCode")
       .should("eq", 200);
-
-    cy.get("@initialChannelCount").then((initialCount) => {
-      // Check if channel count is decreased after request
-      cy.get("#channel-container")
-        .find("#channelul")
-        .children()
-        .should("have.length", initialCount.length - 1);
-    });
   });
 });

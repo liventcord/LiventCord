@@ -250,14 +250,16 @@ function initializeElements() {
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
 
-  const tbShowProfile = getId("tb-showprofile");
+  const tbShowProfile = getId("tb-show-members");
   tbShowProfile?.addEventListener("click", handleMembersClick);
 }
 
 function initializeSettings() {
   updateSelfProfile(currentUserId, currentUserNick);
   const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
-  setUsersList(isCookieUsersOpen, true);
+  setTimeout(() => {
+    setUsersList(isCookieUsersOpen, true);
+  }, 0);
   disableElement("loading-screen");
 }
 

@@ -83,6 +83,7 @@ const maxTenorWidth = 768;
 const maxTenorHeight = 576;
 const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
 const IgnoreProxies = ["i.redd.it", ...tenorHosts];
+export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 const getAttachmentUrl = (attachmentId: string) =>
   `${import.meta.env.VITE_BACKEND_URL}/attachments/${attachmentId}`;
@@ -158,7 +159,6 @@ function getProxy(url: string): string {
 
     return (
       initialState.mediaProxyApiUrl +
-      import.meta.env.VITE_BACKEND_URL +
       `/api/proxy/media?url=${encodeURIComponent(url)}`
     );
 
@@ -235,8 +235,13 @@ function createImageElement(
     }
   });
 
-  preloadImage(getProxy(urlSrc))
-    .catch(() => preloadImage(getProxy(urlSrc)))
+  // Check if its an attachment url
+
+  const match = urlSrc.match(attachmentPattern);
+  urlSrc = match ? urlSrc : getProxy(urlSrc);
+
+  preloadImage(urlSrc)
+    .catch(() => preloadImage(urlSrc))
     .then((loadedSrc) => {
       imgElement.src = loadedSrc;
     })
@@ -472,7 +477,6 @@ function processMediaLink(
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        console.log(attachment);
         mediaElement = createImageElement(
           "",
           link,
