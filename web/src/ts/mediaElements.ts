@@ -87,7 +87,7 @@ const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 const getAttachmentUrl = (attachmentId: string) =>
-  `${import.meta.env.VITE_BACKEND_URL}/attachments/${attachmentId}`;
+  `${apiClient.getBackendUrl()}/attachments/${attachmentId}`;
 
 function createTenorElement(
   msgContentElement: HTMLElement,
@@ -248,7 +248,7 @@ function createImageElement(
   if (matchPure && matchPure[1]) {
     const id = matchPure[1];
 
-    urlSrc = apiClient.getBackendUrl() + id;
+    urlSrc = getAttachmentUrl(id);
   }
 
   preloadImage(urlSrc)
