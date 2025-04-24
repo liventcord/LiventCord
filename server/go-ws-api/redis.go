@@ -44,7 +44,7 @@ func consumeMessagesFromRedis() {
 			fmt.Println("Error reading from Redis stream:", err)
 			return
 		}
-		fmt.Println("Messages received from Redis:", messages)
+
 		for _, msg := range messages {
 			for _, xMessage := range msg.Messages {
 				eventType, ok := xMessage.Values["EventType"].(string)
@@ -72,6 +72,16 @@ func consumeMessagesFromRedis() {
 					fmt.Println("Error unmarshalling UserIDs:", err)
 					continue
 				}
+
+				eventDetails := fmt.Sprintf(
+					"Event Type: %s\nPayload: %s\nUserIDs: %v\n",
+					eventType,
+					rawPayload,
+					userIDs,
+				)
+				fmt.Println("New event reached:")
+				fmt.Println(eventDetails)
+
 				hub.lock.RLock()
 				for _, userId := range userIDs {
 					conn, ok := hub.clients[userId]
@@ -92,8 +102,9 @@ func consumeMessagesFromRedis() {
 					}
 				}
 				hub.lock.RUnlock()
+
+				lastID = xMessage.ID
 			}
-			lastID = messages[len(messages)-1].Messages[len(messages[len(messages)-1].Messages)-1].ID
 		}
 	}
 }

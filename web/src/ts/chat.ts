@@ -1389,10 +1389,13 @@ export function fetchMessages(channelId: string, isDm = false) {
   const requestData = {
     channelId,
     isDm,
-    guildId: ""
+    guildId: "",
+    friendId: ""
   };
   if (isOnGuild) {
     requestData["guildId"] = currentGuildId;
+  } else if (isOnDm) {
+    requestData["friendId"] = friendsCache.currentDmId;
   }
 
   if (timeoutId !== null) {

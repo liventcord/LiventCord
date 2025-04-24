@@ -82,7 +82,7 @@
   display: none;
   user-select: none;
   position: relative;
-  left: 170px;
+  left: -10px;
   line-height: 0.8;
   transform: scaleX(1.2);
   color: #949ba4;
