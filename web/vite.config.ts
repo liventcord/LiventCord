@@ -43,14 +43,26 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes("node_modules")) {
-              return "vendor";
-            }
+          manualChunks(id: string) {
+            if (!id.includes("node_modules")) return;
+
+            if (id.includes("vue/dist") || id.match(/node_modules\/@vue\//))
+              return "vue";
+            if (id.includes("vuex")) return "vuex";
+            if (id.includes("croppie")) return "croppie";
+            if (id.includes("canvas-confetti")) return "confetti";
+            if (id.includes("browser-image-compression"))
+              return "image-compression";
+            if (id.includes("file-type")) return "file-type";
+            if (id.includes("dompurify")) return "dompurify";
+            if (id.includes("dotenv")) return "dotenv";
+            if (id.includes("process")) return "process";
+
+            return "vendor";
           },
-          entryFileNames: "assets/[name].js",
-          chunkFileNames: "assets/[name].js",
-          assetFileNames: "assets/[name].[ext]"
+          entryFileNames: "assets/[name].[hash].js",
+          chunkFileNames: "assets/[name].[hash].js",
+          assetFileNames: "assets/[name].[hash].[ext]"
         }
       }
     },
