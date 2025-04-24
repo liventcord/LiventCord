@@ -125,9 +125,13 @@ mv .example.env .env
     The URL used to verify the WebSocket authentication by passing the cookie to the .NET server.
     **Defaults to** `http://localhost:5005`
   
-  - **RedisConnectionString**:
+  - **RedisURI**:
     Connection string for connecting redis.
     **Defaults to** `localhost:6379`
+
+  - **AppMode**:
+    Use release or debug mode.
+    **Defaults to** debug.
 
 ## Media Proxy Server Configuration
 ```bash

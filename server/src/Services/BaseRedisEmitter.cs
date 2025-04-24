@@ -49,7 +49,10 @@ public class BaseRedisEmitter
                     redis?.Dispose();
 
                     var config = ConfigurationOptions.Parse(redisConnectionString);
-                    config.AbortOnConnectFail = false;
+                    if (redisConnectionString.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        config.Ssl = true;
+                    }
                     redis = await ConnectionMultiplexer.ConnectAsync(config);
 
                     if (redis.IsConnected)

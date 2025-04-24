@@ -218,12 +218,13 @@ func broadcastStatusUpdate(userId string, status UserStatus) {
 		fmt.Println("Error fetching guild memberships:", err)
 		return
 	}
-	fmt.Println("Broadcasting status update to guilds:", guilds, "for user:", userId)
+
 	hub.lock.RLock()
 	clients := hub.clients
 	hub.lock.RUnlock()
 
 	seenUsers := make(map[string]struct{})
+	notifyCount := 0
 
 	for _, members := range guilds {
 		for _, targetUserId := range members {
@@ -235,9 +236,12 @@ func broadcastStatusUpdate(userId string, status UserStatus) {
 							ConnectivityStatus: string(status),
 						})
 						seenUsers[targetUserId] = struct{}{}
+						notifyCount++
 					}
 				}
 			}
 		}
 	}
+
+	fmt.Printf("Broadcasting status update to %d guilds for user %s. Total clients notified: %d\n", len(guilds), userId, notifyCount)
 }

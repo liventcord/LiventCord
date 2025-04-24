@@ -12,7 +12,7 @@ func main() {
 	port := getEnv("Port", "8080")
 	hostname := getEnv("Host", "0.0.0.0")
 	appMode := getEnv("AppMode", "debug")
-	redisURL := getEnv("RedisURL", "redis://localhost:6379")
+	redisURI := getEnv("RedisURI", "redis://localhost:6379")
 
 	router := gin.Default()
 
@@ -29,7 +29,7 @@ func main() {
 		})
 	})
 
-	options, err := parseRedisURL(redisURL)
+	options, err := parseRedisURL(redisURI)
 	if err != nil {
 		log.Fatalf("Error parsing Redis URL: %v", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	if redisClient != nil {
 		go consumeMessagesFromRedis()
 	}
-	if err := initRedisClient(redisURL); err != nil {
+	if err := initRedisClient(redisURI); err != nil {
 		log.Fatalf("Failed to initialize Redis client: %v", err)
 	}
 
