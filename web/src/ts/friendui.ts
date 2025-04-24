@@ -130,6 +130,7 @@ interface DmUserInfo {
 
 interface ExistingDmContainer {
   dmContainer: HTMLElement;
+  remove(): void;
 }
 
 class DmUser {
@@ -146,8 +147,12 @@ class DmUser {
   }
 
   static async create(friend: DmUserInfo): Promise<DmUser> {
-    const existing = document.getElementById(friend.userId);
-    if (existing) return new DmUser(friend, existing);
+    const existing = dmContainerParent.querySelector(
+      `#${CSS.escape(friend.userId)}`
+    ) as HTMLElement;
+    if (existing) {
+      return new DmUser(friend, existing);
+    }
 
     const dmContainer = await DmUser.createDmContainer(friend);
     return new DmUser(friend, dmContainer);
@@ -234,7 +239,7 @@ export async function appendToDmList(
   if (existingFriendsIds.has(user.userId)) {
     return null;
   }
-  console.log(user, user.userId, typeof user);
+
   const dmUserInfo: DmUserInfo = {
     userId: user.userId,
     status: "",
@@ -246,6 +251,13 @@ export async function appendToDmList(
   };
 
   const dmUser = await DmUser.create(dmUserInfo);
+
+  const existingContainer = dmContainerParent.querySelector(
+    `#${CSS.escape(user.userId)}`
+  );
+  if (existingContainer) {
+    return dmUser.dmContainer;
+  }
 
   dmContainerParent.appendChild(dmUser.dmContainer);
 
@@ -267,7 +279,7 @@ export function updateDmsList(friends: DmUserInfo[]) {
     return;
   }
 
-  existingFriendsDmContainers.forEach(({ dmContainer, remove }) => remove());
+  existingFriendsDmContainers.forEach(({ remove }) => remove());
   existingFriendsDmContainers.clear();
   existingFriendsIds.clear();
 
@@ -275,8 +287,13 @@ export function updateDmsList(friends: DmUserInfo[]) {
     (record, friend) => {
       async function setupDmUser(_friend: DmUserInfo) {
         const dmUser = await DmUser.create(_friend);
-        dmContainerParent.appendChild(dmUser.dmContainer);
-        dmContainerParent.appendChild(dmUser.dmContainer);
+
+        const existingContainer = dmContainerParent.querySelector(
+          `#${CSS.escape(_friend.userId)}`
+        );
+        if (!existingContainer) {
+          dmContainerParent.appendChild(dmUser.dmContainer);
+        }
 
         existingFriendsDmContainers.add({
           dmContainer: dmUser.dmContainer,
