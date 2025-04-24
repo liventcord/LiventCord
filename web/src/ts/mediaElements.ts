@@ -23,6 +23,7 @@ import {
 } from "./emoji.ts";
 import { Attachment } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
+import { apiClient } from "./api.ts";
 
 interface Embed {
   id: string;
@@ -239,6 +240,16 @@ function createImageElement(
 
   const match = urlSrc.match(attachmentPattern);
   urlSrc = match ? urlSrc : getProxy(urlSrc);
+
+  const regex = /\/attachments\/(\d+)/;
+
+  const matchPure = urlSrc.match(regex);
+
+  if (matchPure && matchPure[1]) {
+    const id = matchPure[1];
+
+    urlSrc = apiClient.getBackendUrl() + id;
+  }
 
   preloadImage(urlSrc)
     .catch(() => preloadImage(urlSrc))

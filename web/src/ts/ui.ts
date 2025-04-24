@@ -837,6 +837,7 @@ function movePreviewImg(images: HTMLImageElement[]) {
 function getImages(): HTMLImageElement[] {
   const mediaGrid = getId("media-grid") as HTMLElement;
   const container = isOnMediaPanel ? mediaGrid : chatContent;
+  if (!container) return [];
   if (isOnMediaPanel) {
     return Array.from(container.querySelectorAll(".image-box"))
       .map((box) => box.querySelector<HTMLImageElement>("img"))
