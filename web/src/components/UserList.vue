@@ -1,11 +1,16 @@
 <template>
   <div>
     <div id="user-list" ref="userList">
-      <div id="media-table-wrapper" class="user-table-wrapper">
-        <div
-          id="media-title"
-          style="align-self: center; margin-top: -5px"
-        ></div>
+      <div
+        v-if="attachments.length > 0"
+        id="media-table-wrapper"
+        class="user-table-wrapper media-table-wrapper-on-right"
+      >
+        <button id="media-title" @click="handleMediaButtonClick()">
+          {{ translations.getTranslation("media-title") }} ({{
+            attachments.length
+          }})
+        </button>
         <div id="media-grid">
           <div
             v-for="attachment in attachments"
@@ -83,7 +88,11 @@ import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
 import { getId } from "../ts/utils.ts";
 import { displayImagePreview } from "../ts/ui.ts";
-import { currentAttachments } from "../ts/chat.ts";
+import {
+  closeMediaPanel,
+  currentAttachments,
+  openMediaPanel
+} from "../ts/chat.ts";
 const props = defineProps({
   members: {
     type: Array,
@@ -97,6 +106,12 @@ const props = defineProps({
 
 const store = useStore();
 const loading = ref(true);
+let isMediaPanelOpen = false;
+
+const handleMediaButtonClick = () => {
+  isMediaPanelOpen = !isMediaPanelOpen;
+  isMediaPanelOpen ? openMediaPanel() : closeMediaPanel();
+};
 
 const handleImageClick = (attachment) => {
   const mediaGrid = getId("media-grid");
@@ -166,24 +181,6 @@ watch(
     }, 0);
   }
 );
-watch(
-  () => store.state.user,
-  (newUserState) => {
-    console.log("User state detailed:", {
-      onlineUsers: newUserState.onlineUsers.map((user) => ({
-        userId: user.userId,
-        status: user.status,
-        isOnline: true
-      })),
-      offlineUsers: newUserState.offlineUsers.map((user) => ({
-        userId: user.userId,
-        status: user.status,
-        isOnline: false
-      }))
-    });
-  },
-  { deep: true }
-);
 </script>
 
 <style scoped>
@@ -230,21 +227,47 @@ watch(
   flex-grow: 1;
 }
 #media-table-wrapper {
-  max-height: 25vh;
-  min-height: 25vh;
   margin-bottom: 5px;
   display: flex;
   flex-direction: column;
-  margin-left: 9px;
+}
+.media-table-wrapper-on-right {
+  max-height: 25vh;
+  min-height: 25vh;
 }
 
 #media-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(3, 1fr);
   gap: 5px;
   width: 100%;
-  height: 100%;
+}
+@media (max-width: 600px) {
+  #media-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #media-table-wrapper {
+    margin-bottom: 50px;
+  }
+}
+#media-title {
+  align-self: center;
+  margin-bottom: 5px;
+  background-color: #151515;
+  width: 200px;
+  color: white;
+  font-size: 1em;
+  padding: 5px;
+  border: 1px solid #6a6969;
+  border-radius: 10px;
+}
+.media-open-metadata {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
 }
 
 .image-box {
@@ -268,7 +291,6 @@ watch(
 
 .image-box img {
   width: 100%;
-  height: 100%;
   object-fit: cover;
   border-radius: 5px;
   transition: opacity 0.3s ease;

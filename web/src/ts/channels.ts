@@ -5,7 +5,8 @@ import {
   getHistoryFromOneChannel,
   setLastSenderID,
   setReachedChannelEnd,
-  clearLastDate
+  clearLastDate,
+  closeMediaPanel
 } from "./chat.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
@@ -132,6 +133,8 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (isTextChannel) router.switchToGuild(currentGuildId, channelId);
   const newChannelName = newChannel.channelName;
   setReachedChannelEnd(false);
+
+  closeMediaPanel();
 
   if (isTextChannel) {
     guildCache.currentChannelId = channelId;

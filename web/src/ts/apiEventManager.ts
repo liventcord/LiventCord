@@ -174,6 +174,9 @@ function handleGuildCreationResponse(data: Guild) {
   createFireWorks();
   appendToGuildContextList(data.guildId);
   loadGuild(data.guildId, data.rootChannel, data.guildName, true);
+  setTimeout(() => {
+    router.reloadLocation();
+  }, 500);
 }
 
 apiClient.on(EventType.CREATE_GUILD, (data: Guild) => {

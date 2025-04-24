@@ -50,7 +50,11 @@ import {
   FileHandler,
   showReplyMenu
 } from "./chatbar.ts";
-import { isImageSpoilered, setImageUnspoilered } from "./mediaElements.ts";
+import {
+  attachmentPattern,
+  isImageSpoilered,
+  setImageUnspoilered
+} from "./mediaElements.ts";
 import { selfName, setProfilePic } from "./avatar.ts";
 import { createTooltip } from "./tooltip.ts";
 import { pinMessage } from "./contextMenuActions.ts";
@@ -177,7 +181,7 @@ export function loadMainToolbar() {
   disableElement("tb-video-call");
   disableElement("tb-pin");
   disableElement("tb-createdm");
-  disableElement("tb-showprofile");
+  disableElement("tb-show-members");
   disableElement("tb-search");
 }
 export function loadGuildToolbar() {
@@ -191,7 +195,7 @@ export function loadGuildToolbar() {
   disableElement("tb-video-call");
   enableElement("tb-pin");
   disableElement("tb-createdm");
-  enableElement("tb-showprofile");
+  enableElement("tb-show-members");
   enableElement("tb-search");
 }
 export function loadDmToolbar() {
@@ -205,7 +209,7 @@ export function loadDmToolbar() {
   enableElement("tb-video-call");
   enableElement("tb-pin");
   enableElement("tb-createdm");
-  enableElement("tb-showprofile");
+  enableElement("tb-show-members");
   enableElement("tb-search");
 }
 
@@ -552,8 +556,8 @@ export function displayImagePreview(
       imageElement.getAttribute("src")) ??
     "";
   const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
-  previewImage.src = imageElement.src;
-  updateCurrentIndex(sanitizedSourceImage, isFromMediaPanel);
+  previewImage.src = sourceimage;
+  updateCurrentIndex(sourceimage, isFromMediaPanel);
   if (isSpoiler) {
     FileHandler.blurImage(previewImage);
   } else {
@@ -611,7 +615,6 @@ export function displayImagePreview(
   }
   function focusOnMessage() {
     hideImagePreview();
-    console.log(isOnMediaPanel, imageElement);
     if (isOnMediaPanel) {
       setTimeout(() => {
         const imagesParent = imageElement.parentElement;
@@ -625,7 +628,6 @@ export function displayImagePreview(
     } else {
       setTimeout(() => {
         const imagesParent = imageElement.parentElement?.parentElement;
-        console.log(imagesParent);
         if (imagesParent) {
           const imagesMessage = chatContent.querySelector(
             `div[id=${CSS.escape(imagesParent.id)}]`
@@ -823,7 +825,6 @@ function movePreviewImg(images: HTMLImageElement[]) {
     images[
       isOnMediaPanel ? currentMediaPreviewIndex : currentChatPreviewIndex
     ] ?? null;
-  console.log(images, img);
   if (img) {
     displayImagePreview(
       img,
@@ -848,38 +849,59 @@ function getImages(): HTMLImageElement[] {
 
 function moveToNextImage() {
   const images = getImages();
+  let currentIndex: number;
+
   if (isOnMediaPanel) {
-    currentMediaPreviewIndex = (currentMediaPreviewIndex + 1) % images.length;
+    currentIndex = currentMediaPreviewIndex;
+    currentIndex = (currentIndex + 1) % images.length;
+    currentMediaPreviewIndex = currentIndex;
   } else {
-    currentChatPreviewIndex = (currentChatPreviewIndex + 1) % images.length;
+    currentIndex = currentChatPreviewIndex;
+    currentIndex = (currentIndex + 1) % images.length;
+    currentChatPreviewIndex = currentIndex;
   }
   movePreviewImg(images);
 }
 
 function moveToPreviousImage() {
   const images = getImages();
+  let currentIndex: number;
+
   if (isOnMediaPanel) {
-    currentMediaPreviewIndex =
-      (currentMediaPreviewIndex - 1 + images.length) % images.length;
+    currentIndex = currentMediaPreviewIndex;
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    currentMediaPreviewIndex = currentIndex;
   } else {
-    currentChatPreviewIndex =
-      (currentChatPreviewIndex - 1 + images.length) % images.length;
+    currentIndex = currentChatPreviewIndex;
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    currentChatPreviewIndex = currentIndex;
   }
   movePreviewImg(images);
 }
+function compareSrcs(image1: string, image2: string): boolean {
+  const match1 = image1.match(attachmentPattern);
+
+  const regex2 = /\/attachments\/(\d+)/;
+  const match2 = image2.match(regex2);
+
+  const id1 = match1 ? match1[1] : null;
+  const id2 = match2 ? match2[1] : null;
+
+  return id1 === id2;
+}
+
 function updateCurrentIndex(sourceimg: string, isFromMediaPanel: boolean) {
   const images = getImages();
-  if (isFromMediaPanel) {
-    isOnMediaPanel = true;
-  } else {
-    isOnMediaPanel = false;
-  }
-  const newIndex = images.findIndex((img) => img.src === sourceimg);
+
+  isOnMediaPanel = isFromMediaPanel;
+
+  const newIndex = images.findIndex((img) => compareSrcs(img.src, sourceimg));
+
   if (newIndex !== -1) {
     if (isFromMediaPanel) {
-      currentChatPreviewIndex = newIndex;
-    } else {
       currentMediaPreviewIndex = newIndex;
+    } else {
+      currentChatPreviewIndex = newIndex;
     }
   }
 }
@@ -959,7 +981,7 @@ export function openGuildSettingsDropdown(event: Event) {
 
 function setDynamicAnimations() {
   const dynamicAnimElements =
-    "#tb-inbox, #tb-pin, #tb-showprofile, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
+    "#tb-inbox, #tb-pin, #tb-show-members, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
 
   document.querySelectorAll(dynamicAnimElements).forEach(function (element) {
     if (element instanceof HTMLElement) {
@@ -1082,7 +1104,7 @@ export function handleMembersClick() {
   }
   isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
 }
-function toggleHamburger(toLeft: boolean, toRight: boolean) {
+export function toggleHamburger(toLeft: boolean, toRight: boolean) {
   if (!userList) return;
 
   if (isOnRight) {
@@ -1235,7 +1257,9 @@ export function initialiseMobile() {
   }
   initialiseMobileListeners();
   if (isMobile) {
-    toggleHamburger(true, false);
+    setTimeout(() => {
+      toggleHamburger(true, false);
+    }, 0);
   }
 }
 function initialiseMobileListeners() {

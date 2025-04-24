@@ -345,7 +345,7 @@ namespace LiventCord.Controllers
         )
         {
             var userId = UserId!;
-            await EditMessage(userId,channelId, messageId, request.Content);
+            await EditMessage(userId, channelId, messageId, request.Content);
             bool isDm = false;
             var editBroadcast = new { isDm, guildId, channelId, messageId, request.Content };
             await _redisEventEmitter.EmitToGuild(EventType.EDIT_MESSAGE_GUILD, editBroadcast, guildId, userId);
@@ -361,10 +361,10 @@ namespace LiventCord.Controllers
         {
             var userId = UserId!;
             var constructedFriendUserChannel = ConstructDmId(userId, friendId);
-            await EditMessage(userId,constructedFriendUserChannel, messageId, request.Content);
+            await EditMessage(userId, constructedFriendUserChannel, messageId, request.Content);
             bool isDm = true;
             var editBroadcast = new { isDm, constructedFriendUserChannel, messageId, request.Content };
-            await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast,userId, constructedFriendUserChannel);
+            await _redisEventEmitter.EmitToFriend(EventType.EDIT_MESSAGE_DM, editBroadcast, userId, constructedFriendUserChannel);
             return Ok(editBroadcast);
         }
 
@@ -814,8 +814,18 @@ namespace LiventCord.Controllers
         }
         [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/attachments")]
-        public async Task<IActionResult> GetAttachments([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId)
+        public async Task<IActionResult> GetAttachments(
+            [IdLengthValidation][FromRoute] string guildId,
+            [IdLengthValidation][FromRoute] string channelId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50
+        )
         {
+            pageSize = pageSize > 500 ? 500 : pageSize;
+
+            int skip = (page - 1) * pageSize;
+            int take = pageSize;
+
             var channelAttachments = await _context.Attachments
                 .Join(
                     _context.Messages,
@@ -830,10 +840,13 @@ namespace LiventCord.Controllers
                         message.ChannelId
                     })
                 .Where(result => result.ChannelId == channelId)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync();
 
             return Ok(channelAttachments);
         }
+
 
     }
 }
