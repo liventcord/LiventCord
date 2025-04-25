@@ -37,8 +37,6 @@ dotnet run
 ```
 .NET server runs at `http://localhost:5005`
 
-Note : This would automatically run pnpm install and build/serve frontend
-
 ### Run Vite for Development (SPA)
 ```bash
 cd web

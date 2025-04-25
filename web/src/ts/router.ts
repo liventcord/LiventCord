@@ -86,7 +86,7 @@ class Router {
   }
   async logOutApp() {
     apiClient
-      .fetch("/auth/logout", { method: "POST" })
+      .fetchRelative("/auth/logout", { method: "POST" })
       .then(() => {
         window.location.reload();
       })

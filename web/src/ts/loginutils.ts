@@ -257,15 +257,14 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
   }
 
   apiClient
-    .fetch(isRegister ? "/auth/register" : "/auth/login", {
+    .fetchRelative(isRegister ? "/auth/register" : "/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
       headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json"
+        "Content-Type": "application/json"
       }
     })
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
         let errorMsg = "";
         if (response.status === 401) {
@@ -282,7 +281,14 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
           response.status === 401 ? "Unauthorized" : "Error occurred"
         );
       }
-      return response;
+
+      const responseData = await response.json();
+
+      if (!isRegister && responseData.token) {
+        apiClient.setAuthToken(responseData.token);
+      }
+
+      return responseData;
     })
     .then(() => {
       if (isRegister) {
@@ -335,7 +341,7 @@ function setRegisterInputListeners(registerForm: HTMLElement) {
       debounceTimer = setTimeout(async () => {
         try {
           isFetching = true;
-          const response = await apiClient.fetch(
+          const response = await apiClient.fetchRelative(
             "/api/discriminators?nick=" + encodeURIComponent(newInputValue)
           );
 

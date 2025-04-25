@@ -18,6 +18,5 @@ CMD ["app"]
 ARG DotnetApiUrl http://localhost:5005
 ARG RedisConnectionString redis://localhost:6379
 ARG GinMode release
-ARG StreamPassword
 ARG Host localhost
 ARG Port 8080

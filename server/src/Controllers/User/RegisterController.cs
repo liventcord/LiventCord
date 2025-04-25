@@ -12,12 +12,17 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _context;
         private readonly NickDiscriminatorController _nickDiscriminatorController;
         private readonly PasswordHasher<User> _passwordHasher;
+        private readonly IConfiguration _configuration;
 
-        public RegisterController(AppDbContext context, NickDiscriminatorController nickDiscriminatorController)
+        public RegisterController(
+            AppDbContext context,
+            NickDiscriminatorController nickDiscriminatorController,
+            IConfiguration configuration)
         {
             _context = context;
             _nickDiscriminatorController = nickDiscriminatorController;
             _passwordHasher = new PasswordHasher<User>();
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
