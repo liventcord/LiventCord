@@ -1,0 +1,1 @@
+(cd ../web && find cypress/e2e -name '*.cy.ts' | xargs -n1 -P$(find cypress/e2e -name '*.cy.ts' | wc -l) -I{} pnpm cypress run --spec "{}")
