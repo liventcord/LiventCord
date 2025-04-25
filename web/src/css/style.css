@@ -499,10 +499,7 @@
     scrollbar-color: #212222 #2b2d31;
   }
 }
-#crown-symbol {
-  width: 20px;
-  height: auto;
-}
+
 #toolbaroptions {
   z-index: 2;
   position: absolute;
@@ -1444,11 +1441,18 @@ textarea::-webkit-scrollbar-track {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
+
 .profileName {
   pointer-events: none;
-  margin-bottom: 5px;
   margin-left: 15px;
+  margin-right: 5px;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center;
 }
+
 .profile-pic:hover {
   border-radius: 0px;
 }

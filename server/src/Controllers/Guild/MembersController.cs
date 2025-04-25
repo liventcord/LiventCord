@@ -86,7 +86,7 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> HandleGuildLeave([FromRoute][IdLengthValidation] string guildId)
         {
             await RemoveMemberFromGuild(UserId!, guildId);
-            await InvalidateGuildMemberCaches(UserId!);
+            await InvalidateGuildMemberCaches(guildId);
             return Ok(new { guildId });
         }
 
@@ -354,20 +354,24 @@ namespace LiventCord.Controllers
 
         public async Task InvalidateGuildMemberCaches(string guildId)
         {
-            var guild = await _dbContext.Guilds.Include(g => g.Channels).FirstOrDefaultAsync(g => g.GuildId == guildId);
-
+            var guild = await _dbContext.Guilds
+                .Include(g => g.GuildMembers)
+                .FirstOrDefaultAsync(g => g.GuildId == guildId);
             if (guild != null)
             {
+
                 var cachedUserIds = _cacheService.GetCachedUserIds();
 
-                var memberIdsToInvalidate = guild.GuildMembers
-                    .Where(m => cachedUserIds.Contains(m.MemberId))
+                var memberIdsToInvalidate = await _dbContext.GuildMembers
+                    .Where(m => m.GuildId == guildId && cachedUserIds.Contains(m.MemberId))
                     .Select(m => m.MemberId)
-                    .ToArray();
+                    .ToArrayAsync();
 
                 _cacheService.InvalidateGuildMemberCaches(memberIdsToInvalidate);
             }
         }
+
+
     }
 
 }

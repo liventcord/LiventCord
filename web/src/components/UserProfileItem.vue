@@ -18,8 +18,12 @@
     />
     <span class="profileName" style="color: white">
       {{ userData.nickName || deletedUser }}
-      <img v-if="isGuildOwner" :src="crownEmojibase64" id="crown-symbol" />
     </span>
+    <img
+      v-if="isOnline && isGuildOwner"
+      :src="crownEmojibase64"
+      id="crown-symbol"
+    />
     <StatusBubble
       ref="bubble"
       :status="status"
@@ -128,3 +132,10 @@ export default {
   }
 };
 </script>
+<style scoped>
+#crown-symbol {
+  width: 20px;
+  height: auto;
+  display: inline-block;
+}
+</style>

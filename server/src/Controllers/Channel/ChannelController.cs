@@ -137,7 +137,6 @@ namespace LiventCord.Controllers
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
                 return Forbid();
-
             return await CreateChannelInternal(UserId!, guildId, Utils.CreateRandomId(), request.ChannelName, request.IsTextChannel, request.IsPrivate, recipientId: null, returnResponse: true);
         }
 
@@ -192,11 +191,10 @@ namespace LiventCord.Controllers
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
-            if (userId != null)
-            {
-                await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
-                await _membersController.InvalidateGuildMemberCaches(guildId);
-            }
+            await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
+
+            await _membersController.InvalidateGuildMemberCaches(guildId);
+
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
@@ -226,14 +224,6 @@ namespace LiventCord.Controllers
 
             return returnResponse ? Ok(new { recipientId, newDmChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
-
-        [NonAction]
-        public async Task<bool> DoesChannelExists(string guildId, string channelId)
-        {
-            return await _dbContext.Channels.AnyAsync(c => c.ChannelId == channelId && c.GuildId == guildId);
-        }
-
-
 
         [NonAction]
         public async Task<List<ChannelWithLastRead>> GetGuildChannels(string userId, string guildId)

@@ -199,7 +199,7 @@ namespace LiventCord.Controllers
                     throw;
                 }
 
-                _cacheService.InvalidateCache(userId);
+                await _membersController.InvalidateGuildMemberCaches(guildId);
                 return Ok(new { guildId });
             }
             catch (Exception ex)
