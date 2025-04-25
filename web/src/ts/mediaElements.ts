@@ -142,7 +142,7 @@ function createTenorElement(
   return imgElement;
 }
 
-function getProxy(url: string): string {
+export function getProxy(url: string): string {
   if (url.startsWith("/")) {
     return `${location.origin}${url}`;
   }
@@ -150,7 +150,7 @@ function getProxy(url: string): string {
   try {
     const parsedUrl = new URL(url);
 
-    if (parsedUrl.hostname === location.hostname) {
+    if (parsedUrl.hostname === apiClient.getBackendHostname()) {
       return url;
     }
 

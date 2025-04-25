@@ -283,6 +283,12 @@ class ApiClient {
     }
     return method;
   }
+  getBackendHostname(): string | null {
+    const url = this.getBackendUrl();
+    if (!url) return "";
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  }
   getBackendUrl(): string | null {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     if (!backendUrl) {

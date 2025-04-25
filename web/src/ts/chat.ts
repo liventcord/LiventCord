@@ -556,7 +556,6 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
 }
 export function closeMediaPanel() {
   const wrapper = getId("media-table-wrapper");
-  const userList = getId("user-list");
   if (!wrapper) return;
   if (!userList) return;
 
@@ -564,6 +563,8 @@ export function closeMediaPanel() {
     userList.insertBefore(wrapper, userList.firstChild);
   }
   const mediaTitle = getId("media-title");
+
+  mediaTitle?.classList.remove("media-open-metadata");
   if (mediaTitle) wrapper.insertBefore(mediaTitle, wrapper.firstChild);
 
   wrapper.classList.add("media-table-wrapper-on-right");
@@ -571,7 +572,6 @@ export function closeMediaPanel() {
 }
 export function openMediaPanel() {
   const wrapper = getId("media-table-wrapper");
-  const chatContainer = getId("chat-container");
   const mediaTitle = getId("media-title");
   const channelInfo = getId("channel-info");
   if (!wrapper) return;
@@ -588,7 +588,7 @@ export function openMediaPanel() {
   wrapper.classList.remove("media-table-wrapper-on-right");
   disableElement("chat-content");
   channelInfo.appendChild(mediaTitle);
-  mediaTitle.classList.add("media-open-metadata");
+  mediaTitle?.classList.add("media-open-metadata");
 
   if (isMobile) {
     toggleHamburger(true, false);

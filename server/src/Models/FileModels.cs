@@ -38,7 +38,7 @@ public class AttachmentFile : FileBase
         byte[] content,
         string extension,
         string channelId,
-        string guildId,
+        string? guildId, // guild id doesnt exist for dm attachments
         string userId
     )
         : base(fileId, fileName, content, extension, "attachments", guildId)

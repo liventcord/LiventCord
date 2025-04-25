@@ -225,6 +225,7 @@ export async function sendMessage(content: string, user_ids?: string[]) {
   const temporaryId = createRandomId();
   const formData = createNewMessageFormData(temporaryId, content, user_ids);
   await processFiles(fileInput.files, formData);
+  FileHandler.resetFileInput();
 
   const additionalData = constructMessagePayload();
   const channelId = getChannelId();
