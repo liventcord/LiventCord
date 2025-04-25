@@ -237,6 +237,9 @@ class Router {
     window.history.pushState(null, "", "/channels/@me");
     selectGuildList("a");
   }
+  openLink(link: string) {
+    window.open(link, "_blank");
+  }
 }
 
 export const router = new Router();

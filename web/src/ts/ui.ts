@@ -52,6 +52,7 @@ import {
 } from "./chatbar.ts";
 import {
   attachmentPattern,
+  getProxy,
   isImageSpoilered,
   setImageUnspoilered
 } from "./mediaElements.ts";
@@ -540,59 +541,71 @@ export function beautifyJson(jsonData: string) {
   }
 }
 
-export function displayImagePreview(
-  imageElement: HTMLImageElement,
-  senderId?: string,
-  date?: Date,
-  isSpoiler = false,
-  isFromMediaPanel = false
-): void {
-  enableElement("image-preview-container");
-  const previewImage = getId("preview-image") as HTMLImageElement;
-  previewImage.style.animation = "preview-image-animation 0.2s forwards";
-  const sourceimage =
-    (imageElement.dataset.originalSrc ||
-      imageElement.getAttribute("data-original-src") ||
-      imageElement.getAttribute("src")) ??
-    "";
-  const sanitizedSourceImage = DOMPurify.sanitize(sourceimage);
-  previewImage.src = sourceimage;
-  updateCurrentIndex(sourceimage, isFromMediaPanel);
-  if (isSpoiler) {
-    FileHandler.blurImage(previewImage);
+function focusOnMessage(imageElement: HTMLElement) {
+  hideImagePreview();
+  if (isOnMediaPanel) {
+    setTimeout(() => {
+      const imagesParent = imageElement.parentElement;
+      if (imagesParent && imagesParent.dataset.messageid) {
+        const imagesMessage = chatContent.querySelector(
+          `div[id=${CSS.escape(imagesParent.dataset.messageid)}]`
+        ) as HTMLElement;
+        if (imagesMessage) scrollToMessage(imagesMessage);
+      }
+    }, 50);
   } else {
-    FileHandler.unBlurImage(previewImage);
-  }
+    setTimeout(() => {
+      const imagesParent = imageElement.parentElement?.parentElement;
+      if (imagesParent) {
+        const imagesMessage = chatContent.querySelector(
+          `div[id=${CSS.escape(imagesParent.id)}]`
+        ) as HTMLElement;
 
+        if (imagesMessage) {
+          scrollToMessage(imagesMessage);
+        }
+      }
+    }, 50);
+  }
+}
+function setupPreviewMetadata(
+  imageElement: HTMLImageElement,
+  sourceImage: string,
+  senderId?: string,
+  date?: Date
+) {
   const previewAuthor = getId("preview-author");
+  const previewNick = getId("preview-nick");
+  const descriptionName = getId("details-container-description-1");
+  const descriptionSize = getId("details-container-description-2");
+  const previewDate = getId("preview-date");
+  const previewContent = getId("preview-content");
+
   const senderAvatar = previewAuthor?.querySelector(
     ".preview-avatar"
   ) as HTMLImageElement;
-  if (senderId) {
-    (senderAvatar.id = senderId), setProfilePic(senderAvatar, senderId);
+  if (senderId && senderAvatar) {
+    senderAvatar.id = senderId;
+    setProfilePic(senderAvatar, senderId);
   }
-  const previewNick = getId("preview-nick");
+
   if (previewNick && senderId) {
     previewNick.textContent = userManager.getUserNick(senderId);
   }
 
-  const descriptionName = getId("details-container-description-1");
   const filename =
     imageElement.dataset.filename ||
-    getFileNameFromUrl(sourceimage) ||
-    sourceimage;
-
+    getFileNameFromUrl(sourceImage) ||
+    sourceImage;
   if (descriptionName && filename) {
     descriptionName.textContent = filename;
-    descriptionName.addEventListener("mouseover", () => {
-      createTooltip(descriptionName, filename);
-    });
+    descriptionName.addEventListener("mouseover", () =>
+      createTooltip(descriptionName, filename)
+    );
   }
 
-  const descriptionSize = getId("details-container-description-2");
   const dataFileSize = imageElement.dataset.filesize;
   const extension = getImageExtension(imageElement);
-
   let size = Number(dataFileSize);
   let isEstimated = false;
 
@@ -609,136 +622,182 @@ export function displayImagePreview(
     const formattedSize = formatFileSize(size);
     const sizeText = `${getResolution(imageElement)} (${formattedSize}${isEstimated ? " roughly" : ""})`;
     descriptionSize.textContent = sizeText;
-    descriptionSize.addEventListener("mouseover", () => {
-      createTooltip(descriptionSize, sizeText);
-    });
+    descriptionSize.addEventListener("mouseover", () =>
+      createTooltip(descriptionSize, sizeText)
+    );
   }
-  function focusOnMessage() {
-    hideImagePreview();
-    if (isOnMediaPanel) {
-      setTimeout(() => {
-        const imagesParent = imageElement.parentElement;
-        if (imagesParent && imagesParent.dataset.messageid) {
-          const imagesMessage = chatContent.querySelector(
-            `div[id=${CSS.escape(imagesParent.dataset.messageid)}]`
-          ) as HTMLElement;
-          if (imagesMessage) scrollToMessage(imagesMessage);
-        }
-      }, 50);
-    } else {
-      setTimeout(() => {
-        const imagesParent = imageElement.parentElement?.parentElement;
-        if (imagesParent) {
-          const imagesMessage = chatContent.querySelector(
-            `div[id=${CSS.escape(imagesParent.id)}]`
-          ) as HTMLElement;
 
-          if (imagesMessage) {
-            scrollToMessage(imagesMessage);
-          }
-        }
-      }, 50);
-    }
-  }
-  const previewDate = getId("preview-date");
   if (previewDate && date) {
     previewDate.textContent = formatDateGood(date);
-
     previewDate.addEventListener("click", (event: MouseEvent) => {
-      event?.preventDefault();
-      focusOnMessage();
+      event.preventDefault();
+      focusOnMessage(imageElement);
     });
   }
-  let content: string | undefined;
 
+  let content: string | undefined;
   if (isOnMediaPanel) {
-    if (imageElement.parentElement) {
-      content = (imageElement.parentElement as HTMLElement).dataset.content;
-    }
+    content = imageElement.parentElement?.dataset.content;
   } else {
     const grandParent = imageElement.parentNode
       ?.parentNode as HTMLElement | null;
-    if (grandParent?.dataset) {
-      content = grandParent.dataset.content;
-    }
+    content = grandParent?.dataset.content;
   }
 
-  const previewContent = getId("preview-content");
-  if (previewContent) previewContent.textContent = "";
-
-  if (previewContent && content) {
-    previewContent.textContent = content;
-
+  if (previewContent) {
+    previewContent.textContent = content || "";
     previewContent.addEventListener("click", (event: MouseEvent) => {
-      event?.preventDefault();
-      focusOnMessage();
+      event.preventDefault();
+      focusOnMessage(imageElement);
     });
   }
+}
 
-  let isPreviewZoomed = false;
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
+let isPreviewZoomed = false;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
 
-  function toggleZoom() {
-    isPreviewZoomed = !isPreviewZoomed;
-    if (isPreviewZoomed) {
-      previewImage.classList.add("zoomed");
-      previewImage.style.left = "50%";
-      previewImage.style.top = "50%";
-      previewImage.style.transform = "translate(-50%, -50%)";
-      previewImage.style.width = "auto";
-      previewImage.style.height = "auto";
-    } else {
-      previewImage.classList.remove("zoomed");
-      previewImage.style.left = "0%";
-      previewImage.style.top = "0%";
-      previewImage.style.transform = "translate(-50%, -50%)";
-      previewImage.style.width = "";
-      previewImage.style.height = "";
-    }
+function toggleZoom(previewImage: HTMLImageElement) {
+  isPreviewZoomed = !isPreviewZoomed;
+  if (isPreviewZoomed) {
+    previewImage.classList.add("zoomed");
+    previewImage.style.left = "50%";
+    previewImage.style.top = "50%";
+    previewImage.style.transform = "translate(-50%, -50%)";
+    previewImage.style.width = "auto";
+    previewImage.style.height = "auto";
+  } else {
+    previewImage.classList.remove("zoomed");
+    previewImage.style.left = "0%";
+    previewImage.style.top = "0%";
+    previewImage.style.transform = "translate(-50%, -50%)";
+    previewImage.style.width = "";
+    previewImage.style.height = "";
   }
-
-  function handlePreviewClick() {
-    if (isSpoiler) {
-      FileHandler.unBlurImage(previewImage);
-      setImageUnspoilered(imageElement.id);
-      isSpoiler = false;
-    } else {
-      toggleZoom();
-    }
+}
+function handlePreviewOpenButton(sanitizedSourceImage: string) {
+  const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
+  if (previewOpenButton) {
   }
+  previewOpenButton.replaceWith(previewOpenButton.cloneNode(true));
+  const newPreviewOpenButton = getId("preview-image-open") as HTMLButtonElement;
+  newPreviewOpenButton.addEventListener("click", () => {
+    if (sanitizedSourceImage) {
+      router.openLink(sanitizedSourceImage);
+    }
+  });
+}
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    hideImagePreview();
+  }
+}
+document.addEventListener("keydown", handleKeyDown);
+export function displayImagePreview(
+  imageElement: HTMLImageElement,
+  senderId?: string,
+  date?: Date,
+  isSpoiler = false,
+  isFromMediaPanel = false
+): void {
+  enableElement("image-preview-container");
+  const previewImage = getId("preview-image") as HTMLImageElement;
+  const sourceImage = getSourceImage(imageElement);
+  const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
+  previewImage.style.animation = "preview-image-animation 0.2s forwards";
+  previewImage.src = getProxy(sourceImage);
+
+  updateCurrentIndex(sourceImage, isFromMediaPanel);
+  handleImageSpoiler(previewImage, isSpoiler);
+
+  setupPreviewMetadata(imageElement, sourceImage, senderId, date);
+
+  addEventListeners(
+    previewImage,
+    imageElement,
+    sanitizedSourceImage,
+    senderId,
+    isSpoiler
+  );
+}
+
+function getSourceImage(imageElement: HTMLImageElement): string {
+  return (
+    imageElement.dataset.originalSrc ||
+    imageElement.getAttribute("data-original-src") ||
+    imageElement.getAttribute("src") ||
+    ""
+  );
+}
+
+function handleImageSpoiler(
+  previewImage: HTMLImageElement,
+  isSpoiler: boolean
+): void {
+  if (isSpoiler) {
+    FileHandler.blurImage(previewImage);
+  } else {
+    FileHandler.unBlurImage(previewImage);
+  }
+}
+
+function addEventListeners(
+  previewImage: HTMLImageElement,
+  imageElement: HTMLImageElement,
+  sanitizedSourceImage: string,
+  senderId?: string,
+  isSpoiler = false
+): void {
   const spoilerText = previewImage.querySelector(".spoiler-text");
+
   if (spoilerText) {
     spoilerText.addEventListener("click", (event) => {
       event.stopPropagation();
-      handlePreviewClick();
+      handlePreviewClick(previewImage, isSpoiler, imageElement.id);
     });
   }
 
-  previewImage.addEventListener("click", handlePreviewClick);
+  previewImage.addEventListener("click", () => {
+    handlePreviewClick(previewImage, isSpoiler, imageElement.id);
+  });
 
-  const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
-  if (previewOpenButton) {
-    previewOpenButton.replaceWith(previewOpenButton.cloneNode(true));
-    const newPreviewOpenButton = getId(
-      "preview-image-open"
-    ) as HTMLButtonElement;
-    newPreviewOpenButton.addEventListener("click", () => {
-      if (sanitizedSourceImage) {
-        console.log("Going to: ", sanitizedSourceImage);
-        window.open(sanitizedSourceImage, "_blank");
-      }
-    });
+  handlePreviewOpenButton(sanitizedSourceImage);
+
+  setupZoomButton(previewImage);
+  setupReplyButton(previewImage, imageElement, senderId);
+  setupImagePreviewDrag(previewImage);
+}
+
+function handlePreviewClick(
+  previewImage: HTMLImageElement,
+  isSpoiler: boolean,
+  imageId: string
+): void {
+  if (isSpoiler) {
+    FileHandler.unBlurImage(previewImage);
+    setImageUnspoilered(imageId);
+    isSpoiler = false;
+  } else {
+    toggleZoom(previewImage);
   }
+}
 
+function setupZoomButton(previewImage: HTMLImageElement): void {
   const previewZoomButton = getId("preview-image-zoom") as HTMLButtonElement;
   if (previewZoomButton) {
     previewZoomButton.addEventListener("click", () => {
-      toggleZoom();
+      toggleZoom(previewImage);
     });
   }
+}
+
+function setupReplyButton(
+  previewImage: HTMLImageElement,
+  imageElement: HTMLImageElement,
+  senderId?: string
+): void {
   const previewReplyButton = getId("preview-image-reply") as HTMLButtonElement;
   if (previewReplyButton) {
     previewReplyButton.addEventListener("click", () => {
@@ -753,7 +812,9 @@ export function displayImagePreview(
       }
     });
   }
+}
 
+function setupImagePreviewDrag(previewImage: HTMLImageElement): void {
   previewImage.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });
@@ -771,9 +832,6 @@ export function displayImagePreview(
     if (isDragging) {
       const newX = event.clientX - startX;
       const newY = event.clientY - startY;
-      const imagePreviewContainer = getId(
-        "image-preview-container"
-      ) as HTMLElement;
 
       const overflowX = previewImage.width * 0.8;
       const overflowY = previewImage.height * 0.8;
@@ -837,48 +895,63 @@ function movePreviewImg(images: HTMLImageElement[]) {
 function getImages(): HTMLImageElement[] {
   const mediaGrid = getId("media-grid") as HTMLElement;
   const container = isOnMediaPanel ? mediaGrid : chatContent;
-  if (!container) return [];
-  if (isOnMediaPanel) {
-    return Array.from(container.querySelectorAll(".image-box"))
-      .map((box) => box.querySelector<HTMLImageElement>("img"))
-      .filter((img): img is HTMLImageElement => img !== null && img.src !== "");
-  }
-  return Array.from(
-    container.querySelectorAll<HTMLImageElement>(".chat-image")
-  ).filter((img) => img.src !== "");
+
+  const selector = isOnMediaPanel ? ".image-box img" : ".chat-image";
+
+  const getImagesFromElement = (element: HTMLElement): HTMLImageElement[] => {
+    const images = Array.from(element.querySelectorAll(selector)).filter(
+      (img): img is HTMLImageElement =>
+        img instanceof HTMLImageElement && img.src !== ""
+    );
+
+    element.querySelectorAll("*").forEach((child) => {
+      if (child instanceof HTMLElement) {
+        images.push(...getImagesFromElement(child));
+      }
+    });
+    return images;
+  };
+
+  return getImagesFromElement(container);
 }
 
 function moveToNextImage() {
   const images = getImages();
-  let currentIndex: number;
+  if (images.length === 0) return;
 
   if (isOnMediaPanel) {
-    currentIndex = currentMediaPreviewIndex;
-    currentIndex = (currentIndex + 1) % images.length;
-    currentMediaPreviewIndex = currentIndex;
+    currentMediaPreviewIndex = (currentMediaPreviewIndex + 1) % images.length;
   } else {
-    currentIndex = currentChatPreviewIndex;
-    currentIndex = (currentIndex + 1) % images.length;
-    currentChatPreviewIndex = currentIndex;
+    console.log("Images lenght: ", images.length);
+    console.log("Old index: ", currentChatPreviewIndex);
+    currentChatPreviewIndex = (currentChatPreviewIndex + 1) % images.length;
+    console.log(
+      `Moving to next image: ${currentChatPreviewIndex}/${images.length - 1}`
+    );
+    console.log("New index: ", currentChatPreviewIndex);
   }
+
   movePreviewImg(images);
 }
 
 function moveToPreviousImage() {
   const images = getImages();
-  let currentIndex: number;
+  if (images.length === 0) return;
 
   if (isOnMediaPanel) {
-    currentIndex = currentMediaPreviewIndex;
-    currentIndex = (currentIndex - 1 + images.length) % images.length;
-    currentMediaPreviewIndex = currentIndex;
+    currentMediaPreviewIndex =
+      (currentMediaPreviewIndex - 1 + images.length) % images.length;
   } else {
-    currentIndex = currentChatPreviewIndex;
-    currentIndex = (currentIndex - 1 + images.length) % images.length;
-    currentChatPreviewIndex = currentIndex;
+    currentChatPreviewIndex =
+      (currentChatPreviewIndex - 1 + images.length) % images.length;
+    console.log(
+      `Moving to previous image: ${currentChatPreviewIndex}/${images.length - 1}`
+    );
   }
+
   movePreviewImg(images);
 }
+
 function compareSrcs(image1: string, image2: string): boolean {
   const match1 = image1.match(attachmentPattern);
 
@@ -901,8 +974,6 @@ function updateCurrentIndex(sourceimg: string, isFromMediaPanel: boolean) {
   if (newIndex !== -1) {
     if (isFromMediaPanel) {
       currentMediaPreviewIndex = newIndex;
-    } else {
-      currentChatPreviewIndex = newIndex;
     }
   }
 }
@@ -1018,18 +1089,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-let startX = 0;
-let endX = 0;
+let previewSlideStartX = 0;
+let previewSlideEndX = 0;
 
 const channelList = getId("channel-list") as HTMLElement;
 
 document.addEventListener("touchstart", (e: TouchEvent) => {
-  startX = e.touches[0].clientX;
+  previewSlideStartX = e.touches[0].clientX;
 });
 
 document.addEventListener("touchend", (e: TouchEvent) => {
-  endX = e.changedTouches[0].clientX;
-  const diff = endX - startX;
+  previewSlideEndX = e.changedTouches[0].clientX;
+  const diff = previewSlideEndX - previewSlideStartX;
 
   if (Math.abs(diff) < 50) return;
 
@@ -1046,8 +1117,8 @@ document.addEventListener("touchend", (e: TouchEvent) => {
 });
 
 function handleSwapNavigation(e: TouchEvent) {
-  endX = e.changedTouches[0].clientX;
-  const diff = endX - startX;
+  previewSlideEndX = e.changedTouches[0].clientX;
+  const diff = previewSlideEndX - startX;
 
   if (Math.abs(diff) < 50) return;
 

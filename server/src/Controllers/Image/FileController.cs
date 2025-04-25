@@ -226,6 +226,11 @@ namespace LiventCord.Controllers
             }
             else
             {
+                if (!string.IsNullOrEmpty(channelId))
+                {
+                    _logger.LogInformation("Uploading attachment for Friend ChannelId: {ChannelId}", channelId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
+                    await SaveOrUpdateFile(new AttachmentFile(fileId, sanitizedFileName, content, extension, channelId, guildId, userId));
+                }
                 _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                 await SaveOrUpdateFile(new ProfileFile(fileId, sanitizedFileName, content, extension, userId));
             }
