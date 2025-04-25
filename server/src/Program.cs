@@ -63,7 +63,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = AuthController._jwtIssuer,
         ValidAudience = AuthController._jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured"))),
+            Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:JwtKey"] ?? throw new InvalidOperationException("JWT Key is not configured"))),
         ClockSkew = TimeSpan.Zero
     };
 
