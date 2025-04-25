@@ -212,7 +212,7 @@ class ApiClient {
     }
   }
   public getEmojis() {
-    return this.fetch("/api/guilds/${currentGuildId}/emojis");
+    return this.fetch(`/api/guilds/${currentGuildId}/emojis`);
   }
   public onWebsocketReconnect() {
     console.log("Websocket reconnected!");

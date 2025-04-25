@@ -379,9 +379,9 @@ export function handleChannelDelete(data: ChannelData) {
   const guildId = data.guildId;
   const channelId = data.channelId;
   if (!guildId || !channelId) return;
+  closeSettings();
   if (guildCache.currentChannelId === channelId) {
     const rootChannel = cacheInterface.getRootChannel(guildId);
-    closeSettings();
     if (rootChannel) {
       changeChannel(rootChannel);
     } else {

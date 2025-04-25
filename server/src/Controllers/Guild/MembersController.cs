@@ -72,7 +72,7 @@ namespace LiventCord.Controllers
             {
                 await AddMemberToGuild(UserId!, guildId);
                 var guild = await GetUserGuildAsync(UserId!, guildId);
-                _cacheService.InvalidateCache(UserId!);
+                await InvalidateGuildMemberCaches(guildId);
                 return Ok(new { success = true, guild, joinedChannelId });
             }
             catch (Exception ex)
@@ -86,7 +86,7 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> HandleGuildLeave([FromRoute][IdLengthValidation] string guildId)
         {
             await RemoveMemberFromGuild(UserId!, guildId);
-            _cacheService.InvalidateCache(UserId!);
+            await InvalidateGuildMemberCaches(UserId!);
             return Ok(new { guildId });
         }
 
@@ -351,5 +351,23 @@ namespace LiventCord.Controllers
 
             return guilds;
         }
+
+        public async Task InvalidateGuildMemberCaches(string guildId)
+        {
+            var guild = await _dbContext.Guilds.Include(g => g.Channels).FirstOrDefaultAsync(g => g.GuildId == guildId);
+
+            if (guild != null)
+            {
+                var cachedUserIds = _cacheService.GetCachedUserIds();
+
+                var memberIdsToInvalidate = guild.GuildMembers
+                    .Where(m => cachedUserIds.Contains(m.MemberId))
+                    .Select(m => m.MemberId)
+                    .ToArray();
+
+                _cacheService.InvalidateGuildMemberCaches(memberIdsToInvalidate);
+            }
+        }
     }
+
 }
