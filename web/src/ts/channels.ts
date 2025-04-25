@@ -128,6 +128,12 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (isOnMePage || isOnDm) {
     return;
   }
+
+  store.dispatch("selectChannel", {
+    channelId: newChannel.channelId,
+    isTextChannel: newChannel.isTextChannel
+  });
+
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
   if (isTextChannel) router.switchToGuild(currentGuildId, channelId);
