@@ -68,12 +68,12 @@ func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, er
 
 func authenticateSession(cookie string) (string, error) {
 	DOTNET_API_URL := getEnv("DotnetApiUrl", "http://localhost:5005")
-	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-session", nil)
+	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-token", nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %v", err)
 	}
 
-	req.Header.Set("Cookie", ".AspNetCore.Cookies="+cookie)
+	req.Header.Set("Authorization", "Bearer "+cookie)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

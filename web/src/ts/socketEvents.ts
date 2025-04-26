@@ -89,8 +89,8 @@ class WebSocketClient {
   }
 
   private async connectSocket() {
-    const cookie = await getAuthCookie();
-    if (cookie) {
+    const cookie = await apiClient.getAuthCookie();
+    if (cookie !== "undefined") {
       this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
       this.attachHandlers();
     }
@@ -262,16 +262,6 @@ class WebSocketClient {
       await this.connectSocket();
     }
   }
-}
-
-let authCookie: string;
-async function getAuthCookie(): Promise<string> {
-  if (authCookie) return encodeURIComponent(authCookie);
-  const response = await apiClient.fetch("/auth/ws-token");
-  if (!response.ok) console.error("Failed to retrieve cookie for ws");
-  const data = await response.json();
-  authCookie = data.cookieValue;
-  return encodeURIComponent(data.cookieValue);
 }
 
 export const socketClient = WebSocketClient.getInstance();

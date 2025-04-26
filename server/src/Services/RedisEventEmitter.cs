@@ -13,9 +13,8 @@ public class RedisEventEmitter
         _redisEmitter = redisEmitter;
     }
 
-    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string userId)
+    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string? userId)
     {
-        Console.WriteLine(eventType.ToString(), payload, guildId, userId);
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();

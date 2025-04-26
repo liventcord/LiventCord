@@ -53,6 +53,13 @@ mv Properties/exampleSettings.json Properties/appsettings.json
   - **SqlitePath**:
     File path where SQLite will store data.
     **Defaults to** `Data/liventcord.db`
+    
+  - **JwtAccessTokenExpiryDays**:
+    Expire days for jwt tokens
+    **Defaults to** `7`
+
+  - **JwtKey**:
+    Jwt key used for signing authentication, Must be set for server.
 
   - **FrontendUrl**:
     Url to add cors headers at.

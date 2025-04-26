@@ -1,7 +1,6 @@
 describe("Register Test", () => {
   it("Fills out the form and registers", () => {
     cy.visit(Cypress.env("frontendUrl"));
-    cy.wait(500);
     cy.get("#register-link").click();
     cy.get("#register-email").type("test@gmail.com");
     cy.get("#register-nick").type("testuser");

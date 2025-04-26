@@ -57,9 +57,9 @@
     top: 180px !important;
   }
   #profile-popup-bottom-container {
-    height: 47%;
-    top: 75%;
-    width: 94%;
+    height: 47% !important;
+    top: 75% !important;
+    width: 94% !important;
   }
 }
 
@@ -169,7 +169,7 @@
     height: 0;
   }
   100% {
-    width: 31vw;
+    width: 30vw;
     height: 83vh;
   }
 }

@@ -47,12 +47,18 @@ import { apiClient, EventType } from "./api.ts";
 import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
-  appendToMessageContextList
+  appendToMessageContextList,
+  editMessageOnContextList
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage } from "./app.ts";
-import { loadingScreen, setActiveIcon, toggleHamburger } from "./ui.ts";
+import {
+  isOnCenter,
+  loadingScreen,
+  setActiveIcon,
+  toggleHamburger
+} from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
@@ -109,7 +115,13 @@ export function createChatScrollButton() {
       (chatContainer.scrollTop + chatContainer.clientHeight);
     if (hiddenContent > threshold) {
       scrollButton.style.display = "flex";
-    } else {
+    }
+    if (isMobile) {
+      if (isOnCenter()) {
+        scrollButton.style.display = "none";
+      }
+    }
+    if (hiddenContent < threshold && isMobile) {
       scrollButton.style.display = "none";
     }
   });
@@ -1113,6 +1125,17 @@ export function handleSelfSentMessage(data: Message) {
         );
       }
       element.id = data.messageId;
+      const messagesOptionsButton = element.querySelector(
+        ".message-button-container"
+      ) as HTMLElement;
+      if (messagesOptionsButton) {
+        const msgButton = messagesOptionsButton.querySelector(
+          ".message-button"
+        ) as HTMLElement;
+        if (msgButton) msgButton.dataset.m_id = data.messageId;
+      }
+      if (data.temporaryId)
+        editMessageOnContextList(data.temporaryId, data.messageId, data.userId);
     }
     selfSentMessages.splice(foundMessageIndex, 1);
   }

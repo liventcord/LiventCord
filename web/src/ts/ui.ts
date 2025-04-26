@@ -38,7 +38,7 @@ import {
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
-import { isOnMePage, router } from "./router.ts";
+import { isOnGuild, isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { observe, scrollToMessage, updateChatWidth } from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
@@ -174,10 +174,8 @@ function handleMobileToolbar() {
 export function loadMainToolbar() {
   if (isMobile) {
     handleMobileToolbar();
-    enableElement("tb-hamburger");
-  } else {
-    disableElement("tb-hamburger");
   }
+  disableElement("tb-hamburger");
   disableElement("tb-call");
   disableElement("tb-video-call");
   disableElement("tb-pin");
@@ -291,7 +289,7 @@ function createPopupContent(
     id: ""
   });
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleEnterKeydown = (event: KeyboardEvent) => {
     if (event.key === "Enter") {
       handleAccept();
     }
@@ -301,7 +299,7 @@ function createPopupContent(
     if (acceptCallback) acceptCallback();
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleEnterKeydown);
     }
   };
 
@@ -315,7 +313,7 @@ function createPopupContent(
     popRefuseButton.addEventListener("click", function () {
       if (outerParent && outerParent.firstChild) {
         closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-        document.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("keydown", handleEnterKeydown);
       }
     });
   }
@@ -324,16 +322,7 @@ function createPopupContent(
 
   popAcceptButton.addEventListener("click", handleAccept);
 
-  document.addEventListener("keydown", handleKeyDown);
-
-  popAcceptButton.addEventListener("click", function () {
-    if (acceptCallback) acceptCallback();
-    if (outerParent && outerParent.firstChild) {
-      closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-
-      document.removeEventListener("keydown", handleKeyDown);
-    }
-  });
+  document.addEventListener("keydown", handleEnterKeydown);
 
   return outerParent;
 }
@@ -411,7 +400,8 @@ export function openChangePasswordPop() {
     id: ""
   });
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleEnterKeydown = (event: KeyboardEvent) => {
+    event.preventDefault();
     if (event.key === "Enter") {
       acceptCallback(event);
     }
@@ -465,7 +455,7 @@ export function openChangePasswordPop() {
   const successCallback = () => {
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleEnterKeydown);
     }
   };
   const acceptCallback = (event: KeyboardEvent | null) => {
@@ -482,13 +472,13 @@ export function openChangePasswordPop() {
   popRefuseButton.addEventListener("click", function () {
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleEnterKeydown);
     }
   });
 
   parentElement.appendChild(popAcceptButton);
 
-  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("keydown", handleEnterKeydown);
 
   popAcceptButton.addEventListener("click", function () {
     acceptCallback(null);
@@ -1015,15 +1005,14 @@ function hideJsonPreview(event: Event) {
   }
 }
 
+export async function createInvitePop() {
+  await apiClient.send(EventType.GET_INVITES, {
+    guildId: currentGuildId,
+    channelId: guildCache.currentChannelId
+  });
+  createInviteUsersPop();
+}
 export function openGuildSettingsDropdown(event: Event) {
-  async function createInvitePop() {
-    await apiClient.send(EventType.GET_INVITES, {
-      guildId: currentGuildId,
-      channelId: guildCache.currentChannelId
-    });
-    createInviteUsersPop();
-  }
-
   const handlers: Record<string, () => void> = {
     "invite-dropdown-button": createInvitePop,
     "settings-dropdown-button": () => {
@@ -1118,9 +1107,7 @@ document.addEventListener("touchend", (e: TouchEvent) => {
 
 function handleSwapNavigation(e: TouchEvent) {
   previewSlideEndX = e.changedTouches[0].clientX;
-  const diff = previewSlideEndX - startX;
-
-  if (Math.abs(diff) < 50) return;
+  const diff = previewSlideEndX - previewSlideStartX;
 
   if (diff > 0) {
     if (isOnRight) {
@@ -1128,8 +1115,10 @@ function handleSwapNavigation(e: TouchEvent) {
       return;
     }
     enableElement(mobileBlackBg);
-    enableElement("channel-info");
-    enableElement("hash-sign");
+    if (isOnGuild) {
+      enableElement("channel-info");
+      enableElement("hash-sign");
+    }
 
     mobileMoveToLeft();
   } else {
@@ -1145,8 +1134,10 @@ function handleSwapNavigation(e: TouchEvent) {
       mobileMoveToCenter(true);
       mobileMoveToRight();
       enableElement(mobileBlackBg);
-      enableElement("channel-info");
-      enableElement("hash-sign");
+      if (isOnGuild) {
+        enableElement("channel-info");
+        enableElement("hash-sign");
+      }
       return;
     }
 
@@ -1214,12 +1205,16 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean) {
     mobileMoveToCenter();
   }
 }
-
+export function isOnCenter(): boolean {
+  return !isOnLeft && !isOnRight;
+}
 export function mobileMoveToRight() {
   if (!userList) return;
   isOnLeft = false;
   isOnRight = true;
+
   enableElement(userList);
+  disableElement("scroll-to-bottom");
 }
 
 export function mobileMoveToCenter(excludeChannelList: boolean = false) {
@@ -1240,14 +1235,19 @@ export function mobileMoveToCenter(excludeChannelList: boolean = false) {
   getId("message-input-container")?.classList.remove(
     "message-input-container-mobile-left"
   );
+
+  enableElement(chatContainer);
+
   guildContainer.classList.remove("visible");
 
   chatContainer.classList.remove("chat-container-mobile-left");
-  enableElement("hash-sign");
-  enableElement("channel-info");
+  if (isOnGuild) {
+    enableElement("hash-sign");
+    enableElement("channel-info");
+    disableElement(navigationBar);
+  }
 
   disableElement(mobileBlackBg);
-  disableElement(navigationBar);
 }
 
 export function mobileMoveToLeft() {
@@ -1256,10 +1256,11 @@ export function mobileMoveToLeft() {
   isOnLeft = true;
   isOnRight = false;
   disableElement(userList);
-
+  disableElement("media-menu");
+  disableElement("scroll-to-bottom");
   channelList.classList.remove("visible");
   guildContainer.classList.add("visible");
-
+  disableElement(chatContainer);
   chatContainer.classList.add("chat-container-mobile-left");
   getId("guilds-list")?.classList.add("guilds-list-mobile-left");
   getId("message-input-container")?.classList.add(
@@ -1327,14 +1328,14 @@ export function initialiseMobile() {
     navigationBar.appendChild(avatarWrapper);
     avatarWrapper.classList.add("navigationButton");
   }
-  initialiseMobileListeners();
+  initialiseListeners();
   if (isMobile) {
     setTimeout(() => {
       toggleHamburger(true, false);
     }, 0);
   }
 }
-function initialiseMobileListeners() {
+function initialiseListeners() {
   const tbPinMessage = getId("tb-pin");
   tbPinMessage?.addEventListener("click", () => {
     pinMessage("");

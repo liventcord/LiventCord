@@ -4,7 +4,7 @@ import { createBubble } from "./userList.ts";
 import { createEl, disableElement, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
-import { copySelfName } from "./contextMenuActions.ts";
+import { copyId, copySelfName } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 
 export class UserStatus {
@@ -168,8 +168,9 @@ export class UserStatus {
     copyIdButton.appendChild(this.createCopyIdSvg());
     copyIdButton.innerHTML +=
       translations.getContextTranslation("COPY_USER_ID");
-    copyIdButton.addEventListener("click", (event: MouseEvent) =>
-      copySelfName(event)
+    copyIdButton.addEventListener(
+      "click",
+      (event: MouseEvent) => copyId(currentUserId, event) //copySelfName(event)
     );
     return copyIdButton;
   }

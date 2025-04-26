@@ -251,6 +251,10 @@ watch(
   #media-table-wrapper {
     margin-bottom: 50px;
   }
+  #user-list,
+  #activity-list {
+    padding-top: 65px;
+  }
 }
 #media-title {
   align-self: center;

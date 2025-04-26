@@ -244,7 +244,6 @@ function getFriendMessage(
   status?: string
 ): string {
   if (isSuccess) {
-    return translations.replacePlaceholder(errorType, { userNick });
   } else if (status) {
     return translations.getFriendErrorMessage(status);
   }
@@ -260,8 +259,8 @@ function displayFriendActionMessage(
   const text = isSuccess
     ? getFriendMessage(userNick, isSuccess, errorType, status)
     : getFriendMessage(userNick, false, errorType, status);
-
-  printFriendMessage(text);
+  console.log(text);
+  if (text) printFriendMessage(text);
 }
 interface FriendMessage {
   friendId: string;

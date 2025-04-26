@@ -85,15 +85,8 @@ class Router {
     disableElement("register-form");
   }
   async logOutApp() {
-    apiClient
-      .fetch("/auth/logout", { method: "POST" })
-      .then(() => {
-        window.location.reload();
-      })
-      .catch((error) => {
-        window.location.reload();
-        console.error("Error during logout:", error);
-      });
+    apiClient.clearToken();
+    window.location.reload();
   }
   reloadLocation() {
     window.location.reload();
@@ -235,7 +228,6 @@ class Router {
   resetRoute() {
     console.error("Resetting route");
     window.history.pushState(null, "", "/channels/@me");
-    selectGuildList("a");
   }
   openLink(link: string) {
     window.open(link, "_blank");

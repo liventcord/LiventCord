@@ -63,9 +63,9 @@ public static class RouteConfig
             app.MapGet(path, async context =>
             {
                 var originalRoute = context.Request.Query["route"].ToString();
-                var redirectUrl = baseUrl + (string.IsNullOrEmpty(originalRoute) 
-                    ? "" 
-                    : "?route=" + Uri.EscapeDataString(originalRoute)); 
+                var redirectUrl = baseUrl + (string.IsNullOrEmpty(originalRoute)
+                    ? ""
+                    : "?route=" + Uri.EscapeDataString(originalRoute));
 
                 context.Response.Redirect(redirectUrl);
                 await Task.CompletedTask;

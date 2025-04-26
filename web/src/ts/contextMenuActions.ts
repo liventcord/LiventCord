@@ -20,11 +20,15 @@ import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser, askUser } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
-import { apiClient, EventType } from "./api.ts";
 import { copyText } from "./tooltip.ts";
 import { convertToEditUi, deleteMessage } from "./message.ts";
 import { scrollToMessage } from "./chat.ts";
-import { createDeleteChannelPrompt } from "./settingsui.ts";
+import {
+  createDeleteChannelPrompt,
+  openSettings,
+  SettingType
+} from "./settingsui.ts";
+import { changeChannel } from "./channels.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
@@ -143,8 +147,12 @@ function muteGuild(guildId: string) {
 function showNotifyMenu(channelId: string) {
   alertUser("Notify menu is not implemented!");
 }
-function onChangeChannel(channelId: string) {
-  alertUser("Channel editing is not implemented!");
+function onEditChannel(channelId: string) {
+  const foundChannel = cacheInterface.getChannel(currentGuildId, channelId);
+  if (!foundChannel) return;
+  changeChannel(foundChannel);
+  // Open channel settings
+  openSettings(SettingType.CHANNEL);
 }
 function muteUser(userId: string) {}
 function deafenUser(userId: string) {}
@@ -186,14 +194,6 @@ export function copyId(id: string, event: MouseEvent) {
   copyText(event, id);
 }
 
-function deleteChannel(channelId: string, guildId: string) {
-  const data = {
-    guildId,
-    channelId
-  };
-  apiClient.send(EventType.DELETE_CHANNEL, data);
-}
-
 export function appendToChannelContextList(channelId: string) {
   contextList[channelId] = createChannelsContext(channelId);
 }
@@ -201,6 +201,18 @@ export function appendToChannelContextList(channelId: string) {
 export function appendToMessageContextList(messageId: string, userId: string) {
   messageContextList[messageId] = createMessageContext(messageId, userId);
 }
+
+export function editMessageOnContextList(
+  oldId: string,
+  newId: string,
+  userId: string
+) {
+  if (messageContextList[oldId]) {
+    delete messageContextList[oldId];
+    messageContextList[newId] = createMessageContext(newId, userId);
+  }
+}
+
 export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userManager.getUserInfo(userId);
@@ -400,7 +412,7 @@ function createChannelsContext(channelId: string) {
 
   if (permissionManager.canManageChannels()) {
     context[ChannelsActionType.EDIT_CHANNEL] = {
-      action: () => onChangeChannel(channelId)
+      action: () => onEditChannel(channelId)
     };
     context[ChannelsActionType.DELETE_CHANNEL] = {
       action: () =>
@@ -468,12 +480,14 @@ function createMessageContext(messageId: string, userId: string) {
         action: () => deleteMessagePrompt(messageId)
       };
     }
-  } else {
-    if (isOnGuild && permissionManager.canManageMessages())
-      context[MessagesActionType.DELETE_MESSAGE] = {
-        label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessagePrompt(messageId)
-      };
+  } else if (
+    (isOnGuild && userId === currentUserId) ||
+    permissionManager.canManageMessages()
+  ) {
+    context[MessagesActionType.DELETE_MESSAGE] = {
+      label: MessagesActionType.DELETE_MESSAGE,
+      action: () => deleteMessagePrompt(messageId)
+    };
   }
 
   if (isDeveloperMode) {

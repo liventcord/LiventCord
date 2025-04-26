@@ -9,16 +9,18 @@
   "AllowedHosts": "*",
   "AppSettings": {
     "DatabaseType": "sqlite",
-    "Host": "127.0.0.1",
-    "Port": "5005",
     "RemoteConnection": "Host=localhost;Port=5432;Username=myuser;Password=mypassword;Database=mydatabase;",
+    "SqlitePath": "Data/liventcord.db",
     "MinPoolSize": "1",
     "MaxPoolSize": "3",
-    "SqlitePath": "Data/liventcord.db",
+    "Host": "127.0.0.1",
+    "Port": "5005",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",
     "MaxAvatarSize": "3",
     "MaxAttachmentsSize": "30",
     "EnableMetadataIndexing": true,
-    "MetadataDomainLimit": "100"
+    "MetadataDomainLimit": "100",
+    "JwtKey": "YourSuperSecretKeyHereThatShouldBeAtLeast32BytesLong",
+    "AccessTokenExpiryDays": 30
   }
 }

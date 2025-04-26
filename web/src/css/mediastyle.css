@@ -53,6 +53,9 @@
   font-weight: 900;
   background-color: #41434a;
 }
+.media-menu-button:hover {
+  background-color: #41434a;
+}
 #categoryName {
   color: white;
   font-size: 20px;
@@ -75,9 +78,6 @@
 }
 #gifs-menu-emoji:hover,
 #gifs-menu-gif:hover {
-  background-color: #41434a;
-}
-.media-menu-button:hover {
   background-color: #41434a;
 }
 
@@ -146,6 +146,7 @@
   max-width: 3020px;
   max-height: 3000px;
 }
+
 #media-menu {
   overflow: hidden;
   width: 480px;
@@ -159,7 +160,34 @@
   right: 253px;
   bottom: 90px;
   padding: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
+
+@media (max-width: 600px) {
+  #media-menu {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .media-menu-button {
+    flex: 1 1 30%;
+    height: 40px;
+    font-size: 16px;
+    width: 120px;
+  }
+
+  #gif-menu,
+  #media-menu {
+    right: 0;
+    bottom: 10px;
+    padding: 0px;
+    width: 100% !important;
+    height: 50vh !important;
+  }
+}
+
 #media-menu-container {
   display: flex;
   flex-wrap: wrap;
@@ -193,21 +221,7 @@
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-.media-menu-button {
-  cursor: pointer;
-  width: 60px;
-  height: 25px;
-  margin-right: 10px;
-  border: none;
-  color: white;
-  border-radius: 5px;
-  font-size: 15px;
-  font-weight: 900;
-  background-color: #41434a;
-}
-.media-menu-button:hover {
-  background-color: #41434a;
-}
+
 #mediaMenuSearchbar {
   width: 100%;
   color: white;
@@ -384,6 +398,9 @@
 
 .embed-video {
   max-width: 500px;
+}
+.video {
+  display: flex;
 }
 .embed-container {
   border-radius: 5px;

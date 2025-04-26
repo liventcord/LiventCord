@@ -326,9 +326,12 @@ function createVideoElement(url: string) {
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
+  videoElement.loop = true;
+  videoElement.playsInline = true;
 
   return videoElement;
 }
+
 function createRegularText(content: string) {
   const spanElement = createEl("p", { id: "message-content-element" });
   spanElement.textContent = content;

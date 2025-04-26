@@ -1,7 +1,7 @@
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
 import { alertUser } from "./ui.ts";
-import { isOnDm } from "./router.ts";
+import { isOnDm, router } from "./router.ts";
 import { fetchMessages } from "./chat.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
@@ -193,10 +193,64 @@ const EventUrlMap: Record<EventType, string> = {
 type ListenerCallback = (data: any) => void;
 
 class ApiClient {
+  private authCookie = "";
+  async getAuthCookie(): Promise<string> {
+    if (this.authCookie) return encodeURIComponent(this.authCookie);
+    const response = await apiClient.fetchRelative("/auth/ws-token");
+    if (!response.ok) console.error("Failed to retrieve cookie for ws");
+    const data = await response.json();
+    this.authCookie = data.token;
+    return encodeURIComponent(this.authCookie);
+  }
+  getAuthToken = (): string | null => {
+    return localStorage.getItem("jwt_token");
+  };
+  setAuthToken = (token: string): void => {
+    localStorage.setItem("jwt_token", token);
+  };
+  clearToken = (): void => {
+    localStorage.removeItem("jwt_token");
+  };
+
+  fetchRelative(
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ): Promise<Response> {
+    const token = this.getAuthToken();
+    const initToUse: RequestInit = { ...(init ?? {}), credentials: "include" };
+
+    initToUse.headers = {
+      ...(init?.headers ?? {}),
+      Authorization: `Bearer ${token}`
+    };
+
+    return window
+      .fetch(import.meta.env.VITE_BACKEND_URL + input, initToUse)
+      .then((response) => {
+        if (response.status === 401) {
+          router.openLogin();
+          this.clearToken();
+        }
+        return response;
+      });
+  }
+
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const initToUse = init ?? {};
-    initToUse.credentials = "include";
-    return window.fetch(import.meta.env.VITE_BACKEND_URL + input, initToUse);
+    const token = this.getAuthToken();
+    const initToUse: RequestInit = { ...(init ?? {}), credentials: "include" };
+
+    initToUse.headers = {
+      ...(init?.headers ?? {}),
+      Authorization: `Bearer ${token}`
+    };
+
+    return window.fetch(input, initToUse).then((response) => {
+      if (response.status === 401) {
+        router.openLogin();
+        this.clearToken();
+      }
+      return response;
+    });
   }
 
   private listeners: Record<string, ListenerCallback[]>;
@@ -212,7 +266,7 @@ class ApiClient {
     }
   }
   public getEmojis() {
-    return this.fetch("/api/guilds/${currentGuildId}/emojis");
+    return this.fetchRelative(`/api/guilds/${currentGuildId}/emojis`);
   }
   public onWebsocketReconnect() {
     console.log("Websocket reconnected!");
@@ -403,7 +457,7 @@ class ApiClient {
         : { "Content-Type": "application/json" };
 
     try {
-      const response: Response = await fetch(url, {
+      const response: Response = await this.fetch(url, {
         method,
         headers,
         body,
@@ -446,7 +500,7 @@ class ApiClient {
 
       const { url, method } = result;
 
-      const response = await fetch(url, {
+      const response = await this.fetch(url, {
         method,
         body: formData,
         credentials: "include"

@@ -429,7 +429,7 @@
 .arrow-symbol {
   text-align: center;
   font-size: 20px;
-  margin-top: 6px;
+  margin-top: 10px;
   margin-left: 10px;
   transform: scaleY(2);
 }
@@ -499,10 +499,7 @@
     scrollbar-color: #212222 #2b2d31;
   }
 }
-#crown-symbol {
-  width: 20px;
-  height: auto;
-}
+
 #toolbaroptions {
   z-index: 2;
   position: absolute;
@@ -831,6 +828,12 @@
   display: block;
 }
 
+.status-profile {
+  width: 100px !important;
+  height: 100px !important;
+  top: 50px !important;
+}
+
 @media (max-width: 600px) {
   #channel-list {
     display: none;
@@ -840,6 +843,9 @@
   }
   .chat-container-mobile-left {
     display: flex !important;
+  }
+  #chat-container {
+    padding-left: 0px;
   }
 
   #user-info-panel {
@@ -908,11 +914,18 @@
   #friend-menu-buttons {
     margin-left: -50px;
     overflow-x: scroll;
-    margin-right: 0px;
-    gap: 25px;
+    margin-right: 70px;
     width: 100%;
   }
-
+  .vertical-line {
+    margin-right: -10px;
+  }
+  .startmessage {
+    margin-top: 550px;
+  }
+  #guild-settings-dropdown {
+    margin-left: 25px !important;
+  }
   #friendsTitleContainer {
     left: 20px;
   }
@@ -985,11 +998,23 @@
     left: 65px !important;
   }
   #scroll-to-bottom {
-    right: 30vw !important;
+    right: 45vw !important;
   }
+
   #preview-image {
     max-width: 99% !important;
     max-height: 99% !important;
+  }
+  .status-profile {
+    width: 120px !important;
+    height: 120px !important;
+    top: 30px !important;
+    left: unset !important;
+  }
+  .panel-status-bubble {
+    left: 164px !important;
+    padding: 12px !important;
+    top: 110px;
   }
 }
 
@@ -1444,11 +1469,18 @@ textarea::-webkit-scrollbar-track {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
+
 .profileName {
   pointer-events: none;
-  margin-bottom: 5px;
   margin-left: 15px;
+  margin-right: 5px;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center;
 }
+
 .profile-pic:hover {
   border-radius: 0px;
 }
@@ -1808,12 +1840,6 @@ textarea::-webkit-scrollbar-track {
   gap: 10px;
   flex-direction: column;
   align-items: center;
-}
-
-.status-profile {
-  width: 90px !important;
-  height: auto !important;
-  top: 50px !important;
 }
 
 .panel-status-bubble {

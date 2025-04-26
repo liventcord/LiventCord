@@ -38,7 +38,7 @@
     </span>
     <span class="channelSpan">{{ channelName }}</span>
     <div class="content-wrapper" :style="contentWrapperStyle">
-      <span @click.stop="inviteUser()">
+      <span @click.stop="createInvitePop()">
         <svg
           class="invite-channel-button"
           aria-hidden="true"
@@ -89,12 +89,14 @@ import { defineComponent, computed, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { guildCache } from "../ts/cache";
 import { changeChannel } from "../ts/channels";
-import { selectedChanColor, hoveredChanColor, alertUser } from "../ts/ui";
-import { openChannelSettings } from "../ts/settingsui";
 import {
-  appendToChannelContextList,
-  inviteUser
-} from "../ts/contextMenuActions";
+  selectedChanColor,
+  hoveredChanColor,
+  alertUser,
+  createInvitePop
+} from "../ts/ui";
+import { openChannelSettings } from "../ts/settingsui";
+import { appendToChannelContextList } from "../ts/contextMenuActions";
 import { currentGuildId } from "../ts/guild";
 export default defineComponent({
   name: "Channel",
@@ -197,7 +199,7 @@ export default defineComponent({
       handleClick,
       handleChannelSettings,
       isHovered,
-      inviteUser
+      createInvitePop
     };
   }
 });

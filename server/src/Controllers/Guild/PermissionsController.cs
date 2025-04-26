@@ -14,13 +14,8 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<bool> CheckPermission(string userId, string guildId, PermissionFlags permission, string? oldSenderId = null)
+        public async Task<bool> CheckPermission(string userId, string guildId, PermissionFlags permission)
         {
-            if (oldSenderId != null && permission == PermissionFlags.DeleteMessages && oldSenderId != userId)
-            {
-                return false;
-            }
-
             var ownerId = await GetGuildOwner(guildId);
             if (ownerId == userId)
                 return true;
@@ -41,9 +36,15 @@ namespace LiventCord.Controllers
             => await CheckPermission(userId, guildId, PermissionFlags.CanInvite);
 
         [NonAction]
-        public async Task<bool> CanDeleteMessages(string userId, string guildId, string? oldSenderId = null)
-            => await CheckPermission(userId, guildId, PermissionFlags.SendMessages, oldSenderId);
-
+        public async Task<bool> CanDeleteMessages(string userId, string guildId, string? senderId = null)
+        {
+            if (senderId != null && senderId == userId)
+            {
+                var result = await CheckPermission(userId, guildId, PermissionFlags.SendMessages);
+                return result == true ? result : false;
+            }
+            return await CheckPermission(userId, guildId, PermissionFlags.DeleteMessages);
+        }
         [NonAction]
         public async Task<bool> CanSendMessages(string userId, string guildId)
             => await CheckPermission(userId, guildId, PermissionFlags.SendMessages);

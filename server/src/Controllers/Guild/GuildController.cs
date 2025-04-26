@@ -62,7 +62,7 @@ namespace LiventCord.Controllers
 
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
-            _cacheService.InvalidateCache(userId);
+            await _membersController.InvalidateGuildMemberCaches(userId, guildId);
 
             return Ok(new { guildId, request.GuildName });
         }
@@ -199,7 +199,7 @@ namespace LiventCord.Controllers
                     throw;
                 }
 
-                _cacheService.InvalidateCache(userId);
+                await _membersController.InvalidateGuildMemberCaches(userId, guildId);
                 return Ok(new { guildId });
             }
             catch (Exception ex)

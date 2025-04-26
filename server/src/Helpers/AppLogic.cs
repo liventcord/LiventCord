@@ -59,7 +59,7 @@ namespace LiventCord.Helpers
         private readonly MembersController _membersController;
         private readonly FriendController _friendController;
         private readonly TypingController _typingController;
-        private readonly LoginController _loginController;
+        private readonly AuthController _authController;
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly ICacheService _cacheService;
@@ -71,7 +71,7 @@ namespace LiventCord.Helpers
             MembersController membersController,
             TypingController typingController,
             ILogger<AppLogicService> logger,
-            LoginController loginController,
+            AuthController authController,
             PermissionsController permissionsController,
             IConfiguration configuration,
             ICacheService cacheService
@@ -81,7 +81,7 @@ namespace LiventCord.Helpers
             _guildController = guildController;
             _friendController = friendController;
             _typingController = typingController;
-            _loginController = loginController;
+            _authController = authController;
             _permissionsController = permissionsController;
             _membersController = membersController;
             _cacheService = cacheService;
@@ -98,7 +98,6 @@ namespace LiventCord.Helpers
                 await context.Response.WriteAsJsonAsync(
                     new { message = "User session is no longer valid. Please log in again." }
                 );
-                await _loginController.Logout();
             }
 
 

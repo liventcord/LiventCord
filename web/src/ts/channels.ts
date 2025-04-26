@@ -128,6 +128,12 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (isOnMePage || isOnDm) {
     return;
   }
+
+  store.dispatch("selectChannel", {
+    channelId: newChannel.channelId,
+    isTextChannel: newChannel.isTextChannel
+  });
+
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
   if (isTextChannel) router.switchToGuild(currentGuildId, channelId);
@@ -373,9 +379,9 @@ export function handleChannelDelete(data: ChannelData) {
   const guildId = data.guildId;
   const channelId = data.channelId;
   if (!guildId || !channelId) return;
+  closeSettings();
   if (guildCache.currentChannelId === channelId) {
     const rootChannel = cacheInterface.getRootChannel(guildId);
-    closeSettings();
     if (rootChannel) {
       changeChannel(rootChannel);
     } else {

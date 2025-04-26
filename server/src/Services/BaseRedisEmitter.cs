@@ -48,12 +48,27 @@ public class BaseRedisEmitter
                 {
                     redis?.Dispose();
 
-                    var config = ConfigurationOptions.Parse(redisConnectionString);
-                    if (redisConnectionString.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+                    ConfigurationOptions config;
+                    if (redisConnectionString.StartsWith("redis://", StringComparison.OrdinalIgnoreCase) || redisConnectionString.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
                     {
-                        config.Ssl = true;
+                        var uri = new Uri(redisConnectionString);
+                        var userInfoParts = uri.UserInfo?.Split(':', 2);
+                        config = new ConfigurationOptions
+                        {
+                            EndPoints = { { uri.Host, uri.Port > 0 ? uri.Port : 6379 } },
+                            User = userInfoParts?.Length > 0 ? userInfoParts[0] : null,
+                            Password = userInfoParts?.Length > 1 ? userInfoParts[1] : null,
+                            Ssl = uri.Scheme == "rediss",
+                            AbortOnConnectFail = false
+                        };
                     }
-                    config.AbortOnConnectFail = false;
+                    else
+                    {
+                        config = ConfigurationOptions.Parse(redisConnectionString);
+                        config.Ssl = true;
+                        config.AbortOnConnectFail = false;
+                    }
+
                     redis = await ConnectionMultiplexer.ConnectAsync(config);
 
                     if (redis.IsConnected)
@@ -92,8 +107,9 @@ public class BaseRedisEmitter
         {
             _reconnectLock.Release();
         }
-
     }
+
+
     public async Task EmitGuildMembersToRedisStream(string guildId, string[] userIds)
     {
         if (_connectionSemaphore == null) return;

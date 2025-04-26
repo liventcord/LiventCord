@@ -62,50 +62,44 @@ namespace LiventCord.Controllers
             var userId = UserId!;
             var channel = await _dbContext.Channels.FindAsync(channelId);
             if (channel == null)
-                return NotFound("Channel does not exist.");
-
-            if (!await _membersController.DoesMemberExistInGuild(userId, guildId))
-                return BadRequest(new { Type = "error", Message = "User not in guild." });
+                return NotFound();
 
             if (!await _permissionsController.HasPermission(userId, guildId, PermissionFlags.ManageChannels))
                 return Forbid();
 
+            var rootId = channel.Guild?.RootChannel;
             var guildChannels = await _dbContext.Channels
-                .Where(c => c.GuildId == guildId && c.ChannelId != channelId)
+                .Where(c => c.GuildId == guildId
+                        && c.ChannelId != channelId
+                        && c.ChannelId != rootId)
                 .ToListAsync();
 
-            if (guildChannels.Count == 0)
-                return BadRequest(new { Type = "error", Message = $"Cannot delete the last channel." });
+            if (!guildChannels.Any())
+                return BadRequest(new { Type = "error", Message = "Cannot delete the last channel." });
 
-            if (channel.Guild?.RootChannel == channelId)
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
             {
-                var newRootChannel = guildChannels.FirstOrDefault();
-                if (newRootChannel != null)
-                {
-                    channel.Guild.RootChannel = newRootChannel.ChannelId;
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
+                using var tx = await _dbContext.Database.BeginTransactionAsync();
 
-            var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
-            await _imageController.DeleteAttachmentFiles(messages);
+                if (rootId == channelId && channel.Guild != null)
+                    channel.Guild.RootChannel = guildChannels.Where(c => c.ChannelId != rootId).First().ChannelId;
 
-            _dbContext.Channels.Remove(channel);
+                var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
+                await _imageController.DeleteAttachmentFiles(messages);
 
-            try
-            {
+                _dbContext.Channels.Remove(channel);
                 await _dbContext.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Conflict(new { Type = "error", Message = "Concurrency conflict occurred. Please try again." });
-            }
+                await tx.CommitAsync();
+            });
 
-            await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, UserId!);
-            _cacheService.InvalidateCache(userId);
+            await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, userId);
+            await _membersController.InvalidateGuildMemberCaches(userId, guildId);
 
             return Ok(new { guildId, channelId });
         }
+
 
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}")]
@@ -131,7 +125,7 @@ namespace LiventCord.Controllers
             var channelToEmit = new { channelId, channelName = request.ChannelName, guildId };
 
             await _redisEventEmitter.EmitToGuild(EventType.UPDATE_CHANNEL_NAME, channelToEmit, guildId, UserId!);
-            _cacheService.InvalidateCache(UserId!);
+            await _membersController.InvalidateGuildMemberCaches(UserId, guildId);
 
             return Ok(new { guildId, channelId, request.ChannelName });
         }
@@ -143,7 +137,6 @@ namespace LiventCord.Controllers
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
                 return Forbid();
-
             return await CreateChannelInternal(UserId!, guildId, Utils.CreateRandomId(), request.ChannelName, request.IsTextChannel, request.IsPrivate, recipientId: null, returnResponse: true);
         }
 
@@ -198,14 +191,14 @@ namespace LiventCord.Controllers
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
-            if (userId != null)
-            {
-                await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
-                _cacheService.InvalidateCache(userId);
-            }
+            await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId);
+
+            await _membersController.InvalidateGuildMemberCaches(userId, guildId);
+
 
             return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
+
 
         private async Task<IActionResult> HandleDmChannelCreation(string userId, string recipientId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
         {
@@ -231,14 +224,6 @@ namespace LiventCord.Controllers
 
             return returnResponse ? Ok(new { recipientId, newDmChannel.ChannelId, isTextChannel, channelName }) : Ok();
         }
-
-        [NonAction]
-        public async Task<bool> DoesChannelExists(string guildId, string channelId)
-        {
-            return await _dbContext.Channels.AnyAsync(c => c.ChannelId == channelId && c.GuildId == guildId);
-        }
-
-
 
         [NonAction]
         public async Task<List<ChannelWithLastRead>> GetGuildChannels(string userId, string guildId)
