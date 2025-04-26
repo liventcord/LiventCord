@@ -330,6 +330,7 @@ export async function drawProfilePop(
     console.error("Null user data requested profile draw", userData);
     return null;
   }
+  if (getId("profilePopContainer")) return null;
   if (isImagePreviewOpen()) {
     hideImagePreview();
   }

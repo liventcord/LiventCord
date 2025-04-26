@@ -429,7 +429,7 @@
 .arrow-symbol {
   text-align: center;
   font-size: 20px;
-  margin-top: 6px;
+  margin-top: 10px;
   margin-left: 10px;
   transform: scaleY(2);
 }
@@ -844,6 +844,9 @@
   .chat-container-mobile-left {
     display: flex !important;
   }
+  #chat-container {
+    padding-left: 0px;
+  }
 
   #user-info-panel {
     display: none;
@@ -997,9 +1000,7 @@
   #scroll-to-bottom {
     right: 45vw !important;
   }
-  .arrow-symbol {
-    margin-top: 10px;
-  }
+
   #preview-image {
     max-width: 99% !important;
     max-height: 99% !important;

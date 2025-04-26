@@ -1205,14 +1205,16 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean) {
     mobileMoveToCenter();
   }
 }
-
+export function isOnCenter(): boolean {
+  return !isOnLeft && !isOnRight;
+}
 export function mobileMoveToRight() {
   if (!userList) return;
   isOnLeft = false;
   isOnRight = true;
-  if (isMobile) {
-    enableElement(userList);
-  }
+
+  enableElement(userList);
+  disableElement("scroll-to-bottom");
 }
 
 export function mobileMoveToCenter(excludeChannelList: boolean = false) {
@@ -1254,7 +1256,8 @@ export function mobileMoveToLeft() {
   isOnLeft = true;
   isOnRight = false;
   disableElement(userList);
-
+  disableElement("media-menu");
+  disableElement("scroll-to-bottom");
   channelList.classList.remove("visible");
   guildContainer.classList.add("visible");
   disableElement(chatContainer);
