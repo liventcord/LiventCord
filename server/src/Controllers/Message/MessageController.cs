@@ -378,7 +378,7 @@ namespace LiventCord.Controllers
         {
             if (!await _permissionsController.CanDeleteMessages(UserId!, guildId))
             {
-                return StatusCode(StatusCodes.Status403Forbidden);
+                return Forbid();
             }
             var deleteBroadcast = new { guildId, channelId, messageId };
             await DeleteMessage(channelId, messageId);
