@@ -325,7 +325,7 @@ table {
 #profile-container {
   display: flex;
   margin-top: 257px;
-  margin-left: 15px;
+  margin-left: -170px;
 }
 #profile-title {
   color: white;

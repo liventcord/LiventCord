@@ -476,6 +476,9 @@ export function loadDmHome(isChangingUrl?: boolean): void {
       disableElement("channel-info-container-for-index");
     }
     loadMainToolbar();
+    disableElement("hash-sign");
+    disableElement("dm-profile-sign-bubble");
+    disableElement("dm-profile-sign");
 
     disableElement(chatContainer);
     disableElement("message-input-container");
@@ -616,7 +619,6 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     disableElement("hash-sign");
     enableElement("channel-info");
 
-    enableElement("dm-profile-sign");
     const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
     if (dmProfSign) {
       setProfilePic(dmProfSign, id);

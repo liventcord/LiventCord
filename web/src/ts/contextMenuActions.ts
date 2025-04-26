@@ -201,6 +201,18 @@ export function appendToChannelContextList(channelId: string) {
 export function appendToMessageContextList(messageId: string, userId: string) {
   messageContextList[messageId] = createMessageContext(messageId, userId);
 }
+
+export function editMessageOnContextList(
+  oldId: string,
+  newId: string,
+  userId: string
+) {
+  if (messageContextList[oldId]) {
+    delete messageContextList[oldId];
+    messageContextList[newId] = createMessageContext(newId, userId);
+  }
+}
+
 export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userManager.getUserInfo(userId);
@@ -468,12 +480,14 @@ function createMessageContext(messageId: string, userId: string) {
         action: () => deleteMessagePrompt(messageId)
       };
     }
-  } else {
-    if (isOnGuild && permissionManager.canManageMessages())
-      context[MessagesActionType.DELETE_MESSAGE] = {
-        label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessagePrompt(messageId)
-      };
+  } else if (
+    (isOnGuild && userId === currentUserId) ||
+    permissionManager.canManageMessages()
+  ) {
+    context[MessagesActionType.DELETE_MESSAGE] = {
+      label: MessagesActionType.DELETE_MESSAGE,
+      action: () => deleteMessagePrompt(messageId)
+    };
   }
 
   if (isDeveloperMode) {

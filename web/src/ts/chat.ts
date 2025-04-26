@@ -47,7 +47,8 @@ import { apiClient, EventType } from "./api.ts";
 import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
-  appendToMessageContextList
+  appendToMessageContextList,
+  editMessageOnContextList
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
@@ -1113,6 +1114,17 @@ export function handleSelfSentMessage(data: Message) {
         );
       }
       element.id = data.messageId;
+      const messagesOptionsButton = element.querySelector(
+        ".message-button-container"
+      ) as HTMLElement;
+      if (messagesOptionsButton) {
+        const msgButton = messagesOptionsButton.querySelector(
+          ".message-button"
+        ) as HTMLElement;
+        if (msgButton) msgButton.dataset.m_id = data.messageId;
+      }
+      if (data.temporaryId)
+        editMessageOnContextList(data.temporaryId, data.messageId, data.userId);
     }
     selfSentMessages.splice(foundMessageIndex, 1);
   }

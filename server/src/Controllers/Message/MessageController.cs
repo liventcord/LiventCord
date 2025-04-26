@@ -569,7 +569,7 @@ namespace LiventCord.Controllers
                 }
                 else
                 {
-                    return BadRequest();
+                    return NotFound();
                 }
             }
 

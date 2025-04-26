@@ -828,6 +828,12 @@
   display: block;
 }
 
+.status-profile {
+  width: 100px !important;
+  height: 100px !important;
+  top: 50px !important;
+}
+
 @media (max-width: 600px) {
   #channel-list {
     display: none;
@@ -905,11 +911,18 @@
   #friend-menu-buttons {
     margin-left: -50px;
     overflow-x: scroll;
-    margin-right: 0px;
-    gap: 25px;
+    margin-right: 70px;
     width: 100%;
   }
-
+  .vertical-line {
+    margin-right: -10px;
+  }
+  .startmessage {
+    margin-top: 550px;
+  }
+  #guild-settings-dropdown {
+    margin-left: 25px !important;
+  }
   #friendsTitleContainer {
     left: 20px;
   }
@@ -982,11 +995,25 @@
     left: 65px !important;
   }
   #scroll-to-bottom {
-    right: 30vw !important;
+    right: 45vw !important;
+  }
+  .arrow-symbol {
+    margin-top: 10px;
   }
   #preview-image {
     max-width: 99% !important;
     max-height: 99% !important;
+  }
+  .status-profile {
+    width: 120px !important;
+    height: 120px !important;
+    top: 30px !important;
+    left: unset !important;
+  }
+  .panel-status-bubble {
+    left: 164px !important;
+    padding: 12px !important;
+    top: 110px;
   }
 }
 
@@ -1812,12 +1839,6 @@ textarea::-webkit-scrollbar-track {
   gap: 10px;
   flex-direction: column;
   align-items: center;
-}
-
-.status-profile {
-  width: 90px !important;
-  height: auto !important;
-  top: 50px !important;
 }
 
 .panel-status-bubble {
