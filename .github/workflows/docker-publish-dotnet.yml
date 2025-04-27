@@ -11,9 +11,6 @@ on:
       IMAGE_NAME:
         description: 'The Docker image name'
         required: true
-      SERVICE_ID:
-        description: 'Id of koyeb service'
-        required: true
 
 jobs:
   build-and-push:
