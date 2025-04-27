@@ -39,7 +39,7 @@ jobs:
           dotnet tool install --global dotnet-ef
           dotnet tool restore
           dotnet ef migrations add InitialCreate
-          export APPSETTINGS__JWTKEY=a00f3b9175e0bb5e95462d3810fad55cd4ed5c9c776f300f4d5d855c1703251b
+          copy src/Properties/exampleSettings.json src/Properties/appsettings.json
           nohup dotnet run --project . &
 
       - name: Wait for backend to be ready
@@ -53,7 +53,7 @@ jobs:
       - name: Start frontend dev server
         working-directory: web
         run: |
-          mv src/.env.example src/.env
+          cp src/.env.example src/.env
           nohup pnpm run dev &
           sleep 5
           curl --silent --fail localhost:5173 
