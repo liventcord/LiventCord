@@ -352,9 +352,12 @@ namespace LiventCord.Controllers
             return guilds;
         }
         [NonAction]
-        public async Task InvalidateGuildMemberCaches(string userId, string guildId)
+        public async Task InvalidateGuildMemberCaches(string? userId, string guildId)
         {
-            _cacheService.InvalidateCache(userId);
+            if (userId != null)
+            {
+                _cacheService.InvalidateCache(userId);
+            }
             var guild = await _dbContext.Guilds
                 .Include(g => g.GuildMembers)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);

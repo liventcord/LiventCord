@@ -42,11 +42,11 @@ public class CacheService : ICacheService
         }
     }
 
-    public void InvalidateCache(string key)
+    public void InvalidateCache(string userId)
     {
-        _memoryCache.Remove(key);
+        _userKeys.Remove(userId);
 
-        _userKeys.Remove(key);
+        _memoryCache.Remove($"UserInitData_{userId}");
     }
 
     public string[] GetCachedUserIds()

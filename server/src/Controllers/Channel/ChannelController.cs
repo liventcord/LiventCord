@@ -125,7 +125,7 @@ namespace LiventCord.Controllers
             var channelToEmit = new { channelId, channelName = request.ChannelName, guildId };
 
             await _redisEventEmitter.EmitToGuild(EventType.UPDATE_CHANNEL_NAME, channelToEmit, guildId, UserId!);
-            await _membersController.InvalidateGuildMemberCaches(UserId, guildId);
+            await _membersController.InvalidateGuildMemberCaches(UserId!, guildId);
 
             return Ok(new { guildId, channelId, request.ChannelName });
         }

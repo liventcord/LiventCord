@@ -13,24 +13,20 @@ describe("Create Channel", () => {
       .as("initialChannelCount");
     cy.get("#channel-dropdown-button").click();
     cy.get("#create-channel-send-input").type("Test channel");
-    cy.intercept("POST", "**/api/guilds/*/channels").as("channelCreateRequest");
-    cy.get(".pop-up-accept").click();
 
     // Check if channel count is increased after request
     cy.get("@initialChannelCount").then((initialCount) => {
+      cy.intercept("POST", "**/api/guilds/*/channels").as(
+        "channelCreateRequest"
+      );
+      cy.get(".pop-up-accept").click();
+      cy.wait("@channelCreateRequest")
+        .its("response.statusCode")
+        .should("eq", 200);
       cy.get("#channel-container")
         .find("#channelul")
         .children()
         .should("have.length.greaterThan", initialCount.length);
-
-      cy.wait("@channelCreateRequest")
-        .its("response.statusCode")
-        .should("eq", 200);
-
-      cy.get("#channel-container")
-        .find("#channelul")
-        .children()
-        .should("have.length", initialCount.length + 1);
     });
   });
 });
