@@ -35,31 +35,15 @@ jobs:
       - run: pnpm install
       - run: pnpm cypress install
 
-      - name: Pull backend Docker image
-        run: docker pull thelp281/liventcord:latest
 
-      - name: Create user-defined network
-        run: docker network create backend_network
-
-      - name: Start backend container
+      - name: Start backend server
         run: |
-          docker run -d --name backend --network backend_network -p 5005:5005 thelp281/liventcord:latest
-          sleep 5
+          dotnet tool install --global dotnet-ef &&
+          dotnet ef database add migrations InitialCreate
 
-      - name: Run migrations using .NET SDK container
-        run: |
-          docker run --rm \
-            --network backend_network \
-            -v ${{ github.workspace }}/server:/app \
-            -w /app \
-            mcr.microsoft.com/dotnet/sdk:8.0 bash -c "
-              dotnet tool install --global dotnet-ef &&
-              export PATH=\"/root/.dotnet/tools:\$PATH\" &&
-              dotnet ef database update --project src
-            "
 
       - name: Start the backend server
-        run: docker exec -d backend dotnet run
+        run: dotnet run
 
       - name: Wait for the backend server to be ready
         run: |
