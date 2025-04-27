@@ -1,4 +1,2 @@
 server/src/wwwroot/templates/* linguist-generated
 server/src/wwwroot/404/* linguist-generated
-*.mp3 filter=lfs diff=lfs merge=lfs -text
-1.mp3 filter=lfs diff=lfs merge=lfs -text
