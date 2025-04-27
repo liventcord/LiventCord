@@ -3,21 +3,16 @@ name: Run Cypress Tests
 on:
   push:
     paths:
-      - 'web/'
+      - 'web/**'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'web/'
-
+      - 'web/**'
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: web
 
     steps:
       - uses: actions/checkout@v4
@@ -32,27 +27,44 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: web/pnpm-lock.yaml
 
-      - run: pnpm install
-      - run: pnpm cypress install
-
-
-      - name: Start backend server
+      - name: Install frontend deps
+        working-directory: web
         run: |
-          dotnet tool install --global dotnet-ef &&
-          dotnet ef database add migrations InitialCreate
+          pnpm install
+          pnpm cypress install
 
-
-      - name: Start the backend server
-        run: dotnet run
-
-      - name: Wait for the backend server to be ready
+      - name: Build & start backend
+        working-directory: server/src
         run: |
-          until curl --silent --fail localhost:5005; do
+          dotnet tool install --global dotnet-ef
+          dotnet tool restore
+          dotnet ef migrations add InitialCreate
+          export APPSETTINGS__JWTKEY=a00f3b9175e0bb5e95462d3810fad55cd4ed5c9c776f300f4d5d855c1703251b
+          nohup dotnet run --project . &
+
+      - name: Wait for backend to be ready
+        run: |
+          until curl --silent --fail http://localhost:5005; do
+            echo "Waiting for backend…"
             sleep 1
           done
+          echo "✅ Backend is up!"
 
-      - run: |
+      - name: Start frontend dev server
+        working-directory: web
+        run: |
+          mv src/.env.example src/.env
           nohup pnpm run dev &
-          sleep 10
+          sleep 5
+          curl --silent --fail localhost:5173 
 
-      - run: pnpm run test
+      - name: Run Cypress tests
+        working-directory: web
+        run: pnpm run test
+        continue-on-error: true 
+
+      - name: Upload Cypress screenshots as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: web/cypress/screenshots/

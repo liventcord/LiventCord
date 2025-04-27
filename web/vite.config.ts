@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
   const env = loadEnv(mode, process.cwd());
 
+  const backendUrl = env.VITE_BACKEND_URL;
+  if (!backendUrl) {
+    throw new Error(
+      "Vite backend URL is unset! Please set VITE_BACKEND_URL in your environment variables."
+    );
+  }
+
   const proxyTarget = "http://localhost:5005";
   const commonProxyConfig = {
     target: proxyTarget,

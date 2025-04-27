@@ -345,14 +345,6 @@ class ApiClient {
   }
   getBackendUrl(): string | null {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
-    if (!backendUrl) {
-      alertUser(
-        "Environment variable VITE_BACKEND_URL is unset!",
-        "Cant communicate with api"
-      );
-
-      return null;
-    }
     return backendUrl;
   }
 

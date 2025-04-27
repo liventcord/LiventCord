@@ -15,6 +15,7 @@
     "MaxPoolSize": "3",
     "Host": "127.0.0.1",
     "Port": "5005",
+    "FrontendUrl": "http://localhost:5173",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",
     "MaxAvatarSize": "3",
     "MaxAttachmentsSize": "30",
