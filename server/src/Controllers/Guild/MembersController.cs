@@ -351,7 +351,7 @@ namespace LiventCord.Controllers
 
             return guilds;
         }
-
+        [NonAction]
         public async Task InvalidateGuildMemberCaches(string userId, string guildId)
         {
             _cacheService.InvalidateCache(userId);

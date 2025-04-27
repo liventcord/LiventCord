@@ -98,7 +98,7 @@ async function setPicture(
     imgToUpdate.src = IMAGE_SRCS.CLYDE_SRC;
     return;
   }
-
+  imgToUpdate.crossOrigin = "anonymous"
   srcId = String(srcId);
 
   if (failedImages.has(srcId)) {
@@ -547,7 +547,7 @@ async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
 export async function setProfilePic(
   profileImg: HTMLImageElement,
   userId: string,
-  isTimestamp = false
+  isTimestamp = true
 ) {
   setPicture(profileImg, userId, true, isTimestamp);
 }

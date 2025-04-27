@@ -1,0 +1,29 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+indent-width = 4
+src = ["src"]
+extend-exclude = ["venv", "databases", "src/__pycache__", "src/livent-cord-client"]
+fix = true
+unsafe-fixes = true
+show-fixes = true
+preview = true
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming (naming conventions)
+    "B",   # flake8-bugbear (common bugs)
+    "C4",  # flake8-comprehensions (comprehension improvements)
+    "D",   # pydocstyle (docstring linting)
+    "UP",  # pyupgrade (syntax updates)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -1,0 +1,12 @@
+icrawler
+pytube
+selenium
+pillow
+requests
+asyncio
+discord
+aiosqlite
+environs
+sqlalchemy
+openapi-python-client
+mypy

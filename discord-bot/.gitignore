@@ -1,0 +1,12 @@
+venv/
+databases/
+src/__pycache__
+src/.mypy_cache
+src/.env
+src/oldbot
+src/livent-cord-client
+src/commands/__pycache__
+src/commands/.mypy_cache
+src/messages/__pycache__
+src/messages/.mypy_cache
+

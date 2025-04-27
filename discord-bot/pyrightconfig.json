@@ -1,0 +1,9 @@
+{
+    "exclude": [
+      "src/bot.py"
+    ],
+    "include": [
+      "src/livent-cord-client"
+    ],
+  }
+  
