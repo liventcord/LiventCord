@@ -9,7 +9,8 @@ export default defineConfig({
     },
     responseTimeout: 10000,
     execTimeout: 10000,
-    defaultCommandTimeout: 10000
+    defaultCommandTimeout: 10000,
+    chromeWebSecurity: false
   },
   component: {
     devServer: {
