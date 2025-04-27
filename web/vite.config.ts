@@ -7,24 +7,22 @@ import cssnano from "cssnano";
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
   const env = loadEnv(mode, process.cwd());
-
-  const backendUrl = env.VITE_BACKEND_URL;
-  if (!backendUrl) {
-    throw new Error(
-      "Vite backend URL is unset! Please set VITE_BACKEND_URL in your environment variables."
+  const backendUrl = env.VITE_BACKEND_URL || "http://localhost:5005";
+  if (!env.VITE_BACKEND_URL) {
+    console.warn(
+      "Vite backend URL is unset! Defaulting to http://localhost:5005"
     );
   }
-
   const proxyTarget = "http://localhost:5005";
   const commonProxyConfig = {
     target: proxyTarget,
     changeOrigin: true,
     secure: false
   };
-
   const proxyPaths = ["/api", "/profiles", "/guilds", "/attachments", "/auth"];
-
-  const proxyConfig = proxyPaths.reduce((acc, path) => {
+  const proxyConfig = proxyPaths.reduce<
+    Record<string, typeof commonProxyConfig>
+  >((acc, path) => {
     acc[path] = commonProxyConfig;
     return acc;
   }, {});
@@ -33,17 +31,16 @@ export default defineConfig(({ mode }) => {
     root: "./src",
     publicDir: "../public",
     base: isDev ? "/" : "/LiventCord/app/",
-
+    define: {
+      "import.meta.env.VITE_BACKEND_URL": JSON.stringify(backendUrl)
+    },
     build: {
       outDir: "output",
       assetsDir: "ts",
       emptyOutDir: true,
       minify: isDev ? false : "terser",
       terserOptions: {
-        compress: {
-          passes: 3,
-          drop_console: false //!isDev
-        },
+        compress: { passes: 3, drop_console: false },
         mangle: { toplevel: true }
       },
       sourcemap: isDev,
@@ -52,7 +49,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
-
             if (id.includes("vue/dist") || id.match(/node_modules\/@vue\//))
               return "vue";
             if (id.includes("vuex")) return "vuex";
@@ -64,7 +60,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes("dompurify")) return "dompurify";
             if (id.includes("dotenv")) return "dotenv";
             if (id.includes("process")) return "process";
-
             return "vendor";
           },
           entryFileNames: "assets/[name].[hash].js",
@@ -73,15 +68,10 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-
     css: {
-      postcss: {
-        plugins: [autoprefixer, cssnano({ preset: "default" })]
-      }
+      postcss: { plugins: [autoprefixer, cssnano({ preset: "default" })] }
     },
-
     plugins: [vue(), eslintPlugin({ emitWarning: false })],
-
     server: {
       hmr: true,
       proxy: {
