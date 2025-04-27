@@ -39,7 +39,7 @@ jobs:
           dotnet tool install --global dotnet-ef
           dotnet tool restore
           dotnet ef migrations add InitialCreate
-          cp src/Properties/exampleSettings.json src/Properties/appsettings.json
+          cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
       - name: Wait for backend to be ready
