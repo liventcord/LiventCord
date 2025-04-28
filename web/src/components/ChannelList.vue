@@ -38,13 +38,18 @@ export default defineComponent({
   z-index: 1;
   padding: 36px 47px;
   width: 140px;
-  scroll-behavior: smooth;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
   overflow-x: hidden;
   font-weight: bold;
   background-color: #2b2d31;
   color: #ffffff;
   position: relative;
   padding-left: 125px;
+}
+
+#channelul {
+  width: 100%;
 }
 
 .channel-users-container {
