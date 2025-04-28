@@ -39,7 +39,7 @@ export default defineComponent({
   padding: 36px 47px;
   width: 140px;
   height: calc(100vh - 100px);
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   font-weight: bold;
   background-color: #2b2d31;
