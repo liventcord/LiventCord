@@ -242,7 +242,9 @@
     "done": "Bitti",
     "details-container-title-1": "Dosya adı",
     "details-container-title-2": "Boyut",
-    "media-title": "Medya"
+    "media-title": "Medya",
+    "find-perfect-emoji": "Mükemmel emojiyi bul",
+    "search-tenor": "Tenor'da ara"
   },
   "errorTranslations": {},
   "tooltipTranslations": {

@@ -3,6 +3,7 @@ import { createEl, getId, debounce, IMAGE_SRCS } from "./utils.ts";
 import { sendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
+import { translations } from "./translations.ts";
 
 let initialMouseX: number;
 let initialMouseY: number;
@@ -247,12 +248,14 @@ function isMediaData(
 }
 
 async function loadMenuGifContent(): Promise<void> {
+  mediaMenuSearchbar.value = "";
+  mediaMenuSearchbar.placeholder = translations.getTranslation("search-tenor");
+
   console.log("Loading GIF content...");
 
   const categoryUrls = await fetchCategoryUrls();
 
   if (categoryUrls.length > 0) {
-    // Pass Category[] here and mark isCategory as true
     displayContent(categoryUrls, "gif", true);
   } else {
     console.log("No categories available.");
@@ -422,6 +425,8 @@ function handleCategoryGifs(responseText: string) {
     gif.loadGif(gifImg);
   });
 }
+const mediaMenuSearchbar = getId("media-menu-search-bar") as HTMLInputElement;
+const categoryNameText = getId("category-name");
 
 async function fetchCategoryGifs(categoryPath: string) {
   const url = `https://g.tenor.com/v1/search?key=${exampleTenorId}&q=${categoryPath}&limit=50`;
@@ -431,25 +436,22 @@ async function fetchCategoryGifs(categoryPath: string) {
 // should return back to input field when this function is called
 function showCategoriesList() {
   console.log("Show categories list");
-  const categoryNameText = getId("categoryName");
+
   if (categoryNameText) {
     categoryNameText.style.display = "none";
+    categoryNameText.textContent = "";
   }
   if (gifsBackBtn) {
     gifsBackBtn.style.display = "none";
   }
-  const mediaMenuSearchbar = getId("mediaMenuSearchbar");
+
   if (mediaMenuSearchbar) {
     mediaMenuSearchbar.style.display = "flex";
   }
   loadMenuGifContent();
-  if (categoryNameText) {
-    categoryNameText.textContent = "";
-  }
 }
 
 function showCategoryView(categoryName: string) {
-  const categoryNameText = getId("categoryName");
   if (categoryNameText) {
     categoryNameText.style.display = "block";
     categoryNameText.textContent = categoryName;
@@ -457,7 +459,6 @@ function showCategoryView(categoryName: string) {
   if (gifsBackBtn) {
     gifsBackBtn.style.display = "block";
   }
-  const mediaMenuSearchbar = getId("mediaMenuSearchbar");
   if (mediaMenuSearchbar) {
     mediaMenuSearchbar.style.display = "none";
   }
@@ -471,14 +472,14 @@ function createCategoryBox(
   categoryPath: string,
   previewImage: string
 ) {
-  const box = createEl("div", { className: "categoryBox" });
+  const box = createEl("div", { className: "category-box" });
   const gifImg = createEl("img", {
-    className: "gifCategoryImage",
+    className: "gif-category-image",
     src: previewImage
   });
 
-  //className: "gifCategoryImage",
-  const overlay = createEl("div", { className: "gifOverlay" });
+  //className: "gif-category-image",
+  const overlay = createEl("div", { className: "overlay" });
   const caption = createEl("div", {
     textContent: name,
     className: "gifCategoryCaption"
@@ -508,26 +509,20 @@ function toggleGifs(isTop?: boolean) {
 }
 
 function toggleEmojis(isTop?: boolean) {
+  mediaMenuSearchbar.value = "";
   if (currentMenuType === "emoji") {
     toggleMediaMenu();
+    mediaMenuSearchbar.placeholder =
+      translations.getTranslation("search-tenor");
   } else {
     currentMenuType = "emoji";
     mediaMenuContainer.innerHTML = getEmojiPanel();
+    mediaMenuSearchbar.placeholder =
+      translations.getTranslation("find-perfect-emoji");
 
     if (!isMediaMenuOpen) {
       toggleMediaMenu();
     }
-  }
-}
-
-function httpGetSync(url: string) {
-  const xmlHttp = new XMLHttpRequest();
-  xmlHttp.open("GET", url, false);
-  xmlHttp.send(null);
-  if (xmlHttp.status === STATUS_200) {
-    return xmlHttp.responseText;
-  } else {
-    throw new Error(`HTTP error! Status: ${xmlHttp.status}`);
   }
 }
 
@@ -572,15 +567,17 @@ function initialiseMedia() {
   mediaMenu = getId("media-menu") as HTMLElement;
   mediaMenuContainer = getId("media-menu-container") as HTMLElement;
   mediaMenu.style.display = "none";
-  const searchBar = getId("mediaMenuSearchbar") as HTMLInputElement;
-
-  searchBar.addEventListener(
-    "keydown",
-    debounce(async () => {
-      const query = searchBar.value;
-      await loadGifContent(query);
-    }, GIF_DEBOUNCE_TIME)
-  );
+  if (mediaMenuSearchbar) {
+    mediaMenuSearchbar.addEventListener(
+      "keydown",
+      debounce(async () => {
+        if (currentMenuType === "gif") {
+          const query = mediaMenuSearchbar.value;
+          await loadGifContent(query);
+        }
+      }, GIF_DEBOUNCE_TIME)
+    );
+  }
 
   emojiBtnTop.addEventListener("click", (e) => {
     toggleEmojis(false);

@@ -52,25 +52,36 @@
   font-size: 15px;
   font-weight: 900;
   background-color: #41434a;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
+
 .media-menu-button:hover {
-  background-color: #41434a;
+  background-color: #52575d;
+  transform: scale(1.1);
 }
-#categoryName {
+
+#category-name {
   color: white;
   font-size: 20px;
-  margin-left: 30px;
+  margin-left: 40px;
   margin-top: 7px;
   pointer-events: none;
 }
 #gifsBackBtn {
   display: none;
-  position: fixed;
-  background-color: transparent;
   border: none;
-  color: white;
-  margin-top: -50px;
+  background: transparent;
+  color: #b9b9bf;
+  margin-top: -53px;
   font-size: 1.35em;
+  width: 50px;
+  height: 50px;
+  margin-left: -10px;
+}
+#gifsBackBtn :hover {
+  color: white;
 }
 #media-menu-line {
   top: 45px;
@@ -98,7 +109,6 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 10px;
 }
 
 .emoji {
@@ -183,6 +193,9 @@
     width: 100% !important;
     height: 50vh !important;
   }
+  .emojis-container {
+    padding: 10px;
+  }
 }
 
 #media-menu-container {
@@ -219,7 +232,7 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-#mediaMenuSearchbar {
+#media-menu-search-bar {
   width: 100%;
   color: white;
   font-size: 18px;
@@ -231,12 +244,8 @@
   background-color: rgb(30, 31, 34);
   outline: none;
 }
-.gifsContainer {
-  position: relative;
-  text-align: center;
-  margin-top: 20px;
-}
-.categoryBox {
+
+.category-box {
   display: inline-block;
   width: 200px;
   height: 200px;
@@ -245,16 +254,16 @@
   position: relative;
   overflow: hidden;
 }
-.categoryBox:hover {
+.category-box:hover {
   background-color: #333;
 }
-.gifCategoryImage {
+.gif-category-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: opacity 0.3s ease-in-out;
 }
-.gifOverlay {
+.gif-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -272,10 +281,10 @@
   color: white;
   font-weight: bold;
 }
-.categoryBox:hover .gifOverlay {
+.category-box:hover .gif-overlay {
   opacity: 0;
 }
-.categoryBox:hover .gifCategoryImage {
+.category-box:hover .gif-category-image {
   opacity: 0.7;
 }
 #backButton {

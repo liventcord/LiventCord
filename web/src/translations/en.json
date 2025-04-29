@@ -229,7 +229,9 @@
     "done": "Done",
     "details-container-title-1": "Filename",
     "details-container-title-2": "Size",
-    "media-title": "Media"
+    "media-title": "Media",
+    "find-perfect-emoji": "Find the perfect emoji",
+    "search-tenor": "Search on Tenor"
   },
   "errorTranslations": {},
   "tooltipTranslations": {
