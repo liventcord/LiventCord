@@ -95,7 +95,10 @@
 .emojis-container {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   width: 100%;
+  padding: 10px;
 }
 
 .emoji {
@@ -117,13 +120,6 @@
   background-color: rgb(26, 27, 30);
   border-radius: 10px;
   border: transparent;
-}
-.emojis-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
 }
 
 .emoji:hover {
@@ -176,13 +172,14 @@
     height: 40px;
     font-size: 16px;
     width: 120px;
+    margin-top: 5px;
   }
 
   #gif-menu,
   #media-menu {
-    right: 0;
+    left: 0 !important;
     bottom: 10px;
-    padding: 0px;
+    padding: 5px;
     width: 100% !important;
     height: 50vh !important;
   }

@@ -263,12 +263,7 @@ async function loadMenuGifContent(): Promise<void> {
 function getEmojiPanel(): string {
   const emojiPanel = createEl("div", { id: "emoji-panel" });
   const emojisContainer = createEl("div", {
-    className: "emojis-container",
-    style: {
-      display: "flex",
-      flexWrap: "wrap",
-      justifyContent: "center"
-    }
+    className: "emojis-container"
   });
 
   renderEmojis(emojisContainer, CATEGORIES);
