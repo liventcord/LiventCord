@@ -5,6 +5,51 @@ import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
 import { translations } from "./translations.ts";
 
+interface Category {
+  title: string;
+  class: string;
+  count: number;
+}
+
+interface EmojiCategory {
+  title: string;
+  class: string;
+  count: number;
+}
+
+interface MediaCategory {
+  name: string;
+  path: string;
+  image: string;
+}
+
+interface GifResponse {
+  error?: string;
+  results: Array<{
+    media_formats: {
+      gif: { url: string };
+      tinygif: { url: string };
+    };
+  }>;
+}
+
+interface Category {
+  name: string;
+  path: string;
+  image: string;
+}
+
+interface MediaData {
+  preview: string;
+  [key: string]: any;
+}
+
+enum MediaTypes {
+  Gif,
+  Emoji,
+  Sticker
+}
+
 let initialMouseX: number;
 let initialMouseY: number;
 let isResizing = false;
@@ -14,7 +59,7 @@ let resizingTop: boolean,
   resizingLeft: boolean,
   resizingRight: boolean;
 let isMediaMenuOpen = false;
-let currentMenuType = "";
+let currentMenuType: MediaTypes;
 let mediaMenu: HTMLElement, mediaMenuContainer: HTMLElement;
 const gifsBackBtn = getId("gifsBackBtn") as HTMLElement;
 const exampleTenorId = "LIVDSRZULELA"; //Example tenor apikey from tenor docs
@@ -26,6 +71,17 @@ const emojiBtnTop = getId("emojibtntop") as HTMLElement;
 const STATUS_200 = 200;
 const VIEWPORT_WIDTH_RATIO = 1.7;
 const VIEWPORT_HEIGHT_RATIO = 1.2;
+
+const CATEGORIES = [
+  { title: "Humans", class: "human", count: 245 },
+  { title: "Nature", class: "nature", count: 213 },
+  { title: "Food", class: "food", count: 129 },
+  { title: "Activities", class: "activities", count: 76 },
+  { title: "Travel", class: "travel", count: 131 },
+  { title: "Objects", class: "objects", count: 223 },
+  { title: "Symbols", class: "symbols", count: 328 },
+  { title: "Flags", class: "flags", count: 269 }
+];
 
 const imgPreviewContainer = getId("image-preview-container");
 if (imgPreviewContainer) {
@@ -79,34 +135,6 @@ function onMouseUp() {
   }
 }
 
-const CATEGORIES = [
-  { title: "Humans", class: "human", count: 245 },
-  { title: "Nature", class: "nature", count: 213 },
-  { title: "Food", class: "food", count: 129 },
-  { title: "Activities", class: "activities", count: 76 },
-  { title: "Travel", class: "travel", count: 131 },
-  { title: "Objects", class: "objects", count: 223 },
-  { title: "Symbols", class: "symbols", count: 328 },
-  { title: "Flags", class: "flags", count: 269 }
-];
-interface Category {
-  title: string;
-  class: string;
-  count: number;
-}
-
-interface EmojiCategory {
-  title: string;
-  class: string;
-  count: number;
-}
-
-interface MediaCategory {
-  name: string;
-  path: string;
-  image: string;
-}
-
 function renderEmojis(
   container: HTMLElement,
   categories: EmojiCategory[]
@@ -119,16 +147,15 @@ function renderEmojis(
   let currentIndex = 0;
 
   categories.forEach((category) => {
-    const categoryContainer = document.createElement("div");
-    categoryContainer.className = "emoji-category";
+    const categoryContainer = createEl("div", { className: "emoji-category" });
 
-    const categoryTitle = document.createElement("div");
-    categoryTitle.className = "category-title";
-    categoryTitle.textContent = category.title;
+    const categoryTitle = createEl("div", {
+      className: "category-title",
+      textContent: category.title
+    });
     categoryContainer.appendChild(categoryTitle);
 
-    const emojisContainer = document.createElement("div");
-    emojisContainer.className = "emojis-container";
+    const emojisContainer = createEl("div", { className: "emojis-container" });
 
     for (let i = 0; i < category.count; i++) {
       const col = currentIndex % columns;
@@ -136,9 +163,10 @@ function renderEmojis(
       const x = -(col * spriteWidth);
       const y = -(row * spriteHeight);
 
-      const emoji = document.createElement("div");
-      emoji.className = `emoji ${category.class}`;
-      emoji.style.backgroundPosition = `${x}px ${y}px`;
+      const emoji = createEl("div", {
+        className: `emoji ${category.class}`,
+        backgroundPosition: `${x}px ${y}px`
+      });
 
       emojisContainer.appendChild(emoji);
 
@@ -150,41 +178,20 @@ function renderEmojis(
   });
 }
 
-interface GifResponse {
-  error?: string;
-  results: Array<{
-    media_formats: {
-      gif: { url: string };
-      tinygif: { url: string };
-    };
-  }>;
-}
-
-interface Category {
-  name: string;
-  path: string;
-  image: string;
-}
-
-interface MediaData {
-  preview: string;
-  [key: string]: any;
-}
-
 function displayContent(
   contentData: (MediaData | EmojiCategory | MediaCategory)[],
-  type: string,
+  type: MediaTypes,
   isCategory: boolean = false
 ): void {
   console.log(type, contentData);
   mediaMenuContainer.innerHTML = "";
 
-  if (type === "emoji") {
+  if (type === MediaTypes.Emoji) {
     mediaMenuContainer.innerHTML = getEmojiPanel();
     return;
   }
 
-  if (type !== "gif") return;
+  if (type !== MediaTypes.Gif) return;
 
   if (isCategory) {
     contentData.forEach((data) => {
@@ -256,10 +263,10 @@ async function loadMenuGifContent(): Promise<void> {
   const categoryUrls = await fetchCategoryUrls();
 
   if (categoryUrls.length > 0) {
-    displayContent(categoryUrls, "gif", true);
+    displayContent(categoryUrls, MediaTypes.Gif, true);
   } else {
     console.log("No categories available.");
-    displayContent([], "gif");
+    displayContent([], MediaTypes.Gif);
   }
 }
 
@@ -314,7 +321,7 @@ async function loadGifContent(query: string): Promise<void> {
     preview: result.media_formats.tinygif.url
   }));
 
-  displayContent(gifElements, "gif");
+  displayContent(gifElements, MediaTypes.Gif);
 }
 
 export function updateMediaPanelPosition() {
@@ -496,11 +503,11 @@ function createCategoryBox(
   return box;
 }
 
-function toggleGifs(isTop?: boolean) {
-  if (currentMenuType === "gif") {
+function toggleGifs() {
+  if (currentMenuType === MediaTypes.Emoji) {
     toggleMediaMenu();
   } else {
-    currentMenuType = "gif";
+    currentMenuType = MediaTypes.Gif;
     loadMenuGifContent();
     if (!isMediaMenuOpen) {
       toggleMediaMenu();
@@ -508,14 +515,14 @@ function toggleGifs(isTop?: boolean) {
   }
 }
 
-function toggleEmojis(isTop?: boolean) {
+function toggleEmojis() {
   mediaMenuSearchbar.value = "";
-  if (currentMenuType === "emoji") {
+  if (currentMenuType === MediaTypes.Emoji) {
     toggleMediaMenu();
     mediaMenuSearchbar.placeholder =
       translations.getTranslation("search-tenor");
   } else {
-    currentMenuType = "emoji";
+    currentMenuType = MediaTypes.Emoji;
     mediaMenuContainer.innerHTML = getEmojiPanel();
     mediaMenuSearchbar.placeholder =
       translations.getTranslation("find-perfect-emoji");
@@ -571,28 +578,30 @@ function initialiseMedia() {
     mediaMenuSearchbar.addEventListener(
       "keydown",
       debounce(async () => {
-        if (currentMenuType === "gif") {
+        if (currentMenuType === MediaTypes.Gif) {
           const query = mediaMenuSearchbar.value;
           await loadGifContent(query);
+        } else if (currentMenuType === MediaTypes.Emoji) {
+          // Add emoji querying
         }
       }, GIF_DEBOUNCE_TIME)
     );
   }
 
   emojiBtnTop.addEventListener("click", (e) => {
-    toggleEmojis(false);
+    toggleEmojis();
     e.stopPropagation();
   });
   gifBtn.addEventListener("click", (e) => {
-    toggleGifs(false);
+    toggleGifs();
     e.stopPropagation();
   });
   emojiBtn.addEventListener("click", (e) => {
-    toggleEmojis(false);
+    toggleEmojis();
     e.stopPropagation();
   });
   gifBtnTop.addEventListener("click", (e) => {
-    toggleGifs(true);
+    toggleGifs();
     e.stopPropagation();
   });
 
