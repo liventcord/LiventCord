@@ -41,6 +41,7 @@ builder.Services.AddScoped<PermissionsController>();
 builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
+builder.Services.AddScoped<MediaProxyController>();
 builder.Services.AddScoped<MetadataService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

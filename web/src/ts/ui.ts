@@ -693,12 +693,13 @@ export function displayImagePreview(
 ): void {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
+  console.log(imageElement);
   const sourceImage = getSourceImage(imageElement);
+  console.log(sourceImage);
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
   previewImage.src = getProxy(sourceImage);
-
   updateCurrentIndex(sourceImage, isFromMediaPanel);
   handleImageSpoiler(previewImage, isSpoiler);
 
@@ -888,21 +889,16 @@ function getImages(): HTMLImageElement[] {
 
   const selector = isOnMediaPanel ? ".image-box img" : ".chat-image";
 
-  const getImagesFromElement = (element: HTMLElement): HTMLImageElement[] => {
-    const images = Array.from(element.querySelectorAll(selector)).filter(
-      (img): img is HTMLImageElement =>
-        img instanceof HTMLImageElement && img.src !== ""
-    );
+  const images = Array.from(container.querySelectorAll(selector)).filter(
+    (img): img is HTMLImageElement =>
+      img instanceof HTMLImageElement &&
+      img.src !== "" &&
+      !img.classList.contains("profile-pic")
+  );
 
-    element.querySelectorAll("*").forEach((child) => {
-      if (child instanceof HTMLElement) {
-        images.push(...getImagesFromElement(child));
-      }
-    });
-    return images;
-  };
+  const uniqueImages = Array.from(new Set(images));
 
-  return getImagesFromElement(container);
+  return uniqueImages;
 }
 
 function moveToNextImage() {

@@ -97,5 +97,24 @@ namespace LiventCord.Helpers
             return string.Join("", userIds);
         }
 
+        public static List<string> ExtractUrls(string input)
+        {
+            List<string> urls = new List<string>();
+
+            string pattern = @"https:\/\/[^\s]+";
+
+            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+            MatchCollection matches = regex.Matches(input);
+
+            foreach (Match match in matches)
+            {
+                urls.Add(match.Value);
+            }
+
+            return urls;
+        }
+
+
+
     }
 }

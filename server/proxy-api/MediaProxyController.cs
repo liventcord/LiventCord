@@ -4,23 +4,27 @@ using System.Security.Cryptography;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-using MimeKit;
+using SixLabors.ImageSharp;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Options;
 
 [Route("api/proxy/media")]
 [ApiController]
 public class MediaProxyController : ControllerBase
 {
     private readonly HttpClient _httpClient;
-    private readonly string _cacheDirectory = Path.Combine(Directory.GetCurrentDirectory(), "MediaCache");
+    private string _cacheDirectory;
     private static readonly ConcurrentDictionary<string, Task> _downloadTasks = new ConcurrentDictionary<string, Task>();
-    private readonly string _blacklistFilePath;
+    private string _blacklistFilePath;
     private static readonly object _blacklistLock = new object();
     private static HashSet<string> _blacklistedUrls = new HashSet<string>();
 
-    private readonly long _storageLimitBytes;
+    private long _storageLimitBytes;
+    private string? _mainServerUrl;
 
-    public MediaProxyController(IConfiguration configuration, MediaCacheSettings mediaCacheSettings)
+    public MediaProxyController(MediaCacheSettings mediaCacheSettings)
     {
+        _mainServerUrl = mediaCacheSettings.MainServerUrl;
         _cacheDirectory = mediaCacheSettings.CacheDirectory;
         _storageLimitBytes = mediaCacheSettings.StorageLimitBytes;
         _blacklistFilePath = Path.Combine(_cacheDirectory, "blacklisted_urls.json");
@@ -38,7 +42,12 @@ public class MediaProxyController : ControllerBase
         _httpClient.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
         _httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate, br");
         _httpClient.DefaultRequestHeaders.Connection.ParseAdd("keep-alive");
+
+
     }
+
+
+
 
     private void LoadBlacklistedUrls()
     {
@@ -295,9 +304,52 @@ public class MediaProxyController : ControllerBase
             AddToBlacklist(url, $"File save error: {ex.Message}");
             throw new InvalidOperationException($"Error saving file {filePath}: {ex.Message}");
         }
+        var mediaUrl = new MediaUrl
+        {
+            Url = url,
+            IsImage = IsImageContentType(response),
+            IsVideo = IsVideoContentType(response),
+            FileSize = response.Content.Headers.ContentLength ?? 0,
+            Width = GetImageWidth(filePath),
+            Height = GetImageHeight(filePath),
+            FileName = response.Content.Headers.ContentDisposition?.FileName?.Trim('"') ?? Path.GetFileName(filePath)
+        };
+
+        await SendToMainServer(mediaUrl);
+    }
+    private async Task SendToMainServer(MediaUrl mediaUrls)
+    {
+        Console.WriteLine(_mainServerUrl + "Sending to main server: " + mediaUrls.Url);
+        if (string.IsNullOrEmpty(_mainServerUrl)) return;
+        try
+        {
+            var content = JsonContent.Create(mediaUrls);
+            var response = await _httpClient.PostAsync(_mainServerUrl + "/api/media", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"Failed to send media info to main server - Status: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending media info to main server: {ex.Message}");
+        }
     }
 
 
+
+    private bool IsImageContentType(HttpResponseMessage response)
+    {
+        var contentType = response.Content.Headers.ContentType?.MediaType?.ToLower();
+        return contentType?.StartsWith("image/") ?? false;
+    }
+
+    private bool IsVideoContentType(HttpResponseMessage response)
+    {
+        var contentType = response.Content.Headers.ContentType?.MediaType?.ToLower();
+        return contentType?.StartsWith("video/") ?? false;
+    }
 
 
     private bool IsValidMediaContentType(HttpResponseMessage response)
@@ -327,4 +379,49 @@ public class MediaProxyController : ControllerBase
         }
     }
 
+    private int GetImageWidth(string filePath)
+    {
+        try
+        {
+            using (var image = Image.Load(filePath))
+            {
+                return image.Width;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting image width: {ex.Message}");
+            return 0;
+        }
+    }
+
+    private int GetImageHeight(string filePath)
+    {
+        try
+        {
+            using (var image = Image.Load(filePath))
+            {
+                return image.Height;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting image height: {ex.Message}");
+            return 0;
+        }
+    }
+
+
+}
+public class MediaUrl
+{
+    [Key]
+    public required string Url { get; set; }
+
+    public required bool IsImage { get; set; }
+    public required bool IsVideo { get; set; }
+    public required string FileName { get; set; }
+    public required long FileSize { get; set; }
+    public required int? Width { get; set; }
+    public required int? Height { get; set; }
 }

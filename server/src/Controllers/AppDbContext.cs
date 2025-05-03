@@ -30,7 +30,8 @@ namespace LiventCord.Controllers
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
 
-
+        public DbSet<MediaUrl> MediaUrls { get; set; }
+        public DbSet<MessageUrl> MessageUrls { get; set; }
         public void RecreateDatabase()
         {
             Database.EnsureDeleted();
@@ -379,6 +380,10 @@ namespace LiventCord.Controllers
                         );
                 });
             });
+            modelBuilder.Entity<MediaUrl>()
+                .ToTable(nameof(MediaUrls))
+                .HasKey(m => new { m.Url });
+
 
 
 

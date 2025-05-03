@@ -73,6 +73,7 @@ export interface Attachment {
   fileSize: number;
   isImageFile: boolean;
   isSpoiler: boolean;
+  isProxyFile: boolean;
 }
 export interface AttachmentWithMetaData {
   attachment: Attachment;

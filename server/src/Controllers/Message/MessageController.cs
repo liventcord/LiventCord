@@ -592,27 +592,21 @@ namespace LiventCord.Controllers
                 ReactionEmojisIds = reactionEmojisIds,
                 Embeds = embeds ?? new List<Embed>(),
                 Metadata = new Metadata(),
-                Attachments = new List<Attachment>()
+                Attachments = attachments
             };
+            if (content != null)
+            {
+                List<string> urls = Utils.ExtractUrls(content);
+                string urlsJoined = string.Join(", ", urls);
+                _logger.LogInformation("Extracted urls: " + urlsJoined + " (Count: " + urls.Count + ")");
+                _context.MessageUrls.Add(new MessageUrl { MessageId = messageId, Urls = urls });
+            }
+
+
 
             if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
                 message.TemporaryId = temporaryId;
 
-            if (attachments != null && attachments.Any())
-            {
-                foreach (var attachment in attachments)
-                {
-                    message.Attachments.Add(new Attachment
-                    {
-                        FileId = attachment.FileId,
-                        IsImageFile = attachment.IsImageFile,
-                        MessageId = messageId,
-                        FileName = attachment.FileName,
-                        FileSize = attachment.FileSize,
-                        IsSpoiler = attachment.IsSpoiler
-                    });
-                }
-            }
 
             await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
@@ -732,9 +726,6 @@ namespace LiventCord.Controllers
                 null
             );
         }
-
-
-
 
         [NonAction]
         private async Task<bool> MessageExists(string messageId, string channelId)

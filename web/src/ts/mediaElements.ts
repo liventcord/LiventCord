@@ -150,6 +150,10 @@ export function getProxy(url: string): string {
   try {
     const parsedUrl = new URL(url);
 
+    if (parsedUrl.hostname === apiClient.getProxyHostname()) {
+      return url;
+    }
+
     if (parsedUrl.hostname === apiClient.getBackendHostname()) {
       return url;
     }
@@ -158,12 +162,7 @@ export function getProxy(url: string): string {
       return url;
     }
 
-    return (
-      initialState.mediaProxyApiUrl +
-      `/api/proxy/media?url=${encodeURIComponent(url)}`
-    );
-
-    //return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
+    return apiClient.getProxyUrl(url);
   } catch (e) {
     console.error("Invalid URL:", url, e);
     return url;
@@ -217,6 +216,7 @@ function createImageElement(
       spoileredImages[attachmentId] = true;
     }
   });
+
   imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
 
@@ -490,7 +490,7 @@ function processMediaLink(
       resolve(true);
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      if (!embeds || embeds.length <= 0) {
+      if (!embeds || (embeds.length <= 0 && !attachment?.isProxyFile)) {
         mediaElement = createImageElement(
           "",
           link,

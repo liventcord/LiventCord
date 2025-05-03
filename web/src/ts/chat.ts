@@ -1113,16 +1113,21 @@ export function handleSelfSentMessage(data: Message) {
           data.embeds,
           data.attachments
         );
-        createMediaElement(
-          data.content,
-          messageContentElement,
-          element,
-          data.metadata,
-          data.embeds,
-          data.userId,
-          data.date ? new Date(data.date) : new Date(),
-          data.attachments
-        );
+        if (
+          data.attachments.length > 0 &&
+          data.attachments.every((attachment) => !attachment.isProxyFile)
+        ) {
+          createMediaElement(
+            data.content,
+            messageContentElement,
+            element,
+            data.metadata,
+            data.embeds,
+            data.userId,
+            data.date ? new Date(data.date) : new Date(),
+            data.attachments
+          );
+        }
       }
       element.id = data.messageId;
       const messagesOptionsButton = element.querySelector(
