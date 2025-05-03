@@ -90,7 +90,7 @@ export const messageDates: { [key: string]: Date } = {};
 const unknownReplies: string[] = [];
 
 let isLastMessageStart = false;
-export function setIsLastMessageStart(val: boolean) {
+function setIsLastMessageStart(val: boolean) {
   isLastMessageStart = val;
 }
 
@@ -206,7 +206,7 @@ export function handleReplies() {
   });
 }
 
-export function createReplyBar(
+function createReplyBar(
   newMessage: HTMLElement,
   messageId: string,
   originalId: string,
@@ -928,7 +928,7 @@ function updateMessageContent(element: HTMLElement, content: string): void {
   requestAnimationFrame(() => observe(element));
   setupEmojiListeners(element);
 }
-export function editChatMessage(data: EditMessageResponse): void {
+function editChatMessage(data: EditMessageResponse): void {
   const { messageId, content } = data;
   const messageElement = getId(messageId);
 
@@ -949,8 +949,7 @@ export function editChatMessage(data: EditMessageResponse): void {
   updateMessageContent(messageContentElement, content);
   addEditedIndicator(messageContentElement);
 }
-
-export function displayChatMessage(data: Message): HTMLElement | null {
+function displayChatMessage(data: Message): HTMLElement | null {
   if (!data || !isValidMessage(data)) return null;
 
   const {
@@ -1066,7 +1065,7 @@ type SentMessage = {
 
 const selfSentMessages: SentMessage[] = [];
 
-export function appendtoSelfSentMessages(temporaryId: string) {
+function appendtoSelfSentMessages(temporaryId: string) {
   selfSentMessages.push({ id: temporaryId });
 }
 

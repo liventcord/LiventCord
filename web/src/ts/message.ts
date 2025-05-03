@@ -261,8 +261,7 @@ function sendNewMessageRequest(formData: FormData, additionalData: any) {
     }
   });
 }
-
-export function sendEditMessageRequest(messageId: string, content: string) {
+function sendEditMessageRequest(messageId: string, content: string) {
   messageQueue = messageQueue.then(async () => {
     try {
       let additionalData: any = {

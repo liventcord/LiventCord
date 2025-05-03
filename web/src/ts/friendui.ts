@@ -553,7 +553,7 @@ export function updateUsersActivities(friends?: Friend[]) {
   }
 }
 
-export function createActivityCard(friend: Friend) {
+function createActivityCard(friend: Friend) {
   if (!userManager.isOnline(friend.userId)) return;
   if (!activityList) return;
   if (friend.activity === "" || friend.activity === undefined) return;

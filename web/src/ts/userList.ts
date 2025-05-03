@@ -32,10 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
 export let isUsersOpenGlobal: boolean;
 
 export const currentUsers = reactive<UserInfo[]>([]);
-export function getCurrentUsers() {
-  console.log("Getting current users: ", currentUsers);
-  return currentUsers;
-}
 
 export async function updateMemberList(
   members: UserInfo[],

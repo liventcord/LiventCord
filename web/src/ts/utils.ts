@@ -497,7 +497,7 @@ export function openExternalUrl(url: string) {
   window.open(url, "_blank");
 }
 
-export function sanitizeHTML(html: string) {
+function sanitizeHTML(html: string) {
   if (typeof html !== "string") return "";
   function isValidForColoring(content: string) {
     return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());

@@ -37,14 +37,14 @@ export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
 selfProfileImage.crossOrigin = "anonymous";
 export let lastConfirmedProfileImg: Blob;
-export let lastConfirmedGuildImg: Blob;
+let lastConfirmedGuildImg: Blob;
 
-export function setLastGuildImg(newBlob: Blob) {
+function setLastGuildImg(newBlob: Blob) {
   lastGuildImage = newBlob;
 }
 let lastProfileImage: Blob;
 let lastGuildImage: Blob;
-export function setLastProfileImg(newBlob: Blob) {
+function setLastProfileImg(newBlob: Blob) {
   lastProfileImage = newBlob;
 }
 
@@ -98,7 +98,7 @@ async function setPicture(
     imgToUpdate.src = IMAGE_SRCS.CLYDE_SRC;
     return;
   }
-  imgToUpdate.crossOrigin = "anonymous"
+  imgToUpdate.crossOrigin = "anonymous";
   srcId = String(srcId);
 
   if (failedImages.has(srcId)) {
@@ -317,7 +317,7 @@ function getMaxEmojiBytes(): number {
 function getMaxEmojiMegaBytes() {
   return 256;
 }
-export function uploadImageEmoji(blobs: File[]): void {
+function uploadImageEmoji(blobs: File[]): void {
   const validFiles: File[] = [];
 
   for (const blob of blobs) {

@@ -281,7 +281,7 @@ interface UserStatusData {
   status: string;
 }
 
-export interface CreateChannelData extends CachedChannel {
+interface CreateChannelData extends CachedChannel {
   guildId: string;
   channelId: string;
   channelName: string;
