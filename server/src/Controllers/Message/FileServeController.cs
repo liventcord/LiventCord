@@ -96,9 +96,7 @@ namespace LiventCord.Controllers
                 return NotFound(new { Error = "File not found." });
 
             string contentType;
-
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
             string[] archiveExtensions = [".tar.gz", ".tgz", ".gz", ".zip", ".rar", ".7z"];
 
             if (extension == ".gz")
@@ -113,8 +111,10 @@ namespace LiventCord.Controllers
                         file.Content = FileDecompressor.DecompressGzip(file.Content);
                         file.FileName = originalFileName;
 
-                        if (!_fileTypeProvider.TryGetContentType(originalFileName, out contentType))
+                        if (!_fileTypeProvider.TryGetContentType(originalFileName, out string? detectedType))
                             contentType = "application/octet-stream";
+                        else
+                            contentType = detectedType!;
                     }
                     catch
                     {
@@ -126,7 +126,6 @@ namespace LiventCord.Controllers
                     contentType = "application/gzip";
                 }
             }
-
             else
             {
                 if (isExtensionManual)
@@ -153,8 +152,10 @@ namespace LiventCord.Controllers
                 }
                 else
                 {
-                    if (!_fileTypeProvider.TryGetContentType(file.FileName, out contentType))
+                    if (!_fileTypeProvider.TryGetContentType(file.FileName, out string? detectedType))
                         contentType = "application/octet-stream";
+                    else
+                        contentType = detectedType!;
                 }
             }
 
@@ -165,6 +166,7 @@ namespace LiventCord.Controllers
 
             return File(file.Content, contentType);
         }
+
 
     }
 }

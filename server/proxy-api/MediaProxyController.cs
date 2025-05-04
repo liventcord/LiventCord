@@ -136,7 +136,8 @@ public class MediaProxyController : ControllerBase
     [HttpPost("/api/proxy/metadata")]
     public async Task<MetadataWithMedia> FetchMetadata([FromBody] string url)
     {
-        _logger.LogInformation($"Received metadata fetch request for URL: {url}");
+        var sanitizedUrl = url.Replace("\n", "").Replace("\r", "");
+        _logger.LogInformation($"Received metadata fetch request for URL: {sanitizedUrl}");
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -182,7 +183,8 @@ public class MediaProxyController : ControllerBase
                 FileName = GetFileName(response, url)
             };
 
-            _logger.LogInformation($"MediaUrl constructed: {mediaUrl.FileName}, {mediaUrl.Width}x{mediaUrl.Height}, {mediaUrl.FileSize} bytes");
+            var sanitizedFileName = mediaUrl.FileName.Replace("\n", "").Replace("\r", "");
+            _logger.LogInformation($"MediaUrl constructed: {sanitizedFileName}, {mediaUrl.Width}x{mediaUrl.Height}, {mediaUrl.FileSize} bytes");
         }
 
         _logger.LogInformation("Metadata fetch complete");
