@@ -1,3 +1,5 @@
+@import url("https://fonts.cdnfonts.com/css/gg-sans-2");
+
 #main-logo {
   transform-origin: center;
   width: 30px;
@@ -1344,7 +1346,6 @@ textarea::-webkit-scrollbar-track {
   max-width: 90%;
   margin-left: 63px;
   z-index: 1;
-  margin-top: 10px;
   user-select: text;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -1358,7 +1359,7 @@ textarea::-webkit-scrollbar-track {
   display: flex;
   top: -20px;
   left: 10px;
-  margin-top: -20px;
+  margin-top: -25px;
   max-width: 99%;
   color: #dcddde;
   word-wrap: break-word;

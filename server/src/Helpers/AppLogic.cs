@@ -73,7 +73,6 @@ namespace LiventCord.Helpers
             ILogger<AppLogicService> logger,
             AuthController authController,
             PermissionsController permissionsController,
-            IConfiguration configuration,
             ICacheService cacheService
         )
         {
@@ -87,7 +86,6 @@ namespace LiventCord.Helpers
             _cacheService = cacheService;
             _logger = logger;
 
-            SharedAppConfig.Initialize(configuration);
         }
 
 

@@ -97,5 +97,27 @@ namespace LiventCord.Helpers
             return string.Join("", userIds);
         }
 
+        static readonly Regex UrlPattern = new Regex(
+            @"https:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]+",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
+
+        static readonly Regex ControlCharPattern = new Regex(
+            @"[\x00-\x1F\x7F\u2000-\u20FF]",
+            RegexOptions.Compiled
+        );
+
+        public static List<string> ExtractUrls(string input)
+        {
+            return UrlPattern.Matches(input)
+                .Cast<Match>()
+                .Select(m => m.Value)
+                .Where(url => !ControlCharPattern.IsMatch(url))
+                .ToList();
+        }
+
+
+
+
     }
 }

@@ -41,10 +41,12 @@ builder.Services.AddScoped<PermissionsController>();
 builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
-builder.Services.AddScoped<MetadataService>();
+builder.Services.AddScoped<MediaProxyController>();
+builder.Services.AddScoped<MetadataController>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+SharedAppConfig.Initialize(builder.Configuration);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -228,6 +230,11 @@ app.Lifetime.ApplicationStarted.Register(async () =>
             {
                 await redisEventEmitter.EmitGuildMembersToRedis(guildId);
             }
+            MediaProxyController mediaProxyController = scope.ServiceProvider.GetRequiredService<MediaProxyController>();
+            await Task.Run(async () =>
+            {
+                await mediaProxyController.AddEmptyMediaUrlsBackgroundTask();
+            });
         }
         catch (DbUpdateException ex)
         {

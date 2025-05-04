@@ -1,10 +1,29 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using Serilog;
+using Serilog.Events;
 using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Host.UseSerilog();
+
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+    .Filter.ByExcluding(logEvent =>
+        logEvent.Properties.TryGetValue("SourceContext", out var sourceContext)
+        && (
+            sourceContext.ToString().Contains("Microsoft.AspNetCore")
+            || sourceContext
+                .ToString()
+                .Contains("Microsoft.EntityFrameworkCore.Database.Command")
+        )
+        && logEvent.Level < LogEventLevel.Warning
+    )
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
 builder.Host.UseSerilog();
 
 builder.Services.AddHttpClient();

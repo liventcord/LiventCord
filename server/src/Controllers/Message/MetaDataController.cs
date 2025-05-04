@@ -1,0 +1,146 @@
+using LiventCord.Controllers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
+using LiventCord.Helpers;
+using System.Text.Json;
+public class Metadata
+{
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public string? SiteName { get; set; }
+    public string? Image { get; set; }
+    public string? Url { get; set; }
+    public string? Type { get; set; }
+    public string? Keywords { get; set; }
+    public string? Author { get; set; }
+
+    public bool IsEmpty()
+    {
+        return string.IsNullOrWhiteSpace(Title) &&
+               string.IsNullOrWhiteSpace(Description) &&
+               string.IsNullOrWhiteSpace(SiteName) &&
+               string.IsNullOrWhiteSpace(Image) &&
+               string.IsNullOrWhiteSpace(Url) &&
+               string.IsNullOrWhiteSpace(Type) &&
+               string.IsNullOrWhiteSpace(Keywords) &&
+               string.IsNullOrWhiteSpace(Author);
+    }
+}
+
+
+public class UrlMetadata : Metadata
+{
+    public int Id { get; set; }
+    public required string Domain { get; set; }
+    public required string RoutePath { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class MetadataWithMedia
+{
+    public Metadata? metadata { get; set; }
+    public MediaUrl? mediaUrl { get; set; }
+
+}
+[Route("api/metadata")]
+[ApiController]
+public class MetadataController : ControllerBase
+{
+    private readonly int MetadataDomainLimit;
+    private readonly bool _isMetadataEnabled;
+    private readonly AppDbContext _dbContext;
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<MetadataController> _logger;
+    private readonly MediaProxyController _mediaProxycontroller;
+
+    public MetadataController(AppDbContext dbContext, IConfiguration configuration, HttpClient httpClient, MediaProxyController mediaProxyController, ILogger<MetadataController> logger)
+    {
+        _dbContext = dbContext;
+        _isMetadataEnabled = configuration.GetValue<bool>("AppSettings:EnableMetadataIndexing");
+        MetadataDomainLimit = configuration.GetValue<int>("AppSettings:MetadataDomainLimit", 100);
+        _httpClient = httpClient;
+        _logger = logger;
+        _mediaProxycontroller = mediaProxyController;
+    }
+    [NonAction]
+    public async Task<Metadata> FetchMetadataFromProxyAsync(List<string> urls, string messageId)
+    {
+        if (urls.Count == 0)
+            return new Metadata();
+        var response = await _httpClient.PostAsync(
+            SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata",
+            JsonContent.Create(urls[0]),
+            CancellationToken.None
+        );
+
+
+        _logger.LogInformation("Status Code: " + response.StatusCode);
+
+        var rawResponse = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata" +
+                " Request to proxy server failed: " + response.StatusCode + " " + rawResponse
+            );
+            return new Metadata();
+        }
+
+        var metadataWithUrls = JsonSerializer.Deserialize<MetadataWithMedia>(rawResponse);
+        if (metadataWithUrls == null)
+            return new Metadata();
+
+        var mediaUrl = metadataWithUrls.mediaUrl;
+        if (mediaUrl != null)
+        {
+            await _mediaProxycontroller.AddMediaUrl(mediaUrl, messageId);
+        }
+
+        return metadataWithUrls.metadata ?? new Metadata();
+    }
+
+
+
+    [HttpPost("")]
+    public async Task<IActionResult> SaveMetadataAsync([FromBody] UrlMetadata urlMetadata)
+    {
+        if (!_isMetadataEnabled)
+        {
+            return Forbid("Metadata indexing is disabled");
+        }
+
+        var existingMetadata = await _dbContext.UrlMetadata.FirstOrDefaultAsync(u =>
+            u.Domain == urlMetadata.Domain && u.RoutePath == urlMetadata.RoutePath
+        );
+
+        if (existingMetadata != null)
+        {
+            return Conflict();
+        }
+
+        var currentTime = DateTime.UtcNow;
+        var twentyFourHoursAgo = currentTime.AddHours(-24);
+
+        var urlCountForDomain = await _dbContext.UrlMetadata.CountAsync(u =>
+            u.Domain == urlMetadata.Domain && u.CreatedAt >= twentyFourHoursAgo
+        );
+
+        if (urlCountForDomain >= MetadataDomainLimit)
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests, "Rate limit exceeded for this domain.");
+        }
+
+        try
+        {
+            _dbContext.UrlMetadata.Add(urlMetadata);
+            await _dbContext.SaveChangesAsync();
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
+}

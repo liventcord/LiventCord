@@ -68,11 +68,13 @@ export interface MessageReply {
   replies: Message[];
 }
 export interface Attachment {
+  proxyUrl: string;
   fileId: string;
   fileName: string;
   fileSize: number;
   isImageFile: boolean;
   isSpoiler: boolean;
+  isProxyFile: boolean;
 }
 export interface AttachmentWithMetaData {
   attachment: Attachment;
@@ -260,8 +262,7 @@ function sendNewMessageRequest(formData: FormData, additionalData: any) {
     }
   });
 }
-
-export function sendEditMessageRequest(messageId: string, content: string) {
+function sendEditMessageRequest(messageId: string, content: string) {
   messageQueue = messageQueue.then(async () => {
     try {
       let additionalData: any = {

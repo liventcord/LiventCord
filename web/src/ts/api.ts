@@ -7,6 +7,7 @@ import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
 import { guildCache } from "./cache.ts";
 import { revertToLastConfirmedImage } from "./avatar.ts";
+import { initialState } from "./app.ts";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -346,6 +347,20 @@ class ApiClient {
   getBackendUrl(): string | null {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     return backendUrl;
+  }
+
+  getProxyHostname(): string | null {
+    if (initialState.mediaProxyApiUrl) {
+      return new URL(initialState.mediaProxyApiUrl).hostname;
+    }
+    return null;
+  }
+
+  getProxyUrl(url: string): string {
+    return (
+      initialState.mediaProxyApiUrl +
+      `/api/proxy/media?url=${encodeURIComponent(url)}`
+    );
   }
 
   getUrlForEvent(

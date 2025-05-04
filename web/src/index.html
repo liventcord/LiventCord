@@ -10,10 +10,9 @@
     <link rel="stylesheet" href="/css/mediastyle.css">
     <link rel="stylesheet" href="/css/popup.css">
     <link rel="stylesheet" href="/css/settings.css"> 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
-      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" 
-      crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'">
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"   crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
     <script type="module" src="/ts/main.ts"></script>
     <script type="module" src="/ts/utils.ts"></script>
     <script type="module" src="/ts/app.ts" ></script>
@@ -497,51 +496,7 @@ ref="userLine"
             <div id="settings-rightcontainer"></div>
         </div>
     </div>
-    <script>
-        const useCDN = true;
 
-        function loadFontStyles() {
-            const styles = `
-                @font-face {
-                    font-family: 'gg sans normal';
-                    font-style: normal;
-                    font-weight: 400;
-                    src: local('gg sans Normal'),
-                        url('${useCDN 
-                            ? 'https://fonts.cdnfonts.com/s/93931/gg sans Regular.woff' 
-                            : '/vendor/gg-sans-regular.woff'}') format('woff');
-                }
-                
-                @font-face {
-                    font-family: 'gg sans medium';
-                    font-style: normal;
-                    font-weight: 500;
-                    src: local('gg sans Medium'),
-                        url('${useCDN 
-                            ? 'https://fonts.cdnfonts.com/s/93931/gg sans Medium.woff' 
-                            : '/vendor/gg-sans-medium.woff'}') format('woff');
-                }
-                
-                @font-face {
-                    font-family: 'gg sans semibold';
-                    font-style: normal;
-                    font-weight: 600;
-                    src: local('gg sans SemiBold'),
-                        url('${useCDN 
-                            ? 'https://fonts.cdnfonts.com/s/93931/gg sans Semibold.woff' 
-                            : '/vendor/gg-sans-semibold.woff'}') format('woff');
-                }
-            `;
-            const styleSheet = document.createElement('style');
-            styleSheet.type = 'text/css';
-            styleSheet.innerText = styles;
-            document.head.appendChild(styleSheet);
-        }
-
-        loadFontStyles();
-
-
-    </script>
 
     <div id="login-panel" style = "display:none">
     <video id="video-background" autoplay muted loop></video>

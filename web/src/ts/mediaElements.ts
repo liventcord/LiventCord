@@ -24,6 +24,7 @@ import {
 import { Attachment } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import { apiClient } from "./api.ts";
+import { currentAttachments } from "./chat.ts";
 
 interface Embed {
   id: string;
@@ -150,6 +151,10 @@ export function getProxy(url: string): string {
   try {
     const parsedUrl = new URL(url);
 
+    if (parsedUrl.hostname === apiClient.getProxyHostname()) {
+      return url;
+    }
+
     if (parsedUrl.hostname === apiClient.getBackendHostname()) {
       return url;
     }
@@ -158,12 +163,7 @@ export function getProxy(url: string): string {
       return url;
     }
 
-    return (
-      initialState.mediaProxyApiUrl +
-      `/api/proxy/media?url=${encodeURIComponent(url)}`
-    );
-
-    //return `${initialState.proxyWorkerUrl}?url=${encodeURIComponent(url)}`;
+    return apiClient.getProxyUrl(url);
   } catch (e) {
     console.error("Invalid URL:", url, e);
     return url;
@@ -217,6 +217,7 @@ function createImageElement(
       spoileredImages[attachmentId] = true;
     }
   });
+
   imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
 
@@ -357,7 +358,13 @@ export async function createMediaElement(
       .join(",");
   }
 
-  const links: string[] = [...extractLinks(content)];
+  const attachmentUrl = attachments?.[0]?.proxyUrl || "";
+  const links: string[] = [
+    ...extractLinks(content).filter((link) => link != attachmentUrl),
+    attachmentUrl
+  ];
+
+  console.log(links);
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -468,6 +475,9 @@ function createFileAttachmentPreview(
 
   return container;
 }
+function doesMessageHasProxyiedLink(link: string) {
+  return currentAttachments.some((a) => a.attachment.proxyUrl === link);
+}
 
 function processMediaLink(
   link: string,
@@ -490,7 +500,7 @@ function processMediaLink(
       resolve(true);
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      if (!embeds || embeds.length <= 0) {
+      if (!embeds || (embeds.length <= 0 && !attachment?.isProxyFile)) {
         mediaElement = createImageElement(
           "",
           link,
@@ -525,6 +535,18 @@ function processMediaLink(
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
       handleLink(messageContentElement, content);
+      if (doesMessageHasProxyiedLink(link)) {
+        mediaElement = createImageElement(
+          "",
+          link,
+          senderId,
+          date,
+          attachment?.fileId,
+          attachment?.isSpoiler,
+          attachment?.fileSize,
+          attachment?.fileName
+        );
+      }
     } else {
       messageContentElement.textContent = content;
       resolve(false);
@@ -578,20 +600,24 @@ function attachMediaElement(
   }
   messageContentElement.appendChild(mediaElement);
 }
-
 export function handleLink(
   messageContentElement: HTMLElement,
   content: string
 ) {
-  const urlPattern = /https?:\/\/[^\s]+/g;
+  messageContentElement.innerHTML = "";
+  messageContentElement.dataset.contentLoaded = "true";
+
+  const urlPattern = /https?:\/\/[^\s<>"']+/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
+  const seenUrls = new Set();
 
-  const appendToMessage = (el: HTMLElement) => {
-    messageContentElement.insertBefore(el, messageContentElement.firstChild);
+  const appendToMessage = (el: HTMLElement | DocumentFragment) => {
+    messageContentElement.appendChild(el);
   };
 
   const insertTextOrHTML = (text: string) => {
+    if (!text.trim()) return;
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span");
     span.innerHTML = replaced;
@@ -599,19 +625,23 @@ export function handleLink(
   };
 
   while ((match = urlPattern.exec(content)) !== null) {
+    const url = match[0];
+
+    if (seenUrls.has(url)) continue;
+    seenUrls.add(url);
+
     const start = match.index;
-    const end = start + match[0].length;
+    const end = start + url.length;
 
     if (start > lastIndex) {
       const text = content.slice(lastIndex, start);
       insertTextOrHTML(text);
     }
 
-    const url = match[0];
-    const urlSpan = createEl("a", { textContent: url });
-    urlSpan.classList.add("url-link");
-    urlSpan.addEventListener("click", () => openExternalUrl(url));
-    appendToMessage(urlSpan);
+    const urlLink = createEl("a", { textContent: url });
+    urlLink.classList.add("url-link");
+    urlLink.addEventListener("click", () => openExternalUrl(url));
+    appendToMessage(urlLink);
 
     lastIndex = end;
   }

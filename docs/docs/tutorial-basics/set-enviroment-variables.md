@@ -158,3 +158,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
   - **ExternalMediaLimit**:
     Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
     **Defaults to** `10`
+
+  - **MainServerUrl**:
+    Url of main .net core server for sending attachments at.
+    **Defaults to** `http://localhost:5005`

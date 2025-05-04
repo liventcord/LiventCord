@@ -40,7 +40,7 @@ dotnet run
 ### Run Vite for Development (SPA)
 ```bash
 cd web
-ppm install
+pnpm install
 mv .env.example .env
 pnpm run dev
 ```

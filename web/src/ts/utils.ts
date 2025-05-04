@@ -426,10 +426,16 @@ export function debounce<T extends (...args: any[]) => void>(
   };
 }
 
-export function isURL(str: string) {
-  const urlPattern =
-    /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/;
-  return urlPattern.test(str);
+const urlPattern = /^https:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]+$/;
+const controlCharPattern = /[\x00-\x1F\x7F\u2000-\u20FF]/;
+
+export function isURL(input: string): boolean {
+  return (
+    typeof input === "string" &&
+    input.trim() !== "" &&
+    urlPattern.test(input) &&
+    !controlCharPattern.test(input)
+  );
 }
 
 export function getProfileUrl(userId: string, addTimestamp?: boolean) {
@@ -497,7 +503,7 @@ export function openExternalUrl(url: string) {
   window.open(url, "_blank");
 }
 
-export function sanitizeHTML(html: string) {
+function sanitizeHTML(html: string) {
   if (typeof html !== "string") return "";
   function isValidForColoring(content: string) {
     return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());

@@ -21,9 +21,11 @@
           >
             <img
               :src="
-                attachment.attachment.isImageFile
-                  ? `${apiClient.getBackendUrl()}/attachments/${attachment.attachment.fileId}`
-                  : 'https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp'
+                attachment.attachment.isProxyFile
+                  ? apiClient.getProxyUrl(attachment.attachment.proxyUrl)
+                  : attachment.attachment.isImageFile
+                    ? `${apiClient.getBackendUrl()}/attachments/${attachment.attachment.fileId}`
+                    : 'https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp'
               "
               alt="Image"
               :data-filesize="attachment.attachment.fileSize"

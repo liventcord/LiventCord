@@ -55,6 +55,8 @@ public class MediaCacheSettings
 {
     public string CacheDirectory { get; }
     public long StorageLimitBytes { get; }
+    public string MainServerUrl { get; }
+
 
     public MediaCacheSettings(IConfiguration configuration)
     {
@@ -65,6 +67,7 @@ public class MediaCacheSettings
         StorageLimitBytes = long.TryParse(configuration["AppSettings:ExternalMediaLimit"], out var limit)
             ? limit * 1024 * 1024 * 1024
             : 10L * 1024 * 1024 * 1024;
+        MainServerUrl = configuration["AppSettings:MainServerUrl"] ?? "http://localhost:5005";
     }
 
 }
