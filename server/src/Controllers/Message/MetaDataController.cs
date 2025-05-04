@@ -63,9 +63,8 @@ public class MetadataController : ControllerBase
         _mediaProxycontroller = mediaProxyController;
     }
     [NonAction]
-    public async Task<Metadata> FetchMetadataFromProxyAsync(string content)
+    public async Task<Metadata> FetchMetadataFromProxyAsync(List<string> urls, string messageId)
     {
-        List<string> urls = Utils.ExtractUrls(content);
         if (urls.Count == 0)
             return new Metadata();
         var response = await _httpClient.PostAsync(
@@ -95,7 +94,7 @@ public class MetadataController : ControllerBase
         var mediaUrl = metadataWithUrls.mediaUrl;
         if (mediaUrl != null)
         {
-            await _mediaProxycontroller.AddMediaUrl(mediaUrl);
+            await _mediaProxycontroller.AddMediaUrl(mediaUrl, messageId);
         }
 
         return metadataWithUrls.metadata ?? new Metadata();

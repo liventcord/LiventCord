@@ -572,11 +572,9 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task HandleMessageUrls(string messageId, string content)
+        private async Task<List<string>> HandleMessageUrls(string messageId, string content)
         {
             var urls = Utils.ExtractUrls(content);
-            string urlsJoined = string.Join(", ", urls);
-
             var existing = await _context.MessageUrls.FindAsync(messageId);
 
             if (existing == null)
@@ -601,6 +599,7 @@ namespace LiventCord.Controllers
                     await _context.SaveChangesAsync();
                 }
             }
+            return urls;
         }
 
         [NonAction]
@@ -660,12 +659,12 @@ namespace LiventCord.Controllers
 
             if (content != null)
             {
-                await HandleMessageUrls(messageId, content);
+                var urls = await HandleMessageUrls(messageId, content);
                 await Task.Run(async () =>
                 {
                     try
                     {
-                        var metadata = await ExtractMetadataIfUrl(content);
+                        var metadata = await ExtractMetadataIfUrl(urls, messageId);
                         await SaveMetadataAsync(messageId, metadata);
                     }
                     catch (Exception ex)
@@ -792,9 +791,9 @@ namespace LiventCord.Controllers
             return message != null;
         }
 
-        private async Task<Metadata> ExtractMetadataIfUrl(string content)
+        private async Task<Metadata> ExtractMetadataIfUrl(List<string> urls, string messageId)
         {
-            var fetchedMetadata = await _metadataService.FetchMetadataFromProxyAsync(content);
+            var fetchedMetadata = await _metadataService.FetchMetadataFromProxyAsync(urls, messageId);
             return fetchedMetadata;
         }
 
@@ -843,18 +842,25 @@ namespace LiventCord.Controllers
                 _context.Messages.Remove(message);
 
                 var existing = await _context.MessageUrls.FindAsync(messageId);
-                if (existing != null)
+                if (existing != null && existing.Urls != null && existing.Urls.Any())
                 {
-                    var mediaUrls = await _context.MessageUrls
-                        .Where(mu => mu.Urls != null && mu.Urls.Any(url => existing.Urls != null && existing.Urls.Contains(url)))
-                        .ToListAsync();
-
-                    if (mediaUrls.Count == 1)
+                    foreach (var url in existing.Urls)
                     {
+                        var isUrlUsedElsewhere = await _context.MessageUrls
+                            .Where(mu => mu.MessageId != messageId && mu.Urls != null && mu.Urls.Contains(url))
+                            .AnyAsync();
 
-                        _logger.LogInformation("There is no other message having any of url, deleting it from messageUrls " + existing.Urls);
-                        _context.MessageUrls.Remove(existing);
+                        if (!isUrlUsedElsewhere)
+                        {
+                            var mediaUrl = await _context.MediaUrls.FirstOrDefaultAsync(mu => mu.Url == url);
+                            if (mediaUrl != null)
+                            {
+                                _context.MediaUrls.Remove(mediaUrl);
+                            }
+                        }
                     }
+
+                    _context.MessageUrls.Remove(existing);
                 }
 
                 await _context.SaveChangesAsync();

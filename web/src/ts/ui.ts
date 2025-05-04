@@ -699,7 +699,7 @@ export function displayImagePreview(
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
-  previewImage.src = getProxy(sourceImage);
+  previewImage.src = getProxy(sanitizedSourceImage);
   updateCurrentIndex(sourceImage, isFromMediaPanel);
   handleImageSpoiler(previewImage, isSpoiler);
 

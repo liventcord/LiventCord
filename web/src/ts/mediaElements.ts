@@ -358,9 +358,10 @@ export async function createMediaElement(
       .join(",");
   }
 
+  const attachmentUrl = attachments?.[0]?.proxyUrl || "";
   const links: string[] = [
-    ...extractLinks(content),
-    ...(attachments?.[0]?.proxyUrl ? [attachments[0].proxyUrl] : [])
+    ...extractLinks(content).filter((link) => link != attachmentUrl),
+    attachmentUrl
   ];
 
   console.log(links);
@@ -535,18 +536,16 @@ function processMediaLink(
     } else if (isURL(link)) {
       handleLink(messageContentElement, content);
       if (doesMessageHasProxyiedLink(link)) {
-        if (!attachment?.isProxyFile) {
-          mediaElement = createImageElement(
-            "",
-            link,
-            senderId,
-            date,
-            attachment?.fileId,
-            attachment?.isSpoiler,
-            attachment?.fileSize,
-            attachment?.fileName
-          );
-        }
+        mediaElement = createImageElement(
+          "",
+          link,
+          senderId,
+          date,
+          attachment?.fileId,
+          attachment?.isSpoiler,
+          attachment?.fileSize,
+          attachment?.fileName
+        );
       }
     } else {
       messageContentElement.textContent = content;
@@ -601,23 +600,24 @@ function attachMediaElement(
   }
   messageContentElement.appendChild(mediaElement);
 }
-
 export function handleLink(
   messageContentElement: HTMLElement,
   content: string
 ) {
-  const urlPattern = /https?:\/\/[^\s]+/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  const seenUrls = new Set();
-
-  const appendToMessage = (el: HTMLElement) => {
-    messageContentElement.insertBefore(el, messageContentElement.firstChild);
-  };
+  messageContentElement.innerHTML = "";
   messageContentElement.dataset.contentLoaded = "true";
 
+  const urlPattern = /https?:\/\/[^\s<>"']+/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const seenUrls = new Set();
+
+  const appendToMessage = (el: HTMLElement | DocumentFragment) => {
+    messageContentElement.appendChild(el);
+  };
+
   const insertTextOrHTML = (text: string) => {
+    if (!text.trim()) return;
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span");
     span.innerHTML = replaced;
@@ -625,25 +625,23 @@ export function handleLink(
   };
 
   while ((match = urlPattern.exec(content)) !== null) {
-    const url = match[0].trim();
-    if (seenUrls.has(url)) {
-      continue;
-    }
+    const url = match[0];
 
+    if (seenUrls.has(url)) continue;
     seenUrls.add(url);
 
     const start = match.index;
-    const end = start + match[0].length;
+    const end = start + url.length;
 
     if (start > lastIndex) {
       const text = content.slice(lastIndex, start);
       insertTextOrHTML(text);
     }
 
-    const urlSpan = createEl("a", { textContent: url });
-    urlSpan.classList.add("url-link");
-    urlSpan.addEventListener("click", () => openExternalUrl(url));
-    appendToMessage(urlSpan);
+    const urlLink = createEl("a", { textContent: url });
+    urlLink.classList.add("url-link");
+    urlLink.addEventListener("click", () => openExternalUrl(url));
+    appendToMessage(urlLink);
 
     lastIndex = end;
   }

@@ -391,8 +391,8 @@ export function observe(element: HTMLElement) {
 function loadObservedContent(targetElement: HTMLElement) {
   const jsonData = targetElement.dataset.content_observe;
   if (jsonData && targetElement.dataset.contentLoaded !== "true") {
-    handleLink(targetElement, jsonData);
     targetElement.dataset.contentLoaded = "true";
+    handleLink(targetElement, jsonData);
   }
 }
 export interface NewMessageResponse {
