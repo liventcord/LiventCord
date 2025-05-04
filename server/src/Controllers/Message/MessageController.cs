@@ -13,7 +13,7 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
-        private readonly MetadataService _metadataService;
+        private readonly MetadataController _metadataService;
         private readonly ITokenValidationService _tokenValidationService;
 
         private readonly FileController _imageController;
@@ -25,7 +25,7 @@ namespace LiventCord.Controllers
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
-            MetadataService metadataService, ITokenValidationService tokenValidationService, FileController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger, ChannelController channelController, FriendDmService friendDmService
+            MetadataController metadataService, ITokenValidationService tokenValidationService, FileController imageController, RedisEventEmitter redisEventEmitter, ILogger<MessageController> logger, ChannelController channelController, FriendDmService friendDmService
         )
         {
             _tokenValidationService = tokenValidationService;
@@ -525,19 +525,11 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task<IActionResult> NewMessage(
-             string messageId,
-             string? temporaryId,
-             string userId,
-             string channelId,
-             string? guildId,
-             string? content,
-             DateTime date,
-             DateTime? lastEdited,
-             List<Attachment>? attachments,
-             string? replyToId,
-             string? reactionEmojisIds,
-             List<Embed>? embeds)
+        private async Task<IActionResult?> ValidateNewMessage(
+            string userId,
+            string channelId,
+            string? guildId,
+            string? replyToId)
         {
             var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
             if (!userExists)
@@ -576,8 +568,60 @@ namespace LiventCord.Controllers
             if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
                 return BadRequest();
 
-            var metadata = await ExtractMetadataIfUrl(content).ConfigureAwait(false);
-            await SaveMetadataAsync(messageId, metadata);
+            return null;
+        }
+
+        [NonAction]
+        private async Task HandleMessageUrls(string messageId, string content)
+        {
+            var urls = Utils.ExtractUrls(content);
+            string urlsJoined = string.Join(", ", urls);
+
+            var existing = await _context.MessageUrls.FindAsync(messageId);
+
+            if (existing == null)
+            {
+                try
+                {
+                    await _context.MessageUrls.AddAsync(new MessageUrl { MessageId = messageId, Urls = urls });
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex.Message);
+                }
+            }
+            else if (existing.Urls != null)
+            {
+                var newUrls = urls.Except(existing.Urls).ToList();
+                if (newUrls.Any())
+                {
+                    existing.Urls.AddRange(newUrls);
+                    _context.MessageUrls.Update(existing);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        [NonAction]
+        private async Task<IActionResult> NewMessage(
+            string messageId,
+            string? temporaryId,
+            string userId,
+            string channelId,
+            string? guildId,
+            string? content,
+            DateTime date,
+            DateTime? lastEdited,
+            List<Attachment>? attachments,
+            string? replyToId,
+            string? reactionEmojisIds,
+            List<Embed>? embeds)
+        {
+            var validationResult = await ValidateNewMessage(userId, channelId, guildId, replyToId);
+            if (validationResult != null)
+                return validationResult;
+
 
 
             var message = new Message
@@ -594,19 +638,10 @@ namespace LiventCord.Controllers
                 Metadata = new Metadata(),
                 Attachments = attachments
             };
-            if (content != null)
-            {
-                List<string> urls = Utils.ExtractUrls(content);
-                string urlsJoined = string.Join(", ", urls);
-                _logger.LogInformation("Extracted urls: " + urlsJoined + " (Count: " + urls.Count + ")");
-                _context.MessageUrls.Add(new MessageUrl { MessageId = messageId, Urls = urls });
-            }
-
 
 
             if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
                 message.TemporaryId = temporaryId;
-
 
             await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
@@ -623,8 +658,29 @@ namespace LiventCord.Controllers
                 await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
             }
 
+            if (content != null)
+            {
+                await HandleMessageUrls(messageId, content);
+                await Task.Run(async () =>
+                {
+                    try
+                    {
+                        var metadata = await ExtractMetadataIfUrl(content);
+                        await SaveMetadataAsync(messageId, metadata);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to extract or save metadata for message: " + messageId);
+                    }
+                });
+
+
+            }
+
+
             return Ok(message);
         }
+
 
 
         private async Task SaveMetadataAsync(string messageId, Metadata metadata)
@@ -736,19 +792,10 @@ namespace LiventCord.Controllers
             return message != null;
         }
 
-        private async Task<Metadata> ExtractMetadataIfUrl(string? content)
+        private async Task<Metadata> ExtractMetadataIfUrl(string content)
         {
-            if (!Uri.IsWellFormedUriString(content, UriKind.Absolute))
-                return new Metadata();
-
-
-            var fetchedMetadata = await _metadataService.ExtractMetadataAsync(content);
-            return new Metadata
-            {
-                Title = fetchedMetadata.Title,
-                Description = fetchedMetadata.Description,
-                SiteName = fetchedMetadata.SiteName
-            };
+            var fetchedMetadata = await _metadataService.FetchMetadataFromProxyAsync(content);
+            return fetchedMetadata;
         }
 
         [NonAction]
@@ -778,7 +825,6 @@ namespace LiventCord.Controllers
                 }
             }
         }
-
         private async Task DeleteMessage(string channelId, string messageId)
         {
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
@@ -795,6 +841,22 @@ namespace LiventCord.Controllers
                 await _imageController.DeleteAttachmentFile(message);
                 _context.Messages.Attach(message);
                 _context.Messages.Remove(message);
+
+                var existing = await _context.MessageUrls.FindAsync(messageId);
+                if (existing != null)
+                {
+                    var mediaUrls = await _context.MessageUrls
+                        .Where(mu => mu.Urls != null && mu.Urls.Any(url => existing.Urls != null && existing.Urls.Contains(url)))
+                        .ToListAsync();
+
+                    if (mediaUrls.Count == 1)
+                    {
+
+                        _logger.LogInformation("There is no other message having any of url, deleting it from messageUrls " + existing.Urls);
+                        _context.MessageUrls.Remove(existing);
+                    }
+                }
+
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
             }
@@ -803,6 +865,8 @@ namespace LiventCord.Controllers
                 _logger.LogError(ex, "Error deleting message. " + ex.Message);
             }
         }
+
+
         [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/attachments")]
         public async Task<IActionResult> GetAttachments(

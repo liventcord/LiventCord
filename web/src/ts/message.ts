@@ -68,6 +68,7 @@ export interface MessageReply {
   replies: Message[];
 }
 export interface Attachment {
+  proxyUrl: string;
   fileId: string;
   fileName: string;
   fileSize: number;

@@ -24,6 +24,7 @@ import {
 import { Attachment } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import { apiClient } from "./api.ts";
+import { currentAttachments } from "./chat.ts";
 
 interface Embed {
   id: string;
@@ -357,7 +358,12 @@ export async function createMediaElement(
       .join(",");
   }
 
-  const links: string[] = [...extractLinks(content)];
+  const links: string[] = [
+    ...extractLinks(content),
+    ...(attachments?.[0]?.proxyUrl ? [attachments[0].proxyUrl] : [])
+  ];
+
+  console.log(links);
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -468,6 +474,9 @@ function createFileAttachmentPreview(
 
   return container;
 }
+function doesMessageHasProxyiedLink(link: string) {
+  return currentAttachments.some((a) => a.attachment.proxyUrl === link);
+}
 
 function processMediaLink(
   link: string,
@@ -525,6 +534,20 @@ function processMediaLink(
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
       handleLink(messageContentElement, content);
+      if (doesMessageHasProxyiedLink(link)) {
+        if (!attachment?.isProxyFile) {
+          mediaElement = createImageElement(
+            "",
+            link,
+            senderId,
+            date,
+            attachment?.fileId,
+            attachment?.isSpoiler,
+            attachment?.fileSize,
+            attachment?.fileName
+          );
+        }
+      }
     } else {
       messageContentElement.textContent = content;
       resolve(false);
@@ -587,9 +610,12 @@ export function handleLink(
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
+  const seenUrls = new Set();
+
   const appendToMessage = (el: HTMLElement) => {
     messageContentElement.insertBefore(el, messageContentElement.firstChild);
   };
+  messageContentElement.dataset.contentLoaded = "true";
 
   const insertTextOrHTML = (text: string) => {
     const replaced = replaceCustomEmojisForChatContainer(text);
@@ -599,6 +625,13 @@ export function handleLink(
   };
 
   while ((match = urlPattern.exec(content)) !== null) {
+    const url = match[0].trim();
+    if (seenUrls.has(url)) {
+      continue;
+    }
+
+    seenUrls.add(url);
+
     const start = match.index;
     const end = start + match[0].length;
 
@@ -607,7 +640,6 @@ export function handleLink(
       insertTextOrHTML(text);
     }
 
-    const url = match[0];
     const urlSpan = createEl("a", { textContent: url });
     urlSpan.classList.add("url-link");
     urlSpan.addEventListener("click", () => openExternalUrl(url));

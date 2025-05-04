@@ -350,8 +350,12 @@ class ApiClient {
   }
 
   getProxyHostname(): string | null {
-    return new URL(initialState.mediaProxyApiUrl).hostname;
+    if (initialState.mediaProxyApiUrl) {
+      return new URL(initialState.mediaProxyApiUrl).hostname;
+    }
+    return null;
   }
+
   getProxyUrl(url: string): string {
     return (
       initialState.mediaProxyApiUrl +

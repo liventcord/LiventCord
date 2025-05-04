@@ -42,10 +42,11 @@ builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<MediaProxyController>();
-builder.Services.AddScoped<MetadataService>();
+builder.Services.AddScoped<MetadataController>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+SharedAppConfig.Initialize(builder.Configuration);
 
 builder.Services.AddAuthentication(options =>
 {
