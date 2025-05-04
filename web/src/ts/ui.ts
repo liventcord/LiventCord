@@ -648,7 +648,9 @@ let isDragging = false;
 let startX = 0;
 let startY = 0;
 
-function toggleZoom(previewImage: HTMLImageElement) {
+function toggleZoom() {
+  const previewImage = getId("preview-image");
+  if (!previewImage) return;
   isPreviewZoomed = !isPreviewZoomed;
   if (isPreviewZoomed) {
     previewImage.classList.add("zoomed");
@@ -771,7 +773,7 @@ function handlePreviewClick(
     setImageUnspoilered(imageId);
     isSpoiler = false;
   } else {
-    toggleZoom(previewImage);
+    toggleZoom();
   }
 }
 
@@ -779,7 +781,7 @@ function setupZoomButton(previewImage: HTMLImageElement): void {
   const previewZoomButton = getId("preview-image-zoom") as HTMLButtonElement;
   if (previewZoomButton) {
     previewZoomButton.addEventListener("click", () => {
-      toggleZoom(previewImage);
+      toggleZoom();
     });
   }
 }
@@ -985,6 +987,10 @@ export function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
+
+  if (isPreviewZoomed) {
+    toggleZoom();
+  }
   setTimeout(() => {
     disableElement(imagePreviewContainer);
 

@@ -28,24 +28,26 @@ public class MediaProxyController : ControllerBase
     {
         if (mediaUrl == null)
             return BadRequest("Invalid URL data.");
-
+        var sanitizedUrl = mediaUrl.Url?.Replace("\n", "").Replace("\r", "");
+        var sanitizedFileName = mediaUrl.FileName?.Replace("\n", "").Replace("\r", "");
+        var sanitizedFileSize = mediaUrl.FileSize.ToString().Replace("\n", "").Replace("\r", "");
         _logger.LogInformation("Received Media URL From Proxy Server: {Url}, FileName: {FileName}, FileSize: {FileSize}, IsImage: {IsImage}",
-            mediaUrl.Url, mediaUrl.FileName, mediaUrl.FileSize, mediaUrl.IsImage);
+            sanitizedUrl, sanitizedFileName, sanitizedFileSize, mediaUrl.IsImage);
 
         var existing = await _context.MediaUrls.FirstOrDefaultAsync(m => m.Url == mediaUrl.Url);
 
-        if (existing == null)
+        if (existing == null && mediaUrl.Url != null)
         {
             await _context.MediaUrls.AddAsync(mediaUrl);
-            _logger.LogInformation("Url " + mediaUrl.Url + " is added to db");
+            _logger.LogInformation("Url " + mediaUrl.Url.Replace("\n", "").Replace("\r", "") + " is added to db");
         }
-        else
+        else if (mediaUrl.Url != null)
         {
-            _logger.LogInformation("Url " + mediaUrl.Url + " already exists in db");
+            _logger.LogInformation("Url " + mediaUrl.Url.Replace("\n", "").Replace("\r", "") + " already exists in db");
         }
 
         var attachments = new List<Attachment>();
-        List<Message> messages;
+        List<Message> messages = new();
 
         if (!string.IsNullOrEmpty(messageId))
         {
@@ -58,7 +60,7 @@ public class MediaProxyController : ControllerBase
             else
                 messages = new List<Message>();
         }
-        else
+        else if (mediaUrl.Url != null)
         {
             var messageIds = await _context.MessageUrls
                 .Where(mu => mu.Urls != null && mu.Urls.Contains(mediaUrl.Url))
@@ -74,11 +76,11 @@ public class MediaProxyController : ControllerBase
                 .ToListAsync();
         }
 
-        if (messages.Count == 0)
+        if (messages.Count == 0 && mediaUrl.Url != null)
         {
-            _logger.LogWarning("No matching message found for URL {Url}. Attachment not created.", mediaUrl.Url);
+            _logger.LogWarning("No matching message found for URL {Url}. Attachment not created.", mediaUrl.Url.Replace("\n", "").Replace("\r", ""));
         }
-        else
+        else if (mediaUrl.Url != null)
         {
             foreach (var msg in messages)
             {
@@ -87,7 +89,7 @@ public class MediaProxyController : ControllerBase
                     FileId = Utils.CreateRandomId(),
                     IsImageFile = mediaUrl.IsImage,
                     MessageId = msg.MessageId,
-                    FileName = mediaUrl.FileName,
+                    FileName = mediaUrl.FileName ?? mediaUrl.Url,
                     FileSize = mediaUrl.FileSize,
                     IsSpoiler = false,
                     IsProxyFile = true,
@@ -112,7 +114,7 @@ public class MediaProxyController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
-
+    [NonAction]
     public async Task AddEmptyMediaUrlsBackgroundTask()
     {
         _logger.LogInformation("Starting background task to add empty media URLs.");
