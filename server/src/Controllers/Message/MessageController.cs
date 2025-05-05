@@ -323,12 +323,12 @@ namespace LiventCord.Controllers
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to extract or save metadata for message: " + request.MessageId);
+                        var sanitizedMessageId = Utils.SanitizeLogInput(request.MessageId);
+                        _logger.LogError(ex, "Failed to extract or save metadata for message: {MessageId}", sanitizedMessageId);
                     }
                 });
-
-
             }
+
             return new Message
             {
                 MessageId = request.MessageId,
@@ -347,8 +347,6 @@ namespace LiventCord.Controllers
                 }).ToList() ?? new List<Embed>()
             };
         }
-
-
 
 
 

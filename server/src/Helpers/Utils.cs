@@ -85,6 +85,11 @@ namespace LiventCord.Helpers
             return new string(fileName.Where(c => c >= 32 && c <= 126).ToArray());
         }
 
+        public static string? SanitizeLogInput(string input)
+        {
+            return input?.Replace(Environment.NewLine, " ").Replace("\r", " ").Replace("\n", " ");
+        }
+
         public static bool IsPostgres(AppDbContext _context)
         {
             return _context.Database.ProviderName?.Contains("Npgsql") == true;
