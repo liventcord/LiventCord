@@ -212,7 +212,7 @@ namespace LiventCord.Controllers
                 else
                 {
 
-                    var newMessage = CreateNewMessage(request, channelId);
+                    var newMessage = await CreateNewMessage(request, channelId);
                     messagesToAddOrUpdate.Add(newMessage);
                 }
             }
@@ -250,7 +250,7 @@ namespace LiventCord.Controllers
                 }
             }
 
-            var newMessage = CreateNewMessage(request, channelId);
+            var newMessage = await CreateNewMessage(request, channelId);
             _context.Messages.Add(newMessage);
             await _context.SaveChangesAsync();
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
@@ -309,8 +309,26 @@ namespace LiventCord.Controllers
             }
         }
 
-        private Message CreateNewMessage(NewBotMessageRequest request, string channelId)
+        private async Task<Message> CreateNewMessage(NewBotMessageRequest request, string channelId)
         {
+            if (request.Content != null)
+            {
+                await Task.Run(async () =>
+                {
+                    var urls = await HandleMessageUrls(request.MessageId, request.Content);
+                    try
+                    {
+                        var metadata = await ExtractMetadataIfUrl(urls, request.MessageId);
+                        await SaveMetadataAsync(request.MessageId, metadata);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to extract or save metadata for message: " + request.MessageId);
+                    }
+                });
+
+
+            }
             return new Message
             {
                 MessageId = request.MessageId,

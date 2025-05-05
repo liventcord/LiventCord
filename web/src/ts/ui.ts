@@ -79,6 +79,7 @@ export const hoveredChanColor = "rgb(53, 55, 60";
 const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
+let isAddedEventListeners = false;
 
 const imagePreviewContainer = getId(
   "image-preview-container"
@@ -649,6 +650,7 @@ let startX = 0;
 let startY = 0;
 
 function toggleZoom() {
+  console.error(isPreviewZoomed);
   const previewImage = getId("preview-image");
   if (!previewImage) return;
   isPreviewZoomed = !isPreviewZoomed;
@@ -706,7 +708,8 @@ export function displayImagePreview(
   handleImageSpoiler(previewImage, isSpoiler);
 
   setupPreviewMetadata(imageElement, sourceImage, senderId, date);
-
+  if (isAddedEventListeners) return;
+  isAddedEventListeners = true;
   addEventListeners(
     previewImage,
     imageElement,
@@ -758,7 +761,7 @@ function addEventListeners(
 
   handlePreviewOpenButton(sanitizedSourceImage);
 
-  setupZoomButton(previewImage);
+  setupZoomButton();
   setupReplyButton(previewImage, imageElement, senderId);
   setupImagePreviewDrag(previewImage);
 }
@@ -777,7 +780,7 @@ function handlePreviewClick(
   }
 }
 
-function setupZoomButton(previewImage: HTMLImageElement): void {
+function setupZoomButton(): void {
   const previewZoomButton = getId("preview-image-zoom") as HTMLButtonElement;
   if (previewZoomButton) {
     previewZoomButton.addEventListener("click", () => {

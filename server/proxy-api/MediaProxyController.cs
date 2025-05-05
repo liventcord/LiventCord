@@ -134,62 +134,71 @@ public class MediaProxyController : ControllerBase
     }
 
     [HttpPost("/api/proxy/metadata")]
-    public async Task<MetadataWithMedia> FetchMetadata([FromBody] string url)
+    public async Task<List<MetadataWithMedia>> FetchMetadata([FromBody] List<string> urls)
     {
-        var sanitizedUrl = url.Replace("\n", "").Replace("\r", "");
-        _logger.LogInformation($"Received metadata fetch request for URL: {sanitizedUrl}");
+        var metadataWithMediaList = new List<MetadataWithMedia>();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-        _logger.LogInformation($"Response status code: {response.StatusCode}");
-
-        if (!response.IsSuccessStatusCode)
+        foreach (var url in urls)
         {
-            var errorBody = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning($"Request to fetch HTML failed: {response.StatusCode}, Response body: {errorBody}");
-            return new MetadataWithMedia(null, new Metadata());
-        }
+            var sanitizedUrl = url.Replace("\n", "").Replace("\r", "");
+            _logger.LogInformation($"Received metadata fetch request for URL: {sanitizedUrl}");
 
-        var contentType = response.Content.Headers.ContentType?.MediaType;
-        _logger.LogInformation($"Content-Type: {contentType}");
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-        Metadata? metadata = null;
-        MediaUrl? mediaUrl = null;
-        bool isMediaContent = IsValidMediaContentType(response);
+            _logger.LogInformation($"Response status code: {response.StatusCode}");
 
-        if (contentType != null && contentType.Contains("text/html", StringComparison.OrdinalIgnoreCase))
-        {
-            var content = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation($"HTML content fetched, length: {content.Length}");
-            metadata = ExtractMetadataFromHtml(url, content);
-        }
-
-        if (isMediaContent)
-        {
-            string filePath = GetCacheFilePath(url);
-            _logger.LogInformation($"Saving media content to file: {filePath}");
-
-            await SaveResponseToFile(response, filePath);
-
-            mediaUrl = new MediaUrl
+            if (!response.IsSuccessStatusCode)
             {
-                Url = url,
-                IsImage = IsImageContentType(response),
-                IsVideo = IsVideoContentType(response),
-                FileSize = response.Content.Headers.ContentLength ?? 0,
-                Width = GetImageDimension(filePath, true),
-                Height = GetImageDimension(filePath, false),
-                FileName = GetFileName(response, url)
-            };
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning($"Request to fetch HTML failed: {response.StatusCode}, Response body: {errorBody}");
+                metadataWithMediaList.Add(new MetadataWithMedia(null, new Metadata()));
+                continue;
+            }
 
-            var sanitizedFileName = mediaUrl.FileName.Replace("\n", "").Replace("\r", "");
-            _logger.LogInformation($"MediaUrl constructed: {sanitizedFileName}, {mediaUrl.Width}x{mediaUrl.Height}, {mediaUrl.FileSize} bytes");
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            _logger.LogInformation($"Content-Type: {contentType}");
+
+            Metadata? metadata = null;
+            MediaUrl? mediaUrl = null;
+            bool isMediaContent = IsValidMediaContentType(response);
+
+            if (contentType != null && contentType.Contains("text/html", StringComparison.OrdinalIgnoreCase))
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation($"HTML content fetched, length: {content.Length}");
+                metadata = ExtractMetadataFromHtml(url, content);
+            }
+
+            if (isMediaContent)
+            {
+                string filePath = GetCacheFilePath(url);
+                _logger.LogInformation($"Saving media content to file: {filePath}");
+
+                await SaveResponseToFile(response, filePath);
+
+                mediaUrl = new MediaUrl
+                {
+                    Url = url,
+                    IsImage = IsImageContentType(response),
+                    IsVideo = IsVideoContentType(response),
+                    FileSize = response.Content.Headers.ContentLength ?? 0,
+                    Width = GetImageDimension(filePath, true),
+                    Height = GetImageDimension(filePath, false),
+                    FileName = GetFileName(response, url)
+                };
+
+                var sanitizedFileName = mediaUrl.FileName.Replace("\n", "").Replace("\r", "");
+                _logger.LogInformation($"MediaUrl constructed: {sanitizedFileName}, {mediaUrl.Width}x{mediaUrl.Height}, {mediaUrl.FileSize} bytes");
+            }
+
+            _logger.LogInformation("Metadata fetch complete");
+            metadataWithMediaList.Add(new MetadataWithMedia(mediaUrl, metadata));
         }
 
-        _logger.LogInformation("Metadata fetch complete");
-        return new MetadataWithMedia(mediaUrl, metadata);
+        return metadataWithMediaList;
     }
+
 
     #endregion
 

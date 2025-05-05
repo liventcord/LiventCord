@@ -16,7 +16,6 @@ import {
   IMAGE_SRCS,
   formatFileSize
 } from "./utils.ts";
-import { initialState } from "./app.ts";
 import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners

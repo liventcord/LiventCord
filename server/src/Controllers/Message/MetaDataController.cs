@@ -67,12 +67,12 @@ public class MetadataController : ControllerBase
     {
         if (urls.Count == 0)
             return new Metadata();
+
         var response = await _httpClient.PostAsync(
             SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata",
-            JsonContent.Create(urls[0]),
+            JsonContent.Create(urls),
             CancellationToken.None
         );
-
 
         _logger.LogInformation("Status Code: " + response.StatusCode);
 
@@ -87,17 +87,23 @@ public class MetadataController : ControllerBase
             return new Metadata();
         }
 
-        var metadataWithUrls = JsonSerializer.Deserialize<MetadataWithMedia>(rawResponse);
-        if (metadataWithUrls == null)
+        var metadataList = JsonSerializer.Deserialize<List<MetadataWithMedia>>(rawResponse);
+        if (metadataList == null)
             return new Metadata();
 
-        var mediaUrl = metadataWithUrls.mediaUrl;
-        if (mediaUrl != null)
+        var mediaUrls = new List<MediaUrl>();
+        foreach (var metadataWithUrls in metadataList)
         {
-            await _mediaProxycontroller.AddMediaUrl(mediaUrl, messageId);
+            var mediaUrl = metadataWithUrls.mediaUrl;
+            if (mediaUrl != null)
+            {
+                await _mediaProxycontroller.AddMediaUrl(mediaUrl, messageId);
+                mediaUrls.Add(mediaUrl);
+            }
         }
 
-        return metadataWithUrls.metadata ?? new Metadata();
+        var metadataResult = metadataList.Select(m => m.metadata).ToList();
+        return metadataResult[0] ?? new Metadata();
     }
 
 
