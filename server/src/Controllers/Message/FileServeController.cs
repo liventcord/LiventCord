@@ -49,7 +49,8 @@ namespace LiventCord.Controllers
 
         private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
         {
-            if (!cacheFilePath.StartsWith(CacheDirectory, StringComparison.OrdinalIgnoreCase))
+            var normalizedPath = Path.GetFullPath(cacheFilePath);
+            if (!normalizedPath.StartsWith(CacheDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest("Invalid file path.");
             }
@@ -141,6 +142,12 @@ namespace LiventCord.Controllers
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {
+            if (guildId.Contains("..") || guildId.Contains("/") || guildId.Contains("\\") ||
+                emojiId.Contains("..") || emojiId.Contains("/") || emojiId.Contains("\\"))
+            {
+                return BadRequest("Invalid guildId or emojiId.");
+            }
+
             var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
 
             return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
