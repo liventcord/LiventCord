@@ -49,6 +49,11 @@ namespace LiventCord.Controllers
 
         private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
         {
+            if (!cacheFilePath.StartsWith(CacheDirectory, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Invalid file path.");
+            }
+
             if (System.IO.File.Exists(cacheFilePath))
             {
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(cacheFilePath);
@@ -69,6 +74,12 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
         {
             guildId = RemoveFileExtension(guildId);
+
+            if (string.IsNullOrEmpty(guildId) || guildId.Contains("..") || guildId.Contains("/") || guildId.Contains("\\"))
+            {
+                return BadRequest("Invalid guildId.");
+            }
+
             var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}.file");
 
             return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
@@ -86,9 +97,10 @@ namespace LiventCord.Controllers
         {
             userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
-            if (userId.Length != 18)
+
+            if (userId.Length != 18 || userId.Contains("..") || userId.Contains("/") || userId.Contains("\\"))
             {
-                return BadRequest("Invalid userId length.");
+                return BadRequest("Invalid userId.");
             }
 
             var cacheFilePath = Path.Combine(CacheDirectory, $"{userId}.file");
@@ -106,6 +118,11 @@ namespace LiventCord.Controllers
         [HttpGet("attachments/{attachmentId}")]
         public async Task<IActionResult> GetAttachmentFile([FromRoute][IdLengthValidation] string attachmentId)
         {
+            if (attachmentId.Contains("..") || attachmentId.Contains("/") || attachmentId.Contains("\\"))
+            {
+                return BadRequest("Invalid attachmentId.");
+            }
+
             var cacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}.file");
 
             return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
@@ -119,6 +136,7 @@ namespace LiventCord.Controllers
                 return GetFileResult(file);
             });
         }
+
 
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
