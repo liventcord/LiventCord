@@ -22,83 +22,60 @@ function getChangedFiles() {
     }
 }
 
-function findCsprojDir(file) {
-    try {
-        let dir = resolve(dirname(file))
-        while (dir !== '/' && dir.length > rootDir.length) {
-            if (!existsSync(dir)) return null
-            const entries = readdirSync(dir)
-            if (entries.some(e => e.endsWith('.csproj'))) return dir
-            const parent = dirname(dir)
-            if (parent === dir) break
-            dir = parent
-        }
-        return null
-    } catch (error) {
-        console.warn(`Failed to find .csproj directory for ${file}:`, (error).message)
-        return null
-    }
-}
+async function runFormatGlobally() {
+    const proc = spawn('dotnet', ['format'], { cwd: rootDir, stdio: 'inherit' });
 
-function groupFilesByProject(files) {
-    const groups= {}
-    for (const file of files) {
-        const projDir = findCsprojDir(file)
-        if (projDir) {
-            if (!groups[projDir]) groups[projDir] = []
-            groups[projDir].push(file)
-        }
-    }
-    return groups
-}
-
-async function runFormatForProjects(projectGroups) {
-    const tasks = Object.entries(projectGroups).flatMap(([projDir, files]) => {
-        if (!existsSync(projDir)) return []
-
-        return files.map(file => {
-            return new Promise((resolve, reject) => {
-                const filePath = relative(projDir, file)
-                const args = ['format', '--include', filePath]
-                const proc = spawn('dotnet', args, { cwd: projDir, stdio: 'inherit' })
-
-                proc.on('exit', code => {
-                    if (code === 0) resolve()
-                    else reject(new Error(`dotnet format failed for ${filePath} in ${projDir}`))
-                })
-            })
+    return new Promise((resolve, reject) => {
+        proc.on('exit', code => {
+            if (code === 0) resolve()
+            else reject(new Error('dotnet format failed globally.'));
         })
-    })
+    });
+}
 
-    const results = await Promise.allSettled(tasks)
+async function runFormatForFiles(changedFiles) {
+    const tasks = changedFiles.map(file => {
+        return new Promise((resolve, reject) => {
+            const filePath = relative(rootDir, file);
+            const args = ['format', '--include', filePath];
+            const proc = spawn('dotnet', args, { cwd: rootDir, stdio: 'inherit' });
+
+            proc.on('exit', code => {
+                if (code === 0) resolve();
+                else reject(new Error(`dotnet format failed for ${filePath}`));
+            });
+        });
+    });
+
+    const results = await Promise.allSettled(tasks);
 
     results.forEach(result => {
-        if (result.status === 'rejected') console.error(result.reason)
-    })
+        if (result.status === 'rejected') console.error(result.reason);
+    });
 }
 
 async function main() {
     if (!existsSync(srcDir)) {
-        console.error(`Source directory does not exist: ${srcDir}`)
-        process.exit(1)
+        console.error(`Source directory does not exist: ${srcDir}`);
+        process.exit(1);
     }
 
-    const changedFiles = getChangedFiles()
+    const changedFiles = getChangedFiles();
     if (changedFiles.length === 0) {
-        console.log('No .cs changes detected under server/src')
-        return
+        console.log('No .cs changes detected under server/src');
+        return;
     }
 
-    const projectGroups = groupFilesByProject(changedFiles)
-    if (Object.keys(projectGroups).length === 0) {
-        console.log('No matching projects found for changed files.')
-        return
+    if (changedFiles.length > 5) {
+        console.log("Running csharp format globally...")
+        await runFormatGlobally();
+    } else {
+        console.log("Running csharp for " + changedFiles.length  + " files...")
+        await runFormatForFiles(changedFiles);
     }
-
-    await runFormatForProjects(projectGroups)
 }
 
 main().catch(err => {
-    console.error('Error:', err.message)
-    process.exit(1)
-})
+    console.error('Error:', err.message);
+    process.exit(1);
+});
