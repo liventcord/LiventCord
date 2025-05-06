@@ -29,7 +29,7 @@ class Router {
   public ID_LENGTH = 19;
 
   isPathnameCorrect(url: string) {
-    const regex = /\/channels\/\d{18,19}\/\d{18,19}/;
+    const regex = /\/channels\/(?:@me\/\d{18,19}|\d{18,19}\/\d{18,19})/;
     console.log(url, regex.test(url));
     return regex.test(url);
   }
