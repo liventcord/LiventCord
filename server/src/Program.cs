@@ -230,11 +230,6 @@ app.Lifetime.ApplicationStarted.Register(async () =>
             {
                 await redisEventEmitter.EmitGuildMembersToRedis(guildId);
             }
-            MediaProxyController mediaProxyController = scope.ServiceProvider.GetRequiredService<MediaProxyController>();
-            await Task.Run(async () =>
-            {
-                await mediaProxyController.AddEmptyMediaUrlsBackgroundTask();
-            });
         }
         catch (DbUpdateException ex)
         {

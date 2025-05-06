@@ -22,9 +22,10 @@ LiventCord.sln
 *.db
 *.pdb
 
-MediaCache
+proxy-api/MediaCache
 src/wwwroot/assets
 src/wwwroot/ts/
 src/wwwroot/vendor/
 src/wwwroot/images/
 src/wwwroot/index.html
+src/FileCache

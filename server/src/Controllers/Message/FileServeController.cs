@@ -13,6 +13,8 @@ namespace LiventCord.Controllers
         private readonly FileExtensionContentTypeProvider _fileTypeProvider;
         private readonly IWebHostEnvironment _env;
         private readonly PermissionsController _permissionsController;
+        private string cacheFilePath = "FileCache";
+        private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), cacheFilePath);
 
         public FileServeController(
             AppDbContext context,
@@ -25,18 +27,58 @@ namespace LiventCord.Controllers
             _fileTypeProvider = fileTypeProvider ?? new FileExtensionContentTypeProvider();
             _env = env;
             _permissionsController = permissionsController;
+
+            var fullCachePath = Path.Combine(Directory.GetCurrentDirectory(), cacheFilePath);
+            if (!Directory.Exists(fullCachePath))
+            {
+                Directory.CreateDirectory(fullCachePath);
+            }
+        }
+
+
+        private string RemoveFileExtension(string userId)
+        {
+            var extensionIndex = userId.LastIndexOf(".");
+            if (extensionIndex > 0)
+            {
+                userId = userId.Substring(0, extensionIndex);
+            }
+            return userId;
+        }
+
+
+        private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
+        {
+            if (System.IO.File.Exists(cacheFilePath))
+            {
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(cacheFilePath);
+                return File(fileBytes, "application/octet-stream");
+            }
+
+            var result = await fetchFile();
+
+            if (result is FileContentResult fileResult)
+            {
+                await System.IO.File.WriteAllBytesAsync(cacheFilePath, fileResult.FileContents);
+            }
+
+            return result;
         }
 
         [HttpGet("guilds/{guildId}")]
         public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
         {
             guildId = RemoveFileExtension(guildId);
+            var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}.file");
 
-            var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
-            if (file == null)
-                return NotFound();
+            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
+            {
+                var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
+                if (file == null)
+                    return NotFound();
 
-            return GetFileResult(file);
+                return GetFileResult(file);
+            });
         }
 
         [HttpGet("profiles/{userId}")]
@@ -49,45 +91,50 @@ namespace LiventCord.Controllers
                 return BadRequest("Invalid userId length.");
             }
 
-            var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
-            if (file == null)
-                return NotFound();
+            var cacheFilePath = Path.Combine(CacheDirectory, $"{userId}.file");
 
-            return GetFileResult(file);
+            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
+            {
+                var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
+                if (file == null)
+                    return NotFound();
+
+                return GetFileResult(file);
+            });
         }
 
         [HttpGet("attachments/{attachmentId}")]
         public async Task<IActionResult> GetAttachmentFile([FromRoute][IdLengthValidation] string attachmentId)
         {
-            var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
-            if (file == null)
-            {
-                return NotFound();
-            }
+            var cacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}.file");
 
-            return GetFileResult(file);
+            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
+            {
+                var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
+                if (file == null)
+                {
+                    return NotFound();
+                }
+
+                return GetFileResult(file);
+            });
         }
 
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {
-            var file = await _context.EmojiFiles.FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
-            if (file == null)
-            {
-                return NotFound(_context.EmojiFiles);
-            }
+            var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
 
-            return GetFileResult(file, true);
-        }
-
-        private string RemoveFileExtension(string userId)
-        {
-            var extensionIndex = userId.LastIndexOf(".");
-            if (extensionIndex > 0)
+            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
             {
-                userId = userId.Substring(0, extensionIndex);
-            }
-            return userId;
+                var file = await _context.EmojiFiles.FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
+                if (file == null)
+                {
+                    return NotFound(_context.EmojiFiles);
+                }
+
+                return GetFileResult(file, true);
+            });
         }
 
         private IActionResult GetFileResult(dynamic file, bool isExtensionManual = false)
@@ -97,34 +144,10 @@ namespace LiventCord.Controllers
 
             string contentType;
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            string[] archiveExtensions = [".tar.gz", ".tgz", ".gz", ".zip", ".rar", ".7z"];
 
             if (extension == ".gz")
             {
-                string originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
-                string originalExtension = Path.GetExtension(originalFileName).ToLowerInvariant();
-
-                if (!archiveExtensions.Contains($".{originalExtension.TrimStart('.')}") && originalExtension != ".tar")
-                {
-                    try
-                    {
-                        file.Content = FileDecompressor.DecompressGzip(file.Content);
-                        file.FileName = originalFileName;
-
-                        if (!_fileTypeProvider.TryGetContentType(originalFileName, out string? detectedType))
-                            contentType = "application/octet-stream";
-                        else
-                            contentType = detectedType!;
-                    }
-                    catch
-                    {
-                        return BadRequest(new { Error = "Failed to decompress file." });
-                    }
-                }
-                else
-                {
-                    contentType = "application/gzip";
-                }
+                contentType = "application/gzip";
             }
             else
             {
@@ -166,6 +189,7 @@ namespace LiventCord.Controllers
 
             return File(file.Content, contentType);
         }
+
 
 
     }
