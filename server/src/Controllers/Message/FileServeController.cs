@@ -13,8 +13,8 @@ namespace LiventCord.Controllers
         private readonly FileExtensionContentTypeProvider _fileTypeProvider;
         private readonly IWebHostEnvironment _env;
         private readonly PermissionsController _permissionsController;
-        private string cacheFilePath = "FileCache";
-        private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), cacheFilePath);
+        private readonly string _cacheFilePath = "FileCache";
+        private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
 
         public FileServeController(
             AppDbContext context,
@@ -28,13 +28,12 @@ namespace LiventCord.Controllers
             _env = env;
             _permissionsController = permissionsController;
 
-            var fullCachePath = Path.Combine(Directory.GetCurrentDirectory(), cacheFilePath);
+            var fullCachePath = Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
             if (!Directory.Exists(fullCachePath))
             {
                 Directory.CreateDirectory(fullCachePath);
             }
         }
-
 
         private string RemoveFileExtension(string userId)
         {
@@ -45,14 +44,13 @@ namespace LiventCord.Controllers
             }
             return userId;
         }
-
-
         private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
         {
             var fullCacheDirPath = Path.GetFullPath(CacheDirectory);
             var fullRequestedPath = Path.GetFullPath(cacheFilePath);
 
-            if (!fullRequestedPath.StartsWith(fullCacheDirPath, StringComparison.OrdinalIgnoreCase))
+            if (!Path.GetRelativePath(fullCacheDirPath, fullRequestedPath).StartsWith(".") &&
+                !fullRequestedPath.StartsWith(fullCacheDirPath, StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest("Invalid file path.");
             }
@@ -82,14 +80,12 @@ namespace LiventCord.Controllers
             return result;
         }
 
-
-
         [HttpGet("guilds/{guildId}")]
         public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
         {
             guildId = RemoveFileExtension(guildId);
 
-            if (string.IsNullOrEmpty(guildId) || guildId.Contains("..") || guildId.Contains("/") || guildId.Contains("\\"))
+            if (string.IsNullOrEmpty(guildId) || ContainsIllegalPathSegments(guildId))
             {
                 return BadRequest("Invalid guildId.");
             }
@@ -112,7 +108,7 @@ namespace LiventCord.Controllers
             userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
 
-            if (userId.Length != 18 || userId.Contains("..") || userId.Contains("/") || userId.Contains("\\"))
+            if (userId.Length != 18 || ContainsIllegalPathSegments(userId))
             {
                 return BadRequest("Invalid userId.");
             }
@@ -132,7 +128,7 @@ namespace LiventCord.Controllers
         [HttpGet("attachments/{attachmentId}")]
         public async Task<IActionResult> GetAttachmentFile([FromRoute][IdLengthValidation] string attachmentId)
         {
-            if (attachmentId.Contains("..") || attachmentId.Contains("/") || attachmentId.Contains("\\"))
+            if (ContainsIllegalPathSegments(attachmentId))
             {
                 return BadRequest("Invalid attachmentId.");
             }
@@ -151,10 +147,14 @@ namespace LiventCord.Controllers
             });
         }
 
-
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {
+            if (ContainsIllegalPathSegments(guildId) || ContainsIllegalPathSegments(emojiId))
+            {
+                return BadRequest("Invalid input.");
+            }
+
             var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
 
             return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
@@ -162,11 +162,20 @@ namespace LiventCord.Controllers
                 var file = await _context.EmojiFiles.FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
                 if (file == null)
                 {
-                    return NotFound(_context.EmojiFiles);
+                    return NotFound();
                 }
 
                 return GetFileResult(file, true);
             });
+        }
+
+        private bool ContainsIllegalPathSegments(string input)
+        {
+            if (!input.All(char.IsDigit))
+            {
+                return false;
+            }
+            return input.Contains("..") || input.Contains("/") || input.Contains("\\");
         }
 
         private IActionResult GetFileResult(dynamic file, bool isExtensionManual = false)
@@ -221,8 +230,5 @@ namespace LiventCord.Controllers
 
             return File(file.Content, contentType);
         }
-
-
-
     }
 }
