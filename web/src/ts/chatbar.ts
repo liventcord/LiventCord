@@ -275,6 +275,18 @@ let isAttachmentsAdded: boolean;
 let fileList: File[] = [];
 export const fileSpoilerMap: WeakMap<File, boolean> = new WeakMap();
 
+const compressedExtensions = [
+  ".zip",
+  ".rar",
+  ".7z",
+  ".tar",
+  ".tar.gz",
+  ".tgz",
+  ".tar.bz2",
+  ".tbz2",
+  ".tar.xz",
+  ".txz"
+];
 export class FileHandler {
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
@@ -342,12 +354,19 @@ export class FileHandler {
   }
 
   static async isImageFile(file: File): Promise<boolean> {
-    const arrayBuffer = await file.slice(0, 4100).arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
+    try {
+      if (await this.isCompressedFile(file.name)) return false;
 
-    const result = await fileTypeFromBuffer(buffer);
-    if (result && result.mime.startsWith("image/")) return true;
-    return false;
+      const readBuffer =
+        file.size < 4100
+          ? new Uint8Array(await file.arrayBuffer())
+          : new Uint8Array(await file.slice(0, 4100).arrayBuffer());
+
+      const result = await fileTypeFromBuffer(readBuffer);
+      return (result && result.mime.startsWith("image/")) || false;
+    } catch {
+      return false;
+    }
   }
 
   static async renderFilePreview(
@@ -366,6 +385,11 @@ export class FileHandler {
       img = createEl("i", {
         className: "fa-solid fa-file attachment-preview-file"
       }) as HTMLImageElement;
+      const isCompressed = await this.isCompressedFile(file.name);
+      if (isCompressed) {
+        img.classList.remove("fa-file");
+        img.classList.add("fa-file-zipper");
+      }
     }
 
     const imageText = createEl("div", {
@@ -436,6 +460,12 @@ export class FileHandler {
     const imgWrapper = img.parentElement;
     const spoilerText = imgWrapper?.querySelector(".spoiler-text");
     const file = (imgWrapper as any)?._file as File;
+
+    if (!file) {
+      console.error("File is undefined or null.");
+      return;
+    }
+
     const isSpoiler = fileSpoilerMap.get(file) ?? false;
 
     if (isSpoiler) {
@@ -444,13 +474,17 @@ export class FileHandler {
       fileSpoilerMap.set(file, false);
     } else {
       FileHandler.blurImage(img);
-
       fileSpoilerMap.set(file, true);
     }
   }
 
   static editImage(img: HTMLImageElement): void {
     alertUser("Image edit is not implemented!");
+  }
+
+  static isCompressedFile(fileName: string): boolean {
+    const lower = fileName.toLowerCase();
+    return compressedExtensions.some((ext) => lower.endsWith(ext));
   }
 
   static async removeImage(container: HTMLElement, file: File) {

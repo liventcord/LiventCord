@@ -445,8 +445,12 @@ function createFileAttachmentPreview(
   const file = createEl("i", {
     className: "fa-solid fa-file attachment-file"
   }) as HTMLImageElement;
-
   if (attachment) {
+    if (FileHandler.isCompressedFile(attachment.fileName)) {
+      file.classList.remove("fa-file");
+      file.classList.add("fa-file-zipper");
+    }
+
     const attachmentUrl = getAttachmentUrl(attachment.fileId);
 
     const textWrapper = createEl("div", { className: "attachment-text" });
@@ -603,9 +607,6 @@ export function handleLink(
   messageContentElement: HTMLElement,
   content: string
 ) {
-  messageContentElement.innerHTML = "";
-  messageContentElement.dataset.contentLoaded = "true";
-
   const urlPattern = /https?:\/\/[^\s<>"']+/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -622,6 +623,13 @@ export function handleLink(
     span.innerHTML = replaced;
     appendToMessage(span);
   };
+
+  const fragment = document.createDocumentFragment();
+
+  const existingTextNode = messageContentElement.firstChild;
+  if (existingTextNode && existingTextNode.nodeType === Node.TEXT_NODE) {
+    content = content.replace(existingTextNode.textContent || "", "");
+  }
 
   while ((match = urlPattern.exec(content)) !== null) {
     const url = match[0];
@@ -649,6 +657,9 @@ export function handleLink(
     const remainingText = content.slice(lastIndex);
     insertTextOrHTML(remainingText);
   }
+
+  messageContentElement.appendChild(fragment);
+  messageContentElement.dataset.contentLoaded = "true";
 
   setupEmojiListeners(messageContentElement);
 }
