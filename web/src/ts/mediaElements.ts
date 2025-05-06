@@ -14,7 +14,8 @@ import {
   createEl,
   getYouTubeEmbedURL,
   IMAGE_SRCS,
-  formatFileSize
+  formatFileSize,
+  renderFileIcon
 } from "./utils.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -446,11 +447,7 @@ function createFileAttachmentPreview(
     className: "fa-solid fa-file attachment-file"
   }) as HTMLImageElement;
   if (attachment) {
-    if (FileHandler.isCompressedFile(attachment.fileName)) {
-      file.classList.remove("fa-file");
-      file.classList.add("fa-file-zipper");
-    }
-
+    renderFileIcon(file, attachment.fileName);
     const attachmentUrl = getAttachmentUrl(attachment.fileId);
 
     const textWrapper = createEl("div", { className: "attachment-text" });

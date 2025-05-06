@@ -832,3 +832,124 @@ export function getFileNameFromUrl(url: string): string {
 
   return "";
 }
+
+const extensionToIcon: Record<string, string> = {
+  // Documents
+  pdf: "fa-file-pdf",
+  doc: "fa-file-word",
+  docx: "fa-file-word",
+  xls: "fa-file-excel",
+  xlsx: "fa-file-excel",
+  ppt: "fa-file-powerpoint",
+  pptx: "fa-file-powerpoint",
+  txt: "fa-file-lines",
+  rtf: "fa-file-lines",
+  md: "fa-pencil-alt",
+
+  // Spreadsheets / Data
+  csv: "fa-file-csv",
+  ods: "fa-file-excel",
+
+  // Audio
+  mp3: "fa-file-audio",
+  wav: "fa-file-audio",
+  ogg: "fa-file-audio",
+  flac: "fa-file-audio",
+  aac: "fa-file-audio",
+  m4a: "fa-file-audio",
+
+  // Video
+  mp4: "fa-file-video",
+  mov: "fa-file-video",
+  avi: "fa-file-video",
+  mkv: "fa-file-video",
+  webm: "fa-file-video",
+  flv: "fa-file-video",
+
+  // Archives
+  zip: "fa-file-zipper",
+  rar: "fa-file-zipper",
+  "7z": "fa-file-zipper",
+  tar: "fa-file-zipper",
+  gz: "fa-file-zipper",
+  bz2: "fa-file-zipper",
+  xz: "fa-file-zipper",
+
+  // Code / Dev
+  js: "fa-file-code",
+  ts: "fa-file-code",
+  jsx: "fa-file-code",
+  tsx: "fa-file-code",
+  py: "fa-file-code",
+  java: "fa-file-code",
+  cpp: "fa-file-code",
+  c: "fa-file-code",
+  h: "fa-file-code",
+  cs: "fa-file-code",
+  php: "fa-file-code",
+  rb: "fa-file-code",
+  go: "fa-file-code",
+  sh: "fa-file-code",
+  ps1: "fa-file-code",
+  html: "fa-file-code",
+  css: "fa-file-code",
+  scss: "fa-file-code",
+  json: "fa-file-code",
+  xml: "fa-file-code",
+  yml: "fa-file-code",
+  yaml: "fa-file-code",
+
+  // Configs & Meta
+  env: "fa-file-code",
+  gitignore: "fa-file-code",
+  dockerfile: "fa-file-code",
+
+  // eBooks
+  epub: "fa-file-lines",
+  mobi: "fa-file-lines",
+  azw: "fa-file-lines",
+  azw3: "fa-file-lines",
+
+  // Certificates & Keys
+  pem: "fa-file-lines",
+  crt: "fa-file-lines",
+  cer: "fa-file-lines",
+  key: "fa-file-lines",
+  pfx: "fa-file-lines",
+  p12: "fa-file-lines",
+
+  // Disk Images
+  iso: "fa-compact-disc",
+  img: "fa-compact-disc",
+
+  // Logs & Misc
+  log: "fa-file-lines",
+  bak: "fa-file-lines",
+  sql: "fa-database",
+
+  // Fonts
+  otf: "fa-font",
+  ttf: "fa-font",
+  woff: "fa-font",
+  eot: "fa-font"
+};
+
+export function renderFileIcon(img: HTMLImageElement, fileName: string) {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (ext) {
+    const iconClass = extensionToIcon[ext];
+    if (iconClass) {
+      img.classList.remove("fa-file");
+      img.classList.add(iconClass);
+    }
+  }
+}
+export function isCompressedFile(fileName: string): boolean {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+
+  const compressedExtensions = Object.keys(extensionToIcon).filter((ext) =>
+    extensionToIcon[ext].includes("fa-file-zipper")
+  );
+
+  return ext ? compressedExtensions.includes(ext) : false;
+}

@@ -24,7 +24,9 @@ import {
   sanitizeHtmlInput,
   findPreviousNode,
   findNextNode,
-  formatFileSize
+  formatFileSize,
+  isCompressedFile,
+  renderFileIcon
 } from "./utils.ts";
 import { alertUser, displayImagePreview } from "./ui.ts";
 import { isOnDm, router } from "./router.ts";
@@ -275,18 +277,6 @@ let isAttachmentsAdded: boolean;
 let fileList: File[] = [];
 export const fileSpoilerMap: WeakMap<File, boolean> = new WeakMap();
 
-const compressedExtensions = [
-  ".zip",
-  ".rar",
-  ".7z",
-  ".tar",
-  ".tar.gz",
-  ".tgz",
-  ".tar.bz2",
-  ".tbz2",
-  ".tar.xz",
-  ".txz"
-];
 export class FileHandler {
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
@@ -349,13 +339,13 @@ export class FileHandler {
   static async processFile(file: File) {
     const isImage = await FileHandler.isImageFile(file);
     const fileURL = isImage ? URL.createObjectURL(file) : "";
-    FileHandler.renderFilePreview(fileURL, file.name, isImage, file);
+    FileHandler.renderFilePreview(fileURL, isImage, file);
     isAttachmentsAdded = true;
   }
 
   static async isImageFile(file: File): Promise<boolean> {
     try {
-      if (await this.isCompressedFile(file.name)) return false;
+      if (await isCompressedFile(file.name)) return false;
 
       const readBuffer =
         file.size < 4100
@@ -369,12 +359,7 @@ export class FileHandler {
     }
   }
 
-  static async renderFilePreview(
-    src: string,
-    fileName: string,
-    isImage: boolean,
-    file: File
-  ) {
+  static async renderFilePreview(src: string, isImage: boolean, file: File) {
     const container = createEl("div", { className: "image-container" });
     (container as any)._file = file;
     let img: HTMLImageElement;
@@ -385,16 +370,12 @@ export class FileHandler {
       img = createEl("i", {
         className: "fa-solid fa-file attachment-preview-file"
       }) as HTMLImageElement;
-      const isCompressed = await this.isCompressedFile(file.name);
-      if (isCompressed) {
-        img.classList.remove("fa-file");
-        img.classList.add("fa-file-zipper");
-      }
+      renderFileIcon(img, file.name);
     }
 
     const imageText = createEl("div", {
       className: "image-text",
-      textContent: fileName
+      textContent: file.name
     });
     const sizeText = createEl("div", {
       className: "image-text right",
@@ -480,11 +461,6 @@ export class FileHandler {
 
   static editImage(img: HTMLImageElement): void {
     alertUser("Image edit is not implemented!");
-  }
-
-  static isCompressedFile(fileName: string): boolean {
-    const lower = fileName.toLowerCase();
-    return compressedExtensions.some((ext) => lower.endsWith(ext));
   }
 
   static async removeImage(container: HTMLElement, file: File) {
