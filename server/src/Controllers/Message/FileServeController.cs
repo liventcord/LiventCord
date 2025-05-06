@@ -49,27 +49,40 @@ namespace LiventCord.Controllers
 
         private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
         {
-            var normalizedPath = Path.GetFullPath(cacheFilePath);
-            if (!normalizedPath.StartsWith(CacheDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            var fullCacheDirPath = Path.GetFullPath(CacheDirectory);
+            var fullRequestedPath = Path.GetFullPath(cacheFilePath);
+
+            if (!fullRequestedPath.StartsWith(fullCacheDirPath, StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest("Invalid file path.");
             }
 
-            if (System.IO.File.Exists(cacheFilePath))
+            var metaPath = fullRequestedPath + ".meta";
+
+            if (System.IO.File.Exists(fullRequestedPath) && System.IO.File.Exists(metaPath))
             {
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(cacheFilePath);
-                return File(fileBytes, "application/octet-stream");
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
+                var contentType = await System.IO.File.ReadAllTextAsync(metaPath);
+                return File(fileBytes, contentType);
             }
 
             var result = await fetchFile();
 
             if (result is FileContentResult fileResult)
             {
-                await System.IO.File.WriteAllBytesAsync(cacheFilePath, fileResult.FileContents);
+                var path = Path.GetDirectoryName(fullRequestedPath);
+                if (path != null)
+                {
+                    Directory.CreateDirectory(path);
+                    await System.IO.File.WriteAllBytesAsync(fullRequestedPath, fileResult.FileContents);
+                    await System.IO.File.WriteAllTextAsync(metaPath, fileResult.ContentType ?? "application/octet-stream");
+                }
             }
 
             return result;
         }
+
+
 
         [HttpGet("guilds/{guildId}")]
         public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
@@ -142,12 +155,6 @@ namespace LiventCord.Controllers
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
         {
-            if (guildId.Contains("..") || guildId.Contains("/") || guildId.Contains("\\") ||
-                emojiId.Contains("..") || emojiId.Contains("/") || emojiId.Contains("\\"))
-            {
-                return BadRequest("Invalid guildId or emojiId.");
-            }
-
             var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
 
             return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>

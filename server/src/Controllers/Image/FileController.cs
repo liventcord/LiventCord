@@ -245,14 +245,30 @@ namespace LiventCord.Controllers
                 .Where(f => attachmentIds.Contains(f.FileId) && f.FileType == "attachments")
                 .ToListAsync();
 
-            if (filesToDelete.Any())
+            var attachmentsToDelete = await _context.Attachments
+                .Where(a => attachmentIds.Contains(a.FileId))
+                .ToListAsync();
+
+            if (filesToDelete.Any() || attachmentsToDelete.Any())
             {
-                _context.Set<AttachmentFile>().RemoveRange(filesToDelete);
+                if (filesToDelete.Any())
+                {
+                    _context.Set<AttachmentFile>().RemoveRange(filesToDelete);
+                }
+
+                if (attachmentsToDelete.Any())
+                {
+                    _context.Attachments.RemoveRange(attachmentsToDelete);
+                }
+
                 await _context.SaveChangesAsync();
 
                 foreach (var fileId in attachmentIds)
                 {
-                    if (filesToDelete.Any(f => f.FileId == fileId))
+                    var wasFileDeleted = filesToDelete.Any(f => f.FileId == fileId);
+                    var wasAttachmentDeleted = attachmentsToDelete.Any(a => a.FileId == fileId);
+
+                    if (wasFileDeleted || wasAttachmentDeleted)
                     {
                         _logger.LogInformation("Attachment file deleted from database successfully. FileId: {FileId}", fileId);
                     }
@@ -270,6 +286,7 @@ namespace LiventCord.Controllers
                 }
             }
         }
+
 
         [NonAction]
         public async Task DeleteAttachmentFile(Message message)
