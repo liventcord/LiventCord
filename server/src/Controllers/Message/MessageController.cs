@@ -266,12 +266,14 @@ namespace LiventCord.Controllers
                 var fileId = Utils.CreateRandomId();
                 var fileSize = 0;
                 var isImage = true;
+                var isVideo = true;
                 var isSpoiler = false;
 
                 var attachment = new Attachment
                 {
                     FileId = fileId,
                     IsImageFile = isImage,
+                    isVideoFile = isVideo,
                     MessageId = messageId,
                     FileName = fileName,
                     FileSize = fileSize,
@@ -767,12 +769,14 @@ namespace LiventCord.Controllers
                     string fileId = await _imageController.UploadFileInternal(file, userId, true, false, guildId, channelId);
 
                     bool isImageFile = file.ContentType.StartsWith("image/");
+                    bool isVideoFile = file.ContentType.StartsWith("video/");
                     bool isSpoiler = spoilerFlags.ElementAtOrDefault(i);
 
                     attachments.Add(new Attachment
                     {
                         FileId = fileId,
                         IsImageFile = isImageFile,
+                        isVideoFile = isVideoFile,
                         MessageId = messageId,
                         FileName = file.FileName,
                         FileSize = file.Length,

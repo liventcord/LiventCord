@@ -73,6 +73,7 @@ export interface Attachment {
   fileName: string;
   fileSize: number;
   isImageFile: boolean;
+  isVideoFile: boolean;
   isSpoiler: boolean;
   isProxyFile: boolean;
 }

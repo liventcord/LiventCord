@@ -317,8 +317,8 @@ function createYouTubeElement(url: string): HTMLElement | undefined {
 
   return iframeElement;
 }
-function createVideoElement(url: string) {
-  if (!isVideoUrl(url)) {
+function createVideoElement(url: string, isVideoAttachment = false) {
+  if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
 
@@ -328,7 +328,6 @@ function createVideoElement(url: string) {
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
-  videoElement.loop = true;
   videoElement.playsInline = true;
 
   const downloadButton = createEl("a", {
@@ -440,7 +439,8 @@ export async function createMediaElement(
 
     for (const attachment of attachmentsToUse) {
       try {
-        if (attachment.isImageFile) {
+        console.log(attachment);
+        if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),
             attachment,
@@ -533,16 +533,20 @@ function processMediaLink(
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || (embeds.length <= 0 && !attachment?.isProxyFile)) {
-        mediaElement = createImageElement(
-          "",
-          link,
-          senderId,
-          date,
-          attachment?.fileId,
-          attachment?.isSpoiler,
-          attachment?.fileSize,
-          attachment?.fileName
-        );
+        if (attachment?.isImageFile) {
+          mediaElement = createImageElement(
+            "",
+            link,
+            senderId,
+            date,
+            attachment?.fileId,
+            attachment?.isSpoiler,
+            attachment?.fileSize,
+            attachment?.fileName
+          );
+        } else if (attachment?.isVideoFile) {
+          mediaElement = createVideoElement(link, true);
+        }
       }
     } else if (isTenorURL(link)) {
       mediaElement = createTenorElement(
