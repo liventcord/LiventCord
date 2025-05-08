@@ -251,11 +251,21 @@ function getGuildSettings(): Setting[] {
   }
   return setToReturn;
 }
+function getChannelSettings(): Setting[] {
+  const setToReturn: Setting[] = [...currentSettings.channelSettings];
 
+  if (permissionManager.canManageChannels()) {
+    setToReturn.push({
+      category: "DeleteChannel" as SettingCategory,
+      label: translations.getSettingsTranslation("DeleteChannel")
+    });
+  }
+  return setToReturn;
+}
 function getChannelSettingHTML() {
   const settings = loadSettings();
   currentSettings = settings;
-  return generateSettingsHtml(settings.channelSettings);
+  return generateSettingsHtml(getChannelSettings());
 }
 
 function getProfileSettingsHTML() {
@@ -351,10 +361,6 @@ function loadSettings(): Settings {
     {
       category: "Permissions" as SettingCategory,
       label: translations.getSettingsTranslation("Permissions")
-    },
-    {
-      category: "DeleteChannel" as SettingCategory,
-      label: translations.getSettingsTranslation("DeleteChannel")
     }
   ];
 

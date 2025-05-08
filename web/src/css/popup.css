@@ -216,17 +216,25 @@
     height: 450px;
   }
 }
+.panel-status-profile-titles {
+  margin-top: 130px !important;
 
+  margin-right: 230px !important;
+}
 @media (max-width: 600px) {
-  #create-channel-send-input {
-    bottom: 188px !important;
-  }
   #private-channel-icon {
     bottom: 167px !important;
   }
   .radio-bar {
     margin-top: -58px;
   }
+  #create-channel-name {
+    padding-top: 170px;
+  }
+  #channel-icon {
+    margin-top: 341px;
+  }
+
   .pop-up {
     padding: 10px;
   }
