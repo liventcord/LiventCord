@@ -424,11 +424,25 @@ export class FileHandler {
       textContent: "SPOILER",
       className: "spoiler-text"
     });
-    const imgWrapper = img.parentElement;
 
-    imgWrapper?.appendChild(text);
+    const imgWrapper = createEl("div", { className: "spoiler-container" });
+
+    const parentElement = img.parentElement;
+
+    if (parentElement) {
+      parentElement.removeChild(img);
+    }
+
+    imgWrapper.appendChild(img);
+    imgWrapper.appendChild(text);
+
     img.style.filter = "blur(10px)";
+
+    if (parentElement) {
+      parentElement.appendChild(imgWrapper);
+    }
   }
+
   static unBlurImage(img: HTMLImageElement) {
     img.style.filter = "";
     const imgWrapper = img.parentElement;
