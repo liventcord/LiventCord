@@ -88,6 +88,7 @@ export function setLastSenderID(id: string) {
   lastSenderID = id;
 }
 export const messageDates: { [key: string]: Date } = {};
+const scrollButton = getId("scroll-to-bottom") as HTMLElement;
 
 const unknownReplies: string[] = [];
 
@@ -104,7 +105,6 @@ export function setReachedChannelEnd(val: boolean) {
 export const CLYDE_ID = "1";
 
 export function createChatScrollButton() {
-  const scrollButton = getId("scroll-to-bottom") as HTMLElement;
   if (!chatContainer) {
     console.error("Chat container is null");
     return;
@@ -128,7 +128,6 @@ export function createChatScrollButton() {
     }
   });
   scrollButton.addEventListener("click", function () {
-    scrollButton.style.display = "none";
     scrollToBottom();
   });
 }
@@ -313,6 +312,8 @@ export function scrollToMessage(messageElementToScroll: HTMLElement) {
 }
 
 export function scrollToBottom() {
+  scrollButton.style.display = "none";
+
   chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 

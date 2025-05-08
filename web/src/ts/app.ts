@@ -502,6 +502,7 @@ export function loadDmHome(isChangingUrl?: boolean): void {
     setisOnMePage(true);
     setIsOnGuild(false);
     updateFriendMenu();
+    disableElement("scroll-to-bottom");
   }
   selectGuildList("main-logo");
 
