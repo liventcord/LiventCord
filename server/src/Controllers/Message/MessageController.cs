@@ -266,12 +266,14 @@ namespace LiventCord.Controllers
                 var fileId = Utils.CreateRandomId();
                 var fileSize = 0;
                 var isImage = true;
+                var isVideo = true;
                 var isSpoiler = false;
 
                 var attachment = new Attachment
                 {
                     FileId = fileId,
                     IsImageFile = isImage,
+                    isVideoFile = isVideo,
                     MessageId = messageId,
                     FileName = fileName,
                     FileSize = fileSize,
@@ -767,12 +769,14 @@ namespace LiventCord.Controllers
                     string fileId = await _imageController.UploadFileInternal(file, userId, true, false, guildId, channelId);
 
                     bool isImageFile = file.ContentType.StartsWith("image/");
+                    bool isVideoFile = file.ContentType.StartsWith("video/");
                     bool isSpoiler = spoilerFlags.ElementAtOrDefault(i);
 
                     attachments.Add(new Attachment
                     {
                         FileId = fileId,
                         IsImageFile = isImageFile,
+                        isVideoFile = isVideoFile,
                         MessageId = messageId,
                         FileName = file.FileName,
                         FileSize = file.Length,
@@ -898,31 +902,48 @@ namespace LiventCord.Controllers
             [FromQuery] int pageSize = 50
         )
         {
+            bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
+
             pageSize = pageSize > 500 ? 500 : pageSize;
-
             int skip = (page - 1) * pageSize;
-            int take = pageSize;
 
-            var channelAttachments = await _context.Attachments
+            var query = _context.Attachments
                 .Join(
                     _context.Messages,
                     attachment => attachment.MessageId,
                     message => message.MessageId,
-                    (attachment, message) => new
+                    (attachment, message) => new { attachment, message }
+                )
+                .Join(
+                    _context.Channels,
+                    combined => combined.message.ChannelId,
+                    channel => channel.ChannelId,
+                    (combined, channel) => new
                     {
-                        attachment,
-                        message.UserId,
-                        message.Content,
-                        message.Date,
-                        message.ChannelId
-                    })
-                .Where(result => result.ChannelId == channelId)
+                        combined.attachment,
+                        combined.message.UserId,
+                        combined.message.Content,
+                        combined.message.Date,
+                        channel.ChannelId,
+                        channel.GuildId
+                    }
+                )
+                .Where(result => result.ChannelId == channelId && result.GuildId == guildId);
+
+            int totalAttachmentsCountForChannel = await query.CountAsync();
+
+            var channelAttachments = await query
                 .Skip(skip)
-                .Take(take)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(channelAttachments);
+            return Ok(new { attachments = channelAttachments, count = totalAttachmentsCountForChannel });
         }
+
 
 
     }

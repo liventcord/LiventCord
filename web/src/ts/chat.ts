@@ -1,3 +1,4 @@
+import { useStore } from "vuex";
 import { reactive } from "vue";
 import {
   AttachmentWithMetaData,
@@ -72,6 +73,7 @@ import {
 } from "./emoji.ts";
 import { currentChannelName } from "./channels.ts";
 
+const store = useStore();
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
   bottomestChatDateStr = date;
@@ -1489,12 +1491,31 @@ export function fetchMessages(channelId: string, isDm = false) {
     : EventType.GET_ATTACHMENTS_DM;
 
   apiClient.send(attachmentType, requestData);
+  clearCurrentAttachments();
+  if (store) {
+    store.dispatch("setHasMoreAttachments", false);
+  }
 }
 export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
 
-export function setCurrentAttachments(attachments: AttachmentWithMetaData[]) {
-  currentAttachments.splice(0, currentAttachments.length, ...attachments);
+export function appendCurrentAttachments(
+  attachments: AttachmentWithMetaData[]
+) {
+  currentAttachments.push(...attachments);
 }
+export function updateAttachmentsCount(count: number) {
+  const mediaTitle = getId("media-title");
+  if (mediaTitle) {
+    mediaTitle.textContent = `${translations.getTranslation("media-title")} (${count})`;
+  } else {
+    console.log("Title not found");
+  }
+}
+
+export function clearCurrentAttachments() {
+  currentAttachments.length = 0;
+}
+
 function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
   const textc = isReply ? "↪" : "⋯";
 

@@ -22,6 +22,7 @@ interface ChannelHoverInfo {
 }
 
 interface RootState {
+  hasMoreAttachments: boolean;
   user: UserState;
   channels: Channel[];
   hoveredChannels: Record<string, ChannelHoverInfo>;
@@ -41,7 +42,8 @@ export default createStore<RootState>({
     hoveredChannels: {},
     selectedChannelId: null,
     selectedChannelType: null,
-    attachments: []
+    attachments: [],
+    hasMoreAttachments: true
   },
   mutations: {
     setAttachments(state, attachments: AttachmentWithMetaData[]) {
@@ -162,6 +164,9 @@ export default createStore<RootState>({
       state.hoveredChannels = {
         [channelId]: { isTextChannel }
       };
+    },
+    setHasMoreAttachments(state, value: boolean) {
+      state.hasMoreAttachments = value;
     }
   },
 
@@ -233,6 +238,9 @@ export default createStore<RootState>({
         channelId: props.channelId,
         isTextChannel: props.isTextChannel
       });
+    },
+    setHasMoreAttachments({ commit }, value: boolean) {
+      commit("setHasMoreAttachments", value);
     }
   },
 
@@ -260,6 +268,7 @@ export default createStore<RootState>({
 
     getOfflineUsers: (state) => {
       return state.user.offlineUsers;
-    }
+    },
+    hasMoreAttachments: (state) => state.hasMoreAttachments
   }
 });

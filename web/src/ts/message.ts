@@ -73,6 +73,7 @@ export interface Attachment {
   fileName: string;
   fileSize: number;
   isImageFile: boolean;
+  isVideoFile: boolean;
   isSpoiler: boolean;
   isProxyFile: boolean;
 }
@@ -647,4 +648,16 @@ export function convertToEditUi(message: HTMLElement) {
       editMessageContent();
     }
   });
+}
+export function fetchMoreAttachments(page: number, pageSize: number) {
+  const attachmentType = isOnGuild
+    ? EventType.GET_ATTACHMENTS_GUILD
+    : EventType.GET_ATTACHMENTS_DM;
+  console.log(page, pageSize);
+
+  apiClient.send(
+    attachmentType,
+    { guildId: currentGuildId, channelId: guildCache.currentChannelId },
+    { page, pageSize }
+  );
 }

@@ -405,6 +405,34 @@
 .embed-video {
   max-width: 500px;
 }
+.video-container {
+  position: relative;
+  width: 560px;
+  height: 315px;
+}
+
+.download-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 1em;
+  height: 1em;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  text-align: center;
+  display: none;
+}
+
+.download-button.visible {
+  display: block;
+}
+
+.download-button .icon {
+  font-size: 1em;
+  color: white;
+}
 .video {
   display: flex;
 }
@@ -504,7 +532,7 @@
   left: 20px;
   top: 30px;
   width: 40px;
-  height: auto;
+  height: 40px;
 }
 #image-preview-container {
   position: absolute;
