@@ -317,26 +317,54 @@ function createYouTubeElement(url: string): HTMLElement | undefined {
 
   return iframeElement;
 }
-
 function createVideoElement(url: string) {
   if (!isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
+
   const videoElement = createEl("video") as HTMLVideoElement;
-  videoElement.src = getProxy(url);
+  const proxiedUrl = getProxy(url);
+  videoElement.src = proxiedUrl;
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
   videoElement.loop = true;
   videoElement.playsInline = true;
 
-  const container = createEl("div");
+  const downloadButton = createEl("a", {
+    href: url,
+    target: "_blank",
+    className: "download-button"
+  }) as HTMLAnchorElement;
+
+  const icon = createEl("i", {
+    className: "fas fa-external-link-alt icon"
+  }) as HTMLElement;
+  downloadButton.appendChild(icon);
+
+  const container = createEl("div", { className: "video-container" });
   container.appendChild(videoElement);
+  container.appendChild(downloadButton);
   container.setAttribute("allowfullscreen", "");
+
+  let controlsVisible = false;
+
+  videoElement.addEventListener("mousemove", () => {
+    if (!controlsVisible) {
+      controlsVisible = true;
+      downloadButton.classList.add("visible");
+    }
+  });
+
+  container.addEventListener("mouseleave", () => {
+    if (controlsVisible) {
+      controlsVisible = false;
+      downloadButton.classList.remove("visible");
+    }
+  });
 
   return container;
 }
-
 function createRegularText(content: string) {
   const spanElement = createEl("p", { id: "message-content-element" });
   spanElement.textContent = content;
@@ -364,7 +392,7 @@ export async function createMediaElement(
 
   const attachmentUrl = attachments?.[0]?.proxyUrl || "";
   const links: string[] = [
-    ...extractLinks(content).filter((link) => link != attachmentUrl),
+    ...extractLinks(content).filter((link) => link !== attachmentUrl),
     attachmentUrl
   ];
 
