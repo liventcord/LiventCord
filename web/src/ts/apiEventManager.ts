@@ -6,7 +6,8 @@ import {
   handleHistoryResponse,
   handleSelfSentMessage,
   handleOldMessagesResponse,
-  setCurrentAttachments
+  appendCurrentAttachments,
+  updateAttachmentsCount
 } from "./chat.ts";
 import { replyCache, cacheInterface } from "./cache.ts";
 import {
@@ -302,10 +303,17 @@ interface MessageDatesResponse {
   messageDate: Date;
 }
 
+interface AttachmentWithMetaDataAndCount {
+  attachments: AttachmentWithMetaData[];
+  count: number;
+}
 apiClient.on(
   EventType.GET_ATTACHMENTS_GUILD,
-  (data: AttachmentWithMetaData[]) => {
-    setCurrentAttachments([...data]);
+  (data: AttachmentWithMetaDataAndCount) => {
+    appendCurrentAttachments(data.attachments);
+    setTimeout(() => {
+      updateAttachmentsCount(data.count);
+    }, 0);
   }
 );
 

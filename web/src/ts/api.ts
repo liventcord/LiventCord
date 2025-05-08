@@ -141,8 +141,9 @@ const EventUrlMap: Record<EventType, string> = {
   GET_MEMBERS: "/guilds/{guildId}/members",
   GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
   GET_ATTACHMENTS_GUILD:
-    "/guilds/{guildId}/channels/{channelId}/messages/attachments",
-  GET_ATTACHMENTS_DM: "/dms/channels/{friendId}/messages/attachments",
+    "/guilds/{guildId}/channels/{channelId}/messages/attachments?page={page}",
+  GET_ATTACHMENTS_DM:
+    "/dms/channels/{friendId}/messages/attachments?page={page}",
   GET_HISTORY_DM:
     "/dms/channels/{channelId}/messages?date={date}&messageId={messageId}",
   GET_HISTORY_GUILD:
@@ -532,7 +533,11 @@ class ApiClient {
     }
   }
 
-  async send(event: EventType, data: any = {}) {
+  async send(
+    event: EventType,
+    data: any = {},
+    queryParams: Record<string, any> = {}
+  ) {
     console.log(data);
 
     if (!event) {
@@ -543,7 +548,7 @@ class ApiClient {
     const expectsResponse = !this.nonResponseEvents.includes(event);
 
     try {
-      const result = this.getUrlForEvent(event, data);
+      const result = this.getUrlForEvent(event, data, queryParams);
       if (!result) {
         console.error(`Failed to get URL and method for event: ${event}`);
         return;

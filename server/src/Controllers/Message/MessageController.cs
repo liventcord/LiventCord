@@ -902,31 +902,48 @@ namespace LiventCord.Controllers
             [FromQuery] int pageSize = 50
         )
         {
+            bool userExists = await _context.DoesMemberExistInGuild(UserId!, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
+
             pageSize = pageSize > 500 ? 500 : pageSize;
-
             int skip = (page - 1) * pageSize;
-            int take = pageSize;
 
-            var channelAttachments = await _context.Attachments
+            var query = _context.Attachments
                 .Join(
                     _context.Messages,
                     attachment => attachment.MessageId,
                     message => message.MessageId,
-                    (attachment, message) => new
+                    (attachment, message) => new { attachment, message }
+                )
+                .Join(
+                    _context.Channels,
+                    combined => combined.message.ChannelId,
+                    channel => channel.ChannelId,
+                    (combined, channel) => new
                     {
-                        attachment,
-                        message.UserId,
-                        message.Content,
-                        message.Date,
-                        message.ChannelId
-                    })
-                .Where(result => result.ChannelId == channelId)
+                        combined.attachment,
+                        combined.message.UserId,
+                        combined.message.Content,
+                        combined.message.Date,
+                        channel.ChannelId,
+                        channel.GuildId
+                    }
+                )
+                .Where(result => result.ChannelId == channelId && result.GuildId == guildId);
+
+            int totalAttachmentsCountForChannel = await query.CountAsync();
+
+            var channelAttachments = await query
                 .Skip(skip)
-                .Take(take)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(channelAttachments);
+            return Ok(new { attachments = channelAttachments, count = totalAttachmentsCountForChannel });
         }
+
 
 
     }

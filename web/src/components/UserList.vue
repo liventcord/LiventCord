@@ -5,12 +5,9 @@
         v-if="attachments.length > 0"
         id="media-table-wrapper"
         class="user-table-wrapper media-table-wrapper-on-right"
+        @scroll="handleScroll"
       >
-        <button id="media-title" @click="handleMediaButtonClick()">
-          {{ translations.getTranslation("media-title") }} ({{
-            attachments.length
-          }})
-        </button>
+        <button id="media-title" @click="handleMediaButtonClick()"></button>
         <div id="media-grid">
           <div
             v-for="attachment in attachments"
@@ -90,6 +87,7 @@ import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
 import { getId } from "../ts/utils.ts";
 import { displayImagePreview } from "../ts/ui.ts";
+import { fetchMoreAttachments } from "../ts/message.ts";
 import {
   closeMediaPanel,
   currentAttachments,
@@ -110,6 +108,40 @@ const props = defineProps({
 const store = useStore();
 const loading = ref(true);
 let isMediaPanelOpen = false;
+const currentPage = ref(1);
+const pageSize = 50;
+const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
+const loadMoreMedia = async () => {
+  loading.value = true;
+  try {
+    const newAttachments = await fetchMoreAttachments(
+      currentPage.value,
+      pageSize
+    );
+
+    if (newAttachments && newAttachments.length > 0) {
+      currentPage.value++;
+      store.dispatch("appendAttachments", newAttachments);
+    } else {
+      hasMoreAttachments.value = false;
+    }
+  } catch (error) {
+    console.error("Error loading more media:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleScroll = () => {
+  const mediaScroll = getId("media-table-wrapper");
+  const bottomOfGrid =
+    mediaScroll.scrollHeight ===
+    mediaScroll.scrollTop + mediaScroll.clientHeight;
+
+  if (bottomOfGrid && !loading.value && hasMoreAttachments.value) {
+    loadMoreMedia();
+  }
+};
 
 const handleMediaButtonClick = () => {
   isMediaPanelOpen = !isMediaPanelOpen;
@@ -159,6 +191,9 @@ watch(
   { immediate: true, deep: true }
 );
 watch(currentAttachments, (newAttachments) => {
+  setTimeout(() => {
+    currentPage.value++;
+  }, 0);
   if (newAttachments.length) {
     processAttachments(newAttachments);
   }
