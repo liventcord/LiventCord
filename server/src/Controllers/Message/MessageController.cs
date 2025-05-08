@@ -394,7 +394,13 @@ namespace LiventCord.Controllers
             [IdLengthValidation][FromRoute] string messageId
         )
         {
-            if (!await _permissionsController.CanDeleteMessages(UserId!, guildId))
+            var foundMessage = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
+            if (foundMessage == null)
+            {
+                return Forbid();
+            }
+
+            if (!await _permissionsController.CanDeleteMessages(UserId!, guildId, foundMessage.UserId))
             {
                 return Forbid();
             }

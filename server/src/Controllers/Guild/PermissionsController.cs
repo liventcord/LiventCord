@@ -36,7 +36,7 @@ namespace LiventCord.Controllers
             => await CheckPermission(userId, guildId, PermissionFlags.CanInvite);
 
         [NonAction]
-        public async Task<bool> CanDeleteMessages(string userId, string guildId, string? senderId = null)
+        public async Task<bool> CanDeleteMessages(string userId, string guildId, string senderId)
         {
             if (senderId != null && senderId == userId)
             {
