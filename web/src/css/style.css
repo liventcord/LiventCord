@@ -1850,10 +1850,6 @@ textarea::-webkit-scrollbar-track {
   padding: 8px;
 }
 
-.panel-status-profile-titles {
-  margin-top: 130px !important;
-}
-
 .status-button-bubble {
   padding: 8;
   top: 5px;
