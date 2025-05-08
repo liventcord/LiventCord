@@ -330,7 +330,11 @@ function createVideoElement(url: string) {
   videoElement.loop = true;
   videoElement.playsInline = true;
 
-  return videoElement;
+  const container = createEl("div");
+  container.appendChild(videoElement);
+  container.setAttribute("allowfullscreen", "");
+
+  return container;
 }
 
 function createRegularText(content: string) {
