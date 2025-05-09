@@ -29,7 +29,7 @@
               @click="handleImageClick(attachment)"
               ref="imageBox"
               :style="{
-                filter: attachment.attachment.isSpoiler ? 'blur(15px)' : 'none'
+                filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
               }"
             />
           </div>
@@ -108,22 +108,26 @@ const props = defineProps({
 const store = useStore();
 const loading = ref(true);
 let isMediaPanelOpen = false;
-const currentPage = ref(1);
+const currentPage = computed(() => store.getters.currentPage);
+
 const pageSize = 50;
+
 const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
+
 const loadMoreMedia = async () => {
   loading.value = true;
   try {
+    console.log("Loading more media...");
     const newAttachments = await fetchMoreAttachments(
       currentPage.value,
       pageSize
     );
 
     if (newAttachments && newAttachments.length > 0) {
-      currentPage.value++;
       store.dispatch("appendAttachments", newAttachments);
+      store.commit("incrementCurrentPage");
     } else {
-      hasMoreAttachments.value = false;
+      store.commit("setHasMoreAttachments", false);
     }
   } catch (error) {
     console.error("Error loading more media:", error);
@@ -133,11 +137,11 @@ const loadMoreMedia = async () => {
 };
 
 const handleScroll = () => {
+  console.log("Has more attachments: " + hasMoreAttachments.value);
   const mediaScroll = getId("media-table-wrapper");
   const bottomOfGrid =
     mediaScroll.scrollHeight ===
     mediaScroll.scrollTop + mediaScroll.clientHeight;
-
   if (bottomOfGrid && !loading.value && hasMoreAttachments.value) {
     loadMoreMedia();
   }
@@ -178,9 +182,9 @@ const processMembers = async (newMembers) => {
   loading.value = false;
 };
 const processAttachments = async (newAttachments) => {
-  console.log(newAttachments);
   await store.dispatch("setAttachments", newAttachments);
 };
+
 watch(
   currentUsers,
   (newUsers) => {
@@ -191,9 +195,6 @@ watch(
   { immediate: true, deep: true }
 );
 watch(currentAttachments, (newAttachments) => {
-  setTimeout(() => {
-    currentPage.value++;
-  }, 0);
   if (newAttachments.length) {
     processAttachments(newAttachments);
   }

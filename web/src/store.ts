@@ -29,6 +29,7 @@ interface RootState {
   selectedChannelId: string | null;
   selectedChannelType: boolean | null;
   attachments: AttachmentWithMetaData[];
+  currentPage: number;
 }
 
 export default createStore<RootState>({
@@ -43,7 +44,8 @@ export default createStore<RootState>({
     selectedChannelId: null,
     selectedChannelType: null,
     attachments: [],
-    hasMoreAttachments: true
+    hasMoreAttachments: true,
+    currentPage: 1
   },
   mutations: {
     setAttachments(state, attachments: AttachmentWithMetaData[]) {
@@ -53,7 +55,12 @@ export default createStore<RootState>({
     setChannels(state, channels: Channel[]) {
       state.channels = channels;
     },
-
+    setCurrentPage(state, page: number) {
+      state.currentPage = page;
+    },
+    increaseCurrentPage(state) {
+      state.currentPage++;
+    },
     setChannel(state, channel: Channel) {
       const existingChannelIndex = state.channels.findIndex(
         (c) => c.channelId === channel.channelId
@@ -269,6 +276,7 @@ export default createStore<RootState>({
     getOfflineUsers: (state) => {
       return state.user.offlineUsers;
     },
-    hasMoreAttachments: (state) => state.hasMoreAttachments
+    hasMoreAttachments: (state) => state.hasMoreAttachments,
+    currentPage: (state) => state.currentPage
   }
 });

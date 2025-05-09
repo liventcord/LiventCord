@@ -1,4 +1,3 @@
-import { useStore } from "vuex";
 import { reactive } from "vue";
 import {
   AttachmentWithMetaData,
@@ -72,8 +71,8 @@ import {
   setupEmojiListeners
 } from "./emoji.ts";
 import { currentChannelName } from "./channels.ts";
+import store from "../store.ts";
 
-const store = useStore();
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
   bottomestChatDateStr = date;
@@ -231,12 +230,9 @@ function createReplyBar(
   const nick = userManager.getUserNick(userId);
   replyBar.style.height = "100px";
   const replyAvatar = createEl("img", {
-    className: "profile-pic",
+    className: "profile-pic reply-avatar",
     id: userId
   }) as HTMLImageElement;
-  replyAvatar.classList.add("reply-avatar");
-  replyAvatar.style.width = "15px";
-  replyAvatar.style.height = "15px";
 
   setProfilePic(replyAvatar, userId);
   const replyNick = createEl("span", {
@@ -1486,6 +1482,7 @@ export function fetchMessages(channelId: string, isDm = false) {
     ? EventType.GET_HISTORY_GUILD
     : EventType.GET_HISTORY_DM;
   apiClient.send(typeToUse, requestData);
+  store.commit("setCurrentPage", 1);
 
   const attachmentType = isOnGuild
     ? EventType.GET_ATTACHMENTS_GUILD
@@ -1493,9 +1490,9 @@ export function fetchMessages(channelId: string, isDm = false) {
 
   apiClient.send(attachmentType, requestData);
   clearCurrentAttachments();
-  if (store) {
-    store.dispatch("setHasMoreAttachments", false);
-  }
+
+  store.commit("setHasMoreAttachments", true);
+  store.commit("increaseCurrentPage");
 }
 export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
 

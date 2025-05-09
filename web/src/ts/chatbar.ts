@@ -436,7 +436,10 @@ export class FileHandler {
     imgWrapper.appendChild(img);
     imgWrapper.appendChild(text);
 
-    img.style.filter = "blur(10px)";
+    img.style.filter = "blur(12px)";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
 
     if (parentElement) {
       parentElement.appendChild(imgWrapper);
@@ -446,7 +449,12 @@ export class FileHandler {
   static unBlurImage(img: HTMLImageElement) {
     img.style.filter = "";
     const imgWrapper = img.parentElement;
-    const spoilerText = imgWrapper?.querySelector(".spoiler-text");
+    if (!imgWrapper) return;
+    const parent = imgWrapper.parentElement?.parentElement;
+    if (!parent) return;
+    const spoilerText = parent.querySelector(
+      ".spoiler-text"
+    ) as HTMLElement | null;
     if (spoilerText) {
       spoilerText.remove();
     }

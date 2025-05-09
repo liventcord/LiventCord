@@ -653,7 +653,6 @@ export function fetchMoreAttachments(page: number, pageSize: number) {
   const attachmentType = isOnGuild
     ? EventType.GET_ATTACHMENTS_GUILD
     : EventType.GET_ATTACHMENTS_DM;
-  console.log(page, pageSize);
 
   apiClient.send(
     attachmentType,

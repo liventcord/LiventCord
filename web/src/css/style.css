@@ -1300,7 +1300,6 @@ input[type="file"] {
   cursor: pointer;
 }
 .chat-image {
-  width: 100%;
   height: auto;
   display: block;
   position: relative;
@@ -1386,8 +1385,8 @@ textarea::-webkit-scrollbar-track {
   position: absolute;
 }
 .reply-avatar {
-  width: 10px;
-  height: 10px;
+  width: 15px;
+  height: 15px;
   margin-left: 8px;
 }
 .blink {
