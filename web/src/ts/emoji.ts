@@ -32,8 +32,7 @@ const changeEmojiName = (event: Event, guildId: string, emojiId: string) => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     const name = (event.target as HTMLTextAreaElement).value;
-    const data = { guildId, emojiId, name };
-    apiClient.send(EventType.CHANGE_EMOJI_NAME, data);
+    apiClient.send(EventType.CHANGE_EMOJI_NAME, { guildId, emojiId, name });
   }, debounceTimeout);
 };
 

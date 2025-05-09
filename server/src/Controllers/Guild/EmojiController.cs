@@ -79,19 +79,16 @@ namespace LiventCord.Controllers
 
             return Ok(new { emojiIds, request.GuildId });
         }
-
         [HttpPut("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> RenameEmojiFile(
-            [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string emojiId,
-            [FromBody] string name)
+            [FromBody] RenameEmojiRequest request)
         {
-            if (string.IsNullOrWhiteSpace(name) || name.Length < 2 || !Regex.IsMatch(name, @"^[a-zA-Z0-9_]+$"))
+            if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length < 2 || !Regex.IsMatch(request.Name, @"^[a-zA-Z0-9_]+$"))
             {
                 return BadRequest("Emoji name must be at least 2 characters long and contain only alphanumeric characters and underscores.");
             }
 
-            bool canManageGuild = await _permissionsController.CanManageGuild(UserId!, guildId);
+            bool canManageGuild = await _permissionsController.CanManageGuild(UserId!, request.GuildId);
             if (!canManageGuild)
             {
                 return Forbid();
@@ -99,9 +96,11 @@ namespace LiventCord.Controllers
 
             try
             {
-                var file = await _dbContext.EmojiFiles.FirstAsync(f => f.FileId == emojiId && f.GuildId == guildId);
-                file.FileName = name;
+                var file = await _dbContext.EmojiFiles.FirstAsync(f => f.FileId == request.EmojiId && f.GuildId == request.GuildId);
+
+                file.FileName = request.Name;
                 await _dbContext.SaveChangesAsync();
+
                 return Ok();
             }
             catch (InvalidOperationException)
@@ -141,4 +140,11 @@ namespace LiventCord.Controllers
         }
 
     }
+}
+
+public class RenameEmojiRequest
+{
+    public required string GuildId { get; set; }
+    public required string EmojiId { get; set; }
+    public required string Name { get; set; }
 }

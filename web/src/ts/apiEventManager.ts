@@ -143,7 +143,7 @@ apiClient.on(EventType.GET_INVITES, (data) => {
 });
 
 apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
-  const newGuildName = data.newGuildName;
+  const newGuildName = data.guildName;
   const guildId = data.guildId;
   if (!newGuildName || !guildId) return;
   if (guildId === currentGuildId) {

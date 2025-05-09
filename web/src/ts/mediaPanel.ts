@@ -164,9 +164,9 @@ function renderEmojis(
       const y = -(row * spriteHeight);
 
       const emoji = createEl("div", {
-        className: `emoji ${category.class}`,
-        backgroundPosition: `${x}px ${y}px`
+        className: `emoji ${category.class}`
       });
+      emoji.style.backgroundPosition = `${x}px ${y}px`;
 
       emojisContainer.appendChild(emoji);
 
