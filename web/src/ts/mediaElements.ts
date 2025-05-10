@@ -395,7 +395,6 @@ export async function createMediaElement(
     attachmentUrl
   ];
 
-  console.log(links);
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -439,7 +438,6 @@ export async function createMediaElement(
 
     for (const attachment of attachmentsToUse) {
       try {
-        console.log(attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),

@@ -117,7 +117,7 @@ const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
 const loadMoreMedia = async () => {
   loading.value = true;
   try {
-    console.log("Loading more media...");
+    console.log("Loading more media... " + currentPage.value);
     const newAttachments = await fetchMoreAttachments(
       currentPage.value,
       pageSize
@@ -126,7 +126,13 @@ const loadMoreMedia = async () => {
     if (newAttachments && newAttachments.length > 0) {
       store.dispatch("appendAttachments", newAttachments);
       store.commit("incrementCurrentPage");
+      if (newAttachments.length < pageSize) {
+        store.commit("setHasMoreAttachments", false);
+      } else {
+        store.commit("setHasMoreAttachments", true);
+      }
     } else {
+      store.commit("increaseCurrentPage");
       store.commit("setHasMoreAttachments", false);
     }
   } catch (error) {
@@ -142,7 +148,7 @@ const handleScroll = () => {
   const bottomOfGrid =
     mediaScroll.scrollHeight ===
     mediaScroll.scrollTop + mediaScroll.clientHeight;
-  if (bottomOfGrid && !loading.value && hasMoreAttachments.value) {
+  if (bottomOfGrid && !loading.value) {
     loadMoreMedia();
   }
 };

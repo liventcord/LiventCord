@@ -333,7 +333,6 @@ async function getOldMessagesOnScroll() {
   await getOldMessages(new Date(oldestDate));
   isFetchingOldMessages = false;
   stopFetching = true;
-  console.log("Fetching complete. Resetting flag.");
   setHasJustFetchedMessagesFalse();
   setTimeout(() => {
     stopFetching = false;
@@ -1492,7 +1491,6 @@ export function fetchMessages(channelId: string, isDm = false) {
   clearCurrentAttachments();
 
   store.commit("setHasMoreAttachments", true);
-  store.commit("increaseCurrentPage");
 }
 export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
 

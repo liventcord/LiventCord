@@ -56,9 +56,11 @@ export default createStore<RootState>({
       state.channels = channels;
     },
     setCurrentPage(state, page: number) {
+      console.log("Setting current page to: " + page);
       state.currentPage = page;
     },
     increaseCurrentPage(state) {
+      console.log("Increasing current page!");
       state.currentPage++;
     },
     setChannel(state, channel: Channel) {
@@ -173,6 +175,7 @@ export default createStore<RootState>({
       };
     },
     setHasMoreAttachments(state, value: boolean) {
+      console.log("Set has more attachments to: " + value);
       state.hasMoreAttachments = value;
     }
   },
