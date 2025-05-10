@@ -6,6 +6,7 @@ public abstract class FileBase
     public byte[] Content { get; set; }
     public string Extension { get; set; }
     public string FileType { get; set; }
+    public int ContentLength { get; }
 
     protected FileBase(
         string fileId,
@@ -19,10 +20,12 @@ public abstract class FileBase
         FileId = fileId;
         FileName = fileName;
         Content = content;
+        ContentLength = content.Length;
         Extension = extension;
         FileType = fileType;
         GuildId = guildId;
     }
+
 
     public abstract bool Matches(string? userId, string? guildId);
 }

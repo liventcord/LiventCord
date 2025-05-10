@@ -774,8 +774,8 @@ namespace LiventCord.Controllers
 
                     string fileId = await _imageController.UploadFileInternal(file, userId, true, false, guildId, channelId);
 
-                    bool isImageFile = file.ContentType.StartsWith("image/");
-                    bool isVideoFile = file.ContentType.StartsWith("video/");
+                    bool isImageFile = FileSignatureValidator.IsImageFile(file);
+                    bool isVideoFile = FileSignatureValidator.IsVideoFile(file);
                     bool isSpoiler = spoilerFlags.ElementAtOrDefault(i);
 
                     attachments.Add(new Attachment

@@ -3,6 +3,7 @@ using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 using System.IO.Compression;
 
 public static class FileDecompressor
@@ -119,6 +120,7 @@ namespace LiventCord.Controllers
             long maxSize = SharedAppConfig.GetMaxAttachmentSize();
             return file.Length <= maxSize;
         }
+
         [NonAction]
         public async Task<string> UploadFileInternal(
             IFormFile file,
@@ -238,7 +240,6 @@ namespace LiventCord.Controllers
             _logger.LogInformation("File uploaded successfully. FileId: {FileId}", fileId);
             return fileId;
         }
-
         private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
         {
             var filesToDelete = await _context.Set<AttachmentFile>()
@@ -421,6 +422,99 @@ namespace LiventCord.Controllers
 }
 
 
+public static class FileSignatureValidator
+{
+    public static bool IsImageFile(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return false;
+        }
+
+        var extension = System.IO.Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(extension))
+        {
+            return false;
+        }
+
+        if (!extension.StartsWith("."))
+        {
+            extension = "." + extension;
+        }
+
+        var validImageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tiff" };
+
+        if (!validImageExtensions.Contains(extension.ToLowerInvariant()))
+        {
+            return false;
+        }
+
+        var contentType = file.ContentType;
+
+
+        var validImageContentTypes = new[]
+        {
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "image/svg+xml", "image/bmp", "image/tiff"
+        };
+
+        if (validImageContentTypes.Any(ct => contentType.StartsWith(ct, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        var detectedMimeType = MimeTypes.GetMimeType(extension);
+        if (!string.IsNullOrEmpty(detectedMimeType) &&
+            detectedMimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsVideoFile(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return false;
+        }
+
+        var extension = System.IO.Path.GetExtension(file.FileName);
+        if (string.IsNullOrEmpty(extension))
+        {
+            return false;
+        }
+
+        if (!extension.StartsWith("."))
+        {
+            extension = "." + extension;
+        }
+
+        var validVideoExtensions = new[] { ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".mpeg" };
+
+        if (!validVideoExtensions.Contains(extension.ToLowerInvariant()))
+        {
+            return false;
+        }
+
+        var contentType = file.ContentType;
+
+
+        var validVideoContentTypes = new[]
+        {
+            "video/mp4", "video/x-msvideo", "video/x-matroska", "video/quicktime",
+            "video/x-ms-wmv", "video/x-flv", "video/webm", "video/mpeg"
+        };
+
+        if (validVideoContentTypes.Any(ct => contentType.StartsWith(ct, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
 public class ProfileImageUploadRequest
 {
     public required IFormFile Photo { get; set; }
