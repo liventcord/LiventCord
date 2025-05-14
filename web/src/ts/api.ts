@@ -265,7 +265,8 @@ class ApiClient {
     if (import.meta.env.DEV) {
       this.validateEventMaps();
       this.checkFullCrud();
-    } else {
+    }
+    if (!this.getBackendUrl()) {
       setTimeout(() => {
         alertUser(
           "Backend url is not set in vite config!",
