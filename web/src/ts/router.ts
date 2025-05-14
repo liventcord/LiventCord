@@ -70,7 +70,7 @@ class Router {
 
   async openLogin() {
     enableElement("login-panel");
-    initialiseLoginPage(false);
+    initialiseLoginPage();
     this.switchToLogin();
   }
   closeLogin() {

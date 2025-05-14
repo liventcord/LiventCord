@@ -4,7 +4,6 @@ import { router } from "./router";
 import { getId } from "./utils";
 
 let currentLanguage = "en";
-
 const loginTranslations = {
   en: {
     emailInvalid: "Please enter a valid email address.",
@@ -71,12 +70,18 @@ function setLanguage(language: string) {
   window.dispatchEvent(languageChangeEvent);
 }
 
-export function initialiseLoginPage(isRegister: boolean) {
+let areListenersAdded = false;
+
+export function initialiseLoginPage() {
   const browserLanguage = navigator.language || navigator.language;
   const languageToSet = browserLanguage.startsWith("tr") ? "tr" : "en";
 
   setLanguage(languageToSet);
   updateDOM();
+  if (areListenersAdded) {
+    return;
+  }
+  areListenersAdded = true;
 
   const loginForm = getId("login-form");
   const registerForm = getId("register-form");
@@ -135,7 +140,6 @@ export function initialiseLoginPage(isRegister: boolean) {
   ) as HTMLVideoElement;
   if (wallpaper) {
     const width = window.innerWidth;
-
     if (width > 1280) {
       wallpaper.src =
         "https://motionbgs.com/media/492/nier-automata.3840x2160.mp4";
@@ -163,12 +167,16 @@ export function initialiseLoginPage(isRegister: boolean) {
 
   const enButton = getId("en-button");
   const trButton = getId("tr-button");
-  enButton?.addEventListener("click", () => {
-    setLanguage("en");
-  });
-  trButton?.addEventListener("click", () => {
-    setLanguage("tr");
-  });
+  if (enButton) {
+    enButton.addEventListener("click", () => {
+      setLanguage("en");
+    });
+  }
+  if (trButton) {
+    trButton.addEventListener("click", () => {
+      setLanguage("tr");
+    });
+  }
 }
 
 function getTranslation(key: string) {
@@ -196,6 +204,12 @@ function alertUser(text: string, isSuccess = false) {
   setTimeout(() => {
     container.remove();
   }, 5000);
+}
+interface LoginResponse {
+  token: string;
+}
+function isLoginResponse(data: any): data is LoginResponse {
+  return data && typeof data.token === "string";
 }
 
 function submitForm(form: HTMLElement, isRegister: boolean) {
@@ -282,10 +296,15 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
         );
       }
 
-      const responseData = await response.json();
+      let responseData: LoginResponse | {} = {};
+      if (!isRegister) {
+        responseData = await response.json();
 
-      if (!isRegister && responseData.token) {
-        apiClient.setAuthToken(responseData.token);
+        if (isLoginResponse(responseData)) {
+          apiClient.setAuthToken(responseData.token);
+        } else {
+          throw new Error("Invalid response data");
+        }
       }
 
       return responseData;

@@ -159,7 +159,7 @@
   }
   100% {
     width: 30vw;
-    height: 30vh;
+    height: 35vh;
   }
 }
 
@@ -314,10 +314,9 @@
 .pop-up-content {
   color: white;
   overflow-y: scroll;
-  max-height: calc(100% - 38px);
-  padding: 50px;
+  padding: 10px;
   margin-top: 50px;
-  margin-bottom: 38px;
+  margin-bottom: 80px;
 }
 
 .pop-up-subject {

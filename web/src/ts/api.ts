@@ -265,6 +265,11 @@ class ApiClient {
     if (import.meta.env.DEV) {
       this.validateEventMaps();
       this.checkFullCrud();
+    } else {
+      alertUser(
+        "Backend url is not set in vite config!",
+        "Set up .env file at vite src directory."
+      );
     }
   }
   public getEmojis() {
@@ -485,6 +490,22 @@ class ApiClient {
       return responseBody ? JSON.parse(responseBody) : null;
     } catch (error) {
       console.error(`Failed to send request for event "${event}":`, error);
+      if (event === EventType.GET_INIT_DATA) {
+        if (window.location.hostname === "127.0.0.1") {
+          alertUser(
+            "CORS ISSUE",
+            "You are trying to access webapp from 127.0.0.1 . If you have set up 'localhost' for frontend url in backend, make sure they are exactly same."
+          );
+        } else if (window.location.hostname === "localhost") {
+          alertUser(
+            "CORS ISSUE",
+            "You are trying to access webapp from localhost . If you have set up '127.0.0.1' for frontend url in backend, make sure they are exactly same."
+          );
+        } else {
+          alertUser("Cant establish connection to server");
+        }
+        return;
+      }
       throw error;
     }
   }
@@ -568,17 +589,6 @@ class ApiClient {
         this.handleMessage(event, response);
       }
     } catch (error: any) {
-      console.error(error);
-
-      if (
-        error.message.includes("NetworkError") ||
-        error.message.includes("Failed to fetch")
-      ) {
-        console.error(`Network error when trying to request event: ${event}`);
-      } else {
-        console.error(`Error during request for event "${event}"`);
-      }
-
       alertUser(
         `Error during request for event "${event}"`,
         `${error} ${event} ${JSON.stringify(data)}`
