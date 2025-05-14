@@ -266,10 +266,12 @@ class ApiClient {
       this.validateEventMaps();
       this.checkFullCrud();
     } else {
-      alertUser(
-        "Backend url is not set in vite config!",
-        "Set up .env file at vite src directory."
-      );
+      setTimeout(() => {
+        alertUser(
+          "Backend url is not set in vite config!",
+          "Set up .env file at vite src directory."
+        );
+      }, 1000);
     }
   }
   public getEmojis() {
