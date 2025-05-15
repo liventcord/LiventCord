@@ -437,7 +437,9 @@ export function isURL(input: string): boolean {
     !controlCharPattern.test(input)
   );
 }
-
+export function containsUrl(input: string): boolean {
+  return typeof input === "string" && /\bhttps?:\/\/\S+/i.test(input);
+}
 export function getProfileUrl(userId: string, addTimestamp?: boolean) {
   const timestamp = `?ts=${new Date().getTime()}`;
 

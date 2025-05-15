@@ -382,7 +382,6 @@ export async function createMediaElement(
   attachments?: Attachment[]
 ) {
   const attachmentsToUse = processAttachments(attachments);
-
   if (attachmentsToUse.length) {
     newMessage.dataset.attachmentUrls = attachmentsToUse
       .map((a) => getAttachmentUrl(a.fileId))
@@ -390,10 +389,10 @@ export async function createMediaElement(
   }
 
   const attachmentUrl = attachments?.[0]?.proxyUrl || "";
-  const links: string[] = [
-    ...extractLinks(content).filter((link) => link !== attachmentUrl),
-    attachmentUrl
-  ];
+  const links: string[] = attachmentUrl
+    ? [attachmentUrl]
+    : extractLinks(content).filter((link) => link !== attachmentUrl);
+
 
   let mediaCount = 0;
   let linksProcessed = 0;
@@ -415,29 +414,11 @@ export async function createMediaElement(
     }
   }
 
-  await processLinks();
-  async function processLinks() {
-    while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
+  console.warn(attachments, links);
+  if (attachments)
+    for (const attachment of attachments) {
       try {
-        const isError = await processMediaLink(
-          links[linksProcessed],
-          null,
-          messageContentElement,
-          content,
-          metadata,
-          embeds,
-          senderId,
-          date
-        );
-        if (!isError) mediaCount++;
-      } catch (error) {
-        console.error("Error processing media link:", error);
-      }
-      linksProcessed++;
-    }
-
-    for (const attachment of attachmentsToUse) {
-      try {
+        console.log("Processing attachment: ", attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),
@@ -457,6 +438,28 @@ export async function createMediaElement(
       } catch (error) {
         console.error("Error processing attachment:", error);
       }
+    }
+  else {
+    await processLinks();
+  }
+  async function processLinks() {
+    while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
+      try {
+        const isError = await processMediaLink(
+          links[linksProcessed],
+          null,
+          messageContentElement,
+          content,
+          metadata,
+          embeds,
+          senderId,
+          date
+        );
+        if (!isError) mediaCount++;
+      } catch (error) {
+        console.error("Error processing media link:", error);
+      }
+      linksProcessed++;
     }
   }
 }
@@ -506,7 +509,10 @@ function createFileAttachmentPreview(
   return container;
 }
 function doesMessageHasProxyiedLink(link: string) {
-  return currentAttachments.some((a) => a.attachment.proxyUrl === link);
+  const result = currentAttachments.some((a) => a.attachment.proxyUrl === link);
+  console.log(result);
+  return true;
+  return result;
 }
 
 function processMediaLink(
@@ -530,7 +536,14 @@ function processMediaLink(
       resolve(true);
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      if (!embeds || (embeds.length <= 0 && !attachment?.isProxyFile)) {
+      console.log(
+        attachment,
+        "Processing image or attachment: " +
+          link +
+          " is proxy file : " +
+          attachment?.isProxyFile
+      );
+      if (!embeds || embeds.length <= 0) {
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
@@ -568,24 +581,28 @@ function processMediaLink(
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
+      console.log("Handling link: " + link);
       handleLink(messageContentElement, content);
-      if (doesMessageHasProxyiedLink(link)) {
-        mediaElement = createImageElement(
-          "",
-          link,
-          senderId,
-          date,
-          attachment?.fileId,
-          attachment?.isSpoiler,
-          attachment?.fileSize,
-          attachment?.fileName
-        );
-      }
+      setTimeout(() => {
+        if (doesMessageHasProxyiedLink(link)) {
+          mediaElement = createImageElement(
+            attachment?.fileName ?? "",
+            link,
+            senderId,
+            date,
+            attachment?.fileId,
+            attachment?.isSpoiler,
+            attachment?.fileSize,
+            attachment?.fileName
+          );
+        }
+      }, 0);
     } else {
       messageContentElement.textContent = content;
       resolve(false);
       return;
     }
+    console.warn(mediaElement);
 
     if (mediaElement instanceof Promise) {
       mediaElement
@@ -662,7 +679,7 @@ export function handleLink(
     content = content.replace(existingTextNode.textContent || "", "");
   }
 
-  while ((match = urlPattern.exec(content)) !== null) {
+  while ((match = urlPattern.exec(content)) != null) {
     const url = match[0];
 
     if (seenUrls.has(url)) continue;

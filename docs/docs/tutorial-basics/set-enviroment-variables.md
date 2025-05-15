@@ -75,7 +75,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
 
   - **MediaProxyApiUrl**:
     Url of the Media Proxy url for proxying external resources on media previews.
-    **Defaults to** `leventcord.bsite.net`
+    **Defaults to** `ymemwaf.bsite.net`
     
 
   - **MaxAvatarSize**:
