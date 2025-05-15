@@ -165,37 +165,7 @@ table {
   border-radius: 50%;
   cursor: pointer;
 }
-.profile-dots3 {
-  cursor: pointer;
-  border-radius: 50%;
-  color: white;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  background-color: rgb(17, 18, 20);
-  border: none;
-  margin-right: 15px;
-  margin-top: 12px;
-  color: #b5bac1;
-}
-.profile-dots3-text {
-  font-size: 20px;
-  pointer-events: none;
-  margin-top: 2px;
-  text-indent: 0.5px;
-  user-select: none;
-}
-.profile-display {
-  width: 120px;
-  height: 120px;
-  border: solid rgb(17, 18, 20) 8px;
-  top: 137px;
-  left: 16px;
-  position: absolute;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: border-radius 0.2s ease-out;
-}
+
 #guild-image,
 #guild-image-remove {
   width: 100px;
@@ -322,44 +292,7 @@ table {
   padding-left: 20px;
   font-weight: bold;
 }
-#profile-container {
-  display: flex;
-  margin-top: 257px;
-  margin-left: 20px;
-}
-#profile-title {
-  color: white;
-  font-size: 25px;
-  user-select: text;
-  font-weight: bold;
-}
-#profile-discriminator {
-  font-weight: bold;
-  color: rgb(181, 186, 193);
-  font-size: 16px;
-  margin-top: 60px;
-  user-select: text;
-  position: fixed;
-}
-#invite-users-send-text {
-  font-weight: bold;
-  color: rgb(181, 186, 193);
-  font-size: 12px;
-  padding-left: 20px;
-}
-#profile-about-title {
-  font-weight: bold;
-  color: rgb(181, 186, 193);
-  font-size: 17px;
-  user-select: text;
-  padding-left: 20px;
-}
-#profile-about-description {
-  font-weight: bold;
-  color: rgb(181, 186, 193);
-  font-size: 17px;
-  padding-left: 20px;
-}
+
 #invite-users-channel-name-text {
   font-weight: bold;
   color: rgb(181, 186, 193);

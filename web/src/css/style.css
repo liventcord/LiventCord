@@ -1230,12 +1230,12 @@
 }
 .status-bubble {
   color: white;
-  padding: 8px;
+  padding: 0.6em;
   border-radius: 50px;
   position: absolute;
   transition: opacity 0.5s ease-in-out;
-  top: 202px;
-  left: 87px;
+  top: 19vh;
+  left: 3.7vw;
   border: 4px solid #111214;
 }
 
@@ -1558,63 +1558,6 @@ textarea::-webkit-scrollbar-track {
 }
 .message-button:hover {
   background-color: #393a3b;
-}
-.profile-options-container {
-  font-size: 16px;
-  margin-left: auto;
-  display: flex;
-  justify-content: flex-end;
-  flex-direction: row-reverse;
-  position: absolute;
-  right: 0px;
-}
-.profile-send-msg-button {
-  cursor: pointer;
-  border: none;
-  background-color: rgb(78, 80, 88);
-  color: white;
-  height: 32px;
-  width: 90px;
-  margin-right: 16px;
-  margin-top: -25px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-}
-
-.profile-send-msg-button svg {
-  margin-right: 8px;
-}
-
-.profile-add-friend-button {
-  cursor: pointer;
-  border: none;
-  background-color: rgb(88, 101, 242);
-  color: white;
-  height: 32px;
-  width: 130px;
-  margin-right: 16px;
-  margin-top: -25px;
-  display: flex;
-  align-items: center;
-  padding: 0;
-  border-radius: 5px;
-  text-indent: 5px;
-}
-.profile-add-friend-button-pending {
-  background-color: rgb(78, 80, 88) !important;
-  width: 30px;
-  opacity: 0.6;
-}
-.icon-container {
-  display: flex;
-  align-items: center;
-  margin-left: 15px;
-  justify-content: center;
-  pointer-events: none;
-}
-.profile-add-friend-button-pending .icon-container {
-  margin-left: 8px;
 }
 
 .failed {
