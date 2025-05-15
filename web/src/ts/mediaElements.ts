@@ -393,7 +393,6 @@ export async function createMediaElement(
     ? [attachmentUrl]
     : extractLinks(content).filter((link) => link !== attachmentUrl);
 
-
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -414,7 +413,6 @@ export async function createMediaElement(
     }
   }
 
-  console.warn(attachments, links);
   if (attachments)
     for (const attachment of attachments) {
       try {
@@ -510,8 +508,6 @@ function createFileAttachmentPreview(
 }
 function doesMessageHasProxyiedLink(link: string) {
   const result = currentAttachments.some((a) => a.attachment.proxyUrl === link);
-  console.log(result);
-  return true;
   return result;
 }
 
@@ -536,18 +532,11 @@ function processMediaLink(
       resolve(true);
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      console.log(
-        attachment,
-        "Processing image or attachment: " +
-          link +
-          " is proxy file : " +
-          attachment?.isProxyFile
-      );
       if (!embeds || embeds.length <= 0) {
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
-            link,
+            attachment.proxyUrl,
             senderId,
             date,
             attachment?.fileId,
@@ -581,28 +570,24 @@ function processMediaLink(
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
-      console.log("Handling link: " + link);
       handleLink(messageContentElement, content);
-      setTimeout(() => {
-        if (doesMessageHasProxyiedLink(link)) {
-          mediaElement = createImageElement(
-            attachment?.fileName ?? "",
-            link,
-            senderId,
-            date,
-            attachment?.fileId,
-            attachment?.isSpoiler,
-            attachment?.fileSize,
-            attachment?.fileName
-          );
-        }
-      }, 0);
+      if (doesMessageHasProxyiedLink(link)) {
+        mediaElement = createImageElement(
+          attachment?.fileName ?? "",
+          link,
+          senderId,
+          date,
+          attachment?.fileId,
+          attachment?.isSpoiler,
+          attachment?.fileSize,
+          attachment?.fileName
+        );
+      }
     } else {
       messageContentElement.textContent = content;
       resolve(false);
       return;
     }
-    console.warn(mediaElement);
 
     if (mediaElement instanceof Promise) {
       mediaElement
@@ -660,8 +645,8 @@ export function handleLink(
   let match: RegExpExecArray | null;
   const seenUrls = new Set();
 
-  const appendToMessage = (el: HTMLElement | DocumentFragment) => {
-    messageContentElement.appendChild(el);
+  const prependToMessage = (el: HTMLElement | DocumentFragment) => {
+    messageContentElement.insertBefore(el, messageContentElement.firstChild);
   };
 
   const insertTextOrHTML = (text: string) => {
@@ -669,7 +654,7 @@ export function handleLink(
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span");
     span.innerHTML = replaced;
-    appendToMessage(span);
+    prependToMessage(span);
   };
 
   const fragment = document.createDocumentFragment();
@@ -696,7 +681,7 @@ export function handleLink(
     const urlLink = createEl("a", { textContent: url });
     urlLink.classList.add("url-link");
     urlLink.addEventListener("click", () => openExternalUrl(url));
-    appendToMessage(urlLink);
+    prependToMessage(urlLink);
 
     lastIndex = end;
   }
@@ -706,12 +691,13 @@ export function handleLink(
     insertTextOrHTML(remainingText);
   }
 
-  messageContentElement.appendChild(fragment);
+  messageContentElement.insertBefore(
+    fragment,
+    messageContentElement.firstChild
+  );
   messageContentElement.dataset.contentLoaded = "true";
-
   setupEmojiListeners(messageContentElement);
 }
-
 function applyBorderColor(element: HTMLElement, decimalColor: number) {
   if (
     !Number.isInteger(decimalColor) ||
