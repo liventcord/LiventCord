@@ -91,8 +91,10 @@ class WebSocketClient {
   private async connectSocket() {
     const cookie = await apiClient.getAuthCookie();
     if (cookie !== "undefined") {
-      this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
-      this.attachHandlers();
+      try {
+        this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
+        this.attachHandlers();
+      } catch (ex) {}
     }
   }
 
@@ -163,20 +165,12 @@ class WebSocketClient {
       }
     };
 
-    this.socket.onerror = (error) => {
-      console.error("WebSocket Error:", error);
-    };
-
     this.socket.onclose = (event) => {
-      if (event.wasClean) {
-        console.log("Closed cleanly:", event.code, event.reason);
-      } else {
-        console.error("Connection interrupted");
+      if (!event.wasClean) {
         const retryDelay = Math.min(
           Math.pow(2, this.retryCount) * 1000,
           this.maxRetryDelay
         );
-        console.log(`Retrying connection in ${retryDelay / 1000} seconds...`);
         setTimeout(() => this.reconnect(), retryDelay);
         this.retryCount = Math.min(this.retryCount + 1, 10);
       }

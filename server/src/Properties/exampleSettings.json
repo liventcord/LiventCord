@@ -17,6 +17,7 @@
     "Port": "5005",
     "FrontendUrl": "http://localhost:5173",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",
+    "MediaProxyApiUrl": "http://127.0.0.1:5000",
     "MaxAvatarSize": "3",
     "MaxAttachmentsSize": "30",
     "EnableMetadataIndexing": true,

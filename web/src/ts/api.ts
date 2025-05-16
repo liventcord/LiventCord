@@ -366,10 +366,7 @@ class ApiClient {
   }
 
   getProxyUrl(url: string): string {
-    return (
-      initialState.mediaProxyApiUrl +
-      `/api/proxy/media?url=${encodeURIComponent(url)}`
-    );
+    return initialState.mediaProxyApiUrl + `/api/proxy/media?url=${url}`;
   }
 
   getUrlForEvent(

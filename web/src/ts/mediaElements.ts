@@ -382,7 +382,6 @@ export async function createMediaElement(
   attachments?: Attachment[]
 ) {
   const attachmentsToUse = processAttachments(attachments);
-
   if (attachmentsToUse.length) {
     newMessage.dataset.attachmentUrls = attachmentsToUse
       .map((a) => getAttachmentUrl(a.fileId))
@@ -390,10 +389,9 @@ export async function createMediaElement(
   }
 
   const attachmentUrl = attachments?.[0]?.proxyUrl || "";
-  const links: string[] = [
-    ...extractLinks(content).filter((link) => link !== attachmentUrl),
-    attachmentUrl
-  ];
+  const links: string[] = attachmentUrl
+    ? [attachmentUrl]
+    : extractLinks(content).filter((link) => link !== attachmentUrl);
 
   let mediaCount = 0;
   let linksProcessed = 0;
@@ -415,29 +413,10 @@ export async function createMediaElement(
     }
   }
 
-  await processLinks();
-  async function processLinks() {
-    while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
+  if (attachments)
+    for (const attachment of attachments) {
       try {
-        const isError = await processMediaLink(
-          links[linksProcessed],
-          null,
-          messageContentElement,
-          content,
-          metadata,
-          embeds,
-          senderId,
-          date
-        );
-        if (!isError) mediaCount++;
-      } catch (error) {
-        console.error("Error processing media link:", error);
-      }
-      linksProcessed++;
-    }
-
-    for (const attachment of attachmentsToUse) {
-      try {
+        console.log("Processing attachment: ", attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),
@@ -457,6 +436,28 @@ export async function createMediaElement(
       } catch (error) {
         console.error("Error processing attachment:", error);
       }
+    }
+  else {
+    await processLinks();
+  }
+  async function processLinks() {
+    while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
+      try {
+        const isError = await processMediaLink(
+          links[linksProcessed],
+          null,
+          messageContentElement,
+          content,
+          metadata,
+          embeds,
+          senderId,
+          date
+        );
+        if (!isError) mediaCount++;
+      } catch (error) {
+        console.error("Error processing media link:", error);
+      }
+      linksProcessed++;
     }
   }
 }
@@ -506,7 +507,8 @@ function createFileAttachmentPreview(
   return container;
 }
 function doesMessageHasProxyiedLink(link: string) {
-  return currentAttachments.some((a) => a.attachment.proxyUrl === link);
+  const result = currentAttachments.some((a) => a.attachment.proxyUrl === link);
+  return result;
 }
 
 function processMediaLink(
@@ -530,11 +532,11 @@ function processMediaLink(
       resolve(true);
     };
     if (isImageURL(link) || isAttachmentUrl(link)) {
-      if (!embeds || (embeds.length <= 0 && !attachment?.isProxyFile)) {
+      if (!embeds || embeds.length <= 0) {
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
-            link,
+            attachment.proxyUrl,
             senderId,
             date,
             attachment?.fileId,
@@ -571,7 +573,7 @@ function processMediaLink(
       handleLink(messageContentElement, content);
       if (doesMessageHasProxyiedLink(link)) {
         mediaElement = createImageElement(
-          "",
+          attachment?.fileName ?? "",
           link,
           senderId,
           date,
@@ -643,8 +645,8 @@ export function handleLink(
   let match: RegExpExecArray | null;
   const seenUrls = new Set();
 
-  const appendToMessage = (el: HTMLElement | DocumentFragment) => {
-    messageContentElement.appendChild(el);
+  const prependToMessage = (el: HTMLElement | DocumentFragment) => {
+    messageContentElement.insertBefore(el, messageContentElement.firstChild);
   };
 
   const insertTextOrHTML = (text: string) => {
@@ -652,7 +654,7 @@ export function handleLink(
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span");
     span.innerHTML = replaced;
-    appendToMessage(span);
+    prependToMessage(span);
   };
 
   const fragment = document.createDocumentFragment();
@@ -662,7 +664,7 @@ export function handleLink(
     content = content.replace(existingTextNode.textContent || "", "");
   }
 
-  while ((match = urlPattern.exec(content)) !== null) {
+  while ((match = urlPattern.exec(content)) != null) {
     const url = match[0];
 
     if (seenUrls.has(url)) continue;
@@ -679,7 +681,7 @@ export function handleLink(
     const urlLink = createEl("a", { textContent: url });
     urlLink.classList.add("url-link");
     urlLink.addEventListener("click", () => openExternalUrl(url));
-    appendToMessage(urlLink);
+    prependToMessage(urlLink);
 
     lastIndex = end;
   }
@@ -689,12 +691,13 @@ export function handleLink(
     insertTextOrHTML(remainingText);
   }
 
-  messageContentElement.appendChild(fragment);
+  messageContentElement.insertBefore(
+    fragment,
+    messageContentElement.firstChild
+  );
   messageContentElement.dataset.contentLoaded = "true";
-
   setupEmojiListeners(messageContentElement);
 }
-
 function applyBorderColor(element: HTMLElement, decimalColor: number) {
   if (
     !Number.isInteger(decimalColor) ||
