@@ -74,7 +74,7 @@ export default defineConfig(({ mode }) => {
       eslintPlugin({ emitWarning: false }),
       VitePWA({
         registerType: "autoUpdate",
-        injectRegister: "auto",
+        injectRegister: "inline",
         devOptions: {
           enabled: true
         },
