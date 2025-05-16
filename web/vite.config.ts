@@ -83,6 +83,7 @@ export default defineConfig(({ mode }) => {
           short_name: "App",
           description: "LiventCord Desktop App",
           start_url: "/LiventCord/app/",
+          scope: "/LiventCord/app/",
           display: "standalone",
           background_color: "#ffffff",
           theme_color: "#000000",
