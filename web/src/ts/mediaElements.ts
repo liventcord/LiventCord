@@ -321,7 +321,6 @@ function createVideoElement(url: string, isVideoAttachment = false) {
   if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
-
   const videoElement = createEl("video") as HTMLVideoElement;
   const proxiedUrl = getProxy(url);
   videoElement.src = proxiedUrl;
@@ -526,6 +525,7 @@ function processMediaLink(
     const handleLoad = () => {
       resolve(false);
     };
+    console.log(link,attachment)
 
     const handleError = () => {
       console.error("Error loading media element");
@@ -536,7 +536,7 @@ function processMediaLink(
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
-            attachment.proxyUrl,
+            attachment.proxyUrl ?? IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
             senderId,
             date,
             attachment?.fileId,
@@ -545,7 +545,7 @@ function processMediaLink(
             attachment?.fileName
           );
         } else if (attachment?.isVideoFile) {
-          mediaElement = createVideoElement(link, true);
+          mediaElement = createVideoElement(attachment.proxyUrl ?? link, true);
         }
       }
     } else if (isTenorURL(link)) {
