@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 import discord
 import requests
@@ -11,14 +10,14 @@ class AvatarHandler:
     @staticmethod
     async def get_all_members_avatars(
         bot: discord.Client, guild_id: int
-    ) -> List[discord.Member]:
+    ) -> list[discord.Member]:
         guild = bot.get_guild(guild_id)
 
         if guild is None:
             return []
 
         print("getting members...")
-        members: List[discord.Member] = []
+        members: list[discord.Member] = []
         async for member in guild.fetch_members(limit=None):
             members.append(member)
         return members

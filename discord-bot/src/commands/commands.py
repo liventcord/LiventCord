@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Optional
 
 import discord
 import requests
@@ -31,7 +30,7 @@ URL_COMMAND = "#url"
 
 async def find_message_in_channels(
     guild: discord.Guild, message_id: int
-) -> Optional[discord.Message]:
+) -> discord.Message | None:
     for channel in guild.text_channels:
         try:
             message = await channel.fetch_message(message_id)

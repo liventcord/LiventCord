@@ -1,19 +1,21 @@
 import argparse
-import time
+import asyncio
+import datetime
 import os
 import random
-import asyncio
+import time
+from typing import Any
+
 import requests
-import datetime
-from typing import Dict, Any
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from utils import LC_BOT_TOKEN, MainGuildIdLiventcord, forward_url
 from livent_cord_client import AuthenticatedClient
 from livent_cord_client.api.message import (
     post_api_discord_bot_messages_guild_id_channel_id,
 )
 from livent_cord_client.models.new_bot_message_request import NewBotMessageRequest
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+from utils import LC_BOT_TOKEN, MainGuildIdLiventcord, forward_url
 
 parser = argparse.ArgumentParser(
     description="Script to scrape images from a user's page."
@@ -83,22 +85,21 @@ client = AuthenticatedClient(base_url=forward_url, token=LC_BOT_TOKEN)
 
 
 def create_random_id():
-    "Create random 19 digits string id"
+    """Create random 19 digits string id."""
     return "".join([str(random.randint(0, 9)) for _ in range(19)])
 
 
 async def send_messages(messages):
-    "Send messages to liventcord guild"
-
+    """Send messages to liventcord guild."""
     for message in messages:
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "message_id": create_random_id(),
             "user_id": user_id,
             "content": message,
-            "date": datetime.datetime.now(datetime.timezone.utc),
+            "date": datetime.datetime.now(datetime.UTC),
         }
 
-        filtered_data: Dict[str, Any] = {k: v for k, v in data.items() if v is not None}
+        filtered_data: dict[str, Any] = {k: v for k, v in data.items() if v is not None}
 
         request = NewBotMessageRequest(**filtered_data)
 

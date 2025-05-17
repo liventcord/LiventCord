@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+
 from avatar import AvatarHandler
 from commands.commands import handle_commands, isDm
 from messages.message_forwarder import LiventCordClient

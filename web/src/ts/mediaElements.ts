@@ -525,7 +525,7 @@ function processMediaLink(
     const handleLoad = () => {
       resolve(false);
     };
-    console.log(link,attachment)
+    console.log(link, attachment);
 
     const handleError = () => {
       console.error("Error loading media element");

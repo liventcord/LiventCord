@@ -1,12 +1,15 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, List
+from typing import Any
+
 import discord
 import requests
 from requests import RequestException
 from sqlalchemy.future import select
 from sqlalchemy.orm.attributes import flag_modified
+
+from messages.message import Message, SessionLocal
 from messages.message_forwarder import LiventCordClient
 from utils import (
     BULK_SAVE_THRESHOLD,
@@ -14,7 +17,6 @@ from utils import (
     MainGuildIdDiscord,
     isSaving,
 )
-from messages.message import Message, SessionLocal
 
 os.makedirs("databases", exist_ok=True)
 
@@ -107,24 +109,22 @@ class MessageHandler:
         )
 
     def extract_message_details(self) -> tuple:
-        attachments = ", ".join(
-            [attachment.url for attachment in self.message.attachments]
-        )
+        attachments = ", ".join([
+            attachment.url for attachment in self.message.attachments
+        ])
         reply_to_id = (
             self.message.reference.resolved.id
             if self.message.reference and self.message.reference.resolved
             else None
         )
-        reaction_emojis_ids = ", ".join(
-            [
-                (
-                    str(reaction.emoji.id)
-                    if isinstance(reaction.emoji, discord.Emoji)
-                    else str(reaction.emoji)
-                )
-                for reaction in self.message.reactions
-            ]
-        )
+        reaction_emojis_ids = ", ".join([
+            (
+                str(reaction.emoji.id)
+                if isinstance(reaction.emoji, discord.Emoji)
+                else str(reaction.emoji)
+            )
+            for reaction in self.message.reactions
+        ])
         embeds = (
             json.dumps([embed.to_dict() for embed in self.message.embeds])
             if self.message.embeds
@@ -140,19 +140,17 @@ class MessageHandler:
         )
 
         if existing_message:
-            for idx, field in enumerate(
-                [
-                    "guild_id",
-                    "content",
-                    "channel_id",
-                    "date",
-                    "last_edited",
-                    "attachment_urls",
-                    "reply_to_id",
-                    "reaction_emojis_ids",
-                    "embed",
-                ]
-            ):
+            for idx, field in enumerate([
+                "guild_id",
+                "content",
+                "channel_id",
+                "date",
+                "last_edited",
+                "attachment_urls",
+                "reply_to_id",
+                "reaction_emojis_ids",
+                "embed",
+            ]):
                 old_value = getattr(existing_message, field)
                 new_value = message_data[idx + 2]
 
@@ -266,7 +264,7 @@ class MessageHandler:
             session.close()
 
     @classmethod
-    async def delete_messages_from_db(cls, message_ids: List[int]) -> None:
+    async def delete_messages_from_db(cls, message_ids: list[int]) -> None:
         session = SessionLocal()
         try:
             session.query(Message).filter(

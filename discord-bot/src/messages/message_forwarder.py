@@ -1,6 +1,7 @@
 import asyncio
 import json
-from typing import Any, Dict, List, Union
+from typing import Any
+
 from livent_cord_client import AuthenticatedClient
 from livent_cord_client.api.channel import post_api_discord_bot_guilds_guild_id_channels
 from livent_cord_client.api.message import (
@@ -17,6 +18,7 @@ from livent_cord_client.models.embed_type import EmbedType
 from livent_cord_client.models.embed_video import EmbedVideo
 from livent_cord_client.models.new_bot_message_request import NewBotMessageRequest
 from livent_cord_client.types import UNSET, Unset
+
 from messages.message import Message
 from utils import LC_BOT_TOKEN, MainGuildIdLiventcord, forward_url
 
@@ -36,7 +38,7 @@ class LiventCordClient:
         self.client = AuthenticatedClient(base_url=url, token=token)
         self.created_channels: set[str] = set()
 
-    def refine_embeds(self, raw_embeds: Any) -> List[Embed]:
+    def refine_embeds(self, raw_embeds: Any) -> list[Embed]:
         refined = []
         for data in raw_embeds:
             if isinstance(data, dict):
@@ -51,7 +53,7 @@ class LiventCordClient:
                             name = f.get("name", None)
                             value = f.get("value", None)
                             fields.append(EmbedField(name=name, value=value))
-                thumb: Union[EmbedThumbnail, Unset] = UNSET
+                thumb: EmbedThumbnail | Unset = UNSET
                 if "thumbnail" in data and isinstance(data["thumbnail"], dict):
                     thumb_data = data["thumbnail"]
                     thumb_data.pop("placeholder", None)
@@ -59,7 +61,7 @@ class LiventCordClient:
                     thumb_data.pop("flags", None)
                     thumb = EmbedThumbnail(**thumb_data)
 
-                video: Union[EmbedVideo, Unset] = UNSET
+                video: EmbedVideo | Unset = UNSET
                 if "video" in data and isinstance(data["video"], dict):
                     video_data = data["video"].copy()
                     video_data.pop("placeholder", None)
@@ -67,20 +69,20 @@ class LiventCordClient:
                     video_data.pop("flags", None)
                     video = EmbedVideo(**video_data)
 
-                author: Union[EmbedAuthor, Unset] = UNSET
+                author: EmbedAuthor | Unset = UNSET
                 if "author" in data and isinstance(data["author"], dict):
                     author_data = data["author"].copy()
                     author_data.pop("proxy_icon_url", None)
                     author = EmbedAuthor(**author_data)
 
-                image: Union[EmbedImage, Unset] = UNSET
+                image: EmbedImage | Unset = UNSET
                 if "image" in data and isinstance(data["image"], dict):
                     image_data = data["image"]
                     image_data.pop("placeholder", None)
                     image_data.pop("placeholder_version", None)
                     image_data.pop("flags", None)
                     image = EmbedImage(**image_data)
-                footer: Union[EmbedFooter, Unset] = UNSET
+                footer: EmbedFooter | Unset = UNSET
                 footer = UNSET
                 if "footer" in data and isinstance(data["footer"], dict):
                     footer_data = data["footer"].copy()
@@ -109,7 +111,7 @@ class LiventCordClient:
             refined.append(embed)
         return refined
 
-    def process_embeds(self, raw_embed: Any) -> List[Embed]:
+    def process_embeds(self, raw_embed: Any) -> list[Embed]:
         if isinstance(raw_embed, str):
             try:
                 raw_embed = json.loads(raw_embed)
@@ -159,14 +161,14 @@ class LiventCordClient:
                 except Exception as e:
                     print(f"Error creating channel {channel_id}: {e}")
 
-            requests: List[NewBotMessageRequest] = []
+            requests: list[NewBotMessageRequest] = []
             for message in messages:
                 if message.embed:
                     message.embed = self.process_embeds(message.embed)
                 else:
                     message.embed = []
 
-                data: Dict[str, Any] = {
+                data: dict[str, Any] = {
                     "message_id": message.message_id,
                     "user_id": message.user_id,
                     "content": message.content or "",
@@ -182,7 +184,7 @@ class LiventCordClient:
                 if message.date is not None:
                     data["date"] = message.date
 
-                filtered_data: Dict[str, Any] = {
+                filtered_data: dict[str, Any] = {
                     k: v for k, v in data.items() if v is not None
                 }
 

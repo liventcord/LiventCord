@@ -9,10 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sort"
-	"time"
+	"strings"
 	"sync"
+	"time"
 )
 
 const cacheHeader = "public, max-age=31536000, immutable"
@@ -26,22 +26,20 @@ func getCachePath(videoID string) (string, error) {
 }
 
 func getAudioStream(videoID string) (string, error) {
-    tempCookies := "/tmp/cookies.txt"
-    err := exec.Command("cp", "/etc/secrets/cookies.txt", tempCookies).Run()
-    if err != nil {
-        return "", fmt.Errorf("failed to copy cookies file.")
-    }
+	tempCookies := "/tmp/cookies.txt"
+	err := exec.Command("cp", "/etc/secrets/cookies.txt", tempCookies).Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to copy cookies file.")
+	}
 
-    cmd := exec.Command("yt-dlp", "--cookies", tempCookies, "-f", "bestaudio[ext=m4a]/bestaudio[height<=480]", "--get-url", "https://www.youtube.com/watch?v="+videoID)
-    output, err := cmd.CombinedOutput()
-    if err != nil {
-        log.Printf("yt-dlp command failed.")
-        return "", fmt.Errorf("yt-dlp error.")
-    }
-    return strings.TrimSpace(string(output)), nil
+	cmd := exec.Command("yt-dlp", "--cookies", tempCookies, "-f", "bestaudio[ext=m4a]/bestaudio[height<=480]", "--get-url", "https://www.youtube.com/watch?v="+videoID)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("yt-dlp command failed.")
+		return "", fmt.Errorf("yt-dlp error.")
+	}
+	return strings.TrimSpace(string(output)), nil
 }
-
-
 
 func handleRangeRequest(c *gin.Context, data []byte) {
 	c.Header("Accept-Ranges", "bytes")
@@ -132,7 +130,7 @@ func proxyStreamWithCache(c *gin.Context, videoID string) {
 	for key, values := range resp.Header {
 		c.Writer.Header()[key] = values
 	}
-	
+
 	c.Header("Cache-Control", cacheHeader)
 	c.Status(resp.StatusCode)
 
@@ -168,68 +166,67 @@ func proxyStreamWithCache(c *gin.Context, videoID string) {
 }
 
 func cleanCache(maxSize int64) {
-    cacheDir := "cache"
-    files, err := os.ReadDir(cacheDir)
-    if err != nil {
-        log.Println("[ERROR] Failed to read cache directory:", err)
-        return
-    }
+	cacheDir := "cache"
+	files, err := os.ReadDir(cacheDir)
+	if err != nil {
+		log.Println("[ERROR] Failed to read cache directory:", err)
+		return
+	}
 
-    var totalSize int64
-    var fileList []os.FileInfo
+	var totalSize int64
+	var fileList []os.FileInfo
 
-    for _, file := range files {
-        fi, err := file.Info()
-        if err != nil {
-            continue
-        }
-        totalSize += fi.Size()
-        fileList = append(fileList, fi)
-    }
+	for _, file := range files {
+		fi, err := file.Info()
+		if err != nil {
+			continue
+		}
+		totalSize += fi.Size()
+		fileList = append(fileList, fi)
+	}
 
-    if totalSize > maxSize {
-        log.Println("[CACHE] Cache limit exceeded, deleting old files...")
-        sort.Slice(fileList, func(i, j int) bool {
-            return fileList[i].ModTime().Before(fileList[j].ModTime())
-        })
+	if totalSize > maxSize {
+		log.Println("[CACHE] Cache limit exceeded, deleting old files...")
+		sort.Slice(fileList, func(i, j int) bool {
+			return fileList[i].ModTime().Before(fileList[j].ModTime())
+		})
 
-        for _, file := range fileList {
-            os.Remove(filepath.Join(cacheDir, file.Name()))
-            totalSize -= file.Size()
-            if totalSize < maxSize {
-                break
-            }
-        }
-    }
+		for _, file := range fileList {
+			os.Remove(filepath.Join(cacheDir, file.Name()))
+			totalSize -= file.Size()
+			if totalSize < maxSize {
+				break
+			}
+		}
+	}
 }
 
 var urlCache = sync.Map{}
 
 func getCachedAudioStream(videoID string) (string, error) {
-    if url, ok := urlCache.Load(videoID); ok {
-        return url.(string), nil
-    }
+	if url, ok := urlCache.Load(videoID); ok {
+		return url.(string), nil
+	}
 
-    url, err := getAudioStream(videoID)
-    if err == nil {
-        urlCache.Store(videoID, url)
-        go func() {
-            time.Sleep(5 * time.Minute)
-            urlCache.Delete(videoID)
-        }()
-    }
-    return url, err
+	url, err := getAudioStream(videoID)
+	if err == nil {
+		urlCache.Store(videoID, url)
+		go func() {
+			time.Sleep(5 * time.Minute)
+			urlCache.Delete(videoID)
+		}()
+	}
+	return url, err
 }
 
 func startCacheCleaner(interval time.Duration, maxSize int64) {
-    ticker := time.NewTicker(interval)
-    go func() {
-        for range ticker.C {
-            cleanCache(maxSize)
-        }
-    }()
+	ticker := time.NewTicker(interval)
+	go func() {
+		for range ticker.C {
+			cleanCache(maxSize)
+		}
+	}()
 }
-
 
 func main() {
 	os.MkdirAll("cache", os.ModePerm)

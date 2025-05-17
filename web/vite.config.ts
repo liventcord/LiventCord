@@ -3,7 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import eslintPlugin from "vite-plugin-eslint";
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
-import { VitePWA } from 'vite-plugin-pwa';
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === "development";
@@ -11,14 +11,17 @@ export default defineConfig(({ mode }) => {
 
   const proxyTarget = "http://localhost:5005";
   const proxyPaths = ["/api", "/profiles", "/guilds", "/attachments", "/auth"];
-  const proxyConfig = proxyPaths.reduce((acc, path) => {
-    acc[path] = {
-      target: proxyTarget,
-      changeOrigin: true,
-      secure: false
-    };
-    return acc;
-  }, {} as Record<string, any>);
+  const proxyConfig = proxyPaths.reduce(
+    (acc, path) => {
+      acc[path] = {
+        target: proxyTarget,
+        changeOrigin: true,
+        secure: false
+      };
+      return acc;
+    },
+    {} as Record<string, any>
+  );
 
   return {
     root: "./src",
@@ -44,11 +47,13 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
 
-            if (id.includes("vue/dist") || id.match(/node_modules\/@vue\//)) return "vue";
+            if (id.includes("vue/dist") || id.match(/node_modules\/@vue\//))
+              return "vue";
             if (id.includes("vuex")) return "vuex";
             if (id.includes("croppie")) return "croppie";
             if (id.includes("canvas-confetti")) return "confetti";
-            if (id.includes("browser-image-compression")) return "image-compression";
+            if (id.includes("browser-image-compression"))
+              return "image-compression";
             if (id.includes("file-type")) return "file-type";
             if (id.includes("dompurify")) return "dompurify";
             if (id.includes("dotenv")) return "dotenv";

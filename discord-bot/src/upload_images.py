@@ -1,4 +1,5 @@
 import os
+
 import requests
 from environs import Env
 
@@ -7,7 +8,7 @@ env.read_env()
 
 guild_id = env.str("MAIN_GUILD_ID_LC")
 channel_id = env.str("MAIN_CHANNEL_ID_LC")
-url = f'{env.str("FORWARD_URL")}/api/guilds/{guild_id}/channels/{channel_id}/messages'
+url = f"{env.str('FORWARD_URL')}/api/guilds/{guild_id}/channels/{channel_id}/messages"
 
 folder_path = "images/"
 LC_USER_TOKEN = env.str("LC_USER_TOKEN")
@@ -25,7 +26,7 @@ data = {
 headers = {"Authorization": "Bearer " + LC_USER_TOKEN}
 
 valid_files = []
-for root, dirs, files_in_dir in os.walk(folder_path):
+for root, _dirs, files_in_dir in os.walk(folder_path):
     for file_name in files_in_dir:
         file_extension = os.path.splitext(file_name)[1].lower()
         if file_extension not in supported_image_extensions:
