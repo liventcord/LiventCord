@@ -60,8 +60,8 @@ class Router {
         loadDmHome(false);
       } else if (pathStr.startsWith("/channels/@me/")) {
         openDm(parts[3]);
-      } else if (pathStr.startsWith("/channels/") && parts.length === 4) {
-        handleChannelLoading(parts[2], parts[3]);
+      } else if (pathStr.startsWith("/channels/") && parts.length === 3) {
+        handleChannelLoading(parts[1], parts[2]);
       }
     } catch (error) {
       console.error(error);
