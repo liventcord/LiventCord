@@ -251,13 +251,19 @@ function createImageElement(
 
     urlSrc = getAttachmentUrl(id);
   }
-
-  preloadImage(urlSrc)
-    .catch(() => preloadImage(urlSrc))
-    .then((loadedSrc) => {
-      imgElement.src = loadedSrc;
-    })
-    .catch(() => {});
+  if (
+    urlSrc !== IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC &&
+    urlSrc !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+  ) {
+    preloadImage(urlSrc)
+      .catch(() => preloadImage(urlSrc))
+      .then((loadedSrc) => {
+        imgElement.src = loadedSrc;
+      })
+      .catch(() => {});
+  } else {
+    imgElement.src = urlSrc;
+  }
 
   return imgElement;
 }
@@ -536,7 +542,7 @@ function processMediaLink(
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
-            attachment.proxyUrl ?? IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
+            attachment.proxyUrl ?? getAttachmentUrl(attachment.fileId),
             senderId,
             date,
             attachment?.fileId,
