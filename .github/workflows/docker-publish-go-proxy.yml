@@ -31,6 +31,6 @@ jobs:
           context: server/proxy-api/
           file: server/proxy-api/Dockerfile
           push: true
-          tags: thelp281/liventcord-ws-api:latest
-          cache-from: type=registry,ref=thelp281/liventcord-ws-api:cache
-          cache-to: type=registry,ref=thelp281/liventcord-ws-api:cache,mode=max
+          tags: thelp281/liventcord-proxy-api:latest
+          cache-from: type=registry,ref=thelp281/liventcord-proxy-api:cache
+          cache-to: type=registry,ref=thelp281/liventcord-proxy-api:cache,mode=max
