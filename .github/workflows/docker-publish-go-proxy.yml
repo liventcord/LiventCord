@@ -1,0 +1,36 @@
+name: Publish Docker Api Image Go Proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "server/proxy-api**"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: server/proxy-api/
+          file: server/proxy-api/Dockerfile
+          push: true
+          tags: thelp281/liventcord-ws-api:latest
+          cache-from: type=registry,ref=thelp281/liventcord-ws-api:cache
+          cache-to: type=registry,ref=thelp281/liventcord-ws-api:cache,mode=max

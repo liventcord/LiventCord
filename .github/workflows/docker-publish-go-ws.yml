@@ -1,4 +1,4 @@
-name: Publish Docker Image Go
+name: Publish Docker Api Image Go Ws
 
 on:
   push:
