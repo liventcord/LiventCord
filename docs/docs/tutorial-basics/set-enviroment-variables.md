@@ -140,20 +140,16 @@ mv .example.env .env
     Use release or debug mode.
     **Defaults to** debug.
 
-## Media Proxy Server Configuration
+## Gin Media Proxy Server Configuration
 ```bash
 cd Liventcord/server/proxy-api
 ```
-1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
+1. Move `.env.example` to `.env`.
 ```bash
-mv Properties/exampleSettings.json Properties/appsettings.json
+mv .env.example .env
 ```
 
 #### Configuration Options
-
-  - **FrontendUrl**:
-    Url to add cors headers at.
-    **Defaults to** `none`
 
   - **ExternalMediaLimit**:
     Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.

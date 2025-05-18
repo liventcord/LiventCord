@@ -38,3 +38,4 @@ ARG EnableMetadataIndexing
 ARG MetadataDomainLimit
 ARG RedisConnectionString
 ARG RedisConnectionLimit
+ARG JwtKey

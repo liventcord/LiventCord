@@ -65,7 +65,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = AuthController._jwtIssuer,
         ValidAudience = AuthController._jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:JwtKey"] ?? throw new InvalidOperationException("JWT Key is not configured"))),
+            Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey)),
         ClockSkew = TimeSpan.Zero
     };
 
@@ -124,8 +124,9 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"];
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? "http://127.0.0.1:5173";
 
+Console.WriteLine("Frontend url is: " + FRONTEND_URL);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", policy =>

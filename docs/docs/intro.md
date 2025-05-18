@@ -17,7 +17,7 @@ Get started with LiventCord in just a few steps.
 ### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
 ### 2. Install Node (For frontend) https://nodejs.org/en/download
 ### 3. Install Pnpm (For frontend) npm install -g pnpm
-### 4. Install Go (Optional, for realtime updates) https://go.dev/dl/
+### 4. Install Go (Optional, for realtime updates / External media display) https://go.dev/dl/
 ### 5. Install Redis (Optional, for realtime updates) https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/
 
 
@@ -53,10 +53,16 @@ Vite runs at `http://localhost:5173`.
 redis-server
 ```
 
-### Run Gin server for realtime updates (Requires redis)
+### Run Gin ws server for realtime updates (Requires redis)
 ```bash
 cd server/go-ws-api
 mv .env.example .env
-go run main.go
+go run .
 ```
 Gin server runs at `http://localhost:8080`
+
+### Run Go Proxy server for external media display
+```bash
+cd server/proxy-api
+mv .env.example .env
+go run .

@@ -42,6 +42,7 @@ namespace LiventCord.Helpers
 {
     public static partial class Utils
     {
+        public static string DefaultJwtKey = "abcdefgh12345678ijklmnop87654321";
         private static readonly Random _random = new();
         public static int ID_LENGTH = 19;
         public static int USER_ID_LENGTH = 18;

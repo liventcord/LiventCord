@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using LiventCord.Helpers;
 
 namespace LiventCord.Controllers
 {
@@ -41,9 +42,9 @@ namespace LiventCord.Controllers
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
-
-            _jwtKey = configuration["AppSettings:JwtKey"] ?? throw new InvalidOperationException("JWT Key is missing in configuration");
-            _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
+            _jwtKey = configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey;
+            if (configuration["AppSettings:JwtKey"] == Utils.DefaultJwtKey)
+                _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
         }
 
         [HttpPost("change-password")]

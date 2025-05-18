@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "vite.config.js",
   "scripts": {
-    "dev": "vite",
-    "start": "vite",
+    "dev": "vite --host='127.0.0.1'",
+    "start": "vite --host='127.0.0.1'",
     "lint": "pnpm eslint src/ts/* --fix",
     "build": "vite build",
     "serve": "vite preview",

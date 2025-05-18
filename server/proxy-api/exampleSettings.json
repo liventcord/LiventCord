@@ -1,7 +1,0 @@
-{
-    "AppSettings": {
-        "FrontendUrl" : "*",
-        "MainServerUrl" : "http://localhost:5005",
-        "ExternalMediaLimit" : "10"
-    }
-}

@@ -13,7 +13,7 @@
     "SqlitePath": "Data/liventcord.db",
     "MinPoolSize": "1",
     "MaxPoolSize": "3",
-    "Host": "127.0.0.1",
+    "Host": "0.0.0.0",
     "Port": "5005",
     "FrontendUrl": "http://localhost:5173",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",

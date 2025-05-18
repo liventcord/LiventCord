@@ -1,0 +1,22 @@
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /usr/src/app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -v -o /usr/local/bin/app ./...
+
+FROM alpine:latest
+
+WORKDIR /usr/local/bin
+COPY --from=builder /usr/local/bin/app .
+
+CMD ["app"]
+
+ARG MainServerUrl http://localhost:5005
+ARG ExternalMediaLimit 5
+ARG GinMode release
+ARG Host localhost
+ARG Port 8080
