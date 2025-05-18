@@ -1,7 +1,7 @@
 import { apiClient } from "./api";
 import { initialiseApp } from "./app";
 import { router } from "./router";
-import { getId } from "./utils";
+import { createEl, getId } from "./utils";
 
 let currentLanguage = "en";
 const loginTranslations = {
@@ -45,6 +45,11 @@ const loginTranslations = {
   }
 } as any;
 
+interface LoginResponse {
+  token: string;
+}
+let areListenersAdded = false;
+
 function updateDOM() {
   const elements = document.querySelectorAll("[data-i18n]");
   elements.forEach((element) => {
@@ -70,66 +75,64 @@ function setLanguage(language: string) {
   window.dispatchEvent(languageChangeEvent);
 }
 
-let areListenersAdded = false;
-
 export function initialiseLoginPage() {
-  const browserLanguage = navigator.language || navigator.language;
-  const languageToSet = browserLanguage.startsWith("tr") ? "tr" : "en";
-
+  const languageToSet = navigator.language.startsWith("tr") ? "tr" : "en";
   setLanguage(languageToSet);
   updateDOM();
-  if (areListenersAdded) {
-    return;
-  }
+
+  if (areListenersAdded) return;
   areListenersAdded = true;
 
-  const loginForm = getId("login-form");
-  const registerForm = getId("register-form");
+  const addInputValidationListeners = (
+    emailInput: HTMLInputElement,
+    passInput: HTMLInputElement
+  ) => {
+    emailInput.addEventListener("input", () =>
+      emailInput.setCustomValidity("")
+    );
+    passInput.addEventListener("input", () => passInput.setCustomValidity(""));
 
-  if (loginForm) {
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      submitForm(loginForm, false);
+    emailInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        passInput.focus();
+      }
     });
+
+    passInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitForm(emailInput.closest("form")!, false);
+      }
+    });
+  };
+
+  const setupForm = (form: HTMLFormElement, isRegister: boolean) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitForm(form, isRegister);
+    });
+  };
+
+  const loginForm = getId("login-form") as HTMLFormElement | null;
+  if (loginForm) {
+    setupForm(loginForm, false);
 
     const loginEmailInput = loginForm.querySelector(
       'input[name="email"]'
-    ) as HTMLInputElement;
+    ) as HTMLInputElement | null;
     const loginPassInput = loginForm.querySelector(
       'input[name="pass"]'
-    ) as HTMLInputElement;
+    ) as HTMLInputElement | null;
 
     if (loginEmailInput && loginPassInput) {
-      loginEmailInput.addEventListener("input", () => {
-        loginEmailInput.setCustomValidity("");
-      });
-
-      loginPassInput.addEventListener("input", () => {
-        loginPassInput.setCustomValidity("");
-      });
-
-      loginEmailInput.addEventListener("keypress", function (event) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          loginPassInput.focus();
-        }
-      });
-
-      loginPassInput.addEventListener("keypress", function (event) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          submitForm(loginForm, false);
-        }
-      });
+      addInputValidationListeners(loginEmailInput, loginPassInput);
     }
   }
 
+  const registerForm = getId("register-form") as HTMLFormElement | null;
   if (registerForm) {
-    registerForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      submitForm(registerForm, true);
-    });
-
+    setupForm(registerForm, true);
     setRegisterInputListeners(registerForm);
   }
 
@@ -137,46 +140,31 @@ export function initialiseLoginPage() {
 
   const wallpaper = document.getElementById(
     "video-background"
-  ) as HTMLVideoElement;
+  ) as HTMLVideoElement | null;
   if (wallpaper) {
-    const width = window.innerWidth;
-    if (width > 1280) {
-      wallpaper.src =
-        "https://motionbgs.com/media/492/nier-automata.3840x2160.mp4";
-    } else {
-      wallpaper.src =
-        "https://motionbgs.com/media/492/nier-automata.1920x1080.mp4";
-    }
+    wallpaper.src =
+      window.innerWidth > 1280
+        ? "https://motionbgs.com/media/492/nier-automata.3840x2160.mp4"
+        : "https://motionbgs.com/media/492/nier-automata.1920x1080.mp4";
   }
 
-  const registerLink = getId("register-link");
-  if (registerLink) {
-    registerLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      router.switchToRegister();
-    });
-  }
+  const addClickListener = (id: string, handler: (e: Event) => void) => {
+    const element = getId(id);
+    if (element) element.addEventListener("click", handler);
+  };
 
-  const loginLink = getId("login-link");
-  if (loginLink) {
-    loginLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      router.switchToLogin();
-    });
-  }
+  addClickListener("register-link", (e) => {
+    e.preventDefault();
+    router.switchToRegister();
+  });
 
-  const enButton = getId("en-button");
-  const trButton = getId("tr-button");
-  if (enButton) {
-    enButton.addEventListener("click", () => {
-      setLanguage("en");
-    });
-  }
-  if (trButton) {
-    trButton.addEventListener("click", () => {
-      setLanguage("tr");
-    });
-  }
+  addClickListener("login-link", (e) => {
+    e.preventDefault();
+    router.switchToLogin();
+  });
+
+  addClickListener("en-button", () => setLanguage("en"));
+  addClickListener("tr-button", () => setLanguage("tr"));
 }
 
 function getTranslation(key: string) {
@@ -184,30 +172,20 @@ function getTranslation(key: string) {
 }
 
 function alertUser(text: string, isSuccess = false) {
-  const container = document.createElement("div");
-  container.classList.add(
-    isSuccess ? "info-container" : "error-container",
-    "swipe-in"
-  );
+  const container = createEl("div", {
+    className: isSuccess ? "info-container" : "error-container"
+  });
 
-  setTimeout(() => {
-    container.classList.remove("swipe-in");
-  }, 3000);
-
-  const messageDiv = document.createElement("div");
-  messageDiv.id = "info-message";
-  messageDiv.textContent = text;
+  const messageDiv = createEl("div", { id: "info-message", textContent: text });
 
   container.appendChild(messageDiv);
-  document.body.prepend(container);
+  document.body.appendChild(container);
 
   setTimeout(() => {
     container.remove();
-  }, 5000);
+  }, 4500);
 }
-interface LoginResponse {
-  token: string;
-}
+
 function isLoginResponse(data: any): data is LoginResponse {
   return data && typeof data.token === "string";
 }
@@ -261,10 +239,7 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
     return;
   }
 
-  const data = {
-    email: emailValue,
-    password: passwordValue
-  } as any;
+  const data = { email: emailValue, password: passwordValue } as any;
 
   if (isRegister && nickValue) {
     data.nickname = nickValue;
@@ -274,9 +249,7 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
     .fetchRelative(isRegister ? "/auth/register" : "/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json"
-      }
+      headers: { "Content-Type": "application/json" }
     })
     .then(async (response) => {
       if (!response.ok) {
@@ -307,9 +280,6 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
         }
       }
 
-      return responseData;
-    })
-    .then(() => {
       if (isRegister) {
         alertUser(getTranslation("successRegister"), true);
         setTimeout(() => {
@@ -319,6 +289,8 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
         router.closeLogin();
         initialiseApp();
       }
+
+      return responseData;
     })
     .catch((error) => {
       console.error("Error:", error);

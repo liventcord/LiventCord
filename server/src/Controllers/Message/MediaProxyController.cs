@@ -88,7 +88,7 @@ public class MediaProxyController : ControllerBase
                 {
                     FileId = Utils.CreateRandomId(),
                     IsImageFile = mediaUrl.IsImage,
-                    isVideoFile = mediaUrl.IsVideo,
+                    IsVideoFile = mediaUrl.IsVideo,
                     MessageId = msg.MessageId,
                     FileName = mediaUrl.FileName ?? mediaUrl.Url,
                     FileSize = mediaUrl.FileSize,

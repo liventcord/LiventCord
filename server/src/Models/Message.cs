@@ -52,7 +52,7 @@ namespace LiventCord.Models
         public required string FileId { get; set; }
 
         public required bool IsImageFile { get; set; }
-        public bool? isVideoFile { get; set; }
+        public bool? IsVideoFile { get; set; }
 
         public required string MessageId { get; set; }
         public required string FileName { get; set; }

@@ -42,7 +42,7 @@ namespace LiventCord.Helpers
 {
     public static partial class Utils
     {
-        public static string DefaultJwtKey = "abcdefgh12345678ijklmnop87654321";
+        public static string DefaultJwtKey = "9cb2c90f2f8f10041efc1a40d7d126f2faa1ce67363dfacbb252d7cb7909ae71";
         private static readonly Random _random = new();
         public static int ID_LENGTH = 19;
         public static int USER_ID_LENGTH = 18;

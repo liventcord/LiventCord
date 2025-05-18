@@ -43,9 +43,13 @@ namespace LiventCord.Controllers
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
             _jwtKey = configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey;
-            if (configuration["AppSettings:JwtKey"] == Utils.DefaultJwtKey)
-                _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
+            _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
+            if (_accessTokenExpiryDays == 0)
+            {
+                _accessTokenExpiryDays = 7;
+            }
         }
+
 
         [HttpPost("change-password")]
         [Authorize]
@@ -120,7 +124,7 @@ namespace LiventCord.Controllers
                 new Claim("purpose", _jwtAudience)
             };
 
-            var expiryTime = DateTime.Now.AddDays(_accessTokenExpiryDays);
+            var expiryTime = DateTime.UtcNow.AddDays(_accessTokenExpiryDays);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

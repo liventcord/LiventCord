@@ -273,7 +273,7 @@ namespace LiventCord.Controllers
                 {
                     FileId = fileId,
                     IsImageFile = isImage,
-                    isVideoFile = isVideo,
+                    IsVideoFile = isVideo,
                     MessageId = messageId,
                     FileName = fileName,
                     FileSize = fileSize,
@@ -782,7 +782,7 @@ namespace LiventCord.Controllers
                     {
                         FileId = fileId,
                         IsImageFile = isImageFile,
-                        isVideoFile = isVideoFile,
+                        IsVideoFile = isVideoFile,
                         MessageId = messageId,
                         FileName = file.FileName,
                         FileSize = file.Length,

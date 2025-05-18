@@ -439,7 +439,7 @@
 #createChannelPopContainer {
   animation: pop-up-animation-channel 0.3s forwards;
 }
-.info-container {
+.notify-info-container {
   width: auto;
   min-width: 300px;
   max-width: 90%;
@@ -457,7 +457,7 @@
   justify-content: center;
   animation: moveAndFade 9s forwards;
 }
-.info-message {
+.notify-info-message {
   color: #ffffff;
   font-size: calc(16px + 1vw);
   white-space: normal;

@@ -120,12 +120,11 @@ export function setWindowName(pendingCounter: number) {
     ? `LiventCord (${pendingCounter})`
     : "LiventCord";
 }
-
 function sendNotify(data: string) {
-  const container = createEl("div", { className: "info-container" });
+  const container = createEl("div", { className: "notify-info-container" });
 
   const childDiv = createEl("div", {
-    className: "info-message",
+    className: "notify-info-message",
     textContent: data
   });
   container.appendChild(childDiv);
