@@ -7,6 +7,7 @@ from pytube import Search
 
 from commands.admin import change_avatar, handle_status
 from commands.mimic import me_mimic
+from commands.pokemon import generate_pokemon
 from commands.ui import handle_ui
 from crawler import process_image_search_command
 from utils import OwnerId, isDm
@@ -19,6 +20,7 @@ UI_COMMAND = "#ui"
 PING_COMMAND = "#ping"
 REGIONAL_COMMAND = "#reg"
 SAY_COMMAND = "#say"
+POKEMON_COMMAND = "#pokemon"
 CHANGEAVATARCOMMAND = "#changeavatar"
 DELETE_COMMAND = "#delete"
 YOUTUBE_COMMAND = "#youtube"
@@ -184,6 +186,17 @@ def generate_help_embed() -> discord.Embed:
         "--Admin Commands--": "Admin-specific commands below.",
         "#changeavatar": "Changes the bot's avatar (with cooldown). Usage: #changeavatar (with attachment image or link)",
         "#status": "Updates the bot's status message. Usage: #status <status_text>",
+        "#pokemon": "Display pokemon. Usage: #pokemon POKEMON_NAME OPTIONS. Available options:\n"
+        "-s, --shiny : Show shiny variant\n"
+        "-b, --big : Show bigger image\n"
+        "-f, --form : Show an alternate form of a pokemon\n"
+        "-r, --random : Select random Pokémon\n"
+        "COUNT (1-10) : Number of images to generate (default 1)\n"
+        "POKEMON_NAME : Specify a Pokémon by name.\n"
+        "Examples:\n"
+        "  #pokemon pikachu\n"
+        "  #pokemon charizard -b 2\n"
+        "  #pokemon -r 3 -s\n",
     }
 
     help_embed = discord.Embed(
@@ -259,7 +272,8 @@ async def handle_commands(client: discord.Client, message: discord.Message) -> N
         await process_image_search_command(message, command)
     elif message_lower.startswith(URL_COMMAND):
         await handle_url(message)
-
+    elif message_lower.startswith(POKEMON_COMMAND):
+        await generate_pokemon(message)
     if message.author.id == OwnerId:
         if message_lower.startswith(CHANGEAVATARCOMMAND) and message.attachments:
             await change_avatar(client, message)

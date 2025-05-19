@@ -10,3 +10,4 @@ environs
 sqlalchemy
 openapi-python-client
 mypy
+cairosvg
