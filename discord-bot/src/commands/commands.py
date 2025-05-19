@@ -183,9 +183,6 @@ def generate_help_embed() -> discord.Embed:
         "#avatar": "Displays the avatar and status of a user. Usage: #avatar @mention(optional)",
         "#ui": "Shows detailed user information in the server. Usage: #ui <Mention>",
         "#ping": "Shows the bot's latency.",
-        "--Admin Commands--": "Admin-specific commands below.",
-        "#changeavatar": "Changes the bot's avatar (with cooldown). Usage: #changeavatar (with attachment image or link)",
-        "#status": "Updates the bot's status message. Usage: #status <status_text>",
         "#pokemon": "Display pokemon. Usage: #pokemon POKEMON_NAME OPTIONS. Available options:\n"
         "-s, --shiny : Show shiny variant\n"
         "-b, --big : Show bigger image\n"
@@ -197,6 +194,9 @@ def generate_help_embed() -> discord.Embed:
         "  #pokemon pikachu\n"
         "  #pokemon charizard -b 2\n"
         "  #pokemon -r 3 -s\n",
+        "--Admin Commands--": "Admin-specific commands below.",
+        "#changeavatar": "Changes the bot's avatar (with cooldown). Usage: #changeavatar (with attachment image or link)",
+        "#status": "Updates the bot's status message. Usage: #status <status_text>"
     }
 
     help_embed = discord.Embed(
