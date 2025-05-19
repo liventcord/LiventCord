@@ -237,7 +237,7 @@ async def handle_commands(client: discord.Client, message: discord.Message) -> N
     message_lower = message.content.lower()
     if message_lower.startswith(HELP_COMMAND):
         help_embed = generate_help_embed()
-        await message.channel.send(embed=help_embed)
+        await message.author.send(embed=help_embed)
 
     if message_lower.startswith(AVATAR_COMMAND):
         await handle_avatar(message)
