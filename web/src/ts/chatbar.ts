@@ -1456,6 +1456,18 @@ export function initialiseChatInput() {
       }
     }
   });
+  chatInput.addEventListener("paste", (e: ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData?.getData("text/plain") || "";
+    const html = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/ {2}/g, " &nbsp;")
+      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+      .replace(/\n/g, "<br>");
+    document.execCommand("insertHTML", false, html);
+  });
 
   chatInput.addEventListener("keydown", (event) => {
     const options = userMentionDropdown.querySelectorAll(".mention-option");
