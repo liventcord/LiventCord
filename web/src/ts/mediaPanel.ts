@@ -212,7 +212,7 @@ function displayContent(
 
   if (contentData.length === 0) {
     const baseGif = createEl("img", {
-      className: "gif-content",
+      className: "gif-contentt",
       textContent: "No gifs found"
     });
     mediaMenuContainer.appendChild(baseGif);
@@ -220,12 +220,12 @@ function displayContent(
     contentData.forEach((data) => {
       if (isMediaData(data)) {
         const img = createEl("img", {
-          className: `${type}-content`,
+          className: `gif-content`,
           src: data.preview
         });
         img.addEventListener("click", () => {
           toggleMediaMenu();
-          sendMessage(data[type]);
+          sendMessage(data.gif);
         });
         mediaMenuContainer.appendChild(img);
       }
@@ -363,7 +363,7 @@ interface GifResponse {
 
 function toggleMediaMenu() {
   if (isMediaMenuOpen) {
-    console.log("Closing media menu");
+    console.error("Closing media menu");
     mediaMenu.style.display = "none";
     isMediaMenuOpen = false;
   } else {
@@ -426,6 +426,10 @@ function handleCategoryGifs(responseText: string) {
     const gifImg = createEl("img", {
       className: "gif-content"
     }) as HTMLImageElement;
+    gifImg.addEventListener("click", () => {
+      toggleMediaMenu();
+      sendMessage(gifData.media[0].gif.url);
+    });
     gifImg.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
     mediaMenuContainer.appendChild(gifImg);
 

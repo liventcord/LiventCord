@@ -212,7 +212,10 @@ async function processFiles(
 let messageQueue = Promise.resolve();
 
 export async function sendMessage(content: string, user_ids?: string[]) {
-  if (content === "") return;
+  if (content === "") {
+    console.error("Empty content!");
+    return;
+  }
 
   if (isOnDm && !canSendMessageToDm(friendsCache.currentDmId)) {
     displayCannotSendMessage(friendsCache.currentDmId, content);

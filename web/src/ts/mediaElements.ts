@@ -83,7 +83,13 @@ const maxHeight = 384;
 export const maxAttachmentsCount = 10;
 const maxTenorWidth = 768;
 const maxTenorHeight = 576;
-const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
+const tenorHosts = [
+  "media1.tenor.com",
+  "c.tenor.com",
+  "tenor.com",
+  "media.tenor.com"
+];
+
 const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
@@ -121,24 +127,29 @@ function createTenorElement(
     className: "tenor-image"
   }) as HTMLImageElement;
 
-  imgElement.onload = function () {
-    const actualSrc = tenorURL;
-    if (actualSrc) {
-      imgElement.src = DOMPurify.sanitize(actualSrc);
-    }
-  };
-
-  imgElement.onerror = function () {
-    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
-    imgElement.remove();
-    msgContentElement.textContent = inputText;
-  };
   imgElement.setAttribute("data-userId", senderId);
   imgElement.setAttribute("data-date", date.toString());
 
   imgElement.addEventListener("click", function () {
     displayImagePreview(imgElement, senderId, date);
   });
+
+  imgElement.onerror = function () {
+    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+    imgElement.remove();
+    msgContentElement.textContent = inputText;
+  };
+
+  if (tenorURL) {
+    imgElement.onload = function () {
+      imgElement.src = DOMPurify.sanitize(tenorURL);
+    };
+    const preload = new Image();
+    preload.onload = imgElement.onload;
+    preload.src = DOMPurify.sanitize(tenorURL);
+  } else {
+    msgContentElement.textContent = inputText;
+  }
 
   return imgElement;
 }
@@ -393,11 +404,6 @@ export async function createMediaElement(
       .join(",");
   }
 
-  const attachmentUrl = attachments?.[0]?.proxyUrl || "";
-  const links: string[] = attachmentUrl
-    ? [attachmentUrl]
-    : extractLinks(content).filter((link) => link !== attachmentUrl);
-
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -418,7 +424,7 @@ export async function createMediaElement(
     }
   }
 
-  if (attachments)
+  if (attachments && attachments.length > 0) {
     for (const attachment of attachments) {
       try {
         console.log("Processing attachment: ", attachment);
@@ -442,10 +448,18 @@ export async function createMediaElement(
         console.error("Error processing attachment:", error);
       }
     }
-  else {
+  } else {
     await processLinks();
   }
   async function processLinks() {
+    const attachmentUrl = attachments?.[0]?.proxyUrl || "";
+    if (!content && !attachmentUrl) {
+      return;
+    }
+    const links: string[] = attachmentUrl
+      ? [attachmentUrl]
+      : extractLinks(content).filter((link) => link !== attachmentUrl);
+
     while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
       try {
         const isError = await processMediaLink(
@@ -531,14 +545,23 @@ function processMediaLink(
     const handleLoad = () => {
       resolve(false);
     };
-    console.log(link, attachment);
 
     const handleError = () => {
       console.error("Error loading media element");
       resolve(true);
     };
+    console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
+        if (!attachment && isTenorURL(link)) {
+          mediaElement = createTenorElement(
+            messageContentElement,
+            content,
+            link,
+            senderId,
+            date
+          );
+        }
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
@@ -594,7 +617,6 @@ function processMediaLink(
       resolve(false);
       return;
     }
-
     if (mediaElement instanceof Promise) {
       mediaElement
         .then((resolvedElement) => {
