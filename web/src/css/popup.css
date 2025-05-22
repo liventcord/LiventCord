@@ -783,7 +783,8 @@
 .profile-display {
   width: 20%;
   max-width: 120px;
-  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
   border: solid rgb(17, 18, 20) 8px;
   top: 14.2vh;
   left: 16px;
@@ -792,6 +793,7 @@
   cursor: pointer;
   transition: border-radius 0.2s ease-out;
 }
+
 .profile-options-container {
   font-size: 16px;
   margin-left: auto;

@@ -1238,8 +1238,8 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   if (isOnGuild) {
     enableElement("hash-sign");
     enableElement("channel-info");
-    disableElement(navigationBar);
   }
+  disableElement(navigationBar);
 
   disableElement(mobileBlackBg);
 }

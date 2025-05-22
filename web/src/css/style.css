@@ -1023,6 +1023,13 @@
     padding: 12px !important;
     top: 110px;
   }
+  .outer-parent .edit-message-div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(80vw);
+  }
 }
 
 #navigation-bar {
@@ -1379,13 +1386,11 @@ textarea::-webkit-scrollbar-track {
 .replyBar {
   max-height: 20px;
   margin-left: 50px;
-  margin-top: -20px;
+  margin-top: -30px;
   display: flex;
   position: absolute;
 }
 .reply-avatar {
-  width: 15px;
-  height: 15px;
   margin-left: 8px;
 }
 .blink {
@@ -1409,7 +1414,7 @@ textarea::-webkit-scrollbar-track {
   color: gray;
 }
 .replyMessage {
-  margin-top: 10px !important;
+  margin-top: 20px !important;
 }
 .dateBar {
   position: relative;
@@ -1883,16 +1888,17 @@ textarea::-webkit-scrollbar-track {
   background-color: #36393f;
   border: 1px solid #3a3a40;
   border-radius: 10px;
-  margin-top: 30px;
+  margin-top: 10px;
   margin-bottom: 30px;
   color: white;
   padding: 15px;
   overflow: auto;
   outline: none;
   position: relative;
-  width: calc(100% - 90px);
   margin-left: 0px;
+  width: calc(100vw - 400px);
 }
+
 .base-user-input:focus {
   border: 1px solid #515255;
   outline: none;
@@ -1900,10 +1906,10 @@ textarea::-webkit-scrollbar-track {
 
 .edit-message-button-container {
   position: absolute;
-  top: 80%;
   display: flex;
   justify-content: space-between;
   margin-top: -3px;
+  bottom: 8%;
 }
 
 .edit-message-button {
