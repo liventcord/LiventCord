@@ -81,8 +81,8 @@ class MetaData {
 const maxWidth = 512;
 const maxHeight = 384;
 export const maxAttachmentsCount = 10;
-const maxTenorWidth = 768;
-const maxTenorHeight = 576;
+const maxTenorWidth = "85vw";
+const maxTenorHeight = "85vh";
 const tenorHosts = [
   "media1.tenor.com",
   "c.tenor.com",
@@ -120,8 +120,8 @@ function createTenorElement(
     src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       cursor: "pointer",
-      maxWidth: `${maxTenorWidth}px`,
-      maxHeight: `${maxTenorHeight}px`
+      maxWidth: maxTenorWidth,
+      maxHeight: maxTenorHeight
     },
     loading: "lazy",
     className: "tenor-image"

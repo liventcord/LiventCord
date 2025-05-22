@@ -196,6 +196,12 @@
   .emojis-container {
     padding: 10px;
   }
+
+  .embed-container {
+    margin-top: 30px !important;
+    margin-left: -60px;
+    margin-right: 40px;
+  }
 }
 
 #media-menu-container {
