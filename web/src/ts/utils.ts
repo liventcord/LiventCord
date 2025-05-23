@@ -204,37 +204,40 @@ export function kebapToSentence(text: string) {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
-export function getFormattedDate(messageDate: Date) {
+export function getFormattedDate(input: string) {
   const today = new Date();
   const yesterday = new Date(today);
+  const messageDate = new Date(
+    /([zZ]|[+-]\d{2}:\d{2})$/.test(input) ? input : input + "Z"
+  );
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const userTimeZoneOffset = today.getTimezoneOffset() * 60000;
-  const localMessageDate = new Date(messageDate.getTime() - userTimeZoneOffset);
-
-  if (localMessageDate.toDateString() === today.toDateString()) {
+  if (messageDate.toDateString() === today.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "today"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
-  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
+  } else if (messageDate.toDateString() === yesterday.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "yesterday"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else {
-    return `ㅤ${localMessageDate.toLocaleDateString(
+    return `ㅤ${messageDate.toLocaleDateString(
       translations.getLocale()
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   }
 }
