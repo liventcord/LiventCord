@@ -60,7 +60,8 @@
     "readen-chat": "{{count}}+ messages since {{date}} at {{time}}.",
     "channel-manage-fail": "You dont have permission to manage channels in guild {{guildName}}",
     "shared-guilds": "{{count}} Shared Guilds",
-    "shared-friends": "{{count}} Shared Friends"
+    "shared-friends": "{{count}} Shared Friends",
+    "drop_zone_channel": "Upload to channel #{{channelName}}"
   },
   "settingTranslations": {
     "en": "English",

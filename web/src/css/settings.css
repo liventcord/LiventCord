@@ -308,6 +308,10 @@ table {
   top: 4%;
   left: 4%;
 }
+#drop-zone-channel-name {
+  font-size: 1.5em;
+  color: white;
+}
 .input-container {
   position: fixed;
   left: 50%;
