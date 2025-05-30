@@ -132,24 +132,20 @@ export function handleResize() {
   if (!userList) return;
 
   const isSmallScreen = window.innerWidth < 1200;
+  setUserListLine();
 
   if (isSmallScreen) {
     if (!isMobile) {
       disableElement(userList);
       if (userLine) disableElement(userLine);
       if (activityList) disableElement(activityList);
-
-      if (!isOnMePage) setUserListLine();
     }
   } else {
+    console.log(isUsersOpenGlobal);
     if (isOnMePage) {
       if (activityList) enableElement(activityList);
-      if (userLine) enableElement(userLine);
     } else {
-      if (userLine) disableElement(userLine);
       if (activityList) disableElement(activityList);
-
-      isUsersOpenGlobal ? enableElement(userList) : disableElement(userList);
     }
   }
   updateChatWidth();

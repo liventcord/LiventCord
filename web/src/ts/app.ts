@@ -586,6 +586,8 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     if (activityList) {
       disableElement(activityList);
     }
+    handleMembersClick();
+
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");
