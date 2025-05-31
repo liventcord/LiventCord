@@ -369,6 +369,11 @@ export function updateGuilds(guildsJson: Array<any>) {
 
   const mainLogoItem = createMainLogo();
   fragment.appendChild(mainLogoItem);
+  const pendingAlertMain = createEl("button", {
+    className: "pendingAlert",
+    id: "pendingAlertMain"
+  });
+  mainLogoItem.appendChild(pendingAlertMain);
 
   wrapWhiteRod(mainLogoItem);
 

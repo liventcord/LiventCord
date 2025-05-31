@@ -363,6 +363,11 @@
 #pendingAlertRight {
   margin-left: -20px;
 }
+#pendingAlertMain {
+  margin-top: -22px;
+  margin-left: 8px;
+  position: absolute;
+}
 .friend-image {
   border-radius: 50%;
   width: 32px;
