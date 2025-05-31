@@ -919,7 +919,7 @@ function handleBackspace(event: KeyboardEvent) {
     ) {
       event.preventDefault();
 
-      chatInput.innerHTML = "\u2800";
+      chatInput.innerHTML = "\u200B";
 
       requestAnimationFrame(() => {
         state.rawContent = "";
@@ -1122,7 +1122,7 @@ export function manuallyRenderEmojis(rawContent: string) {
   chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== ""
       ? formattedContent
-      : "\u2800"
+      : "\u200B"
   );
 
   DomUtils.ensureTextNodeAfterImage(chatInput);
@@ -1287,7 +1287,7 @@ function handleChatInput(event: Event) {
         chatInput.innerHTML = DOMPurify.sanitize(
           formattedContent && formattedContent.trim() !== ""
             ? formattedContent
-            : "\u2800"
+            : "\u200B"
         );
 
         DomUtils.ensureTextNodeAfterImage(chatInput);
