@@ -659,6 +659,55 @@ function toggleZoom() {
     previewImage.style.height = "";
   }
 }
+function handlePreviewDownloadButton(sanitizedSourceImage: string) {
+  const previewImageDownload = getId(
+    "preview-image-download"
+  ) as HTMLButtonElement;
+  const previewImage = getId("preview-image") as HTMLImageElement;
+
+  previewImageDownload.onclick = async () => {
+    if (!sanitizedSourceImage) return;
+
+    try {
+      if (previewImage?.complete && previewImage.naturalWidth !== 0) {
+        const canvas = createEl("canvas", {
+          width: previewImage.naturalWidth,
+          height: previewImage.naturalHeight
+        }) as HTMLCanvasElement;
+
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(previewImage, 0, 0);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            triggerDownload(url, sanitizedSourceImage);
+            URL.revokeObjectURL(url);
+          } else {
+            fallbackDownload();
+          }
+        }, "image/jpeg");
+      } else {
+        fallbackDownload();
+      }
+    } catch {
+      fallbackDownload();
+    }
+
+    function fallbackDownload() {
+      router.downloadLink(sanitizedSourceImage);
+    }
+
+    function triggerDownload(url: string, originalUrl: string) {
+      const a = createEl("a", {
+        href: url,
+        download: originalUrl.split("/").pop() || "image.jpg"
+      });
+      a.click();
+    }
+  };
+}
+
 function handlePreviewOpenButton(sanitizedSourceImage: string) {
   const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
 
@@ -745,6 +794,7 @@ function addEventListeners(
   };
   setupZoomButton();
   handlePreviewOpenButton(sanitizedSourceImage);
+  handlePreviewDownloadButton(sanitizedSourceImage);
 
   setupReplyButton(imageElement, senderId);
   if (isAddedDragListeners) return;
