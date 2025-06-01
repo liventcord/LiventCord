@@ -31,9 +31,9 @@ import { translations } from "./translations.ts";
 import { activityList, userList } from "./userList.ts";
 import { loadDmHome, openDm } from "./app.ts";
 
-const addfriendhighlightedcolor = "#248046";
-const highlightedColor = "#43444b";
-const defaultColor = "#313338";
+const addfriendhighlightedcolor = "#5865F2";
+const highlightedColor = "#29292D";
+const defaultColor = "transparent";
 const grayColor = "#c2c2c2";
 
 let currentUserActivities: Friend[] = [];

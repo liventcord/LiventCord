@@ -4,19 +4,18 @@
   width: 50%;
   height: 60px;
   top: 112px;
-  left: 353px;
+  left: 400px;
   position: absolute;
 }
 .dm-container {
   display: flex;
   align-items: center;
   position: relative;
-  background-color: #2b2d31;
   border-radius: 5px;
   right: 45px;
   top: 90px;
   margin-top: 10px;
-  width: 225px;
+  width: 280px;
   height: 40px;
   padding-left: 8px;
   gap: 10px;
@@ -65,16 +64,19 @@
   display: none;
   left: 343px;
 }
+body.black-theme .dm-container:hover {
+  background-color: #1c1c1f;
+}
 
 .dm-container:hover {
   user-select: none;
   background-color: #35373c;
 }
 .dm-selected:hover {
-  background-color: rgb(53, 55, 60);
+  background-color: #1c1c1f !important;
 }
 .dm-selected {
-  background-color: rgb(64, 66, 73);
+  background-color: #27272a;
 }
 .dm-container:hover .close-dm-btn {
   display: flex;
@@ -128,7 +130,7 @@
   background-color: #313338;
   color: #ffffff;
   position: fixed;
-  padding-left: 190px;
+  padding-left: 210px;
   top: 12px;
   width: calc(100% - 190px);
   display: flex;
@@ -312,7 +314,7 @@
   top: 60px;
   padding: 10px;
   cursor: pointer;
-  background-color: #313338;
+  background-color: transparent;
   border-radius: 8px;
   transition: background-color 0.3s ease;
   width: 95%;
@@ -321,7 +323,7 @@
   display: flex;
 }
 .friend-card:hover {
-  background-color: #393c41;
+  background-color: #242428;
 }
 .friend-card:hover .friend-discriminator {
   background-color: #393c41;
@@ -401,7 +403,7 @@
 .friend-container {
   border: none;
   display: flex;
-  width: 225px;
+  width: 140%;
   height: 44px;
   border-radius: 5px;
   margin-top: 20px;
@@ -456,9 +458,11 @@
   justify-content: center;
   margin-left: auto;
   cursor: pointer;
+  padding: 10px;
+  position: relative;
 }
+
 .friend-button .gray-sphere {
-  background-color: #2b2d31;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -467,10 +471,16 @@
   justify-content: center;
   pointer-events: auto;
 }
+
+.friend-button:hover .gray-sphere {
+  background-color: #2b2d31;
+}
+
 .friend-button .gray-sphere img {
   width: 22px;
   height: 22px;
 }
+
 .friend_button_element {
   margin-left: 15px;
 }
@@ -506,6 +516,10 @@
   top: 40%;
   left: 30%;
 }
+body.black-theme #wumpusalone {
+  filter: brightness(0.5);
+}
+
 .description-rectangle {
   margin-top: -100px;
   background-color: #000000cc;

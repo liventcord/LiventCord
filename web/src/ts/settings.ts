@@ -40,6 +40,7 @@ import { currentGuildId } from "./guild.ts";
 import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
+import { setBlackTheme } from "./extras.ts";
 
 const isImagePreviewOpen = false;
 const CHANGE_NAME_COOLDOWN = 1000;
@@ -76,6 +77,7 @@ type ToggleState = {
   "activity-toggle": boolean;
   "slide-toggle": boolean;
   "private-channel-toggle": boolean;
+  "black-toggle": boolean;
 };
 
 class ToggleManager {
@@ -89,7 +91,8 @@ class ToggleManager {
       "party-toggle": loadBooleanCookie("party-toggle") ?? false,
       "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
       "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
-      "private-channel-toggle": false
+      "private-channel-toggle": false,
+      "black-toggle": loadBooleanCookie("black-toggle")
     };
 
     if (this.states["snow-toggle"]) {
@@ -280,7 +283,14 @@ export function initializeCookies() {
     toggleManager.toggleEffect("snow", true);
   if (toggleManager.states["party-toggle"])
     toggleManager.toggleEffect("party", true);
+
+  if (isBlackTheme()) {
+    setBlackTheme();
+  }
 }
+export const isBlackTheme = () => {
+  return toggleManager.states["black-toggle"];
+};
 
 export function triggerFileInput() {
   const profileImageInput = getProfileImageFile();

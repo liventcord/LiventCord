@@ -1327,14 +1327,17 @@ guildContainer.classList.add("visible");
 addNavigationListeners();
 
 export function initialiseMobile() {
-  const earphoneParent = earphoneButton.parentElement;
-  if (earphoneParent) {
-    earphoneParent.remove();
+  if (earphoneButton) {
+    const earphoneParent = earphoneButton.parentElement;
+    if (earphoneParent) {
+      earphoneParent.remove();
+    }
   }
-
-  const microphoneParent = microphoneButton.parentElement;
-  if (microphoneParent) {
-    microphoneParent.remove();
+  if (microphoneButton) {
+    const microphoneParent = microphoneButton.parentElement;
+    if (microphoneParent) {
+      microphoneParent.remove();
+    }
   }
   disableElement(selfName);
   disableElement("self-status");

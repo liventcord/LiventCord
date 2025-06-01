@@ -85,17 +85,17 @@
   width: 125px;
   height: 42px;
   margin-top: 7px;
-  left: 20px;
   position: relative;
 }
 #user-info-panel {
   position: fixed;
-  bottom: 0px;
-  height: 53px;
-  z-index: 2;
+  bottom: 10px;
+  height: 57px;
+  z-index: 5;
   background-color: #232428;
-  left: 55px;
-  width: 257px;
+  left: 7px;
+  width: 364px;
+  border-radius: 5px;
   overflow: hidden;
 }
 #sound-panel-status {
@@ -193,15 +193,6 @@
   overflow: hidden auto;
   position: relative;
 }
-#channel-list {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 250px;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 2 !important;
-}
 
 #channel-list.visible {
   transform: translateX(0);
@@ -213,7 +204,6 @@
   display: flex;
   align-items: flex-start;
   position: relative;
-  background-color: #313338;
   color: #dcddde;
   margin-top: 650px;
 }
@@ -291,7 +281,7 @@
   display: none;
   flex-wrap: nowrap;
   gap: 15px;
-  background-color: #36393f;
+  background-color: #222327;
   margin-top: -190px;
   padding: 10px 15px 27px;
   border: none;
@@ -300,12 +290,12 @@
   position: relative;
   box-sizing: border-box;
   justify-items: start;
-  width: calc(100vw - 585px);
+  width: calc(100vw - 646px);
   white-space: nowrap;
 }
 
 #attachments-tray.attachments-tray-user-list-open {
-  width: calc(100vw - 350px);
+  width: calc(100vw - 400px);
 }
 
 .image-container {
@@ -405,7 +395,7 @@
 
 #file-button {
   bottom: 15px;
-  left: 345px;
+  left: 406px;
   width: 22px;
   height: 22px;
   border: none;
@@ -601,7 +591,7 @@
   color: rgb(144 155 164);
   font-size: 14px;
   margin-top: -5px;
-  width: 220px;
+  width: 286px;
   height: 28px;
   text-indent: -65px;
   margin-left: 20px;
@@ -649,7 +639,7 @@
   z-index: 1;
   position: fixed;
   bottom: 20px;
-  padding-left: 330px;
+  padding-left: 390px;
   width: 100%;
   height: 80px;
 }
@@ -677,10 +667,10 @@
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  width: calc(100vw - 585px);
+  width: calc(100vw - 646px);
 }
 #reply-info.reply-user-list-open {
-  width: calc(100vw - 350px);
+  width: calc(100vw - 400px);
 }
 #reply-info.reply-attachments-open {
   top: -255px;
@@ -700,7 +690,7 @@
   min-height: 45px;
   max-height: 500px;
   bottom: 2px;
-  width: calc(100vw - 585px);
+  width: calc(100vw - 646px);
   z-index: 1;
   outline: none;
   resize: none;
@@ -708,6 +698,9 @@
   box-sizing: border-box;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+body.black-theme .base-user-input {
+  background-color: #222327;
 }
 #create-guild-button {
   align-items: center;
@@ -750,14 +743,14 @@
   background-color: #2b2d31;
   position: absolute;
   display: block;
-  width: 240px;
+  width: 315px;
   height: 50px;
   left: 62px;
   top: -2px;
   z-index: 3;
   pointer-events: auto;
   position: fixed;
-  width: 250px;
+
   transform: translateX(-265%);
   transition: transform 0.3s ease;
 }
@@ -806,7 +799,7 @@
   width: 20px;
   user-select: none;
   pointer-events: none;
-  left: 198px;
+  left: 275px;
   bottom: 14px;
   display: none;
   transform: scaleX(1.5) rotate(180deg);
@@ -1061,7 +1054,7 @@
 }
 
 .user-list-hidden {
-  width: calc(100vw - 350px);
+  width: calc(100vw - 400px);
 }
 .reply-opened {
   border-radius: 0 0 7px 7px !important;
@@ -1081,13 +1074,13 @@
 }
 #channel-info {
   font-size: 17px;
-  margin-left: 345px;
+  margin-left: 410px;
   width: calc(100vw - 710px);
 }
 #hash-sign {
   font-size: 35px;
   top: 12px;
-  left: 328px;
+  left: 390px;
   color: rgb(128, 132, 142);
   position: absolute;
   display: none;
@@ -1267,15 +1260,20 @@
   max-width: 256px;
   max-height: 256px;
 }
-.horizontal-line {
-  border: none;
-  right: 0px;
-  width: 1px;
-  top: -8px;
-  position: relative;
+.horizontal-line,
+.horizontal-line-guild {
+  top: 41px;
   z-index: 1;
   border-top: 100vh solid rgb(63, 66, 71);
-  transform: rotate(180deg);
+  transform: scaleX(-0.5);
+}
+.horizontal-line {
+  right: 0px;
+  position: relative;
+}
+.horizontal-line-guild {
+  left: 71px;
+  position: absolute;
 }
 
 #imageElement {
@@ -1533,6 +1531,7 @@ textarea::-webkit-scrollbar-track {
   display: none;
   background-color: #2e3035;
   transition: background-color 0.3s ease;
+  border-radius: 5px;
 }
 .message-button:hover {
   background-color: #313338;
@@ -1885,7 +1884,7 @@ textarea::-webkit-scrollbar-track {
 
 .edit-message-div {
   height: auto;
-  background-color: #36393f;
+  background-color: #222327;
   border: 1px solid #3a3a40;
   border-radius: 10px;
   margin-top: 10px;

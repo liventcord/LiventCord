@@ -319,7 +319,7 @@
   background-color: rgb(218, 224, 246);
   font-weight: bold;
   text-indent: -2px;
-  right: 630px;
+  right: 690px;
   border-radius: 2px;
   bottom: 12px;
   width: 25px;
@@ -357,13 +357,13 @@
 }
 
 #gifbtn.gifbtn-user-list-open {
-  right: 390px;
+  right: 450px;
 }
 #emojibtn.emojibtn-user-list-open {
-  right: 344px;
+  right: 403px;
 }
 #emojibtn {
-  right: 584px;
+  right: 642px;
   bottom: 0px;
   width: 48px;
   height: 48px;

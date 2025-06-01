@@ -19,7 +19,8 @@ import {
   regenerateConfirmationPanel,
   triggerFileInput,
   onEditGuildName,
-  onEditChannelName
+  onEditChannelName,
+  isBlackTheme
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -548,8 +549,8 @@ function getAccountSettingsHtml() {
         <div id="settings-title">${translations.getSettingsTranslation(
           "MyAccount"
         )}</div>
-        <div id="settings-rightbar">
-            <div id="settings-light-rightbar">
+        <div id="settings-rightbar" class="${isBlackTheme() ? "black-theme-3" : ""}">
+            <div id="settings-light-rightbar" class="${isBlackTheme() ? "black-theme" : ""}">
                 <div id="set-info-title-nick">${translations.getSettingsTranslation(
                   "Username"
                 )}</div>
@@ -568,7 +569,6 @@ function getAccountSettingsHtml() {
                 <span id="settings-self-name">${currentUserNick}</span>
                 <button id="change-password-button" class="settings-buttons settings-button">${translations.getSettingsTranslation("ChangePassword")}</button>
                 </div>
-
     `;
 }
 
@@ -627,6 +627,9 @@ function getAppearanceHtml() {
             createToggle(toggle.id, toggle.label, toggle.description)
           )
           .join("")}
+    <span style="display: inline-block; background-color: #323339; width: 70px;  border-radius: 50%;"></span>
+    <span style="display: inline-block; background-color: #1D1D21; width: 70px;  border-radius: 50%; margin-left: 10px;"></span>
+
     `;
 }
 

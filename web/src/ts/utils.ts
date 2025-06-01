@@ -12,14 +12,6 @@ export const IMAGE_SRCS = {
     "https://liventcord.github.io/LiventCord/app/images/icons/icon.webp",
   WUMPUS_SRC:
     "https://liventcord.github.io/LiventCord/app/images/wumpusalone.webp",
-  WHITEMIC_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/whitemic.webp",
-  REDMIC_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/redmic.webp",
-  WHITEEARPHONES_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/whiteearphones.webp",
-  REDEARPHONES_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/redearphones.webp",
   DEFAULT_MEDIA_IMG_SRC:
     "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp",
   CLYDE_SRC: "https://liventcord.github.io/LiventCord/app/images/clyde.webp",

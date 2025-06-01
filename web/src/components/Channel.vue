@@ -212,7 +212,7 @@ export default defineComponent({
   align-items: flex-start;
   cursor: pointer;
   margin-top: 2px;
-  width: 50%;
+  width: 42%;
   height: auto;
   margin-left: -80px;
   border-radius: 5px;

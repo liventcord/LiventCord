@@ -327,7 +327,11 @@ async function loadGifContent(query: string): Promise<void> {
 export function updateMediaPanelPosition() {
   mediaMenu = getId("media-menu") as HTMLElement;
   if (mediaMenu) {
-    mediaMenu.className = !isUsersOpenGlobal ? "users-open" : "";
+    if (!isUsersOpenGlobal) {
+      mediaMenu.classList.add("users-open");
+    } else {
+      mediaMenu.classList.remove("users-open");
+    }
   }
 }
 export function handleMediaPanelResize() {

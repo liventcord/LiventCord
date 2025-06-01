@@ -42,15 +42,19 @@ const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 const WIGGLE_DELAY = 500;
 let isInitializedAudio: boolean;
-export const microphoneButton = getId("microphone-button") as HTMLImageElement;
-export const earphoneButton = getId("earphone-button") as HTMLImageElement;
-
-if (microphoneButton) {
-  microphoneButton.addEventListener("click", setMicrophone);
-}
-if (earphoneButton) {
-  earphoneButton.addEventListener("click", setEarphones);
-}
+export const earphoneButton = getId("earphone-button");
+export const microphoneButton = getId("microphone-button");
+const containers = document.querySelectorAll(".voice-button-container");
+containers.forEach((container) => {
+  container.addEventListener("click", function (event) {
+    const target = event.target as HTMLElement;
+    if (target.id === "microphone-button") {
+      setMicrophone();
+    } else if (target.id === "earphone-button") {
+      setEarphones();
+    }
+  });
+});
 
 //initializeMp3Yt();
 
@@ -460,22 +464,18 @@ function activateSoundOutput() {
 
 let isMicrophoneOpen = true;
 function setMicrophone() {
-  const imagePath = isMicrophoneOpen
-    ? IMAGE_SRCS.WHITEMIC_SRC
-    : IMAGE_SRCS.REDMIC_SRC;
-  microphoneButton.src = imagePath;
-  isMicrophoneOpen = !isMicrophoneOpen;
   console.log("Set microphone! to ", isMicrophoneOpen);
+  if (!microphoneButton) return;
+  microphoneButton.classList.toggle("fa-microphone", !isMicrophoneOpen);
+  microphoneButton.classList.toggle("fa-microphone-slash", isMicrophoneOpen);
+
+  isMicrophoneOpen = !isMicrophoneOpen;
 }
 
 let isEarphonesOpen = true;
 function setEarphones() {
-  const imagePath = isEarphonesOpen
-    ? IMAGE_SRCS.WHITEEARPHONES_SRC
-    : IMAGE_SRCS.REDEARPHONES_SRC;
-  earphoneButton.src = imagePath;
-  isEarphonesOpen = !isEarphonesOpen;
   console.log("Set earphones! to ", isEarphonesOpen);
+  isEarphonesOpen = !isEarphonesOpen;
 }
 
 async function activateMicAndSoundOutput() {

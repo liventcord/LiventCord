@@ -1,9 +1,54 @@
-import confetti from "canvas-confetti";
+import confettiImport from "canvas-confetti";
 
-import { createEl } from "./utils.ts";
-import { chatInput } from "./chatbar.ts";
+const confetti = confettiImport as unknown as (options: any) => void;
+
+import { createEl, getId } from "./utils.ts";
+import { chatContainer, chatInput } from "./chatbar.ts";
 import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
-import { isUsersOpenGlobal } from "./userList.ts";
+import { isUsersOpenGlobal, userList } from "./userList.ts";
+import { guildContainer } from "./guild.ts";
+import { friendsContainer } from "./friendui.ts";
+
+export function setBlackTheme() {
+  document.body.classList.add("black-theme");
+  chatContainer.classList.add("black-theme");
+  const infoContainer = getId("channel-info-container-for-index");
+
+  infoContainer?.classList.add("black-theme");
+  setTimeout(() => {
+    const friendInfoContainer = getId("channel-info-container-for-friend");
+    friendInfoContainer?.children[0]?.classList.add("black-theme");
+    console.warn(friendInfoContainer?.classList);
+  }, 100);
+
+  const channelList = getId("channel-list");
+  const activityList = getId("activity-list");
+  channelList?.classList.add("black-theme-3");
+  activityList?.classList.add("black-theme");
+
+  setTimeout(() => {
+    userList?.classList.add("black-theme");
+  }, 0);
+  const guildsList = getId("guilds-list");
+
+  guildsList?.classList.add("black-theme-3");
+
+  guildContainer.classList.add("black-theme-3");
+  const userPanel = getId("user-info-panel");
+  userPanel?.classList.add("black-theme-4");
+  const avatarWrapper = getId("avatar-wrapper");
+  avatarWrapper?.classList.add("black-theme-4");
+  friendsContainer?.classList.add("black-theme");
+  const settingsLeftbar = getId("settings-leftbar");
+  settingsLeftbar?.classList.add("black-theme-3");
+  const right = getId("settings-rightcontainer");
+  right?.classList.add("black-theme-4");
+
+  const lightRightbar = getId("settings-light-rightbar");
+  lightRightbar?.classList.add("black-theme");
+  const mediaMenu = getId("media-menu");
+  mediaMenu?.classList.add("black-theme");
+}
 
 const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
   const {
