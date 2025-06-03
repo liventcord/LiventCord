@@ -1,4 +1,6 @@
-declare var confetti: any;
+import confettiImport from "canvas-confetti";
+
+const confetti = confettiImport as unknown as (options: any) => void;
 import {
   blackImage,
   getId,
@@ -287,16 +289,16 @@ export function initializeCookies() {
     toggleManager.setupToggle(key as keyof ToggleState);
   });
 
-  console.log("init cookies", toggleManager.states);
-
   if (toggleManager.states["snow-toggle"])
     toggleManager.toggleEffect("snow", true);
   if (toggleManager.states["party-toggle"])
     toggleManager.toggleEffect("party", true);
 
   const black = isBlackTheme();
-  setTheme(black);
   selectTheme(black ? Themes.Dark : Themes.Ash);
+}
+export function saveThemeCookie(val: boolean) {
+  return saveBooleanCookie(themeCookieKey, val ? 1 : 0);
 }
 export function isBlackTheme() {
   return loadBooleanCookie(themeCookieKey);

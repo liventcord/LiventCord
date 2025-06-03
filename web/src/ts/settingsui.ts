@@ -20,7 +20,8 @@ import {
   triggerFileInput,
   onEditGuildName,
   onEditChannelName,
-  isBlackTheme
+  isBlackTheme,
+  saveThemeCookie
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -39,7 +40,8 @@ import {
   enableElement,
   blackImage,
   escapeHtml,
-  isMobile
+  isMobile,
+  saveBooleanCookie
 } from "./utils.ts";
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
@@ -629,8 +631,8 @@ function getAppearanceHtml() {
             createToggle(toggle.id, toggle.label, toggle.description)
           )
           .join("")}
-        <h3>${translations.getSettingsTranslation("Theme")}</h3>
-        <p style="color: #C4C5C9" >${translations.getSettingsTranslation("ThemeDescription")}</p>
+        <h3 style="margin: 0px;" >${translations.getSettingsTranslation("Theme")}</h3>
+        <p style="color: #C4C5C9; margin: 0px;" >${translations.getSettingsTranslation("ThemeDescription")}</p>
 
         <div class="theme-selector-container">
           <span id="ash-theme-selector" class="theme-circle ash-theme"></span>
@@ -698,20 +700,26 @@ export enum Themes {
 const selectedThemeBorderColor = "#5865F2";
 const unThemeBorderColor = "#A5A5AC";
 
-export function selectTheme(selected: Themes) {
-  setTheme(selected === Themes.Dark);
-
+function selectThemeButton(isDark: boolean) {
   const ash = getId("ash-theme-selector");
   const dark = getId("dark-theme-selector");
   if (!ash || !dark) return;
 
-  const isDark = selected === Themes.Dark;
   ash.style.borderColor = isDark
     ? unThemeBorderColor
     : selectedThemeBorderColor;
   dark.style.borderColor = isDark
     ? selectedThemeBorderColor
     : unThemeBorderColor;
+}
+export function selectTheme(selected: Themes) {
+  console.log("Set theme: " + selected);
+  const isDark = selected === Themes.Dark;
+
+  setTheme(isDark);
+  saveThemeCookie(isDark);
+
+  selectThemeButton(isDark);
 }
 
 function initialiseSettingComponents(
@@ -739,6 +747,7 @@ function initialiseSettingComponents(
   const dark = getId("dark-theme-selector");
   ash?.addEventListener("click", () => selectTheme(Themes.Ash));
   dark?.addEventListener("click", () => selectTheme(Themes.Dark));
+  selectThemeButton(isBlackTheme());
 
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
