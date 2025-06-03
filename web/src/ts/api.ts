@@ -9,6 +9,13 @@ import { guildCache } from "./cache.ts";
 import { revertToLastConfirmedImage } from "./avatar.ts";
 import { initialState } from "./app.ts";
 
+class NoSessionError extends Error {
+  constructor() {
+    super("No session token available");
+    this.name = "NoSessionError";
+  }
+}
+
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -213,46 +220,60 @@ class ApiClient {
   clearToken = (): void => {
     localStorage.removeItem("jwt_token");
   };
+  private prepareRequest(
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ): [RequestInfo | URL, RequestInit] {
+    const token = this.getAuthToken();
+    if (!token) {
+      throw new NoSessionError();
+    }
 
+    const initToUse: RequestInit = {
+      ...(init ?? {}),
+      credentials: "include",
+      headers: {
+        ...(init?.headers ?? {}),
+        Authorization: `Bearer ${token}`
+      }
+    };
+
+    return [input, initToUse];
+  }
   fetchRelative(
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<Response> {
-    const token = this.getAuthToken();
-    const initToUse: RequestInit = { ...(init ?? {}), credentials: "include" };
-
-    initToUse.headers = {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`
-    };
-
-    return window
-      .fetch(import.meta.env.VITE_BACKEND_URL + input, initToUse)
-      .then((response) => {
+    try {
+      const [fullUrl, preparedInit] = this.prepareRequest(
+        import.meta.env.VITE_BACKEND_URL + input,
+        init
+      );
+      return window.fetch(fullUrl, preparedInit).then((response) => {
         if (response.status === 401) {
           router.openLogin();
           this.clearToken();
         }
         return response;
       });
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const token = this.getAuthToken();
-    const initToUse: RequestInit = { ...(init ?? {}), credentials: "include" };
-
-    initToUse.headers = {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`
-    };
-
-    return window.fetch(input, initToUse).then((response) => {
-      if (response.status === 401) {
-        router.openLogin();
-        this.clearToken();
-      }
-      return response;
-    });
+    try {
+      const [preparedUrl, preparedInit] = this.prepareRequest(input, init);
+      return window.fetch(preparedUrl, preparedInit).then((response) => {
+        if (response.status === 401) {
+          router.openLogin();
+          this.clearToken();
+        }
+        return response;
+      });
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   private listeners: Record<string, ListenerCallback[]>;
@@ -461,16 +482,15 @@ class ApiClient {
     event: EventType,
     expectsResponse: boolean = true
   ): Promise<any | null> {
-    const body: string | undefined =
+    const body =
       method !== HttpMethod.GET && data ? JSON.stringify(data) : undefined;
-
-    const headers: HeadersInit | undefined =
+    const headers =
       method === HttpMethod.GET
         ? undefined
         : { "Content-Type": "application/json" };
 
     try {
-      const response: Response = await this.fetch(url, {
+      const response = await this.fetch(url, {
         method,
         headers,
         body,
@@ -486,26 +506,21 @@ class ApiClient {
         return null;
       }
 
-      const responseBody: string = await response.text();
+      const responseBody = await response.text();
       return responseBody ? JSON.parse(responseBody) : null;
     } catch (error) {
       console.error(`Failed to send request for event "${event}":`, error);
+
       if (event === EventType.GET_INIT_DATA) {
-        if (window.location.hostname === "127.0.0.1") {
-          alertUser(
-            "CORS ISSUE",
-            "You are trying to access webapp from 127.0.0.1 . If you have set up 'localhost' for frontend url in backend, make sure they are exactly same."
-          );
-        } else if (window.location.hostname === "localhost") {
-          alertUser(
-            "CORS ISSUE",
-            "You are trying to access webapp from localhost . If you have set up '127.0.0.1' for frontend url in backend, make sure they are exactly same."
-          );
-        } else {
-          alertUser("Cant establish connection to server");
+        if (error instanceof NoSessionError) {
+          router.openLogin();
+          return;
         }
+
+        alertUser("Cant establish connection to server");
         return;
       }
+
       throw error;
     }
   }
