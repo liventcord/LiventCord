@@ -812,7 +812,7 @@ body.black-theme #settings-menu button.touch-hover {
   cursor: pointer;
 }
 #microphone-button:hover {
-  background-color: #535353;
+  background-color: #36363b;
 }
 #earphone-button {
   margin-top: -35px;

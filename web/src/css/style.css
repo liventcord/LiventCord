@@ -594,7 +594,7 @@
   width: 286px;
   height: 28px;
   text-indent: -65px;
-  margin-left: 20px;
+  margin-left: 78px;
 }
 .iconWrapper {
   display: flex;
@@ -743,14 +743,13 @@ body.black-theme .base-user-input {
   background-color: #313338;
   position: absolute;
   display: block;
-  width: 315px;
+  width: 377px;
   height: 50px;
-  left: 62px;
+  left: 0px;
   top: -2px;
   z-index: 3;
   pointer-events: auto;
   position: fixed;
-
   transform: translateX(-265%);
   transition: transform 0.3s ease;
 }

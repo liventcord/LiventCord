@@ -30,9 +30,12 @@ import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
 import { activityList, userList } from "./userList.ts";
 import { loadDmHome, openDm } from "./app.ts";
+import { isBlackTheme } from "./settings.ts";
 
-const addfriendhighlightedcolor = "#5865F2";
-const highlightedColor = "#29292D";
+const addfriendhighlightedcolor = () =>
+  isBlackTheme() ? "#5865F2" : "#248046";
+const highlightedColor = () => (isBlackTheme() ? "#29292D" : "#43444b");
+
 const defaultColor = "transparent";
 const grayColor = "#c2c2c2";
 
@@ -396,7 +399,7 @@ export function updateFriendMenu() {
 }
 function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
-  openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor;
+  openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor();
   openFriendsBtn.style.color = "white";
   displayWumpus();
   isAddFriendsOpen = false;
@@ -416,7 +419,9 @@ function selectFriendMenu(clickedButton: HTMLElement) {
       const reqType = getRequestType(button);
 
       button.style.backgroundColor =
-        reqType === currentSelectedFriendMenu ? highlightedColor : defaultColor;
+        reqType === currentSelectedFriendMenu
+          ? highlightedColor()
+          : defaultColor;
       button.style.color =
         reqType === currentSelectedFriendMenu ? "white" : grayColor;
     }
@@ -440,14 +445,14 @@ function initializeButtonsList() {
     el.addEventListener("click", () => selectFriendMenu(el));
 
     el.addEventListener("mouseenter", () => {
-      el.style.backgroundColor = highlightedColor;
+      el.style.backgroundColor = highlightedColor();
       el.style.color = "white";
     });
 
     el.addEventListener("mouseleave", () => {
       const isActive =
         reqType === currentSelectedFriendMenu && !isAddFriendsOpen;
-      el.style.backgroundColor = isActive ? highlightedColor : defaultColor;
+      el.style.backgroundColor = isActive ? highlightedColor() : defaultColor;
       el.style.color = isActive ? "white" : grayColor;
     });
   });
@@ -905,6 +910,12 @@ function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
     translations.getTranslation("more")
   );
   optionsButton.id = friend.userId;
+
+  friendButton.addEventListener("mouseover", () => {
+    sendMsgBtn.style.backgroundColor = "#2b2d31;";
+    optionsButton.style.backgroundColor = "#2b2d31;";
+  });
+
   const cachedFriend = friendsCache.getFriend(friend.userId);
   appendToProfileContextList(cachedFriend, friend.userId);
   optionsButton.addEventListener("click", () => {

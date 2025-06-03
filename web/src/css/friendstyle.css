@@ -72,12 +72,23 @@ body.black-theme .dm-container:hover {
   user-select: none;
   background-color: #35373c;
 }
-.dm-selected:hover {
-  background-color: #1c1c1f !important;
-}
+
 .dm-selected {
-  background-color: #27272a;
+  background-color: #404249;
 }
+
+.dm-selected:hover {
+  background-color: #35373c !important;
+}
+
+body.black-theme .dm-selected {
+  background-color: #27272b;
+}
+
+body.black-theme .dm-selected:hover {
+  background-color: #1d1d1e !important;
+}
+
 .dm-container:hover .close-dm-btn {
   display: flex;
 }
@@ -323,11 +334,12 @@ body.black-theme .dm-container:hover {
   display: flex;
 }
 .friend-card:hover {
+  background-color: #3a3b41;
+}
+body.black-theme .friend-card:hover {
   background-color: #242428;
 }
-.friend-card:hover .friend-discriminator {
-  background-color: #393c41;
-}
+
 .friend-card:not(:last-child)::after {
   content: "";
   position: absolute;
@@ -389,6 +401,7 @@ body.black-theme .dm-container:hover {
   margin-left: 5px;
   display: inline-block;
   pointer-events: none;
+  background-color: transparent;
 }
 .friend-status {
   font-size: 13px;
@@ -448,7 +461,7 @@ body.black-theme .dm-container:hover {
 #friend-icon {
   position: absolute;
   left: 93px;
-  top: 65px;
+  top: 82px;
   height: 30px;
   width: 30px;
 }
@@ -470,10 +483,6 @@ body.black-theme .dm-container:hover {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-}
-
-.friend-button:hover .gray-sphere {
-  background-color: #2b2d31;
 }
 
 .friend-button .gray-sphere img {
