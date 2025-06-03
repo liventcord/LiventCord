@@ -8,46 +8,42 @@ import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { guildContainer } from "./guild.ts";
 import { friendsContainer } from "./friendui.ts";
+export function setTheme(isDark: boolean) {
+  const toggleClass = (el: any, cls: string) => {
+    if (!el) return;
+    if (isDark) {
+      if (!el.classList.contains(cls)) el.classList.add(cls);
+    } else {
+      if (el.classList.contains(cls)) el.classList.remove(cls);
+    }
+  };
 
-export function setBlackTheme() {
-  document.body.classList.add("black-theme");
-  chatContainer.classList.add("black-theme");
-  const infoContainer = getId("channel-info-container-for-index");
+  toggleClass(document.body, "black-theme");
+  toggleClass(chatContainer, "black-theme");
+  toggleClass(getId("channel-info-container-for-index"), "black-theme");
 
-  infoContainer?.classList.add("black-theme");
   setTimeout(() => {
-    const friendInfoContainer = getId("channel-info-container-for-friend");
-    friendInfoContainer?.children[0]?.classList.add("black-theme");
-    console.warn(friendInfoContainer?.classList);
+    const friendInfo = getId("channel-info-container-for-friend");
+    toggleClass(friendInfo?.children[0], "black-theme");
+    if (isDark) console.warn(friendInfo?.classList);
   }, 100);
 
-  const channelList = getId("channel-list");
-  const activityList = getId("activity-list");
-  channelList?.classList.add("black-theme-3");
-  activityList?.classList.add("black-theme");
+  toggleClass(getId("channel-list"), "black-theme-3");
+  toggleClass(getId("activity-list"), "black-theme");
 
   setTimeout(() => {
-    userList?.classList.add("black-theme");
+    toggleClass(userList, "black-theme");
   }, 0);
-  const guildsList = getId("guilds-list");
 
-  guildsList?.classList.add("black-theme-3");
-
-  guildContainer.classList.add("black-theme-3");
-  const userPanel = getId("user-info-panel");
-  userPanel?.classList.add("black-theme-4");
-  const avatarWrapper = getId("avatar-wrapper");
-  avatarWrapper?.classList.add("black-theme-4");
-  friendsContainer?.classList.add("black-theme");
-  const settingsLeftbar = getId("settings-leftbar");
-  settingsLeftbar?.classList.add("black-theme-3");
-  const right = getId("settings-rightcontainer");
-  right?.classList.add("black-theme-4");
-
-  const lightRightbar = getId("settings-light-rightbar");
-  lightRightbar?.classList.add("black-theme");
-  const mediaMenu = getId("media-menu");
-  mediaMenu?.classList.add("black-theme");
+  toggleClass(getId("guilds-list"), "black-theme-3");
+  toggleClass(guildContainer, "black-theme-3");
+  toggleClass(getId("user-info-panel"), "black-theme-4");
+  toggleClass(getId("avatar-wrapper"), "black-theme-4");
+  toggleClass(friendsContainer, "black-theme");
+  toggleClass(getId("settings-leftbar"), "black-theme-3");
+  toggleClass(getId("settings-rightcontainer"), "black-theme-4");
+  toggleClass(getId("settings-light-rightbar"), "black-theme");
+  toggleClass(getId("media-menu"), "black-theme");
 }
 
 const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {

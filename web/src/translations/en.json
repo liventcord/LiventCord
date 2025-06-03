@@ -123,7 +123,9 @@
     "Image": "IMAGE",
     "UploadEmoji": "Upload Emoji",
     "EmojiCount": "slot available",
-    "SuccessEmoji": "Emoji(s) Uploaded Succesfully!"
+    "SuccessEmoji": "Emoji(s) Uploaded Succesfully!",
+    "Theme": "Theme",
+    "ThemeDescription": "Adjust the colour of interface for better visibility."
   },
   "textTranslations": {
     "online": "Online",

@@ -47,6 +47,7 @@ import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId, setGuildImage } from "./guild.ts";
 import { isOnGuild } from "./router.ts";
 import { getGuildEmojiHtml, populateEmojis } from "./emoji.ts";
+import { setTheme } from "./extras.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -544,13 +545,14 @@ function getSoundAndVideoHtml() {
   <select id="speakers-dropdown" class="dropdown"></select>`;
 }
 function getAccountSettingsHtml() {
+  const _isBlackTheme = isBlackTheme();
   return `
         <div id="settings-rightbartop"></div>
         <div id="settings-title">${translations.getSettingsTranslation(
           "MyAccount"
         )}</div>
-        <div id="settings-rightbar" class="${isBlackTheme() ? "black-theme-3" : ""}">
-            <div id="settings-light-rightbar" class="${isBlackTheme() ? "black-theme" : ""}">
+        <div id="settings-rightbar" class="${_isBlackTheme ? "black-theme-3" : ""}">
+            <div id="settings-light-rightbar" class="${_isBlackTheme ? "black-theme" : ""}">
                 <div id="set-info-title-nick">${translations.getSettingsTranslation(
                   "Username"
                 )}</div>
@@ -627,8 +629,13 @@ function getAppearanceHtml() {
             createToggle(toggle.id, toggle.label, toggle.description)
           )
           .join("")}
-    <span style="display: inline-block; background-color: #323339; width: 70px;  border-radius: 50%;"></span>
-    <span style="display: inline-block; background-color: #1D1D21; width: 70px;  border-radius: 50%; margin-left: 10px;"></span>
+        <h3>${translations.getSettingsTranslation("Theme")}</h3>
+        <p style="color: #C4C5C9" >${translations.getSettingsTranslation("ThemeDescription")}</p>
+
+        <div class="theme-selector-container">
+          <span id="ash-theme-selector" class="theme-circle ash-theme"></span>
+          <span id="dark-theme-selector" class="theme-circle dark-theme"></span>
+        </div>
 
     `;
 }
@@ -684,6 +691,28 @@ function initializeLanguageDropdown() {
     }
   });
 }
+export enum Themes {
+  Ash,
+  Dark
+}
+const selectedThemeBorderColor = "#5865F2";
+const unThemeBorderColor = "#A5A5AC";
+
+export function selectTheme(selected: Themes) {
+  setTheme(selected === Themes.Dark);
+
+  const ash = getId("ash-theme-selector");
+  const dark = getId("dark-theme-selector");
+  if (!ash || !dark) return;
+
+  const isDark = selected === Themes.Dark;
+  ash.style.borderColor = isDark
+    ? unThemeBorderColor
+    : selectedThemeBorderColor;
+  dark.style.borderColor = isDark
+    ? selectedThemeBorderColor
+    : unThemeBorderColor;
+}
 
 function initialiseSettingComponents(
   settingsContainer: HTMLElement,
@@ -704,8 +733,12 @@ function initialiseSettingComponents(
 
   toggleManager.setupToggles();
 
-  const settingsSelfProfile = getProfileImage();
-  settingsSelfProfile?.addEventListener("click", triggerFileInput);
+  getProfileImage()?.addEventListener("click", triggerFileInput);
+
+  const ash = getId("ash-theme-selector");
+  const dark = getId("dark-theme-selector");
+  ash?.addEventListener("click", () => selectTheme(Themes.Ash));
+  dark?.addEventListener("click", () => selectTheme(Themes.Dark));
 
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 

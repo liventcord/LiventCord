@@ -353,10 +353,17 @@ function rgbToHex(r: number, g: number, b: number) {
   );
 }
 export function getAverageRGB(imgEl: HTMLImageElement): string {
-  if (imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
+  if (
+    imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC ||
+    !imgEl.complete ||
+    imgEl.naturalWidth === 0
+  ) {
     return "#e7e7e7";
   }
-  imgEl.crossOrigin = "anonymous";
+
+  if (rgbCache[imgEl.src]) {
+    return rgbCache[imgEl.src] as string;
+  }
 
   const blockSize = 5;
   const RGBA_COMPONENTS = 4;
@@ -365,10 +372,6 @@ export function getAverageRGB(imgEl: HTMLImageElement): string {
 
   if (!context) {
     return "#000000";
-  }
-
-  if (rgbCache[imgEl.src]) {
-    return rgbCache[imgEl.src] as string;
   }
 
   const height = (canvas.height =

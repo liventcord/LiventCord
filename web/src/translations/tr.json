@@ -136,7 +136,9 @@
     "Image": "RESİM",
     "UploadEmoji": "Emoji Yükle",
     "EmojiCount": "slot mevcut",
-    "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!"
+    "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!",
+    "Theme": "Tema",
+    "ThemeDescription": "Daha iyi bir görünüm için arayüz rengini değiştir."
   },
   "textTranslations": {
     "online": "Çevrim İçi",

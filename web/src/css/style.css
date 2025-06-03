@@ -81,7 +81,7 @@
 }
 #avatar-wrapper {
   border-radius: 5px;
-  background-color: #232428;
+  background-color: #36373e;
   width: 125px;
   height: 42px;
   margin-top: 7px;
@@ -92,7 +92,7 @@
   bottom: 10px;
   height: 57px;
   z-index: 5;
-  background-color: #232428;
+  background-color: #36373e;
   left: 7px;
   width: 364px;
   border-radius: 5px;
@@ -187,7 +187,7 @@
 #user-list {
   user-select: none;
   z-index: 1;
-  background-color: #2b2d31;
+  background-color: #313338;
   color: #ffffff;
   scroll-behavior: smooth;
   overflow: hidden auto;
@@ -304,8 +304,8 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
-  border: 5px solid #2b2d31;
-  background-color: #2b2d31;
+  border: 5px solid #313338;
+  background-color: #313338;
   position: relative;
   overflow: hidden;
   padding: 5px;
@@ -477,7 +477,7 @@
 .emoji-container::-webkit-scrollbar-track,
 .base-user-input::-webkit-scrollbar-track,
 .suggestions-dropdown::-webkit-scrollbar-track {
-  background-color: #2b2d31;
+  background-color: #313338;
   border-radius: 5px;
 }
 
@@ -493,7 +493,7 @@
   .base-user-input,
   .suggestions-dropdown {
     scrollbar-width: auto;
-    scrollbar-color: #212222 #2b2d31;
+    scrollbar-color: #212222 #313338;
   }
 }
 
@@ -649,7 +649,7 @@
   padding-bottom: 27px;
   color: #ffffff;
   font-family: Arial, Helvetica, sans-serif;
-  background-color: #2b2d31;
+  background-color: #313338;
   border: none;
   line-height: 20px;
   position: absolute;
@@ -740,7 +740,7 @@ body.black-theme .base-user-input {
 }
 
 #guild-container {
-  background-color: #2b2d31;
+  background-color: #313338;
   position: absolute;
   display: block;
   width: 315px;
@@ -759,7 +759,6 @@ body.black-theme .base-user-input {
 }
 .guilds-list {
   list-style-type: none;
-  background-color: #1e1f22;
   position: fixed;
   height: 100%;
   margin-top: 0px;
@@ -1173,7 +1172,7 @@ body.black-theme .base-user-input {
 
 #reply-container {
   display: none;
-  background-color: #2b2d31;
+  background-color: #313338;
   color: rgb(183, 186, 165);
   width: 80%;
   border-radius: 5%;
@@ -1227,7 +1226,7 @@ body.black-theme .base-user-input {
   margin-left: 22px;
   margin-top: 22px;
   transition: opacity 0.5s ease-in-out;
-  border: 3px solid #2b2d31;
+  border: 3px solid #313338;
 }
 .status-bubble {
   color: white;
@@ -1344,7 +1343,7 @@ textarea::-webkit-scrollbar-thumb {
   border-radius: 6px;
 }
 textarea::-webkit-scrollbar-track {
-  background-color: #2b2d31;
+  background-color: #313338;
 }
 .json-container {
   background-color: rgb(34, 33, 33);
@@ -1618,7 +1617,7 @@ textarea::-webkit-scrollbar-track {
   display: none;
 
   flex-direction: column;
-  background: #2b2d31;
+  background: #313338;
   border: 1px solid #3c3e42;
   max-height: 300px;
   height: auto;
@@ -2217,3 +2216,26 @@ h2 {
 }
 
 /* Login */
+
+.theme-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-circle {
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+}
+
+.ash-theme {
+  background-color: #323339;
+  border: 1px solid #a9a9b0;
+}
+
+.dark-theme {
+  background-color: #1d1d21;
+  border: 1px solid black;
+}
