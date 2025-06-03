@@ -117,7 +117,9 @@ function createTenorElement(
   }
 
   const imgElement = createEl("img", {
-    src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
+    src: tenorURL
+      ? DOMPurify.sanitize(tenorURL)
+      : IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       cursor: "pointer",
       maxWidth: maxTenorWidth,
@@ -140,14 +142,7 @@ function createTenorElement(
     msgContentElement.textContent = inputText;
   };
 
-  if (tenorURL) {
-    imgElement.onload = function () {
-      imgElement.src = DOMPurify.sanitize(tenorURL);
-    };
-    const preload = new Image();
-    preload.onload = imgElement.onload;
-    preload.src = DOMPurify.sanitize(tenorURL);
-  } else {
+  if (!tenorURL) {
     msgContentElement.textContent = inputText;
   }
 
@@ -218,10 +213,12 @@ function createImageElement(
       maxHeight: `${maxHeight}px`
     }
   }) as HTMLImageElement;
+
   imgElement.setAttribute("data-userid", senderId);
   imgElement.setAttribute("data-date", date.toString());
   imgElement.setAttribute("data-filesize", fileSize.toString());
   imgElement.setAttribute("data-filename", fileName);
+
   requestAnimationFrame(() => {
     if (isSpoiler) {
       FileHandler.blurImage(imgElement);
@@ -231,9 +228,10 @@ function createImageElement(
 
   imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
-
   imgElement.setAttribute("data-original-src", urlSrc);
+
   let isClicked: boolean;
+
   imgElement.addEventListener("click", () => {
     if (isSpoiler) {
       if (isClicked) {
@@ -248,32 +246,24 @@ function createImageElement(
     }
   });
 
-  // Check if its an attachment url
-
   const match = urlSrc.match(attachmentPattern);
   urlSrc = match ? urlSrc : getProxy(urlSrc);
 
   const regex = /\/attachments\/(\d+)/;
-
   const matchPure = urlSrc.match(regex);
 
   if (matchPure && matchPure[1]) {
     const id = matchPure[1];
-
     urlSrc = getAttachmentUrl(id);
   }
+
   if (
     urlSrc !== IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC &&
     urlSrc !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
   ) {
-    preloadImage(urlSrc)
-      .catch(() => preloadImage(urlSrc))
-      .then((loadedSrc) => {
-        imgElement.src = loadedSrc;
-      })
-      .catch(() => {});
-  } else {
     imgElement.src = urlSrc;
+  } else {
+    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   }
 
   return imgElement;
