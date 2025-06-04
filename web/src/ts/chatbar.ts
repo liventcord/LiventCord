@@ -1470,15 +1470,31 @@ export function initialiseChatInput() {
   });
   chatInput.addEventListener("paste", (e: ClipboardEvent) => {
     e.preventDefault();
-    const text = e.clipboardData?.getData("text/plain") || "";
-    const html = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/ {2}/g, " &nbsp;")
-      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
-      .replace(/\n/g, "<br>");
-    document.execCommand("insertHTML", false, html);
+    const items = e.clipboardData?.items;
+    if (items) {
+      let foundMedia = false;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file") {
+          foundMedia = true;
+          const file = item.getAsFile();
+          if (file) {
+            FileHandler.handleFileInput([file]);
+          }
+        }
+      }
+      if (!foundMedia) {
+        const text = e.clipboardData?.getData("text/plain") || "";
+        const html = text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/ {2}/g, " &nbsp;")
+          .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+          .replace(/\n/g, "<br>");
+        document.execCommand("insertHTML", false, html);
+      }
+    }
   });
 
   chatInput.addEventListener("keydown", (event) => {
