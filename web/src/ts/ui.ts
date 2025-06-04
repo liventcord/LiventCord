@@ -34,7 +34,8 @@ import {
   getImageExtension,
   estimateImageSizeBytes,
   getResolution,
-  getFileNameFromUrl
+  getFileNameFromUrl,
+  corsDomainManager
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -52,7 +53,6 @@ import {
 } from "./chatbar.ts";
 import {
   attachmentPattern,
-  getProxy,
   isImageSpoilered,
   setImageUnspoilered
 } from "./mediaElements.ts";
@@ -724,20 +724,20 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 document.addEventListener("keydown", handleKeyDown);
-export function displayImagePreview(
+export async function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
   date?: Date,
   isSpoiler = false,
   isFromMediaPanel = false
-): void {
+): Promise<void> {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   const sourceImage = getSourceImage(imageElement);
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
-  previewImage.src = getProxy(sanitizedSourceImage);
+  previewImage.src = await corsDomainManager.getProxy(sanitizedSourceImage);
   updateCurrentIndex(sourceImage, isFromMediaPanel);
   handleImageSpoiler(previewImage, isSpoiler);
 

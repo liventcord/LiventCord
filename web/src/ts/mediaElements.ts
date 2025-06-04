@@ -15,7 +15,10 @@ import {
   getYouTubeEmbedURL,
   IMAGE_SRCS,
   formatFileSize,
-  renderFileIcon
+  renderFileIcon,
+  loadImageWithRetry,
+  corsDomainManager,
+  tenorHosts
 } from "./utils.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -83,14 +86,7 @@ const maxHeight = 384;
 export const maxAttachmentsCount = 10;
 const maxTenorWidth = "85vw";
 const maxTenorHeight = "85vh";
-const tenorHosts = [
-  "media1.tenor.com",
-  "c.tenor.com",
-  "tenor.com",
-  "media.tenor.com"
-];
 
-const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 const getAttachmentUrl = (attachmentId: string) =>
@@ -149,44 +145,6 @@ function createTenorElement(
   return imgElement;
 }
 
-export function getProxy(url: string): string {
-  if (url.startsWith("/")) {
-    return `${location.origin}${url}`;
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-
-    if (parsedUrl.hostname === apiClient.getProxyHostname()) {
-      return url;
-    }
-
-    if (parsedUrl.hostname === apiClient.getBackendHostname()) {
-      return url;
-    }
-
-    if (IgnoreProxies.includes(parsedUrl.hostname)) {
-      return url;
-    }
-
-    return apiClient.getProxyUrl(url);
-  } catch (e) {
-    console.error("Invalid URL:", url, e);
-    return url;
-  }
-}
-
-function preloadImage(src: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
-
-    img.onload = () => resolve(img.src);
-    img.onerror = () => reject();
-  });
-}
-
 const spoileredImages: Record<string, boolean> = {};
 export function isImageSpoilered(id: string) {
   return Boolean(spoileredImages[id]);
@@ -194,7 +152,7 @@ export function isImageSpoilered(id: string) {
 export function setImageUnspoilered(id: string) {
   delete spoileredImages[id];
 }
-function createImageElement(
+async function createImageElement(
   inputText: string,
   urlSrc: string,
   senderId: string,
@@ -203,7 +161,7 @@ function createImageElement(
   isSpoiler = false,
   fileSize = 0,
   fileName = ""
-): HTMLImageElement {
+): Promise<HTMLImageElement> {
   const imgElement = createEl("img", {
     className: "chat-image",
     id: attachmentId,
@@ -247,7 +205,7 @@ function createImageElement(
   });
 
   const match = urlSrc.match(attachmentPattern);
-  urlSrc = match ? urlSrc : getProxy(urlSrc);
+  urlSrc = match ? urlSrc : await corsDomainManager.getProxy(urlSrc);
 
   const regex = /\/attachments\/(\d+)/;
   const matchPure = urlSrc.match(regex);
@@ -258,12 +216,18 @@ function createImageElement(
   }
 
   if (
-    urlSrc !== IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC &&
-    urlSrc !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+    urlSrc === IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC ||
+    urlSrc === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
   ) {
-    imgElement.src = urlSrc;
-  } else {
     imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+  } else {
+    loadImageWithRetry(urlSrc, 3)
+      .then((loadedImg) => {
+        imgElement.src = loadedImg.src;
+      })
+      .catch(() => {
+        imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+      });
   }
 
   return imgElement;
@@ -324,12 +288,12 @@ function createYouTubeElement(url: string): HTMLElement | undefined {
 
   return iframeElement;
 }
-function createVideoElement(url: string, isVideoAttachment = false) {
+async function createVideoElement(url: string, isVideoAttachment = false) {
   if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
   const videoElement = createEl("video") as HTMLVideoElement;
-  const proxiedUrl = getProxy(url);
+  const proxiedUrl = await corsDomainManager.getProxy(url);
   videoElement.src = proxiedUrl;
   videoElement.width = 560;
   videoElement.height = 315;
@@ -530,7 +494,7 @@ function processMediaLink(
   senderId: string,
   date: Date
 ): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
+  return new Promise<boolean>(async (resolve) => {
     let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
     const handleLoad = () => {
       resolve(false);
@@ -564,7 +528,10 @@ function processMediaLink(
             attachment?.fileName
           );
         } else if (attachment?.isVideoFile) {
-          mediaElement = createVideoElement(attachment.proxyUrl ?? link, true);
+          mediaElement = await createVideoElement(
+            attachment.proxyUrl ?? link,
+            true
+          );
         }
       }
     } else if (isTenorURL(link)) {
@@ -748,7 +715,7 @@ async function appendEmbedToMessage(
     const imageContainer = createEl("div", {
       className: "embed-image-container"
     });
-    const imgElement = createImageElement(
+    const imgElement = await createImageElement(
       embed.title || "",
       imgUrl,
       senderId,
@@ -769,7 +736,7 @@ async function appendEmbedToMessage(
     const videoContainer = createEl("div", {
       className: "embed-video-container"
     });
-    const videoElement = createVideoElement(embed.video.url);
+    const videoElement = await createVideoElement(embed.video.url);
     videoElement.className = "embed-video";
 
     videoContainer.appendChild(videoElement);

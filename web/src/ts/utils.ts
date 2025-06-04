@@ -6,6 +6,7 @@ import {
 import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
+import { apiClient } from "./api.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
@@ -951,4 +952,145 @@ export function isCompressedFile(fileName: string): boolean {
   );
 
   return ext ? compressedExtensions.includes(ext) : false;
+}
+export const tenorHosts = [
+  "media1.tenor.com",
+  "c.tenor.com",
+  "tenor.com",
+  "media.tenor.com"
+];
+
+const IgnoreProxies = ["i.redd.it", ...tenorHosts];
+
+class CorsDomainManager {
+  private static LOCALSTORAGE_KEY = "corsAllowedDomainsCache";
+  private cache: Record<string, boolean> = {};
+
+  constructor() {
+    this.cache = this.loadCache();
+  }
+
+  private loadCache(): Record<string, boolean> {
+    try {
+      const stored = localStorage.getItem(CorsDomainManager.LOCALSTORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private saveCache() {
+    try {
+      localStorage.setItem(
+        CorsDomainManager.LOCALSTORAGE_KEY,
+        JSON.stringify(this.cache)
+      );
+    } catch {}
+  }
+
+  private testCorsForDomain(domain: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `https://${domain}/favicon.ico}`;
+
+      let resolved = false;
+
+      function done(result: boolean) {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve(result);
+        }
+      }
+
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
+
+      const timeoutId = setTimeout(() => done(false), 5000);
+    });
+  }
+
+  async getProxy(url: string): Promise<string> {
+    if (url.startsWith("/")) {
+      return `${location.origin}${url}`;
+    }
+    if (!navigator.onLine) {
+      return url;
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname;
+
+      if (
+        hostname === apiClient.getProxyHostname() ||
+        hostname === apiClient.getBackendHostname() ||
+        IgnoreProxies.includes(hostname)
+      ) {
+        return url;
+      }
+
+      if (this.cache[hostname] === true) {
+        return url;
+      }
+
+      if (this.cache[hostname] === false) {
+        return apiClient.getProxyUrl(url);
+      }
+
+      const allowsCors = await this.testCorsForDomain(hostname);
+
+      this.cache[hostname] = allowsCors;
+      this.saveCache();
+
+      return allowsCors ? url : apiClient.getProxyUrl(url);
+    } catch (e) {
+      console.error("Invalid URL:", url, e);
+      return url;
+    }
+  }
+}
+
+export const corsDomainManager = new CorsDomainManager();
+
+export function loadImageWithRetry(
+  url: string,
+  maxRetries = 3
+): Promise<HTMLImageElement> {
+  return retry(
+    () =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = url;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Image failed to load"));
+      }),
+    maxRetries
+  );
+}
+export function retry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delayMs = 500,
+  backoffFactor = 2
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    function attempt(n: number, currentDelay: number) {
+      fn()
+        .then(resolve)
+        .catch((err) => {
+          if (n === 0) {
+            reject(err);
+          } else {
+            setTimeout(
+              () => attempt(n - 1, currentDelay * backoffFactor),
+              currentDelay
+            );
+          }
+        });
+    }
+    attempt(retries, delayMs);
+  });
 }
