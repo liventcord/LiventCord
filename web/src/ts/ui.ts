@@ -74,6 +74,8 @@ export const selectedChanColor = () => (isBlackTheme() ? "#414248" : "#404249");
 const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
+const horizontalLineGuild = getId("horizontal-line-guild") as HTMLElement;
+
 let isAddedDragListeners = false;
 const imagePreviewContainer = getId(
   "image-preview-container"
@@ -1280,6 +1282,7 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   enableElement(chatContainer);
 
   guildContainer.classList.remove("visible");
+  disableElement(horizontalLineGuild);
 
   chatContainer.classList.remove("chat-container-mobile-left");
   if (isOnGuild) {
@@ -1287,7 +1290,6 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
     enableElement("channel-info");
   }
   disableElement(navigationBar);
-
   disableElement(mobileBlackBg);
 }
 
@@ -1301,6 +1303,8 @@ function mobileMoveToLeft() {
   disableElement("scroll-to-bottom");
   channelList.classList.remove("visible");
   guildContainer.classList.add("visible");
+  enableElement(horizontalLineGuild);
+
   disableElement(chatContainer);
   chatContainer.classList.add("chat-container-mobile-left");
   getId("guilds-list")?.classList.add("guilds-list-mobile-left");

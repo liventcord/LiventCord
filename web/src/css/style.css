@@ -1258,7 +1258,7 @@ body.black-theme .base-user-input {
   max-height: 256px;
 }
 .horizontal-line,
-.horizontal-line-guild {
+#horizontal-line-guild {
   top: 41px;
   z-index: 1;
   border-top: 100vh solid rgb(63, 66, 71);
@@ -1268,7 +1268,7 @@ body.black-theme .base-user-input {
   right: 0px;
   position: relative;
 }
-.horizontal-line-guild {
+#horizontal-line-guild {
   left: 71px;
   position: absolute;
 }
