@@ -74,7 +74,6 @@
   font-size: 14px;
   color: #ffffff;
   white-space: nowrap;
-  max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: text;
@@ -82,7 +81,7 @@
 #avatar-wrapper {
   border-radius: 5px;
   background-color: #36373e;
-  width: 125px;
+  width: 260px;
   height: 42px;
   margin-top: 7px;
   position: relative;
@@ -797,7 +796,7 @@ body.black-theme .base-user-input {
   width: 20px;
   user-select: none;
   pointer-events: none;
-  left: 275px;
+  left: 341px;
   bottom: 14px;
   display: none;
   transform: scaleX(1.5) rotate(180deg);
@@ -806,7 +805,7 @@ body.black-theme .base-user-input {
 }
 #guild-name {
   width: 80%;
-  padding-left: 20px;
+  padding-left: 80px;
   padding-top: 15px;
   font-size: 15px;
   font-weight: bold;

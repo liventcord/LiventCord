@@ -744,7 +744,7 @@
 #profile-container {
   display: flex;
   margin-top: 28vh;
-  margin-left: 20px;
+  margin-left: 140px;
 }
 #profile-title {
   color: white;
@@ -756,7 +756,7 @@
   font-weight: bold;
   color: rgb(181, 186, 193);
   font-size: 0.8em;
-  margin-top: 6vh;
+  margin-top: 3em;
   user-select: text;
   position: fixed;
 }

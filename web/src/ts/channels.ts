@@ -119,7 +119,7 @@ function selectChannelElement(channelId: string) {
   ) as HTMLElement;
   console.log(channel);
   if (!channel) return;
-  channel.style.backgroundColor = selectedChanColor;
+  channel.style.backgroundColor = selectedChanColor();
 }
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) return;

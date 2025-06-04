@@ -129,8 +129,8 @@ export default defineComponent({
         backgroundColor:
           isHovered.value || isSelected
             ? isSelected
-              ? selectedChanColor
-              : hoveredChanColor
+              ? selectedChanColor()
+              : hoveredChanColor()
             : "transparent",
         color: isSelected ? "white" : "rgb(148, 155, 164)"
       };

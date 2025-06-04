@@ -768,7 +768,6 @@ body.black-theme #settings-menu button.touch-hover {
   padding-top: 5px;
 }
 .voice-button-container {
-  border: 2px solid gray;
   border-radius: 25px;
   position: absolute;
 }
