@@ -78,7 +78,6 @@
   font-size: 1.35em;
   width: 50px;
   height: 50px;
-  margin-left: -10px;
 }
 #gifsBackBtn :hover {
   color: white;
@@ -213,6 +212,7 @@
   overflow-x: hidden;
   max-height: calc(100% - 80px);
 }
+
 .gif-content {
   margin: 9px;
   max-width: 320px;
@@ -221,25 +221,29 @@
   border-radius: 8px;
   overflow: hidden;
   background-color: #f0f0f0;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
 }
+
 .gif-content img {
-  width: 100%;
+  width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: 100%;
   display: block;
   border-radius: 8px;
   object-fit: contain;
 }
+
 .gif-content:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 #media-menu-search-bar {
-  width: 100%;
+  width: 90%;
   color: white;
   font-size: 18px;
   height: 30px;
@@ -247,8 +251,15 @@
   padding-left: 10px;
   margin-top: 10px;
   border: none;
-  background-color: rgb(30, 31, 34);
+  background-color: #1e1f22;
   outline: none;
+}
+.search-bar-gif {
+  margin-left: 50px;
+  width: 90%;
+}
+body.black-theme #media-menu-search-bar {
+  background-color: #212126 !important;
 }
 
 .category-box {
