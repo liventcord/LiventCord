@@ -1,5 +1,12 @@
 import { initialState } from "./app.ts";
-import { createEl, getId, debounce, IMAGE_SRCS } from "./utils.ts";
+import {
+  createEl,
+  getId,
+  debounce,
+  IMAGE_SRCS,
+  enableElement,
+  disableElement
+} from "./utils.ts";
 import { sendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
@@ -209,10 +216,11 @@ function displayContent(
     });
     return;
   }
-
+  enableElement(gifsBackBtn, false, true);
+  mediaMenuSearchbar.classList.add("search-bar-gif");
   if (contentData.length === 0) {
     const baseGif = createEl("img", {
-      className: "gif-content",
+      className: "gif-contentt",
       textContent: "No gifs found"
     });
     mediaMenuContainer.appendChild(baseGif);
@@ -220,12 +228,12 @@ function displayContent(
     contentData.forEach((data) => {
       if (isMediaData(data)) {
         const img = createEl("img", {
-          className: `${type}-content`,
+          className: `gif-content`,
           src: data.preview
         });
         img.addEventListener("click", () => {
           toggleMediaMenu();
-          sendMessage(data[type]);
+          sendMessage(data.gif);
         });
         mediaMenuContainer.appendChild(img);
       }
@@ -327,7 +335,11 @@ async function loadGifContent(query: string): Promise<void> {
 export function updateMediaPanelPosition() {
   mediaMenu = getId("media-menu") as HTMLElement;
   if (mediaMenu) {
-    mediaMenu.className = !isUsersOpenGlobal ? "users-open" : "";
+    if (!isUsersOpenGlobal) {
+      mediaMenu.classList.add("users-open");
+    } else {
+      mediaMenu.classList.remove("users-open");
+    }
   }
 }
 export function handleMediaPanelResize() {
@@ -361,14 +373,14 @@ interface GifResponse {
   results: GifResult[];
 }
 
-function toggleMediaMenu() {
-  if (isMediaMenuOpen) {
-    console.log("Closing media menu");
-    mediaMenu.style.display = "none";
+function toggleMediaMenu(isClickingTop?: boolean) {
+  if (isMediaMenuOpen && !isClickingTop) {
+    console.error("Closing media menu");
+    disableElement(mediaMenu);
     isMediaMenuOpen = false;
   } else {
-    console.log("Opening media menu");
-    mediaMenu.style.display = "block";
+    console.error("Opening media menu");
+    enableElement(mediaMenu, false, true);
     isMediaMenuOpen = true;
   }
 }
@@ -426,6 +438,10 @@ function handleCategoryGifs(responseText: string) {
     const gifImg = createEl("img", {
       className: "gif-content"
     }) as HTMLImageElement;
+    gifImg.addEventListener("click", () => {
+      toggleMediaMenu();
+      sendMessage(gifData.media[0].gif.url);
+    });
     gifImg.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
     mediaMenuContainer.appendChild(gifImg);
 
@@ -439,36 +455,26 @@ async function fetchCategoryGifs(categoryPath: string) {
   const url = `https://g.tenor.com/v1/search?key=${exampleTenorId}&q=${categoryPath}&limit=50`;
   httpGetAsync(url, handleCategoryGifs);
 }
-// search input field should hidden and shown category name when rendered gifs
-// should return back to input field when this function is called
 function showCategoriesList() {
   console.log("Show categories list");
 
   if (categoryNameText) {
-    categoryNameText.style.display = "none";
     categoryNameText.textContent = "";
   }
-  if (gifsBackBtn) {
-    gifsBackBtn.style.display = "none";
-  }
+  mediaMenuSearchbar.classList.remove("search-bar-gif");
+  disableElement(gifsBackBtn);
 
-  if (mediaMenuSearchbar) {
-    mediaMenuSearchbar.style.display = "flex";
-  }
+  enableElement(mediaMenuSearchbar);
   loadMenuGifContent();
 }
 
 function showCategoryView(categoryName: string) {
   if (categoryNameText) {
-    categoryNameText.style.display = "block";
     categoryNameText.textContent = categoryName;
   }
-  if (gifsBackBtn) {
-    gifsBackBtn.style.display = "block";
-  }
-  if (mediaMenuSearchbar) {
-    mediaMenuSearchbar.style.display = "none";
-  }
+  enableElement(gifsBackBtn, false, true);
+  mediaMenuSearchbar.classList.add("search-bar-gif");
+  disableElement(mediaMenuSearchbar);
 }
 
 function fetchTrendingGifs() {
@@ -503,22 +509,27 @@ function createCategoryBox(
   return box;
 }
 
-function toggleGifs() {
+function toggleGifs(isClickingTop?: boolean) {
+  console.log(currentMenuType);
   if (currentMenuType === MediaTypes.Emoji) {
-    toggleMediaMenu();
+    currentMenuType = MediaTypes.Gif;
+    toggleGifs();
+
+    toggleMediaMenu(isClickingTop);
   } else {
     currentMenuType = MediaTypes.Gif;
     loadMenuGifContent();
+
     if (!isMediaMenuOpen) {
-      toggleMediaMenu();
+      toggleMediaMenu(isClickingTop);
     }
   }
 }
 
-function toggleEmojis() {
+function toggleEmojis(isClickingTop?: boolean) {
   mediaMenuSearchbar.value = "";
   if (currentMenuType === MediaTypes.Emoji) {
-    toggleMediaMenu();
+    toggleMediaMenu(isClickingTop);
     mediaMenuSearchbar.placeholder =
       translations.getTranslation("search-tenor");
   } else {
@@ -528,7 +539,7 @@ function toggleEmojis() {
       translations.getTranslation("find-perfect-emoji");
 
     if (!isMediaMenuOpen) {
-      toggleMediaMenu();
+      toggleMediaMenu(isClickingTop);
     }
   }
 }
@@ -572,8 +583,9 @@ const GIF_DEBOUNCE_TIME = 300;
 function initialiseMedia() {
   initialiseEmojiPreview();
   mediaMenu = getId("media-menu") as HTMLElement;
+
   mediaMenuContainer = getId("media-menu-container") as HTMLElement;
-  mediaMenu.style.display = "none";
+  disableElement(mediaMenu);
   if (mediaMenuSearchbar) {
     mediaMenuSearchbar.addEventListener(
       "keydown",
@@ -589,7 +601,7 @@ function initialiseMedia() {
   }
 
   emojiBtnTop.addEventListener("click", (e) => {
-    toggleEmojis();
+    toggleEmojis(true);
     e.stopPropagation();
   });
   gifBtn.addEventListener("click", (e) => {
@@ -601,7 +613,7 @@ function initialiseMedia() {
     e.stopPropagation();
   });
   gifBtnTop.addEventListener("click", (e) => {
-    toggleGifs();
+    toggleGifs(true);
     e.stopPropagation();
   });
 

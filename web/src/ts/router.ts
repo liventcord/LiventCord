@@ -1,9 +1,8 @@
 import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
-import { selectGuildList } from "./guild.ts";
 import { showGuildPop } from "./popups.ts";
-import { disableElement, enableElement } from "./utils.ts";
+import { createEl, disableElement, enableElement } from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
 import { apiClient } from "./api.ts";
 export let isOnMePage = true;
@@ -231,6 +230,29 @@ class Router {
   }
   openLink(link: string) {
     window.open(link, "_blank");
+  }
+  async downloadLink(link: string) {
+    try {
+      const response = await fetch(link, { mode: "cors" });
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      let filename = link.split("/").pop() || "";
+      if (!filename || !filename.includes(".")) {
+        const mime = blob.type; // e.g. "image/png"
+        const extension = mime.split("/")[1] || "jpg";
+        filename = `image.${extension}`;
+      }
+
+      const a = createEl("a", { href: url, download: filename }) as HTMLElement;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download image:", error);
+    }
   }
 }
 

@@ -801,7 +801,7 @@ export function createProfileImageChat(
   nick: string,
   userInfo: UserInfo,
   userId: string,
-  date: Date,
+  date: string,
   isBot: boolean = false,
   isAfterDeleting: boolean = false,
   replyBar: HTMLElement | null = null
@@ -840,7 +840,6 @@ export function createProfileImageChat(
   authorAndDate.appendChild(nickElement);
 
   const dateElement = createEl("span", { className: "date-element" });
-
   dateElement.textContent = getFormattedDate(date);
   authorAndDate.appendChild(dateElement);
 
@@ -1200,7 +1199,7 @@ function handleAddToTop(
       nick,
       userInfo,
       userId,
-      new Date(date),
+      date,
       isBot
     );
   } else {
@@ -1233,7 +1232,6 @@ function handleRegularMessage(
       new Date(bottomestChatDateStr).getTime() - new Date(date).getTime()
     ) / MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
-  const dateObject = new Date(date);
 
   if (!lastSenderID || isTimeGap || replyToId) {
     createProfileImageChat(
@@ -1242,7 +1240,7 @@ function handleRegularMessage(
       nick,
       userInfo,
       userId,
-      dateObject,
+      date,
       isBot
     );
   } else {
@@ -1253,7 +1251,7 @@ function handleRegularMessage(
         nick,
         userInfo,
         userId,
-        dateObject,
+        date,
         isBot
       );
     } else {

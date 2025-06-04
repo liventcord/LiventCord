@@ -1,9 +1,50 @@
-import confetti from "canvas-confetti";
+import confettiImport from "canvas-confetti";
 
-import { createEl } from "./utils.ts";
-import { chatInput } from "./chatbar.ts";
+const confetti = confettiImport as unknown as (options: any) => void;
+
+import { createEl, getId } from "./utils.ts";
+import { chatContainer, chatInput } from "./chatbar.ts";
 import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
-import { isUsersOpenGlobal } from "./userList.ts";
+import { isUsersOpenGlobal, userList } from "./userList.ts";
+import { guildContainer } from "./guild.ts";
+import { friendsContainer } from "./friendui.ts";
+export function setTheme(isDark: boolean) {
+  const toggleClass = (el: any, cls: string) => {
+    if (!el) return;
+    if (isDark) {
+      if (!el.classList.contains(cls)) el.classList.add(cls);
+    } else {
+      if (el.classList.contains(cls)) el.classList.remove(cls);
+    }
+  };
+
+  toggleClass(document.body, "black-theme");
+  toggleClass(chatContainer, "black-theme");
+  toggleClass(getId("channel-info-container-for-index"), "black-theme");
+
+  setTimeout(() => {
+    const friendInfo = getId("channel-info-container-for-friend");
+    toggleClass(friendInfo?.children[0], "black-theme");
+    if (isDark) console.warn(friendInfo?.classList);
+  }, 100);
+
+  toggleClass(getId("channel-list"), "black-theme-3");
+  toggleClass(getId("activity-list"), "black-theme");
+
+  setTimeout(() => {
+    toggleClass(userList, "black-theme");
+  }, 0);
+
+  toggleClass(getId("guilds-list"), "black-theme-3");
+  toggleClass(guildContainer, "black-theme-3");
+  toggleClass(getId("user-info-panel"), "black-theme-4");
+  toggleClass(getId("avatar-wrapper"), "black-theme-4");
+  toggleClass(friendsContainer, "black-theme");
+  toggleClass(getId("settings-leftbar"), "black-theme-3");
+  toggleClass(getId("settings-rightcontainer"), "black-theme-4");
+  toggleClass(getId("settings-light-rightbar"), "black-theme");
+  toggleClass(getId("media-menu"), "black-theme");
+}
 
 const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
   const {

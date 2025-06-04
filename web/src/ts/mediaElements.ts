@@ -15,7 +15,10 @@ import {
   getYouTubeEmbedURL,
   IMAGE_SRCS,
   formatFileSize,
-  renderFileIcon
+  renderFileIcon,
+  loadImageWithRetry,
+  corsDomainManager,
+  tenorHosts
 } from "./utils.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -81,10 +84,9 @@ class MetaData {
 const maxWidth = 512;
 const maxHeight = 384;
 export const maxAttachmentsCount = 10;
-const maxTenorWidth = 768;
-const maxTenorHeight = 576;
-const tenorHosts = ["media1.tenor.com", "c.tenor.com", "tenor.com"];
-const IgnoreProxies = ["i.redd.it", ...tenorHosts];
+const maxTenorWidth = "85vw";
+const maxTenorHeight = "85vh";
+
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 const getAttachmentUrl = (attachmentId: string) =>
@@ -111,28 +113,18 @@ function createTenorElement(
   }
 
   const imgElement = createEl("img", {
-    src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
+    src: tenorURL
+      ? DOMPurify.sanitize(tenorURL)
+      : IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
     style: {
       cursor: "pointer",
-      maxWidth: `${maxTenorWidth}px`,
-      maxHeight: `${maxTenorHeight}px`
+      maxWidth: maxTenorWidth,
+      maxHeight: maxTenorHeight
     },
     loading: "lazy",
     className: "tenor-image"
   }) as HTMLImageElement;
 
-  imgElement.onload = function () {
-    const actualSrc = tenorURL;
-    if (actualSrc) {
-      imgElement.src = DOMPurify.sanitize(actualSrc);
-    }
-  };
-
-  imgElement.onerror = function () {
-    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
-    imgElement.remove();
-    msgContentElement.textContent = inputText;
-  };
   imgElement.setAttribute("data-userId", senderId);
   imgElement.setAttribute("data-date", date.toString());
 
@@ -140,45 +132,17 @@ function createTenorElement(
     displayImagePreview(imgElement, senderId, date);
   });
 
+  imgElement.onerror = function () {
+    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+    imgElement.remove();
+    msgContentElement.textContent = inputText;
+  };
+
+  if (!tenorURL) {
+    msgContentElement.textContent = inputText;
+  }
+
   return imgElement;
-}
-
-export function getProxy(url: string): string {
-  if (url.startsWith("/")) {
-    return `${location.origin}${url}`;
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-
-    if (parsedUrl.hostname === apiClient.getProxyHostname()) {
-      return url;
-    }
-
-    if (parsedUrl.hostname === apiClient.getBackendHostname()) {
-      return url;
-    }
-
-    if (IgnoreProxies.includes(parsedUrl.hostname)) {
-      return url;
-    }
-
-    return apiClient.getProxyUrl(url);
-  } catch (e) {
-    console.error("Invalid URL:", url, e);
-    return url;
-  }
-}
-
-function preloadImage(src: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
-
-    img.onload = () => resolve(img.src);
-    img.onerror = () => reject();
-  });
 }
 
 const spoileredImages: Record<string, boolean> = {};
@@ -188,7 +152,7 @@ export function isImageSpoilered(id: string) {
 export function setImageUnspoilered(id: string) {
   delete spoileredImages[id];
 }
-function createImageElement(
+async function createImageElement(
   inputText: string,
   urlSrc: string,
   senderId: string,
@@ -197,7 +161,7 @@ function createImageElement(
   isSpoiler = false,
   fileSize = 0,
   fileName = ""
-): HTMLImageElement {
+): Promise<HTMLImageElement> {
   const imgElement = createEl("img", {
     className: "chat-image",
     id: attachmentId,
@@ -207,10 +171,12 @@ function createImageElement(
       maxHeight: `${maxHeight}px`
     }
   }) as HTMLImageElement;
+
   imgElement.setAttribute("data-userid", senderId);
   imgElement.setAttribute("data-date", date.toString());
   imgElement.setAttribute("data-filesize", fileSize.toString());
   imgElement.setAttribute("data-filename", fileName);
+
   requestAnimationFrame(() => {
     if (isSpoiler) {
       FileHandler.blurImage(imgElement);
@@ -220,9 +186,10 @@ function createImageElement(
 
   imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
-
   imgElement.setAttribute("data-original-src", urlSrc);
+
   let isClicked: boolean;
+
   imgElement.addEventListener("click", () => {
     if (isSpoiler) {
       if (isClicked) {
@@ -237,32 +204,30 @@ function createImageElement(
     }
   });
 
-  // Check if its an attachment url
-
   const match = urlSrc.match(attachmentPattern);
-  urlSrc = match ? urlSrc : getProxy(urlSrc);
+  urlSrc = match ? urlSrc : await corsDomainManager.getProxy(urlSrc);
 
   const regex = /\/attachments\/(\d+)/;
-
   const matchPure = urlSrc.match(regex);
 
   if (matchPure && matchPure[1]) {
     const id = matchPure[1];
-
     urlSrc = getAttachmentUrl(id);
   }
+
   if (
-    urlSrc !== IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC &&
-    urlSrc !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
+    urlSrc === IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC ||
+    urlSrc === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
   ) {
-    preloadImage(urlSrc)
-      .catch(() => preloadImage(urlSrc))
-      .then((loadedSrc) => {
-        imgElement.src = loadedSrc;
-      })
-      .catch(() => {});
+    imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   } else {
-    imgElement.src = urlSrc;
+    loadImageWithRetry(urlSrc, 3)
+      .then((loadedImg) => {
+        imgElement.src = loadedImg.src;
+      })
+      .catch(() => {
+        imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+      });
   }
 
   return imgElement;
@@ -323,12 +288,12 @@ function createYouTubeElement(url: string): HTMLElement | undefined {
 
   return iframeElement;
 }
-function createVideoElement(url: string, isVideoAttachment = false) {
+async function createVideoElement(url: string, isVideoAttachment = false) {
   if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
   const videoElement = createEl("video") as HTMLVideoElement;
-  const proxiedUrl = getProxy(url);
+  const proxiedUrl = await corsDomainManager.getProxy(url);
   videoElement.src = proxiedUrl;
   videoElement.width = 560;
   videoElement.height = 315;
@@ -393,11 +358,6 @@ export async function createMediaElement(
       .join(",");
   }
 
-  const attachmentUrl = attachments?.[0]?.proxyUrl || "";
-  const links: string[] = attachmentUrl
-    ? [attachmentUrl]
-    : extractLinks(content).filter((link) => link !== attachmentUrl);
-
   let mediaCount = 0;
   let linksProcessed = 0;
 
@@ -418,7 +378,7 @@ export async function createMediaElement(
     }
   }
 
-  if (attachments)
+  if (attachments && attachments.length > 0) {
     for (const attachment of attachments) {
       try {
         console.log("Processing attachment: ", attachment);
@@ -442,10 +402,18 @@ export async function createMediaElement(
         console.error("Error processing attachment:", error);
       }
     }
-  else {
+  } else {
     await processLinks();
   }
   async function processLinks() {
+    const attachmentUrl = attachments?.[0]?.proxyUrl || "";
+    if (!content && !attachmentUrl) {
+      return;
+    }
+    const links: string[] = attachmentUrl
+      ? [attachmentUrl]
+      : extractLinks(content).filter((link) => link !== attachmentUrl);
+
     while (linksProcessed < links.length && mediaCount < maxAttachmentsCount) {
       try {
         const isError = await processMediaLink(
@@ -526,19 +494,28 @@ function processMediaLink(
   senderId: string,
   date: Date
 ): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
+  return new Promise<boolean>(async (resolve) => {
     let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
     const handleLoad = () => {
       resolve(false);
     };
-    console.log(link, attachment);
 
     const handleError = () => {
       console.error("Error loading media element");
       resolve(true);
     };
+    console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
+        if (!attachment && isTenorURL(link)) {
+          mediaElement = createTenorElement(
+            messageContentElement,
+            content,
+            link,
+            senderId,
+            date
+          );
+        }
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
             "",
@@ -551,7 +528,10 @@ function processMediaLink(
             attachment?.fileName
           );
         } else if (attachment?.isVideoFile) {
-          mediaElement = createVideoElement(attachment.proxyUrl ?? link, true);
+          mediaElement = await createVideoElement(
+            attachment.proxyUrl ?? link,
+            true
+          );
         }
       }
     } else if (isTenorURL(link)) {
@@ -594,7 +574,6 @@ function processMediaLink(
       resolve(false);
       return;
     }
-
     if (mediaElement instanceof Promise) {
       mediaElement
         .then((resolvedElement) => {
@@ -736,7 +715,7 @@ async function appendEmbedToMessage(
     const imageContainer = createEl("div", {
       className: "embed-image-container"
     });
-    const imgElement = createImageElement(
+    const imgElement = await createImageElement(
       embed.title || "",
       imgUrl,
       senderId,
@@ -757,7 +736,7 @@ async function appendEmbedToMessage(
     const videoContainer = createEl("div", {
       className: "embed-video-container"
     });
-    const videoElement = createVideoElement(embed.video.url);
+    const videoElement = await createVideoElement(embed.video.url);
     videoElement.className = "embed-video";
 
     videoContainer.appendChild(videoElement);

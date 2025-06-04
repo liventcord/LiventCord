@@ -44,7 +44,7 @@ const crownEmojibase64 =
 import { appendToProfileContextList } from "../ts/contextMenuActions";
 import { deletedUser, userManager } from "../ts/user.ts";
 import { setProfilePic } from "../ts/avatar.ts";
-
+import { isBlackTheme } from "../ts/settings.ts";
 export default {
   name: "UserProfileItem",
   components: {
@@ -89,7 +89,9 @@ export default {
     };
 
     const onMouseEnter = () => {
-      profileImg.value.parentElement.style.backgroundColor = "rgb(53, 55, 60)";
+      profileImg.value.parentElement.style.backgroundColor = isBlackTheme
+        ? "#242428"
+        : "rgb(53, 55, 60)";
     };
 
     const onMouseLeave = () => {

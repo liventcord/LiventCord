@@ -379,38 +379,38 @@ export function addDm(friendId: string) {
 let currentFriendInstances: FriendData[];
 
 export function UpdatePendingCounter() {
-  let pendingCounter = 0;
-  if (currentFriendInstances) {
-    currentFriendInstances.forEach((friend) => {
-      if (friend.isPending && friend.isFriendsRequestToUser) {
-        pendingCounter += 1;
+  setTimeout(() => {
+    let pendingCounter = 0;
+    if (currentFriendInstances) {
+      pendingCounter = currentFriendInstances.reduce((count, friend) => {
+        return (
+          count + (friend.isPending && friend.isFriendsRequestToUser ? 1 : 0)
+        );
+      }, 0);
+    }
+
+    const pendingAlerts = [
+      pendingAlertLeft,
+      pendingAlertRight,
+      getId("pendingAlertMain")
+    ];
+    const hasPending = pendingCounter > 0;
+
+    pendingAlerts.forEach((alert) => {
+      if (!alert) return;
+
+      alert.textContent = String(pendingCounter);
+      if (hasPending) {
+        enableElement(alert);
+      } else {
+        disableElement(alert);
       }
     });
-  }
-
-  if (pendingCounter > 0) {
-    if (pendingAlertLeft) {
-      pendingAlertLeft.textContent = String(pendingCounter);
-      enableElement(pendingAlertLeft);
-    }
-    if (pendingAlertRight) {
-      pendingAlertRight.textContent = String(pendingCounter);
-      enableElement(pendingAlertRight);
-    }
 
     setWindowName(pendingCounter);
-  } else {
-    if (pendingAlertLeft) {
-      disableElement(pendingAlertLeft);
-      pendingAlertLeft.textContent = "0";
-    }
-    if (pendingAlertRight) {
-      disableElement(pendingAlertRight);
-      pendingAlertRight.textContent = "0";
-    }
-    setWindowName(0);
-  }
+  }, 0);
 }
+
 export function updateFriendsList(friends: FriendData[]): void {
   if (!friends || friends.length === 0) {
     console.warn("Empty friend list data.");

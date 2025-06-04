@@ -37,8 +37,8 @@ export default defineComponent({
 #channel-list {
   z-index: 1;
   padding: 36px 47px;
-  width: 140px;
-  height: calc(100vh - 100px);
+
+  height: calc(100vh);
   overflow-y: scroll;
   overflow-x: hidden;
   font-weight: bold;
@@ -69,9 +69,8 @@ export default defineComponent({
 #channel-list::-webkit-scrollbar-track {
   background-color: #2f3136;
 }
-#channel-list,
-#channel-list-2 {
-  width: 140px;
+#channel-list {
+  width: 205px;
   padding-left: 125px;
   max-height: 100%;
   position: relative;

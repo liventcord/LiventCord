@@ -152,6 +152,12 @@ interface InitialState {
   sharedGuildsMap: Map<string, any>;
   wsUrl: string;
 }
+
+const ELEMENT_IDS = {
+  friendsContainer: "friends-container",
+  channelInfoFriend: "channel-info-container-for-friend"
+};
+
 export let userStatus: UserStatus;
 export function initializeApp() {
   userStatus = new UserStatus();
@@ -454,93 +460,89 @@ export function openDm(friendId: string) {
 }
 
 let lastDmId: string;
-export function loadDmHome(isChangingUrl?: boolean): void {
-  if (isChangingUrl === undefined) {
-    isChangingUrl = true;
-  }
 
+function handleMenu(isChangingUrl: boolean) {
+  selectGuildList("main-logo");
+  if (isChangingUrl) router.resetRoute();
+
+  enableElement(ELEMENT_IDS.friendsContainer, false, true);
+  friendContainerItem.classList.add("dm-selected");
+
+  disableDmContainers();
+  lastDmId = "";
+  friendsCache.currentDmId = "";
+
+  enableElement(ELEMENT_IDS.channelInfoFriend);
+  if (!isMobile) disableElement("channel-info-container-for-index");
+
+  loadMainToolbar();
+
+  [
+    "hash-sign",
+    "dm-profile-sign-bubble",
+    "dm-profile-sign",
+    chatContainer,
+    "message-input-container",
+    "channel-container",
+    "channel-info"
+  ].forEach(disableElement);
+
+  friendContainerItem.style.color = "white";
+
+  updateUsersActivities();
+
+  setUsersList(false);
+  if (userList) disableElement(userList);
+  setUserListLine();
+
+  const nowOnlineTitle = getId("nowonline");
+  if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
+
+  if (isOnMePage) return;
+
+  closeDropdown();
+  setisOnMePage(true);
+  setIsOnGuild(false);
+  updateFriendMenu();
+  disableElement("scroll-to-bottom");
+}
+
+function handleDm() {
+  openDm(lastDmId);
+  disableElement(ELEMENT_IDS.friendsContainer);
+}
+
+export function loadDmHome(isChangingUrl = true): void {
   console.log("Loading main menu...");
 
-  function handleMenu() {
-    selectGuildList("main-logo");
-    if (isChangingUrl) {
-      router.resetRoute();
-    }
-    enableElement("friends-container", false, true);
-    friendContainerItem.classList.add("dm-selected");
-    disableDmContainers();
-    lastDmId = "";
-    friendsCache.currentDmId = "";
-    enableElement("channel-info-container-for-friend");
-    if (!isMobile) {
-      disableElement("channel-info-container-for-index");
-    }
-    loadMainToolbar();
-    disableElement("hash-sign");
-    disableElement("dm-profile-sign-bubble");
-    disableElement("dm-profile-sign");
-
-    disableElement(chatContainer);
-    disableElement("message-input-container");
-    friendContainerItem.style.color = "white";
-    disableElement("channel-container");
-    disableElement("channel-info");
-
-    updateUsersActivities();
-
-    setUsersList(false);
-    if (userList) disableElement(userList);
-    setUserListLine();
-
-    const nowOnlineTitle = getId("nowonline");
-    if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
-    if (isOnMePage) {
-      return;
-    }
-
-    closeDropdown();
-    setisOnMePage(true);
-    setIsOnGuild(false);
-    updateFriendMenu();
-    disableElement("scroll-to-bottom");
-  }
   selectGuildList("main-logo");
 
-  function handleDm() {
-    openDm(lastDmId);
-    disableElement("friends-container");
-  }
   if (isOnGuild) {
     if (isOnDm) {
-      handleMenu();
+      handleMenu(isChangingUrl);
+    } else if (lastDmId) {
+      handleDm();
     } else {
-      if (lastDmId) {
-        handleDm();
-      } else {
-        handleMenu();
-      }
+      handleMenu(isChangingUrl);
     }
   } else {
-    handleMenu();
+    handleMenu(isChangingUrl);
   }
+
   disableElement("channel-container");
   enableElement("friend-container-item");
   setGuildNameText("");
   disableElement("guild-settings-button");
   enableElement("global-search-input", false, true);
   enableElement("friends-container-item");
-
   enableElement("dms-title");
   enableElement("dm-container-parent", false, true);
 
-  if (!isMobile) {
-    enableElement("guild-container", false, true);
-  }
+  if (!isMobile) enableElement("guild-container", false, true);
 
   const chanList = getId("channel-list") as HTMLElement;
-  if (cachedFriMenuContent && chanList) {
+  if (cachedFriMenuContent && chanList)
     chanList.innerHTML = cachedFriMenuContent;
-  }
 
   handleResize();
 }
@@ -586,6 +588,8 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     if (activityList) {
       disableElement(activityList);
     }
+    handleMembersClick();
+
     disableElement("dm-container-parent");
     disableElement("friend-container-item");
     enableElement("guild-settings-button");

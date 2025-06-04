@@ -129,8 +129,8 @@ export default defineComponent({
         backgroundColor:
           isHovered.value || isSelected
             ? isSelected
-              ? selectedChanColor
-              : hoveredChanColor
+              ? selectedChanColor()
+              : hoveredChanColor()
             : "transparent",
         color: isSelected ? "white" : "rgb(148, 155, 164)"
       };
@@ -212,7 +212,7 @@ export default defineComponent({
   align-items: flex-start;
   cursor: pointer;
   margin-top: 2px;
-  width: 50%;
+  width: 42%;
   height: auto;
   margin-left: -80px;
   border-radius: 5px;

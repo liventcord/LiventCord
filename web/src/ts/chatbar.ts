@@ -29,7 +29,7 @@ import {
   renderFileIcon
 } from "./utils.ts";
 import { alertUser, displayImagePreview } from "./ui.ts";
-import { isOnDm, router } from "./router.ts";
+import { isOnDm, isOnGuild, router } from "./router.ts";
 import { maxAttachmentSize } from "./avatar.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
@@ -41,6 +41,7 @@ import {
   regexIdEmojis
 } from "./emoji.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
+import { currentChannelName } from "./channels.ts";
 
 export let currentReplyingTo = "";
 
@@ -529,70 +530,81 @@ export class FileHandler {
   }
 
   static setDropHandler() {
-    const dropZone = getId("drop-zone");
-    const fileButton = getId("file-button");
-    if (!dropZone) return;
+    const dropZone = getId("drop-zone") as HTMLElement;
+    const fileButton = getId("file-button") as HTMLElement;
+    if (!dropZone || !fileButton) return;
+    if (!dropZone) {
+      console.log("dropZone not found");
+      return;
+    }
 
-    if (!fileButton) return;
+    if (!fileButton) {
+      console.log("fileButton not found");
+      return;
+    }
 
     const dragEvents = ["dragenter", "dragover", "dragleave", "drop"];
     dragEvents.forEach((eventName) => {
       document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    const handleDragEnterOrOver = (e: DragEvent) => {
-      const dataTransfer = e.dataTransfer;
-      if (dataTransfer && dataTransfer.types.includes("text/plain")) {
-        dropZone.style.display = "flex";
-      }
-      dropZone.classList.add("hover");
-    };
-    dropZone.addEventListener(
-      "dragenter",
-      (e: Event) => handleDragEnterOrOver(e as DragEvent),
-      false
-    );
-    dropZone.addEventListener(
-      "dragover",
-      (e: Event) => handleDragEnterOrOver(e as DragEvent),
-      false
-    );
-
-    const handleDragLeaveOrDrop = (e: DragEvent) => {
-      if (e.type === "drop") {
-        handleDrop(e);
-      } else if (
-        e.type === "dragleave" &&
-        !dropZone.contains(e.relatedTarget as Node)
-      ) {
-        dropZone.style.display = "none";
-      }
-      dropZone.classList.remove("hover");
-    };
-    dropZone.addEventListener(
-      "dragleave",
-      (e: Event) => handleDragLeaveOrDrop(e as DragEvent),
-      false
-    );
-
-    dropZone.addEventListener("drop", handleDrop, false);
+    document.body.addEventListener("dragenter", handleDragEnterOrOver, false);
+    document.body.addEventListener("dragover", handleDragEnterOrOver, false);
+    document.body.addEventListener("dragleave", handleDragLeave, false);
+    document.body.addEventListener("drop", handleDrop, false);
 
     fileButton.addEventListener("click", () => {
+      console.log("fileButton clicked");
       fileInput.click();
     });
 
-    fileInput.addEventListener("change", FileHandler.handleFileInput);
+    fileInput.addEventListener("change", (e) => {
+      console.log("fileInput change event");
+      FileHandler.handleFileInput(e);
+    });
 
     function preventDefaults(e: Event) {
       e.preventDefault();
       e.stopPropagation();
     }
 
+    function handleDragEnterOrOver(e: DragEvent) {
+      dropZone.style.display = "flex";
+      dropZone.classList.add("hover");
+      const chanName = isOnGuild
+        ? currentChannelName
+        : isOnDm
+          ? userManager.getUserNick(friendsCache.currentDmId)
+          : "";
+      const dropChannelName = getId("drop-zone-channel-name");
+      if (dropChannelName) {
+        dropChannelName.textContent = translations.getDropZoneText(chanName);
+      }
+    }
+
+    function handleDragLeave(e: DragEvent) {
+      if (
+        e.relatedTarget == null ||
+        !document.body.contains(e.relatedTarget as Node)
+      ) {
+        console.log("Full dragleave, hiding dropZone");
+        dropZone.style.display = "none";
+        dropZone.classList.remove("hover");
+      }
+    }
+
     function handleDrop(e: DragEvent) {
+      console.log("Handling drop");
+      dropZone.style.display = "none";
+      dropZone.classList.remove("hover");
+
       const dt = e.dataTransfer;
       const files = dt?.files;
       if (files?.length) {
+        console.log(`${files.length} file(s) dropped`);
         FileHandler.handleFileInput(files);
+      } else {
+        console.log("No files dropped");
       }
     }
   }
@@ -907,7 +919,7 @@ function handleBackspace(event: KeyboardEvent) {
     ) {
       event.preventDefault();
 
-      chatInput.innerHTML = "\u2800";
+      chatInput.innerHTML = "\u200B";
 
       requestAnimationFrame(() => {
         state.rawContent = "";
@@ -1110,7 +1122,7 @@ export function manuallyRenderEmojis(rawContent: string) {
   chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== ""
       ? formattedContent
-      : "\u2800"
+      : "\u200B"
   );
 
   DomUtils.ensureTextNodeAfterImage(chatInput);
@@ -1275,7 +1287,7 @@ function handleChatInput(event: Event) {
         chatInput.innerHTML = DOMPurify.sanitize(
           formattedContent && formattedContent.trim() !== ""
             ? formattedContent
-            : "\u2800"
+            : "\u200B"
         );
 
         DomUtils.ensureTextNodeAfterImage(chatInput);
@@ -1453,6 +1465,34 @@ export function initialiseChatInput() {
     if (event.target instanceof HTMLInputElement) {
       if (event.target.value) {
         updateUserMentionDropdown(event.target.value);
+      }
+    }
+  });
+  chatInput.addEventListener("paste", (e: ClipboardEvent) => {
+    e.preventDefault();
+    const items = e.clipboardData?.items;
+    if (items) {
+      let foundMedia = false;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file") {
+          foundMedia = true;
+          const file = item.getAsFile();
+          if (file) {
+            FileHandler.handleFileInput([file]);
+          }
+        }
+      }
+      if (!foundMedia) {
+        const text = e.clipboardData?.getData("text/plain") || "";
+        const html = text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/ {2}/g, " &nbsp;")
+          .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+          .replace(/\n/g, "<br>");
+        document.execCommand("insertHTML", false, html);
       }
     }
   });

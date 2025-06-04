@@ -14,6 +14,18 @@ body {
   min-height: 100vh;
   user-select: none;
 }
+.black-theme {
+  background-color: #1a1a1e !important;
+}
+.black-theme-2 {
+  background-color: #111214 !important;
+}
+.black-theme-3 {
+  background-color: #121214 !important;
+}
+.black-theme-4 {
+  background-color: #202024 !important;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -104,6 +116,12 @@ table {
 #settings-menu button:active,
 #settings-menu button.touch-hover {
   background-color: #677bc4;
+}
+
+body.black-theme #settings-menu button:hover,
+body.black-theme #settings-menu button:active,
+body.black-theme #settings-menu button.touch-hover {
+  background-color: #2c2c30;
 }
 
 #settings-menu {
@@ -307,6 +325,10 @@ table {
   position: fixed;
   top: 4%;
   left: 4%;
+}
+#drop-zone-channel-name {
+  font-size: 1.5em;
+  color: white;
 }
 .input-container {
   position: fixed;
@@ -745,14 +767,13 @@ table {
   padding-left: 15px;
   padding-top: 5px;
 }
-.button-container {
-  border: 2px solid gray;
+.voice-button-container {
   border-radius: 25px;
   position: absolute;
 }
 #settings-button {
   margin-top: -33px;
-  margin-left: 221px;
+  margin-left: 334px;
   position: fixed;
   user-select: none;
   width: 20px;
@@ -779,27 +800,30 @@ table {
 }
 #microphone-button {
   margin-top: -35px;
-  margin-left: 157px;
+  margin-left: 270px;
   position: fixed;
   user-select: none;
   width: 20px;
   height: 20px;
   border-radius: 5px;
-  background-color: #ffffff00;
+  color: #a7a7ae;
+  background-color: transparent;
   cursor: pointer;
 }
 #microphone-button:hover {
-  background-color: #535353;
+  background-color: #36363b;
 }
 #earphone-button {
   margin-top: -35px;
-  margin-left: 189px;
+  margin-left: 300px;
   position: fixed;
   user-select: none;
   width: 20px;
   height: 20px;
   border-radius: 5px;
-  background-color: #ffffff00;
+  color: #a7a7ae;
+
+  background-color: transparent;
   cursor: pointer;
 }
 #earphone-button:hover {

@@ -73,7 +73,8 @@
     "readen-chat": "{{date}}'da {{time}}'den beri {{count}}+ yeni mesaj",
     "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!",
     "shared-guilds": "{{count}} Ortak Sunucu",
-    "shared-friends": "{{count}} Ortak Arkadaş"
+    "shared-friends": "{{count}} Ortak Arkadaş",
+    "drop_zone_channel": "{{channelName}} Kanalına yükle"
   },
   "settingTranslations": {
     "en": "İngilizce",
@@ -135,7 +136,9 @@
     "Image": "RESİM",
     "UploadEmoji": "Emoji Yükle",
     "EmojiCount": "slot mevcut",
-    "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!"
+    "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!",
+    "Theme": "Tema",
+    "ThemeDescription": "Daha iyi bir görünüm için arayüz rengini değiştir."
   },
   "textTranslations": {
     "online": "Çevrim İçi",

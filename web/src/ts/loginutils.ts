@@ -246,11 +246,15 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
   }
 
   apiClient
-    .fetchRelative(isRegister ? "/auth/register" : "/auth/login", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" }
-    })
+    .fetchRelative(
+      isRegister ? "/auth/register" : "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      },
+      true
+    )
     .then(async (response) => {
       if (!response.ok) {
         let errorMsg = "";
@@ -333,7 +337,9 @@ function setRegisterInputListeners(registerForm: HTMLElement) {
         try {
           isFetching = true;
           const response = await apiClient.fetchRelative(
-            "/api/discriminators?nick=" + encodeURIComponent(newInputValue)
+            "/api/discriminators?nick=" + encodeURIComponent(newInputValue),
+            undefined,
+            true
           );
 
           if (response.ok) {

@@ -6,20 +6,13 @@ import {
 import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
+import { apiClient } from "./api.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
     "https://liventcord.github.io/LiventCord/app/images/icons/icon.webp",
   WUMPUS_SRC:
     "https://liventcord.github.io/LiventCord/app/images/wumpusalone.webp",
-  WHITEMIC_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/whitemic.webp",
-  REDMIC_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/redmic.webp",
-  WHITEEARPHONES_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/whiteearphones.webp",
-  REDEARPHONES_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/icons/redearphones.webp",
   DEFAULT_MEDIA_IMG_SRC:
     "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp",
   CLYDE_SRC: "https://liventcord.github.io/LiventCord/app/images/clyde.webp",
@@ -204,37 +197,40 @@ export function kebapToSentence(text: string) {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
-export function getFormattedDate(messageDate: Date) {
+export function getFormattedDate(input: string) {
   const today = new Date();
   const yesterday = new Date(today);
+  const messageDate = new Date(
+    /([zZ]|[+-]\d{2}:\d{2})$/.test(input) ? input : input + "Z"
+  );
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const userTimeZoneOffset = today.getTimezoneOffset() * 60000;
-  const localMessageDate = new Date(messageDate.getTime() - userTimeZoneOffset);
-
-  if (localMessageDate.toDateString() === today.toDateString()) {
+  if (messageDate.toDateString() === today.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "today"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
-  } else if (localMessageDate.toDateString() === yesterday.toDateString()) {
+  } else if (messageDate.toDateString() === yesterday.toDateString()) {
     return `ㅤ${translations.getTranslation(
       "yesterday"
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else {
-    return `ㅤ${localMessageDate.toLocaleDateString(
+    return `ㅤ${messageDate.toLocaleDateString(
       translations.getLocale()
-    )} ${localMessageDate.toLocaleTimeString(translations.getLocale(), {
+    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   }
 }
@@ -358,10 +354,17 @@ function rgbToHex(r: number, g: number, b: number) {
   );
 }
 export function getAverageRGB(imgEl: HTMLImageElement): string {
-  if (imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
+  if (
+    imgEl.src === IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC ||
+    !imgEl.complete ||
+    imgEl.naturalWidth === 0
+  ) {
     return "#e7e7e7";
   }
-  imgEl.crossOrigin = "anonymous";
+
+  if (rgbCache[imgEl.src]) {
+    return rgbCache[imgEl.src] as string;
+  }
 
   const blockSize = 5;
   const RGBA_COMPONENTS = 4;
@@ -370,10 +373,6 @@ export function getAverageRGB(imgEl: HTMLImageElement): string {
 
   if (!context) {
     return "#000000";
-  }
-
-  if (rgbCache[imgEl.src]) {
-    return rgbCache[imgEl.src] as string;
   }
 
   const height = (canvas.height =
@@ -953,4 +952,145 @@ export function isCompressedFile(fileName: string): boolean {
   );
 
   return ext ? compressedExtensions.includes(ext) : false;
+}
+export const tenorHosts = [
+  "media1.tenor.com",
+  "c.tenor.com",
+  "tenor.com",
+  "media.tenor.com"
+];
+
+const IgnoreProxies = ["i.redd.it", ...tenorHosts];
+
+class CorsDomainManager {
+  private static LOCALSTORAGE_KEY = "corsAllowedDomainsCache";
+  private cache: Record<string, boolean> = {};
+
+  constructor() {
+    this.cache = this.loadCache();
+  }
+
+  private loadCache(): Record<string, boolean> {
+    try {
+      const stored = localStorage.getItem(CorsDomainManager.LOCALSTORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private saveCache() {
+    try {
+      localStorage.setItem(
+        CorsDomainManager.LOCALSTORAGE_KEY,
+        JSON.stringify(this.cache)
+      );
+    } catch {}
+  }
+
+  private testCorsForDomain(domain: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `https://${domain}/favicon.ico}`;
+
+      let resolved = false;
+
+      function done(result: boolean) {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve(result);
+        }
+      }
+
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
+
+      const timeoutId = setTimeout(() => done(false), 5000);
+    });
+  }
+
+  async getProxy(url: string): Promise<string> {
+    if (url.startsWith("/")) {
+      return `${location.origin}${url}`;
+    }
+    if (!navigator.onLine) {
+      return url;
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname;
+
+      if (
+        hostname === apiClient.getProxyHostname() ||
+        hostname === apiClient.getBackendHostname() ||
+        IgnoreProxies.includes(hostname)
+      ) {
+        return url;
+      }
+
+      if (this.cache[hostname] === true) {
+        return url;
+      }
+
+      if (this.cache[hostname] === false) {
+        return apiClient.getProxyUrl(url);
+      }
+
+      const allowsCors = await this.testCorsForDomain(hostname);
+
+      this.cache[hostname] = allowsCors;
+      this.saveCache();
+
+      return allowsCors ? url : apiClient.getProxyUrl(url);
+    } catch (e) {
+      console.error("Invalid URL:", url, e);
+      return url;
+    }
+  }
+}
+
+export const corsDomainManager = new CorsDomainManager();
+
+export function loadImageWithRetry(
+  url: string,
+  maxRetries = 3
+): Promise<HTMLImageElement> {
+  return retry(
+    () =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = url;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Image failed to load"));
+      }),
+    maxRetries
+  );
+}
+export function retry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delayMs = 500,
+  backoffFactor = 2
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    function attempt(n: number, currentDelay: number) {
+      fn()
+        .then(resolve)
+        .catch((err) => {
+          if (n === 0) {
+            reject(err);
+          } else {
+            setTimeout(
+              () => attempt(n - 1, currentDelay * backoffFactor),
+              currentDelay
+            );
+          }
+        });
+    }
+    attempt(retries, delayMs);
+  });
 }

@@ -29,7 +29,9 @@ import {
   formatDate,
   disableElement,
   createRandomId,
-  createEl
+  createEl,
+  enableElement,
+  isMobile
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -212,7 +214,10 @@ async function processFiles(
 let messageQueue = Promise.resolve();
 
 export async function sendMessage(content: string, user_ids?: string[]) {
-  if (content === "") return;
+  if (content === "") {
+    console.error("Empty content!");
+    return;
+  }
 
   if (isOnDm && !canSendMessageToDm(friendsCache.currentDmId)) {
     displayCannotSendMessage(friendsCache.currentDmId, content);
@@ -583,28 +588,75 @@ function isThereMultipleMessageContentElements(
 
   return profilelessBefore || profilelessAfter;
 }
+
 export function convertToEditUi(message: HTMLElement) {
   editMessageCurrentContent = message.outerHTML;
+
   const messageContentElement = message.querySelector(
     "#message-content-element"
   ) as HTMLElement;
   if (!messageContentElement) return;
-  const _isThereMultipleMessageContentElements =
-    isThereMultipleMessageContentElements(message);
 
-  const editableDiv = createEl("div", {
+  const hasMultiple = isThereMultipleMessageContentElements(message);
+  const editMessageDiv = createEditDiv(messageContentElement);
+
+  let container: HTMLElement;
+
+  if (isMobile) {
+    container = createMobileWrapper(editMessageDiv);
+    container.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      if (target && target.className == "outer-parent") {
+        target.remove();
+      }
+    });
+
+    if (hasMultiple) container.style.marginLeft = "50px";
+    document.body.appendChild(container);
+  } else {
+    container = editMessageDiv;
+    if (hasMultiple) container.style.marginLeft = "50px";
+    messageContentElement.appendChild(editMessageDiv);
+  }
+
+  const buttonContainer = createButtonContainer(
+    () => saveEdit(message, messageContentElement, container, buttonContainer),
+    () => cancelEdit(message)
+  );
+  if (buttonContainer) message.appendChild(buttonContainer);
+
+  container.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      cancelEdit(message);
+      event.preventDefault();
+    } else if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      saveEdit(message, messageContentElement, container, buttonContainer);
+    }
+  });
+}
+
+function createEditDiv(contentElement: HTMLElement) {
+  const div = createEl("div", {
     className: "edit-message-div base-user-input",
     contentEditable: "true"
   });
-  editableDiv.innerText =
-    messageContentElement.textContent?.replace(/\s*\([^)]*\)\s*$/, "") || "";
+  div.innerText =
+    contentElement.textContent?.replace(/\s*\([^)]*\)\s*$/, "") || "";
+  return div;
+}
 
-  if (_isThereMultipleMessageContentElements) {
-    editableDiv.style.marginLeft = "50px";
-  }
-  messageContentElement.replaceWith(editableDiv);
+function createMobileWrapper(child: HTMLElement) {
+  const wrapper = createEl("div", { className: "outer-parent" });
+  enableElement(wrapper);
+  wrapper.appendChild(child);
+  return wrapper;
+}
 
-  const buttonContainer = createEl("div", {
+function createButtonContainer(onSave: () => void, onCancel: () => void) {
+  if (isMobile) return null;
+
+  const container = createEl("div", {
     className: "edit-message-button-container"
   });
 
@@ -612,43 +664,37 @@ export function convertToEditUi(message: HTMLElement) {
     className: "edit-message-button",
     innerHTML: `<span class="blue-text">Enter</span> <span class="white-text">${translations.getTranslation("save-button-text")}</span>`
   });
-  function editMessageContent() {
-    messageContentElement.textContent = editableDiv.innerText;
-    editableDiv.replaceWith(messageContentElement);
-    buttonContainer.remove();
-    messageContentElement.textContent = editableDiv.innerText;
-    sendEditMessageRequest(message.id, editableDiv.innerText);
-    editableDiv.replaceWith(messageContentElement);
-    buttonContainer.remove();
-    addEditedIndicator(messageContentElement);
-  }
-
-  saveButton.onclick = function () {
-    editMessageContent();
-  };
 
   const cancelButton = createEl("a", {
     className: "edit-message-button",
     innerHTML: `<span class="blue-text">Esc</span> <span class="white-text">${translations.getTranslation("exit-button-text")}</span>`
   });
-  cancelButton.onclick = function () {
-    message.outerHTML = editMessageCurrentContent;
-  };
 
-  buttonContainer.appendChild(saveButton);
-  buttonContainer.appendChild(cancelButton);
-  message.appendChild(buttonContainer);
+  saveButton.onclick = onSave;
+  cancelButton.onclick = onCancel;
 
-  editableDiv.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-      message.outerHTML = editMessageCurrentContent;
-      event.preventDefault();
-    } else if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      editMessageContent();
-    }
-  });
+  container.appendChild(saveButton);
+  container.appendChild(cancelButton);
+  return container;
 }
+
+function saveEdit(
+  message: HTMLElement,
+  originalContentElement: HTMLElement,
+  container: HTMLElement,
+  buttonContainer: HTMLElement | null
+) {
+  originalContentElement.textContent = container.innerText;
+  container.remove();
+  if (buttonContainer) buttonContainer.remove();
+  sendEditMessageRequest(message.id, container.innerText);
+  addEditedIndicator(originalContentElement);
+}
+
+function cancelEdit(message: HTMLElement) {
+  message.outerHTML = editMessageCurrentContent;
+}
+
 export function fetchMoreAttachments(page: number, pageSize: number) {
   const attachmentType = isOnGuild
     ? EventType.GET_ATTACHMENTS_GUILD

@@ -1,4 +1,6 @@
-declare var confetti: any;
+import confettiImport from "canvas-confetti";
+
+const confetti = confettiImport as unknown as (options: any) => void;
 import {
   blackImage,
   getId,
@@ -30,7 +32,9 @@ import {
   hideConfirmationPanel,
   isChannelSettings,
   isProfileSettings,
-  currentSettingsChannelId
+  currentSettingsChannelId,
+  selectTheme,
+  Themes
 } from "./settingsui.ts";
 import { alertUser, hideImagePreviewRequest, handleToggleClick } from "./ui.ts";
 import { isDomLoaded } from "./app.ts";
@@ -40,6 +44,7 @@ import { currentGuildId } from "./guild.ts";
 import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
+import { setTheme } from "./extras.ts";
 
 const isImagePreviewOpen = false;
 const CHANGE_NAME_COOLDOWN = 1000;
@@ -109,23 +114,33 @@ class ToggleManager {
     newValue: boolean,
     disabled: boolean = false
   ) {
+    console.log("updateState called with:", { toggleId, newValue, disabled });
+
     if (!disabled) {
       this.states[toggleId] = newValue;
+      console.log(`State updated: ${toggleId} = ${newValue}`);
 
       if (toggleId !== "private-channel-toggle") {
         saveBooleanCookie(toggleId, newValue ? 1 : 0);
+        console.log(`Cookie saved: ${toggleId} = ${newValue ? 1 : 0}`);
       }
 
       this.triggerActions(toggleId, newValue);
+      console.log(`Actions triggered for: ${toggleId}`);
     } else {
       this.states[toggleId] = false;
+      console.log(`Toggle is disabled. State forced to false for: ${toggleId}`);
 
       if (toggleId !== "private-channel-toggle") {
         saveBooleanCookie(toggleId, 0);
+        console.log(`Cookie saved with 0 for disabled toggle: ${toggleId}`);
       }
     }
 
     this.updateToggleDisplay(toggleId, this.states[toggleId], disabled);
+    console.log(
+      `Toggle display updated for: ${toggleId} with value: ${this.states[toggleId]}, disabled: ${disabled}`
+    );
   }
 
   setupToggles() {
@@ -268,18 +283,25 @@ class ToggleManager {
   }
 }
 export const toggleManager = ToggleManager.getInstance();
-
+const themeCookieKey = "is-dark-theme";
 export function initializeCookies() {
   Object.entries(toggleManager.states).forEach(([key, value]) => {
     toggleManager.setupToggle(key as keyof ToggleState);
   });
 
-  console.log("init cookies", toggleManager.states);
-
   if (toggleManager.states["snow-toggle"])
     toggleManager.toggleEffect("snow", true);
   if (toggleManager.states["party-toggle"])
     toggleManager.toggleEffect("party", true);
+
+  const black = isBlackTheme();
+  selectTheme(black ? Themes.Dark : Themes.Ash);
+}
+export function saveThemeCookie(val: boolean) {
+  return saveBooleanCookie(themeCookieKey, val ? 1 : 0);
+}
+export function isBlackTheme() {
+  return loadBooleanCookie(themeCookieKey);
 }
 
 export function triggerFileInput() {

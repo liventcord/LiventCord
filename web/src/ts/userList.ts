@@ -25,7 +25,7 @@ export let activityList: HTMLElement | null;
 
 document.addEventListener("DOMContentLoaded", () => {
   userList = getId("user-list") as HTMLElement | null;
-  userLine = getId("user-line") as HTMLElement | null;
+  userLine = document.querySelector(".horizontal-line") as HTMLElement | null;
   activityList = getId("activity-list") as HTMLElement | null;
 });
 

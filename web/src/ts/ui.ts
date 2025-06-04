@@ -34,7 +34,8 @@ import {
   getImageExtension,
   estimateImageSizeBytes,
   getResolution,
-  getFileNameFromUrl
+  getFileNameFromUrl,
+  corsDomainManager
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -52,7 +53,6 @@ import {
 } from "./chatbar.ts";
 import {
   attachmentPattern,
-  getProxy,
   isImageSpoilered,
   setImageUnspoilered
 } from "./mediaElements.ts";
@@ -60,6 +60,7 @@ import { selfName, setProfilePic } from "./avatar.ts";
 import { createTooltip } from "./tooltip.ts";
 import { pinMessage } from "./contextMenuActions.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
+import { isBlackTheme } from "./settings.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -67,12 +68,14 @@ export const muteHtml =
   '<svg class="icon_cdc675" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="m2.7 22.7 20-20a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4ZM10.8 17.32c-.21.21-.1.58.2.62V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 0 0-2 0c0 1.45-.52 2.79-1.38 3.83l-.02.02A5.99 5.99 0 0 1 12.32 16a.52.52 0 0 0-.34.15l-1.18 1.18ZM15.36 4.52c.15-.15.19-.38.08-.56A4 4 0 0 0 8 6v4c0 .3.03.58.1.86.07.34.49.43.74.18l6.52-6.52ZM5.06 13.98c.16.28.53.31.75.09l.75-.75c.16-.16.19-.4.08-.61A5.97 5.97 0 0 1 6 10a1 1 0 0 0-2 0c0 1.45.39 2.81 1.06 3.98Z" class=""></path></svg>';
 export const inviteVoiceHtml =
   '<svg class="icon_cdc675" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a1 1 0 1 0-2 0v8H3a1 1 0 1 0 0 2h8v8a1 1 0 0 0 2 0v-8h8a1 1 0 0 0 0-2h-8V3Z" class=""></path></svg>';
-export const selectedChanColor = "rgb(64, 66, 73)";
-export const hoveredChanColor = "rgb(53, 55, 60";
+export const hoveredChanColor = () => (isBlackTheme() ? "#1C1C1F" : "#34353B");
+export const selectedChanColor = () => (isBlackTheme() ? "#414248" : "#404249");
 
 const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
+const horizontalLineGuild = getId("horizontal-line-guild") as HTMLElement;
+
 let isAddedDragListeners = false;
 const imagePreviewContainer = getId(
   "image-preview-container"
@@ -132,24 +135,20 @@ export function handleResize() {
   if (!userList) return;
 
   const isSmallScreen = window.innerWidth < 1200;
+  setUserListLine();
 
   if (isSmallScreen) {
     if (!isMobile) {
       disableElement(userList);
       if (userLine) disableElement(userLine);
       if (activityList) disableElement(activityList);
-
-      if (!isOnMePage) setUserListLine();
     }
   } else {
+    console.log(isUsersOpenGlobal);
     if (isOnMePage) {
       if (activityList) enableElement(activityList);
-      if (userLine) enableElement(userLine);
     } else {
-      if (userLine) disableElement(userLine);
       if (activityList) disableElement(activityList);
-
-      isUsersOpenGlobal ? enableElement(userList) : disableElement(userList);
     }
   }
   updateChatWidth();
@@ -663,6 +662,55 @@ function toggleZoom() {
     previewImage.style.height = "";
   }
 }
+function handlePreviewDownloadButton(sanitizedSourceImage: string) {
+  const previewImageDownload = getId(
+    "preview-image-download"
+  ) as HTMLButtonElement;
+  const previewImage = getId("preview-image") as HTMLImageElement;
+
+  previewImageDownload.onclick = async () => {
+    if (!sanitizedSourceImage) return;
+
+    try {
+      if (previewImage?.complete && previewImage.naturalWidth !== 0) {
+        const canvas = createEl("canvas", {
+          width: previewImage.naturalWidth,
+          height: previewImage.naturalHeight
+        }) as HTMLCanvasElement;
+
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(previewImage, 0, 0);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            triggerDownload(url, sanitizedSourceImage);
+            URL.revokeObjectURL(url);
+          } else {
+            fallbackDownload();
+          }
+        }, "image/jpeg");
+      } else {
+        fallbackDownload();
+      }
+    } catch {
+      fallbackDownload();
+    }
+
+    function fallbackDownload() {
+      router.downloadLink(sanitizedSourceImage);
+    }
+
+    function triggerDownload(url: string, originalUrl: string) {
+      const a = createEl("a", {
+        href: url,
+        download: originalUrl.split("/").pop() || "image.jpg"
+      });
+      a.click();
+    }
+  };
+}
+
 function handlePreviewOpenButton(sanitizedSourceImage: string) {
   const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
 
@@ -678,20 +726,20 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 document.addEventListener("keydown", handleKeyDown);
-export function displayImagePreview(
+export async function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
   date?: Date,
   isSpoiler = false,
   isFromMediaPanel = false
-): void {
+): Promise<void> {
   enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
   const sourceImage = getSourceImage(imageElement);
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
-  previewImage.src = getProxy(sanitizedSourceImage);
+  previewImage.src = await corsDomainManager.getProxy(sanitizedSourceImage);
   updateCurrentIndex(sourceImage, isFromMediaPanel);
   handleImageSpoiler(previewImage, isSpoiler);
 
@@ -749,6 +797,7 @@ function addEventListeners(
   };
   setupZoomButton();
   handlePreviewOpenButton(sanitizedSourceImage);
+  handlePreviewDownloadButton(sanitizedSourceImage);
 
   setupReplyButton(imageElement, senderId);
   if (isAddedDragListeners) return;
@@ -1233,14 +1282,14 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   enableElement(chatContainer);
 
   guildContainer.classList.remove("visible");
+  disableElement(horizontalLineGuild);
 
   chatContainer.classList.remove("chat-container-mobile-left");
   if (isOnGuild) {
     enableElement("hash-sign");
     enableElement("channel-info");
-    disableElement(navigationBar);
   }
-
+  disableElement(navigationBar);
   disableElement(mobileBlackBg);
 }
 
@@ -1254,6 +1303,8 @@ function mobileMoveToLeft() {
   disableElement("scroll-to-bottom");
   channelList.classList.remove("visible");
   guildContainer.classList.add("visible");
+  enableElement(horizontalLineGuild);
+
   disableElement(chatContainer);
   chatContainer.classList.add("chat-container-mobile-left");
   getId("guilds-list")?.classList.add("guilds-list-mobile-left");
@@ -1281,14 +1332,17 @@ guildContainer.classList.add("visible");
 addNavigationListeners();
 
 export function initialiseMobile() {
-  const earphoneParent = earphoneButton.parentElement;
-  if (earphoneParent) {
-    earphoneParent.remove();
+  if (earphoneButton) {
+    const earphoneParent = earphoneButton.parentElement;
+    if (earphoneParent) {
+      earphoneParent.remove();
+    }
   }
-
-  const microphoneParent = microphoneButton.parentElement;
-  if (microphoneParent) {
-    microphoneParent.remove();
+  if (microphoneButton) {
+    const microphoneParent = microphoneButton.parentElement;
+    if (microphoneParent) {
+      microphoneParent.remove();
+    }
   }
   disableElement(selfName);
   disableElement("self-status");

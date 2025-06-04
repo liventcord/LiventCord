@@ -156,6 +156,13 @@ class Translations {
       { channelName: 15 }
     );
   }
+  getDropZoneText(channelName: string): string {
+    return this.replacePlaceholder(
+      "drop_zone_channel",
+      { channelName },
+      { channelName: 15 }
+    );
+  }
 
   getAvatarUploadErrorMsg(maxAvatarSize: string): string {
     return this.replacePlaceholder("avatar-upload-size-error-message", {
