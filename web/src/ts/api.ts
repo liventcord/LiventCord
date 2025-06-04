@@ -222,10 +222,11 @@ class ApiClient {
   };
   private prepareRequest(
     input: RequestInfo | URL,
-    init?: RequestInit
+    init?: RequestInit,
+    ignoreCookieRequirement = false
   ): [RequestInfo | URL, RequestInit] {
     const token = this.getAuthToken();
-    if (!token) {
+    if (!token && !ignoreCookieRequirement) {
       throw new NoSessionError();
     }
 
@@ -242,12 +243,14 @@ class ApiClient {
   }
   fetchRelative(
     input: RequestInfo | URL,
-    init?: RequestInit
+    init?: RequestInit,
+    ignoreCookieRequirement = false
   ): Promise<Response> {
     try {
       const [fullUrl, preparedInit] = this.prepareRequest(
         import.meta.env.VITE_BACKEND_URL + input,
-        init
+        init,
+        ignoreCookieRequirement
       );
       return window.fetch(fullUrl, preparedInit).then((response) => {
         if (response.status === 401) {
