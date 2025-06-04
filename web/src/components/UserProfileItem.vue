@@ -34,7 +34,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { ref, onMounted, computed, watch } from "vue";
 import { useStore } from "vuex";
 import StatusBubble from "./StatusBubble.vue";
@@ -45,6 +45,7 @@ import { appendToProfileContextList } from "../ts/contextMenuActions";
 import { deletedUser, userManager } from "../ts/user.ts";
 import { setProfilePic } from "../ts/avatar.ts";
 import { isBlackTheme } from "../ts/settings.ts";
+import { UserInfo } from "../ts/user.ts";
 export default {
   name: "UserProfileItem",
   components: {
@@ -52,7 +53,7 @@ export default {
   },
   props: {
     userData: {
-      type: Object,
+      type: Object as () => UserInfo,
       required: true
     },
     isOnline: {
@@ -70,46 +71,54 @@ export default {
   },
   setup(props) {
     const store = useStore();
-    const profileImg = ref(null);
-    const bubble = ref(null);
+
+    const profileImg = ref<HTMLImageElement | null>(null);
+
+    const bubble = ref(null as null | InstanceType<typeof StatusBubble>);
     const status = ref(props.status);
-    console.log("User Profile Item Props:", {
-      userData: props.userData,
-      isOnline: props.isOnline,
-      initialStatus: props.status
-    });
+
     const onProfileImageHover = (isHovering) => {
-      if (isHovering) {
-        profileImg.value.style.borderRadius = "0px";
-        bubble.value.$el.style.opacity = "0";
-      } else {
-        profileImg.value.style.borderRadius = "25px";
-        if (props.isOnline) bubble.value.$el.style.opacity = "1";
+      if (profileImg.value) {
+        profileImg.value.style.borderRadius = isHovering ? "0px" : "25px";
+        if (bubble.value?.$el) {
+          bubble.value.$el.style.opacity = isHovering
+            ? "0"
+            : props.isOnline
+              ? "1"
+              : "0";
+        }
       }
     };
 
     const onMouseEnter = () => {
-      profileImg.value.parentElement.style.backgroundColor = isBlackTheme
-        ? "#242428"
-        : "rgb(53, 55, 60)";
+      if (profileImg.value?.parentElement) {
+        profileImg.value.parentElement.style.backgroundColor = isBlackTheme()
+          ? "#242428"
+          : "rgb(53, 55, 60)";
+      }
     };
 
     const onMouseLeave = () => {
-      profileImg.value.parentElement.style.backgroundColor = "initial";
+      if (profileImg.value?.parentElement) {
+        profileImg.value.parentElement.style.backgroundColor = "initial";
+      }
     };
 
     const updateStatus = async () => {
-      status.value = await userManager.getStatusString(props.userData.userId);
+      if (props.userData?.userId) {
+        status.value = await userManager.getStatusString(props.userData.userId);
+      }
     };
 
     watch(
       () => props.isOnline,
       (newStatus) => {
-        if (newStatus && bubble.value) {
+        if (newStatus && bubble.value?.$el) {
           bubble.value.$el.style.opacity = "1";
         }
       }
     );
+
     watch(
       () => props.status,
       (newStatus) => {
@@ -119,8 +128,10 @@ export default {
 
     onMounted(async () => {
       await updateStatus();
-      setProfilePic(profileImg.value, props.userData.userId);
-      appendToProfileContextList(props.userData, props.userData.userId);
+      if (profileImg.value && props.userData?.userId) {
+        setProfilePic(profileImg.value, props.userData.userId);
+        appendToProfileContextList(props.userData, props.userData.userId);
+      }
     });
 
     return {

@@ -84,11 +84,11 @@
     </div>
   </li>
 </template>
-<script>
+<script lang="ts">
 import { defineComponent, computed, ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { guildCache } from "../ts/cache";
-import { changeChannel } from "../ts/channels";
+import { changeChannel, currentVoiceChannelId } from "../ts/channels";
 import {
   selectedChanColor,
   hoveredChanColor,
@@ -109,7 +109,6 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const isHovered = ref(false);
-    props.guildId = currentGuildId;
 
     onMounted(() => {
       if (props.channelId === guildCache.currentChannelId) {
@@ -117,7 +116,13 @@ export default defineComponent({
           channelId: props.channelId,
           isTextChannel: props.isTextChannel
         });
-        changeChannel(props);
+
+        changeChannel({
+          guildId: currentGuildId,
+          channelId: props.channelId,
+          channelName: props.channelName,
+          isTextChannel: props.isTextChannel
+        });
       }
 
       appendToChannelContextList(props.channelId);
@@ -176,7 +181,13 @@ export default defineComponent({
         channelId: props.channelId,
         isTextChannel: props.isTextChannel
       });
-      changeChannel(props);
+
+      changeChannel({
+        guildId: currentGuildId,
+        channelId: props.channelId,
+        channelName: props.channelName,
+        isTextChannel: props.isTextChannel
+      });
     };
 
     const handleChannelSettings = (event) => {
@@ -187,7 +198,7 @@ export default defineComponent({
     function isChannelMatching(channelId, isTextChannel) {
       const currentChannel = isTextChannel
         ? guildCache.currentChannelId
-        : guildCache.currentVoiceChannelId;
+        : currentVoiceChannelId;
       return channelId === currentChannel;
     }
 

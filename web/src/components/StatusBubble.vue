@@ -2,7 +2,7 @@
   <span :class="bubbleClass" :style="{ opacity: computedOpacity }"></span>
 </template>
 
-<script>
+<script lang="ts">
 import { computed } from "vue";
 
 export default {

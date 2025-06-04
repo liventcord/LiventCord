@@ -75,7 +75,7 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, computed, watch } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
@@ -123,18 +123,8 @@ const loadMoreMedia = async () => {
       pageSize
     );
 
-    if (newAttachments && newAttachments.length > 0) {
-      store.dispatch("appendAttachments", newAttachments);
-      store.commit("incrementCurrentPage");
-      if (newAttachments.length < pageSize) {
-        store.commit("setHasMoreAttachments", false);
-      } else {
-        store.commit("setHasMoreAttachments", true);
-      }
-    } else {
-      store.commit("increaseCurrentPage");
-      store.commit("setHasMoreAttachments", false);
-    }
+    store.commit("increaseCurrentPage");
+    store.commit("setHasMoreAttachments", false);
   } catch (error) {
     console.error("Error loading more media:", error);
   } finally {
@@ -145,11 +135,13 @@ const loadMoreMedia = async () => {
 const handleScroll = () => {
   console.log("Has more attachments: " + hasMoreAttachments.value);
   const mediaScroll = getId("media-table-wrapper");
-  const bottomOfGrid =
-    mediaScroll.scrollHeight ===
-    mediaScroll.scrollTop + mediaScroll.clientHeight;
-  if (bottomOfGrid && !loading.value) {
-    loadMoreMedia();
+  if (mediaScroll) {
+    const bottomOfGrid =
+      mediaScroll.scrollHeight ===
+      mediaScroll.scrollTop + mediaScroll.clientHeight;
+    if (bottomOfGrid && !loading.value) {
+      loadMoreMedia();
+    }
   }
 };
 
@@ -160,11 +152,13 @@ const handleMediaButtonClick = () => {
 
 const handleImageClick = (attachment) => {
   const mediaGrid = getId("media-grid");
+  if (!mediaGrid) return;
   const parent = mediaGrid.querySelector(
     `div[id='${attachment.attachment.fileId}']`
-  );
+  ) as HTMLElement;
+  if (!parent) return;
   const isSpoiler = parent.dataset.isspoiler === "true" || false;
-  const imgElement = parent.firstChild;
+  const imgElement = parent.firstChild as HTMLImageElement;
   if (imgElement) {
     displayImagePreview(
       imgElement,
@@ -181,7 +175,7 @@ const onlineUsers = computed(() => store.state.user.onlineUsers);
 const offlineUsers = computed(() => store.state.user.offlineUsers);
 
 const processMembers = async (newMembers) => {
-  if (isOnMePage.value && !props.ignoreisOnMePage) return;
+  if (isOnMePage && !props.ignoreisOnMePage) return;
 
   loading.value = true;
   await store.dispatch("categorizeUsers", newMembers);
@@ -210,7 +204,7 @@ watch(
   (attachments) => {
     setTimeout(() => {
       attachments.forEach((attachment) => {
-        const element = getId("media-grid").querySelector(
+        const element = getId("media-grid")?.querySelector(
           "#" + CSS.escape(attachment.attachment.fileId)
         );
         if (element) {
