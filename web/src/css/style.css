@@ -764,6 +764,7 @@ body.black-theme .base-user-input {
   overflow-y: auto;
   width: 32px;
   z-index: 3;
+  background-color: #1e1f22;
 }
 .guilds-list li img {
   transition:

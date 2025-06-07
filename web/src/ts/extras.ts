@@ -2,12 +2,96 @@ import confettiImport from "canvas-confetti";
 
 const confetti = confettiImport as unknown as (options: any) => void;
 
-import { createEl, getId } from "./utils.ts";
+import { createEl, getId, isValidUrl } from "./utils.ts";
 import { chatContainer, chatInput } from "./chatbar.ts";
 import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { guildContainer } from "./guild.ts";
 import { friendsContainer } from "./friendui.ts";
+
+let bgVideoElement: HTMLVideoElement | null = null;
+const defaultBGTransparency = "0.4";
+export let currentBGTransparency = defaultBGTransparency;
+export const currentVideoUrl =
+  "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/items/1406990/915b1b4a05133186525a956d7ca5c142a3c3c9f3.webm";
+
+function addErrorIcon() {
+  const input = getId("video-url-input");
+  if (!input) return;
+  if (input.querySelector("div.fa-exclamation-circle")) return;
+  const errorElement = createEl("div");
+  errorElement.style.color = "red";
+  errorElement.style.fontSize = "24px";
+  errorElement.className = "fa fa-exclamation-circle";
+  input.appendChild(errorElement);
+}
+
+export function removeVideoErrorIcon() {
+  const input = getId("video-url-input");
+  const errorIcon = input?.querySelector("svg.fa-circle-exclamation");
+  errorIcon?.remove();
+}
+
+export function createBGVideo(transparencyValue?: string | null) {
+  if (bgVideoElement) return;
+  const video = createEl("video", {
+    className: "background-video",
+    autoplay: true,
+    muted: true,
+    loop: true,
+    playsInline: true
+  }) as HTMLVideoElement;
+
+  const source = createEl("source", {
+    src: currentVideoUrl,
+    type: "video/webm"
+  }) as HTMLSourceElement;
+
+  video.appendChild(source);
+
+  function handleVideoError() {
+    addErrorIcon();
+  }
+
+  video.addEventListener("error", handleVideoError);
+  source.addEventListener("error", handleVideoError);
+
+  video.addEventListener("canplay", () => {
+    console.log("Video can play now");
+    removeVideoErrorIcon();
+  });
+
+  document.body.appendChild(video);
+  bgVideoElement = video;
+  updateVideoTransparency(transparencyValue || currentBGTransparency);
+}
+
+export function updateVideoTransparency(value: string) {
+  console.log("Updated transparency to: ", value);
+  if (!bgVideoElement) return;
+  currentBGTransparency = value;
+  bgVideoElement.style.opacity = value;
+}
+
+export function onEditVideoUrl(value: string) {
+  if (!bgVideoElement) return;
+  const source = bgVideoElement.querySelector("source");
+  if (!source) return;
+  if (!isValidUrl(value)) {
+    console.warn("Invalid URL format:", value);
+    return;
+  }
+  source.src = value;
+  bgVideoElement.load();
+}
+
+export function disableBgVideo() {
+  if (!bgVideoElement) return;
+  bgVideoElement.pause();
+  bgVideoElement.remove();
+  bgVideoElement = null;
+}
+
 export function setTheme(isDark: boolean) {
   const toggleClass = (el: any, cls: string) => {
     if (!el) return;

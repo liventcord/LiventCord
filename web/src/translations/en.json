@@ -83,7 +83,9 @@
     "PartyMode": "Party Mode",
     "EnablePartyMode": "Enable party mode.",
     "SlideMode": "Slide Mode",
+    "VideoMode": "Video Background",
     "EnableSlideMode": "Enable slide mode.",
+    "EnableVideoMode": "Enable Video Background.",
     "EnableNotifications": "Enable notifications.",
     "ActivityStatus": "Activity Status",
     "ShareActivityWhenActive": "Share activity when you're active",
@@ -125,7 +127,9 @@
     "EmojiCount": "slot available",
     "SuccessEmoji": "Emoji(s) Uploaded Succesfully!",
     "Theme": "Theme",
-    "ThemeDescription": "Adjust the colour of interface for better visibility."
+    "ThemeDescription": "Adjust the colour of interface for better visibility.",
+    "VideoTransparency": "Video Transparency",
+    "VideoUrlTitle": "Background Video URL"
   },
   "textTranslations": {
     "online": "Online",

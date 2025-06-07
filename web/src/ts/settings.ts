@@ -1,6 +1,4 @@
 import confettiImport from "canvas-confetti";
-
-const confetti = confettiImport as unknown as (options: any) => void;
 import {
   blackImage,
   getId,
@@ -44,7 +42,9 @@ import { currentGuildId } from "./guild.ts";
 import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
-import { setTheme } from "./extras.ts";
+import { disableBgVideo, createBGVideo } from "./extras.ts";
+
+const confetti = confettiImport as unknown as (options: any) => void;
 
 const isImagePreviewOpen = false;
 const CHANGE_NAME_COOLDOWN = 1000;
@@ -74,12 +74,20 @@ function clearCookies() {
   }
 }
 
+export function saveTransparencyValue(value: string): void {
+  localStorage.setItem("transparencySliderValue", value);
+}
+export function readTransparencyValue(): string | null {
+  return localStorage.getItem("transparencySliderValue");
+}
+
 type ToggleState = {
   "notify-toggle": boolean;
   "snow-toggle": boolean;
   "party-toggle": boolean;
   "activity-toggle": boolean;
   "slide-toggle": boolean;
+  "video-toggle": boolean;
   "private-channel-toggle": boolean;
 };
 
@@ -94,11 +102,18 @@ class ToggleManager {
       "party-toggle": loadBooleanCookie("party-toggle") ?? false,
       "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
       "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
+      "video-toggle": loadBooleanCookie("video-toggle") ?? false,
       "private-channel-toggle": false
     };
 
     if (this.states["snow-toggle"]) {
       this.startSnowEffect();
+    }
+    let savedValue = readTransparencyValue();
+    if (this.states["video-toggle"]) {
+      setTimeout(() => {
+        createBGVideo(savedValue);
+      }, 0);
     }
   }
 
@@ -222,7 +237,8 @@ class ToggleManager {
   triggerActions(toggleId: keyof ToggleState, newValue: boolean) {
     const toggleActions: Record<string, () => void> = {
       "snow-toggle": this.toggleEffect.bind(this, "snow", newValue),
-      "party-toggle": this.toggleEffect.bind(this, "party", newValue)
+      "party-toggle": this.toggleEffect.bind(this, "party", newValue),
+      "video-toggle": this.toggleEffect.bind(this, "video", newValue)
     };
 
     if (toggleActions[toggleId]) {
@@ -235,6 +251,8 @@ class ToggleManager {
       enable ? this.startSnowEffect() : this.stopSnowEffect();
     } else if (effect === "party") {
       enable ? this.startPartyEffect() : this.stopPartyEffect();
+    } else if (effect === "video") {
+      enable ? createBGVideo() : disableBgVideo();
     }
   }
 

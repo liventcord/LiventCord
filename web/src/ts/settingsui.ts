@@ -21,7 +21,8 @@ import {
   onEditGuildName,
   onEditChannelName,
   isBlackTheme,
-  saveThemeCookie
+  saveThemeCookie,
+  saveTransparencyValue
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -40,8 +41,7 @@ import {
   enableElement,
   blackImage,
   escapeHtml,
-  isMobile,
-  saveBooleanCookie
+  isMobile
 } from "./utils.ts";
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
@@ -49,7 +49,13 @@ import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId, setGuildImage } from "./guild.ts";
 import { isOnGuild } from "./router.ts";
 import { getGuildEmojiHtml, populateEmojis } from "./emoji.ts";
-import { setTheme } from "./extras.ts";
+import {
+  currentBGTransparency,
+  currentVideoUrl,
+  onEditVideoUrl,
+  setTheme,
+  updateVideoTransparency
+} from "./extras.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -621,6 +627,11 @@ function getAppearanceHtml() {
       id: "slide-toggle",
       label: translations.getSettingsTranslation("SlideMode"),
       description: translations.getSettingsTranslation("EnableSlideMode")
+    },
+    {
+      id: "video-toggle",
+      label: translations.getSettingsTranslation("VideoMode"),
+      description: translations.getSettingsTranslation("EnableVideoMode")
     }
   ];
 
@@ -638,6 +649,26 @@ function getAppearanceHtml() {
           <span id="ash-theme-selector" class="theme-circle ash-theme"></span>
           <span id="dark-theme-selector" class="theme-circle dark-theme"></span>
         </div>
+        <h3>${translations.getSettingsTranslation("VideoUrlTitle")}</h3>
+        <div
+          id="video-url-input"
+          contenteditable="true"
+          role="textbox"
+          aria-multiline="false"
+          class="base-user-input">
+          ${currentVideoUrl}
+        </div>
+
+        ${translations.getSettingsTranslation("VideoTransparency")}
+        <input
+        id="video-transparency-input"
+        type="range"
+        min="0.01"
+        max="0.35"
+        step="0.01"
+        value="0.25"
+        style=" bottom: 20px; left: 20px; z-index: 1000;">
+
 
     `;
 }
@@ -749,6 +780,25 @@ function initialiseSettingComponents(
   dark?.addEventListener("click", () => selectTheme(Themes.Dark));
   selectThemeButton(isBlackTheme());
 
+  const transparencyInput = getId(
+    "video-transparency-input"
+  ) as HTMLInputElement;
+
+  transparencyInput?.addEventListener("input", function (event: Event) {
+    if (!event.target) return;
+    const target = event.target as HTMLInputElement;
+    const value = target.value;
+    saveTransparencyValue(value);
+    updateVideoTransparency(value);
+  });
+  if (transparencyInput) transparencyInput.value = currentBGTransparency;
+
+  const videoUrlInput = getId("video-url-input");
+
+  videoUrlInput?.addEventListener("input", (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.textContent) onEditVideoUrl(target.textContent);
+  });
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;

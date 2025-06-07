@@ -96,7 +96,9 @@
     "PartyMode": "Parti Modu",
     "EnablePartyMode": "Parti modunu aktifleştir.",
     "SlideMode": "Kayma Modu",
+    "VideoMode": "Video arkaplanı",
     "EnableSlideMode": "Kayma modunu aktifleştir.",
+    "EnableVideoMode": "Video arkaplanını etkinleştir.",
     "EnableNotifications": "Bildirimleri etkinleştir.",
     "ActivityStatus": "Etkinlik Durumu",
     "ShareActivityWhenActive": "Aktif olduğunuzda etkinliği paylaş",
@@ -138,7 +140,9 @@
     "EmojiCount": "slot mevcut",
     "SuccessEmoji": "Emoji(ler) başarıyla yüklendi!",
     "Theme": "Tema",
-    "ThemeDescription": "Daha iyi bir görünüm için arayüz rengini değiştir."
+    "ThemeDescription": "Daha iyi bir görünüm için arayüz rengini değiştir.",
+    "VideoTransparency": "Video Saydamlığı",
+    "VideoUrlTitle": "Arkaplan video URL"
   },
   "textTranslations": {
     "online": "Çevrim İçi",

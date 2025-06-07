@@ -1162,3 +1162,27 @@ body.black-theme #settings-menu button.touch-hover {
 #emoji-count {
   color: white;
 }
+
+.background-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 1;
+  z-index: 1000;
+}
+#video-url-input {
+  position: relative;
+  white-space: unset;
+  width: unset;
+  padding: 10px;
+}
+
+.error-icon {
+  color: red;
+  font-size: 1.2em;
+}
