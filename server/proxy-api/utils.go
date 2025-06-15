@@ -112,6 +112,7 @@ func (c *MediaProxyController) addToBlacklist(url string) {
 }
 
 func (c *MediaProxyController) loadBlacklistedUrls() {
+	add_to_blacklist(c.blacklistedUrlsEnv)
 	b, err := os.ReadFile(c.blacklistPath)
 	if err == nil {
 		temp := make(map[string]string)

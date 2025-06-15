@@ -68,22 +68,34 @@ func (c *MediaProxyController) FetchMetadata(ctx *gin.Context) {
 	var resp []MetadataWithMedia
 	for _, url := range urls {
 		url = strings.TrimSpace(url)
-		request, _ := http.NewRequest("GET", url, nil)
-		resp2, err := c.httpClient.Do(request)
-		if err != nil {
-			resp = append(resp, MetadataWithMedia{nil, &Metadata{}})
+		if !isAllowedHTTPS(url) {
 			continue
 		}
-		defer resp2.Body.Close()
+
+		request, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			continue
+		}
+
+		resp2, err := c.httpClient.Do(request)
+		if err != nil {
+			continue
+		}
+
 		contentType := resp2.Header.Get("Content-Type")
-		media := c.isValidMediaContentType(contentType)
+
 		var meta *Metadata
 		var mediaUrl *MediaUrl
+
 		if strings.Contains(contentType, "text/html") {
 			body, _ := io.ReadAll(resp2.Body)
+			resp2.Body.Close()
 			meta = extractMetadataFromHtml(url, string(body))
+		} else {
+			resp2.Body.Close()
 		}
-		if media {
+
+		if c.isValidMediaContentType(contentType) {
 			filePath := c.getCacheFilePath(url)
 			_ = c.saveResponseToFile(resp2, filePath)
 			mediaUrl = &MediaUrl{
@@ -96,7 +108,8 @@ func (c *MediaProxyController) FetchMetadata(ctx *gin.Context) {
 				FileName: getFileName(resp2, url),
 			}
 		}
+
 		resp = append(resp, MetadataWithMedia{mediaUrl, meta})
 	}
-	ctx.JSON(200, resp)
+	ctx.JSON(http.StatusOK, resp)
 }

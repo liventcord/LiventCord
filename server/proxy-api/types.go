@@ -32,14 +32,15 @@ type Metadata struct {
 	Author      string `json:"author"`
 }
 type MediaProxyController struct {
-	httpClient      *http.Client
-	cacheDirectory  string
-	storageLimit    int64
-	mainServerUrl   string
-	blacklistPath   string
-	downloadTasks   sync.Map
-	blacklistLock   sync.Mutex
-	blacklistedUrls map[string]time.Time
+	httpClient         *http.Client
+	cacheDirectory     string
+	storageLimit       int64
+	mainServerUrl      string
+	blacklistPath      string
+	blacklistedUrlsEnv string
+	downloadTasks      sync.Map
+	blacklistLock      sync.Mutex
+	blacklistedUrls    map[string]time.Time
 }
 type AppConfig struct {
 	ExternalMediaLimit int64

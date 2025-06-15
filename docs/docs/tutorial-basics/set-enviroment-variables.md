@@ -161,3 +161,6 @@ mv .env.example .env
   - **MainServerUrl**:
     Url of main .net core server for sending attachments at.
     **Defaults to** `http://localhost:5005`
+
+  - **AddToBlacklist**:
+    Specifies a list of domains or URLs to be added to the blacklist. This should be provided as a JSON array string.

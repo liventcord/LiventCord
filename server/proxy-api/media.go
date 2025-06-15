@@ -6,7 +6,9 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -20,15 +22,17 @@ import (
 
 func NewMediaProxyController(settings *MediaCacheSettings) *MediaProxyController {
 	blacklistPath := filepath.Join(settings.CacheDirectory, "blacklisted_urls.json")
+	blacklistedUrlsEnv := os.Getenv("AddToBlacklist")
 	c := &MediaProxyController{
 		httpClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		cacheDirectory:  settings.CacheDirectory,
-		storageLimit:    settings.StorageLimitBytes,
-		blacklistPath:   blacklistPath,
-		mainServerUrl:   settings.MainServerUrl,
-		blacklistedUrls: make(map[string]time.Time),
+		cacheDirectory:     settings.CacheDirectory,
+		storageLimit:       settings.StorageLimitBytes,
+		blacklistPath:      blacklistPath,
+		blacklistedUrlsEnv: blacklistedUrlsEnv,
+		mainServerUrl:      settings.MainServerUrl,
+		blacklistedUrls:    make(map[string]time.Time),
 	}
 	c.initHttpClient()
 	c.loadBlacklistedUrls()
@@ -41,12 +45,38 @@ func (c *MediaProxyController) initHttpClient() {
 	}
 }
 
+func isAllowedHTTPS(rawurl string) bool {
+	parsed, err := url.Parse(rawurl)
+	if err != nil {
+		return false
+	}
+
+	if strings.ToLower(parsed.Scheme) != "https" {
+		return false
+	}
+
+	host := parsed.Hostname()
+	ip := net.ParseIP(host)
+	if ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() {
+			return false
+		}
+		return true
+	}
+
+	return true
+}
+
 func (c *MediaProxyController) GetMedia(ctx *gin.Context) {
 	url := ctx.Query("url")
-	if url == "" {
-		ctx.String(http.StatusBadRequest, "URL parameter is required.")
+	url = strings.TrimSpace(url)
+	url = strings.Trim(url, `"`)
+
+	if !isAllowedHTTPS(url) {
+		ctx.String(http.StatusBadRequest, "URL rejected")
 		return
 	}
+
 	if c.isUrlBlacklisted(url) {
 		ctx.String(http.StatusBadRequest, "URL is blacklisted.")
 		return
