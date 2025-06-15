@@ -10,7 +10,10 @@ sidebar_position: 1
 #### Configuration Options
   - **VITE_BACKEND_URL**:
     The URL of the .NET backend server that the frontend will use for API requests.
-    Note : for cypress tests, use 127.0.0.1 instead of localhost since cypress blocks localhost weirdly
+    Note : for cypress tests, use 127.0.0.1 instead of localhost.
+  
+  - **VITE_GOOGLE_CLIENT_ID**:
+    Used for authenticating users via Google OAuth during login.
 
 ## .NET Server Configuration
 1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.

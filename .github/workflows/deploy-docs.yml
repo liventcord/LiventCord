@@ -40,7 +40,9 @@ jobs:
             ${{ runner.os }}-deps-
             
       - name: Create WebApp .env file
-        run: echo "VITE_BACKEND_URL=https://liventcord.koyeb.app" > web/src/.env
+        run: |
+          echo "VITE_BACKEND_URL=https://liventcord.koyeb.app" > web/src/.env
+          echo "VITE_GOOGLE_CLIENT_ID=169531875709-8rhbhc68ubtarfd6m46nl544rf46j8m0.apps.googleusercontent.com" >> web/src/.env
       - name: Parallel build and deploy
         run: |
           (cd web && pnpm install --frozen-lockfile && pnpm build) &

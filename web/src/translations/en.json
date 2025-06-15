@@ -240,7 +240,21 @@
     "find-perfect-emoji": "Find the perfect emoji",
     "search-tenor": "Search on Tenor"
   },
-  "errorTranslations": {},
+  "errorTranslations": {
+    "LOGIN_ERROR_TITLE": "Login Error",
+    "EMAIL_EXISTS_WITH_PASSWORD": "This email is already associated with a password. To log in with Google, please link your Google account in your account settings.",
+    "GOOGLE_AUTH_FAILED": "Google authentication failed. Try again.",
+    "UNKNOWN_LOGIN_ERROR": "Login failed due to an unknown error.",
+    "LOGIN_FAILED": "Login failed",
+    "NETWORK_ERROR_LOGIN": "Login failed due to network or server error",
+    "PASSWORD_REQUIRED": "Password is required to link your Google account.",
+    "GOOGLE_LINK_SUCCESS": "Google account linked successfully!",
+    "INVALID_PASSWORD": "Incorrect password. Google account not linked.",
+    "EMAIL_MISMATCH": "The Google account email does not match your registered email.",
+    "INVALID_GOOGLE_TOKEN": "Google authentication failed. Please try again.",
+    "GOOGLE_LINK_FAILED": "Failed to link Google account due to server error.",
+    "UNKNOWN_LINK_ERROR": "Failed to link Google account due to an unknown error."
+  },
   "tooltipTranslations": {
     "settings-button": "User Setting",
     "microphone-button": "Open Microphone",

@@ -283,7 +283,18 @@ class Translations {
 
     return translation || key;
   }
+  getErrorMessage(key: string) {
+    const translation = this.errorTranslations[key];
+    if (!translation) {
+      console.error(
+        "Cannot find translation for:",
+        key,
+        this.errorTranslations
+      );
+    }
 
+    return translation || key;
+  }
   getFriendErrorMessage(key: string) {
     const result = this.friendErrorTranslations[key];
 

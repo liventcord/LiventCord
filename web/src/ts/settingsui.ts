@@ -56,6 +56,8 @@ import {
   setTheme,
   updateVideoTransparency
 } from "./extras.ts";
+import { initializeGoogleOauth } from "./loginutils.ts";
+import { closePopUp } from "./popups.ts";
 
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
@@ -578,6 +580,8 @@ function getAccountSettingsHtml() {
                 </form>
                 <span id="settings-self-name">${currentUserNick}</span>
                 <button id="change-password-button" class="settings-buttons settings-button">${translations.getSettingsTranslation("ChangePassword")}</button>
+                <button id="link-google-btn" class="settings-buttons settings-button" >Link Google Account</button>
+                <div id="google-link-wrapper" >
                 </div>
     `;
 }
@@ -752,6 +756,63 @@ export function selectTheme(selected: Themes) {
 
   selectThemeButton(isDark);
 }
+function createPopupWrapper(wrapperElement: HTMLElement) {
+  const popOuterParent = createEl("div", {
+    className: "outer-parent",
+    style: { display: "flex" }
+  });
+  const parentContainer = createEl("div", {
+    className: "pop-up",
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      width: "100%",
+      height: "100%"
+    }
+  });
+  popOuterParent.addEventListener("click", () => {
+    const rightbar = getId("settings-rightbar");
+    if (rightbar) {
+      const newWrapper = createEl("div", { id: "google-link-wrapper" });
+      rightbar.appendChild(newWrapper);
+    }
+
+    closePopUp(popOuterParent, parentContainer);
+  });
+  popOuterParent.appendChild(parentContainer);
+  parentContainer.appendChild(wrapperElement);
+  return popOuterParent;
+}
+
+function linkGoogleAccount() {
+  console.log("Link Google account");
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const wrapper = getId("google-link-wrapper");
+  console.log(wrapper, clientId);
+  if (!clientId || !wrapper) return;
+  initializeGoogleOauth(true);
+
+  const popOuterParent = createPopupWrapper(wrapper);
+  document.body.appendChild(popOuterParent);
+
+  wrapper.innerHTML = `
+    <div id="g_id_onload"
+         data-client_id="${clientId}"
+         data-context="use"
+         data-ux_mode="popup"
+         data-callback="handleGoogleLinkResponse">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="continue_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+  `;
+}
 
 function initialiseSettingComponents(
   settingsContainer: HTMLElement,
@@ -842,8 +903,11 @@ function initialiseSettingComponents(
     }
   });
 
-  const changePasswordButton = getId("change-password-button");
-  changePasswordButton?.addEventListener("click", openChangePasswordPop);
+  getId("change-password-button")?.addEventListener(
+    "click",
+    openChangePasswordPop
+  );
+  getId("link-google-btn")?.addEventListener("click", linkGoogleAccount);
 
   const uploadEmojiButton = getId(
     "upload-emoji-button"

@@ -253,7 +253,21 @@
     "find-perfect-emoji": "Mükemmel emojiyi bul",
     "search-tenor": "Tenor'da ara"
   },
-  "errorTranslations": {},
+  "errorTranslations": {
+    "LOGIN_ERROR_TITLE": "Giriş Hatası",
+    "EMAIL_EXISTS_WITH_PASSWORD": "Bu e-posta zaten bir şifre ile kayıtlı. Google ile giriş yapmak için lütfen hesap ayarlarından Google hesabınızı bağlayın.",
+    "GOOGLE_AUTH_FAILED": "Google doğrulaması başarısız oldu. Lütfen tekrar deneyin.",
+    "UNKNOWN_LOGIN_ERROR": "Bilinmeyen bir hata nedeniyle giriş başarısız oldu.",
+    "LOGIN_FAILED": "Giriş başarısız oldu",
+    "NETWORK_ERROR_LOGIN": "Giriş, ağ veya sunucu hatası nedeniyle başarısız oldu",
+    "PASSWORD_REQUIRED": "Google hesabınızı bağlamak için şifreniz gereklidir.",
+    "GOOGLE_LINK_SUCCESS": "Google hesabınız başarıyla bağlandı!",
+    "INVALID_PASSWORD": "Yanlış şifre. Google hesabı bağlanmadı.",
+    "EMAIL_MISMATCH": "Google hesabınızın e-postası, kayıtlı e-postanızla eşleşmiyor.",
+    "INVALID_GOOGLE_TOKEN": "Google doğrulaması başarısız oldu. Lütfen tekrar deneyin.",
+    "GOOGLE_LINK_FAILED": "Google hesabı bağlanırken sunucu hatası oluştu.",
+    "UNKNOWN_LINK_ERROR": "Bilinmeyen bir hata nedeniyle Google hesabı bağlanamadı."
+  },
   "tooltipTranslations": {
     "settings-button": "Kullanıcı Ayarları",
     "microphone-button": "Mikrofonu aç",

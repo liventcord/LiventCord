@@ -1,6 +1,8 @@
 import { apiClient } from "./api";
 import { initialiseApp } from "./app";
 import { router } from "./router";
+import { translations } from "./translations";
+import { alertUser } from "./ui";
 import { createEl, getId } from "./utils";
 
 let currentLanguage = "en";
@@ -82,6 +84,8 @@ export function initialiseLoginPage() {
 
   if (areListenersAdded) return;
   areListenersAdded = true;
+
+  initializeGoogleOauth();
 
   const addInputValidationListeners = (
     emailInput: HTMLInputElement,
@@ -171,7 +175,7 @@ function getTranslation(key: string) {
   return loginTranslations[currentLanguage][key] || key;
 }
 
-function alertUser(text: string, isSuccess = false) {
+function alertUserLogin(text: string, isSuccess = false) {
   const container = createEl("div", {
     className: isSuccess ? "info-container" : "error-container"
   });
@@ -188,6 +192,165 @@ function alertUser(text: string, isSuccess = false) {
 
 function isLoginResponse(data: any): data is LoginResponse {
   return data && typeof data.token === "string";
+}
+
+function setAuthToken(token: string) {
+  apiClient.setAuthToken(token);
+  router.closeLogin();
+  initialiseApp();
+}
+
+function handleCredentialResponse(response: any) {
+  const idToken = response.credential;
+
+  apiClient
+    .fetchRelative(
+      "/auth/google-login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ idToken: idToken })
+      },
+      true
+    )
+    .then(async (res) => {
+      const data = await res.json();
+      if (res.ok && data.token) {
+        setAuthToken(data.token);
+      } else if (data.errorCode) {
+        switch (data.errorCode) {
+          case "EMAIL_EXISTS_WITH_PASSWORD":
+            alertUser(
+              translations.getErrorMessage("LOGIN_ERROR_TITLE"),
+              translations.getErrorMessage("EMAIL_EXISTS_WITH_PASSWORD")
+            );
+            break;
+          case "GOOGLE_AUTH_FAILED":
+            alertUser(
+              translations.getErrorMessage("LOGIN_ERROR_TITLE"),
+              translations.getErrorMessage("GOOGLE_AUTH_FAILED")
+            );
+            break;
+          default:
+            alertUser(
+              translations.getErrorMessage("LOGIN_ERROR_TITLE"),
+              translations.getErrorMessage("UNKNOWN_LOGIN_ERROR")
+            );
+        }
+      } else {
+        alertUser(
+          translations.getErrorMessage("LOGIN_ERROR_TITLE"),
+          translations.getErrorMessage("LOGIN_FAILED")
+        );
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      alertUser(
+        translations.getErrorMessage("LOGIN_ERROR_TITLE"),
+        translations.getErrorMessage("UNKNOWN_LINK_ERROR")
+      );
+    });
+}
+function handleGoogleLinkResponse(response: any) {
+  const idToken = response.credential;
+  const password = prompt(
+    "Enter your current password to link your Google account:"
+  );
+  if (!password) {
+    alert("Password is required to link your Google account.");
+    return;
+  }
+  apiClient
+    .fetchRelative(
+      "/auth/google-link",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, password })
+      },
+      true
+    )
+    .then(async (res) => {
+      if (res.ok) {
+        alert("Google account linked successfully!");
+        return;
+      }
+
+      let data = {} as any;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
+      if (data.errorCode) {
+        switch (data.errorCode) {
+          case "INVALID_PASSWORD":
+            alert("Incorrect password. Google account not linked.");
+            break;
+          case "EMAIL_MISMATCH":
+            alert(
+              "The Google account email does not match your registered email."
+            );
+            break;
+          case "INVALID_GOOGLE_TOKEN":
+            alert("Google authentication failed. Please try again.");
+            break;
+          case "GOOGLE_LINK_FAILED":
+            alert("Failed to link Google account due to server error.");
+            break;
+          default:
+            alert("Failed to link Google account due to an unknown error.");
+        }
+      } else {
+        alert("Failed to link Google account. No error details received.");
+      }
+    })
+
+    .catch((e) => {
+      alert(e);
+    });
+}
+
+const windowAny = window as any;
+windowAny.handleCredentialResponse = handleCredentialResponse;
+windowAny.handleGoogleLinkResponse = handleGoogleLinkResponse;
+export function initializeGoogleOauth(isLink: boolean = false) {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  if (clientId) {
+    const script = createEl("script", {
+      src: "https://accounts.google.com/gsi/client",
+      async: true,
+      defer: true
+    }) as HTMLScriptElement;
+    document.head.appendChild(script);
+    const wrapper = getId(
+      isLink ? "google-link-wrapper" : "google-signin-wrapper"
+    );
+    if (!wrapper) return;
+
+    wrapper.innerHTML = `
+      <div id="g_id_onload"
+          data-client_id="${clientId}"
+          data-context="signin"
+          data-ux_mode="popup"
+          data-callback="handleCredentialResponse">
+      </div>
+
+      <div class="g_id_signin"
+          data-type="standard"
+          data-shape="rectangular"
+          data-theme="outline"
+          data-text="sign_in_with"
+          data-size="large"
+          data-logo_alignment="left">
+      </div>
+    `;
+  }
 }
 
 function submitForm(form: HTMLElement, isRegister: boolean) {
@@ -267,7 +430,7 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
         } else {
           errorMsg = `${getTranslation("errorOccurred")} ${response.status}`;
         }
-        alertUser(errorMsg);
+        alertUserLogin(errorMsg);
         throw new Error(
           response.status === 401 ? "Unauthorized" : "Error occurred"
         );
@@ -285,7 +448,7 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
       }
 
       if (isRegister) {
-        alertUser(getTranslation("successRegister"), true);
+        alertUserLogin(getTranslation("successRegister"), true);
         setTimeout(() => {
           router.openLogin();
         }, 5000);

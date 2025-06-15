@@ -84,6 +84,10 @@ const buttonElements = {
   blocked: getId("blocked-button") as HTMLElement
 };
 
+document.addEventListener("DOMContentLoaded", () => {
+  selectFriendMenu(buttonElements.online);
+});
+
 let ButtonsList = Object.values(buttonElements);
 initializeButtonsList();
 
@@ -388,8 +392,6 @@ export function printFriendMessage(content: string) {
     notifyTimeout = 0;
   }, NOTIFY_LENGTH);
 }
-
-selectFriendMenu(buttonElements.online);
 
 export function updateFriendMenu() {
   const currentSelectedFriendMenuElement =

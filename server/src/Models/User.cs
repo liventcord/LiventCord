@@ -20,6 +20,13 @@ namespace LiventCord.Models
         [NotMapped]
         public required string Email { get; set; }
 
+        [Column("is_google_user")]
+        public bool IsGoogleUser { get; set; } = false;
+
+        [Column("google_id")]
+        public string? GoogleId { get; set; }
+
+
         [Required]
         [StringLength(4)]
         [Column("discriminator")]

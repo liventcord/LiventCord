@@ -500,7 +500,7 @@ body.black-theme #settings-menu button.touch-hover {
 }
 .settings-button {
   background-color: #5865f2;
-  width: 130px;
+  width: auto;
   height: 35px;
   color: white;
   font-size: 0.9em;

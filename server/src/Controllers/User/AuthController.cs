@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using LiventCord.Helpers;
+using Google.Apis.Auth;
+
+
 
 namespace LiventCord.Controllers
 {
@@ -29,7 +32,7 @@ namespace LiventCord.Controllers
 
     [Route("auth")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController : BaseController
     {
         private readonly AppDbContext _context;
         private readonly PasswordHasher<User> _passwordHasher;
@@ -37,13 +40,17 @@ namespace LiventCord.Controllers
         public static string _jwtIssuer = "LiventCord";
         public static string _jwtAudience = "LiventCordClients";
         private readonly int _accessTokenExpiryDays;
+        private readonly FileController _fileController;
+        private readonly RegisterController _registerController;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(AppDbContext context, IConfiguration configuration, RegisterController registerController, FileController fileController)
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
             _jwtKey = configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey;
             _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
+            _registerController = registerController;
+            _fileController = fileController;
             if (_accessTokenExpiryDays == 0)
             {
                 _accessTokenExpiryDays = 7;
@@ -99,6 +106,69 @@ namespace LiventCord.Controllers
 
             return Ok(new { token });
         }
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLoginAuth([FromBody] GoogleLoginRequest request)
+        {
+            if (_registerController.isGoogleClientIdNull())
+            {
+                return StatusCode(500);
+            }
+
+            try
+            {
+                var user = await _registerController.LoginOrRegisterGoogleUserAsync(request.IdToken);
+                var token = GenerateJwtToken(user);
+                return Ok(new { token });
+            }
+            catch (AuthConflictException ex)
+            {
+                return Conflict(new { errorCode = ex.Code });
+            }
+            catch (Exception)
+            {
+                return Unauthorized(new { errorCode = "GOOGLE_AUTH_FAILED" });
+            }
+        }
+        [HttpPost("google-link")]
+        public async Task<IActionResult> GoogleLink([FromBody] GoogleLinkRequest request)
+        {
+            if (_registerController.isGoogleClientIdNull())
+                return StatusCode(500);
+
+            var userId = UserId!;
+
+            if (userId == null)
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return Unauthorized();
+
+            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = [_registerController._googleClientId]
+            });
+
+            if (payload == null || !payload.EmailVerified)
+                return BadRequest(new { errorCode = "INVALID_GOOGLE_TOKEN" });
+
+            if (!string.Equals(user.Email, payload.Email, StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { errorCode = "EMAIL_MISMATCH" });
+
+            var passwordValid = _passwordHasher.VerifyHashedPassword(user, user.Password, request.Password) == PasswordVerificationResult.Success;
+            if (!passwordValid)
+                return BadRequest(new { errorCode = "INVALID_PASSWORD" });
+
+            user.IsGoogleUser = true;
+            user.GoogleId = payload.Subject;
+            user.Nickname = payload.Name;
+            await _context.SaveChangesAsync();
+            await _fileController.UploadProfileImageFromGoogle(userId, payload.Picture);
+
+            return Ok();
+        }
+
+
 
         private async Task<User?> AuthenticateUser(string email, string password)
         {
@@ -111,6 +181,7 @@ namespace LiventCord.Controllers
             var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
             return result == PasswordVerificationResult.Success ? user : null;
         }
+
 
         private string GenerateJwtToken(User user)
         {
@@ -173,5 +244,14 @@ namespace LiventCord.Controllers
             return Ok(new { token = wsToken });
         }
 
+    }
+}
+public class AuthConflictException : Exception
+{
+    public string Code { get; }
+
+    public AuthConflictException(string code) : base(code)
+    {
+        Code = code;
     }
 }

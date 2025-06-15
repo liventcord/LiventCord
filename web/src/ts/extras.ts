@@ -33,7 +33,8 @@ export function removeVideoErrorIcon() {
 }
 
 export function createBGVideo(transparencyValue?: string | null) {
-  if (bgVideoElement) return;
+  if (document.querySelector(".background-video")) return;
+
   const video = createEl("video", {
     className: "background-video",
     autoplay: true,

@@ -73,6 +73,35 @@ namespace LiventCord.Controllers
             }
         }
 
+
+        [NonAction]
+        public async Task<string?> UploadProfileImageFromGoogle(string userId, string googleUrl)
+        {
+
+            using var httpClient = new HttpClient();
+            Console.WriteLine($"Downloading image from {googleUrl}");
+            using var imageStream = await httpClient.GetStreamAsync(googleUrl);
+
+            var memoryStream = new MemoryStream();
+            await imageStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            Console.WriteLine($"Downloaded image size: {memoryStream.Length} bytes");
+
+            var formFile = new FormFile(memoryStream, 0, memoryStream.Length, "file", "google-profile.jpg");
+
+            formFile.Headers = new HeaderDictionary();
+            formFile.ContentType = "image/jpeg";
+
+            var uploadedImageUrl = await UploadFileInternal(formFile, userId, false, false, null);
+            Console.WriteLine($"Image uploaded successfully. URL: {uploadedImageUrl}");
+
+            return uploadedImageUrl;
+        }
+
+
+
+
         [HttpPost("guild")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadGuildImage([FromForm] GuildImageUploadRequest request)
@@ -233,8 +262,12 @@ namespace LiventCord.Controllers
                     _logger.LogInformation("Uploading attachment for Friend ChannelId: {ChannelId}", channelId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
                     await SaveOrUpdateFile(new AttachmentFile(fileId, sanitizedFileName, content, extension, channelId, guildId, userId));
                 }
-                _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
-                await SaveOrUpdateFile(new ProfileFile(fileId, sanitizedFileName, content, extension, userId));
+                else
+                {
+                    _logger.LogInformation("Uploading profile file for UserId: {UserId}", userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""));
+                    await SaveOrUpdateFile(new ProfileFile(fileId, sanitizedFileName, content, extension, userId));
+
+                }
             }
 
             _logger.LogInformation("File uploaded successfully. FileId: {FileId}", fileId);
