@@ -20,6 +20,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	MaxFileSizeBytes       = 50 * 1024 * 1024
+	MaxConcurrentDownloads = 5
+)
+
+var downloadSemaphore = make(chan struct{}, MaxConcurrentDownloads)
+
 func NewMediaProxyController(settings *MediaCacheSettings) *MediaProxyController {
 	blacklistPath := filepath.Join(settings.CacheDirectory, "blacklisted_urls.json")
 	blacklistedUrlsEnv := os.Getenv("AddToBlacklist")
@@ -65,51 +72,6 @@ func isAllowedHTTPS(rawurl string) bool {
 	}
 
 	return true
-}
-
-func (c *MediaProxyController) GetMedia(ctx *gin.Context) {
-	url := ctx.Query("url")
-	url = strings.TrimSpace(url)
-	url = strings.Trim(url, `"`)
-
-	if !isAllowedHTTPS(url) {
-		ctx.String(http.StatusBadRequest, "URL rejected")
-		return
-	}
-
-	if c.isUrlBlacklisted(url) {
-		ctx.String(http.StatusBadRequest, "URL is blacklisted.")
-		return
-	}
-
-	filePath := c.getCacheFilePath(url)
-
-	if _, err := os.Stat(filePath); err == nil {
-		c.handleFileResponse(ctx, filePath)
-		return
-	}
-
-	ch := make(chan error, 1)
-	_, loaded := c.downloadTasks.LoadOrStore(filePath, ch)
-	if !loaded {
-		go func() {
-			defer c.downloadTasks.Delete(filePath)
-			err := c.downloadFile(url, filePath)
-			ch <- err
-			close(ch)
-		}()
-	}
-
-	err := <-ch
-	if err != nil {
-		ctx.String(http.StatusBadGateway, "Download failed.")
-		return
-	}
-	if _, err := os.Stat(filePath); err == nil {
-		c.handleFileResponse(ctx, filePath)
-	} else {
-		ctx.String(http.StatusBadGateway, "File missing after download.")
-	}
 }
 
 func (c *MediaProxyController) handleFileResponse(ctx *gin.Context, filePath string) {
@@ -245,15 +207,66 @@ func (c *MediaProxyController) getCacheFilePath(url string) string {
 	return filepath.Join(c.cacheDirectory, strings.ToLower(encoded))
 }
 
+func (c *MediaProxyController) GetMedia(ctx *gin.Context) {
+	url := strings.TrimSpace(ctx.Query("url"))
+	url = strings.Trim(url, `"`)
+
+	if !isAllowedHTTPS(url) {
+		ctx.String(http.StatusBadRequest, "URL rejected")
+		return
+	}
+
+	if c.isUrlBlacklisted(url) {
+		ctx.String(http.StatusBadRequest, "URL is blacklisted.")
+		return
+	}
+
+	filePath := c.getCacheFilePath(url)
+
+	if _, err := os.Stat(filePath); err == nil {
+		c.handleFileResponse(ctx, filePath)
+		return
+	}
+
+	ch := make(chan error, 1)
+	_, loaded := c.downloadTasks.LoadOrStore(filePath, ch)
+	if !loaded {
+		go func() {
+			defer c.downloadTasks.Delete(filePath)
+			downloadSemaphore <- struct{}{}
+			defer func() { <-downloadSemaphore }()
+
+			err := c.downloadFile(url, filePath)
+			ch <- err
+			close(ch)
+		}()
+	}
+
+	err := <-ch
+	if err != nil {
+		ctx.String(http.StatusBadGateway, "Download failed.")
+		return
+	}
+	if _, err := os.Stat(filePath); err == nil {
+		c.handleFileResponse(ctx, filePath)
+	} else {
+		ctx.String(http.StatusBadGateway, "File missing after download.")
+	}
+}
+
+// ---- Download logic ----
+
 func (c *MediaProxyController) downloadFile(url, filePath string) error {
+	if !isAllowedHTTPS(url) {
+		return errors.New("URL is not allowed")
+	}
+
 	const maxRedirects = 5
 	redirects := 0
-	println("Starting download:", url)
 	for redirects < maxRedirects {
 		req, _ := http.NewRequest("GET", url, nil)
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
-			println("Download error for", url, ":", err.Error())
 			c.addToBlacklist(url)
 			return err
 		}
@@ -261,45 +274,38 @@ func (c *MediaProxyController) downloadFile(url, filePath string) error {
 
 		if isRedirect(resp.StatusCode) {
 			newUrl := resp.Header.Get("Location")
-			if newUrl == "" {
-				println("Download error for", url, ": empty redirect URL")
+			if newUrl == "" || c.isUrlBlacklisted(newUrl) {
 				c.addToBlacklist(url)
-				return errors.New("empty redirect URL")
-			}
-			if c.isUrlBlacklisted(newUrl) {
-				println("Download error for", url, ": redirect URL is blacklisted:", newUrl)
-				return errors.New("redirect URL is blacklisted")
+				return errors.New("invalid or blacklisted redirect")
 			}
 			url = newUrl
-			println("Redirecting to:", url)
 			redirects++
 			continue
 		}
 
 		contentType := resp.Header.Get("Content-Type")
 		if strings.Contains(contentType, "text/html") {
-			body, _ := io.ReadAll(resp.Body)
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 1000*1024)) // Limit to 100 KB
 			_ = sendHtmlToMainServer(c.mainServerUrl, url, string(body))
-			println("Downloaded HTML content from:", url)
 			return nil
 		}
 
 		if !c.isValidMediaContentType(contentType) {
-			println("Download error for", url, ": invalid media type:", contentType)
 			c.addToBlacklist(url)
 			return errors.New("invalid media type: " + contentType)
 		}
 
-		c.enforceStorageLimit()
+		if resp.ContentLength > MaxFileSizeBytes {
+			c.addToBlacklist(url)
+			return errors.New("file too large")
+		}
 
-		err = c.saveResponseToFile(resp, filePath)
+		err = c.saveLimitedResponseToFile(io.LimitReader(resp.Body, MaxFileSizeBytes+1), filePath)
 		if err != nil {
-			println("Download error saving file for", url, ":", err.Error())
 			c.addToBlacklist(url)
 			return err
 		}
 
-		println("Successfully downloaded:", url)
 		mediaUrl := MediaUrl{
 			Url:      url,
 			IsImage:  strings.HasPrefix(contentType, "image/"),
@@ -312,11 +318,25 @@ func (c *MediaProxyController) downloadFile(url, filePath string) error {
 		_ = sendMediaUrlsToMainServer(c.mainServerUrl, mediaUrl)
 		return nil
 	}
-	println("Download error for", url, ": Too many redirects")
 	c.addToBlacklist(url)
-	return errors.New("Too many redirects")
+	return errors.New("too many redirects")
 }
+func (c *MediaProxyController) saveLimitedResponseToFile(reader io.Reader, filePath string) error {
+	out, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
 
+	written, err := io.Copy(out, reader)
+	if err != nil {
+		return err
+	}
+	if written > MaxFileSizeBytes {
+		return errors.New("file exceeds allowed size")
+	}
+	return nil
+}
 func (c *MediaProxyController) isValidMediaContentType(contentType string) bool {
 	ct := strings.ToLower(contentType)
 	if ct == "" {
