@@ -992,7 +992,7 @@ class CorsDomainManager {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.src = `https://${domain}/favicon.ico}`;
+      img.src = `https://${domain}/favicon.ico`;
 
       let resolved = false;
 
