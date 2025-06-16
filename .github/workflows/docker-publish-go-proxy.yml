@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "server/proxy-api**"
+      - "server/proxy-api/**"
   workflow_dispatch:
 
 jobs:
