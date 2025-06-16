@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "server/go-ws-api**"
+      - "server/go-ws-api/**"
   workflow_dispatch:
 
 jobs:
