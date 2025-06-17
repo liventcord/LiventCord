@@ -217,9 +217,8 @@
   }
 }
 .panel-status-profile-titles {
-  margin-top: 130px !important;
-
-  margin-right: 230px !important;
+  margin-top: 150px !important;
+  margin-right: 73px !important;
 }
 @media (max-width: 600px) {
   #private-channel-icon {
@@ -744,7 +743,6 @@
 #profile-container {
   display: flex;
   margin-top: 28vh;
-  margin-left: 140px;
 }
 #profile-title {
   color: white;

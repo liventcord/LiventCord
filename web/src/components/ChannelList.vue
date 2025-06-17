@@ -1,6 +1,6 @@
 <template>
   <Teleport to="#channel-container">
-    <ul id="channelul" style="width: 310%">
+    <ul id="channelul" style="width: 100%">
       <Channel
         v-for="channel in channels"
         :key="channel.channelId"
@@ -46,10 +46,8 @@ export default defineComponent({
   color: #ffffff;
   position: relative;
   padding-left: 125px;
-}
-
-#channelul {
-  width: 100%;
+  width: 205px;
+  max-height: 100%;
 }
 
 .channel-users-container {
@@ -69,10 +67,8 @@ export default defineComponent({
 #channel-list::-webkit-scrollbar-track {
   background-color: #2f3136;
 }
-#channel-list {
-  width: 205px;
-  padding-left: 125px;
-  max-height: 100%;
-  position: relative;
+#channel-container {
+  padding-bottom: 150px;
+  margin-top: 20px;
 }
 </style>

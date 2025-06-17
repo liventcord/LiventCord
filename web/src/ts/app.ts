@@ -253,6 +253,7 @@ function initializeElements() {
     "mouseout",
     () => (guildContainer.style.backgroundColor = "#2b2d31")
   );
+  guildContainer.style.backgroundColor = "#2b2d31";
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
 

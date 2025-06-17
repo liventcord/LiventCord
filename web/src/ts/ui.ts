@@ -35,7 +35,8 @@ import {
   estimateImageSizeBytes,
   getResolution,
   getFileNameFromUrl,
-  corsDomainManager
+  corsDomainManager,
+  debounce
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -61,6 +62,7 @@ import { createTooltip } from "./tooltip.ts";
 import { pinMessage } from "./contextMenuActions.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
+import { setWidths, updateChannelsWidth } from "./channels.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -1394,3 +1396,87 @@ function initialiseListeners() {
     toggleHamburger(!isOnLeft, !isOnRight);
   });
 }
+
+function updateUIWidths(newWidth: number) {
+  const hashSign = getId("hash-sign");
+  if (hashSign) {
+    hashSign.style.left = `${newWidth + 180}px`;
+  }
+
+  const chanInfo = getId("channel-info");
+  if (chanInfo) {
+    chanInfo.style.marginLeft = `${newWidth + 200}px`;
+  }
+
+  const panel = getId("user-info-panel");
+  if (panel) {
+    panel.style.width = `${newWidth + 115}px`;
+  }
+
+  const input = getId("global-search-input");
+  if (input) {
+    input.style.width = `${newWidth + 90}px`;
+  }
+
+  const fileBtn = getId("file-button");
+  if (fileBtn) {
+    fileBtn.style.left = `${newWidth + 200}px`;
+  }
+}
+
+function setAllWidths(newWidth: number) {
+  setWidths(newWidth);
+  updateUIWidths(newWidth);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
+
+  const savedWidth = localStorage.getItem("channelListWidth");
+  const initialWidth = savedWidth ? clamp(parseInt(savedWidth, 10)) : 150;
+  setAllWidths(initialWidth);
+
+  const handleResize = () => {
+    const channelList = document.getElementById("channel-list");
+    if (!channelList) return;
+
+    const computedStyle = window.getComputedStyle(channelList);
+    const currentWidth = clamp(parseInt(computedStyle.width, 10));
+    setAllWidths(currentWidth);
+    localStorage.setItem("channelListWidth", currentWidth.toString());
+  };
+
+  window.addEventListener("resize", debounce(handleResize, 150));
+
+  const channelList = document.getElementById("channel-list");
+  if (channelList) {
+    channelList.addEventListener("mousedown", (e) => {
+      let isDragging = true;
+      const startX = e.clientX;
+      const computedStyle = window.getComputedStyle(channelList);
+      const startWidth = clamp(parseInt(computedStyle.width, 10));
+
+      document.body.style.userSelect = "none";
+
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDragging) return;
+
+        let newWidth = clamp(startWidth + (e.clientX - startX));
+        setAllWidths(newWidth);
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+        const computedStyle = window.getComputedStyle(channelList);
+        const finalWidth = clamp(parseInt(computedStyle.width, 10));
+        localStorage.setItem("channelListWidth", finalWidth.toString());
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  }
+});

@@ -49,9 +49,14 @@ export default createStore<RootState>({
   },
   mutations: {
     setAttachments(state, attachments: AttachmentWithMetaData[]) {
-      console.log(state.attachments);
-      state.attachments = attachments;
+      const seen = new Set();
+      state.attachments = attachments.filter(({ attachment }) => {
+        if (seen.has(attachment.fileId)) return false;
+        seen.add(attachment.fileId);
+        return true;
+      });
     },
+
     setChannels(state, channels: Channel[]) {
       state.channels = channels;
     },

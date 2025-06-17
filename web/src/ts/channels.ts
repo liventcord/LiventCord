@@ -463,3 +463,53 @@ function drawVoiceChannelUser(
   allUsersContainer.appendChild(userContainer);
   channelButton.appendChild(allUsersContainer);
 }
+
+export function setWidths(newWidth: number) {
+  const userInput = getId("user-input");
+  const guildContainer = getId("guild-container");
+  const containerWidth = window.innerWidth;
+
+  if (channelList) {
+    channelList.style.width = `${newWidth}px`;
+  }
+
+  if (userInput) {
+    const userInputWidth = containerWidth - newWidth - 200;
+    userInput.style.width = `${userInputWidth}px`;
+  }
+
+  if (guildContainer) {
+    guildContainer.style.width = `${newWidth + 172}px`;
+  }
+}
+
+export function updateChannelsWidth(e: MouseEvent) {
+  let isDragging = true;
+  const startX = e.clientX;
+  const computedStyle = channelList
+    ? window.getComputedStyle(channelList)
+    : null;
+  const startWidth = computedStyle ? parseInt(computedStyle.width, 10) : 150;
+
+  document.body.style.userSelect = "none";
+
+  const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+
+    let newWidth = startWidth + (e.clientX - startX);
+    newWidth = clamp(newWidth);
+    setWidths(newWidth);
+  };
+
+  const onMouseUp = () => {
+    isDragging = false;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    document.body.style.userSelect = "";
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+}

@@ -248,7 +248,6 @@ watch(
   width: 238px;
   display: flex;
   flex-direction: column;
-  z-index: 0;
   height: 100vh;
 }
 #activity-list {

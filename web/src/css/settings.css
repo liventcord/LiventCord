@@ -446,6 +446,9 @@ body.black-theme #settings-menu button.touch-hover {
 }
 @media (max-width: 600px) {
   #settings-button {
+    position: absolute;
+    width: 40px !important;
+    right: 0px;
     margin-top: -12px !important;
   }
   #settings-leftbar {
@@ -767,22 +770,7 @@ body.black-theme #settings-menu button.touch-hover {
   padding-left: 15px;
   padding-top: 5px;
 }
-.voice-button-container {
-  border-radius: 25px;
-  position: absolute;
-}
-#settings-button {
-  margin-top: -33px;
-  margin-left: 334px;
-  position: fixed;
-  user-select: none;
-  width: 20px;
-  height: 20px;
-  background-color: #ffffff00;
-  cursor: pointer;
-  border: none;
-  outline: none;
-}
+
 @keyframes rotate360 {
   from {
     transform: rotate(0deg);
@@ -798,37 +786,34 @@ body.black-theme #settings-menu button.touch-hover {
 #settings-button:not(:hover) svg {
   animation: none;
 }
-#microphone-button {
-  margin-top: -35px;
-  margin-left: 270px;
-  position: fixed;
-  user-select: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  color: #a7a7ae;
-  background-color: transparent;
-  cursor: pointer;
-}
-#microphone-button:hover {
-  background-color: #36363b;
-}
-#earphone-button {
-  margin-top: -35px;
-  margin-left: 300px;
-  position: fixed;
-  user-select: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  color: #a7a7ae;
 
+.voice-button-container {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#microphone-button,
+#earphone-button,
+#settings-button {
+  user-select: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: #a7a7ae;
   background-color: transparent;
   cursor: pointer;
+  border: none;
+  outline: none;
 }
-#earphone-button:hover {
+#earphone-button:hover,
+#microphone-button:hover,
+#settings-button:hover {
   background-color: #535353;
 }
+
 #self-profile-image {
   border-radius: 25px;
   transition: border-radius 0.3s;
