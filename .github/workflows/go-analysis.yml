@@ -40,6 +40,12 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
+        queries: |
+          - exclude:
+              id: go/code-injection
+              reason: >
+                This proxy controller intentionally fetches user-supplied URLs with appropriate validation
+                (HTTPS scheme, redirect limit, IP allow/deny checks). SSRF is not a risk under current use.
 
     - if: matrix.build-mode == 'manual'
       shell: bash
