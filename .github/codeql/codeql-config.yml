@@ -1,0 +1,9 @@
+name: "Custom CodeQL config"
+disable-default-queries: false
+
+queries:
+  - exclude:
+      id: go/code-injection
+      reason: >
+        This proxy controller intentionally fetches user-supplied URLs with appropriate validation
+        (HTTPS scheme, redirect limit, IP allow/deny checks). SSRF is mitigated and this is a controlled use case.

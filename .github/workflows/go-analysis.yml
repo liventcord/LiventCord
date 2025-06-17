@@ -32,28 +32,23 @@ jobs:
             build-mode: autobuild
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
-        queries: |
-          - exclude:
-              id: go/code-injection
-              reason: >
-                This proxy controller intentionally fetches user-supplied URLs with appropriate validation
-                (HTTPS scheme, redirect limit, IP allow/deny checks). SSRF is not a risk under current use.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: .github/codeql/codeql-config.yml
 
-    - if: matrix.build-mode == 'manual'
-      shell: bash
-      run: |
-        echo 'Replace with build commands if needed'
-        exit 1
+      - if: matrix.build-mode == 'manual'
+        shell: bash
+        run: |
+          echo 'Replace with build commands if needed'
+          exit 1
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
