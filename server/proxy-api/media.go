@@ -63,12 +63,24 @@ func isAllowedHTTPS(rawurl string) bool {
 	}
 
 	host := parsed.Hostname()
+
 	ip := net.ParseIP(host)
 	if ip != nil {
 		if ip.IsLoopback() || ip.IsPrivate() {
 			return false
 		}
 		return true
+	}
+
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return false
+	}
+
+	for _, resolvedIP := range ips {
+		if resolvedIP.IsLoopback() || resolvedIP.IsPrivate() {
+			return false
+		}
 	}
 
 	return true
