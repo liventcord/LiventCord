@@ -6,6 +6,7 @@ on:
     paths:
       - "server/go-ws-api/**"
       - "server/go-yt-stream-api/**"
+      - "server/go-proxy-api/**"
   pull_request:
     branches: [ "main" ]
   schedule:
