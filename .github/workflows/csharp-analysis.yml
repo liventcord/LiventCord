@@ -7,8 +7,10 @@ on:
       - "server/src/**"
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
   schedule:
     - cron: '17 1 * * 2'
+
 
 jobs:
   analyze:

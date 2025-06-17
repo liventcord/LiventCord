@@ -9,6 +9,7 @@ on:
       - "server/proxy-api/**"
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
   schedule:
     - cron: '17 1 * * 2'
 
