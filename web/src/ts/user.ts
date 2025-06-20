@@ -32,11 +32,13 @@ export interface UserInfo {
 }
 
 export const deletedUser = "Deleted User";
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let lastTopSenderId = null;
 
 export function setLastTopSenderId(id: string) {
-  if (!id) return;
+  if (!id) {
+    return;
+  }
   lastTopSenderId = id;
 }
 
@@ -118,7 +120,7 @@ function setInputValidity(input: HTMLInputElement, message: string) {
 
 class UserManager {
   private userNames: { [userId: string]: UserInfo } = {};
-  private isSelfOnline: boolean = false;
+  private readonly isSelfOnline: boolean = false;
   private statusCache: Record<string, Promise<boolean> | boolean> = {};
 
   constructor() {
@@ -194,11 +196,12 @@ class UserManager {
     if (this.userNames[userId]) {
       console.log("Updating user status for: ", userId, status);
       this.userNames[userId].status = status;
-      if (store)
+      if (store) {
         store.dispatch("updateStatusInMembersList", {
           userId,
           status
         });
+      }
     } else {
       console.error("Failed to add user:", userId);
     }
@@ -209,8 +212,12 @@ class UserManager {
   }
   async isNotOffline(userId: string): Promise<boolean> {
     const cachedStatus = this.statusCache[userId];
-    if (cachedStatus instanceof Promise) return cachedStatus;
-    if (cachedStatus !== undefined) return Boolean(cachedStatus);
+    if (cachedStatus instanceof Promise) {
+      return cachedStatus;
+    }
+    if (cachedStatus !== undefined) {
+      return Boolean(cachedStatus);
+    }
 
     const currentStatus = this.userNames[userId]?.status;
     if (currentStatus !== undefined) {
@@ -354,8 +361,9 @@ export function initializeProfile() {
   selfName.textContent = currentUserNick;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
   const profileDiscriminator = getId("profile-discriminator");
-  if (profileDiscriminator)
+  if (profileDiscriminator) {
     profileDiscriminator.textContent = "#" + initialState.user.discriminator;
+  }
   userStatus.setSelfStatus(initialState.user.status);
   updateSelfProfile(currentUserId, currentUserNick);
 }

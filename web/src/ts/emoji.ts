@@ -1,40 +1,91 @@
 import { apiClient, EventType } from "./api";
 import { cacheInterface } from "./cache";
+import {
+  chatInput,
+  DomUtils,
+  getChatBarState,
+  manuallyRenderEmojis,
+  setChatBarState
+} from "./chatbar";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
-import { isOnGuild } from "./router";
+import { isOnGuild, router } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { userManager } from "./user";
 import {
   createEl,
+  debounce,
+  disableElement,
   escapeHtml,
   getEmojiPath,
   getId,
   getProfileUrl,
   IMAGE_SRCS,
-  sanitizeInput
+  sanitizeHtmlInput,
+  sanitizeInput,
+  underscoreToTitle
 } from "./utils";
 
-export function getCurrentEmojis(): Emoji[] | null {
+const spriteWidth = 40;
+const spriteHeight = 40;
+const sheetWidth = 1680;
+const columns = Math.floor(sheetWidth / spriteWidth);
+const emojiSuggestionDropdown = getId(
+  "emojiSuggestionDropdown"
+) as HTMLSelectElement;
+
+type CustomEmoji = {
+  guildId: string;
+  userId: string;
+  fileId: string;
+  fileName: string;
+};
+type BuiltinEmoji = {
+  id: string;
+  names: string[];
+  spriteIndex: number;
+  surrogates: string;
+};
+
+let builtinEmojisCache: BuiltinEmoji[] = [];
+
+interface BuiltinEmojiPayload {
+  emojis: Record<
+    string,
+    {
+      names: string[];
+      surrogates: string;
+      unicodeVersion: number;
+      spriteIndex: number;
+    }
+  >;
+  emojisByCategory: any;
+  nameToEmoji: any;
+  surrogateToEmoji: any;
+  numDiversitySprites: number;
+  numNonDiversitySprites: number;
+}
+
+function getCurrentEmojis(): Emoji[] | null {
   if (isOnGuild) {
     return cacheInterface.getEmojis(currentGuildId);
   } else {
     return null;
   }
 }
-export const regexIdEmojis = /:(\d+):/g;
+const regexIdEmojis = /:(\d+):/g;
 
-const debounceTimeout: number = 1000;
-let debounceTimer: number;
-
-const changeEmojiName = (event: Event, guildId: string, emojiId: string) => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    const name = (event.target as HTMLTextAreaElement).value;
-    apiClient.send(EventType.CHANGE_EMOJI_NAME, { guildId, emojiId, name });
-  }, debounceTimeout);
+const changeEmojiNameHandler = (
+  event: Event,
+  guildId: string,
+  emojiId: string
+) => {
+  const name = (event.target as HTMLTextAreaElement).value;
+  apiClient.send(EventType.CHANGE_EMOJI_NAME, { guildId, emojiId, name });
 };
+
+const changeEmojiName = debounce(changeEmojiNameHandler, 1000);
 
 function generateEmojiRowHTML(emoji: Emoji): string {
   const canManageEmojis = permissionManager.canManageGuild();
@@ -112,7 +163,9 @@ function generateEmojiRowHTML(emoji: Emoji): string {
 function deleteEmoji(guildId: string, emojiId: string) {
   apiClient.send(EventType.DELETE_EMOJI, { guildId, emojiId }).then(() => {
     const row = getId(`emoji-row-${emojiId}`);
-    if (row) row.remove();
+    if (row) {
+      row.remove();
+    }
     cacheInterface.removeEmojis(guildId, emojiId);
     generateEmojiCount();
   });
@@ -234,51 +287,433 @@ export function getGuildEmojiHtml(): string {
   `;
   return initialHtml;
 }
+function generateEmojiTag(id: string): string {
+  const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
 
-export function generateEmojiImageTag(fileId: string): string {
-  return `<img data-id="${sanitizeInput(fileId)}" class="chat-emoji" src="${getEmojiPath(fileId, currentGuildId)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(fileId))}" />`;
+  if (builtinIndex !== -1) {
+    const col = builtinIndex % columns;
+    const row = Math.floor(builtinIndex / columns);
+    const x = -(col * spriteWidth);
+    const y = -(row * spriteHeight);
+
+    return `<div data-emoji-id="${sanitizeInput(id)}" data-id="${sanitizeInput(id)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" class="emoji builtin-emoji" style="width:${spriteWidth}px; height:${spriteHeight}px; background-position: ${x}px ${y}px;"></div>`;
+  } else {
+    return `<img data-id="${sanitizeInput(id)}" class="chat-emoji" src="${getEmojiPath(id, currentGuildId)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" />`;
+  }
+}
+
+let builtinEmojiPayload: BuiltinEmojiPayload | null = null;
+
+async function loadBuiltinEmojis(): Promise<void> {
+  try {
+    const response = await fetch("/emojis.json");
+    if (!response.ok) {
+      builtinEmojisCache = [];
+      builtinEmojiPayload = null;
+      return;
+    }
+    const data = await response.json();
+    builtinEmojiPayload = data as BuiltinEmojiPayload;
+
+    // Map emojis object to array with added id property as key
+    builtinEmojisCache = Object.entries(builtinEmojiPayload.emojis).map(
+      ([id, e]) => ({
+        id,
+        names: e.names,
+        spriteIndex: e.spriteIndex,
+        surrogates: e.surrogates
+      })
+    );
+  } catch {
+    builtinEmojisCache = [];
+    builtinEmojiPayload = null;
+  }
 }
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
-  const emojisToUse = getCurrentEmojis();
-  if (!content || !emojisToUse) return escapeHtml(content);
+  const customEmojisToUse: CustomEmoji[] = getCurrentEmojis() ?? [];
 
-  return content
-    .replace(regexIdEmojis, (match, emojiId) => {
-      const emoji = emojisToUse.find((e) => e.fileId === emojiId);
-      if (emoji) return `%%__EMOJI__${emoji.fileId}__%%`;
-      return escapeHtml(match);
-    })
-    .split(/(%%__EMOJI__.*?__%%)/g)
-    .map((part) => {
-      const match = part.match(/^%%__EMOJI__(.*?)__%%$/);
-      if (match) return generateEmojiImageTag(match[1]);
-      return escapeHtml(part);
-    })
-    .join("");
+  type UnifiedEmoji = { id: string; emoji: string };
+
+  const customUnified: UnifiedEmoji[] = customEmojisToUse.map((e) => ({
+    id: e.fileId,
+    emoji: e.fileName
+  }));
+
+  const builtinUnified: UnifiedEmoji[] = builtinEmojisCache.map((e) => ({
+    id: e.id,
+    emoji: e.names[0]
+  }));
+
+  const emojisToUse = [...customUnified, ...builtinUnified];
+
+  if (!content || emojisToUse.length === 0) {
+    return escapeHtml(content);
+  }
+
+  const emojiMap = new Map(emojisToUse.map((e) => [e.id, e]));
+
+  const regexIdEmojis = /:([0-9A-Fa-f]+):/g;
+
+  return content.replace(regexIdEmojis, (match, emojiId) => {
+    const emoji = emojiMap.get(emojiId);
+    if (emoji) {
+      return generateEmojiTag(emojiId);
+    }
+    return escapeHtml(match);
+  });
+}
+
+function getEmojiCode(builtinIndex: number): string | null {
+  const emoji = builtinEmojisCache[builtinIndex];
+  if (!emoji) {
+    return null;
+  }
+  return `:${emoji.id}:`;
+}
+
+export function appendBuiltinEmojiChat(builtinIndex: number) {
+  const emojiCode = getEmojiCode(builtinIndex);
+  if (!emojiCode) {
+    return;
+  }
+
+  appendEmojiToInput(emojiCode);
 }
 
 function handleEmojiHover(element: HTMLElement, emojiName: string): void {
-  console.log("Clicked emoji:", element, emojiName);
   createTooltip(element, emojiName);
 }
 
-function handleEmojiListener(element: HTMLElement, emojiId: string): void {
-  const emojiName = cacheInterface.getEmojiName(emojiId);
-  element.addEventListener("mouseover", () =>
-    handleEmojiHover(element, emojiName)
-  );
+function isBuiltinEmoji(emojiId: string): boolean {
+  return builtinEmojisCache.findIndex((e) => e.id === emojiId) !== -1;
+}
+function isCustomEmoji(
+  emoji: CustomEmoji | BuiltinEmoji
+): emoji is CustomEmoji {
+  return (emoji as CustomEmoji).fileName !== undefined;
 }
 
-export function setupEmojiListeners(container: HTMLElement): void {
-  const emojiElements = container.querySelectorAll(
-    ".chat-emoji"
-  ) as NodeListOf<HTMLElement>;
+function getBuiltinEmojiName(emojiId: string) {
+  const emoji = builtinEmojisCache.find((e) => e.id === emojiId);
+  return emoji ? underscoreToTitle(emoji.names[0]) : "Unknown";
+}
 
-  emojiElements.forEach((el) => {
-    const dataId = el.getAttribute("data-id");
-    if (dataId) {
-      handleEmojiListener(el, dataId);
+let emojiListenerAdded = false;
+
+export function setupEmojiListeners(): void {
+  if (emojiListenerAdded) {
+    return;
+  }
+  emojiListenerAdded = true;
+
+  document.body.addEventListener("mouseover", (event) => {
+    const target = event.target as HTMLElement;
+    if (!target) {
+      return;
+    }
+
+    if (
+      target.classList.contains("builtin-emoji") ||
+      target.classList.contains("chat-emoji")
+    ) {
+      const dataId = target.getAttribute("data-id");
+      if (!dataId) {
+        return;
+      }
+
+      if (isBuiltinEmoji(dataId)) {
+        handleEmojiHover(target, getBuiltinEmojiName(dataId));
+      } else {
+        const emojiName = cacheInterface.getEmojiName(dataId);
+        handleEmojiHover(target, emojiName);
+      }
     }
   });
 }
+
+export function preserveEmojiContent(element: HTMLElement): string {
+  let result = "";
+
+  const walkNode = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      result += node.textContent || "";
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+
+      if (el.tagName === "IMG" && el.hasAttribute("data-emoji-id")) {
+        const dataId = el.getAttribute("data-emoji-id");
+        if (dataId) {
+          result += `:${dataId}:`;
+        } else {
+          result += el.getAttribute("alt") || "";
+        }
+      } else if (
+        el.tagName === "DIV" &&
+        el.classList.contains("emoji") &&
+        el.hasAttribute("data-emoji-id")
+      ) {
+        const emojiId = el.getAttribute("data-emoji-id");
+        if (emojiId) {
+          result += `:${emojiId}:`;
+        } else {
+          result += el.getAttribute("alt") || "";
+        }
+      } else if (el.hasChildNodes()) {
+        Array.from(el.childNodes).forEach(walkNode);
+      }
+    }
+  };
+
+  Array.from(element.childNodes).forEach(walkNode);
+  return result;
+}
+
+export function processEmojisWithPositions(content: string): string {
+  const positions = [];
+  let lastIndex = 0,
+    result = "",
+    match;
+  const sanitizedContent = sanitizeHtmlInput(content);
+
+  const emojis = getCurrentEmojis() || [];
+
+  while ((match = regexIdEmojis.exec(sanitizedContent)) !== null) {
+    const emojiId = match[1];
+    result += sanitizedContent.slice(lastIndex, match.index);
+
+    const isBuiltin = isBuiltinEmoji(emojiId);
+    const isCustom =
+      emojiId.length === router.ID_LENGTH &&
+      emojis.some((e) => e.fileId === emojiId);
+
+    if (isBuiltin || isCustom) {
+      const start = result.length;
+      const imgTag = generateEmojiTag(emojiId);
+      result += imgTag;
+      positions.push({ start, end: start + imgTag.length });
+    } else {
+      result += match[0];
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  result += sanitizedContent.slice(lastIndex);
+  return result;
+}
+
+function triggerEmojiSuggestionDisplay(textContext: string) {
+  const customEmojis: CustomEmoji[] = getCurrentEmojis() ?? [];
+
+  const lastColonIndex = textContext.lastIndexOf(":");
+  const emojiQuery =
+    lastColonIndex !== -1 ? textContext.slice(lastColonIndex + 1).trim() : "";
+
+  if (!emojiQuery) {
+    return;
+  }
+
+  const lowerQuery = emojiQuery.toLowerCase();
+
+  const matching: (CustomEmoji | BuiltinEmoji)[] = [];
+
+  const allEmojis = [...builtinEmojisCache, ...customEmojis];
+
+  for (const emoji of allEmojis) {
+    if (matching.length >= 50) {
+      break;
+    }
+
+    if (isCustomEmoji(emoji)) {
+      const name = emoji.fileName.toLowerCase();
+      if (name.includes(lowerQuery)) {
+        matching.push(emoji);
+      }
+    } else {
+      if (emoji.names.some((n) => n.toLowerCase().includes(lowerQuery))) {
+        matching.push(emoji);
+      }
+    }
+  }
+
+  if (matching.length === 0) {
+    const state = getChatBarState();
+    state.emojiSuggestionsVisible = false;
+    setChatBarState(state);
+    emojiSuggestionDropdown.style.display = "none";
+    return;
+  }
+
+  emojiSuggestionDropdown.innerHTML = "";
+  const state = getChatBarState();
+  state.emojiSuggestionsVisible = false;
+  setChatBarState(state);
+
+  for (const emoji of matching) {
+    const emojiId = "fileId" in emoji ? emoji.fileId : emoji.id;
+    const emojiLabel = "fileName" in emoji ? emoji.fileName : emoji.names[0];
+
+    const suggestion = createEl("div", { className: "suggestion-option" });
+
+    const emojiTag = generateEmojiTag(emojiId);
+    suggestion.innerHTML = emojiTag;
+
+    const labelSpan = createEl("span", {
+      className: "suggestion-label",
+      textContent: underscoreToTitle(emojiLabel)
+    });
+
+    suggestion.appendChild(labelSpan);
+
+    suggestion.dataset.id = emojiId;
+
+    suggestion.addEventListener("click", () => {
+      emojiSuggestionDropdown
+        .querySelectorAll(".suggestion-option")
+        .forEach((el) => el.classList.remove("active"));
+      suggestion.classList.add("active");
+      applyActiveEmojiSuggestion();
+    });
+
+    emojiSuggestionDropdown.appendChild(suggestion);
+  }
+
+  state.emojiSuggestionsVisible = true;
+  emojiSuggestionDropdown.style.display = "flex";
+  highlightSuggestion(0);
+}
+
+//#region Emoji Suggestions
+function hideEmojiSuggestions() {
+  const state = getChatBarState();
+  state.emojiSuggestionsVisible = false;
+  disableElement("emojiSuggestionDropdown");
+  const dd = getId("emojiSuggestionDropdown");
+  if (dd) {
+    dd.innerHTML = "";
+  }
+}
+
+function showEmojiSuggestions() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const currentNode = range.startContainer;
+  const currentOffset = range.startOffset;
+
+  const textUpToCursor = DomUtils.getTextUpToCursorFromNode(
+    currentNode,
+    currentOffset
+  );
+  const safe = sanitizeHtmlInput(textUpToCursor);
+  triggerEmojiSuggestionDisplay(safe);
+}
+
+export function toggleShowEmojiSuggestions() {
+  const state = getChatBarState();
+  const start = Math.max(0, state.cursorPosition - 30);
+  const textBeforeCursor = state.rawContent.slice(start, state.cursorPosition);
+  textBeforeCursor.trimStart().startsWith(":")
+    ? showEmojiSuggestions()
+    : hideEmojiSuggestions();
+}
+
+function appendEmojiToInput(text: string) {
+  if (!chatInput) {
+    return;
+  }
+  const state = getChatBarState();
+  state.rawContent = `${state.rawContent}${text}`;
+  chatInput.focus();
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  if (!chatInput.contains(range.startContainer)) {
+    const newRange = document.createRange();
+    newRange.selectNodeContents(chatInput);
+    newRange.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+  }
+  const finalRange = selection.getRangeAt(0);
+  finalRange.deleteContents();
+  finalRange.insertNode(document.createTextNode(text));
+  finalRange.collapse(false);
+
+  selection.removeAllRanges();
+  selection.addRange(finalRange);
+
+  manuallyRenderEmojis(state.rawContent);
+}
+
+export function applyActiveEmojiSuggestion() {
+  if (!emojiSuggestionDropdown) {
+    return;
+  }
+
+  const activeItem = emojiSuggestionDropdown.querySelector<HTMLElement>(
+    ".suggestion-option.active"
+  );
+  if (!activeItem) {
+    return;
+  }
+
+  const emojiId = activeItem.dataset.id;
+  if (!emojiId) {
+    return;
+  }
+
+  const insertedText = `:${emojiId}:`;
+
+  const successful = document.execCommand("insertText", false, insertedText);
+  if (!successful) {
+    appendEmojiToInput(insertedText);
+  }
+
+  setTimeout(hideEmojiSuggestions, 50);
+}
+
+export function handleEmojiSuggestions(event: KeyboardEvent) {
+  const state = getChatBarState();
+  if (!state.emojiSuggestionsVisible || !emojiSuggestionDropdown) {
+    return;
+  }
+
+  const items = Array.from(emojiSuggestionDropdown.children) as HTMLElement[];
+  const currentIndex = items.findIndex((el) => el.classList.contains("active"));
+  const direction = event.key === "ArrowDown" ? 1 : -1;
+  let newIndex = currentIndex + direction;
+
+  if (newIndex < 0) {
+    newIndex = items.length - 1;
+  }
+  if (newIndex >= items.length) {
+    newIndex = 0;
+  }
+
+  highlightSuggestion(newIndex);
+}
+
+function highlightSuggestion(index: number) {
+  const items = Array.from(emojiSuggestionDropdown.children) as HTMLElement[];
+
+  items.forEach((el, i) => {
+    el.classList.toggle("active", i === index);
+    if (i === index) {
+      el.scrollIntoView({ block: "nearest" });
+    }
+  });
+}
+//#endregion
+async function main() {
+  await loadBuiltinEmojis();
+}
+
+main();

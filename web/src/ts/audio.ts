@@ -194,7 +194,9 @@ function initializeMp3Yt() {
   document.addEventListener("click", handleClick);
 }
 async function fetchAudioStreamUrl(videoId?: string) {
-  if (!videoId) return null;
+  if (!videoId) {
+    return null;
+  }
   try {
     const response = await fetch(
       `/ytstream/?videoId=${encodeURIComponent(videoId)}`
@@ -220,7 +222,9 @@ export function enableBorderMovement() {
 }
 
 export function stopAudioAnalysis() {
-  if (!isAnalyzing) return;
+  if (!isAnalyzing) {
+    return;
+  }
 
   isAnalyzing = false;
 
@@ -260,10 +264,14 @@ function startAudioAnalysis() {
 }
 
 function getSelfFromUserList(): HTMLImageElement | null {
-  if (!userList) return null;
+  if (!userList) {
+    return null;
+  }
 
   const userProfiles = userList.querySelectorAll(".profile-container");
-  if (!userProfiles.length) return null;
+  if (!userProfiles.length) {
+    return null;
+  }
 
   for (const profile of Array.from(userProfiles)) {
     if (profile.id === currentUserId) {
@@ -278,14 +286,18 @@ function analyzeAudio(
   dataArray: Uint8Array,
   recentVolumes: number[]
 ) {
-  if (!isAnalyzing || !analyser) return;
+  if (!isAnalyzing || !analyser) {
+    return;
+  }
 
   analyser.getByteFrequencyData(dataArray);
 
   let sum = 0;
   for (let i = 0; i < dataArray.length; i++) {
     const dataIndex = dataArray[i];
-    if (dataIndex) sum += dataIndex;
+    if (dataIndex) {
+      sum += dataIndex;
+    }
   }
 
   const averageVolume = sum / dataArray.length;
@@ -439,7 +451,7 @@ function activateSoundOutput() {
         });
       }
 
-      const defaultOption = createEl("option") as HTMLOptionElement;
+      const defaultOption = createEl("option");
       defaultOption.style.fontSize = "12px";
       defaultOption.value = "default";
       defaultOption.textContent = "Default Sound Output";
@@ -447,7 +459,7 @@ function activateSoundOutput() {
     } catch (error) {
       console.error("Error updating sound output options:", error);
 
-      const defaultOption = createEl("option") as HTMLOptionElement;
+      const defaultOption = createEl("option");
       defaultOption.style.fontSize = "12px";
       defaultOption.value = "default";
       defaultOption.textContent = "Default Sound Output";
@@ -465,7 +477,9 @@ function activateSoundOutput() {
 let isMicrophoneOpen = true;
 function setMicrophone() {
   console.log("Set microphone! to ", isMicrophoneOpen);
-  if (!microphoneButton) return;
+  if (!microphoneButton) {
+    return;
+  }
   microphoneButton.classList.toggle("fa-microphone", !isMicrophoneOpen);
   microphoneButton.classList.toggle("fa-microphone-slash", isMicrophoneOpen);
 
@@ -650,7 +664,9 @@ function initializeMusic() {
   function playCurrentSong() {
     const currentSong = songs[currentSongIndex];
 
-    if (currentSong) playAudio(currentSong);
+    if (currentSong) {
+      playAudio(currentSong);
+    }
 
     const audio = new Audio(currentSong);
     audio.onended = function () {

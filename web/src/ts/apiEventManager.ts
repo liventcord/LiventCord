@@ -134,7 +134,9 @@ apiClient.on(EventType.DELETE_GUILD, (data) => {
 apiClient.on(EventType.GET_INVITES, (data) => {
   const inviteId = data.inviteId;
   const guildId = currentGuildId;
-  if (!guildId || !inviteId) return;
+  if (!guildId || !inviteId) {
+    return;
+  }
   if (data && inviteId) {
     cacheInterface.addInvite(guildId, inviteId);
   } else {
@@ -145,7 +147,9 @@ apiClient.on(EventType.GET_INVITES, (data) => {
 apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
   const newGuildName = data.guildName;
   const guildId = data.guildId;
-  if (!newGuildName || !guildId) return;
+  if (!newGuildName || !guildId) {
+    return;
+  }
   if (guildId === currentGuildId) {
     setGuildNameText(newGuildName);
   }
@@ -358,7 +362,7 @@ apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
 });
 
 apiClient.on(EventType.GET_FRIENDS, (data) => {
-  friendsCache.initialiseFriends(data as any);
+  friendsCache.initialiseFriends(data);
   updateFriendsList(data);
 });
 

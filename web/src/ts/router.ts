@@ -2,7 +2,12 @@ import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
 import { showGuildPop } from "./popups.ts";
-import { createEl, disableElement, enableElement } from "./utils.ts";
+import {
+  createEl,
+  disableElement,
+  enableElement,
+  openBlobUrl
+} from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
 import { apiClient } from "./api.ts";
 export let isOnMePage = true;
@@ -228,9 +233,18 @@ class Router {
     console.error("Resetting route");
     window.history.pushState(null, "", "/channels/@me");
   }
-  openLink(link: string) {
-    window.open(link, "_blank");
+  async openLink(link: string, imageElement?: HTMLImageElement) {
+    if (link.startsWith("blob:")) {
+      if (!imageElement) {
+        console.warn("Cannot open blob URL without source image element");
+        return;
+      }
+      await openBlobUrl(imageElement);
+    } else {
+      window.open(link, "_blank");
+    }
   }
+
   async downloadLink(link: string) {
     try {
       const response = await fetch(link, { mode: "cors" });

@@ -195,7 +195,7 @@ export function createChannelsPop(guildId: string) {
   const inviteUsersSendInput = createEl("input", {
     id: "create-channel-send-input",
     placeholder: translations.getTranslation("new-channel-placeholder")
-  }) as HTMLInputElement;
+  });
   inviteUsersSendInput.addEventListener("input", () =>
     toggleButtonState(inviteUsersSendInput.value.trim() !== "", popAcceptButton)
   );
@@ -286,8 +286,9 @@ export function createChannelsPop(guildId: string) {
   document.body.appendChild(newPopOuterParent);
   toggleManager.setupToggle("private-channel-toggle");
   newPopOuterParent.addEventListener("click", (event) => {
-    if (event.target === newPopOuterParent)
+    if (event.target === newPopOuterParent) {
       closePopUp(newPopOuterParent, newPopParent);
+    }
   });
 }
 
@@ -330,7 +331,9 @@ export async function drawProfilePop(
     console.error("Null user data requested profile draw", userData);
     return null;
   }
-  if (getId("profilePopContainer")) return null;
+  if (getId("profilePopContainer")) {
+    return null;
+  }
   if (isImagePreviewOpen()) {
     hideImagePreview();
   }
@@ -360,7 +363,9 @@ export async function drawProfilePop(
 
   profileContainer.appendChild(profileImg);
   profileContainer.appendChild(popTopContainer);
-  if (popBottomContainer) profileContainer.appendChild(popBottomContainer);
+  if (popBottomContainer) {
+    profileContainer.appendChild(popBottomContainer);
+  }
 
   const status = await userManager.getStatusString(userId);
   const bubble = createBubble(status);
@@ -413,7 +418,7 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
 function createProfileImage(userData: UserInfo): HTMLImageElement {
   const profileImg = createEl("img", {
     className: "profile-display"
-  }) as HTMLImageElement;
+  });
   currentProfileImg = profileImg;
   profileImg.crossOrigin = "anonymous";
   profileImg.addEventListener("mouseover", function () {
@@ -552,7 +557,9 @@ function createPopBottomContainer(
     });
     sharedGuilds.forEach((guildId: string) => {
       const rootChannel = cacheInterface.getRootChannel(guildId);
-      if (!rootChannel) return;
+      if (!rootChannel) {
+        return;
+      }
       const guildName = cacheInterface.getGuildName(guildId) as string;
       const isUploaded = cacheInterface.getIsUploaded(guildId) as boolean;
       const guildImage = createGuildListItem(
@@ -803,7 +810,7 @@ export function createInviteUsersPop() {
     id: "invite-users-send-input",
     value: invitelink,
     readonly: true
-  }) as HTMLInputElement;
+  });
 
   const copyButton = createEl("button", {
     className: "copy-button",
@@ -884,7 +891,9 @@ function createPopUpCloseButton(
   id?: string
 ) {
   const closeButton = createEl("button", { className });
-  if (id) closeButton.id = id;
+  if (id) {
+    closeButton.id = id;
+  }
   closeButton.innerHTML =
     '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path></svg>';
   closeButton.addEventListener("click", function () {
@@ -1056,8 +1065,9 @@ function changePopUpToGuildCreation(
   newPopSubject: HTMLElement,
   closeCallback: CallableFunction
 ) {
-  if (popButtonContainer?.parentNode)
+  if (popButtonContainer?.parentNode) {
     popButtonContainer.parentNode.removeChild(popButtonContainer);
+  }
 
   newPopSubject.textContent = translations.getTranslation("customize-guild");
   newPopContent.textContent = translations.getTranslation(
@@ -1094,7 +1104,7 @@ function changePopUpToGuildCreation(
     id: "guildImageInput",
     accept: "image/*",
     style: { display: "none" }
-  }) as HTMLInputElement;
+  });
 
   const guildImage = createEl("div", {
     id: "guildImg",
@@ -1140,11 +1150,22 @@ function changePopUpToGuildCreation(
     handleImageUpload(guildImage, uploadText, clearButton, event)
   );
   clearButton.addEventListener("click", clearImage);
+  let isClickListenerAdded = false;
 
-  document.body.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement;
-    if (target.closest("#guildImg")) triggerGuildInput();
-  });
+  function setupClickListener(): void {
+    if (isClickListenerAdded) {
+      return;
+    }
+    isClickListenerAdded = true;
+
+    document.body.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement;
+      if (target.closest("#guildImg")) {
+        triggerGuildInput();
+      }
+    });
+  }
+  setupClickListener();
 
   guildImageForm.append(guildImageInput, guildImage);
   newPopParent.style.animation =
@@ -1178,7 +1199,7 @@ function ChangePopUpToGuildJoining(
   const newInput = createEl("input", {
     placeholder: text,
     id: "guild-name-input"
-  }) as HTMLInputElement;
+  });
   if (inviteId) {
     newInput.value = inviteId;
   }
@@ -1343,7 +1364,7 @@ export function createCropPop(
     parentContainer.remove();
   });
 
-  const imageElement = createEl("img") as HTMLImageElement;
+  const imageElement = createEl("img");
   imageElement.src = inputSrc;
 
   const croppie = new Croppie(imageContainer, {

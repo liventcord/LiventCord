@@ -204,9 +204,13 @@ type ListenerCallback = (data: any) => void;
 class ApiClient {
   private authCookie = "";
   async getAuthCookie(): Promise<string> {
-    if (this.authCookie) return encodeURIComponent(this.authCookie);
+    if (this.authCookie) {
+      return encodeURIComponent(this.authCookie);
+    }
     const response = await apiClient.fetchRelative("/auth/ws-token");
-    if (!response.ok) console.error("Failed to retrieve cookie for ws");
+    if (!response.ok) {
+      console.error("Failed to retrieve cookie for ws");
+    }
     const data = await response.json();
     this.authCookie = data.token;
     return encodeURIComponent(this.authCookie);
@@ -280,7 +284,7 @@ class ApiClient {
   }
 
   private listeners: Record<string, ListenerCallback[]>;
-  private nonResponseEvents: EventType[];
+  private readonly nonResponseEvents: EventType[];
 
   constructor() {
     this.listeners = {};
@@ -347,10 +351,18 @@ class ApiClient {
         };
       }
 
-      if (method === HttpMethod.POST) missingCrud[resource].create = true;
-      if (method === HttpMethod.GET) missingCrud[resource].read = true;
-      if (method === HttpMethod.PUT) missingCrud[resource].update = true;
-      if (method === HttpMethod.DELETE) missingCrud[resource].delete = true;
+      if (method === HttpMethod.POST) {
+        missingCrud[resource].create = true;
+      }
+      if (method === HttpMethod.GET) {
+        missingCrud[resource].read = true;
+      }
+      if (method === HttpMethod.PUT) {
+        missingCrud[resource].update = true;
+      }
+      if (method === HttpMethod.DELETE) {
+        missingCrud[resource].delete = true;
+      }
     });
 
     Object.entries(missingCrud).forEach(([resource, ops]) => {
@@ -373,7 +385,9 @@ class ApiClient {
   }
   getBackendHostname(): string | null {
     const url = this.getBackendUrl();
-    if (!url) return "";
+    if (!url) {
+      return "";
+    }
     const urlObj = new URL(url);
     return urlObj.hostname;
   }
@@ -390,7 +404,15 @@ class ApiClient {
   }
 
   getProxyUrl(url: string): string {
-    return initialState.mediaProxyApiUrl + `/api/proxy/media?url=${url}`;
+    const isLocalhost = url.includes("localhost") || url.includes("127.0.0.1");
+    const isIp = /^[\d.]+$/.test(new URL(url).hostname);
+    if (isLocalhost || isIp) {
+      return url;
+    }
+    return (
+      initialState.mediaProxyApiUrl +
+      `/api/proxy/media?url=${encodeURIComponent(url)}`
+    );
   }
 
   getUrlForEvent(
@@ -399,7 +421,9 @@ class ApiClient {
     queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } | null {
     const url = this.getBackendUrl();
-    if (!url) return null;
+    if (!url) {
+      return null;
+    }
     const basePath = url + "/api";
 
     const urlTemplate = EventUrlMap[event];
@@ -614,7 +638,9 @@ class ApiClient {
     }
   }
   async handleError(response: Response, event: EventType) {
-    if (response.ok) return;
+    if (response.ok) {
+      return;
+    }
     if (friendEvents.includes(event)) {
       const predefinedMessage =
         translations.getFriendErrorMessage(String(response.status)) ||

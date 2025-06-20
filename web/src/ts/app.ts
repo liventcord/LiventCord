@@ -5,7 +5,8 @@ import {
   loadGuildToolbar,
   loadDmToolbar,
   initialiseMobile,
-  handleMembersClick
+  handleMembersClick,
+  initialiseChannelDrag
 } from "./ui.ts";
 import {
   getHistoryFromOneChannel,
@@ -231,6 +232,8 @@ export function initialiseState(data: InitialStateData): void {
   setSocketClient(wsUrl);
   guildCache.currentGuildName = guildName;
   updateDmsList(dmFriends);
+  initialiseChannelDrag();
+
   friendsCache.initialiseFriends(friendsStatus);
   setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
   updateGuilds(guilds);
@@ -267,6 +270,7 @@ function initializeSettings() {
   setTimeout(() => {
     setUsersList(isCookieUsersOpen, true);
   }, 0);
+
   disableElement("loading-screen");
 }
 
@@ -291,7 +295,9 @@ function initializeListeners() {
 
   const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
   avatarWrapper.addEventListener("click", () => {
-    if (userStatus) userStatus.showStatusPanel();
+    if (userStatus) {
+      userStatus.showStatusPanel();
+    }
   });
 
   addContextListeners();
@@ -366,7 +372,9 @@ export function handleChannelLoading(
   guildId: string,
   channelId?: string
 ): void {
-  if (!channelId) return;
+  if (!channelId) {
+    return;
+  }
 
   console.log("Channel check");
 
@@ -464,7 +472,9 @@ let lastDmId: string;
 
 function handleMenu(isChangingUrl: boolean) {
   selectGuildList("main-logo");
-  if (isChangingUrl) router.resetRoute();
+  if (isChangingUrl) {
+    router.resetRoute();
+  }
 
   enableElement(ELEMENT_IDS.friendsContainer, false, true);
   friendContainerItem.classList.add("dm-selected");
@@ -474,7 +484,9 @@ function handleMenu(isChangingUrl: boolean) {
   friendsCache.currentDmId = "";
 
   enableElement(ELEMENT_IDS.channelInfoFriend);
-  if (!isMobile) disableElement("channel-info-container-for-index");
+  if (!isMobile) {
+    disableElement("channel-info-container-for-index");
+  }
 
   loadMainToolbar();
 
@@ -493,13 +505,19 @@ function handleMenu(isChangingUrl: boolean) {
   updateUsersActivities();
 
   setUsersList(false);
-  if (userList) disableElement(userList);
+  if (userList) {
+    disableElement(userList);
+  }
   setUserListLine();
 
   const nowOnlineTitle = getId("nowonline");
-  if (nowOnlineTitle) nowOnlineTitle.style.fontWeight = "bolder";
+  if (nowOnlineTitle) {
+    nowOnlineTitle.style.fontWeight = "bolder";
+  }
 
-  if (isOnMePage) return;
+  if (isOnMePage) {
+    return;
+  }
 
   closeDropdown();
   setisOnMePage(true);
@@ -539,11 +557,14 @@ export function loadDmHome(isChangingUrl = true): void {
   enableElement("dms-title");
   enableElement("dm-container-parent", false, true);
 
-  if (!isMobile) enableElement("guild-container", false, true);
+  if (!isMobile) {
+    enableElement("guild-container", false, true);
+  }
 
   const chanList = getId("channel-list") as HTMLElement;
-  if (cachedFriMenuContent && chanList)
+  if (cachedFriMenuContent && chanList) {
     chanList.innerHTML = cachedFriMenuContent;
+  }
 
   handleResize();
 }

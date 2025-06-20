@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+
 import {
   AttachmentWithMetaData,
   getMessageDate,
@@ -232,7 +233,7 @@ function createReplyBar(
   const replyAvatar = createEl("img", {
     className: "profile-pic reply-avatar",
     id: userId
-  }) as HTMLImageElement;
+  });
 
   setProfilePic(replyAvatar, userId);
   const replyNick = createEl("span", {
@@ -263,7 +264,9 @@ function createReplyBar(
       scrollToMessage(originalMsg);
     } else {
       const replyToId = newMessage.dataset.replyToId;
-      if (!replyToId) return;
+      if (!replyToId) {
+        return;
+      }
 
       const message = cacheInterface.getMessage(
         currentGuildId,
@@ -325,7 +328,9 @@ async function getOldMessagesOnScroll() {
     return;
   }
   const oldestDate = getMessageDate();
-  if (!oldestDate) return;
+  if (!oldestDate) {
+    return;
+  }
   if (oldestDate === "1970-01-01 00:00:00.000000+00:00") {
     return;
   }
@@ -364,7 +369,7 @@ const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
       if (entry.target instanceof HTMLElement) {
-        const target = entry.target as HTMLElement;
+        const target = entry.target;
         if (
           target &&
           entry.isIntersecting &&
@@ -383,7 +388,9 @@ const observer = new IntersectionObserver(
 );
 
 export function observe(element: HTMLElement) {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   observer.observe(element);
 }
 function loadObservedContent(targetElement: HTMLElement) {
@@ -566,8 +573,12 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
 }
 export function closeMediaPanel() {
   const wrapper = getId("media-table-wrapper");
-  if (!wrapper) return;
-  if (!userList) return;
+  if (!wrapper) {
+    return;
+  }
+  if (!userList) {
+    return;
+  }
 
   if (!userList.contains(wrapper)) {
     userList.insertBefore(wrapper, userList.firstChild);
@@ -575,7 +586,9 @@ export function closeMediaPanel() {
   const mediaTitle = getId("media-title");
 
   mediaTitle?.classList.remove("media-open-metadata");
-  if (mediaTitle) wrapper.insertBefore(mediaTitle, wrapper.firstChild);
+  if (mediaTitle) {
+    wrapper.insertBefore(mediaTitle, wrapper.firstChild);
+  }
 
   wrapper.classList.add("media-table-wrapper-on-right");
   enableElement(chatContent, false, true);
@@ -584,13 +597,23 @@ export function openMediaPanel() {
   const wrapper = getId("media-table-wrapper");
   const mediaTitle = getId("media-title");
   const channelInfo = getId("channel-info");
-  if (!wrapper) return;
-  if (!chatContainer) return;
+  if (!wrapper) {
+    return;
+  }
+  if (!chatContainer) {
+    return;
+  }
 
-  if (!channelInfo) return;
-  if (!mediaTitle) return;
+  if (!channelInfo) {
+    return;
+  }
+  if (!mediaTitle) {
+    return;
+  }
 
-  if (!channelInfo) return;
+  if (!channelInfo) {
+    return;
+  }
   if (!chatContainer.contains(wrapper)) {
     chatContainer.appendChild(wrapper);
   }
@@ -734,7 +757,9 @@ function setupScrollHandling(wasAtBottom: boolean) {
 
   const preventScrollJump = () => {
     if (!isUserInteracted) {
-      if (wasAtBottom) scrollToBottom();
+      if (wasAtBottom) {
+        scrollToBottom();
+      }
     }
   };
 
@@ -813,7 +838,7 @@ export function createProfileImageChat(
   const profileImg = createEl("img", {
     className: "profile-pic",
     id: userId
-  }) as HTMLImageElement;
+  });
   setProfilePic(profileImg, userId);
 
   profileImg.style.width = "40px";
@@ -923,7 +948,7 @@ function updateMessageContent(element: HTMLElement, content: string): void {
   element.textContent = formattedMessage;
   element.dataset.content_observe = formattedMessage;
   requestAnimationFrame(() => observe(element));
-  setupEmojiListeners(element);
+  setupEmojiListeners();
 }
 function editChatMessage(data: EditMessageResponse): void {
   const { messageId, content } = data;
@@ -947,7 +972,9 @@ function editChatMessage(data: EditMessageResponse): void {
   addEditedIndicator(messageContentElement);
 }
 function displayChatMessage(data: Message): HTMLElement | null {
-  if (!data || !isValidMessage(data)) return null;
+  if (!data || !isValidMessage(data)) {
+    return null;
+  }
 
   const {
     messageId,
@@ -967,9 +994,15 @@ function displayChatMessage(data: Message): HTMLElement | null {
     isNotSent,
     replyOf
   } = data;
-  if (currentMessagesCache[messageId]) return null;
-  if (!channelId || !date) return null;
-  if (!attachments && content === "" && embeds.length === 0) return null;
+  if (currentMessagesCache[messageId]) {
+    return null;
+  }
+  if (!channelId || !date) {
+    return null;
+  }
+  if (!attachments && content === "" && embeds.length === 0) {
+    return null;
+  }
   const nick = userManager.getUserNick(userId);
 
   const newMessage = createMessageElement(
@@ -1048,7 +1081,9 @@ function displayChatMessage(data: Message): HTMLElement | null {
     replyOf,
     replyToId ?? undefined
   );
-  if (foundReply) return foundReply;
+  if (foundReply) {
+    return foundReply;
+  }
 
   return null;
 }
@@ -1133,10 +1168,13 @@ export function handleSelfSentMessage(data: Message) {
         const msgButton = messagesOptionsButton.querySelector(
           ".message-button"
         ) as HTMLElement;
-        if (msgButton) msgButton.dataset.m_id = data.messageId;
+        if (msgButton) {
+          msgButton.dataset.m_id = data.messageId;
+        }
       }
-      if (data.temporaryId)
+      if (data.temporaryId) {
         editMessageOnContextList(data.temporaryId, data.messageId, data.userId);
+      }
     }
     selfSentMessages.splice(foundMessageIndex, 1);
   }
@@ -1378,7 +1416,9 @@ function fetchReplies(
 }
 
 export function updateChatWidth() {
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
   if (userList.style.display === "none") {
     chatInput.classList.add("user-list-hidden");
     replyInfo.classList.add("reply-user-list-open");
@@ -1402,11 +1442,13 @@ export function getMessageFromChat(top = true): HTMLElement | null {
     message.classList.contains("message")
   );
 
-  if (filteredMessages.length === 0) return null;
+  if (filteredMessages.length === 0) {
+    return null;
+  }
 
   if (top) {
     return filteredMessages.reduce<HTMLElement>((topmost, current) => {
-      const topmostElement = topmost as HTMLElement;
+      const topmostElement = topmost;
       const currentElement = current as HTMLElement;
       return currentElement.offsetTop < topmostElement.offsetTop
         ? currentElement
@@ -1431,13 +1473,13 @@ export function getHistoryFromOneChannel(
     if (messages.length > 0) {
       clearMessagesCache();
 
-      for (const msg of messages as Message[]) {
+      for (const msg of messages) {
         const foundReply = displayChatMessage(msg);
         if (foundReply) {
           repliesList.add(msg.messageId);
         }
       }
-      fetchReplies(messages as Message[], repliesList);
+      fetchReplies(messages, repliesList);
 
       return;
     } else {
@@ -1691,7 +1733,9 @@ export function displayStartMessage(
     }
     chatContent.insertBefore(message, chatContent.firstChild);
     setIsLastMessageStart(true);
-    if (!isOldestMessageDateOnChannel) scrollToBottom();
+    if (!isOldestMessageDateOnChannel) {
+      scrollToBottom();
+    }
   } else {
     if (chatContent.querySelector(".startmessage")) {
       return;
@@ -1707,7 +1751,7 @@ export function displayStartMessage(
     );
     const profileImg = createEl("img", {
       className: "channelIcon"
-    }) as HTMLImageElement;
+    });
     setProfilePic(profileImg, friendsCache.currentDmId);
     const msgdescription = createEl("div", {
       id: "msgDescription",

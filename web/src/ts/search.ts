@@ -30,7 +30,9 @@ export function updateUserMentionDropdown(value: string) {
         ? cacheInterface.getMembers(currentGuildId)
         : getCurrentDmFriends();
 
-      if (!currentUsers) return;
+      if (!currentUsers) {
+        return;
+      }
 
       let usersArray: UserInfo[] = [];
 
@@ -62,7 +64,7 @@ export function updateUserMentionDropdown(value: string) {
         userMentionDropdown.innerHTML = filteredUsers
           .map(
             (user) => `
-              <div class="mention-option" data-userid="${user.userId}" onclick="selectMember('${user.userId}', '${user.nickName}')">
+              <div class="suggestion-option" data-userid="${user.userId}" onclick="selectMember('${user.userId}', '${user.nickName}')">
                 ${user.nickName}
               </div>
             `
@@ -81,7 +83,7 @@ export function updateUserMentionDropdown(value: string) {
 }
 
 export function highlightOption(index: number) {
-  const options = userMentionDropdown.querySelectorAll(".mention-option");
+  const options = userMentionDropdown.querySelectorAll(".suggestion-option");
   options.forEach((option) => option.classList.remove("mention-highlight"));
   if (index >= 0 && index < options.length) {
     options[index].classList.add("mention-highlight");
@@ -101,7 +103,9 @@ export function selectMember(userId: string, userNick: string) {
 }
 
 function getMonthValue(query: string) {
-  if (query.length === 0) return ["Not Specified"];
+  if (query.length === 0) {
+    return ["Not Specified"];
+  }
 
   const lowerCaseQuery = query.toLowerCase();
 
@@ -177,7 +181,9 @@ function filterMembers(query: string): void {
   dateSection3Content.innerHTML = "";
 
   const users = getGuildMembers();
-  if (!users) return;
+  if (!users) {
+    return;
+  }
 
   const filteredUsers = users
     .filter((user) => {

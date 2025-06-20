@@ -1,5 +1,6 @@
 //ui.js
 import DOMPurify from "dompurify";
+
 import {
   activityList,
   isUsersOpenGlobal,
@@ -36,7 +37,8 @@ import {
   getResolution,
   getFileNameFromUrl,
   corsDomainManager,
-  debounce
+  debounce,
+  isURL
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -62,7 +64,7 @@ import { createTooltip } from "./tooltip.ts";
 import { pinMessage } from "./contextMenuActions.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
-import { setWidths, updateChannelsWidth } from "./channels.ts";
+import { setWidths } from "./channels.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -77,8 +79,9 @@ const activeIconHref = "/icons/iconactive.webp";
 const inactiveIconHref = "/icons/icon.webp";
 const favicon = getId("favicon") as HTMLAnchorElement;
 const horizontalLineGuild = getId("horizontal-line-guild") as HTMLElement;
-
+let currentFileName = "";
 let isAddedDragListeners = false;
+
 const imagePreviewContainer = getId(
   "image-preview-container"
 ) as HTMLImageElement;
@@ -92,7 +95,7 @@ function enableLoadingScreen() {
   document.body.appendChild(loadingScreen);
   const loadingElement = createEl("img", {
     id: "loading-element"
-  }) as HTMLImageElement;
+  });
   loadingScreen.appendChild(loadingElement);
   loadingElement.src = "/icons/icon.webp";
 }
@@ -105,8 +108,11 @@ function isLoadingScreen() {
 
 let isEmailToggled = false;
 export function toggleEmail() {
-  const eyeIcon = getId("set-info-email-eye") as HTMLElement;
-  const emailIcon = getId("set-info-email") as HTMLElement;
+  const eyeIcon = getId("set-info-email-eye");
+  const emailIcon = getId("set-info-email");
+  if (!eyeIcon || !emailIcon) {
+    return;
+  }
   isEmailToggled = !isEmailToggled;
   emailIcon.textContent = isEmailToggled
     ? initialState.user.email
@@ -134,7 +140,9 @@ export function handleToggleClick(
 
 export function handleResize() {
   handleMediaPanelResize();
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
 
   const isSmallScreen = window.innerWidth < 1200;
   setUserListLine();
@@ -142,22 +150,32 @@ export function handleResize() {
   if (isSmallScreen) {
     if (!isMobile) {
       disableElement(userList);
-      if (userLine) disableElement(userLine);
-      if (activityList) disableElement(activityList);
+      if (userLine) {
+        disableElement(userLine);
+      }
+      if (activityList) {
+        disableElement(activityList);
+      }
     }
   } else {
     console.log(isUsersOpenGlobal);
     if (isOnMePage) {
-      if (activityList) enableElement(activityList);
+      if (activityList) {
+        enableElement(activityList);
+      }
     } else {
-      if (activityList) disableElement(activityList);
+      if (activityList) {
+        disableElement(activityList);
+      }
     }
   }
   updateChatWidth();
 
   const inputRightToSet = userList.style.display === "flex" ? "463px" : "76px";
   const addFriendInputButton = getId("addfriendinputbutton");
-  if (addFriendInputButton) addFriendInputButton.style.right = inputRightToSet;
+  if (addFriendInputButton) {
+    addFriendInputButton.style.right = inputRightToSet;
+  }
 }
 function handleMobileToolbar() {
   getId("toolbaroptions")
@@ -291,7 +309,9 @@ function createPopupContent(
   };
 
   const handleAccept = () => {
-    if (acceptCallback) acceptCallback();
+    if (acceptCallback) {
+      acceptCallback();
+    }
     if (outerParent && outerParent.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
       document.removeEventListener("keydown", handleEnterKeydown);
@@ -404,37 +424,37 @@ export function openChangePasswordPop() {
   const currentPasswordInputTitle = createEl("p", {
     id: "current-password-input-title",
     textContent: currentPassword
-  }) as HTMLParagraphElement;
+  });
   currentPasswordInputTitle.classList.add("password-title");
 
   const currentInput = createEl("input", {
     id: "current-password-input",
     type: "password"
-  }) as HTMLInputElement;
+  });
   currentInput.classList.add("password-input");
 
   const newInput = createEl("input", {
     id: "new-password-input",
     type: "password"
-  }) as HTMLInputElement;
+  });
   newInput.classList.add("password-input");
 
   const newPasswordInputTitle = createEl("p", {
     id: "new-password-input-title",
     textContent: newPassword
-  }) as HTMLParagraphElement;
+  });
   newPasswordInputTitle.classList.add("password-title");
 
   const newPasswordConfirmTitle = createEl("p", {
     id: "new-password-input-confirm-title",
     textContent: newPasswordConfirm
-  }) as HTMLParagraphElement;
+  });
   newPasswordConfirmTitle.classList.add("password-title");
 
   const newInputConfirm = createEl("input", {
     id: "new-password-input-confirm",
     type: "password"
-  }) as HTMLInputElement;
+  });
   newInputConfirm.classList.add("password-input");
 
   const parentElement = outerParent.firstChild as HTMLElement;
@@ -535,7 +555,9 @@ function focusOnMessage(imageElement: HTMLElement) {
         const imagesMessage = chatContent.querySelector(
           `div[id=${CSS.escape(imagesParent.dataset.messageid)}]`
         ) as HTMLElement;
-        if (imagesMessage) scrollToMessage(imagesMessage);
+        if (imagesMessage) {
+          scrollToMessage(imagesMessage);
+        }
       }
     }, 50);
   } else {
@@ -553,6 +575,7 @@ function focusOnMessage(imageElement: HTMLElement) {
     }, 50);
   }
 }
+
 function setupPreviewMetadata(
   imageElement: HTMLImageElement,
   sourceImage: string,
@@ -582,6 +605,8 @@ function setupPreviewMetadata(
     imageElement.dataset.filename ||
     getFileNameFromUrl(sourceImage) ||
     sourceImage;
+
+  currentFileName = sourceImage;
   if (descriptionName && filename) {
     descriptionName.textContent = filename;
     descriptionName.addEventListener("mouseover", () =>
@@ -646,7 +671,9 @@ let startY = 0;
 function toggleZoom() {
   console.error(isPreviewZoomed);
   const previewImage = getId("preview-image");
-  if (!previewImage) return;
+  if (!previewImage) {
+    return;
+  }
   isPreviewZoomed = !isPreviewZoomed;
   if (isPreviewZoomed) {
     previewImage.classList.add("zoomed");
@@ -671,14 +698,16 @@ function handlePreviewDownloadButton(sanitizedSourceImage: string) {
   const previewImage = getId("preview-image") as HTMLImageElement;
 
   previewImageDownload.onclick = async () => {
-    if (!sanitizedSourceImage) return;
+    if (!sanitizedSourceImage) {
+      return;
+    }
 
     try {
       if (previewImage?.complete && previewImage.naturalWidth !== 0) {
         const canvas = createEl("canvas", {
           width: previewImage.naturalWidth,
           height: previewImage.naturalHeight
-        }) as HTMLCanvasElement;
+        });
 
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(previewImage, 0, 0);
@@ -715,10 +744,12 @@ function handlePreviewDownloadButton(sanitizedSourceImage: string) {
 
 function handlePreviewOpenButton(sanitizedSourceImage: string) {
   const previewOpenButton = getId("preview-image-open") as HTMLButtonElement;
+  const previewImage = getId("preview-image") as HTMLImageElement;
 
   previewOpenButton.onclick = () => {
     if (sanitizedSourceImage) {
-      router.openLink(sanitizedSourceImage);
+      const link = isURL(currentFileName) ? currentFileName : "";
+      router.openLink(link, previewImage);
     }
   };
 }
@@ -728,6 +759,18 @@ function handleKeyDown(event: KeyboardEvent) {
   }
 }
 document.addEventListener("keydown", handleKeyDown);
+export async function displayImagePreviewBlob(imageElement: HTMLImageElement) {
+  const blobUrl = imageElement.src;
+  const response = await fetch(blobUrl);
+  const blob = await response.blob();
+
+  const objectUrl = URL.createObjectURL(blob);
+  const newImage = createEl("img", { src: objectUrl });
+
+  await displayImagePreview(newImage);
+  URL.revokeObjectURL(objectUrl);
+}
+
 export async function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
@@ -802,7 +845,9 @@ function addEventListeners(
   handlePreviewDownloadButton(sanitizedSourceImage);
 
   setupReplyButton(imageElement, senderId);
-  if (isAddedDragListeners) return;
+  if (isAddedDragListeners) {
+    return;
+  }
   isAddedDragListeners = true;
   setupImagePreviewDrag(previewImage);
 }
@@ -844,7 +889,9 @@ function setupReplyButton(
         const messageId = (
           imageElement.parentElement?.parentElement as HTMLElement
         ).id;
-        if (senderId && messageId) showReplyMenu(messageId, senderId);
+        if (senderId && messageId) {
+          showReplyMenu(messageId, senderId);
+        }
       }
     };
   }
@@ -948,7 +995,9 @@ function getImages(): HTMLImageElement[] {
 
 function moveToNextImage() {
   const images = getImages();
-  if (images.length === 0) return;
+  if (images.length === 0) {
+    return;
+  }
 
   if (isOnMediaPanel) {
     currentMediaPreviewIndex = (currentMediaPreviewIndex + 1) % images.length;
@@ -967,7 +1016,9 @@ function moveToNextImage() {
 
 function moveToPreviousImage() {
   const images = getImages();
-  if (images.length === 0) return;
+  if (images.length === 0) {
+    return;
+  }
 
   if (isOnMediaPanel) {
     currentMediaPreviewIndex =
@@ -1081,7 +1132,7 @@ export function openGuildSettingsDropdown(event: Event) {
   toggleDropdown();
 
   if (clickedId in handlers) {
-    handlers[clickedId as keyof typeof handlers]();
+    handlers[clickedId]();
   }
 }
 
@@ -1136,7 +1187,9 @@ document.addEventListener("touchend", (e: TouchEvent) => {
   previewSlideEndX = e.changedTouches[0].clientX;
   const diff = previewSlideEndX - previewSlideStartX;
 
-  if (Math.abs(diff) < 50) return;
+  if (Math.abs(diff) < 50) {
+    return;
+  }
 
   if (isImagePreviewOpen()) {
     if (diff > 50) {
@@ -1213,7 +1266,9 @@ export function handleMembersClick() {
   isMobile ? toggleHamburger(false, !isOnLeft) : toggleUsersList();
 }
 export function toggleHamburger(toLeft: boolean, toRight: boolean) {
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
 
   if (isOnRight) {
     disableElement(mobileBlackBg);
@@ -1254,7 +1309,9 @@ export function isOnCenter(): boolean {
   return !isOnLeft && !isOnRight;
 }
 function mobileMoveToRight() {
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
   isOnLeft = false;
   isOnRight = true;
 
@@ -1263,7 +1320,9 @@ function mobileMoveToRight() {
 }
 
 function mobileMoveToCenter(excludeChannelList: boolean = false) {
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
 
   isOnRight = false;
   isOnLeft = false;
@@ -1296,7 +1355,9 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
 }
 
 function mobileMoveToLeft() {
-  if (!userList) return;
+  if (!userList) {
+    return;
+  }
 
   isOnLeft = true;
   isOnRight = false;
@@ -1396,7 +1457,20 @@ function initialiseListeners() {
     toggleHamburger(!isOnLeft, !isOnRight);
   });
 }
+function updateDmContainers() {
+  const par = getId("dm-container-parent");
 
+  if (par) {
+    const dmContainers = par.querySelectorAll(".dm-container");
+    const width = getCurrentWidth();
+
+    dmContainers.forEach((el) => {
+      if (el instanceof HTMLDivElement) {
+        (el as HTMLElement).style.width = `${width + 80}px`;
+      }
+    });
+  }
+}
 function updateUIWidths(newWidth: number) {
   const hashSign = getId("hash-sign");
   if (hashSign) {
@@ -1422,6 +1496,17 @@ function updateUIWidths(newWidth: number) {
   if (fileBtn) {
     fileBtn.style.left = `${newWidth + 200}px`;
   }
+  const profsign = getId("dm-profile-sign");
+  if (profsign) {
+    profsign.style.left = `${newWidth + 180}px`;
+  }
+
+  const bubble = getId("dm-profile-sign-bubble");
+  if (bubble) {
+    bubble.style.left = `${newWidth + 195}px`;
+  }
+
+  updateDmContainers();
 }
 
 function setAllWidths(newWidth: number) {
@@ -1429,26 +1514,36 @@ function setAllWidths(newWidth: number) {
   updateUIWidths(newWidth);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
+export const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
+
+export function getCurrentWidth(): number {
+  const savedWidth = localStorage.getItem("channelListWidth");
+  const initialWidth = savedWidth ? clamp(parseInt(savedWidth, 10)) : 150;
+
+  return initialWidth;
+}
+export const handleResizeWidth = () => {
+  if (!channelList) {
+    return;
+  }
+
+  const computedStyle = window.getComputedStyle(channelList);
+  const currentWidth = clamp(parseInt(computedStyle.width, 10));
+  setAllWidths(currentWidth);
+  localStorage.setItem("channelListWidth", currentWidth.toString());
+};
+
+export function initialiseChannelDrag() {
+  if (!channelList) {
+    return;
+  }
 
   const savedWidth = localStorage.getItem("channelListWidth");
   const initialWidth = savedWidth ? clamp(parseInt(savedWidth, 10)) : 150;
   setAllWidths(initialWidth);
 
-  const handleResize = () => {
-    const channelList = document.getElementById("channel-list");
-    if (!channelList) return;
-
-    const computedStyle = window.getComputedStyle(channelList);
-    const currentWidth = clamp(parseInt(computedStyle.width, 10));
-    setAllWidths(currentWidth);
-    localStorage.setItem("channelListWidth", currentWidth.toString());
-  };
-
   window.addEventListener("resize", debounce(handleResize, 150));
 
-  const channelList = document.getElementById("channel-list");
   if (channelList) {
     channelList.addEventListener("mousedown", (e) => {
       let isDragging = true;
@@ -1459,16 +1554,18 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.style.userSelect = "none";
 
       const onMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return;
+        if (!isDragging) {
+          return;
+        }
 
-        let newWidth = clamp(startWidth + (e.clientX - startX));
+        const newWidth = clamp(startWidth + (e.clientX - startX));
         setAllWidths(newWidth);
       };
 
       const onMouseUp = () => {
         isDragging = false;
-        const computedStyle = window.getComputedStyle(channelList);
-        const finalWidth = clamp(parseInt(computedStyle.width, 10));
+        const computed = window.getComputedStyle(channelList);
+        const finalWidth = clamp(parseInt(computed.width, 10));
         localStorage.setItem("channelListWidth", finalWidth.toString());
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
@@ -1479,4 +1576,4 @@ document.addEventListener("DOMContentLoaded", () => {
       document.addEventListener("mouseup", onMouseUp);
     });
   }
-});
+}

@@ -1,4 +1,5 @@
 import confettiImport from "canvas-confetti";
+
 import {
   blackImage,
   getId,
@@ -109,7 +110,7 @@ class ToggleManager {
     if (this.states["snow-toggle"]) {
       this.startSnowEffect();
     }
-    let savedValue = readTransparencyValue();
+    const savedValue = readTransparencyValue();
     if (this.states["video-toggle"]) {
       setTimeout(() => {
         createBGVideo(savedValue);
@@ -265,8 +266,9 @@ class ToggleManager {
     let skew = 1;
 
     const frame = () => {
-      if (!ToggleManager.getInstance().states["snow-toggle"] || !isDomLoaded)
+      if (!ToggleManager.getInstance().states["snow-toggle"] || !isDomLoaded) {
         return;
+      }
 
       skew = Math.max(0.8, skew - 0.001);
       confetti({
@@ -307,10 +309,12 @@ export function initializeCookies() {
     toggleManager.setupToggle(key as keyof ToggleState);
   });
 
-  if (toggleManager.states["snow-toggle"])
+  if (toggleManager.states["snow-toggle"]) {
     toggleManager.toggleEffect("snow", true);
-  if (toggleManager.states["party-toggle"])
+  }
+  if (toggleManager.states["party-toggle"]) {
     toggleManager.toggleEffect("party", true);
+  }
 
   const black = isBlackTheme();
   selectTheme(black ? Themes.Dark : Themes.Ash);
@@ -331,7 +335,9 @@ export function triggerFileInput() {
 }
 
 export function triggerGuildImageUpdate() {
-  if (!permissionManager.canManageGuild()) return;
+  if (!permissionManager.canManageGuild()) {
+    return;
+  }
   const guildImageInput = getGuildImageFile();
   if (guildImageInput) {
     guildImageInput.click();
@@ -387,11 +393,15 @@ function removeguildImage() {
   apiClient.send(EventType.DELETE_GUILD_IMAGE, { guildId: currentGuildId });
   clearAvatarInput(true);
   const guildImg = getGuildImage();
-  if (guildImg) guildImg.src = blackImage;
+  if (guildImg) {
+    guildImg.src = blackImage;
+  }
 }
 
 function changeNickname() {
-  if (changeNicknameTimeout) return;
+  if (changeNicknameTimeout) {
+    return;
+  }
 
   const newNicknameInput = getId("new-nickname-input") as HTMLInputElement;
   const newNickname = newNicknameInput.value.trim();
@@ -401,7 +411,9 @@ function changeNickname() {
     refreshUserProfile(currentUserId, newNickname);
     userManager.setUserNick(newNickname);
     const setInfoNick = getId("set-info-nick");
-    if (setInfoNick) setInfoNick.innerText = newNickname;
+    if (setInfoNick) {
+      setInfoNick.innerText = newNickname;
+    }
     updateSelfName(newNickname);
     apiClient.send(EventType.CHANGE_NICK, { newNickname });
     newNicknameInput.value = newNickname;
@@ -413,7 +425,9 @@ function changeNickname() {
 }
 
 function changeGuildName() {
-  if (changeGuildNameTimeout) return;
+  if (changeGuildNameTimeout) {
+    return;
+  }
   const newGuildInput = getId("guild-overview-name-input") as HTMLInputElement;
   if (!newGuildInput) {
     console.warn("Guild input does not exist");
@@ -434,7 +448,9 @@ function changeGuildName() {
   }
 }
 function changeChannelName() {
-  if (changeChannelNameTimeout) return;
+  if (changeChannelNameTimeout) {
+    return;
+  }
   const channelNameInput = getId(
     "channel-overview-name-input"
   ) as HTMLInputElement;

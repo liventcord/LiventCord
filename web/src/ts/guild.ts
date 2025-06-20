@@ -228,7 +228,9 @@ export function joinToGuild(inviteId: string) {
 const leftGuilds = new Set<string>();
 
 export function leaveCurrentGuild() {
-  if (leftGuilds.has(currentGuildId)) return;
+  if (leftGuilds.has(currentGuildId)) {
+    return;
+  }
 
   leftGuilds.add(currentGuildId);
   apiClient.send(EventType.LEAVE_GUILD, { guildId: currentGuildId });
@@ -252,14 +254,18 @@ export function addKeybinds() {
   const guilds = Array.from(document.querySelectorAll("#guilds-list img"));
 
   const handler = (event: KeyboardEvent) => {
-    if (!event.shiftKey) return;
+    if (!event.shiftKey) {
+      return;
+    }
 
     const key = event.key;
 
     if (key === "ArrowUp" || key === "ArrowDown") {
       event.preventDefault();
 
-      if (isGuildKeyDown) return;
+      if (isGuildKeyDown) {
+        return;
+      }
 
       if (key === "ArrowUp") {
         currentGuildIndex =
@@ -288,7 +294,9 @@ export function removeFromGuildList(guildId: string) {
   console.log(guildsList, guildImg);
   if (guildImg) {
     const parentLi = guildImg.closest("li");
-    if (parentLi) parentLi.remove();
+    if (parentLi) {
+      parentLi.remove();
+    }
   }
 }
 
@@ -302,15 +310,17 @@ export function updateGuildImage(uploadedGuildId: string) {
 }
 
 export function selectGuildList(guildId: string): void {
-  if (!guildsList) return;
+  if (!guildsList) {
+    return;
+  }
 
-  const foundGuilds = Array.from(
-    guildsList.querySelectorAll("img")
-  ) as HTMLImageElement[];
+  const foundGuilds = Array.from(guildsList.querySelectorAll("img"));
 
   for (const guild of foundGuilds) {
     const guildParent = guild.parentElement;
-    if (!guildParent) continue;
+    if (!guildParent) {
+      continue;
+    }
     if (guild.id === guildId) {
       wrapWhiteRod(guildParent);
       guildParent.classList.add("selected-guild");
@@ -321,9 +331,7 @@ export function selectGuildList(guildId: string): void {
   }
 }
 export function createGuildContextLists() {
-  const foundGuilds = Array.from(
-    guildsList.querySelectorAll("img")
-  ) as HTMLImageElement[];
+  const foundGuilds = Array.from(guildsList.querySelectorAll("img"));
   for (const guild of foundGuilds) {
     appendToGuildContextList(guild.id);
   }
@@ -339,7 +347,7 @@ export const createGuildListItem = (
   const imgElement = createEl("img", {
     id: guildId,
     className: "guild-image"
-  }) as HTMLImageElement;
+  });
 
   setGuildImage(guildId, imgElement, isUploaded);
 
@@ -414,21 +422,29 @@ export function updateGuilds(guildsJson: Array<any>) {
 }
 
 export function wrapWhiteRod(element: HTMLElement) {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   if (!element.querySelector(".white-rod")) {
     const whiteRod = createEl("div", { className: "white-rod" });
     element.appendChild(whiteRod);
   }
 }
 function removeWhiteRod(element: HTMLElement) {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   const whiteRod = element.querySelector(".white-rod");
-  if (!whiteRod) return;
+  if (!whiteRod) {
+    return;
+  }
   whiteRod.remove();
 }
 
 function appendToGuildList(guild: Guild) {
-  if (getGuildFromBar(guild.guildId)) return;
+  if (getGuildFromBar(guild.guildId)) {
+    return;
+  }
 
   const listItem = createGuildListItem(
     guild.guildId,

@@ -181,16 +181,22 @@ class GuildMembersCache extends BaseCache {
   updateMemberId(guildId: string, memberId: string, add = true): void {
     const memberIds = this.getMemberIds(guildId);
     const index = memberIds.indexOf(memberId);
-    if (add && index === MINUS_INDEX) memberIds.push(memberId);
-    else if (!add && index !== MINUS_INDEX) memberIds.splice(index, 1);
+    if (add && index === MINUS_INDEX) {
+      memberIds.push(memberId);
+    } else if (!add && index !== MINUS_INDEX) {
+      memberIds.splice(index, 1);
+    }
     this.setMemberIds(guildId, memberIds);
   }
 
   updateMember(guildId: string, member: Member, add = true): void {
     const members = this.getMembers(guildId);
     const index = members.findIndex((m) => m.userId === member.userId);
-    if (add && index === MINUS_INDEX) members.push(member);
-    else if (!add && index !== MINUS_INDEX) members.splice(index, 1);
+    if (add && index === MINUS_INDEX) {
+      members.push(member);
+    } else if (!add && index !== MINUS_INDEX) {
+      members.splice(index, 1);
+    }
     this.setMembers(guildId, members);
   }
 
@@ -316,7 +322,7 @@ class VoiceChannelCache extends BaseCache {
 }
 
 class SharedGuildsCache extends BaseCache {
-  private guildFriendIdsMap: Map<string, string[]> = new Map();
+  private readonly guildFriendIdsMap: Map<string, string[]> = new Map();
 
   hasSharedGuild(friendId: string): boolean {
     const friendGuildIds = new Set<string>(
@@ -495,7 +501,9 @@ class GuildCache {
   }
 
   getGuild(guildId: string): CacheGuild | null {
-    if (!guildId) return null;
+    if (!guildId) {
+      return null;
+    }
     if (!this.guilds[guildId]) {
       this.guilds[guildId] = new CacheGuild(guildId, "Default Guild", false);
     }
@@ -543,7 +551,7 @@ class GuildCacheInterface {
     this.guildCache.addGuild({
       guildId,
       guildName,
-      isGuildUploadedImg: isGuildUploadedImg
+      isGuildUploadedImg
     });
   }
   removeGuild(guildId: string) {
@@ -605,7 +613,9 @@ class GuildCacheInterface {
 
   // Voice
   getVoiceChannelMembers(channelId: string): string[] | null {
-    if (!channelId) return null;
+    if (!channelId) {
+      return null;
+    }
     const guilds = Object.values(this.guildCache.guilds);
 
     for (const guild of guilds) {
@@ -621,14 +631,17 @@ class GuildCacheInterface {
   }
 
   setVoiceChannelMembers(channelId: string, usersArray: string[]): void {
-    if (!channelId) return;
+    if (!channelId) {
+      return;
+    }
     const guilds = Object.values(this.guildCache.guilds);
 
     guilds.forEach((guild) => {
       if (guild.voiceChannels && guild.voiceChannels.channelId === channelId) {
         usersArray.forEach((userId) => {
-          if (guild.voiceChannels)
+          if (guild.voiceChannels) {
             guild.voiceChannels.addUserToVoiceChannel(userId);
+          }
         });
       }
     });
@@ -844,7 +857,6 @@ export function setMessagesCache(id: string, msg: HTMLElement) {
 export function clearMessagesCache() {
   currentMessagesCache = {};
 }
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
 
 export const replyCache: Record<string, MessageReply> = {};
 

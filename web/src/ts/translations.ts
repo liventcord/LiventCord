@@ -6,7 +6,6 @@ import {
   saveCookie
 } from "./utils.ts";
 import { alertUser } from "./ui.ts";
-
 import enTranslations from "./../translations/en.json";
 import trTranslations from "./../translations/tr.json";
 
@@ -245,7 +244,9 @@ class Translations {
   }
 
   setLanguage(language: string) {
-    if (!language) return;
+    if (!language) {
+      return;
+    }
 
     console.log(`Selected Language: ${language}`);
     this.currentLanguage = language;
@@ -256,8 +257,7 @@ class Translations {
   async loadTranslations(language: string) {
     language = language[0].toUpperCase() + language.slice(1).toLowerCase();
 
-    const selectedTranslations =
-      translationsMap[language as keyof typeof translationsMap];
+    const selectedTranslations = translationsMap[language];
 
     this.textTranslations = selectedTranslations.textTranslations;
     this.friendErrorTranslations = selectedTranslations.friendErrorTranslations;
@@ -305,7 +305,7 @@ class Translations {
 
     if (typeof result === "object" && result !== null && "default" in result) {
       console.log("Found object with default:", result);
-      return result.default as string;
+      return result.default;
     }
 
     console.log("Found direct string:", result);

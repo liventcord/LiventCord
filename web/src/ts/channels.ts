@@ -8,9 +8,10 @@ import {
   clearLastDate,
   closeMediaPanel
 } from "./chat.ts";
+import { isUsersOpenGlobal } from "./userList.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
-import { muteHtml, inviteVoiceHtml, selectedChanColor } from "./ui.ts";
+import { muteHtml, inviteVoiceHtml, selectedChanColor, clamp } from "./ui.ts";
 import { createUserContext } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
@@ -113,17 +114,25 @@ export function handleNewChannel(data: Channel) {
 }
 function selectChannelElement(channelId: string) {
   const channelsUl = getChannelsUl();
-  if (!channelsUl) return;
+  if (!channelsUl) {
+    return;
+  }
   const channel = channelsUl.querySelector(
     `#${CSS.escape(channelId)}`
   ) as HTMLElement;
   console.log(channel);
-  if (!channel) return;
+  if (!channel) {
+    return;
+  }
   channel.style.backgroundColor = selectedChanColor();
 }
 export async function changeChannel(newChannel?: ChannelData) {
-  if (!newChannel) return;
-  if (!newChannel.isTextChannel) return;
+  if (!newChannel) {
+    return;
+  }
+  if (!newChannel.isTextChannel) {
+    return;
+  }
   console.log("Changed channel: ", newChannel);
   if (isOnMePage || isOnDm) {
     return;
@@ -136,7 +145,9 @@ export async function changeChannel(newChannel?: ChannelData) {
 
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
-  if (isTextChannel) router.switchToGuild(currentGuildId, channelId);
+  if (isTextChannel) {
+    router.switchToGuild(currentGuildId, channelId);
+  }
   const newChannelName = newChannel.channelName;
   setReachedChannelEnd(false);
 
@@ -211,7 +222,9 @@ function setCurrentChannel(channelId: string) {
 
 function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
-  if (isKeyDown || isOnMePage) return;
+  if (isKeyDown || isOnMePage) {
+    return;
+  }
   currentChannels.forEach((channel, index) => {
     const hotkey =
       index < ALPHA_KEYS_MAX
@@ -347,7 +360,9 @@ function removeChannel(data: ChannelData) {
 
   if (guildCache.currentChannelId === channelId) {
     const firstChannel = channelsArray[0]?.channelId;
-    if (firstChannel) loadGuild(currentGuildId, firstChannel);
+    if (firstChannel) {
+      loadGuild(currentGuildId, firstChannel);
+    }
   }
 }
 
@@ -367,7 +382,9 @@ function addChannelsOnState(channels: Channel[]) {
 
 export function updateChannels(channels: Channel[]) {
   console.log("Updating channels with:", channels);
-  if (!isOnMePage) disableElement("dm-container-parent");
+  if (!isOnMePage) {
+    disableElement("dm-container-parent");
+  }
 
   if (Array.isArray(channels) && channels.every(isValidChannelData)) {
     addChannelsOnState(channels);
@@ -378,7 +395,9 @@ export function updateChannels(channels: Channel[]) {
 export function handleChannelDelete(data: ChannelData) {
   const guildId = data.guildId;
   const channelId = data.channelId;
-  if (!guildId || !channelId) return;
+  if (!guildId || !channelId) {
+    return;
+  }
   closeSettings();
   if (guildCache.currentChannelId === channelId) {
     const rootChannel = cacheInterface.getRootChannel(guildId);
@@ -434,7 +453,7 @@ function drawVoiceChannelUser(
   const userElement = createEl("img", {
     style:
       "width: 25px; height: 25px; border-radius: 50px; position:fixed; margin-right: 170px;"
-  }) as HTMLImageElement;
+  });
   setProfilePic(userElement, userId);
   userContainer.appendChild(userElement);
   userContainer.style.marginTop = index === 0 ? "30px" : "10px";
@@ -465,17 +484,20 @@ function drawVoiceChannelUser(
 }
 
 export function setWidths(newWidth: number) {
+  console.log("Called width");
   const userInput = getId("user-input");
   const guildContainer = getId("guild-container");
-  const containerWidth = window.innerWidth;
 
   if (channelList) {
     channelList.style.width = `${newWidth}px`;
   }
 
   if (userInput) {
-    const userInputWidth = containerWidth - newWidth - 200;
-    userInput.style.width = `${userInputWidth}px`;
+    userInput.style.width = isUsersOpenGlobal
+      ? `calc(100vw - ${newWidth}px - 435px)`
+      : `calc(100vw - ${newWidth}px - 200px)`;
+
+    userInput.style.left = isUsersOpenGlobal ? "19.79vw" : "";
   }
 
   if (guildContainer) {
@@ -493,10 +515,10 @@ export function updateChannelsWidth(e: MouseEvent) {
 
   document.body.style.userSelect = "none";
 
-  const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
-
   const onMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging) {
+      return;
+    }
 
     let newWidth = startWidth + (e.clientX - startX);
     newWidth = clamp(newWidth);

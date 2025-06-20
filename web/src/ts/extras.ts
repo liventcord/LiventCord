@@ -17,8 +17,12 @@ export const currentVideoUrl =
 
 function addErrorIcon() {
   const input = getId("video-url-input");
-  if (!input) return;
-  if (input.querySelector("div.fa-exclamation-circle")) return;
+  if (!input) {
+    return;
+  }
+  if (input.querySelector("div.fa-exclamation-circle")) {
+    return;
+  }
   const errorElement = createEl("div");
   errorElement.style.color = "red";
   errorElement.style.fontSize = "24px";
@@ -33,7 +37,9 @@ export function removeVideoErrorIcon() {
 }
 
 export function createBGVideo(transparencyValue?: string | null) {
-  if (document.querySelector(".background-video")) return;
+  if (document.querySelector(".background-video")) {
+    return;
+  }
 
   const video = createEl("video", {
     className: "background-video",
@@ -41,12 +47,12 @@ export function createBGVideo(transparencyValue?: string | null) {
     muted: true,
     loop: true,
     playsInline: true
-  }) as HTMLVideoElement;
+  });
 
   const source = createEl("source", {
     src: currentVideoUrl,
     type: "video/webm"
-  }) as HTMLSourceElement;
+  });
 
   video.appendChild(source);
 
@@ -69,15 +75,21 @@ export function createBGVideo(transparencyValue?: string | null) {
 
 export function updateVideoTransparency(value: string) {
   console.log("Updated transparency to: ", value);
-  if (!bgVideoElement) return;
+  if (!bgVideoElement) {
+    return;
+  }
   currentBGTransparency = value;
   bgVideoElement.style.opacity = value;
 }
 
 export function onEditVideoUrl(value: string) {
-  if (!bgVideoElement) return;
+  if (!bgVideoElement) {
+    return;
+  }
   const source = bgVideoElement.querySelector("source");
-  if (!source) return;
+  if (!source) {
+    return;
+  }
   if (!isValidUrl(value)) {
     console.warn("Invalid URL format:", value);
     return;
@@ -87,7 +99,9 @@ export function onEditVideoUrl(value: string) {
 }
 
 export function disableBgVideo() {
-  if (!bgVideoElement) return;
+  if (!bgVideoElement) {
+    return;
+  }
   bgVideoElement.pause();
   bgVideoElement.remove();
   bgVideoElement = null;
@@ -95,11 +109,17 @@ export function disableBgVideo() {
 
 export function setTheme(isDark: boolean) {
   const toggleClass = (el: any, cls: string) => {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     if (isDark) {
-      if (!el.classList.contains(cls)) el.classList.add(cls);
+      if (!el.classList.contains(cls)) {
+        el.classList.add(cls);
+      }
     } else {
-      if (el.classList.contains(cls)) el.classList.remove(cls);
+      if (el.classList.contains(cls)) {
+        el.classList.remove(cls);
+      }
     }
   };
 
@@ -110,7 +130,9 @@ export function setTheme(isDark: boolean) {
   setTimeout(() => {
     const friendInfo = getId("channel-info-container-for-friend");
     toggleClass(friendInfo?.children[0], "black-theme");
-    if (isDark) console.warn(friendInfo?.classList);
+    if (isDark) {
+      console.warn(friendInfo?.classList);
+    }
   }, 100);
 
   toggleClass(getId("channel-list"), "black-theme-3");
@@ -186,7 +208,9 @@ const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
 
 export function popKeyboardConfetti() {
   const selectionStart = chatInput.selectionStart;
-  if (!selectionStart) return;
+  if (!selectionStart) {
+    return;
+  }
   const { x, y } = getCursorXY(chatInput, selectionStart);
   const inputRect = chatInput.getBoundingClientRect();
 
