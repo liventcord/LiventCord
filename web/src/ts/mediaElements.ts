@@ -313,6 +313,7 @@ async function createVideoElement(url: string, isVideoAttachment = false) {
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
+  videoElement.loop = true;
   videoElement.playsInline = true;
 
   const downloadButton = createEl("a", {

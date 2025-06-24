@@ -47,7 +47,6 @@
           <img
             v-if="failedVideos[attachment.attachment.fileId]"
             :src="getVideoFallbackImg()"
-            @click="handleImageClick(attachment)"
             class="fallback-image"
           />
         </div>
@@ -178,6 +177,7 @@ const handleMediaButtonClick = () => {
 };
 
 const handleImageClick = (attachment) => {
+  if (attachment.attachment.isVideoFile) return;
   const mediaGrid = getId("media-grid");
   if (!mediaGrid) return;
   const parent = mediaGrid.querySelector(
