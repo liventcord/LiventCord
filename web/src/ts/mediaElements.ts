@@ -206,7 +206,7 @@ async function createImageElement(
   });
 
   const match = urlSrc.match(attachmentPattern);
-  urlSrc = match ? urlSrc : await corsDomainManager.getProxy(urlSrc);
+  urlSrc = match ? urlSrc : urlSrc;
 
   const regex = /\/attachments\/(\d+)/;
   const matchPure = urlSrc.match(regex);
@@ -222,16 +222,28 @@ async function createImageElement(
   ) {
     imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   } else {
-    loadImageWithRetry(urlSrc, 3)
-      .then((loadedImg) => {
-        imgElement.src = loadedImg.src;
-      })
-      .catch(() => {
-        imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
-      });
+    await tryLoadImageWithFallback(urlSrc, imgElement);
   }
 
   return imgElement;
+}
+
+async function tryLoadImageWithFallback(
+  urlSrc: string,
+  imgElement: HTMLImageElement
+) {
+  try {
+    const loadedImg = await loadImageWithRetry(urlSrc, 3);
+    imgElement.src = loadedImg.src;
+  } catch {
+    try {
+      const proxyUrl = await corsDomainManager.getProxy(urlSrc);
+      const proxiedImg = await loadImageWithRetry(proxyUrl, 1);
+      imgElement.src = proxiedImg.src;
+    } catch {
+      imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+    }
+  }
 }
 
 function createAudioElement(audioURL: string) {

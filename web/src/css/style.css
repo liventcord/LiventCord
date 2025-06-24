@@ -859,7 +859,7 @@ body.black-theme .base-user-input {
     display: none;
   }
   .channel-list-mobile-left {
-    width: 155px !important;
+    width: 200px !important;
   }
   .chat-container-mobile-left {
     display: flex !important;
@@ -1067,7 +1067,7 @@ body.black-theme .base-user-input {
 }
 
 #mobile-black-bg {
-  z-index: 1;
+  z-index: 0;
   background-color: #00000073;
 }
 

@@ -15,15 +15,40 @@
           class="image-box"
           :data-isspoiler="attachment.attachment.isSpoiler"
         >
-          <img
+          <component
+            v-if="
+              !failedVideos[attachment.attachment.fileId] &&
+              (attachment.attachment.isImageFile ||
+                attachment.attachment.isVideoFile)
+            "
+            :is="
+              attachment.attachment.isImageFile
+                ? 'img'
+                : attachment.attachment.isVideoFile
+                  ? 'video'
+                  : null
+            "
             :src="getAttachmentSrc(attachment)"
-            alt="Image"
             :data-filesize="attachment.attachment.fileSize"
             @click="handleImageClick(attachment)"
             ref="imageBox"
             :style="{
               filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
             }"
+            v-bind="attachment.attachment.isVideoFile ? { controls: true } : {}"
+            v-bind:alt="attachment.attachment.isImageFile ? 'Image' : undefined"
+            @error="
+              attachment.attachment.isVideoFile
+                ? onVideoError(attachment.attachment.fileId)
+                : null
+            "
+          />
+
+          <img
+            v-if="failedVideos[attachment.attachment.fileId]"
+            :src="getVideoFallbackImg()"
+            @click="handleImageClick(attachment)"
+            class="fallback-image"
           />
         </div>
       </div>
@@ -78,7 +103,7 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import { getId, isTenorURL } from "../ts/utils.ts";
+import { getId, IMAGE_SRCS, isTenorURL } from "../ts/utils.ts";
 import { displayImagePreview } from "../ts/ui.ts";
 import { fetchMoreAttachments } from "../ts/message.ts";
 import {
@@ -106,6 +131,15 @@ const currentPage = computed(() => store.getters.currentPage);
 const pageSize = 50;
 
 const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
+
+const failedVideos = {};
+
+function onVideoError(fileId) {
+  failedVideos[fileId] = true;
+}
+function getVideoFallbackImg() {
+  return IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+}
 
 const loadMoreMedia = async () => {
   loading.value = true;
@@ -344,6 +378,14 @@ watch(
   object-fit: cover;
   border-radius: 5px;
   transition: opacity 0.3s ease;
+}
+.image-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  transition: opacity 0.3s ease;
+  display: block;
 }
 
 .image-box:hover img {
