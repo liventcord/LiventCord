@@ -748,7 +748,9 @@ function handlePreviewOpenButton(sanitizedSourceImage: string) {
 
   previewOpenButton.onclick = () => {
     if (sanitizedSourceImage) {
-      const link = isURL(currentFileName) ? currentFileName : "";
+      const link = isURL(currentFileName)
+        ? currentFileName
+        : sanitizedSourceImage;
       router.openLink(link, previewImage);
     }
   };
