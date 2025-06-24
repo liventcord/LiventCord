@@ -7,7 +7,7 @@ import {
   saveBooleanCookie
 } from "./utils.ts";
 import { isOnMePage } from "./router.ts";
-import { updateChatWidth } from "./chat.ts";
+import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
 import {
@@ -109,6 +109,7 @@ export function setUsersList(
   updateMediaPanelPosition();
   handleResize();
   handleResizeWidth();
+  fetchCurrentAttachments();
 }
 export function updateDmFriendList(friendId: string, friendNick: string) {
   const usersData = [

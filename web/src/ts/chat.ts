@@ -63,7 +63,7 @@ import {
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
-import { userList } from "./userList.ts";
+import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
 import { constructUserData, drawProfilePopId } from "./popups.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
@@ -597,6 +597,7 @@ export function openMediaPanel() {
   const wrapper = getId("media-table-wrapper");
   const mediaTitle = getId("media-title");
   const channelInfo = getId("channel-info");
+
   if (!wrapper) {
     return;
   }
@@ -1494,16 +1495,17 @@ let timeoutId: number | null = null;
 export function fetchMessages(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 
-  const requestData = {
+  const requestData: any = {
     channelId,
     isDm,
     guildId: "",
     friendId: ""
   };
+
   if (isOnGuild) {
-    requestData["guildId"] = currentGuildId;
+    requestData.guildId = currentGuildId;
   } else if (isOnDm) {
-    requestData["friendId"] = friendsCache.currentDmId;
+    requestData.friendId = friendsCache.currentDmId;
   }
 
   if (timeoutId !== null) {
@@ -1511,7 +1513,7 @@ export function fetchMessages(channelId: string, isDm = false) {
   }
 
   timeoutId = setTimeout(() => {
-    hasJustFetchedMessages = false;
+    setHasJustFetchedMessagesFalse();
     timeoutId = null;
   }, FETCH_MESSAGES_COOLDOWN);
 
@@ -1520,18 +1522,41 @@ export function fetchMessages(channelId: string, isDm = false) {
   const typeToUse = isOnGuild
     ? EventType.GET_HISTORY_GUILD
     : EventType.GET_HISTORY_DM;
+
   apiClient.send(typeToUse, requestData);
+
+  if (isUsersOpenGlobal) {
+    fetchAttachments(channelId, isDm);
+  }
+}
+export function fetchCurrentAttachments() {
+  fetchAttachments(guildCache.currentChannelId);
+}
+function fetchAttachments(channelId: string, isDm = false) {
   store.commit("setCurrentPage", 1);
 
   const attachmentType = isOnGuild
     ? EventType.GET_ATTACHMENTS_GUILD
     : EventType.GET_ATTACHMENTS_DM;
 
+  const requestData: any = {
+    channelId,
+    isDm,
+    guildId: "",
+    friendId: ""
+  };
+
+  if (isOnGuild) {
+    requestData.guildId = currentGuildId;
+  } else if (isOnDm) {
+    requestData.friendId = friendsCache.currentDmId;
+  }
+
   apiClient.send(attachmentType, requestData);
   clearCurrentAttachments();
-
   store.commit("setHasMoreAttachments", true);
 }
+
 export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
 
 export function appendCurrentAttachments(

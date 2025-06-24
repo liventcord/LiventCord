@@ -1,40 +1,33 @@
 <template>
-  <div>
-    <div id="user-list" ref="userList">
-      <div
-        v-if="attachments.length > 0"
-        id="media-table-wrapper"
-        class="user-table-wrapper media-table-wrapper-on-right"
-        @scroll="handleScroll"
-      >
-        <button id="media-title" @click="handleMediaButtonClick()"></button>
-        <div id="media-grid">
-          <div
-            v-for="attachment in attachments"
-            :key="attachment.attachment.fileId"
-            :id="attachment.attachment.fileId"
-            class="image-box"
-            :data-isspoiler="attachment.attachment.isSpoiler"
-          >
-            <img
-              :src="
-                attachment.attachment.isProxyFile
-                  ? apiClient.getProxyUrl(attachment.attachment.proxyUrl)
-                  : attachment.attachment.isImageFile
-                    ? `${apiClient.getBackendUrl()}/attachments/${attachment.attachment.fileId}`
-                    : 'https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp'
-              "
-              alt="Image"
-              :data-filesize="attachment.attachment.fileSize"
-              @click="handleImageClick(attachment)"
-              ref="imageBox"
-              :style="{
-                filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
-              }"
-            />
-          </div>
+  <div id="user-list" ref="userList">
+    <div
+      v-if="attachments.length > 0"
+      id="media-table-wrapper"
+      class="user-table-wrapper media-table-wrapper-on-right"
+      @scroll="handleScroll"
+    >
+      <button id="media-title" @click="handleMediaButtonClick()"></button>
+      <div id="media-grid">
+        <div
+          v-for="attachment in attachments"
+          :key="attachment.attachment.fileId"
+          :id="attachment.attachment.fileId"
+          class="image-box"
+          :data-isspoiler="attachment.attachment.isSpoiler"
+        >
+          <img
+            :src="getAttachmentSrc(attachment)"
+            alt="Image"
+            :data-filesize="attachment.attachment.fileSize"
+            @click="handleImageClick(attachment)"
+            ref="imageBox"
+            :style="{
+              filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
+            }"
+          />
         </div>
       </div>
+
       <div v-if="loading"></div>
       <div v-else class="user-table-wrapper">
         <table class="user-table">
@@ -85,7 +78,7 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import { getId } from "../ts/utils.ts";
+import { getId, isTenorURL } from "../ts/utils.ts";
 import { displayImagePreview } from "../ts/ui.ts";
 import { fetchMoreAttachments } from "../ts/message.ts";
 import {
@@ -184,6 +177,21 @@ const processMembers = async (newMembers) => {
 const processAttachments = async (newAttachments) => {
   await store.dispatch("setAttachments", newAttachments);
 };
+
+function getAttachmentSrc(attachment) {
+  const file = attachment.attachment;
+  const isTenor = isTenorURL(file.proxyUrl);
+
+  if (isTenor) {
+    return file.proxyUrl;
+  } else if (file.isProxyFile) {
+    return apiClient.getProxyUrl(file.proxyUrl);
+  } else if (file.isImageFile) {
+    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
+  } else {
+    return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
+  }
+}
 
 watch(
   currentUsers,

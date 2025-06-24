@@ -546,7 +546,7 @@ export function deleteLocalMessage(
         nick,
         userInfo,
         userId,
-        new Date(date),
+        date,
         true
       );
       break;
