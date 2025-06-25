@@ -8,7 +8,7 @@ import {
   clearLastDate,
   closeMediaPanel
 } from "./chat.ts";
-import { isUsersOpenGlobal } from "./userList.ts";
+import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
 import { muteHtml, inviteVoiceHtml, selectedChanColor, clamp } from "./ui.ts";
@@ -484,7 +484,6 @@ function drawVoiceChannelUser(
 }
 
 export function setWidths(newWidth: number) {
-  console.log("Called width");
   const userInput = getId("user-input");
   const guildContainer = getId("guild-container");
 
@@ -492,12 +491,17 @@ export function setWidths(newWidth: number) {
     channelList.style.width = `${newWidth}px`;
   }
 
-  if (userInput) {
-    userInput.style.width = isUsersOpenGlobal
-      ? `calc(100vw - ${newWidth}px - 435px)`
-      : `calc(100vw - ${newWidth}px - 200px)`;
+  if (channelList && userList && userInput) {
+    const leftPadding = 10;
+    const rightPadding = 20;
 
-    userInput.style.left = isUsersOpenGlobal ? "19.79vw" : "";
+    const channelRect = channelList.getBoundingClientRect();
+    const availableWidth = isUsersOpenGlobal
+      ? userList.getBoundingClientRect().left - channelRect.right
+      : window.innerWidth - channelRect.right;
+
+    userInput.style.width = `${availableWidth - leftPadding - rightPadding}px`;
+    userInput.style.left = `${channelRect.right + leftPadding}px`;
   }
 
   if (guildContainer) {
