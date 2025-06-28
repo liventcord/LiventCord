@@ -233,7 +233,7 @@ async function tryLoadImageWithFallback(
   imgElement: HTMLImageElement
 ) {
   try {
-    const loadedImg = await loadImageWithRetry(urlSrc, 3);
+    const loadedImg = await loadImageWithRetry(urlSrc, 1);
     imgElement.src = loadedImg.src;
   } catch {
     try {
@@ -527,14 +527,24 @@ function processMediaLink(
     console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        if (!attachment && isTenorURL(link)) {
-          mediaElement = createTenorElement(
-            messageContentElement,
-            content,
-            link,
+        if (!attachment ) {
+          if(isTenorURL(link)) {
+
+            mediaElement = createTenorElement(
+              messageContentElement,
+              content,
+              link,
+              senderId,
+              date
+            );
+          } else {
+             mediaElement = createImageElement(
+            "",
+              link,
             senderId,
             date
           );
+          }
         }
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(

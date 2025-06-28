@@ -196,7 +196,7 @@ def generate_help_embed() -> discord.Embed:
         "  #pokemon -r 3 -s\n",
         "--Admin Commands--": "Admin-specific commands below.",
         "#changeavatar": "Changes the bot's avatar (with cooldown). Usage: #changeavatar (with attachment image or link)",
-        "#status": "Updates the bot's status message. Usage: #status <status_text>"
+        "#status": "Updates the bot's status message. Usage: #status <status_text>",
     }
 
     help_embed = discord.Embed(

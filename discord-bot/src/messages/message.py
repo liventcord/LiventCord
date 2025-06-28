@@ -1,8 +1,17 @@
+import os
+
 from sqlalchemy import Column, DateTime, String, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
-DATABASE_URL = "sqlite:///databases/guild_db.db"
+
+db_path = "databases/guild_db.db"
+db_dir = os.path.dirname(db_path)
+
+if not os.path.exists(db_dir):
+    os.makedirs(db_dir)
+
+DATABASE_URL = f"sqlite:///{db_path}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 

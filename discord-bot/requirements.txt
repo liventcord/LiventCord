@@ -1,6 +1,5 @@
 icrawler
 pytube
-selenium
 pillow
 requests
 asyncio
@@ -10,4 +9,6 @@ environs
 sqlalchemy
 openapi-python-client
 mypy
-cairosvg
+cairosvg; sys_platform == "linux"
+wcwidth; sys_platform == "linux"
+selenium; sys_platform in "linux darwin win32"
