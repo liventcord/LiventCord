@@ -1,6 +1,7 @@
 import { apiClient, EventType } from "./api";
 import { cacheInterface } from "./cache";
 import {
+  adjustHeight,
   chatInput,
   DomUtils,
   getChatBarState,
@@ -459,6 +460,7 @@ export function preserveEmojiContent(element: HTMLElement): string {
         } else {
           result += el.getAttribute("alt") || "";
         }
+        Array.from(el.childNodes).forEach(walkNode);
       } else if (el.hasChildNodes()) {
         Array.from(el.childNodes).forEach(walkNode);
       }
@@ -627,30 +629,85 @@ function appendEmojiToInput(text: string) {
     return;
   }
   const state = getChatBarState();
-  state.rawContent = `${state.rawContent}${text}`;
-  chatInput.focus();
+
+  let charCount = 0;
+  let targetNode: Node | null = null;
+  let targetOffset = 0;
+
+  function findPosition(node: Node): boolean {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nodeTextLength = node.textContent?.length || 0;
+      if (charCount + nodeTextLength >= state.cursorPosition) {
+        targetNode = node;
+        targetOffset = state.cursorPosition - charCount;
+        return true;
+      }
+      charCount += nodeTextLength;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      if ((node as HTMLElement).tagName === "IMG") {
+        const emojiId = (node as HTMLElement).getAttribute("data-emoji-id");
+        charCount += emojiId ? `:${emojiId}:`.length : 1;
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          if (findPosition(node.childNodes[i])) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  findPosition(chatInput);
+
+  if (!targetNode) {
+    targetNode = chatInput;
+    targetOffset = chatInput.childNodes.length;
+  }
+
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
+  if (!selection) {
     return;
   }
 
-  const range = selection.getRangeAt(0);
-  if (!chatInput.contains(range.startContainer)) {
-    const newRange = document.createRange();
-    newRange.selectNodeContents(chatInput);
-    newRange.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
+  const range = document.createRange();
+  if (targetNode.nodeType === Node.TEXT_NODE) {
+    range.setStart(targetNode, targetOffset);
+  } else {
+    const el = targetNode as HTMLElement;
+    const offset = Math.min(targetOffset, el.childNodes.length);
+    range.setStart(targetNode, offset);
   }
-  const finalRange = selection.getRangeAt(0);
-  finalRange.deleteContents();
-  finalRange.insertNode(document.createTextNode(text));
-  finalRange.collapse(false);
+  range.collapse(true);
 
   selection.removeAllRanges();
-  selection.addRange(finalRange);
+  selection.addRange(range);
+
+  range.deleteContents();
+  const emojiNode = document.createTextNode(text);
+  range.insertNode(emojiNode);
+
+  range.setStartAfter(emojiNode);
+  range.collapse(true);
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  state.rawContent =
+    state.rawContent.slice(0, state.cursorPosition) +
+    text +
+    state.rawContent.slice(state.cursorPosition);
+
+  state.cursorPosition += text.length;
+  state.selectionStart = state.cursorPosition;
+  state.selectionEnd = state.cursorPosition;
 
   manuallyRenderEmojis(state.rawContent);
+
+  chatInput.focus();
+
+  adjustHeight();
+
 }
 
 export function applyActiveEmojiSuggestion() {

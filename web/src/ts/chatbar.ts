@@ -159,25 +159,27 @@ export class ReadenMessagesManager {
   }
 }
 
-export function adjustHeight() {
-  const MIN_CHAT_HEIGHT = 500;
-  chatInput.style.height = "auto";
-  chatInput.style.height = chatInput.scrollHeight + "px";
-  const chatInputHeight = chatInput.scrollHeight;
-  chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight;
+const MIN_CHAT_HEIGHT = 500
 
-  const adjustChatContainerHeight = () => {
-    const viewportHeight = window.innerHeight;
-    const availableHeight = viewportHeight - chatInputHeight;
-    const newHeight = Math.max(MIN_CHAT_HEIGHT, availableHeight);
-    chatContainer.style.height = `${newHeight}px`;
-  };
-
-  adjustChatContainerHeight();
-  window.addEventListener("resize", adjustChatContainerHeight);
-
-  adjustReplyPosition();
+function adjustChatContainerHeight() {
+  const chatInputHeight = chatInput.scrollHeight
+  const viewportHeight = window.innerHeight
+  const availableHeight = viewportHeight - chatInputHeight
+  const newHeight = Math.max(MIN_CHAT_HEIGHT, availableHeight)
+  chatContainer.style.height = `${newHeight}px`
 }
+
+export function adjustHeight() {
+  chatInput.style.height = "auto"
+  chatInput.style.height = chatInput.scrollHeight + "px"
+  chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight
+
+  adjustChatContainerHeight()
+  window.addEventListener("resize", adjustChatContainerHeight)
+
+  adjustReplyPosition()
+}
+
 
 function extractChannelIds(message: string): string[] {
   const channelIds: string[] = [];
@@ -855,16 +857,17 @@ export class DomUtils {
 }
 
 function handleKeyboardNavigation(event: KeyboardEvent) {
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-    handleEmojiJump(event);
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight" ) {
+    handleEmojiJump(event)
+    handleEmojiSuggestions(event)
+
   } else if (event.key === "Backspace") {
-    handleBackspace(event);
+    handleBackspace(event)
   } else if (event.key === "Space") {
-    handleSpace(event);
-  } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-    handleEmojiSuggestions(event);
+    handleSpace(event)
   }
 }
+
 
 function handleBackspace(event: KeyboardEvent) {
   const selection = window.getSelection();
