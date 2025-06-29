@@ -19,14 +19,12 @@
             v-if="
               !failedVideos[attachment.attachment.fileId] &&
               (attachment.attachment.isImageFile ||
-                attachment.attachment.isVideoFile)
+               attachment.attachment.isVideoFile)
             "
             :is="
               attachment.attachment.isImageFile
                 ? 'img'
-                : attachment.attachment.isVideoFile
-                  ? 'video'
-                  : null
+                : 'video'
             "
             :src="getAttachmentSrc(attachment)"
             :data-filesize="attachment.attachment.fileSize"
@@ -51,43 +49,42 @@
           />
         </div>
       </div>
+    </div>
 
-      <div v-if="loading"></div>
-      <div v-else class="user-table-wrapper">
-        <table class="user-table">
-          <tbody>
-            <template v-if="onlineUsers.length > 0">
-              <CategoryTitle
-                :title="`${translations.getTranslation('online')} — ${onlineUsers.length}`"
-              />
-              <UserProfileItem
-                v-for="user in onlineUsers"
-                :key="user.userId"
-                :user-data="user"
-                :is-online="true"
-                :status="user.status"
-                :is-guild-owner="
-                  cacheInterface.isGuildOwner(currentGuildId, user.userId)
-                "
-              />
-            </template>
-            <template v-if="offlineUsers.length > 0">
-              <CategoryTitle
-                :title="`${translations.getTranslation('offline')} — ${offlineUsers.length}`"
-              />
-              <UserProfileItem
-                v-for="user in offlineUsers"
-                :key="user.userId"
-                :user-data="user"
-                :is-online="false"
-                :is-guild-owner="
-                  cacheInterface.isGuildOwner(currentGuildId, user.userId)
-                "
-              />
-            </template>
-          </tbody>
-        </table>
-      </div>
+    <div class="user-table-wrapper">
+      <table class="user-table">
+        <tbody>
+          <template v-if="onlineUsers.length > 0">
+            <CategoryTitle
+              :title="`${translations.getTranslation('online')} — ${onlineUsers.length}`"
+            />
+            <UserProfileItem
+              v-for="user in onlineUsers"
+              :key="user.userId"
+              :user-data="user"
+              :is-online="true"
+              :status="user.status"
+              :is-guild-owner="
+                cacheInterface.isGuildOwner(currentGuildId, user.userId)
+              "
+            />
+          </template>
+          <template v-if="offlineUsers.length > 0">
+            <CategoryTitle
+              :title="`${translations.getTranslation('offline')} — ${offlineUsers.length}`"
+            />
+            <UserProfileItem
+              v-for="user in offlineUsers"
+              :key="user.userId"
+              :user-data="user"
+              :is-online="false"
+              :is-guild-owner="
+                cacheInterface.isGuildOwner(currentGuildId, user.userId)
+              "
+            />
+          </template>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

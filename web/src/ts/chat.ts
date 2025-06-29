@@ -1562,8 +1562,15 @@ export const currentAttachments = reactive<AttachmentWithMetaData[]>([]);
 export function appendCurrentAttachments(
   attachments: AttachmentWithMetaData[]
 ) {
-  currentAttachments.push(...attachments);
+  if (attachments.length === 0) {
+    clearCurrentAttachmentsFromList();
+    return;
+  }
+
+  store.commit("setAttachments", attachments);
+  updateAttachmentsCount(attachments.length);
 }
+
 export function updateAttachmentsCount(count: number) {
   const mediaTitle = getId("media-title");
   if (mediaTitle) {
@@ -1574,7 +1581,11 @@ export function updateAttachmentsCount(count: number) {
 }
 
 export function clearCurrentAttachments() {
-  currentAttachments.length = 0;
+  store.commit("setAttachments", []);
+}
+export function clearCurrentAttachmentsFromList() {
+  store.commit("setAttachments", []);
+  updateAttachmentsCount(0);
 }
 
 function createMsgOptionButton(message: HTMLElement, isReply: boolean) {

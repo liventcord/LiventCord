@@ -533,7 +533,7 @@ namespace LiventCord.Controllers
 
             var messages = await query
                 .OrderByDescending(m => m.Date)
-                .Take(50)
+                .Take(25)
                 .AsNoTracking()
                 .ToListAsync();
 

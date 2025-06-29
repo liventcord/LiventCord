@@ -170,7 +170,8 @@ async function createImageElement(
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
-    }
+    },
+    loading: "lazy"
   });
 
   imgElement.setAttribute("data-userid", senderId);
@@ -527,9 +528,8 @@ function processMediaLink(
     console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        if (!attachment ) {
-          if(isTenorURL(link)) {
-
+        if (!attachment) {
+          if (isTenorURL(link)) {
             mediaElement = createTenorElement(
               messageContentElement,
               content,
@@ -538,12 +538,7 @@ function processMediaLink(
               date
             );
           } else {
-             mediaElement = createImageElement(
-            "",
-              link,
-            senderId,
-            date
-          );
+            mediaElement = createImageElement("", link, senderId, date);
           }
         }
         if (attachment?.isImageFile) {
