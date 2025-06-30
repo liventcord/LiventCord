@@ -10,6 +10,7 @@ import {
 } from "./chatbar";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
+import { getTextUpToCursorFromNode } from "./navigation";
 import { isOnGuild, router } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
@@ -470,38 +471,48 @@ export function preserveEmojiContent(element: HTMLElement): string {
   Array.from(element.childNodes).forEach(walkNode);
   return result;
 }
-
-export function processEmojisWithPositions(content: string): string {
-  const positions = [];
-  let lastIndex = 0,
-    result = "",
-    match;
-  const sanitizedContent = sanitizeHtmlInput(content);
-
+export function renderEmojisFromContent(content: string): string {
+  let result = "";
+  let i = 0;
   const emojis = getCurrentEmojis() || [];
 
-  while ((match = regexIdEmojis.exec(sanitizedContent)) !== null) {
-    const emojiId = match[1];
-    result += sanitizedContent.slice(lastIndex, match.index);
+  while (i < content.length) {
+    if (content[i] === ":") {
+      // Check for escaped colon "::"
+      if (content[i + 1] === ":") {
+        result += ":";
+        i += 2;
+        continue;
+      }
 
-    const isBuiltin = isBuiltinEmoji(emojiId);
-    const isCustom =
-      emojiId.length === router.ID_LENGTH &&
-      emojis.some((e) => e.fileId === emojiId);
+      // Try to find a closing colon for an emoji token
+      let end = content.indexOf(":", i + 1);
 
-    if (isBuiltin || isCustom) {
-      const start = result.length;
-      const imgTag = generateEmojiTag(emojiId);
-      result += imgTag;
-      positions.push({ start, end: start + imgTag.length });
+      if (end !== -1) {
+        const emojiId = content.slice(i + 1, end);
+        const isBuiltin = isBuiltinEmoji(emojiId);
+        const isCustom =
+          emojiId.length === router.ID_LENGTH &&
+          emojis.some((e) => e.fileId === emojiId);
+
+        if (isBuiltin || isCustom) {
+          // Replace emoji token with image tag
+          result += generateEmojiTag(emojiId);
+          i = end + 1;
+          continue;
+        }
+      }
+
+      // No valid emoji token found, add colon as is
+      result += ":";
+      i++;
     } else {
-      result += match[0];
+      // Add normal character
+      result += content[i];
+      i++;
     }
-
-    lastIndex = match.index + match[0].length;
   }
 
-  result += sanitizedContent.slice(lastIndex);
   return result;
 }
 
@@ -607,17 +618,14 @@ function showEmojiSuggestions() {
   const currentNode = range.startContainer;
   const currentOffset = range.startOffset;
 
-  const textUpToCursor = DomUtils.getTextUpToCursorFromNode(
-    currentNode,
-    currentOffset
-  );
+  const textUpToCursor = getTextUpToCursorFromNode(currentNode, currentOffset);
   const safe = sanitizeHtmlInput(textUpToCursor);
   triggerEmojiSuggestionDisplay(safe);
 }
 
 export function toggleShowEmojiSuggestions() {
   const state = getChatBarState();
-  const start = Math.max(0, state.cursorPosition - 30);
+  const start = Math.max(0, state.cursorPosition);
   const textBeforeCursor = state.rawContent.slice(start, state.cursorPosition);
   textBeforeCursor.trimStart().startsWith(":")
     ? showEmojiSuggestions()
@@ -644,7 +652,10 @@ function appendEmojiToInput(text: string) {
       }
       charCount += nodeTextLength;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      if ((node as HTMLElement).tagName === "IMG") {
+      if (
+        (node as HTMLElement).tagName === "IMG" ||
+        (node as HTMLElement).tagName === "DIV"
+      ) {
         const emojiId = (node as HTMLElement).getAttribute("data-emoji-id");
         charCount += emojiId ? `:${emojiId}:`.length : 1;
       } else {
@@ -707,7 +718,6 @@ function appendEmojiToInput(text: string) {
   chatInput.focus();
 
   adjustHeight();
-
 }
 
 export function applyActiveEmojiSuggestion() {
