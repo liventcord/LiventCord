@@ -73,12 +73,12 @@ class WebSocketClient {
   private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
   private socketUrl: string = "";
   private retryCount: number = 0;
-  private maxRetryDelay: number = 30000;
+  private readonly maxRetryDelay: number = 30000;
   private static instance: WebSocketClient | null = null;
-  private heartbeatInterval: number = 30000;
+  private readonly heartbeatInterval: number = 30000;
   private heartbeatTimer: number | null = null;
-  private pendingRequests: Array<() => void> = [];
-  private inProgressRequests: Set<string> = new Set();
+  private readonly pendingRequests: Array<() => void> = [];
+  private readonly inProgressRequests: Set<string> = new Set();
   private hasReconnected: boolean = false;
 
   private constructor(url: string = "") {
@@ -102,8 +102,9 @@ class WebSocketClient {
     if (
       userIds.length < 1 ||
       userIds.some((id) => typeof id !== "string" || id.trim() === "")
-    )
+    ) {
       return;
+    }
 
     userIds.forEach((userId) => {
       if (this.inProgressRequests.has(userId)) {
@@ -226,7 +227,9 @@ class WebSocketClient {
 
   off(eventType: SocketEventType, handler: (...args: any[]) => any) {
     const handlers = this.eventHandlers[eventType];
-    if (!handlers) return;
+    if (!handlers) {
+      return;
+    }
 
     const index = handlers.indexOf(handler);
     if (index !== -1) {

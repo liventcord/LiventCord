@@ -289,9 +289,10 @@
   flex-wrap: nowrap;
   gap: 15px;
   background-color: #222327;
-  margin-top: -190px;
+  margin-top: -250px;
   padding: 10px 15px 27px;
   border: none;
+  left: 390px;
   border-radius: 7px 7px 0 0;
   z-index: 1;
   position: relative;
@@ -858,7 +859,7 @@ body.black-theme .base-user-input {
     display: none;
   }
   .channel-list-mobile-left {
-    width: 155px !important;
+    width: 200px !important;
   }
   .chat-container-mobile-left {
     display: flex !important;
@@ -1066,7 +1067,7 @@ body.black-theme .base-user-input {
 }
 
 #mobile-black-bg {
-  z-index: 1;
+  z-index: 0;
   background-color: #00000073;
 }
 
@@ -1116,7 +1117,7 @@ body.black-theme .base-user-input {
 
 #guild-settings-dropdown {
   width: 220px;
-  left: 65px;
+  left: 80px;
   position: absolute;
   border-radius: 10px;
   background-color: rgb(17, 18, 20);
@@ -1637,28 +1638,32 @@ textarea::-webkit-scrollbar-track {
 }
 .suggestions-dropdown {
   display: none;
-
+  left: 288px;
   flex-direction: column;
-  background: #313338;
+  background: #2e2f33;
   border: 1px solid #3c3e42;
   max-height: 300px;
   height: auto;
   overflow-y: auto;
-  width: 70vw;
+  width: 57vw;
   z-index: 1000;
   bottom: 100%;
   position: absolute;
 }
-.mention-option {
+.suggestion-option {
   padding: 10px;
   cursor: pointer;
   color: white;
 }
-.mention-option.active {
+.suggestion-label {
+  margin-right: 50px;
+}
+
+.suggestion-option.active {
   background-color: #3c3e42;
 }
 
-.mention-option:hover {
+.suggestion-option:hover {
   background-color: #232427;
 }
 .mention-highlight {

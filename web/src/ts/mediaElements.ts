@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+
 import { displayImagePreview, beautifyJson, displayJsonPreview } from "./ui.ts";
 import {
   isImageURL,
@@ -123,7 +124,7 @@ function createTenorElement(
     },
     loading: "lazy",
     className: "tenor-image"
-  }) as HTMLImageElement;
+  });
 
   imgElement.setAttribute("data-userId", senderId);
   imgElement.setAttribute("data-date", date.toString());
@@ -169,8 +170,9 @@ async function createImageElement(
     style: {
       maxWidth: `${maxWidth}px`,
       maxHeight: `${maxHeight}px`
-    }
-  }) as HTMLImageElement;
+    },
+    loading: "lazy"
+  });
 
   imgElement.setAttribute("data-userid", senderId);
   imgElement.setAttribute("data-date", date.toString());
@@ -205,7 +207,7 @@ async function createImageElement(
   });
 
   const match = urlSrc.match(attachmentPattern);
-  urlSrc = match ? urlSrc : await corsDomainManager.getProxy(urlSrc);
+  urlSrc = match ? urlSrc : urlSrc;
 
   const regex = /\/attachments\/(\d+)/;
   const matchPure = urlSrc.match(regex);
@@ -221,16 +223,28 @@ async function createImageElement(
   ) {
     imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   } else {
-    loadImageWithRetry(urlSrc, 3)
-      .then((loadedImg) => {
-        imgElement.src = loadedImg.src;
-      })
-      .catch(() => {
-        imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
-      });
+    await tryLoadImageWithFallback(urlSrc, imgElement);
   }
 
   return imgElement;
+}
+
+async function tryLoadImageWithFallback(
+  urlSrc: string,
+  imgElement: HTMLImageElement
+) {
+  try {
+    const loadedImg = await loadImageWithRetry(urlSrc, 1);
+    imgElement.src = loadedImg.src;
+  } catch {
+    try {
+      const proxyUrl = await corsDomainManager.getProxy(urlSrc);
+      const proxiedImg = await loadImageWithRetry(proxyUrl, 1);
+      imgElement.src = proxiedImg.src;
+    } catch {
+      imgElement.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+    }
+  }
 }
 
 function createAudioElement(audioURL: string) {
@@ -269,7 +283,9 @@ async function createJsonElement(url: string) {
 
 function createYouTubeElement(url: string): HTMLElement | undefined {
   const youtubeURL = getYouTubeEmbedURL(url);
-  if (!youtubeURL) return undefined;
+  if (!youtubeURL) {
+    return undefined;
+  }
 
   const iframeElement = createEl("iframe", {
     src: DOMPurify.sanitize(youtubeURL),
@@ -292,23 +308,24 @@ async function createVideoElement(url: string, isVideoAttachment = false) {
   if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
-  const videoElement = createEl("video") as HTMLVideoElement;
+  const videoElement = createEl("video");
   const proxiedUrl = await corsDomainManager.getProxy(url);
   videoElement.src = proxiedUrl;
   videoElement.width = 560;
   videoElement.height = 315;
   videoElement.controls = true;
+  videoElement.loop = true;
   videoElement.playsInline = true;
 
   const downloadButton = createEl("a", {
     href: url,
     target: "_blank",
     className: "download-button"
-  }) as HTMLAnchorElement;
+  });
 
   const icon = createEl("i", {
     className: "fas fa-external-link-alt icon"
-  }) as HTMLElement;
+  });
   downloadButton.appendChild(icon);
 
   const container = createEl("div", { className: "video-container" });
@@ -426,7 +443,9 @@ export async function createMediaElement(
           senderId,
           date
         );
-        if (!isError) mediaCount++;
+        if (!isError) {
+          mediaCount++;
+        }
       } catch (error) {
         console.error("Error processing media link:", error);
       }
@@ -436,7 +455,9 @@ export async function createMediaElement(
 }
 
 function processAttachments(attachments?: Attachment[]): Attachment[] {
-  if (!attachments || !Array.isArray(attachments)) return [];
+  if (!attachments || !Array.isArray(attachments)) {
+    return [];
+  }
   return attachments.map((attachment) => ({
     ...attachment,
     url: getAttachmentUrl(attachment.fileId)
@@ -461,7 +482,7 @@ function createFileAttachmentPreview(
       textContent: attachment.fileName,
       href: attachmentUrl,
       download: ""
-    }) as HTMLAnchorElement;
+    });
 
     const readableSize = formatFileSize(attachment.fileSize);
 
@@ -507,14 +528,18 @@ function processMediaLink(
     console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
-        if (!attachment && isTenorURL(link)) {
-          mediaElement = createTenorElement(
-            messageContentElement,
-            content,
-            link,
-            senderId,
-            date
-          );
+        if (!attachment) {
+          if (isTenorURL(link)) {
+            mediaElement = createTenorElement(
+              messageContentElement,
+              content,
+              link,
+              senderId,
+              date
+            );
+          } else {
+            mediaElement = createImageElement("", link, senderId, date);
+          }
         }
         if (attachment?.isImageFile) {
           mediaElement = createImageElement(
@@ -635,10 +660,12 @@ export function handleLink(
   };
 
   const insertTextOrHTML = (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      return;
+    }
     const replaced = replaceCustomEmojisForChatContainer(text);
-    const span = createEl("span");
-    span.innerHTML = replaced;
+    const span = createEl("span", { innerHTML: replaced });
+    setupEmojiListeners();
     prependToMessage(span);
   };
 
@@ -652,7 +679,9 @@ export function handleLink(
   while ((match = urlPattern.exec(content)) != null) {
     const url = match[0];
 
-    if (seenUrls.has(url)) continue;
+    if (seenUrls.has(url)) {
+      continue;
+    }
     seenUrls.add(url);
 
     const start = match.index;
@@ -681,7 +710,7 @@ export function handleLink(
     messageContentElement.firstChild
   );
   messageContentElement.dataset.contentLoaded = "true";
-  setupEmojiListeners(messageContentElement);
+  setupEmojiListeners();
 }
 function applyBorderColor(element: HTMLElement, decimalColor: number) {
   if (

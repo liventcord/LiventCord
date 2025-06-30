@@ -445,7 +445,9 @@ function selectSettingCategory(
   }
 
   const settingsContainer = getId("settings-rightcontainer");
-  if (!settingsContainer) return;
+  if (!settingsContainer) {
+    return;
+  }
 
   currentSettingsCategory = settingCategory;
 
@@ -711,7 +713,9 @@ function getPermissionsHtml() {
 
 function initializeLanguageDropdown() {
   const languageDropdown = getId("language-dropdown") as HTMLSelectElement;
-  if (!languageDropdown) return;
+  if (!languageDropdown) {
+    return;
+  }
   languageDropdown.value = translations.currentLanguage;
 
   languageDropdown.addEventListener("change", (event: Event) => {
@@ -738,7 +742,9 @@ const unThemeBorderColor = "#A5A5AC";
 function selectThemeButton(isDark: boolean) {
   const ash = getId("ash-theme-selector");
   const dark = getId("dark-theme-selector");
-  if (!ash || !dark) return;
+  if (!ash || !dark) {
+    return;
+  }
 
   ash.style.borderColor = isDark
     ? unThemeBorderColor
@@ -790,7 +796,9 @@ function linkGoogleAccount() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const wrapper = getId("google-link-wrapper");
   console.log(wrapper, clientId);
-  if (!clientId || !wrapper) return;
+  if (!clientId || !wrapper) {
+    return;
+  }
   initializeGoogleOauth(true);
 
   const popOuterParent = createPopupWrapper(wrapper);
@@ -846,19 +854,25 @@ function initialiseSettingComponents(
   ) as HTMLInputElement;
 
   transparencyInput?.addEventListener("input", function (event: Event) {
-    if (!event.target) return;
+    if (!event.target) {
+      return;
+    }
     const target = event.target as HTMLInputElement;
     const value = target.value;
     saveTransparencyValue(value);
     updateVideoTransparency(value);
   });
-  if (transparencyInput) transparencyInput.value = currentBGTransparency;
+  if (transparencyInput) {
+    transparencyInput.value = currentBGTransparency;
+  }
 
   const videoUrlInput = getId("video-url-input");
 
   videoUrlInput?.addEventListener("input", (e) => {
     const target = e.target as HTMLInputElement;
-    if (target.textContent) onEditVideoUrl(target.textContent);
+    if (target.textContent) {
+      onEditVideoUrl(target.textContent);
+    }
   });
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
@@ -890,7 +904,9 @@ function initialiseSettingComponents(
     if (permissionManager.canManageGuild()) {
       guildNameInput.addEventListener("input", onEditGuildName);
       guildImage?.addEventListener("click", triggerGuildImageUpdate);
-      if (guildImage) setGuildImage(currentGuildId, guildImage, true);
+      if (guildImage) {
+        setGuildImage(currentGuildId, guildImage, true);
+      }
     } else {
       guildNameInput.disabled = true;
     }
@@ -915,7 +931,9 @@ function initialiseSettingComponents(
   const emojiImageInput = getId("emoijImage") as HTMLInputElement | null;
 
   function triggerUploadEmoji(): void {
-    if (!emojiImageInput) return;
+    if (!emojiImageInput) {
+      return;
+    }
     emojiImageInput.click();
     emojiImageInput.addEventListener("change", onEditEmoji);
   }
@@ -965,7 +983,9 @@ export function openSettings(
   settingType: SettingType,
   focusToCategory: boolean = false
 ) {
-  if (!settingsMenu) return;
+  if (!settingsMenu) {
+    return;
+  }
   currentSettingsType = settingType;
   reconstructSettings(settingType, focusToCategory);
 
@@ -985,7 +1005,9 @@ export function closeSettings() {
     shakeScreen();
     return;
   }
-  if (!settingsMenu) return;
+  if (!settingsMenu) {
+    return;
+  }
 
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation = "settings-menu-slide-out 0.3s forwards";
@@ -1005,7 +1027,9 @@ function reconstructSettings(
   focusToCategory: boolean = false
 ) {
   const leftBar = getId("settings-leftbar");
-  if (!leftBar) return;
+  if (!leftBar) {
+    return;
+  }
   leftBar.innerHTML = "";
   switch (settingType) {
     case SettingType.GUILD:
@@ -1026,7 +1050,9 @@ function reconstructSettings(
       break;
   }
   const settingsContainer = getId("settings-rightcontainer");
-  if (!settingsContainer) return;
+  if (!settingsContainer) {
+    return;
+  }
 
   if (isMobile && focusToCategory) {
     enableElement("settings-rightcontainer");
@@ -1049,7 +1075,9 @@ export function showConfirmationPanel(pop: HTMLElement) {
   pop.style.animation = "slide-up 0.5s ease-in-out forwards";
 }
 export function generateConfirmationPanel() {
-  if (!settingsMenu) return;
+  if (!settingsMenu) {
+    return;
+  }
   setIsChangedImage(true);
   const popupDiv = createEl("div", { id: "settings-unsaved-popup" });
 
@@ -1116,7 +1144,9 @@ export function shakeScreen() {
   const RESET_TIMEOUT_DURATION = 800;
 
   regenerateConfirmationPanel();
-  if (currentPopUp) currentPopUp.style.backgroundColor = "#ff1717";
+  if (currentPopUp) {
+    currentPopUp.style.backgroundColor = "#ff1717";
+  }
 
   SHAKE_FORCE += 0.5;
   if (SHAKE_FORCE > 5) {
@@ -1131,7 +1161,9 @@ export function shakeScreen() {
   resetTimeout = setTimeout(() => {
     SHAKE_FORCE = 1;
     document.body.classList.remove("shake-screen");
-    if (currentPopUp) currentPopUp.style.backgroundColor = "#0f0f0f";
+    if (currentPopUp) {
+      currentPopUp.style.backgroundColor = "#0f0f0f";
+    }
   }, RESET_TIMEOUT_DURATION);
 
   return;
@@ -1141,7 +1173,9 @@ export function createDeleteChannelPrompt(
   channelId: string,
   channelName: string
 ) {
-  if (!guildId || !channelId) return;
+  if (!guildId || !channelId) {
+    return;
+  }
   var onClickHandler = function () {
     apiClient.send(EventType.DELETE_CHANNEL, {
       guildId,

@@ -408,8 +408,12 @@ class GetMessagesRequest {
     } else {
       this.channelId = id;
     }
-    if (messageId) this.messageId = messageId;
-    if (guildId) this.guildId = guildId;
+    if (messageId) {
+      this.messageId = messageId;
+    }
+    if (guildId) {
+      this.guildId = guildId;
+    }
   }
 }
 
@@ -436,7 +440,9 @@ export function getOldMessages(date: Date, messageId?: string) {
 
 export function getLastSecondMessageDate() {
   const messages = chatContent.children;
-  if (messages.length < 2) return "";
+  if (messages.length < 2) {
+    return "";
+  }
 
   const secondToLastMessage = messages[messages.length - 2];
   if (secondToLastMessage) {
@@ -452,7 +458,9 @@ export function getLastSecondMessageDate() {
 
 export function getMessageDate(top = true) {
   const messages = chatContent.children;
-  if (messages.length === 0) return null;
+  if (messages.length === 0) {
+    return null;
+  }
 
   const targetElement = getMessageFromChat(top);
   if (targetElement) {
@@ -538,7 +546,7 @@ export function deleteLocalMessage(
         nick,
         userInfo,
         userId,
-        new Date(date),
+        date,
         true
       );
       break;
@@ -595,7 +603,9 @@ export function convertToEditUi(message: HTMLElement) {
   const messageContentElement = message.querySelector(
     "#message-content-element"
   ) as HTMLElement;
-  if (!messageContentElement) return;
+  if (!messageContentElement) {
+    return;
+  }
 
   const hasMultiple = isThereMultipleMessageContentElements(message);
   const editMessageDiv = createEditDiv(messageContentElement);
@@ -611,11 +621,15 @@ export function convertToEditUi(message: HTMLElement) {
       }
     });
 
-    if (hasMultiple) container.style.marginLeft = "50px";
+    if (hasMultiple) {
+      container.style.marginLeft = "50px";
+    }
     document.body.appendChild(container);
   } else {
     container = editMessageDiv;
-    if (hasMultiple) container.style.marginLeft = "50px";
+    if (hasMultiple) {
+      container.style.marginLeft = "50px";
+    }
     messageContentElement.appendChild(editMessageDiv);
   }
 
@@ -623,7 +637,9 @@ export function convertToEditUi(message: HTMLElement) {
     () => saveEdit(message, messageContentElement, container, buttonContainer),
     () => cancelEdit(message)
   );
-  if (buttonContainer) message.appendChild(buttonContainer);
+  if (buttonContainer) {
+    message.appendChild(buttonContainer);
+  }
 
   container.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
@@ -654,7 +670,9 @@ function createMobileWrapper(child: HTMLElement) {
 }
 
 function createButtonContainer(onSave: () => void, onCancel: () => void) {
-  if (isMobile) return null;
+  if (isMobile) {
+    return null;
+  }
 
   const container = createEl("div", {
     className: "edit-message-button-container"
@@ -686,7 +704,9 @@ function saveEdit(
 ) {
   originalContentElement.textContent = container.innerText;
   container.remove();
-  if (buttonContainer) buttonContainer.remove();
+  if (buttonContainer) {
+    buttonContainer.remove();
+  }
   sendEditMessageRequest(message.id, container.innerText);
   addEditedIndicator(originalContentElement);
 }

@@ -11,6 +11,7 @@ import { sendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
 import { translations } from "./translations.ts";
+import { appendBuiltinEmojiChat } from "./emoji.ts";
 
 interface Category {
   title: string;
@@ -101,7 +102,9 @@ function onMouseMove(e: MouseEvent) {
   const MIN_WIDTH_LEFT = 100;
   const MIN_HEIGHT_TOP = 100;
 
-  if (!isResizing) return;
+  if (!isResizing) {
+    return;
+  }
 
   const dx = e.clientX - initialMouseX;
   const dy = e.clientY - initialMouseY;
@@ -141,6 +144,7 @@ function onMouseUp() {
     document.body.style.userSelect = "";
   }
 }
+let clickEmojiListenerAdded = false;
 
 function renderEmojis(
   container: HTMLElement,
@@ -171,9 +175,12 @@ function renderEmojis(
       const y = -(row * spriteHeight);
 
       const emoji = createEl("div", {
-        className: `emoji ${category.class}`
+        className: `emoji ${category.class}`,
+        style: {
+          backgroundPosition: `${x}px ${y}px`
+        }
       });
-      emoji.style.backgroundPosition = `${x}px ${y}px`;
+      emoji.setAttribute("data-index", currentIndex.toString());
 
       emojisContainer.appendChild(emoji);
 
@@ -182,6 +189,21 @@ function renderEmojis(
 
     categoryContainer.appendChild(emojisContainer);
     container.appendChild(categoryContainer);
+  });
+  if (clickEmojiListenerAdded) {
+    return;
+  }
+  clickEmojiListenerAdded = true;
+  document.body.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains("emoji")) {
+      const indexStr = target.getAttribute("data-index");
+      if (indexStr) {
+        const index = parseInt(indexStr, 10);
+        console.log("Delegated emoji click", index);
+        appendBuiltinEmojiChat(index);
+      }
+    }
   });
 }
 
@@ -198,7 +220,9 @@ function displayContent(
     return;
   }
 
-  if (type !== MediaTypes.Gif) return;
+  if (type !== MediaTypes.Gif) {
+    return;
+  }
 
   if (isCategory) {
     contentData.forEach((data) => {
@@ -228,7 +252,7 @@ function displayContent(
     contentData.forEach((data) => {
       if (isMediaData(data)) {
         const img = createEl("img", {
-          className: `gif-content`,
+          className: "gif-content",
           src: data.preview
         });
         img.addEventListener("click", () => {
@@ -318,11 +342,15 @@ async function loadGifContent(query: string): Promise<void> {
   const gifUrl = `${initialState.gifWorkerUrl}?q=${encodeURIComponent(query)}`;
   const response = await fetch(gifUrl);
 
-  if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
 
   const data: GifResponse = await response.json();
 
-  if (data.error) throw new Error(`API error: ${data.error}`);
+  if (data.error) {
+    throw new Error(`API error: ${data.error}`);
+  }
 
   const gifElements = data.results.map((result) => ({
     gif: result.media_formats.gif.url,
@@ -346,7 +374,9 @@ export function handleMediaPanelResize() {
   const DEFAULT_WIDTH = 480;
   const DEFAULT_HEIGHT = 453;
 
-  if (!mediaMenu) return;
+  if (!mediaMenu) {
+    return;
+  }
 
   const viewportWidth = window.innerWidth / VIEWPORT_WIDTH_RATIO;
   const viewportHeight = window.innerHeight / VIEWPORT_HEIGHT_RATIO;
@@ -437,7 +467,7 @@ function handleCategoryGifs(responseText: string) {
 
     const gifImg = createEl("img", {
       className: "gif-content"
-    }) as HTMLImageElement;
+    });
     gifImg.addEventListener("click", () => {
       toggleMediaMenu();
       sendMessage(gifData.media[0].gif.url);

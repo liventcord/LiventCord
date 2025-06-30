@@ -260,7 +260,9 @@ function displayFriendActionMessage(
     ? getFriendMessage(userNick, isSuccess, errorType, status)
     : getFriendMessage(userNick, false, errorType, status);
   console.log(text);
-  if (text) printFriendMessage(text);
+  if (text) {
+    printFriendMessage(text);
+  }
 }
 interface FriendMessage {
   friendId: string;
@@ -273,7 +275,9 @@ function handleAddFriendResponse(message: FriendMessage): void {
   const { friendNick, isSuccess, friendData } = message;
   console.log("add friend response:", message);
   const pendingButton = getId("pending-button");
-  if (pendingButton) pendingButton.click();
+  if (pendingButton) {
+    pendingButton.click();
+  }
   displayFriendActionMessage(
     friendNick,
     isSuccess,
@@ -285,8 +289,9 @@ function handleAddFriendResponse(message: FriendMessage): void {
   if (
     currentSelectedFriendMenu !== "pending" ||
     friendData?.userId === undefined
-  )
+  ) {
     return;
+  }
   updateFriendMenu();
 }
 
@@ -397,7 +402,9 @@ export function UpdatePendingCounter() {
     const hasPending = pendingCounter > 0;
 
     pendingAlerts.forEach((alert) => {
-      if (!alert) return;
+      if (!alert) {
+        return;
+      }
 
       alert.textContent = String(pendingCounter);
       if (hasPending) {
@@ -417,7 +424,9 @@ export function updateFriendsList(friends: FriendData[]): void {
     return;
   }
   console.warn("Friends: ", friends);
-  if (isAddFriendsOpen) return;
+  if (isAddFriendsOpen) {
+    return;
+  }
 
   currentFriendInstances = friends;
 
@@ -481,7 +490,9 @@ export function submitAddFriend() {
   const addfriendinput = getId("addfriendinputfield") as HTMLInputElement;
   const currentValue = addfriendinput.value.trim();
 
-  if (!currentValue) return;
+  if (!currentValue) {
+    return;
+  }
 
   if (!isValidFriendName(currentValue)) {
     printFriendMessage(
@@ -498,7 +509,9 @@ export function submitAddFriend() {
   }
 
   const parsed = parseUsernameDiscriminator(currentValue);
-  if (!parsed) return;
+  if (!parsed) {
+    return;
+  }
 
   const { nickName, discriminator } = parsed;
 
@@ -507,7 +520,9 @@ export function submitAddFriend() {
 
 export function filterFriendsOnSearch(): void {
   const friendsSearchInput = getId("friendsSearchInput") as HTMLInputElement;
-  if (!friendsSearchInput) return;
+  if (!friendsSearchInput) {
+    return;
+  }
 
   const input = friendsSearchInput.value.toLowerCase();
   const friends = document.getElementsByClassName("friend-card");

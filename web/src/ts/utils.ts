@@ -27,7 +27,7 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
     style?: Partial<CSSStyleDeclaration> | string;
     [key: string]: any;
   }
-): HTMLElement => {
+): HTMLElementTagNameMap[K] => {
   const element = document.createElement(tag);
 
   if (options) {
@@ -44,6 +44,7 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 
   return element;
 };
+
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const DEFAULT_DISCRIMINATOR = "0000";
@@ -84,7 +85,9 @@ export function getId(string: string): HTMLElement | null {
 
 export function getMaskedEmail(email: string) {
   const parts = email.split("@");
-  if (parts.length !== 2) return email;
+  if (parts.length !== 2) {
+    return email;
+  }
   const nickName = parts[0];
   const domain = parts[1];
   const hiddenNickname = "*".repeat(nickName.length);
@@ -101,7 +104,9 @@ export function reCalculateFriTitle() {
   const textToWrite =
     friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
   const friendsTitleContainer = getId("friendsTitleContainer") as HTMLElement;
-  if (friendsTitleContainer) friendsTitleContainer.textContent = textToWrite;
+  if (friendsTitleContainer) {
+    friendsTitleContainer.textContent = textToWrite;
+  }
 
   if (friendsCount === 0) {
     displayWumpus();
@@ -368,7 +373,7 @@ export function getAverageRGB(imgEl: HTMLImageElement): string {
 
   const blockSize = 5;
   const RGBA_COMPONENTS = 4;
-  const canvas = createEl("canvas") as HTMLCanvasElement;
+  const canvas = createEl("canvas");
   const context = canvas.getContext && canvas.getContext("2d");
 
   if (!context) {
@@ -475,7 +480,9 @@ export function formatDateGood(date: Date): string {
 }
 
 export function truncateString(str: string, maxLength: number) {
-  if (!str) return "";
+  if (!str) {
+    return "";
+  }
   if (str.length <= maxLength) {
     return str;
   }
@@ -504,7 +511,9 @@ export function openExternalUrl(url: string) {
 }
 
 function sanitizeHTML(html: string) {
-  if (typeof html !== "string") return "";
+  if (typeof html !== "string") {
+    return "";
+  }
   function isValidForColoring(content: string) {
     return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());
   }
@@ -556,12 +565,16 @@ function sanitizeHTML(html: string) {
   return applyCustomStyles(validHtml);
 }
 export function disableElementHTML(element: HTMLElement): void {
-  if (element instanceof HTMLElement) element.style.display = "none";
+  if (element instanceof HTMLElement) {
+    element.style.display = "none";
+  }
 }
 
 export function disableElement(input: string | HTMLElement): void {
   const element = input instanceof HTMLElement ? input : getId(input);
-  if (element) element.style.display = "none";
+  if (element) {
+    element.style.display = "none";
+  }
 }
 
 function applyStyles(
@@ -570,7 +583,9 @@ function applyStyles(
   isBlock: boolean,
   isInline: boolean
 ): void {
-  if (isFlex1) element.style.flex = "1";
+  if (isFlex1) {
+    element.style.flex = "1";
+  }
   element.style.display = isBlock
     ? "block"
     : isInline
@@ -585,7 +600,9 @@ export function enableElement(
   isInline: boolean = false
 ): void {
   const element = input instanceof HTMLElement ? input : getId(input);
-  if (element) applyStyles(element, isFlex1, isBlock, isInline);
+  if (element) {
+    applyStyles(element, isFlex1, isBlock, isInline);
+  }
 }
 
 export function removeElement(elementName: string) {
@@ -629,10 +646,14 @@ function applyCustomStyles(html: string): string {
 export function getBase64Image(
   imgElement: HTMLImageElement
 ): string | undefined {
-  const canvas = createEl("canvas") as HTMLCanvasElement;
-  if (!canvas) return;
+  const canvas = createEl("canvas");
+  if (!canvas) {
+    return;
+  }
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) {
+    return;
+  }
   canvas.width = imgElement.naturalWidth;
   canvas.height = imgElement.naturalHeight;
   ctx.drawImage(imgElement, 0, 0);
@@ -732,6 +753,13 @@ export const convertKeysToCamelCase = (obj: any): any => {
   return obj;
 };
 
+export function underscoreToTitle(str: string) {
+  return str
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function escapeHtml(str: string) {
   return str
     .replace(/&(?![a-zA-Z]+;|#\d+;)/g, "&amp;")
@@ -753,21 +781,30 @@ export function findPreviousNode(node: Node): Node | null {
 }
 
 export function findNextNode(node: Node): Node | null {
-  if (node.firstChild) return node.firstChild;
-  if (node.nextSibling) return node.nextSibling;
+  if (node.firstChild) {
+    return node.firstChild;
+  }
+  if (node.nextSibling) {
+    return node.nextSibling;
+  }
 
   let current = node;
-  while (current.parentNode && !current.nextSibling)
+  while (current.parentNode && !current.nextSibling) {
     current = current.parentNode;
+  }
   return current.nextSibling;
 }
 
 export function findLastTextNode(node: Node): Node | null {
-  if (node.nodeType === Node.TEXT_NODE) return node;
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node;
+  }
 
   for (let i = node.childNodes.length - 1; i >= 0; i--) {
     const lastTextNode = findLastTextNode(node.childNodes[i]);
-    if (lastTextNode) return lastTextNode;
+    if (lastTextNode) {
+      return lastTextNode;
+    }
   }
   return null;
 }
@@ -963,7 +1000,7 @@ export const tenorHosts = [
 const IgnoreProxies = ["i.redd.it", ...tenorHosts];
 
 class CorsDomainManager {
-  private static LOCALSTORAGE_KEY = "corsAllowedDomainsCache";
+  private static readonly LOCALSTORAGE_KEY = "corsAllowedDomainsCache";
   private cache: Record<string, boolean> = {};
 
   constructor() {
@@ -1102,4 +1139,31 @@ export function isValidUrl(url: string) {
   } catch {
     return false;
   }
+}
+
+export async function openBlobUrl(imageElement: HTMLImageElement) {
+  const canvas = createEl("canvas");
+  canvas.width = imageElement.naturalWidth;
+  canvas.height = imageElement.naturalHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Unable to get canvas context");
+  }
+
+  ctx.drawImage(imageElement, 0, 0);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Failed to create blob from canvas"));
+      }
+    }, "image/png");
+  });
+
+  const objectUrl = URL.createObjectURL(blob);
+  window.open(objectUrl, "_blank");
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
 }

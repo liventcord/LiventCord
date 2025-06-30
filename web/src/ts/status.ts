@@ -14,19 +14,19 @@ export class UserStatus {
   private dropdown: HTMLElement | null = null;
   private timeoutId: any = null;
   private isTimeoutPending = false;
-  private statusColors: Record<string, string> = {
+  private readonly statusColors: Record<string, string> = {
     online: "#23a55a",
     offline: "#80848E",
     idle: "#d8db1c",
     "do-not-disturb": "#F23F43"
   };
-  private statusTypes = {
+  private readonly statusTypes = {
     offline: "offline",
     online: "online",
     "do-not-disturb": "do-not-disturb",
     idle: "idle"
   };
-  private selfStatus = getId("self-status") as HTMLElement;
+  private readonly selfStatus = getId("self-status") as HTMLElement;
 
   constructor() {
     this.selfStatus.textContent = this.formatStatusText(
@@ -40,7 +40,9 @@ export class UserStatus {
 
   async showStatusPanel() {
     await this.initStatusPanel();
-    if (!this.createdPanel) return;
+    if (!this.createdPanel) {
+      return;
+    }
 
     this.createdPanel.style.display = "flex";
 
@@ -51,14 +53,16 @@ export class UserStatus {
     document.addEventListener("mousedown", this.handleOutsideClick);
   }
 
-  private handleOutsideClick = (event: MouseEvent) => {
+  private readonly handleOutsideClick = (event: MouseEvent) => {
     console.log(
       event.target,
       this.createdPanel,
       this.createdPanel === this.createdPanel
     );
     const target = event.target as HTMLElement;
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     if (
       this.createdPanel &&
       target.className !== "status-option" &&
@@ -79,7 +83,9 @@ export class UserStatus {
 
   async createStatusPanel() {
     const createdPanel = await drawProfilePopId(currentUserId, true);
-    if (!createdPanel) return;
+    if (!createdPanel) {
+      return;
+    }
 
     createdPanel.classList.add("statusPanelContainer");
     createdPanel.style.display = "none";
@@ -90,7 +96,9 @@ export class UserStatus {
     const statusBubble = createdPanel.querySelector(
       ".status-bubble"
     ) as HTMLElement;
-    if (!statusBubble) return;
+    if (!statusBubble) {
+      return;
+    }
 
     this.updateSelfStatusBubble(statusBubble);
 
@@ -119,7 +127,9 @@ export class UserStatus {
     status: string = this.currentStatus,
     isMain: boolean = false
   ): HTMLElement | null {
-    if (!status) return null;
+    if (!status) {
+      return null;
+    }
     const statusClass = status.toLowerCase().replace(/\s+/g, "-");
     const bubble = createBubble(statusClass);
     bubble.classList.add("status-button-bubble", "status-button-bubble-main");
@@ -137,13 +147,15 @@ export class UserStatus {
 
   createEditStatusSvg(): HTMLElement {
     return createEl("div", {
-      innerHTML: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z"></path></svg>`
+      innerHTML:
+        '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z"></path></svg>'
     });
   }
 
   createCopyIdSvg(): HTMLElement {
     return createEl("div", {
-      innerHTML: `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M15.3 14.48c-.46.45-1.08.67-1.86.67h-1.39V9.2h1.39c.78 0 1.4.22 1.86.67.46.45.68 1.22.68 2.31 0 1.1-.22 1.86-.68 2.31Z" class=""></path><path fill="currentColor" fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5Zm1 15h2.04V7.34H6V17Zm4-9.66V17h3.44c1.46 0 2.6-.42 3.38-1.25.8-.83 1.2-2.02 1.2-3.58s-.4-2.75-1.2-3.58c-.79-.83-1.92-1.25-3.38-1.25H10Z" clip-rule="evenodd" class=""></path></svg>`
+      innerHTML:
+        '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M15.3 14.48c-.46.45-1.08.67-1.86.67h-1.39V9.2h1.39c.78 0 1.4.22 1.86.67.46.45.68 1.22.68 2.31 0 1.1-.22 1.86-.68 2.31Z" class=""></path><path fill="currentColor" fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5Zm1 15h2.04V7.34H6V17Zm4-9.66V17h3.44c1.46 0 2.6-.42 3.38-1.25.8-.83 1.2-2.02 1.2-3.58s-.4-2.75-1.2-3.58c-.79-.83-1.92-1.25-3.38-1.25H10Z" clip-rule="evenodd" class=""></path></svg>'
     });
   }
 
@@ -202,7 +214,9 @@ export class UserStatus {
     }
   }
   setSelfStatus(status: string) {
-    if (!status) return;
+    if (!status) {
+      return;
+    }
     this.currentStatus = status;
 
     this.selfStatus.textContent = this.formatStatusText(status);
@@ -263,12 +277,16 @@ export class UserStatus {
     document.body.append(this.dropdown);
 
     const showDropdown = () => {
-      if (this.dropdown) this.dropdown.style.display = "block";
+      if (this.dropdown) {
+        this.dropdown.style.display = "block";
+      }
       this.clearTimeoutIfNecessary();
     };
 
     const hideDropdown = (event: MouseEvent) => {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
+      if (this.timeoutId) {
+        clearTimeout(this.timeoutId);
+      }
       this.timeoutId = setTimeout(() => {
         if (
           this.dropdown &&
@@ -291,9 +309,13 @@ export class UserStatus {
       event.preventDefault();
       isDropdownVisible = !isDropdownVisible;
       if (isDropdownVisible) {
-        if (this.dropdown) this.dropdown.style.display = "block";
+        if (this.dropdown) {
+          this.dropdown.style.display = "block";
+        }
       } else {
-        if (this.dropdown) this.dropdown.style.display = "none";
+        if (this.dropdown) {
+          this.dropdown.style.display = "none";
+        }
       }
     });
 
@@ -333,12 +355,16 @@ export class UserStatus {
     });
 
     dropdown.addEventListener("mouseenter", () => {
-      if (this.dropdown) this.dropdown.style.display = "block";
+      if (this.dropdown) {
+        this.dropdown.style.display = "block";
+      }
       this.clearTimeoutIfNecessary();
     });
 
     dropdown.addEventListener("mouseleave", () => {
-      if (this.timeoutId) clearTimeout(this.timeoutId);
+      if (this.timeoutId) {
+        clearTimeout(this.timeoutId);
+      }
       this.timeoutId = setTimeout(() => {
         if (this.dropdown) {
           this.dropdown.style.display = "none";

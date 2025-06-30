@@ -12,15 +12,18 @@ document.addEventListener("mouseover", async function (event) {
     !target ||
     target.classList.contains("tooltip") ||
     target === currentTarget
-  )
+  ) {
     return;
+  }
 
   currentTarget = target;
   const name =
     target.id ||
     (target.closest("#tb-pin") ? "tb-pin" : getTooltipClassName(target));
 
-  if (!name) return;
+  if (!name) {
+    return;
+  }
 
   let tooltipText = translations.getTooltipTranslation(name) || "";
   if (target.className === "guild-image") {
@@ -42,7 +45,9 @@ document.addEventListener("mouseout", function (event) {
 });
 
 export function copyText(event: MouseEvent, text: string) {
-  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+  }
   createTooltip(event.target as HTMLElement, "Copied!", {
     x: event.clientX,
     y: event.clientY
@@ -54,7 +59,9 @@ export function copyText(event: MouseEvent, text: string) {
 
 export function createTooltipAtCursor(text: string) {
   const event = window.event as MouseEvent | null;
-  if (!event) return;
+  if (!event) {
+    return;
+  }
 
   createTooltip(document.body, text, {
     x: event.clientX,
@@ -75,7 +82,9 @@ export function createTooltip(
   tooltipText: string,
   positionOffset: { x: number; y: number } = { x: 0, y: 0 }
 ) {
-  if (!tooltipText) return;
+  if (!tooltipText) {
+    return;
+  }
 
   tooltip?.remove();
   tooltip = createEl("div", { className: "tooltip", textContent: tooltipText });

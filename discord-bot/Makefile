@@ -3,7 +3,7 @@
 SHELL := /bin/bash
 VENV_ACTIVATE = venv/bin/activate
 API_URL = https://liventcord.koyeb.app
-PYTHON = python3.13
+PYTHON = python
 
 ifeq ($(OS),Windows_NT)
     VENV_ACTIVATE = venv/Scripts/activate

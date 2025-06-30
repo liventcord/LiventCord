@@ -1,17 +1,23 @@
 """Command for sending pokemon image."""
 
 import os
+import platform
 import re
 import shlex
 import subprocess
 
 import discord
-from cairosvg import svg2png
+
+if platform.system() == "Linux":
+    from cairosvg import svg2png
+    from wcwidth import wcswidth
+else:
+    svg2png = None
+    wcswidth = None
 from PIL import Image, ImageChops
 from rich.ansi import AnsiDecoder
 from rich.console import Console
 from rich.terminal_theme import MONOKAI
-from wcwidth import wcswidth
 
 
 def parse_args(content: str):
@@ -140,6 +146,9 @@ def cleanup_files(paths):
 
 async def generate_pokemon(message: discord.Message) -> None:
     """Generate pokemon image and reply to message."""
+    if svg2png is None:
+        raise RuntimeError("svg2png is only supported on Linux.")
+
     count, shiny, big, random_flag, f_flag, specific = parse_args(message.content)
     embeds = []
     files = []

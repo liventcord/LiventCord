@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+
 import {
   getId,
   createEl,
@@ -6,7 +7,7 @@ import {
   saveBooleanCookie
 } from "./utils.ts";
 import { isOnMePage } from "./router.ts";
-import { updateChatWidth } from "./chat.ts";
+import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
 import {
@@ -16,7 +17,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { handleResize } from "./ui.ts";
+import { handleResize, handleResizeWidth } from "./ui.ts";
 import { socketClient } from "./socketEvents.ts";
 
 export let userList: HTMLElement | null;
@@ -24,9 +25,9 @@ export let userLine: HTMLElement | null;
 export let activityList: HTMLElement | null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  userList = getId("user-list") as HTMLElement | null;
-  userLine = document.querySelector(".horizontal-line") as HTMLElement | null;
-  activityList = getId("activity-list") as HTMLElement | null;
+  userList = getId("user-list");
+  userLine = document.querySelector(".horizontal-line");
+  activityList = getId("activity-list");
 });
 
 export let isUsersOpenGlobal: boolean;
@@ -78,7 +79,9 @@ export function enableUserList() {
 }
 
 export function setUserListLine() {
-  if (!userLine) return;
+  if (!userLine) {
+    return;
+  }
   if (isUsersOpenGlobal) {
     userLine.style.display = "flex";
   } else {
@@ -105,6 +108,8 @@ export function setUsersList(
   updateChatWidth();
   updateMediaPanelPosition();
   handleResize();
+  handleResizeWidth();
+  fetchCurrentAttachments();
 }
 export function updateDmFriendList(friendId: string, friendNick: string) {
   const usersData = [

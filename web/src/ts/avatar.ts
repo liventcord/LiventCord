@@ -92,7 +92,9 @@ async function setPicture(
       : blackImage;
     return;
   }
-  if (!imgToUpdate) return;
+  if (!imgToUpdate) {
+    return;
+  }
 
   if (srcId === CLYDE_ID) {
     imgToUpdate.src = IMAGE_SRCS.CLYDE_SRC;
@@ -235,7 +237,9 @@ function updateImageSource(imageElement: HTMLImageElement, imagePath: string) {
   imageElement.src = imagePath;
 }
 export function updateSelfName(nickName: string) {
-  if (!nickName) return;
+  if (!nickName) {
+    return;
+  }
   const settingsNameText = getId("settings-self-name");
   if (settingsNameText) {
     settingsNameText.innerText = nickName;
@@ -252,7 +256,9 @@ export function updateSelfProfile(
   nickName: string,
   isAfterUploading?: boolean
 ) {
-  if (!userId) return;
+  if (!userId) {
+    return;
+  }
   const selfimagepath = getProfileUrl(userId, true);
 
   updateImageSource(selfProfileImage, selfimagepath);
@@ -263,7 +269,9 @@ export function updateSelfProfile(
   ) {
     const settingsSelfProfile = getProfileImage();
 
-    if (!settingsSelfProfile) return;
+    if (!settingsSelfProfile) {
+      return;
+    }
     updateSelfName(nickName);
 
     updateImageSource(settingsSelfProfile, selfimagepath);
@@ -333,7 +341,9 @@ function uploadImageEmoji(blobs: File[]): void {
     validFiles.push(file);
   }
 
-  if (validFiles.length === 0) return;
+  if (validFiles.length === 0) {
+    return;
+  }
 
   sendImageUploadRequest(
     false,
@@ -345,7 +355,9 @@ function uploadImageEmoji(blobs: File[]): void {
 
 function resetProfileImageFile() {
   const profileImgFile = getProfileImageFile();
-  if (profileImgFile) profileImgFile.value = "";
+  if (profileImgFile) {
+    profileImgFile.value = "";
+  }
 }
 function getFileSrc(isGuild: boolean): string {
   return isGuild
@@ -460,28 +472,34 @@ export function getProfileImageFile() {
 
 export function clearAvatarInput(isGuild: boolean) {
   const fileInput = isGuild ? getGuildImageFile() : getProfileImageFile();
-  if (fileInput) fileInput.value = "";
+  if (fileInput) {
+    fileInput.value = "";
+  }
 }
 
 export function revertToLastConfirmedImage(isGuild: boolean) {
   if (isGuild) {
     if (lastConfirmedGuildImg) {
       const guildImage = getGuildImage();
-      if (guildImage)
+      if (guildImage) {
         guildImage.src = URL.createObjectURL(lastConfirmedGuildImg);
+      }
     }
   } else {
     if (lastConfirmedProfileImg) {
       const profileImage = getProfileImage();
-      if (profileImage)
+      if (profileImage) {
         profileImage.src = URL.createObjectURL(lastConfirmedProfileImg);
+      }
     }
   }
 }
 
 function onEditImage(isGuild: boolean) {
   const fileInput = isGuild ? getGuildImageFile() : getProfileImageFile();
-  if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    return;
+  }
 
   const filedata = fileInput.files[0];
   const reader = new FileReader();
@@ -506,10 +524,12 @@ function onEditImage(isGuild: boolean) {
       }
       setIsChangedImage(true);
       regenerateConfirmationPanel();
-      if (currentPopUp) showConfirmationPanel(currentPopUp);
+      if (currentPopUp) {
+        showConfirmationPanel(currentPopUp);
+      }
     }
     if (e.target && typeof e.target.result === "string") {
-      createCropPop(e.target.result as string, callbackAfterAccept);
+      createCropPop(e.target.result, callbackAfterAccept);
     }
   };
 
@@ -530,8 +550,9 @@ export async function onEditEmoji() {
     !emojiFileInput ||
     !emojiFileInput.files ||
     emojiFileInput.files.length === 0
-  )
+  ) {
     return;
+  }
 
   const files: File[] = Array.from(emojiFileInput.files);
 

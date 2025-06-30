@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import datetime
 import os
+import platform
 import random
 import time
 from typing import Any
@@ -12,8 +13,23 @@ from livent_cord_client.api.message import (
     post_api_discord_bot_messages_guild_id_channel_id,
 )
 from livent_cord_client.models.new_bot_message_request import NewBotMessageRequest
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+
+if platform.system() not in ("Linux", "Windows"):
+    selenium_available = False
+else:
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+
+        selenium_available = True
+    except ImportError:
+        selenium_available = False
+
+if not selenium_available:
+    raise RuntimeError(
+        "Selenium is not supported on this platform or is not installed."
+    )
+
 
 from utils import LC_BOT_TOKEN, MainGuildIdLiventcord, forward_url
 

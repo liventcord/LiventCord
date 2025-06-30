@@ -82,7 +82,9 @@ export function initialiseLoginPage() {
   setLanguage(languageToSet);
   updateDOM();
 
-  if (areListenersAdded) return;
+  if (areListenersAdded) {
+    return;
+  }
   areListenersAdded = true;
 
   initializeGoogleOauth();
@@ -122,12 +124,8 @@ export function initialiseLoginPage() {
   if (loginForm) {
     setupForm(loginForm, false);
 
-    const loginEmailInput = loginForm.querySelector(
-      'input[name="email"]'
-    ) as HTMLInputElement | null;
-    const loginPassInput = loginForm.querySelector(
-      'input[name="pass"]'
-    ) as HTMLInputElement | null;
+    const loginEmailInput = loginForm.querySelector('input[name="email"]');
+    const loginPassInput = loginForm.querySelector('input[name="pass"]');
 
     if (loginEmailInput && loginPassInput) {
       addInputValidationListeners(loginEmailInput, loginPassInput);
@@ -154,7 +152,9 @@ export function initialiseLoginPage() {
 
   const addClickListener = (id: string, handler: (e: Event) => void) => {
     const element = getId(id);
-    if (element) element.addEventListener("click", handler);
+    if (element) {
+      element.addEventListener("click", handler);
+    }
   };
 
   addClickListener("register-link", (e) => {
@@ -211,7 +211,7 @@ function handleCredentialResponse(response: any) {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ idToken: idToken })
+        body: JSON.stringify({ idToken })
       },
       true
     )
@@ -326,12 +326,14 @@ export function initializeGoogleOauth(isLink: boolean = false) {
       src: "https://accounts.google.com/gsi/client",
       async: true,
       defer: true
-    }) as HTMLScriptElement;
+    });
     document.head.appendChild(script);
     const wrapper = getId(
       isLink ? "google-link-wrapper" : "google-signin-wrapper"
     );
-    if (!wrapper) return;
+    if (!wrapper) {
+      return;
+    }
 
     wrapper.innerHTML = `
       <div id="g_id_onload"
@@ -385,7 +387,9 @@ function submitForm(form: HTMLElement, isRegister: boolean) {
 
   emailInput.setCustomValidity("");
   passwordInput.setCustomValidity("");
-  if (nickInput) nickInput.setCustomValidity("");
+  if (nickInput) {
+    nickInput.setCustomValidity("");
+  }
 
   if (!validateEmail(emailValue)) {
     setInputValidity(emailInput, getTranslation("emailInvalid"));
@@ -469,7 +473,9 @@ let debounceTimer = 0;
 let currentInputValue = "";
 
 function setRegisterInputListeners(registerForm: HTMLElement) {
-  if (!registerForm) return;
+  if (!registerForm) {
+    return;
+  }
 
   const emailInput = registerForm.querySelector(
     'input[name="email"]'
@@ -481,7 +487,9 @@ function setRegisterInputListeners(registerForm: HTMLElement) {
     'input[name="pass"]'
   ) as HTMLInputElement;
 
-  if (!emailInput || !nickInput || !passInput) return;
+  if (!emailInput || !nickInput || !passInput) {
+    return;
+  }
 
   emailInput.addEventListener("input", () => {
     emailInput.setCustomValidity("");
@@ -565,7 +573,9 @@ function validatePassword(password: string) {
 }
 
 function validateNick(value?: string) {
-  if (!value) return false;
+  if (!value) {
+    return false;
+  }
   const nick = value.trim();
   return nick.length >= 1 && nick.length <= 32;
 }

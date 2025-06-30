@@ -99,12 +99,16 @@ function openReactionMenu(messageId: string) {
 
 function openEditMessage(messageId: string) {
   const message = getId(messageId);
-  if (!message) return;
+  if (!message) {
+    return;
+  }
   convertToEditUi(message);
   const editMessageButtonContainer = message.querySelector(
     ".edit-message-button-container"
   ) as HTMLElement;
-  if (editMessageButtonContainer) scrollToMessage(editMessageButtonContainer);
+  if (editMessageButtonContainer) {
+    scrollToMessage(editMessageButtonContainer);
+  }
 }
 
 export function pinMessage(messageId: string) {
@@ -119,7 +123,9 @@ function editGuildProfile() {
 }
 function copyMessage(event: MouseEvent, messageId: string) {
   const messageText = getId(messageId)?.getAttribute("data-content");
-  if (messageText) copyText(event, messageText);
+  if (messageText) {
+    copyText(event, messageText);
+  }
 }
 function deleteMessagePrompt(messageId: string) {
   const acceptCallback = () => {
@@ -149,7 +155,9 @@ function showNotifyMenu(channelId: string) {
 }
 function onEditChannel(channelId: string) {
   const foundChannel = cacheInterface.getChannel(currentGuildId, channelId);
-  if (!foundChannel) return;
+  if (!foundChannel) {
+    return;
+  }
   changeChannel(foundChannel);
   // Open channel settings
   openSettings(SettingType.CHANNEL);
@@ -184,12 +192,16 @@ function copyChannelLink(
   copyText(event, content);
 }
 export function copySelfName(event: MouseEvent) {
-  if (!currentUserNick || !currentDiscriminator) return;
+  if (!currentUserNick || !currentDiscriminator) {
+    return;
+  }
   const text = `${currentUserNick}#${currentDiscriminator}`;
   copyText(event, text);
 }
 export function copyId(id: string, event: MouseEvent) {
-  if (!currentUserNick || !currentDiscriminator) return;
+  if (!currentUserNick || !currentDiscriminator) {
+    return;
+  }
 
   copyText(event, id);
 }
