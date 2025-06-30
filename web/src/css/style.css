@@ -1640,7 +1640,7 @@ textarea::-webkit-scrollbar-track {
   display: none;
   left: 288px;
   flex-direction: column;
-  background: #313338;
+  background: #2e2f33;
   border: 1px solid #3c3e42;
   max-height: 300px;
   height: auto;

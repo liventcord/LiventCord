@@ -83,14 +83,27 @@ const state = {
   selectionStart: 0,
   selectionEnd: 0
 };
+(window as any).statee = state;
 export function getChatBarState() {
   return state;
 }
 export function setChatBarState(_state: ChatBarState) {
-  state.rawContent = _state.rawContent;
-  state.renderedContent = _state.renderedContent;
-  chatInput.innerText = state.rawContent;
-  chatInput.dispatchEvent(new Event("input"));
+  console.error("Set new state: ", _state);
+
+  const hasChanged =
+    state.rawContent !== _state.rawContent ||
+    state.renderedContent !== _state.renderedContent;
+
+  if (hasChanged) {
+    state.rawContent = _state.rawContent;
+    state.renderedContent = _state.renderedContent;
+    chatInput.innerText = state.rawContent;
+    chatInput.dispatchEvent(new Event("input"));
+  }
+}
+
+export function setEmojiSuggestionsVisible(value:boolean) {
+  state.emojiSuggestionsVisible = value
 }
 
 if (replyCloseButton) {
@@ -1135,7 +1148,7 @@ export const isEmoji = (node: Node | null): node is HTMLElement =>
   ((node.tagName === "IMG" && node.classList.contains("chat-emoji")) ||
     (node.tagName === "DIV" && node.classList.contains("emoji")));
 
-export function manuallyRenderEmojis(rawContent: string) {
+export function manuallyRenderEmojis(rawContent: string) :void {
   state.isProcessing = true;
 
   state.rawContent = rawContent;
@@ -1394,35 +1407,13 @@ export function initialiseChatInput() {
     }
   });
 
-  const updateCursorOnAction = () => {
-    setTimeout(() => {
-      DomUtils.syncCursorPosition();
-    }, 0);
-  };
 
   const updateCursorOnClick = () => {
-    setTimeout(() => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        return;
-      }
-      const range = selection.getRangeAt(0);
-      const newPos = DomUtils.calculatePositionFromNode(
-        range.startContainer,
-        range.startOffset
-      );
-
-      updateStateCursorPos(newPos);
-      state.selectionStart = newPos;
-      state.selectionEnd = newPos;
-
-      toggleShowEmojiSuggestions();
-    }, 0);
+    toggleShowEmojiSuggestions();
   };
 
   chatInput.addEventListener("input", handleChatInput);
   chatInput.addEventListener("click", updateCursorOnClick);
-  chatInput.addEventListener("focus", updateCursorOnAction);
   chatInput.addEventListener("keydown", handleUserKeydown);
   updatePlaceholderVisibility();
 }

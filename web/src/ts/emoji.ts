@@ -3,10 +3,10 @@ import { cacheInterface } from "./cache";
 import {
   adjustHeight,
   chatInput,
-  DomUtils,
   getChatBarState,
   manuallyRenderEmojis,
-  setChatBarState
+  setChatBarState,
+  setEmojiSuggestionsVisible,
 } from "./chatbar";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
@@ -559,9 +559,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
   }
 
   emojiSuggestionDropdown.innerHTML = "";
-  const state = getChatBarState();
-  state.emojiSuggestionsVisible = false;
-  setChatBarState(state);
+  setEmojiSuggestionsVisible(false)
 
   for (const emoji of matching) {
     const emojiId = "fileId" in emoji ? emoji.fileId : emoji.id;
@@ -592,7 +590,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
     emojiSuggestionDropdown.appendChild(suggestion);
   }
 
-  state.emojiSuggestionsVisible = true;
+  setEmojiSuggestionsVisible(true)
   emojiSuggestionDropdown.style.display = "flex";
   highlightSuggestion(0);
 }
@@ -625,18 +623,57 @@ function showEmojiSuggestions() {
 
 export function toggleShowEmojiSuggestions() {
   const state = getChatBarState();
-  const start = Math.max(0, state.cursorPosition);
-  const textBeforeCursor = state.rawContent.slice(start, state.cursorPosition);
-  textBeforeCursor.trimStart().startsWith(":")
-    ? showEmojiSuggestions()
-    : hideEmojiSuggestions();
+  const textBeforeCursor = state.rawContent.slice(0, state.cursorPosition);
+
+  const emojiTriggerMatch = textBeforeCursor.match(/:([\w-]*)$/);
+
+  if (emojiTriggerMatch) {
+    showEmojiSuggestions();
+  } else {
+    hideEmojiSuggestions();
+  }
 }
 
 function appendEmojiToInput(text: string) {
-  if (!chatInput) {
-    return;
-  }
+  if (!chatInput) return;
   const state = getChatBarState();
+
+  const raw = state.rawContent;
+  const cursorPos = state.cursorPosition;
+
+  let startIndex = cursorPos - 1;
+  while (startIndex >= 0 && raw[startIndex] !== ':') {
+    if (raw[startIndex] === ' ' || raw[startIndex] === '\n') {
+      startIndex = -1;
+      break;
+    }
+    startIndex--;
+  }
+
+  if (startIndex < 0) {
+    startIndex = cursorPos;
+  }
+
+  let endIndex = cursorPos;
+  while (endIndex < raw.length) {
+    const c = raw[endIndex];
+    if (c === ' ' || c === '\n') break;
+    if (c === ':') {
+      endIndex++; 
+      break;
+    }
+    endIndex++;
+  }
+
+  state.rawContent =
+    raw.slice(0, startIndex) +
+    text +
+    raw.slice(endIndex);
+
+  state.cursorPosition = startIndex + text.length;
+  state.selectionStart = state.cursorPosition;
+  state.selectionEnd = state.cursorPosition;
+
 
   let charCount = 0;
   let targetNode: Node | null = null;
@@ -644,25 +681,20 @@ function appendEmojiToInput(text: string) {
 
   function findPosition(node: Node): boolean {
     if (node.nodeType === Node.TEXT_NODE) {
-      const nodeTextLength = node.textContent?.length || 0;
-      if (charCount + nodeTextLength >= state.cursorPosition) {
+      const len = node.textContent?.length || 0;
+      if (charCount + len >= state.cursorPosition) {
         targetNode = node;
         targetOffset = state.cursorPosition - charCount;
         return true;
       }
-      charCount += nodeTextLength;
+      charCount += len;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      if (
-        (node as HTMLElement).tagName === "IMG" ||
-        (node as HTMLElement).tagName === "DIV"
-      ) {
-        const emojiId = (node as HTMLElement).getAttribute("data-emoji-id");
+      if ((node as HTMLElement).tagName === 'IMG' || (node as HTMLElement).tagName === 'DIV') {
+        const emojiId = (node as HTMLElement).getAttribute('data-emoji-id');
         charCount += emojiId ? `:${emojiId}:`.length : 1;
       } else {
         for (let i = 0; i < node.childNodes.length; i++) {
-          if (findPosition(node.childNodes[i])) {
-            return true;
-          }
+          if (findPosition(node.childNodes[i])) return true;
         }
       }
     }
@@ -677,48 +709,26 @@ function appendEmojiToInput(text: string) {
   }
 
   const selection = window.getSelection();
-  if (!selection) {
-    return;
-  }
-
+  if (!selection) return;
   const range = document.createRange();
+
   if (targetNode.nodeType === Node.TEXT_NODE) {
     range.setStart(targetNode, targetOffset);
   } else {
     const el = targetNode as HTMLElement;
-    const offset = Math.min(targetOffset, el.childNodes.length);
-    range.setStart(targetNode, offset);
+    range.setStart(targetNode, Math.min(targetOffset, el.childNodes.length));
   }
   range.collapse(true);
 
   selection.removeAllRanges();
   selection.addRange(range);
 
-  range.deleteContents();
-  const emojiNode = document.createTextNode(text);
-  range.insertNode(emojiNode);
-
-  range.setStartAfter(emojiNode);
-  range.collapse(true);
-
-  selection.removeAllRanges();
-  selection.addRange(range);
-
-  state.rawContent =
-    state.rawContent.slice(0, state.cursorPosition) +
-    text +
-    state.rawContent.slice(state.cursorPosition);
-
-  state.cursorPosition += text.length;
-  state.selectionStart = state.cursorPosition;
-  state.selectionEnd = state.cursorPosition;
-
   manuallyRenderEmojis(state.rawContent);
 
   chatInput.focus();
-
   adjustHeight();
 }
+
 
 export function applyActiveEmojiSuggestion() {
   if (!emojiSuggestionDropdown) {
@@ -739,13 +749,11 @@ export function applyActiveEmojiSuggestion() {
 
   const insertedText = `:${emojiId}:`;
 
-  const successful = document.execCommand("insertText", false, insertedText);
-  if (!successful) {
-    appendEmojiToInput(insertedText);
-  }
+  appendEmojiToInput(insertedText);
 
   setTimeout(hideEmojiSuggestions, 50);
 }
+
 
 export function handleEmojiSuggestions(event: KeyboardEvent) {
   const state = getChatBarState();
