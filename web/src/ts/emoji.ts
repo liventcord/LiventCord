@@ -664,13 +664,14 @@ function appendEmojiToInput(text: string) {
     }
     endIndex++;
   }
+  const textToInsert = ' ' + text;
 
   state.rawContent =
     raw.slice(0, startIndex) +
-    text +
+    textToInsert +
     raw.slice(endIndex);
 
-  state.cursorPosition = startIndex + text.length;
+  state.cursorPosition = startIndex + textToInsert.length;
   state.selectionStart = state.cursorPosition;
   state.selectionEnd = state.cursorPosition;
 
