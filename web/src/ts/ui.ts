@@ -922,30 +922,60 @@ function setupImagePreviewDrag(previewImage: HTMLImageElement): void {
 
   document.addEventListener("mousemove", (event) => {
     if (isDragging) {
-      const newX = event.clientX - startX;
-      const newY = event.clientY - startY;
-
-      const overflowX = previewImage.width * 0.8;
-      const overflowY = previewImage.height * 0.8;
-
-      const minX = -overflowX;
-      const minY = -overflowY;
-      const maxX =
-        imagePreviewContainer.clientWidth - previewImage.width + overflowX;
-      const maxY =
-        imagePreviewContainer.clientHeight - previewImage.height + overflowY;
-
-      const clampedX = Math.min(Math.max(newX, minX), maxX);
-      const clampedY = Math.min(Math.max(newY, minY), maxY);
-
-      previewImage.style.left = `${clampedX}px`;
-      previewImage.style.top = `${clampedY}px`;
+      dragMove(event.clientX, event.clientY);
     }
   });
 
   document.addEventListener("mouseup", () => {
     isDragging = false;
   });
+
+  previewImage.addEventListener("touchstart", (event) => {
+    if (isPreviewZoomed && event.touches.length === 1) {
+      event.preventDefault();
+      const touch = event.touches[0];
+      isDragging = true;
+      startX = touch.clientX - previewImage.offsetLeft;
+      startY = touch.clientY - previewImage.offsetTop;
+    }
+  });
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (isDragging && event.touches.length === 1) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        dragMove(touch.clientX, touch.clientY);
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener("touchend", () => {
+    isDragging = false;
+  });
+
+  function dragMove(clientX: number, clientY: number) {
+    const newX = clientX - startX;
+    const newY = clientY - startY;
+
+    const overflowX = previewImage.width * 0.8;
+    const overflowY = previewImage.height * 0.8;
+
+    const minX = -overflowX;
+    const minY = -overflowY;
+    const maxX =
+      imagePreviewContainer.clientWidth - previewImage.width + overflowX;
+    const maxY =
+      imagePreviewContainer.clientHeight - previewImage.height + overflowY;
+
+    const clampedX = Math.min(Math.max(newX, minX), maxX);
+    const clampedY = Math.min(Math.max(newY, minY), maxY);
+
+    previewImage.style.left = `${clampedX}px`;
+    previewImage.style.top = `${clampedY}px`;
+  }
 }
 
 export function isImagePreviewOpen() {
