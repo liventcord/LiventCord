@@ -26,7 +26,8 @@ import {
   findNextNode,
   formatFileSize,
   isCompressedFile,
-  renderFileIcon
+  renderFileIcon,
+  isMobile
 } from "./utils.ts";
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
@@ -102,8 +103,8 @@ export function setChatBarState(_state: ChatBarState) {
   }
 }
 
-export function setEmojiSuggestionsVisible(value:boolean) {
-  state.emojiSuggestionsVisible = value
+export function setEmojiSuggestionsVisible(value: boolean) {
+  state.emojiSuggestionsVisible = value;
 }
 
 if (replyCloseButton) {
@@ -1148,7 +1149,7 @@ export const isEmoji = (node: Node | null): node is HTMLElement =>
   ((node.tagName === "IMG" && node.classList.contains("chat-emoji")) ||
     (node.tagName === "DIV" && node.classList.contains("emoji")));
 
-export function manuallyRenderEmojis(rawContent: string) :void {
+export function manuallyRenderEmojis(rawContent: string): void {
   state.isProcessing = true;
 
   state.rawContent = rawContent;
@@ -1235,24 +1236,26 @@ function handleSpace(event: KeyboardEvent) {
   console.log(state, chatInput.innerHTML);
 }
 function handleUserKeydown(event: KeyboardEvent) {
-  if (sendTypingData) {
-    handleTypingRequest();
-  }
-  if (!chatContainer) {
-    return;
-  }
+  if (!chatContainer || !chatInput) return;
 
-  if (event.key === "Enter") {
+  const isEnter = event.key === "Enter";
+  const isShift = event.shiftKey;
+
+  if (isEnter) {
     if (state.emojiSuggestionsVisible) {
       event.preventDefault();
       applyActiveEmojiSuggestion();
       return;
     }
 
-    if (event.shiftKey) {
+    if (isMobile) {
+      adjustHeight();
+      return;
+    }
+
+    if (isShift) {
       adjustHeight();
 
-      // Check if we need to scroll
       const difference =
         chatContainer.scrollHeight -
         (chatContainer.scrollTop + chatContainer.clientHeight);
@@ -1260,14 +1263,16 @@ function handleUserKeydown(event: KeyboardEvent) {
       if (difference < SMALL_DIFF) {
         scrollToBottom();
       }
-    } else {
-      event.preventDefault();
-      sendMessage(state.rawContent).then(() => {
-        chatInput.value = "";
-        isAttachmentsAdded = false;
-        adjustHeight();
-      });
+
+      return;
     }
+
+    event.preventDefault();
+    sendMessage(state.rawContent).then(() => {
+      chatInput.innerHTML = "";
+      isAttachmentsAdded = false;
+      adjustHeight();
+    });
   } else {
     handleKeyboardNavigation(event);
   }
@@ -1406,7 +1411,6 @@ export function initialiseChatInput() {
       userMentionDropdown.style.display = "none";
     }
   });
-
 
   const updateCursorOnClick = () => {
     toggleShowEmojiSuggestions();

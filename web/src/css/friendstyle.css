@@ -213,7 +213,7 @@ body.black-theme .dm-selected:hover {
   font-size: 16px;
   height: 22px;
   margin-top: 2px;
-  margin-right: 20px;
+  margin-right: 10px;
   background-color: #43444b;
   background-color: transparent;
   border: none;
@@ -514,6 +514,7 @@ body.black-theme .friend-card:hover {
   top: 40%;
   left: 30%;
 }
+
 body.black-theme #wumpusalone {
   filter: brightness(0.5);
 }

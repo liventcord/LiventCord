@@ -294,7 +294,7 @@
     }
     100% {
       width: 95%;
-      height: 60vh;
+      height: 80vh;
     }
   }
 
@@ -361,7 +361,7 @@
 }
 #private-channel-icon {
   position: absolute;
-  bottom: 120px;
+  bottom: 155px !important;
   left: 18px;
   z-index: 1;
 }

@@ -55,7 +55,7 @@ import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage } from "./app.ts";
 import {
-  isOnCenter,
+  isOnRight,
   loadingScreen,
   setActiveIcon,
   toggleHamburger
@@ -115,14 +115,10 @@ export function createChatScrollButton() {
     const hiddenContent =
       chatContainer.scrollHeight -
       (chatContainer.scrollTop + chatContainer.clientHeight);
-    if (hiddenContent > threshold) {
+    if (hiddenContent > threshold && !isOnRight) {
       scrollButton.style.display = "flex";
     }
-    if (isMobile) {
-      if (isOnCenter()) {
-        scrollButton.style.display = "none";
-      }
-    }
+
     if (hiddenContent < threshold && isMobile) {
       scrollButton.style.display = "none";
     }

@@ -51,6 +51,7 @@ import { changePassword, userManager } from "./user.ts";
 import {
   chatContainer,
   chatContent,
+  chatInput,
   FileHandler,
   showReplyMenu
 } from "./chatbar.ts";
@@ -88,6 +89,12 @@ const imagePreviewContainer = getId(
 if (imagePreviewContainer) {
   imagePreviewContainer.addEventListener("click", hideImagePreviewRequest);
 }
+
+let isOnLeft = false;
+export let isOnRight = false;
+const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
+const toolbarOptions = getId("toolbaroptions") as HTMLElement;
+const navigationBar = getId("navigation-bar") as HTMLElement;
 
 export let loadingScreen: HTMLElement;
 function enableLoadingScreen() {
@@ -1223,8 +1230,6 @@ function handleSwapNavigation(e: TouchEvent) {
     mobileMoveToLeft();
   } else {
     disableElement(mobileBlackBg);
-    disableElement("channel-info");
-    disableElement("hash-sign");
 
     if (isOnLeft) {
       chatContainer.style.flexDirection = "";
@@ -1234,6 +1239,7 @@ function handleSwapNavigation(e: TouchEvent) {
       mobileMoveToCenter(true);
       mobileMoveToRight();
       enableElement(mobileBlackBg);
+
       if (isOnGuild) {
         enableElement("channel-info");
         enableElement("hash-sign");
@@ -1246,20 +1252,11 @@ function handleSwapNavigation(e: TouchEvent) {
   }
 }
 function handleRightCenterCheck() {
-  if (isOnLeft) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
-    mobileMoveToCenter();
-  }
-  return isOnLeft;
+  disableElement(mobileBlackBg);
+  chatContainer.style.flexDirection = "";
+  toolbarOptions.style.zIndex = "1";
 }
-let isOnLeft = false;
-let isOnRight = false;
-const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
-const toolbarOptions = getId("toolbaroptions") as HTMLElement;
-const navigationBar = getId("navigation-bar") as HTMLElement;
+
 export function handleMembersClick() {
   if (isOnLeft) {
     toggleHamburger(true, false);
@@ -1273,18 +1270,13 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean) {
   }
 
   if (isOnRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
+    handleRightCenterCheck();
 
     mobileMoveToCenter();
     return;
   }
   if (isOnLeft && toRight) {
-    disableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "";
-    toolbarOptions.style.zIndex = "1";
-
+    handleRightCenterCheck();
     mobileMoveToCenter();
     return;
   }
@@ -1318,6 +1310,9 @@ function mobileMoveToRight() {
   isOnRight = true;
 
   enableElement(userList);
+  disableElement("channel-info");
+  disableElement("hash-sign");
+
   disableElement("scroll-to-bottom");
 }
 
@@ -1325,6 +1320,7 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   if (!userList) {
     return;
   }
+  console.log("move mobile to center");
 
   isOnRight = false;
   isOnLeft = false;
@@ -1336,19 +1332,21 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   } else {
     disableElement(channelList);
   }
+  enableElement(chatInput);
   getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
   getId("guild-container")?.classList.remove("guilds-list-mobile-left");
   getId("message-input-container")?.classList.remove(
     "message-input-container-mobile-left"
   );
-
-  enableElement(chatContainer);
+  if (!isOnMePage) {
+    enableElement(chatContainer);
+  }
 
   guildContainer.classList.remove("visible");
   disableElement(horizontalLineGuild);
 
   chatContainer.classList.remove("chat-container-mobile-left");
-  if (isOnGuild) {
+  if (!isOnMePage) {
     enableElement("hash-sign");
     enableElement("channel-info");
   }
@@ -1369,6 +1367,7 @@ function mobileMoveToLeft() {
   channelList.classList.remove("visible");
   guildContainer.classList.add("visible");
   enableElement(horizontalLineGuild);
+  disableElement(chatInput);
 
   disableElement(chatContainer);
   chatContainer.classList.add("chat-container-mobile-left");

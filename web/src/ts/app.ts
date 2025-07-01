@@ -494,10 +494,8 @@ function handleMenu(isChangingUrl: boolean) {
     "hash-sign",
     "dm-profile-sign-bubble",
     "dm-profile-sign",
-    chatContainer,
     "message-input-container",
-    "channel-container",
-    "channel-info"
+    "channel-container"
   ].forEach(disableElement);
 
   friendContainerItem.style.color = "white";
@@ -526,11 +524,6 @@ function handleMenu(isChangingUrl: boolean) {
   disableElement("scroll-to-bottom");
 }
 
-function handleDm() {
-  openDm(lastDmId);
-  disableElement(ELEMENT_IDS.friendsContainer);
-}
-
 export function loadDmHome(isChangingUrl = true): void {
   console.log("Loading main menu...");
 
@@ -540,7 +533,8 @@ export function loadDmHome(isChangingUrl = true): void {
     if (isOnDm) {
       handleMenu(isChangingUrl);
     } else if (lastDmId) {
-      handleDm();
+      openDm(lastDmId);
+      disableElement(ELEMENT_IDS.friendsContainer);
     } else {
       handleMenu(isChangingUrl);
     }

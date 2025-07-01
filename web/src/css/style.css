@@ -855,14 +855,19 @@ body.black-theme .base-user-input {
 }
 
 @media (max-width: 600px) {
+  #wumpusalone {
+    left: 0;
+  }
+  .statusPanelContainer {
+    left: 200px !important;
+    bottom: -165px !important;
+  }
+
   #channel-list {
     display: none;
   }
   .channel-list-mobile-left {
     width: 200px !important;
-  }
-  .chat-container-mobile-left {
-    display: flex !important;
   }
   #chat-container {
     padding-left: 0px;
@@ -889,10 +894,11 @@ body.black-theme .base-user-input {
   .channel-button {
     width: 37% !important;
     margin-top: 18px !important;
-    margin-left: -52px !important;
-    transform: scale(1.3);
+    margin-left: -62px !important;
+    transform: scale(1.2);
   }
-  #guilds-list {
+  #guilds-list,
+  #horizontal-line-guild {
     display: none;
   }
   .guilds-list-mobile-left {
@@ -934,7 +940,7 @@ body.black-theme .base-user-input {
   #friend-menu-buttons {
     margin-left: -50px;
     overflow-x: scroll;
-    margin-right: 70px;
+    margin-right: 85px;
     width: 100%;
   }
   .vertical-line {
@@ -971,6 +977,7 @@ body.black-theme .base-user-input {
   #avatar-wrapper {
     background-color: transparent;
     left: 0px;
+    width: 140px;
   }
   #self-discriminator {
     display: none !important;
@@ -1811,8 +1818,8 @@ textarea::-webkit-scrollbar-track {
   z-index: 3;
   position: fixed !important;
   top: unset !important;
-  bottom: -138px !important;
-  left: 160px !important;
+  bottom: -138px;
+  left: 0px;
   gap: 10px;
   flex-direction: column;
   align-items: center;
