@@ -1,12 +1,25 @@
 @media screen and (max-width: 768px) {
-  #emojibtn {
-    right: 0px !important;
+  #emojibtn:not(.send-active) {
+    right: 5px !important;
   }
-  #gifbtn {
+  #emojibtn.send-active {
+    right: 30px !important;
+  }
+
+  #gifbtn:not(.send-active) {
     right: 50px !important;
   }
+  #gifbtn.send-active {
+    right: 80px !important;
+  }
+
   #file-button {
     left: 10px;
+  }
+  #image-preview-container {
+    position: fixed;
+    top: 0;
+    left: 0;
   }
 }
 
@@ -328,9 +341,6 @@ body.black-theme #media-menu-search-bar {
   bottom: -30px;
   z-index: 2;
   position: absolute;
-  border-radius: 50px;
-  width: 30px;
-  height: 30px;
   border: none;
 }
 #gifbtn {
@@ -375,10 +385,10 @@ body.black-theme #media-menu-search-bar {
 }
 
 #gifbtn.gifbtn-user-list-open {
-  right: 50px;
+  right: 55px;
 }
 #emojibtn.emojibtn-user-list-open {
-  right: 0px;
+  right: 10px;
 }
 #emojibtn {
   right: 280px;
@@ -395,6 +405,22 @@ body.black-theme #media-menu-search-bar {
   transform: scale(0.5);
   background-color: transparent;
   filter: brightness(2.8);
+}
+#sendbtn {
+  right: -10px;
+  bottom: -25px;
+  width: 48px;
+  height: 48px;
+  margin: 2px;
+  border-radius: 50%;
+  transition: color 0.3s ease;
+  background-color: transparent;
+  transform: scale(1.5);
+  color: rgb(57, 58, 65);
+}
+
+#sendbtn.sendbtn-active {
+  color: #7a8ef9;
 }
 
 #emojibtn.hovered {
@@ -589,14 +615,6 @@ body.black-theme #media-menu-search-bar {
   justify-content: center;
   align-items: center;
   background-color: #050505cc;
-}
-
-@media (max-width: 768px) {
-  #image-preview-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-  }
 }
 
 #json-preview-container {

@@ -505,7 +505,7 @@ export function setWidths(newWidth: number) {
   }
 
   if (guildContainer) {
-    guildContainer.style.width = `${newWidth + 172}px`;
+    guildContainer.style.width = `${newWidth + 167}px`;
   }
 }
 

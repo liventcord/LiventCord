@@ -1338,6 +1338,8 @@ input[type="file"] {
   height: auto;
   display: block;
   position: relative;
+  margin-left: -50px !important;
+  margin-top: 10px;
 }
 
 #change-nick-button {

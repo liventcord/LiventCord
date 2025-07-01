@@ -121,6 +121,13 @@ function markAsUnread(messageId: string) {
 function editGuildProfile() {
   alertUser("Not implemented: editing guild profile ");
 }
+export function audioCall() {
+  alertUser("Not implemented: audio call ");
+}
+export function videoCall() {
+  alertUser("Not implemented: video call ");
+}
+
 function copyMessage(event: MouseEvent, messageId: string) {
   const messageText = getId(messageId)?.getAttribute("data-content");
   if (messageText) {
@@ -165,8 +172,8 @@ function onEditChannel(channelId: string) {
 function muteUser(userId: string) {}
 function deafenUser(userId: string) {}
 
-function togglePin() {
-  console.log("Toggle pin!");
+export function togglePin() {
+  alertUser("Not implemented: Pin");
 }
 function mentionUser(userId: string) {
   const userNick = userManager.getUserNick(userId);
@@ -244,9 +251,9 @@ export function createUserContext(userId: string) {
     action: () => drawProfilePopId(userId)
   };
 
-  (context[VoiceActionType.MENTION_USER] = () => mentionUser(userId)),
+  ((context[VoiceActionType.MENTION_USER] = () => mentionUser(userId)),
     (context[VoiceActionType.MUTE_USER] = () => muteUser(userId)),
-    (context[VoiceActionType.DEAFEN_USER] = () => deafenUser(userId));
+    (context[VoiceActionType.DEAFEN_USER] = () => deafenUser(userId)));
 
   if (userId === currentUserId) {
     context[ActionType.EDIT_GUILD_PROFILE] = () => editGuildProfile();

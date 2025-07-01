@@ -65,7 +65,12 @@ import {
   currentUserNick,
   userManager
 } from "./user.ts";
-import { addContextListeners } from "./contextMenuActions.ts";
+import {
+  addContextListeners,
+  audioCall,
+  togglePin,
+  videoCall
+} from "./contextMenuActions.ts";
 import {
   updateChannels,
   getChannels,
@@ -262,6 +267,9 @@ function initializeElements() {
 
   const tbShowProfile = getId("tb-show-members");
   tbShowProfile?.addEventListener("click", handleMembersClick);
+  getId("tb-call")?.addEventListener("click", audioCall);
+  getId("tb-video-call")?.addEventListener("click", videoCall);
+  getId("tb-pin")?.addEventListener("click", togglePin);
 }
 
 function initializeSettings() {

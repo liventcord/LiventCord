@@ -96,7 +96,13 @@ const mobileBlackBg = getId("mobile-black-bg") as HTMLElement;
 const toolbarOptions = getId("toolbaroptions") as HTMLElement;
 const navigationBar = getId("navigation-bar") as HTMLElement;
 
+let previewSlideStartX = 0;
+let previewSlideEndX = 0;
+
+const channelList = getId("channel-list") as HTMLElement;
+
 export let loadingScreen: HTMLElement;
+
 function enableLoadingScreen() {
   loadingScreen = createEl("div", { id: "loading-screen" });
   document.body.appendChild(loadingScreen);
@@ -111,6 +117,9 @@ function isLoadingScreen() {
     return false;
   }
   return loadingScreen.style.display === "flex";
+}
+function hideLoadingScreen() {
+  loadingScreen.style.display = "none";
 }
 
 let isEmailToggled = false;
@@ -261,14 +270,6 @@ export function setInactiveIcon() {
   if (favicon.href !== inactiveIconHref) {
     favicon.href = inactiveIconHref;
   }
-}
-
-function isProfilePopOpen() {
-  return Boolean(getId("profilePopContainer"));
-}
-
-function hideLoadingScreen() {
-  loadingScreen.style.display = "none";
 }
 
 //Generic
@@ -932,7 +933,6 @@ function setupImagePreviewDrag(previewImage: HTMLImageElement): void {
 
   previewImage.addEventListener("touchstart", (event) => {
     if (isPreviewZoomed && event.touches.length === 1) {
-      event.preventDefault();
       const touch = event.touches[0];
       isDragging = true;
       startX = touch.clientX - previewImage.offsetLeft;
@@ -1175,49 +1175,6 @@ export function openGuildSettingsDropdown(event: Event) {
   }
 }
 
-function setDynamicAnimations() {
-  const dynamicAnimElements =
-    "#tb-inbox, #tb-pin, #tb-show-members, #tb-help, #tb-call, #tb-video-call, #tb-createdm, #hash-sign, #gifbtn, #friend-icon-sign, #friendiconsvg, #earphone-button, #microphone-button";
-
-  document.querySelectorAll(dynamicAnimElements).forEach(function (element) {
-    if (element instanceof HTMLElement) {
-      element.addEventListener("mousemove", function (event: MouseEvent) {
-        const rect = element.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const distanceX = (mouseX - centerX) / centerX;
-        const distanceY = (mouseY - centerY) / centerY;
-
-        const shakeIntensity = Math.max(
-          Math.abs(distanceX),
-          Math.abs(distanceY)
-        );
-
-        element.style.transform = `rotate(${
-          shakeIntensity * (distanceX < 0 ? -1 : 1)
-        }deg) translate(${distanceX * 3}px, ${distanceY * 3}px)`;
-      });
-
-      element.addEventListener("mouseleave", function () {
-        element.style.transform = "rotate(0deg) translate(0, 0)";
-      });
-    }
-  });
-}
-document.addEventListener("DOMContentLoaded", () => {
-  if (!isMobile) {
-    setDynamicAnimations();
-  }
-});
-
-let previewSlideStartX = 0;
-let previewSlideEndX = 0;
-
-const channelList = getId("channel-list") as HTMLElement;
-
 document.addEventListener("touchstart", (e: TouchEvent) => {
   previewSlideStartX = e.touches[0].clientX;
 });
@@ -1231,10 +1188,12 @@ document.addEventListener("touchend", (e: TouchEvent) => {
   }
 
   if (isImagePreviewOpen()) {
-    if (diff > 50) {
-      moveToPreviousImage();
-    } else if (diff < -50) {
-      moveToNextImage();
+    if (!isPreviewZoomed) {
+      if (diff > 50) {
+        moveToPreviousImage();
+      } else if (diff < -50) {
+        moveToNextImage();
+      }
     }
     return;
   }
@@ -1547,11 +1506,16 @@ function setAllWidths(newWidth: number) {
 
 export const clamp = (width: number) => Math.min(Math.max(width, 100), 260);
 
+const defaultWidth = 150;
 export function getCurrentWidth(): number {
   const savedWidth = localStorage.getItem("channelListWidth");
-  const initialWidth = savedWidth ? clamp(parseInt(savedWidth, 10)) : 150;
+  const initialWidth = savedWidth
+    ? clamp(parseInt(savedWidth, 10))
+    : isMobile
+      ? -510
+      : defaultWidth;
 
-  return initialWidth;
+  return isMobile ? 150 : initialWidth;
 }
 export const handleResizeWidth = () => {
   if (!channelList) {
@@ -1569,32 +1533,33 @@ export function initialiseChannelDrag() {
     return;
   }
 
-  const savedWidth = localStorage.getItem("channelListWidth");
-  const initialWidth = savedWidth ? clamp(parseInt(savedWidth, 10)) : 150;
-  setAllWidths(initialWidth);
+  setAllWidths(getCurrentWidth());
+  setTimeout(() => {
+    handleResizeWidth();
+  }, 0);
 
-  window.addEventListener("resize", debounce(handleResize, 150));
+  window.addEventListener("resize", debounce(handleResize, defaultWidth));
 
   if (channelList) {
     channelList.addEventListener("mousedown", (e) => {
-      let isDragging = true;
-      const startX = e.clientX;
+      let isDraggingChannel = true;
+      const startXChannel = e.clientX;
       const computedStyle = window.getComputedStyle(channelList);
       const startWidth = clamp(parseInt(computedStyle.width, 10));
 
       document.body.style.userSelect = "none";
 
-      const onMouseMove = (e: MouseEvent) => {
-        if (!isDragging) {
+      const onMouseMove = (event: MouseEvent) => {
+        if (!isDraggingChannel) {
           return;
         }
 
-        const newWidth = clamp(startWidth + (e.clientX - startX));
+        const newWidth = clamp(startWidth + (event.clientX - startXChannel));
         setAllWidths(newWidth);
       };
 
       const onMouseUp = () => {
-        isDragging = false;
+        isDraggingChannel = false;
         const computed = window.getComputedStyle(channelList);
         const finalWidth = clamp(parseInt(computed.width, 10));
         localStorage.setItem("channelListWidth", finalWidth.toString());

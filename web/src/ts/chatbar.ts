@@ -51,6 +51,7 @@ import {
   moveCursorTo,
   moveCursorToEndOf
 } from "./navigation.ts";
+import { gifBtn } from "./mediaPanel.ts";
 
 export let currentReplyingTo = "";
 
@@ -89,8 +90,6 @@ export function getChatBarState() {
   return state;
 }
 export function setChatBarState(_state: ChatBarState) {
-  console.error("Set new state: ", _state);
-
   const hasChanged =
     state.rawContent !== _state.rawContent ||
     state.renderedContent !== _state.renderedContent;
@@ -614,7 +613,7 @@ export class FileHandler {
 
     function handleDragLeave(e: DragEvent) {
       if (
-        e.relatedTarget == null ||
+        e.relatedTarget === null ||
         !document.body.contains(e.relatedTarget as Node)
       ) {
         console.log("Full dragleave, hiding dropZone");
@@ -710,7 +709,6 @@ export class DomUtils {
 
     const range = selection.getRangeAt(0);
 
-    const previousCursorPos = state.cursorPosition;
     const newCursorPos = DomUtils.calculatePositionFromNode(
       range.startContainer,
       range.startOffset
@@ -720,9 +718,6 @@ export class DomUtils {
     if (selection.rangeCount > 0) {
       const startRange = selection.getRangeAt(0).cloneRange();
       startRange.collapse(true);
-
-      const previousSelectionStart = state.selectionStart;
-      const previousSelectionEnd = state.selectionEnd;
 
       state.selectionStart = DomUtils.calculatePositionFromNode(
         startRange.startContainer,
@@ -1235,51 +1230,95 @@ function handleSpace(event: KeyboardEvent) {
   }
   console.log(state, chatInput.innerHTML);
 }
+function insertNewlineAtCaret() {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+
+  const textNode = document.createTextNode("\n");
+  range.insertNode(textNode);
+
+  range.setStartAfter(textNode);
+  range.collapse(true);
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  scrollToBottom();
+}
+
 function handleUserKeydown(event: KeyboardEvent) {
+  if (sendTypingData) {
+    handleTypingRequest();
+  }
   if (!chatContainer || !chatInput) return;
 
-  const isEnter = event.key === "Enter";
-  const isShift = event.shiftKey;
-
-  if (isEnter) {
+  if (event.key === "Enter") {
     if (state.emojiSuggestionsVisible) {
       event.preventDefault();
       applyActiveEmojiSuggestion();
       return;
     }
 
+    if (event.shiftKey) {
+      event.preventDefault();
+      insertNewlineAtCaret();
+      adjustHeight();
+      scrollToBottom();
+      return;
+    }
+
     if (isMobile) {
+      event.preventDefault();
+      insertNewlineAtCaret();
       adjustHeight();
       return;
     }
 
-    if (isShift) {
-      adjustHeight();
-
-      const difference =
-        chatContainer.scrollHeight -
-        (chatContainer.scrollTop + chatContainer.clientHeight);
-      const SMALL_DIFF = 10;
-      if (difference < SMALL_DIFF) {
-        scrollToBottom();
-      }
-
-      return;
-    }
-
+    // Desktop: send message on Enter
     event.preventDefault();
     sendMessage(state.rawContent).then(() => {
       chatInput.innerHTML = "";
+      toggleSendButton(false);
       isAttachmentsAdded = false;
       adjustHeight();
     });
-  } else {
-    handleKeyboardNavigation(event);
+
+    return;
   }
+
+  handleKeyboardNavigation(event);
 
   if (isDomLoaded && toggleManager.states["party-toggle"]) {
     popKeyboardConfetti();
   }
+}
+
+function handleUserBeforeInput(event: InputEvent) {
+  if (event.inputType === "insertLineBreak") {
+    adjustHeight();
+    scrollToBottom();
+  }
+}
+
+const emojiBtn = getId("emojibtn") as HTMLElement;
+const sendBtn = getId("sendbtn") as HTMLElement;
+
+function toggleSendButton(hasContent: boolean) {
+  const canSend = hasContent && isMobile;
+
+  if (canSend) {
+    enableElement(sendBtn);
+  } else {
+    disableElement(sendBtn);
+  }
+
+  sendBtn.classList.toggle("sendbtn-active", canSend);
+
+  emojiBtn?.classList.toggle("send-active", hasContent);
+  gifBtn?.classList.toggle("send-active", hasContent);
 }
 
 function handleChatInput(event: Event) {
@@ -1298,6 +1337,8 @@ function handleChatInput(event: Event) {
       start: state.selectionStart,
       end: state.selectionEnd
     };
+    const hasContent = state.rawContent.trim().length > 0;
+    toggleSendButton(hasContent);
 
     if (
       event.inputType.startsWith("insert") ||
@@ -1419,5 +1460,16 @@ export function initialiseChatInput() {
   chatInput.addEventListener("input", handleChatInput);
   chatInput.addEventListener("click", updateCursorOnClick);
   chatInput.addEventListener("keydown", handleUserKeydown);
+
+  chatInput.addEventListener("beforeinput", handleUserBeforeInput);
   updatePlaceholderVisibility();
+
+  getId("sendbtn")?.addEventListener("click", () => {
+    sendMessage(state.rawContent).then(() => {
+      chatInput.value = "";
+      isAttachmentsAdded = false;
+      adjustHeight();
+    });
+  });
+  toggleSendButton(false);
 }

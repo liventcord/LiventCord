@@ -743,10 +743,11 @@
 #profile-container {
   display: flex;
   margin-top: 28vh;
+  margin-left: 20px;
 }
 #profile-title {
   color: white;
-  font-size: 1em;
+  font-size: 1.2em;
   user-select: text;
   font-weight: bold;
 }
