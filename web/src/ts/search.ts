@@ -1,11 +1,7 @@
-import { getId } from "./utils.ts";
-import { isOnGuild } from "./router.ts";
-import { cacheInterface } from "./cache.ts";
-import { currentGuildId, getGuildMembers } from "./guild.ts";
-import { getCurrentDmFriends } from "./friendui.ts";
-import { chatInput } from "./chatbar.ts";
-import { currentChannels } from "./channels.ts";
-import { deletedUser, UserInfo } from "./user.ts";
+import { currentChannels } from "./channels";
+import { getGuildMembers } from "./guild";
+import { deletedUser } from "./user";
+import { getId } from "./utils";
 
 const channelSearchInputElement = getId(
   "channelSearchInput"
@@ -17,90 +13,6 @@ export function setCurrentSearchUiIndex(index: number) {
 export const userMentionDropdown = getId(
   "userMentionDropdown"
 ) as HTMLSelectElement;
-
-export function updateUserMentionDropdown(value: string) {
-  const mentionRegex = /@\w*/g;
-  const match = value.match(mentionRegex);
-
-  if (match && match.length) {
-    const lastMention = match[match.length - 1];
-
-    if (lastMention) {
-      const currentUsers = isOnGuild
-        ? cacheInterface.getMembers(currentGuildId)
-        : getCurrentDmFriends();
-
-      if (!currentUsers) {
-        return;
-      }
-
-      let usersArray: UserInfo[] = [];
-
-      if (Array.isArray(currentUsers)) {
-        usersArray = currentUsers.map((member) => {
-          return {
-            userId: member.userId,
-            nickName: member.nickName,
-            discriminator: ""
-          };
-        });
-      } else {
-        usersArray = Object.values(currentUsers).map((user) => {
-          return {
-            userId: user.userId,
-            nickName: user.nick, // Adjusted this to match the expected property
-            discriminator: user.discriminator || ""
-          };
-        });
-      }
-
-      const filteredUsers = usersArray.filter((user) =>
-        user.nickName
-          .toLowerCase()
-          .startsWith(lastMention.slice(1).toLowerCase())
-      );
-
-      if (filteredUsers.length) {
-        userMentionDropdown.innerHTML = filteredUsers
-          .map(
-            (user) => `
-              <div class="suggestion-option" data-userid="${user.userId}" onclick="selectMember('${user.userId}', '${user.nickName}')">
-                ${user.nickName}
-              </div>
-            `
-          )
-          .join("");
-        userMentionDropdown.style.display = "block";
-        currentSearchUiIndex = -1;
-        highlightOption(0);
-      } else {
-        userMentionDropdown.style.display = "none";
-      }
-    }
-  } else {
-    userMentionDropdown.style.display = "none";
-  }
-}
-
-export function highlightOption(index: number) {
-  const options = userMentionDropdown.querySelectorAll(".suggestion-option");
-  options.forEach((option) => option.classList.remove("mention-highlight"));
-  if (index >= 0 && index < options.length) {
-    options[index].classList.add("mention-highlight");
-  }
-}
-
-export function selectMember(userId: string, userNick: string) {
-  const message = chatInput.value;
-  const position = chatInput.selectionStart as number;
-  const newMessage =
-    message.slice(0, position - message.length) +
-    `@${userNick} ` +
-    message.slice(position);
-  chatInput.value = newMessage;
-  userMentionDropdown.style.display = "none";
-  chatInput.focus();
-}
 
 function getMonthValue(query: string) {
   if (query.length === 0) {
@@ -131,9 +43,6 @@ function getMonthValue(query: string) {
   return matchingMonths.length > 0 ? matchingMonths : ["Not Specified"];
 }
 
-function handleUserClick(userName: string) {
-  alert(`User ${userName} clicked!`);
-}
 function filterMembers(query: string): void {
   const userSection = getId("userSection");
   const mentioningSection = getId("mentioningSection");

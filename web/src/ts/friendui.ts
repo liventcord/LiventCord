@@ -5,12 +5,15 @@ import {
   getId,
   disableElementHTML,
   disableElement,
-  IMAGE_SRCS
+  IMAGE_SRCS,
+  DEFAULT_DISCRIMINATOR
 } from "./utils.ts";
 import {
   currentDiscriminator,
   currentUserId,
   currentUserNick,
+  deletedUser,
+  UserInfo,
   userManager
 } from "./user.ts";
 import {
@@ -31,7 +34,7 @@ import { translations } from "./translations.ts";
 import { activityList, userList } from "./userList.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { isBlackTheme } from "./settings.ts";
-import { clamp, getCurrentWidth, initialiseChannelDrag } from "./ui.ts";
+import { getCurrentWidth } from "./ui.ts";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
@@ -359,19 +362,23 @@ export async function removeFromDmList(userId: string): Promise<void> {
   }
 }
 
-export function getCurrentDmFriends() {
-  return {
-    currentUserId: {
+export function getCurrentDmFriends(): UserInfo[] {
+  return [
+    {
       userId: currentUserId,
-      nick: currentUserNick,
+      nickName: currentUserNick,
       discriminator: currentDiscriminator
     },
-    currentDmId: {
+    {
       userId: friendsCache.currentDmId,
-      nick: currentUserNick,
-      discriminator: "5678"
+      nickName:
+        friendsCache.getFriend(friendsCache.currentDmId).nickName ||
+        deletedUser,
+      discriminator:
+        friendsCache.getFriendDiscriminator(friendsCache.currentDmId) ||
+        DEFAULT_DISCRIMINATOR
     }
-  };
+  ];
 }
 
 let notifyTimeout: number;

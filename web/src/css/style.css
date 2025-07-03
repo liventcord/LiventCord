@@ -872,6 +872,9 @@ body.black-theme .base-user-input {
   #chat-container {
     padding-left: 0px;
   }
+  .chat-image {
+    margin-left: -50px !important;
+  }
 
   #user-info-panel {
     display: none;
@@ -1338,7 +1341,6 @@ input[type="file"] {
   height: auto;
   display: block;
   position: relative;
-  margin-left: -50px !important;
   margin-top: 10px;
 }
 
@@ -1660,9 +1662,11 @@ textarea::-webkit-scrollbar-track {
   position: absolute;
 }
 .suggestion-option {
-  padding: 10px;
+  padding: 8px;
   cursor: pointer;
   color: white;
+  display: flex;
+  align-items: center;
 }
 .suggestion-label {
   margin-right: 50px;

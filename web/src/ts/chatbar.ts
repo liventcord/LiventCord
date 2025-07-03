@@ -1,14 +1,5 @@
 import DOMPurify from "dompurify";
 import { fileTypeFromBuffer } from "file-type";
-
-import {
-  currentSearchUiIndex,
-  setCurrentSearchUiIndex,
-  highlightOption,
-  selectMember,
-  updateUserMentionDropdown,
-  userMentionDropdown
-} from "./search.ts";
 import { apiClient, EventType } from "./api.ts";
 import { friendsCache } from "./friends.ts";
 import { scrollToBottom, updateChatWidth } from "./chat.ts";
@@ -85,7 +76,6 @@ const state = {
   selectionStart: 0,
   selectionEnd: 0
 };
-(window as any).statee = state;
 export function getChatBarState() {
   return state;
 }
@@ -1003,6 +993,9 @@ function handleBackspace(event: KeyboardEvent) {
     }
   }
 }
+export function onMemberSelected(_state: ChatBarState) {
+  state.rawContent = preserveEmojiContent(chatInput);
+}
 
 export function handleEmojiJump(event: KeyboardEvent) {
   const selection = window.getSelection();
@@ -1248,11 +1241,21 @@ function insertNewlineAtCaret() {
 
   scrollToBottom();
 }
-
+let suppressSend = false;
+export function setSuppressSend(val: boolean) {
+  suppressSend = val;
+}
 function handleUserKeydown(event: KeyboardEvent) {
   if (sendTypingData) {
     handleTypingRequest();
   }
+  console.warn("suppressSend status : ", suppressSend);
+  if (suppressSend) {
+    suppressSend = false;
+    return;
+  }
+  console.log("sent message!");
+  return;
   if (!chatContainer || !chatInput) return;
 
   if (event.key === "Enter") {
@@ -1340,6 +1343,16 @@ function handleChatInput(event: Event) {
     const hasContent = state.rawContent.trim().length > 0;
     toggleSendButton(hasContent);
 
+    const selection = window.getSelection();
+
+    state.cursorPosition =
+      selection && selection.rangeCount > 0
+        ? DomUtils.calculatePositionFromNode(
+            selection.getRangeAt(0).startContainer,
+            selection.getRangeAt(0).startOffset
+          )
+        : selectionBefore.start;
+
     if (
       event.inputType.startsWith("insert") ||
       event.inputType.startsWith("delete")
@@ -1347,18 +1360,9 @@ function handleChatInput(event: Event) {
       const formattedContent = renderEmojisFromContent(state.rawContent);
 
       if (formattedContent !== chatInput.innerHTML) {
-        const selection = window.getSelection();
-        const cursorPosition =
-          selection && selection.rangeCount > 0
-            ? DomUtils.calculatePositionFromNode(
-                selection.getRangeAt(0).startContainer,
-                selection.getRangeAt(0).startOffset
-              )
-            : selectionBefore.start;
-
         const savedSelection = {
-          start: cursorPosition,
-          end: cursorPosition
+          start: state.cursorPosition,
+          end: state.cursorPosition
         };
 
         chatInput.innerHTML = DOMPurify.sanitize(
@@ -1391,13 +1395,6 @@ export function initialiseChatInput() {
   chatInput.addEventListener("input", adjustHeight);
   chatInput.addEventListener("keydown", handleUserKeydown);
 
-  chatInput.addEventListener("input", (event) => {
-    if (event.target instanceof HTMLInputElement) {
-      if (event.target.value) {
-        updateUserMentionDropdown(event.target.value);
-      }
-    }
-  });
   chatInput.addEventListener("paste", (e: ClipboardEvent) => {
     e.preventDefault();
     const items = e.clipboardData?.items;
@@ -1427,32 +1424,6 @@ export function initialiseChatInput() {
     }
   });
 
-  chatInput.addEventListener("keydown", (event) => {
-    const options = userMentionDropdown.querySelectorAll(".suggestion-option");
-    if (event.key === "ArrowDown") {
-      setCurrentSearchUiIndex((currentSearchUiIndex + 1) % options.length);
-      highlightOption(currentSearchUiIndex);
-      event.preventDefault();
-    } else if (event.key === "ArrowUp") {
-      setCurrentSearchUiIndex(
-        (currentSearchUiIndex - 1 + options.length) % options.length
-      );
-      highlightOption(currentSearchUiIndex);
-      event.preventDefault();
-    } else if (event.key === "Enter") {
-      if (currentSearchUiIndex >= 0 && currentSearchUiIndex < options.length) {
-        const selectedUserElement = options[
-          currentSearchUiIndex
-        ] as HTMLElement;
-        const selectedUserId = selectedUserElement.dataset.userid as string;
-        const selectedUserNick = selectedUserElement.textContent as string;
-        selectMember(selectedUserId, selectedUserNick);
-      }
-    } else if (event.key === "Escape") {
-      userMentionDropdown.style.display = "none";
-    }
-  });
-
   const updateCursorOnClick = () => {
     toggleShowEmojiSuggestions();
   };
@@ -1465,11 +1436,12 @@ export function initialiseChatInput() {
   updatePlaceholderVisibility();
 
   getId("sendbtn")?.addEventListener("click", () => {
-    sendMessage(state.rawContent).then(() => {
-      chatInput.value = "";
-      isAttachmentsAdded = false;
-      adjustHeight();
-    });
+    isAttachmentsAdded = false;
+    adjustHeight();
+    const message = state.rawContent;
+    chatInput.innerHTML = "";
+    disableElement("userMentionDropdown");
+    sendMessage(message);
   });
   toggleSendButton(false);
 }

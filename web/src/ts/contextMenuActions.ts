@@ -177,7 +177,7 @@ export function togglePin() {
 }
 function mentionUser(userId: string) {
   const userNick = userManager.getUserNick(userId);
-  chatInput.value += `@${userNick}`;
+  chatInput.innerHTML += `@${userNick}`;
 }
 
 function inviteUser(userId: string, guildId: string) {
