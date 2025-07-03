@@ -31,7 +31,7 @@ namespace LiventCord.Controllers
             }
 
             if (!await _permissionController.CanInvite(UserId!, guildId))
-                return Unauthorized();
+                return Forbid();
 
             string? inviteId = await GetInviteIdByGuildAsync(guildId);
 
