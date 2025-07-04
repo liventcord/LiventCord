@@ -1249,13 +1249,10 @@ function handleUserKeydown(event: KeyboardEvent) {
   if (sendTypingData) {
     handleTypingRequest();
   }
-  console.warn("suppressSend status : ", suppressSend);
   if (suppressSend) {
     suppressSend = false;
     return;
   }
-  console.log("sent message!");
-  return;
   if (!chatContainer || !chatInput) return;
 
   if (event.key === "Enter") {
@@ -1280,7 +1277,6 @@ function handleUserKeydown(event: KeyboardEvent) {
       return;
     }
 
-    // Desktop: send message on Enter
     event.preventDefault();
     sendMessage(state.rawContent).then(() => {
       chatInput.innerHTML = "";

@@ -750,6 +750,7 @@
   font-size: 1.2em;
   user-select: text;
   font-weight: bold;
+  white-space: nowrap;
 }
 #profile-discriminator {
   font-weight: bold;
@@ -767,6 +768,7 @@
   height: 32px;
   display: flex;
   background-color: rgb(17, 18, 20);
+  opacity: 0.8;
   border: none;
   margin-right: 15px;
   margin-top: 12px;
@@ -784,15 +786,17 @@
   max-width: 120px;
   aspect-ratio: 1;
   object-fit: cover;
-  border: solid rgb(17, 18, 20) 8px;
-  top: 14.2vh;
+  border: solid #111214 8px;
+  top: 17.2vh;
   left: 16px;
   position: absolute;
   border-radius: 50%;
   cursor: pointer;
   transition: border-radius 0.2s ease-out;
 }
-
+body.black-theme .profile-display {
+  border: solid rgb(36, 36, 41) 8px;
+}
 .profile-options-container {
   font-size: 16px;
   margin-left: auto;

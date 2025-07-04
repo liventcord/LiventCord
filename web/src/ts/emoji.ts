@@ -292,8 +292,9 @@ function generateEmojiTag(id: string): string {
   const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
 
   if (builtinIndex !== -1) {
-    const col = builtinIndex % columns;
-    const row = Math.floor(builtinIndex / columns);
+    const adjustedIndex = builtinIndex - 1;
+    const col = adjustedIndex % columns;
+    const row = Math.floor(adjustedIndex / columns);
     const x = -(col * spriteWidth);
     const y = -(row * spriteHeight);
 
@@ -366,15 +367,16 @@ export function replaceCustomEmojisForChatContainer(content: string): string {
   content = content.replace(regexUserMentions, (match, userId) => {
     const user = userManager.getUserInfo(userId);
     const nick = user?.nickName ?? `@Unknown`;
-    return generateMention(nick);
+    return generateMention(userId, nick);
   });
 
   return content;
 }
 
-function generateMention(displayName: string): string {
-  return `<span class="mention">@${escapeHtml(displayName)}</span>`;
+function generateMention(userId: string, nick: string): string {
+  return `<button class="mention" type="button" data-user-id="${userId}">@${escapeHtml(nick)}</button>`;
 }
+
 function getEmojiCode(builtinIndex: number): string | null {
   const emoji = builtinEmojisCache[builtinIndex];
   if (!emoji) {
@@ -487,15 +489,13 @@ export function renderEmojisFromContent(content: string): string {
 
   while (i < content.length) {
     if (content[i] === ":") {
-      // Check for escaped colon "::"
       if (content[i + 1] === ":") {
         result += ":";
         i += 2;
         continue;
       }
 
-      // Try to find a closing colon for an emoji token
-      let end = content.indexOf(":", i + 1);
+      const end = content.indexOf(":", i + 1);
 
       if (end !== -1) {
         const emojiId = content.slice(i + 1, end);
@@ -505,18 +505,15 @@ export function renderEmojisFromContent(content: string): string {
           emojis.some((e) => e.fileId === emojiId);
 
         if (isBuiltin || isCustom) {
-          // Replace emoji token with image tag
           result += generateEmojiTag(emojiId);
           i = end + 1;
           continue;
         }
       }
 
-      // No valid emoji token found, add colon as is
       result += ":";
       i++;
     } else {
-      // Add normal character
       result += content[i];
       i++;
     }

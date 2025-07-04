@@ -1261,6 +1261,7 @@ body.black-theme .base-user-input {
   transition: opacity 0.5s ease-in-out;
   border: 3px solid #313338;
 }
+
 .status-bubble {
   color: white;
   padding: 0.6em;
@@ -1271,7 +1272,10 @@ body.black-theme .base-user-input {
   left: 3.7vw;
   border: 4px solid #111214;
 }
-
+body.black-theme .status-bubble {
+  border: 4px solid rgb(36, 36, 41);
+  filter: brightness(1);
+}
 #drop-zone {
   position: fixed;
   top: 0;
@@ -1683,8 +1687,32 @@ textarea::-webkit-scrollbar-track {
   background-color: #35373c;
 }
 .mention {
-  color: blue;
+  color: rgb(169, 186, 255);
+  padding: 2px;
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  outline-offset: 2px;
 }
+.mention {
+  background-color: var(--mention-bg);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.mention:hover {
+  background-color: var(--mention-bg-hover);
+}
+
+body:not(.black-theme) {
+  --mention-bg: #3b3f65;
+  --mention-bg-hover: #588df1;
+}
+
+body.black-theme {
+  --mention-bg: #292c51;
+  --mention-bg-hover: #5865e0;
+}
+
 #audio-parent {
   position: fixed;
   display: none;

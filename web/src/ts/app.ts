@@ -13,7 +13,8 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID
+  setLastSenderID,
+  addChatMentionListeners
 } from "./chat.ts";
 import {
   chatInput,
@@ -297,6 +298,8 @@ function initializeListeners() {
   });
 
   addContextListeners();
+
+  addChatMentionListeners();
 }
 
 function handleGuildClick(event: MouseEvent) {
