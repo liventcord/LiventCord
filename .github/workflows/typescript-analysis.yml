@@ -12,10 +12,25 @@ on:
     - cron: '17 1 * * 2'
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      web_changed: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changes in web folder
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            web:
+              - 'web/**'
+
   analyze:
     name: Analyze TypeScript Code
-
+    needs: filter
     runs-on: ubuntu-latest
+    if: needs.filter.outputs.web_changed == 'true'
     permissions:
       security-events: write
       packages: read
@@ -30,22 +45,22 @@ jobs:
             build-mode: none
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        build-mode: ${{ matrix.build-mode }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-    - if: matrix.build-mode == 'manual'
-      shell: bash
-      run: |
-        echo 'Replace with build commands if needed'
-        exit 1
+      - if: matrix.build-mode == 'manual'
+        shell: bash
+        run: |
+          echo 'Replace with build commands if needed'
+          exit 1
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"

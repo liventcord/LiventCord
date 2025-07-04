@@ -14,10 +14,27 @@ on:
     - cron: '17 1 * * 2'
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      go_changed: ${{ steps.filter.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changes in Go server folders
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            go:
+              - 'server/go-ws-api/**'
+              - 'server/go-yt-stream-api/**'
+              - 'server/proxy-api/**'
+
   analyze:
     name: Analyze Go Code
-
+    needs: filter
     runs-on: ubuntu-latest
+    if: needs.filter.outputs.go_changed == 'true'
     permissions:
       security-events: write
       packages: read
