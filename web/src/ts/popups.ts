@@ -350,8 +350,7 @@ export async function createMentionProfilePop(
 
   Object.assign(pop.style, {
     animation: "unset",
-    width: "25vw",
-    height: "45vh",
+    width: "17vw",
     backgroundColor: "rgb(36,36,41)",
     position: "absolute",
     zIndex: "10"
@@ -432,7 +431,7 @@ export async function createMentionProfilePop(
         ".profile-send-msg-button"
       ) as HTMLElement;
       if (btn) {
-        btn.style.width = "22vw";
+        btn.style.width = "15vw";
         btn.style.height = "40px";
         btn.style.marginRight = "0px";
       }

@@ -111,15 +111,23 @@ let currentMentionPop: HTMLElement | null;
 export function addChatMentionListeners() {
   chatContainer?.addEventListener("click", async (event) => {
     const target = event.target as HTMLElement;
-    if (target.classList.contains("mention")) {
+    if (
+      target.classList.contains("mention") ||
+      target.classList.contains("profile-pic")
+    ) {
       const userId = target.dataset.userId;
       if (!userId) return;
+
       if (currentMentionPop) {
         currentMentionPop.remove();
         currentMentionPop = null;
       }
+
       const pop = await createMentionProfilePop(target, userId);
-      if (pop) currentMentionPop = pop;
+      console.log(pop?.parentElement);
+      if (pop) {
+        currentMentionPop = pop;
+      }
     }
   });
 
@@ -131,7 +139,10 @@ export function addChatMentionListeners() {
       return;
     }
 
-    if (target.classList.contains("mention")) {
+    if (
+      target.classList.contains("mention") ||
+      target.classList.contains("profile-pic")
+    ) {
       return;
     }
 
@@ -872,13 +883,16 @@ export function createProfileImageChat(
   }
   const profileImg = createEl("img", {
     className: "profile-pic",
-    id: userId
+    id: userId,
+    style: {
+      width: "40px",
+      height: "40px"
+    }
   });
+
+  profileImg.dataset.userId = userId;
   setProfilePic(profileImg, userId);
 
-  profileImg.style.width = "40px";
-  profileImg.style.height = "40px";
-  profileImg.dataset.userId = userId;
   appendToProfileContextList(userInfo, userId);
 
   profileImg.addEventListener("mouseover", () => {

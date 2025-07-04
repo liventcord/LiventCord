@@ -41,6 +41,7 @@ import { currentGuildId } from "../ts/guild.ts";
 import { getCurrentDmFriends } from "../ts/friendui.ts";
 import { setProfilePic } from "../ts/avatar.ts";
 import {
+  appendMemberMentionToInput,
   DomUtils,
   getChatBarState,
   manuallyRenderEmojis,
@@ -181,52 +182,7 @@ function updateFilteredUsers() {
 }
 
 function selectMember(userId: string, userNick: string) {
-  if (!chatInput) return;
-  const state = getChatBarState();
-  if (!state) return;
-
-  const message = state.rawContent ?? "";
-  console.log(
-    "state:",
-    state,
-    "Message found: ",
-    message,
-    "Chat text: ",
-    chatInput.textContent
-  );
-  let cursorPos = state.cursorPosition;
-  cursorPos = Math.max(0, Math.min(cursorPos, message.length));
-
-  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
-  if (mentionStart === -1) return;
-
-  const mentionCandidate = message.slice(mentionStart, cursorPos);
-  if (/\s/.test(mentionCandidate)) return;
-
-  let mentionEnd = cursorPos;
-  while (mentionEnd < message.length && !/\s/.test(message[mentionEnd])) {
-    mentionEnd++;
-  }
-
-  const newMention = `<@${userId}>`;
-  const newMessage =
-    message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
-
-  const newCursorPos = mentionStart + newMention.length;
-
-  state.rawContent = newMessage;
-  state.cursorPosition = newCursorPos;
-
-  const savedSelection = { start: newCursorPos, end: newCursorPos };
-  requestAnimationFrame(() => {
-    DomUtils.restoreSelection(chatInput, savedSelection);
-  });
-
-  setChatBarState(state);
-
-  manuallyRenderEmojis(newMessage);
-
-  setTimeout(() => disableElement("userMentionDropdown"), 0);
+  appendMemberMentionToInput(userId, userNick);
   showDropdown.value = false;
   currentSearchUiIndex.value = -1;
 }

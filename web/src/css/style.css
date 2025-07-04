@@ -1268,13 +1268,13 @@ body.black-theme .base-user-input {
   border-radius: 50px;
   position: absolute;
   transition: opacity 0.5s ease-in-out;
-  top: 19vh;
+  top: 20vh;
   left: 3.7vw;
-  border: 4px solid #111214;
+  border: 4px solid rgb(17, 18, 20);
+  filter: brightness(1);
 }
 body.black-theme .status-bubble {
   border: 4px solid rgb(36, 36, 41);
-  filter: brightness(1);
 }
 #drop-zone {
   position: fixed;

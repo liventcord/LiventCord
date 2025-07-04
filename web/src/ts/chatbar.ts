@@ -23,7 +23,7 @@ import {
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { maxAttachmentSize } from "./avatar.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
@@ -183,33 +183,64 @@ export function adjustHeight() {
   adjustReplyPosition();
 }
 
-function extractChannelIds(message: string): string[] {
-  const channelIds: string[] = [];
-  const regex = /#(\w{19})/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(message)) !== null) {
-    const channelId = cacheInterface.getChannel(
-      currentGuildId,
-      guildCache.currentChannelId
-    )?.channelId;
-    if (channelId) {
-      channelIds.push(channelId);
-    }
-  }
-  return channelIds;
-}
+export function appendMemberMentionToInput(
+  userId: string,
+  ignoreChecks?: boolean
+) {
+  if (!chatInput) return;
+  const message = state.rawContent ?? "";
 
-function extractUserIds(message: string): string[] {
-  const userIds: string[] = [];
-  const regex = /@(\w{18})/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(message)) !== null) {
-    const userId = userManager.getUserIdFromNick(match[1]);
-    if (userId) {
-      userIds.push(userId);
-    }
+  let cursorPos = state.cursorPosition;
+  cursorPos = Math.max(0, Math.min(cursorPos, message.length));
+
+  const newMention = `<@${userId}>`;
+
+  if (ignoreChecks) {
+    const newMessage =
+      message.slice(0, cursorPos) + newMention + message.slice(cursorPos);
+    const newCursorPos = cursorPos + newMention.length;
+
+    state.rawContent = newMessage;
+    state.cursorPosition = newCursorPos;
+
+    const savedSelection = { start: newCursorPos, end: newCursorPos };
+    requestAnimationFrame(() => {
+      DomUtils.restoreSelection(chatInput, savedSelection);
+    });
+
+    setChatBarState(state);
+    manuallyRenderEmojis(newMessage);
+    setTimeout(() => disableElement("userMentionDropdown"), 0);
+    return;
   }
-  return userIds;
+
+  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
+  if (mentionStart === -1) return;
+
+  const mentionCandidate = message.slice(mentionStart, cursorPos);
+  if (/\s/.test(mentionCandidate)) return;
+
+  let mentionEnd = cursorPos;
+  while (mentionEnd < message.length && !/\s/.test(message[mentionEnd])) {
+    mentionEnd++;
+  }
+
+  const newMessage =
+    message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
+
+  const newCursorPos = mentionStart + newMention.length;
+
+  state.rawContent = newMessage;
+  state.cursorPosition = newCursorPos;
+
+  const savedSelection = { start: newCursorPos, end: newCursorPos };
+  requestAnimationFrame(() => {
+    DomUtils.restoreSelection(chatInput, savedSelection);
+  });
+
+  setChatBarState(state);
+  manuallyRenderEmojis(newMessage);
+  setTimeout(() => disableElement("userMentionDropdown"), 0);
 }
 
 //#region Reply

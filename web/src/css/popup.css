@@ -782,12 +782,11 @@
   user-select: none;
 }
 .profile-display {
-  width: 20%;
-  max-width: 120px;
+  width: 5.6vw;
   aspect-ratio: 1;
   object-fit: cover;
   border: solid #111214 8px;
-  top: 17.2vh;
+  top: 15vh;
   left: 16px;
   position: absolute;
   border-radius: 50%;
@@ -795,7 +794,7 @@
   transition: border-radius 0.2s ease-out;
 }
 body.black-theme .profile-display {
-  border: solid rgb(36, 36, 41) 8px;
+  border: solid #242429 8px;
 }
 .profile-options-container {
   font-size: 16px;
