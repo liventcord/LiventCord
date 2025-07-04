@@ -6,7 +6,7 @@ import {
   getChatBarState,
   manuallyRenderEmojis,
   setChatBarState,
-  setEmojiSuggestionsVisible,
+  setEmojiSuggestionsVisible
 } from "./chatbar";
 import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
@@ -76,7 +76,6 @@ function getCurrentEmojis(): Emoji[] | null {
     return null;
   }
 }
-const regexIdEmojis = /:(\d+):/g;
 
 const changeEmojiNameHandler = (
   event: Event,
@@ -293,8 +292,9 @@ function generateEmojiTag(id: string): string {
   const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
 
   if (builtinIndex !== -1) {
-    const col = builtinIndex % columns;
-    const row = Math.floor(builtinIndex / columns);
+    const adjustedIndex = builtinIndex - 1;
+    const col = adjustedIndex % columns;
+    const row = Math.floor(adjustedIndex / columns);
     const x = -(col * spriteWidth);
     const y = -(row * spriteHeight);
 
@@ -332,6 +332,10 @@ async function loadBuiltinEmojis(): Promise<void> {
   }
 }
 
+const regexIdEmojis = /:([0-9A-Fa-f]+):/g;
+
+const regexUserMentions = /<@(\d{18})>/g;
+
 export function replaceCustomEmojisForChatContainer(content: string): string {
   const customEmojisToUse: CustomEmoji[] = getCurrentEmojis() ?? [];
 
@@ -355,15 +359,22 @@ export function replaceCustomEmojisForChatContainer(content: string): string {
 
   const emojiMap = new Map(emojisToUse.map((e) => [e.id, e]));
 
-  const regexIdEmojis = /:([0-9A-Fa-f]+):/g;
-
-  return content.replace(regexIdEmojis, (match, emojiId) => {
+  content = content.replace(regexIdEmojis, (match, emojiId) => {
     const emoji = emojiMap.get(emojiId);
-    if (emoji) {
-      return generateEmojiTag(emojiId);
-    }
-    return escapeHtml(match);
+    return emoji ? generateEmojiTag(emojiId) : escapeHtml(match);
   });
+
+  content = content.replace(regexUserMentions, (match, userId) => {
+    const user = userManager.getUserInfo(userId);
+    const nick = user?.nickName ?? `@Unknown`;
+    return generateMention(userId, nick);
+  });
+
+  return content;
+}
+
+function generateMention(userId: string, nick: string): string {
+  return `<button class="mention" type="button" data-user-id="${userId}">@${escapeHtml(nick)}</button>`;
 }
 
 function getEmojiCode(builtinIndex: number): string | null {
@@ -478,15 +489,13 @@ export function renderEmojisFromContent(content: string): string {
 
   while (i < content.length) {
     if (content[i] === ":") {
-      // Check for escaped colon "::"
       if (content[i + 1] === ":") {
         result += ":";
         i += 2;
         continue;
       }
 
-      // Try to find a closing colon for an emoji token
-      let end = content.indexOf(":", i + 1);
+      const end = content.indexOf(":", i + 1);
 
       if (end !== -1) {
         const emojiId = content.slice(i + 1, end);
@@ -496,18 +505,15 @@ export function renderEmojisFromContent(content: string): string {
           emojis.some((e) => e.fileId === emojiId);
 
         if (isBuiltin || isCustom) {
-          // Replace emoji token with image tag
           result += generateEmojiTag(emojiId);
           i = end + 1;
           continue;
         }
       }
 
-      // No valid emoji token found, add colon as is
       result += ":";
       i++;
     } else {
-      // Add normal character
       result += content[i];
       i++;
     }
@@ -559,7 +565,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
   }
 
   emojiSuggestionDropdown.innerHTML = "";
-  setEmojiSuggestionsVisible(false)
+  setEmojiSuggestionsVisible(false);
 
   for (const emoji of matching) {
     const emojiId = "fileId" in emoji ? emoji.fileId : emoji.id;
@@ -590,7 +596,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
     emojiSuggestionDropdown.appendChild(suggestion);
   }
 
-  setEmojiSuggestionsVisible(true)
+  setEmojiSuggestionsVisible(true);
   emojiSuggestionDropdown.style.display = "flex";
   highlightSuggestion(0);
 }
@@ -642,8 +648,8 @@ function appendEmojiToInput(text: string) {
   const cursorPos = state.cursorPosition;
 
   let startIndex = cursorPos - 1;
-  while (startIndex >= 0 && raw[startIndex] !== ':') {
-    if (raw[startIndex] === ' ' || raw[startIndex] === '\n') {
+  while (startIndex >= 0 && raw[startIndex] !== ":") {
+    if (raw[startIndex] === " " || raw[startIndex] === "\n") {
       startIndex = -1;
       break;
     }
@@ -657,24 +663,21 @@ function appendEmojiToInput(text: string) {
   let endIndex = cursorPos;
   while (endIndex < raw.length) {
     const c = raw[endIndex];
-    if (c === ' ' || c === '\n') break;
-    if (c === ':') {
-      endIndex++; 
+    if (c === " " || c === "\n") break;
+    if (c === ":") {
+      endIndex++;
       break;
     }
     endIndex++;
   }
-  const textToInsert = ' ' + text;
+  const textToInsert = " " + text;
 
   state.rawContent =
-    raw.slice(0, startIndex) +
-    textToInsert +
-    raw.slice(endIndex);
+    raw.slice(0, startIndex) + textToInsert + raw.slice(endIndex);
 
   state.cursorPosition = startIndex + textToInsert.length;
   state.selectionStart = state.cursorPosition;
   state.selectionEnd = state.cursorPosition;
-
 
   let charCount = 0;
   let targetNode: Node | null = null;
@@ -690,8 +693,11 @@ function appendEmojiToInput(text: string) {
       }
       charCount += len;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      if ((node as HTMLElement).tagName === 'IMG' || (node as HTMLElement).tagName === 'DIV') {
-        const emojiId = (node as HTMLElement).getAttribute('data-emoji-id');
+      if (
+        (node as HTMLElement).tagName === "IMG" ||
+        (node as HTMLElement).tagName === "DIV"
+      ) {
+        const emojiId = (node as HTMLElement).getAttribute("data-emoji-id");
         charCount += emojiId ? `:${emojiId}:`.length : 1;
       } else {
         for (let i = 0; i < node.childNodes.length; i++) {
@@ -730,7 +736,6 @@ function appendEmojiToInput(text: string) {
   adjustHeight();
 }
 
-
 export function applyActiveEmojiSuggestion() {
   if (!emojiSuggestionDropdown) {
     return;
@@ -754,7 +759,6 @@ export function applyActiveEmojiSuggestion() {
 
   setTimeout(hideEmojiSuggestions, 50);
 }
-
 
 export function handleEmojiSuggestions(event: KeyboardEvent) {
   const state = getChatBarState();

@@ -4,7 +4,7 @@ import {
   drawProfilePop,
   drawProfilePopId
 } from "./popups.ts";
-import { showReplyMenu, chatInput } from "./chatbar.ts";
+import { showReplyMenu, appendMemberMentionToInput } from "./chatbar.ts";
 import {
   currentDiscriminator,
   currentUserId,
@@ -176,8 +176,7 @@ export function togglePin() {
   alertUser("Not implemented: Pin");
 }
 function mentionUser(userId: string) {
-  const userNick = userManager.getUserNick(userId);
-  chatInput.value += `@${userNick}`;
+  appendMemberMentionToInput(userId, true);
 }
 
 function inviteUser(userId: string, guildId: string) {

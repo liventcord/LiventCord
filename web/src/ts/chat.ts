@@ -65,7 +65,11 @@ import { friendsCache } from "./friends.ts";
 import { playNotification } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
-import { constructUserData, drawProfilePopId } from "./popups.ts";
+import {
+  constructUserData,
+  createMentionProfilePop,
+  drawProfilePopId
+} from "./popups.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -103,6 +107,51 @@ export function setReachedChannelEnd(val: boolean) {
 }
 
 export const CLYDE_ID = "1";
+let currentMentionPop: HTMLElement | null;
+export function addChatMentionListeners() {
+  chatContainer?.addEventListener("click", async (event) => {
+    const target = event.target as HTMLElement;
+    if (
+      target.classList.contains("mention") ||
+      target.classList.contains("profile-pic")
+    ) {
+      const userId = target.dataset.userId;
+      if (!userId) return;
+
+      if (currentMentionPop) {
+        currentMentionPop.remove();
+        currentMentionPop = null;
+      }
+
+      const pop = await createMentionProfilePop(target, userId);
+      console.log(pop?.parentElement);
+      if (pop) {
+        currentMentionPop = pop;
+      }
+    }
+  });
+
+  document.body.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+
+    if (currentMentionPop && currentMentionPop.contains(target)) {
+      return;
+    }
+
+    if (
+      target.classList.contains("mention") ||
+      target.classList.contains("profile-pic")
+    ) {
+      return;
+    }
+
+    if (currentMentionPop) {
+      currentMentionPop.remove();
+      currentMentionPop = null;
+    }
+  });
+}
 
 export function createChatScrollButton() {
   if (!chatContainer) {
@@ -834,13 +883,16 @@ export function createProfileImageChat(
   }
   const profileImg = createEl("img", {
     className: "profile-pic",
-    id: userId
+    id: userId,
+    style: {
+      width: "40px",
+      height: "40px"
+    }
   });
+
+  profileImg.dataset.userId = userId;
   setProfilePic(profileImg, userId);
 
-  profileImg.style.width = "40px";
-  profileImg.style.height = "40px";
-  profileImg.dataset.userId = userId;
   appendToProfileContextList(userInfo, userId);
 
   profileImg.addEventListener("mouseover", () => {

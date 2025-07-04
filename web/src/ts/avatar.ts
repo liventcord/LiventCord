@@ -5,7 +5,6 @@ import {
   getBase64Image,
   getId,
   blackImage,
-  STATUS_200,
   base64ToBlob,
   IMAGE_SRCS,
   createRandomId

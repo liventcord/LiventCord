@@ -13,7 +13,8 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID
+  setLastSenderID,
+  addChatMentionListeners
 } from "./chat.ts";
 import {
   chatInput,
@@ -98,7 +99,7 @@ import {
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
-import { addChannelSearchListeners, userMentionDropdown } from "./search.ts";
+import { addChannelSearchListeners } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
   isOnMePage,
@@ -283,18 +284,6 @@ function initializeSettings() {
 }
 
 function initializeListeners() {
-  document.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement;
-
-    if (
-      target &&
-      !userMentionDropdown.contains(target) &&
-      target !== chatInput
-    ) {
-      userMentionDropdown.style.display = "none";
-    }
-  });
-
   getId("global-search-input")?.addEventListener("click", () =>
     openSearchPop()
   );
@@ -309,6 +298,8 @@ function initializeListeners() {
   });
 
   addContextListeners();
+
+  addChatMentionListeners();
 }
 
 function handleGuildClick(event: MouseEvent) {
@@ -551,6 +542,11 @@ export function loadDmHome(isChangingUrl = true): void {
   }
 
   disableElement("channel-container");
+  disableElement(chatContainer);
+
+  setTimeout(() => {
+    disableElement(chatContainer);
+  }, 0);
   enableElement("friend-container-item");
   setGuildNameText("");
   disableElement("guild-settings-button");

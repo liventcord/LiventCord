@@ -49,7 +49,6 @@ const DISCRIMINATOR_PARTS_LENGHT = 2;
 
 export const DEFAULT_DISCRIMINATOR = "0000";
 export const isMobile = getMobile();
-const STATUS_404 = 404;
 export const STATUS_200 = 200;
 export const blackImage =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAADElEQVQImWNgIB0AAAA0AAEjQ4N1AAAAAElFTkSuQmCC";
@@ -132,21 +131,6 @@ function sendNotify(data: string) {
   container.addEventListener("animationend", () => {
     container.remove();
   });
-}
-
-function areJsonsEqual(existingData: unknown, newData: unknown): boolean {
-  if (existingData === null || newData === null) {
-    return false;
-  }
-
-  if (typeof existingData !== "object" || typeof newData !== "object") {
-    return false;
-  }
-
-  const existingJson = JSON.stringify(existingData);
-  const newJson = JSON.stringify(newData);
-
-  return existingJson === newJson;
 }
 
 interface ParsedUsername {
@@ -982,13 +966,13 @@ export function renderFileIcon(img: HTMLImageElement, fileName: string) {
   }
 }
 export function isCompressedFile(fileName: string): boolean {
-  const ext = fileName.split(".").pop()?.toLowerCase();
+  const extension = fileName.split(".").pop()?.toLowerCase();
 
   const compressedExtensions = Object.keys(extensionToIcon).filter((ext) =>
     extensionToIcon[ext].includes("fa-file-zipper")
   );
 
-  return ext ? compressedExtensions.includes(ext) : false;
+  return extension ? compressedExtensions.includes(extension) : false;
 }
 export const tenorHosts = [
   "media1.tenor.com",
@@ -1154,9 +1138,9 @@ export async function openBlobUrl(imageElement: HTMLImageElement) {
   ctx.drawImage(imageElement, 0, 0);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob);
+    canvas.toBlob((_blob) => {
+      if (_blob) {
+        resolve(_blob);
       } else {
         reject(new Error("Failed to create blob from canvas"));
       }

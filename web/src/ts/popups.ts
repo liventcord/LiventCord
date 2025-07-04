@@ -323,6 +323,124 @@ function closeCurrentProfileDisplay() {
     currentProfileDisplay.firstChild as HTMLElement
   );
 }
+export async function createMentionProfilePop(
+  baseMessage: HTMLElement,
+  userId: string
+) {
+  const container = await drawProfilePopId(userId);
+  if (!container) return;
+
+  const pop = container.querySelector(".pop-up") as HTMLElement;
+  if (!pop) return;
+
+  document.body.appendChild(pop);
+  container.remove();
+
+  pop.querySelector("#profile-popup-bottom-container")?.remove();
+
+  const topContainer = pop.querySelector(
+    "#profile-popup-top-container"
+  ) as HTMLElement;
+  if (topContainer) {
+    Object.assign(topContainer.style, {
+      height: "30%",
+      top: "15.4%"
+    });
+  }
+
+  Object.assign(pop.style, {
+    animation: "unset",
+    width: "17vw",
+    backgroundColor: "rgb(36,36,41)",
+    position: "absolute",
+    zIndex: "10"
+  });
+
+  const rect = baseMessage.getBoundingClientRect();
+  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+
+  const popHeight = pop.offsetHeight || viewportHeight * 0.45;
+  const popWidth = pop.offsetWidth || viewportWidth * 0.25;
+
+  const THRESHOLD_PX = 150;
+  const DISTANCE_TOP = rect.top;
+  const DISTANCE_BOTTOM = viewportHeight - rect.bottom;
+
+  let topPos: number;
+  if (DISTANCE_BOTTOM < THRESHOLD_PX) {
+    topPos = scrollTop + viewportHeight - popHeight + 100;
+  } else if (DISTANCE_TOP < THRESHOLD_PX) {
+    topPos = scrollTop + 320;
+  } else {
+    topPos = scrollTop + rect.bottom - 50;
+  }
+
+  let leftPos = scrollLeft + rect.left + 50;
+  const minLeft = scrollLeft + 20;
+  const maxLeft = scrollLeft + viewportWidth - popWidth - 20;
+
+  leftPos = Math.min(Math.max(leftPos, minLeft), maxLeft);
+
+  pop.style.left = `${leftPos}px`;
+  pop.style.top = `${topPos}px`;
+  pop.style.height = "";
+  pop.dataset.isMentionPopup = "true";
+
+  const profileDisplay = pop.querySelector(".profile-display") as HTMLElement;
+  if (profileDisplay) {
+    Object.assign(profileDisplay.style, {
+      width: "80px",
+      top: "7vh"
+    });
+  }
+
+  const bubble = pop.querySelector(".status-bubble") as HTMLElement;
+  if (bubble) {
+    bubble.style.top = "12vh";
+  }
+
+  const profContainer = pop.querySelector("#profile-container") as HTMLElement;
+  if (profContainer) {
+    Object.assign(profContainer.style, {
+      marginTop: "18vh"
+    });
+
+    const title = profContainer.querySelector("#profile-title") as HTMLElement;
+    const discriminator = profContainer.querySelector(
+      "#profile-discriminator"
+    ) as HTMLElement;
+    if (title) title.style.marginTop = "30px";
+    if (discriminator) {
+      discriminator.style.fontSize = "1em";
+      discriminator.style.marginTop = "4em";
+    }
+
+    const optionsContainer = profContainer.querySelector(
+      ".profile-options-container"
+    ) as HTMLElement;
+    if (optionsContainer) {
+      optionsContainer.style.bottom = "10px";
+      optionsContainer.style.right = "20px";
+      optionsContainer.style.justifyContent = "center";
+      optionsContainer.style.right = "50%";
+      optionsContainer.style.transform = "translateX(50%)";
+      const btn = optionsContainer.querySelector(
+        ".profile-send-msg-button"
+      ) as HTMLElement;
+      if (btn) {
+        btn.style.width = "15vw";
+        btn.style.height = "40px";
+        btn.style.marginRight = "0px";
+      }
+    }
+  }
+
+  return pop;
+}
+
 export async function drawProfilePop(
   userData: UserInfo,
   shouldDrawPanel?: boolean
@@ -331,8 +449,13 @@ export async function drawProfilePop(
     console.error("Null user data requested profile draw", userData);
     return null;
   }
-  if (getId("profilePopContainer")) {
+  const foundContainer = getId("profilePopContainer");
+  const isMention = foundContainer ? isMentionPopUp(foundContainer) : false;
+  if (foundContainer && !isMention) {
     return null;
+  }
+  if (isMention) {
+    foundContainer?.remove();
   }
   if (isImagePreviewOpen()) {
     hideImagePreview();
@@ -666,7 +789,9 @@ function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
 
   return container;
 }
-
+function isMentionPopUp(parent: HTMLElement) {
+  return parent.dataset.isMentionPopup === "true";
+}
 function createSendMsgButton(userData: UserInfo): HTMLElement {
   const sendMsgBtn = createEl("button", {
     className: "profile-send-msg-button"
@@ -681,11 +806,16 @@ function createSendMsgButton(userData: UserInfo): HTMLElement {
 
   sendMsgBtn.addEventListener("click", () => {
     loadDmHome();
-    openDm(userData.userId);
-    const profilePopContainer = getId("profilePopContainer");
-    if (profilePopContainer) {
-      (profilePopContainer.parentNode as HTMLElement).remove();
-    }
+    setTimeout(() => {
+      openDm(userData.userId);
+      const profilePopContainer = getId("profilePopContainer");
+      if (profilePopContainer) {
+        const parent = profilePopContainer.parentNode as HTMLElement;
+        if (parent !== document.body) {
+          if (isMentionPopUp(parent)) parent.remove();
+        }
+      }
+    }, 0);
   });
 
   return sendMsgBtn;

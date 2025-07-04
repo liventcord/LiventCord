@@ -1,14 +1,5 @@
 import DOMPurify from "dompurify";
 import { fileTypeFromBuffer } from "file-type";
-
-import {
-  currentSearchUiIndex,
-  setCurrentSearchUiIndex,
-  highlightOption,
-  selectMember,
-  updateUserMentionDropdown,
-  userMentionDropdown
-} from "./search.ts";
 import { apiClient, EventType } from "./api.ts";
 import { friendsCache } from "./friends.ts";
 import { scrollToBottom, updateChatWidth } from "./chat.ts";
@@ -32,7 +23,7 @@ import {
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { maxAttachmentSize } from "./avatar.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
@@ -85,7 +76,6 @@ const state = {
   selectionStart: 0,
   selectionEnd: 0
 };
-(window as any).statee = state;
 export function getChatBarState() {
   return state;
 }
@@ -193,33 +183,64 @@ export function adjustHeight() {
   adjustReplyPosition();
 }
 
-function extractChannelIds(message: string): string[] {
-  const channelIds: string[] = [];
-  const regex = /#(\w{19})/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(message)) !== null) {
-    const channelId = cacheInterface.getChannel(
-      currentGuildId,
-      guildCache.currentChannelId
-    )?.channelId;
-    if (channelId) {
-      channelIds.push(channelId);
-    }
-  }
-  return channelIds;
-}
+export function appendMemberMentionToInput(
+  userId: string,
+  ignoreChecks?: boolean
+) {
+  if (!chatInput) return;
+  const message = state.rawContent ?? "";
 
-function extractUserIds(message: string): string[] {
-  const userIds: string[] = [];
-  const regex = /@(\w{18})/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(message)) !== null) {
-    const userId = userManager.getUserIdFromNick(match[1]);
-    if (userId) {
-      userIds.push(userId);
-    }
+  let cursorPos = state.cursorPosition;
+  cursorPos = Math.max(0, Math.min(cursorPos, message.length));
+
+  const newMention = `<@${userId}>`;
+
+  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
+  if (mentionStart === -1 && !ignoreChecks) return;
+
+  let mentionEnd = cursorPos;
+  while (mentionEnd < message.length && !/\s/.test(message[mentionEnd])) {
+    mentionEnd++;
   }
-  return userIds;
+
+  if (ignoreChecks) {
+    const newMessage =
+      message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
+    const newCursorPos = mentionStart + newMention.length;
+
+    state.rawContent = newMessage;
+    state.cursorPosition = newCursorPos;
+
+    const savedSelection = { start: newCursorPos, end: newCursorPos };
+    requestAnimationFrame(() => {
+      DomUtils.restoreSelection(chatInput, savedSelection);
+    });
+
+    setChatBarState(state);
+    manuallyRenderEmojis(newMessage);
+    setTimeout(() => disableElement("userMentionDropdown"), 0);
+    return;
+  }
+
+  const mentionCandidate = message.slice(mentionStart, cursorPos);
+  if (/\s/.test(mentionCandidate)) return;
+
+  const newMessage =
+    message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
+
+  const newCursorPos = mentionStart + newMention.length;
+
+  state.rawContent = newMessage;
+  state.cursorPosition = newCursorPos;
+
+  const savedSelection = { start: newCursorPos, end: newCursorPos };
+  requestAnimationFrame(() => {
+    DomUtils.restoreSelection(chatInput, savedSelection);
+  });
+
+  setChatBarState(state);
+  manuallyRenderEmojis(newMessage);
+  setTimeout(() => disableElement("userMentionDropdown"), 0);
 }
 
 //#region Reply
@@ -1003,6 +1024,9 @@ function handleBackspace(event: KeyboardEvent) {
     }
   }
 }
+export function onMemberSelected(_state: ChatBarState) {
+  state.rawContent = preserveEmojiContent(chatInput);
+}
 
 export function handleEmojiJump(event: KeyboardEvent) {
   const selection = window.getSelection();
@@ -1248,10 +1272,17 @@ function insertNewlineAtCaret() {
 
   scrollToBottom();
 }
-
+let suppressSend = false;
+export function setSuppressSend(val: boolean) {
+  suppressSend = val;
+}
 function handleUserKeydown(event: KeyboardEvent) {
   if (sendTypingData) {
     handleTypingRequest();
+  }
+  if (suppressSend) {
+    suppressSend = false;
+    return;
   }
   if (!chatContainer || !chatInput) return;
 
@@ -1277,7 +1308,6 @@ function handleUserKeydown(event: KeyboardEvent) {
       return;
     }
 
-    // Desktop: send message on Enter
     event.preventDefault();
     sendMessage(state.rawContent).then(() => {
       chatInput.innerHTML = "";
@@ -1340,6 +1370,16 @@ function handleChatInput(event: Event) {
     const hasContent = state.rawContent.trim().length > 0;
     toggleSendButton(hasContent);
 
+    const selection = window.getSelection();
+
+    state.cursorPosition =
+      selection && selection.rangeCount > 0
+        ? DomUtils.calculatePositionFromNode(
+            selection.getRangeAt(0).startContainer,
+            selection.getRangeAt(0).startOffset
+          )
+        : selectionBefore.start;
+
     if (
       event.inputType.startsWith("insert") ||
       event.inputType.startsWith("delete")
@@ -1347,18 +1387,9 @@ function handleChatInput(event: Event) {
       const formattedContent = renderEmojisFromContent(state.rawContent);
 
       if (formattedContent !== chatInput.innerHTML) {
-        const selection = window.getSelection();
-        const cursorPosition =
-          selection && selection.rangeCount > 0
-            ? DomUtils.calculatePositionFromNode(
-                selection.getRangeAt(0).startContainer,
-                selection.getRangeAt(0).startOffset
-              )
-            : selectionBefore.start;
-
         const savedSelection = {
-          start: cursorPosition,
-          end: cursorPosition
+          start: state.cursorPosition,
+          end: state.cursorPosition
         };
 
         chatInput.innerHTML = DOMPurify.sanitize(
@@ -1391,13 +1422,6 @@ export function initialiseChatInput() {
   chatInput.addEventListener("input", adjustHeight);
   chatInput.addEventListener("keydown", handleUserKeydown);
 
-  chatInput.addEventListener("input", (event) => {
-    if (event.target instanceof HTMLInputElement) {
-      if (event.target.value) {
-        updateUserMentionDropdown(event.target.value);
-      }
-    }
-  });
   chatInput.addEventListener("paste", (e: ClipboardEvent) => {
     e.preventDefault();
     const items = e.clipboardData?.items;
@@ -1427,32 +1451,6 @@ export function initialiseChatInput() {
     }
   });
 
-  chatInput.addEventListener("keydown", (event) => {
-    const options = userMentionDropdown.querySelectorAll(".suggestion-option");
-    if (event.key === "ArrowDown") {
-      setCurrentSearchUiIndex((currentSearchUiIndex + 1) % options.length);
-      highlightOption(currentSearchUiIndex);
-      event.preventDefault();
-    } else if (event.key === "ArrowUp") {
-      setCurrentSearchUiIndex(
-        (currentSearchUiIndex - 1 + options.length) % options.length
-      );
-      highlightOption(currentSearchUiIndex);
-      event.preventDefault();
-    } else if (event.key === "Enter") {
-      if (currentSearchUiIndex >= 0 && currentSearchUiIndex < options.length) {
-        const selectedUserElement = options[
-          currentSearchUiIndex
-        ] as HTMLElement;
-        const selectedUserId = selectedUserElement.dataset.userid as string;
-        const selectedUserNick = selectedUserElement.textContent as string;
-        selectMember(selectedUserId, selectedUserNick);
-      }
-    } else if (event.key === "Escape") {
-      userMentionDropdown.style.display = "none";
-    }
-  });
-
   const updateCursorOnClick = () => {
     toggleShowEmojiSuggestions();
   };
@@ -1465,11 +1463,12 @@ export function initialiseChatInput() {
   updatePlaceholderVisibility();
 
   getId("sendbtn")?.addEventListener("click", () => {
-    sendMessage(state.rawContent).then(() => {
-      chatInput.value = "";
-      isAttachmentsAdded = false;
-      adjustHeight();
-    });
+    isAttachmentsAdded = false;
+    adjustHeight();
+    const message = state.rawContent;
+    chatInput.innerHTML = "";
+    disableElement("userMentionDropdown");
+    sendMessage(message);
   });
   toggleSendButton(false);
 }
