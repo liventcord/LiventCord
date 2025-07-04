@@ -134,8 +134,7 @@ function updateFilteredUsers() {
     return;
   }
 
-  // New: Ensure the last "@" is not part of an existing complete mention like <@123456>
-  const mentionLike = textContent.slice(lastAt - 2, cursorPos + 1); // capture <@123...>
+  const mentionLike = textContent.slice(lastAt - 2, cursorPos + 1);
   const completedMentionPattern = /^<@\d+>$/;
   if (completedMentionPattern.test(mentionLike)) {
     filteredUsers.value = [];
@@ -182,13 +181,12 @@ function updateFilteredUsers() {
 }
 
 function selectMember(userId: string, userNick: string) {
-  appendMemberMentionToInput(userId, userNick);
+  appendMemberMentionToInput(userId);
   showDropdown.value = false;
   currentSearchUiIndex.value = -1;
 }
 
 function onInput(event: Event) {
-  console.log(getChatBarState());
   updateFilteredUsers();
 }
 
@@ -214,14 +212,12 @@ function handleKeydown(event: KeyboardEvent) {
       currentSearchUiIndex.value = -1;
       return;
     }
-
     if (
       currentSearchUiIndex.value < 0 ||
       currentSearchUiIndex.value >= optionsLength
     ) {
       currentSearchUiIndex.value = 0;
     }
-
     const user = filteredUsers.value[currentSearchUiIndex.value];
 
     setSuppressSend(true);
@@ -229,13 +225,12 @@ function handleKeydown(event: KeyboardEvent) {
   } else if (event.key === "Escape") {
     event.preventDefault();
     filteredUsers.value = [];
-
     showDropdown.value = false;
     currentSearchUiIndex.value = -1;
-  } else if (event.key === "Space") {
-    filteredUsers.value = [];
-    showDropdown.value = false;
-    currentSearchUiIndex.value = -1;
+  } else if (event.key === "Backspace" || event.key === "Space") {
+    setTimeout(() => {
+      updateFilteredUsers();
+    }, 0);
   }
 }
 

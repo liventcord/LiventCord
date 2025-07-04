@@ -195,10 +195,18 @@ export function appendMemberMentionToInput(
 
   const newMention = `<@${userId}>`;
 
+  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
+  if (mentionStart === -1 && !ignoreChecks) return;
+
+  let mentionEnd = cursorPos;
+  while (mentionEnd < message.length && !/\s/.test(message[mentionEnd])) {
+    mentionEnd++;
+  }
+
   if (ignoreChecks) {
     const newMessage =
-      message.slice(0, cursorPos) + newMention + message.slice(cursorPos);
-    const newCursorPos = cursorPos + newMention.length;
+      message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
+    const newCursorPos = mentionStart + newMention.length;
 
     state.rawContent = newMessage;
     state.cursorPosition = newCursorPos;
@@ -214,16 +222,8 @@ export function appendMemberMentionToInput(
     return;
   }
 
-  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
-  if (mentionStart === -1) return;
-
   const mentionCandidate = message.slice(mentionStart, cursorPos);
   if (/\s/.test(mentionCandidate)) return;
-
-  let mentionEnd = cursorPos;
-  while (mentionEnd < message.length && !/\s/.test(message[mentionEnd])) {
-    mentionEnd++;
-  }
 
   const newMessage =
     message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
