@@ -84,6 +84,11 @@ export function updateVideoTransparency(value: string) {
 function updateBgVideoSource(url: string) {
   if (!bgVideoElement) return;
 
+  if (!isValidUrl(url)) {
+    console.warn("Invalid URL format:", url);
+    return;
+  }
+
   const source = bgVideoElement.querySelector("source");
   if (!source) return;
   source.src = url;
@@ -92,19 +97,11 @@ function updateBgVideoSource(url: string) {
 }
 
 export function onEditVideoUrl(value: string) {
-  if (!isValidUrl(value)) {
-    console.warn("Invalid URL format:", value);
-    return;
-  }
-
   updateBgVideoSource(value);
 }
 
 export function resetVideoUrl() {
   updateBgVideoSource(defaultVideoUrl);
-  const videoUrlInput = getId("video-url-input");
-
-  if (videoUrlInput) videoUrlInput.textContent = defaultVideoUrl;
 }
 
 export function disableBgVideo() {
