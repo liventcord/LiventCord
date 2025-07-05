@@ -22,7 +22,8 @@ import {
   onEditChannelName,
   isBlackTheme,
   saveThemeCookie,
-  saveTransparencyValue
+  saveTransparencyValue,
+  loadBgVideo
 } from "./settings.ts";
 import { initialState } from "./app.ts";
 import {
@@ -51,8 +52,8 @@ import { isOnGuild } from "./router.ts";
 import { getGuildEmojiHtml, populateEmojis } from "./emoji.ts";
 import {
   currentBGTransparency,
-  currentVideoUrl,
   onEditVideoUrl,
+  resetVideoUrl,
   setTheme,
   updateVideoTransparency
 } from "./extras.ts";
@@ -662,8 +663,12 @@ function getAppearanceHtml() {
           role="textbox"
           aria-multiline="false"
           class="base-user-input">
-          ${currentVideoUrl}
+          ${loadBgVideo()}
         </div>
+
+        <button id="video-url-reset-btn" class="settings-button">
+          ${translations.getSettingsTranslation("ResetVideoUrlButton")}
+        </button>
 
         ${translations.getSettingsTranslation("VideoTransparency")}
         <input
@@ -869,11 +874,17 @@ function initialiseSettingComponents(
   const videoUrlInput = getId("video-url-input");
 
   videoUrlInput?.addEventListener("input", (e) => {
-    const target = e.target as HTMLInputElement;
+    const target = e.target as HTMLElement;
     if (target.textContent) {
       onEditVideoUrl(target.textContent);
     }
   });
+  const resetBtn = getId("video-url-reset-btn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      resetVideoUrl();
+    });
+  }
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;

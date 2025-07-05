@@ -142,7 +142,8 @@
     "Theme": "Tema",
     "ThemeDescription": "Daha iyi bir görünüm için arayüz rengini değiştir.",
     "VideoTransparency": "Video Saydamlığı",
-    "VideoUrlTitle": "Arkaplan video URL"
+    "VideoUrlTitle": "Arkaplan video URL",
+    "ResetVideoUrlButton": "Video URL'sini sıfırla"
   },
   "textTranslations": {
     "online": "Çevrim İçi",

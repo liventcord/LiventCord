@@ -67,14 +67,6 @@ export function setIsChangedImage(val: boolean) {
   isChangedImage = val;
 }
 
-function clearCookies() {
-  const cookies = document.cookie.split("; ");
-  for (const cookie of cookies) {
-    const [name] = cookie.split("=");
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-  }
-}
-
 export function saveTransparencyValue(value: string): void {
   localStorage.setItem("transparencySliderValue", value);
 }
@@ -91,7 +83,17 @@ type ToggleState = {
   "video-toggle": boolean;
   "private-channel-toggle": boolean;
 };
+const bgVideoKey = "videoUrl";
+export function saveBgVideo(url: string) {
+  localStorage.setItem(bgVideoKey, url);
+}
+export const defaultVideoUrl =
+  "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/items/1406990/915b1b4a05133186525a956d7ca5c142a3c3c9f3.webm";
 
+export function loadBgVideo() {
+  const result = localStorage.getItem(bgVideoKey) ?? defaultVideoUrl;
+  return result;
+}
 class ToggleManager {
   private static instance: ToggleManager;
   states: ToggleState;

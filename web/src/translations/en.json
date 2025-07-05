@@ -129,7 +129,8 @@
     "Theme": "Theme",
     "ThemeDescription": "Adjust the colour of interface for better visibility.",
     "VideoTransparency": "Video Transparency",
-    "VideoUrlTitle": "Background Video URL"
+    "VideoUrlTitle": "Background Video URL",
+    "ResetVideoUrlButton": "Reset Video URL"
   },
   "textTranslations": {
     "online": "Online",

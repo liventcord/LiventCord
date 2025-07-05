@@ -1852,8 +1852,8 @@ body.black-theme {
   z-index: 3;
   position: fixed !important;
   top: unset !important;
-  bottom: -138px;
-  left: 0px;
+  bottom: -138px !important;
+  left: 175px !important;
   gap: 10px;
   flex-direction: column;
   align-items: center;
@@ -1910,7 +1910,7 @@ body.black-theme {
 
 .status-dropdown {
   position: absolute;
-  top: 73%;
+  top: 63%;
   left: 320px;
   margin-left: 10px;
   display: none;

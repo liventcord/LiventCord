@@ -1171,7 +1171,17 @@ body.black-theme #settings-menu button.touch-hover {
   white-space: unset;
   width: unset;
   padding: 10px;
-  width: 90vw;
+}
+#video-url-reset-btn {
+  width: 120px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1em;
+  white-space: nowrap;
+  box-sizing: border-box;
+  align-self: flex-end;
 }
 
 .error-icon {

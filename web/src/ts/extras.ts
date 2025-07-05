@@ -1,5 +1,4 @@
 import confettiImport from "canvas-confetti";
-
 const confetti = confettiImport as unknown as (options: any) => void;
 
 import { createEl, getId, isValidUrl } from "./utils.ts";
@@ -8,12 +7,11 @@ import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { guildContainer } from "./guild.ts";
 import { friendsContainer } from "./friendui.ts";
+import { defaultVideoUrl, loadBgVideo, saveBgVideo } from "./settings.ts";
 
 let bgVideoElement: HTMLVideoElement | null = null;
 const defaultBGTransparency = "0.4";
 export let currentBGTransparency = defaultBGTransparency;
-export const currentVideoUrl =
-  "https://cdn.fastly.steamstatic.com/steamcommunity/public/images/items/1406990/915b1b4a05133186525a956d7ca5c142a3c3c9f3.webm";
 
 function addErrorIcon() {
   const input = getId("video-url-input");
@@ -48,6 +46,8 @@ export function createBGVideo(transparencyValue?: string | null) {
     loop: true,
     playsInline: true
   });
+  const currentVideoUrl = loadBgVideo();
+  if (currentVideoUrl) onEditVideoUrl(currentVideoUrl);
 
   const source = createEl("source", {
     src: currentVideoUrl,
@@ -64,7 +64,6 @@ export function createBGVideo(transparencyValue?: string | null) {
   source.addEventListener("error", handleVideoError);
 
   video.addEventListener("canplay", () => {
-    console.log("Video can play now");
     removeVideoErrorIcon();
   });
 
@@ -82,20 +81,30 @@ export function updateVideoTransparency(value: string) {
   bgVideoElement.style.opacity = value;
 }
 
-export function onEditVideoUrl(value: string) {
-  if (!bgVideoElement) {
-    return;
-  }
+function updateBgVideoSource(url: string) {
+  if (!bgVideoElement) return;
+
   const source = bgVideoElement.querySelector("source");
-  if (!source) {
-    return;
-  }
+  if (!source) return;
+  source.src = url;
+  saveBgVideo(url);
+  bgVideoElement.load();
+}
+
+export function onEditVideoUrl(value: string) {
   if (!isValidUrl(value)) {
     console.warn("Invalid URL format:", value);
     return;
   }
-  source.src = value;
-  bgVideoElement.load();
+
+  updateBgVideoSource(value);
+}
+
+export function resetVideoUrl() {
+  updateBgVideoSource(defaultVideoUrl);
+  const videoUrlInput = getId("video-url-input");
+
+  if (videoUrlInput) videoUrlInput.textContent = defaultVideoUrl;
 }
 
 export function disableBgVideo() {
