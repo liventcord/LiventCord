@@ -1,7 +1,6 @@
 import { CLYDE_ID } from "./chat.ts";
 import { currentGuildId } from "./guild.ts";
 import {
-  getProfileUrl,
   getBase64Image,
   getId,
   blackImage,
@@ -26,10 +25,11 @@ import {
 import { userList } from "./userList.ts";
 import { createCropPop } from "./popups.ts";
 import { translations } from "./translations.ts";
-import { currentUserId } from "./user.ts";
+import { currentUserId, userManager } from "./user.ts";
 import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
+import { cacheInterface } from "./cache.ts";
 
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
@@ -76,14 +76,12 @@ const allowedAvatarTypes = [
   "image/tiff",
   "image/svg+xml"
 ];
-const imageCache = new Map();
 const failedImages = new Set();
 
 async function setPicture(
   imgToUpdate: HTMLImageElement,
   srcId: string,
-  isProfile: boolean,
-  isTimestamp?: boolean
+  isProfile: boolean
 ) {
   if (!srcId) {
     imgToUpdate.src = isProfile
@@ -109,15 +107,9 @@ async function setPicture(
     return;
   }
 
-  if (imageCache.has(srcId)) {
-    imgToUpdate.src = imageCache.get(srcId);
-    return;
-  }
-
-  const timestamp = new Date().getTime();
   const imageUrl = !isProfile
-    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${srcId}.webp${isTimestamp ? `?ts=${timestamp}` : ""}`
-    : `${getProfileUrl(srcId)}${isTimestamp ? `?ts=${timestamp}` : ""}`;
+    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${srcId}.webp${cacheInterface.getGuildImageVersion(srcId)}`
+    : `${getProfileUrl(srcId)}`;
 
   try {
     const response = await fetch(imageUrl);
@@ -128,7 +120,6 @@ async function setPicture(
       failedImages.add(srcId);
       return;
     }
-    imageCache.set(srcId, imageUrl);
     imgToUpdate.src = imageUrl;
   } catch (e) {
     imgToUpdate.src = isProfile
@@ -249,7 +240,12 @@ export function updateSelfName(nickName: string) {
     selfNameText.innerText = nickName;
   }
 }
-
+export function getProfileUrl(userId: string) {
+  return (
+    import.meta.env.VITE_BACKEND_URL +
+    `/profiles/${userId}?version=${userManager.getUserProfileVersion(userId)}`
+  );
+}
 export function updateSelfProfile(
   userId: string,
   nickName: string,
@@ -258,7 +254,7 @@ export function updateSelfProfile(
   if (!userId) {
     return;
   }
-  const selfimagepath = getProfileUrl(userId, true);
+  const selfimagepath = getProfileUrl(userId);
 
   updateImageSource(selfProfileImage, selfimagepath);
 
@@ -561,15 +557,24 @@ export async function onEditEmoji() {
 export function onEditGuildProfile() {
   onEditImage(true);
 }
-async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
-  setPicture(guildImg, guildId, false);
+export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
+  guildImg.src = `${import.meta.env.VITE_BACKEND_URL}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`;
 }
+export function setGuildImage(
+  guildId: string,
+  imageElement: HTMLImageElement,
+  isUploaded: boolean
+) {
+  imageElement.src = isUploaded
+    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`
+    : blackImage;
+}
+
 export async function setProfilePic(
   profileImg: HTMLImageElement,
-  userId: string,
-  isTimestamp = true
+  userId: string
 ) {
-  setPicture(profileImg, userId, true, isTimestamp);
+  setPicture(profileImg, userId, true);
 }
 
 async function init() {

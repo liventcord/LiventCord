@@ -23,6 +23,7 @@ export interface UserInfo {
   status?: string;
   activity?: string;
   description?: string;
+  profileVersion?: string;
   isFriendsRequestToUser?: boolean;
   createdAt?: string;
   lastLogin?: string;
@@ -149,6 +150,14 @@ class UserManager {
   getUserNick(userId: string): string {
     return this.userNames[userId]?.nickName ?? deletedUser;
   }
+  getUserProfileVersion(userId: string): string {
+    return userId === currentUserId
+      ? initialState.user.profileVersion
+      : (this.userNames[userId]?.profileVersion ?? "");
+  }
+  setProfileVersion(userId: string, version: string): void {
+    this.userNames[userId].profileVersion = version;
+  }
 
   getUserDiscriminator(userId: string): string {
     return this.userNames[userId]?.discriminator ?? "0000";
@@ -171,13 +180,15 @@ class UserManager {
     userId: string,
     nick: string = deletedUser,
     discriminator: string = "",
+    profileVersion: string = "",
     isBlocked?: boolean
   ) {
-    console.log("Adding user: ", userId, nick, discriminator);
+    console.log("Adding user: ", userId, nick, discriminator, profileVersion);
 
     this.userNames[userId] = {
       nickName: nick,
       discriminator,
+      profileVersion,
       isBlocked: Boolean(isBlocked),
       userId,
       status:
@@ -352,6 +363,7 @@ export function initializeProfile() {
     initialState.user.userId,
     initialState.user.nickname,
     initialState.user.discriminator,
+    initialState.user.profileVersion,
     false
   );
   socketClient.onUserIdAvailable();

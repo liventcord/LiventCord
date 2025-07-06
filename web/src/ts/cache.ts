@@ -407,6 +407,7 @@ class CacheGuild {
   emojis: EmojisCache;
   voiceChannels?: VoiceChannelCache;
   ownerId: string | null;
+  guildVersion: string | null;
   rootChannel: string | null = null;
 
   constructor(guildId: string, guildName: string, isGuildUploadedImg: boolean) {
@@ -419,6 +420,7 @@ class CacheGuild {
     this.invites = new InviteIdsCache();
     this.emojis = new EmojisCache();
     this.ownerId = null;
+    this.guildVersion = null;
     if (initialState.sharedGuildsMap) {
       const sharedGuildsMap = new Map<string, string[]>(
         Object.entries(initialState.sharedGuildsMap)
@@ -463,6 +465,9 @@ class CacheGuild {
 
   isOwner(userId: string): boolean {
     return this.ownerId === userId;
+  }
+  setGuildVersion(version: string): void {
+    this.guildVersion = version;
   }
 
   hasMembers(): boolean {
@@ -568,6 +573,9 @@ class GuildCacheInterface {
 
   setGuildOwner(guildId: string, ownerId: string): void {
     this.getGuild(guildId)?.setOwner(ownerId);
+  }
+  setGuildVersion(guildId: string, ownerId: string): void {
+    this.getGuild(guildId)?.setGuildVersion(ownerId);
   }
   isGuildOwner(guildId: string, ownerId: string): boolean {
     console.log(guildId, this.getGuild(guildId)?.getOwner());
@@ -683,6 +691,9 @@ class GuildCacheInterface {
       memberId,
       status
     );
+  }
+  getGuildImageVersion(guildId: string) {
+    return this.getGuild(guildId)?.guildVersion ?? "";
   }
 
   //Channel

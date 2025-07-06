@@ -121,6 +121,7 @@ interface InitialStateData {
   nickName: string;
   userStatus: string;
   userDiscriminator: string;
+  profileVersion: string;
   guildName: string;
   ownerId: string;
   sharedGuildsMap: Map<string, any>;
@@ -144,6 +145,7 @@ interface User {
   maskedEmail: string;
   email: string;
   maxAvatarSize: number;
+  profileVersion: string;
 }
 
 interface InitialState {
@@ -194,8 +196,9 @@ export function initialiseState(data: InitialStateData): void {
     email,
     userId,
     nickName,
-    userStatus,
+    userStatus: _userStatus,
     userDiscriminator,
+    profileVersion,
     guildName,
     ownerId,
     sharedGuildsMap,
@@ -217,8 +220,9 @@ export function initialiseState(data: InitialStateData): void {
     user: {
       userId,
       nickname: nickName,
-      status: userStatus,
+      status: _userStatus,
       discriminator: userDiscriminator,
+      profileVersion,
       maskedEmail: getMaskedEmail(email),
       email,
       maxAvatarSize

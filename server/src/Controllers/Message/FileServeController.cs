@@ -44,7 +44,7 @@ namespace LiventCord.Controllers
             }
             return userId;
         }
-        private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile)
+        private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>> fetchFile, string fileName)
         {
             var fullCacheDirPath = Path.GetFullPath(CacheDirectory);
             var fullRequestedPath = Path.GetFullPath(cacheFilePath);
@@ -59,8 +59,14 @@ namespace LiventCord.Controllers
 
             if (System.IO.File.Exists(fullRequestedPath) && System.IO.File.Exists(metaPath))
             {
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
+                byte[] fileBytes;
+                using (var fs = new FileStream(fullRequestedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    fileBytes = new byte[fs.Length];
+                    await fs.ReadAsync(fileBytes, 0, (int)fs.Length);
+                }
                 var contentType = await System.IO.File.ReadAllTextAsync(metaPath);
+                SetCacheHeaders(fileName);
                 return File(fileBytes, contentType);
             }
 
@@ -72,8 +78,15 @@ namespace LiventCord.Controllers
                 if (path != null)
                 {
                     Directory.CreateDirectory(path);
-                    await System.IO.File.WriteAllBytesAsync(fullRequestedPath, fileResult.FileContents);
-                    await System.IO.File.WriteAllTextAsync(metaPath, fileResult.ContentType ?? "application/octet-stream");
+
+                    var tempFile = fullRequestedPath + ".tmp";
+                    var tempMeta = metaPath + ".tmp";
+
+                    await System.IO.File.WriteAllBytesAsync(tempFile, fileResult.FileContents);
+                    await System.IO.File.WriteAllTextAsync(tempMeta, fileResult.ContentType ?? "application/octet-stream");
+
+                    System.IO.File.Move(tempFile, fullRequestedPath, overwrite: true);
+                    System.IO.File.Move(tempMeta, metaPath, overwrite: true);
                 }
             }
 
@@ -81,7 +94,7 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("guilds/{guildId}")]
-        public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId)
+        public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId, [FromQuery] string? version = null)
         {
             guildId = RemoveFileExtension(guildId);
 
@@ -90,20 +103,21 @@ namespace LiventCord.Controllers
                 return BadRequest("Invalid guildId.");
             }
 
-            var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}.file");
+            var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
+            if (file == null)
+                return NotFound();
 
-            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
+            var versionPart = !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
+
+            var cacheFilePath = Path.Combine(CacheDirectory, $"guild_{guildId}_{versionPart}.file");
+            return await GetFileFromCacheOrDatabase(cacheFilePath, () =>
             {
-                var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
-                if (file == null)
-                    return NotFound();
-
-                return GetFileResult(file);
-            });
+                return Task.FromResult(GetFileResult(file));
+            }, guildId);
         }
 
         [HttpGet("profiles/{userId}")]
-        public async Task<IActionResult> GetProfileFile([FromRoute] string userId)
+        public async Task<IActionResult> GetProfileFile([FromRoute] string userId, [FromQuery] string? version = null)
         {
             userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
@@ -113,16 +127,18 @@ namespace LiventCord.Controllers
                 return BadRequest("Invalid userId.");
             }
 
-            var cacheFilePath = Path.Combine(CacheDirectory, $"{userId}.file");
+            var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            if (file == null)
+                return NotFound();
 
-            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
+            var versionPart = !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
+
+            var cacheFilePath = Path.Combine(CacheDirectory, $"profile_{userId}_{versionPart}.file");
+
+            return await GetFileFromCacheOrDatabase(cacheFilePath, () =>
             {
-                var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
-                if (file == null)
-                    return NotFound();
-
-                return GetFileResult(file);
-            });
+                return Task.FromResult(GetFileResult(file));
+            }, userId);
         }
 
         [HttpGet("attachments/{attachmentId}")]
@@ -144,7 +160,7 @@ namespace LiventCord.Controllers
                 }
 
                 return GetFileResult(file);
-            });
+            }, attachmentId);
         }
 
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
@@ -166,7 +182,7 @@ namespace LiventCord.Controllers
                 }
 
                 return GetFileResult(file, true);
-            });
+            }, emojiId);
         }
 
         private bool ContainsIllegalPathSegments(string input)
@@ -183,52 +199,43 @@ namespace LiventCord.Controllers
             if (file == null)
                 return NotFound(new { Error = "File not found." });
 
-            string contentType;
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            string contentType = DetermineContentType(file.FileName, isExtensionManual);
+            string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
-            if (extension == ".gz")
-            {
-                contentType = "application/gzip";
-            }
-            else
-            {
-                if (isExtensionManual)
-                {
-                    switch (extension)
-                    {
-                        case ".jpg":
-                        case ".jpeg":
-                            contentType = "image/jpeg";
-                            break;
-                        case ".png":
-                            contentType = "image/png";
-                            break;
-                        case ".gif":
-                            contentType = "image/gif";
-                            break;
-                        case ".svg":
-                            contentType = "image/svg+xml";
-                            break;
-                        default:
-                            contentType = "application/octet-stream";
-                            break;
-                    }
-                }
-                else
-                {
-                    if (!_fileTypeProvider.TryGetContentType(file.FileName, out string? detectedType))
-                        contentType = "application/octet-stream";
-                    else
-                        contentType = detectedType!;
-                }
-            }
-
-            var sanitizedFileName = Utils.SanitizeFileName(file.FileName);
-            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{sanitizedFileName}\"");
-            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
-            Response.Headers["Expires"] = DateTime.UtcNow.AddYears(1).ToString("R");
-
+            SetCacheHeaders(sanitizedFileName);
             return File(file.Content, contentType);
         }
+
+        private string DetermineContentType(string fileName, bool isExtensionManual)
+        {
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+
+            if (extension == ".gz")
+                return "application/gzip";
+
+            if (isExtensionManual)
+            {
+                return extension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".gif" => "image/gif",
+                    ".svg" => "image/svg+xml",
+                    _ => "application/octet-stream"
+                };
+            }
+
+            return _fileTypeProvider.TryGetContentType(fileName, out var detectedType)
+                ? detectedType!
+                : "application/octet-stream";
+        }
+
+        private void SetCacheHeaders(string fileName)
+        {
+            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileName}\"");
+            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
+            Response.Headers["Expires"] = DateTime.UtcNow.AddYears(1).ToString("R");
+        }
     }
+
 }

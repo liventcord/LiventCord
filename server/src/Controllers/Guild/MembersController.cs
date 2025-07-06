@@ -266,7 +266,9 @@ namespace LiventCord.Controllers
                         .Where(g => g.GuildId == gm.Guild.GuildId)
                         .Select(g => g.MemberId)
                         .ToList(),
-                    GuildChannels = new List<ChannelWithLastRead>()
+                    GuildChannels = new List<ChannelWithLastRead>(),
+                    GuildVersion = _dbContext.GuildFiles.Where(g => g.GuildId == gm.Guild.GuildId)
+                        .Select(g => g.Version).FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
 
@@ -308,6 +310,9 @@ namespace LiventCord.Controllers
                 {
                     GuildId = gu.Guild.GuildId,
                     OwnerId = gu.Guild.OwnerId,
+                    GuildVersion = _dbContext
+                        .GuildFiles.Where(g => g.GuildId == gu.Guild.GuildId)
+                        .Select(g => g.Version).FirstOrDefault(),
                     GuildName = gu.Guild.GuildName,
                     RootChannel = gu.Guild.RootChannel,
                     Region = gu.Guild.Region,

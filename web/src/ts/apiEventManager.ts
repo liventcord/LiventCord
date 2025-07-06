@@ -84,11 +84,13 @@ apiClient.on(EventType.UPLOAD_EMOJI_IMAGE, (data: any) => {
   cacheInterface.addUploadedEmojis(data.guildId, data.emojiIds);
   populateEmojis();
 });
-apiClient.on(EventType.UPLOAD_GUILD_IMAGE, () => {
+apiClient.on(EventType.UPLOAD_GUILD_IMAGE, (data: any) => {
+  cacheInterface.setGuildVersion(data.guildId, data.guildVersion);
   updateGuildImage(currentGuildId);
   setLastConfirmedGuildImage();
 });
-apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, () => {
+apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
+  userManager.setProfileVersion(currentUserId, data.profileVersion);
   refreshUserProfile(currentUserId, currentUserNick);
   setLastConfirmedProfileImage();
 });

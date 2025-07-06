@@ -1,4 +1,5 @@
 import { apiClient, EventType } from "./api";
+import { getProfileUrl } from "./avatar";
 import { cacheInterface } from "./cache";
 import {
   adjustHeight,
@@ -22,7 +23,6 @@ import {
   escapeHtml,
   getEmojiPath,
   getId,
-  getProfileUrl,
   IMAGE_SRCS,
   sanitizeHtmlInput,
   sanitizeInput,

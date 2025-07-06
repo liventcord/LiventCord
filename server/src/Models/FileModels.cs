@@ -78,7 +78,7 @@ public class EmojiFile : FileBase
 public class GuildFile : FileBase
 {
     public string UserId { get; set; }
-
+    public string Version { get; set; } = Guid.NewGuid().ToString();
     public GuildFile(
         string fileId,
         string fileName,
@@ -99,7 +99,7 @@ public class GuildFile : FileBase
 public class ProfileFile : FileBase
 {
     public string UserId { get; set; }
-
+    public string Version { get; set; } = Guid.NewGuid().ToString();
     public ProfileFile(
         string fileId,
         string fileName,

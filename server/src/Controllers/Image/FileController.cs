@@ -43,12 +43,16 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
         private readonly ILogger<FileController> _logger;
+        private readonly ICacheService _cacheService;
+        private readonly MembersController _memberController;
 
-        public FileController(AppDbContext context, ILogger<FileController> logger, PermissionsController permissionsController)
+        public FileController(AppDbContext context, ILogger<FileController> logger, PermissionsController permissionsController, MembersController membersController, ICacheService cacheService)
         {
             _context = context;
             _logger = logger;
             _permissionsController = permissionsController;
+            _memberController = membersController;
+            _cacheService = cacheService;
         }
 
 
@@ -65,7 +69,11 @@ namespace LiventCord.Controllers
             try
             {
                 var fileId = await UploadFileInternal(request.Photo, UserId!, false, false, null);
-                return Ok(new { fileId });
+                _cacheService.InvalidateCache(UserId!);
+                var profileVersion = await _context.ProfileFiles.Where(g => g.UserId == UserId)
+                        .Select(p => p.Version).FirstOrDefaultAsync();
+
+                return Ok(new { profileVersion });
             }
             catch (Exception ex)
             {
@@ -79,14 +87,14 @@ namespace LiventCord.Controllers
         {
 
             using var httpClient = new HttpClient();
-            Console.WriteLine($"Downloading image from {googleUrl}");
+            _logger.LogInformation($"Downloading google image from {googleUrl}");
             using var imageStream = await httpClient.GetStreamAsync(googleUrl);
 
             var memoryStream = new MemoryStream();
             await imageStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
-            Console.WriteLine($"Downloaded image size: {memoryStream.Length} bytes");
+            _logger.LogInformation($"Downloaded image size: {memoryStream.Length} bytes");
 
             var formFile = new FormFile(memoryStream, 0, memoryStream.Length, "file", "google-profile.jpg");
 
@@ -94,7 +102,8 @@ namespace LiventCord.Controllers
             formFile.ContentType = "image/jpeg";
 
             var uploadedImageUrl = await UploadFileInternal(formFile, userId, false, false, null);
-            Console.WriteLine($"Image uploaded successfully. URL: {uploadedImageUrl}");
+            _logger.LogInformation($"Image uploaded successfully. URL: {uploadedImageUrl}");
+            _cacheService.InvalidateCache(UserId!);
 
             return uploadedImageUrl;
         }
@@ -117,11 +126,15 @@ namespace LiventCord.Controllers
             try
             {
                 var fileId = await UploadFileInternal(request.Photo, UserId!, false, false, request.GuildId, null);
-                return Ok(new { fileId });
+                _cacheService.InvalidateCache(UserId!);
+                var guildVersion = await _context.GuildFiles.Where(g => g.GuildId == request.GuildId)
+                        .Select(g => g.Version).FirstOrDefaultAsync();
+                return Ok(new { request.GuildId, guildVersion });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Type = "error", Message = ex.Message });
+                _logger.LogError(ex.Message);
+                return BadRequest(new { Type = "error" });
             }
         }
 
@@ -376,31 +389,6 @@ namespace LiventCord.Controllers
             }
         }
 
-
-
-
-        private async Task SaveOrUpdateFile<T>(T newFile)
-            where T : FileBase
-        {
-            var existingFile = await GetExistingFile<T>(newFile);
-
-            if (existingFile != null)
-            {
-                existingFile.FileName = newFile.FileName;
-                existingFile.Content = newFile.Content;
-                existingFile.Extension = newFile.Extension;
-
-                _logger.LogInformation("Updated existing file: {FileId}, Content Length: {ContentLength}", existingFile.FileId, existingFile.Content.Length);
-            }
-            else
-            {
-                await _context.Set<T>().AddAsync(newFile);
-
-                _logger.LogInformation("Added new file: {FileId}, Content Length: {ContentLength}", newFile.FileId, newFile.Content.Length);
-            }
-
-            await _context.SaveChangesAsync();
-        }
         private async Task SaveFile<T>(T newFile)
             where T : FileBase
         {
@@ -412,8 +400,50 @@ namespace LiventCord.Controllers
             await _context.SaveChangesAsync();
         }
 
+        private async Task SaveOrUpdateFile<T>(T newFile)
+            where T : FileBase
+        {
+            var existingFile = await GetExistingFile(newFile);
 
+            if (existingFile != null)
+            {
+                existingFile.FileName = newFile.FileName;
+                existingFile.Content = newFile.Content;
+                existingFile.Extension = newFile.Extension;
 
+                if (existingFile is ProfileFile profile)
+                {
+                    profile.Version = Guid.NewGuid().ToString();
+                    _logger.LogInformation("Updated version for ProfileFile: {FileId}, Version: {Version}", profile.FileId, profile.Version);
+                }
+                else if (existingFile is GuildFile guild)
+                {
+                    guild.Version = Guid.NewGuid().ToString();
+                    _logger.LogInformation("Updated version for GuildFile: {FileId}, Version: {Version}", guild.FileId, guild.Version);
+                }
+
+                _logger.LogInformation("Updated existing file: {FileId}, Content Length: {ContentLength}", existingFile.FileId, existingFile.Content.Length);
+            }
+            else
+            {
+                if (newFile is ProfileFile newProfile)
+                {
+                    newProfile.Version = Guid.NewGuid().ToString();
+                    _logger.LogInformation("Set initial version for new ProfileFile: {FileId}, Version: {Version}", newProfile.FileId, newProfile.Version);
+                }
+                else if (newFile is GuildFile newGuild)
+                {
+                    newGuild.Version = Guid.NewGuid().ToString();
+                    _logger.LogInformation("Set initial version for new GuildFile: {FileId}, Version: {Version}", newGuild.FileId, newGuild.Version);
+                }
+
+                await _context.Set<T>().AddAsync(newFile);
+
+                _logger.LogInformation("Added new file: {FileId}, Content Length: {ContentLength}", newFile.FileId, newFile.Content.Length);
+            }
+
+            await _context.SaveChangesAsync();
+        }
 
         private async Task<T?> GetExistingFile<T>(T newFile)
             where T : FileBase
@@ -449,6 +479,7 @@ namespace LiventCord.Controllers
 
             return await query.FirstOrDefaultAsync();
         }
+
 
 
     }

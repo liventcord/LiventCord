@@ -427,13 +427,6 @@ export function isURL(input: string): boolean {
 export function containsUrl(input: string): boolean {
   return typeof input === "string" && /\bhttps?:\/\/\S+/i.test(input);
 }
-export function getProfileUrl(userId: string, addTimestamp?: boolean) {
-  const timestamp = `?ts=${new Date().getTime()}`;
-
-  return addTimestamp
-    ? import.meta.env.VITE_BACKEND_URL + `/profiles/${userId}` + timestamp
-    : import.meta.env.VITE_BACKEND_URL + `/profiles/${userId}`;
-}
 
 function pad(number: number, length: number) {
   let str = String(number);

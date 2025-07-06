@@ -1,10 +1,4 @@
-import {
-  getId,
-  createEl,
-  blackImage,
-  getProfileUrl,
-  IMAGE_SRCS
-} from "./utils.ts";
+import { getId, createEl, blackImage, IMAGE_SRCS } from "./utils.ts";
 import { clickMainLogo, preventDrag } from "./ui.ts";
 import {
   isChangingPage,
@@ -15,7 +9,12 @@ import {
 import { isOnGuild, isOnMePage, isOnDm, router } from "./router.ts";
 import { updateMemberList } from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
-import { validateAvatar, resetImageInput } from "./avatar.ts";
+import {
+  validateAvatar,
+  resetImageInput,
+  getProfileUrl,
+  setGuildPic
+} from "./avatar.ts";
 import { guildCache, cacheInterface } from "./cache.ts";
 import {
   Permission,
@@ -304,7 +303,7 @@ export function updateGuildImage(uploadedGuildId: string) {
   const guildImages = guildsList.querySelectorAll("img");
   guildImages.forEach((img) => {
     if (img.id === uploadedGuildId) {
-      setGuildImage(uploadedGuildId, img, true);
+      setGuildPic(img, uploadedGuildId);
     }
   });
 }
@@ -349,7 +348,7 @@ export const createGuildListItem = (
     className: "guild-image"
   });
 
-  setGuildImage(guildId, imgElement, isUploaded);
+  setGuildPic(imgElement, guildId);
 
   imgElement.onerror = () => {
     imgElement.src = blackImage;
@@ -384,7 +383,6 @@ export function updateGuilds(guildsJson: Array<any>) {
   mainLogoItem.appendChild(pendingAlertMain);
 
   wrapWhiteRod(mainLogoItem);
-
   guildsJson.forEach(
     ({
       guildId,
@@ -392,8 +390,15 @@ export function updateGuilds(guildsJson: Array<any>) {
       isGuildUploadedImg,
       rootChannel,
       guildMembers,
-      ownerId
+      ownerId,
+      guildVersion
     }) => {
+      cacheInterface.setName(guildId, guildName);
+      cacheInterface.setRootChannel(guildId, rootChannel);
+      cacheInterface.setGuildOwner(guildId, ownerId);
+      cacheInterface.setGuildVersion(guildId, guildVersion);
+      cacheInterface.setMemberIds(guildId, guildMembers);
+
       const listItem = createGuildListItem(
         guildId,
         rootChannel,
@@ -402,11 +407,6 @@ export function updateGuilds(guildsJson: Array<any>) {
         true
       );
       fragment.appendChild(listItem);
-
-      cacheInterface.setName(guildId, guildName);
-      cacheInterface.setRootChannel(guildId, rootChannel);
-      cacheInterface.setGuildOwner(guildId, ownerId);
-      cacheInterface.setMemberIds(guildId, guildMembers);
     }
   );
 
@@ -533,15 +533,6 @@ function createMainLogo() {
   return mainLogo;
 }
 
-export function setGuildImage(
-  guildId: string,
-  imageElement: HTMLImageElement,
-  isUploaded: boolean
-) {
-  imageElement.src = isUploaded
-    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${guildId}`
-    : blackImage;
-}
 function getGuildFromBar(guildId: string): HTMLElement | null {
   return (
     document.querySelector(`#guilds-list li img[id='${guildId}']`)

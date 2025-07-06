@@ -30,7 +30,8 @@ import {
   updateSelfProfile,
   lastConfirmedProfileImg,
   getProfileImage,
-  onEditEmoji
+  onEditEmoji,
+  setGuildImage
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { availableLanguages, translations } from "./translations.ts";
@@ -47,7 +48,7 @@ import {
 import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { currentGuildId, setGuildImage } from "./guild.ts";
+import { currentGuildId } from "./guild.ts";
 import { isOnGuild } from "./router.ts";
 import { getGuildEmojiHtml, populateEmojis } from "./emoji.ts";
 import {
@@ -324,6 +325,7 @@ export function updateSettingsProfileColor() {
   const settingsProfileImg = getProfileImage();
   const rightBarTop = getId("settings-rightbartop");
   if (settingsProfileImg && rightBarTop) {
+    console.log("Average: ", getAverageRGB(settingsProfileImg));
     rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
   }
 }

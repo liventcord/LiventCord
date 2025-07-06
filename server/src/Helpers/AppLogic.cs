@@ -55,11 +55,8 @@ namespace LiventCord.Helpers
     public class AppLogicService
     {
         private readonly AppDbContext _dbContext;
-        private readonly GuildController _guildController;
         private readonly MembersController _membersController;
         private readonly FriendController _friendController;
-        private readonly TypingController _typingController;
-        private readonly AuthController _authController;
         private readonly ILogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly ICacheService _cacheService;
@@ -67,28 +64,25 @@ namespace LiventCord.Helpers
         public AppLogicService(
             AppDbContext dbContext,
             FriendController friendController,
-            GuildController guildController,
             MembersController membersController,
-            TypingController typingController,
             ILogger<AppLogicService> logger,
-            AuthController authController,
             PermissionsController permissionsController,
             ICacheService cacheService
         )
         {
             _dbContext = dbContext;
-            _guildController = guildController;
             _friendController = friendController;
-            _typingController = typingController;
-            _authController = authController;
             _permissionsController = permissionsController;
             _membersController = membersController;
             _cacheService = cacheService;
             _logger = logger;
 
         }
-
-
+        private async Task<string> GetProfileImgVersion(string userId)
+        {
+            var result = await _dbContext.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            return result?.Version ?? "0";
+        }
         public async Task HandleInitRequest(HttpContext context)
         {
             async Task RejectStaleSession()
@@ -134,6 +128,7 @@ namespace LiventCord.Helpers
                     email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
                     userDiscriminator = user.Discriminator ?? "",
+                    profileVersion = await GetProfileImgVersion(userId),
                     sharedGuildsMap = await _membersController.GetSharedGuilds(userId, friendsStatus, guilds),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus,
