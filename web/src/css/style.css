@@ -87,6 +87,10 @@
   overflow: hidden;
   right: 20px;
 }
+#avatar-wrapper:hover {
+  background-color: #404249 !important;
+}
+
 #user-info-panel {
   position: fixed;
   bottom: 10px;
@@ -142,9 +146,6 @@
   background-color: transparent;
   bottom: 50px;
   border: none;
-}
-#avatar-wrapper:hover {
-  background-color: #404249;
 }
 
 #self-discriminator {
