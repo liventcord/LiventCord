@@ -3,18 +3,16 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"sync/atomic"
-	"time"
+
+	"github.com/liventcord/liventcord/server/telemetry"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
 var (
-	startTime               time.Time
 	servedFilesSinceStartup uint64
 )
 
@@ -23,8 +21,6 @@ func main() {
 	if err != nil {
 		fmt.Println("Warning: Could not load .env file:", err)
 	}
-
-	startTime = time.Now()
 
 	cfg := LoadConfig()
 	settings := NewMediaCacheSettings(cfg)
@@ -47,43 +43,19 @@ func main() {
 			"status": "Proxy service is running",
 		})
 	})
+	storageStatus := initializer.GetStorageStatus()
+	var servedFiles uint64 = 0
+	telemetry.Init(&servedFiles)
 
-	r.GET("/health", func(c *gin.Context) {
-		uptime := humanReadableDuration(time.Since(startTime))
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
+	loadConfig()
+	adminPassword := getEnv("AdminPassword", "")
 
-		vmStat, err := mem.VirtualMemory()
-		var systemMemory gin.H
-		if err == nil {
-			systemMemory = gin.H{
-				"total":       humanReadableBytes(vmStat.Total),
-				"used":        humanReadableBytes(vmStat.Used),
-				"usedPercent": fmt.Sprintf("%.2f%%", vmStat.UsedPercent),
-			}
-		} else {
-			systemMemory = gin.H{"error": err.Error()}
-		}
-
-		storageStatus := initializer.GetStorageStatus()
-
-		c.JSON(200, gin.H{
-			"service": "Proxy service",
-			"status":  "running",
-			"uptime":  uptime,
-			"config":  fmt.Sprintf("Media Limit: %.0f GB", float64(cfg.ExternalMediaLimit)/(1024*1024*1024)),
-			"memory": gin.H{
-				"go_alloc":       humanReadableBytes(m.Alloc),
-				"go_total_alloc": humanReadableBytes(m.TotalAlloc),
-				"go_sys":         humanReadableBytes(m.Sys),
-				"num_gc":         m.NumGC,
-				"system":         systemMemory,
-			},
-			"goroutines":              runtime.NumGoroutine(),
-			"servedFilesSinceStartup": atomic.LoadUint64(&servedFilesSinceStartup),
-			"storageStatus":           storageStatus,
-		})
-	})
+	if adminPassword != "" {
+		r.GET("/health",
+			AdminAuthMiddleware(adminPassword),
+			telemetry.HealthHandler("Proxy Api", storageStatus, nil, nil),
+		)
+	}
 
 	r.GET("/api/proxy/media", func(c *gin.Context) {
 		controller.GetMedia(c)
@@ -103,4 +75,28 @@ func main() {
 
 	address := fmt.Sprintf("%s:%s", host, port)
 	r.Run(address)
+}
+
+func AdminAuthMiddleware(adminPassword string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != adminPassword {
+			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+func loadConfig() {
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Error loading .env file")
+	}
 }
