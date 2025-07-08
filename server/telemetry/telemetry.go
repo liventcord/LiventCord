@@ -53,7 +53,6 @@ func HumanReadableDuration(d time.Duration) string {
 	return fmt.Sprintf("%dh %dm", hours, minutes)
 }
 
-// Your existing HealthHandler with CPU usage added
 func HealthHandler(
 	serviceName string,
 	storageStatus map[string]interface{},
@@ -78,7 +77,6 @@ func HealthHandler(
 			systemMemory = gin.H{"error": err.Error()}
 		}
 
-		// Get CPU usage percentage over 500ms interval
 		cpuPercents, err := cpu.Percent(500*time.Millisecond, false)
 		var cpuUsage string
 		if err == nil && len(cpuPercents) > 0 {
@@ -98,7 +96,8 @@ func HealthHandler(
 				"num_gc": m.NumGC,
 				"system": systemMemory,
 			},
-			"cpuUsagePercent":         cpuUsage, // <--- Added CPU usage here
+			"os":                      runtime.GOOS,
+			"cpuUsagePercent":         cpuUsage,
 			"goroutines":              runtime.NumGoroutine(),
 			"servedFilesSinceStartup": atomic.LoadUint64(ServedFilesSinceStartup),
 		}

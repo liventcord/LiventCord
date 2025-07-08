@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -54,22 +53,32 @@ func (m *MediaStorageInitializer) Initialize() {
 	}
 	m.ReportStorageStatus()
 }
-
 func (m *MediaStorageInitializer) GetFolderSize(folderPath string) int64 {
 	var totalSize int64
-	_ = filepath.Walk(folderPath, func(_ string, info fs.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
+
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !info.IsDir() {
 			totalSize += info.Size()
 		}
 		return nil
 	})
+
+	if err != nil {
+		return 0
+	}
+
 	return totalSize
 }
 
 func (m *MediaStorageInitializer) GetStorageStatus() map[string]interface{} {
 	folderSize := m.GetFolderSize(m.mediaCacheSettings.CacheDirectory)
-	limitInGB := m.mediaCacheSettings.StorageLimitBytes / (1024 * 1024 * 1024)
-	folderSizeInGB := folderSize / (1024 * 1024 * 1024)
+	fmt.Printf("Folder size for: %s is: %d bytes\n", m.mediaCacheSettings.CacheDirectory, folderSize)
+
+	limitInGB := float64(m.mediaCacheSettings.StorageLimitBytes) / (1024 * 1024 * 1024)
+	folderSizeInGB := float64(folderSize) / (1024 * 1024 * 1024)
 	limitReached := folderSizeInGB >= limitInGB
 
 	return map[string]interface{}{
@@ -81,20 +90,22 @@ func (m *MediaStorageInitializer) GetStorageStatus() map[string]interface{} {
 
 func (m *MediaStorageInitializer) ReportStorageStatus() {
 	status := m.GetStorageStatus()
+
+	folderSizeGB := status["folderSizeGB"].(float64)
+	storageLimitGB := status["storageLimitGB"].(float64)
+
 	barLength := 40
-	filledLength := int(barLength * int(status["folderSizeGB"].(int64)) / int(status["storageLimitGB"].(int64)))
+	filledLength := int(float64(barLength) * (folderSizeGB / storageLimitGB))
 	if filledLength > barLength {
 		filledLength = barLength
 	}
 	emptyLength := barLength - filledLength
 	progressBar := strings.Repeat("=", filledLength) + strings.Repeat("-", emptyLength)
 
-	fmt.Printf("External media storage folder size: %d GB / %d GB\n",
-		status["folderSizeGB"].(int64),
-		status["storageLimitGB"].(int64))
+	fmt.Printf("External media storage folder size: %.2f GB / %.2f GB\n", folderSizeGB, storageLimitGB)
 	fmt.Println("[" + progressBar + "]")
 
 	if status["limitReached"].(bool) {
-		fmt.Println("Warning: Storage limit reached or exceeded.")
+		fmt.Println("⚠️  Warning: Storage limit reached or exceeded.")
 	}
 }

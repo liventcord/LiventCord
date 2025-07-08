@@ -15,15 +15,18 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly string _cacheFilePath = "FileCache";
         private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
+        private readonly IAppStatsService _statsService;
 
         public FileServeController(
             AppDbContext context,
             FileExtensionContentTypeProvider fileTypeProvider,
             IWebHostEnvironment env,
-            PermissionsController permissionsController
+            PermissionsController permissionsController,
+            IAppStatsService statsService
         )
         {
             _context = context;
+            _statsService = statsService;
             _fileTypeProvider = fileTypeProvider ?? new FileExtensionContentTypeProvider();
             _env = env;
             _permissionsController = permissionsController;
@@ -203,6 +206,7 @@ namespace LiventCord.Controllers
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
             SetCacheHeaders(sanitizedFileName);
+            _statsService.ServedFilesSinceStartup++;
             return File(file.Content, contentType);
         }
 

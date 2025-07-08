@@ -18,6 +18,8 @@ ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddSingleton<IAppStatsService, AppStatsService>();
 builder.Services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
 
 builder.Services.AddSingleton<BaseRedisEmitter>();
@@ -38,6 +40,7 @@ builder.Services.AddScoped<AppLogicService>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
+builder.Services.AddScoped<HealthController>();
 builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
