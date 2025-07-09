@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	github.com/gin-gonic/gin v1.10.1
-	github.com/liventcord/liventcord/server/telemetry v0.0.0-00010101000000-000000000000
+	github.com/liventcord/liventcord/server/telemetry v0.0.0-20250709140314-e177f3c0b9d5
 	golang.org/x/net v0.41.0
 )
 
@@ -14,6 +14,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
@@ -21,7 +22,7 @@ require (
 
 require (
 	github.com/bytedance/sonic v1.13.3 // indirect
-	github.com/bytedance/sonic/loader v0.2.4 // indirect
+	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/gin-contrib/cors v1.7.6

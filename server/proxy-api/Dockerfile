@@ -2,7 +2,14 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /usr/src/app
 
-COPY go.mod go.sum ./
+COPY proxy-api/go.mod proxy-api/go.sum ./
+
+COPY telemetry telemetry
+
+COPY proxy-api proxy-api
+
+WORKDIR /usr/src/app/proxy-api
+
 RUN go mod download
 
 COPY . .

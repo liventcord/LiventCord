@@ -28,7 +28,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: server/proxy-api/
+          context: server/
           file: server/proxy-api/Dockerfile
           push: true
           tags: thelp281/liventcord-proxy-api:latest

@@ -14,6 +14,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
@@ -21,7 +22,7 @@ require (
 
 require (
 	github.com/bytedance/sonic v1.13.3 // indirect
-	github.com/bytedance/sonic/loader v0.2.4 // indirect
+	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -34,7 +35,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/liventcord/liventcord/server/telemetry v0.0.0-00010101000000-000000000000
+	github.com/liventcord/liventcord/server/telemetry v0.0.0-20250709140314-e177f3c0b9d5
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
