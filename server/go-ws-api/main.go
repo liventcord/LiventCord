@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +30,6 @@ func main() {
 	telemetry.Init()
 
 	adminPassword := getEnv("AdminPassword", "")
-	fmt.Println(adminPassword)
 
 	if adminPassword != "" {
 		r.GET("/health",
