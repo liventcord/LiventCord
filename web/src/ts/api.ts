@@ -393,7 +393,7 @@ class ApiClient {
   }
   getBackendUrl(): string {
     if (import.meta.env.DEV) {
-      return import.meta.env.VITE_FRONTEND_URL;
+      return import.meta.env.VITE_FRONTEND_URL ?? import.meta.env.VITE_BACKEND_URL;
     }
     return import.meta.env.VITE_BACKEND_URL;
   }
