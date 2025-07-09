@@ -154,10 +154,16 @@ function renderStorageInfo(data) {
 }
 
 function renderServicePanel(data, url) {
-  const isCritical = isMissingCriticalData(data);
+  const isCritical = isMissingCriticalData(data) || data?.isDown;
+
   const panelClass = getPanelClass(isCritical);
+
+  const downNotice = data?.isDown
+    ? `(DOWN - CACHED${data.lastOnline ? `, Last Online: ${formatLastOnline(data.lastOnline)}` : ""})`
+    : "";
+
   const heading = isCritical
-    ? `<h2 class="text-base font-bold uppercase tracking-wide mb-2 flex items-center gap-2 text-red-100">⚠️ ${url}</h2>`
+    ? `<h2 class="text-base font-bold uppercase tracking-wide mb-2 flex items-center gap-2 text-red-100">⚠️ ${url} ${downNotice}</h2>`
     : `<h2 class="text-base neon-text mb-2">🛰️ ${url}</h2>`;
 
   return `
@@ -166,12 +172,22 @@ function renderServicePanel(data, url) {
         ${renderSystemInfo(data)}
         ${data?.service === "WS Api" ? "" : renderStorageInfo(data)}
     </div>
-    `;
+  `;
+}
+function formatLastOnline(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
 }
 
 function normalizeServiceData(service) {
   const rawData = service.data?.data ?? service.data;
-  const normalized = { ...rawData };
+  const normalized = {
+    ...rawData,
+    isDown: service.isDown ?? false,
+    url: service.url,
+    status: service.status,
+    lastOnline: service.lastOnline,
+  };
 
   if (typeof normalized.cpuUsagePercent === "string") {
     normalized.cpuUsagePercent = parseFloat(

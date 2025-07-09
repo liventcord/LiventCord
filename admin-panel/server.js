@@ -12,9 +12,11 @@ const BACKEND_URLS = process.env.BACKEND_URLS
   : [
       "http://localhost:5005", // Main server
       "http://localhost:5000", // Proxy Server
-      "http://localhost:8080", // Ws Server
+      "http://localhost:8080", // WS Server
     ];
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
+
+const cache = {};
 
 app.use(express.static("static"));
 
@@ -38,25 +40,44 @@ app.get("/health", async (req, res) => {
           } else {
             data = await response.text();
           }
-          return {
+
+          const result = {
             url,
             status: response.status,
             data,
+            isDown: false,
           };
+
+          if (response.ok) {
+            cache[url] = { ...result, lastOnline: new Date().toISOString() };
+          }
+
+          return result;
         }),
       ),
     );
 
-    const services = results.map((result) => {
+    const services = results.map((result, index) => {
       if (result.status === "fulfilled") {
         return result.value;
-      } else {
+      }
+
+      const url = BACKEND_URLS[index];
+      const cached = cache[url];
+      if (cached) {
         return {
-          url: BACKEND_URLS[results.indexOf(result)],
-          status: "error",
-          data: { error: result.reason?.message || "Unknown error" },
+          ...cached,
+          isDown: true,
+          lastOnline: cached.lastOnline,
         };
       }
+
+      return {
+        url,
+        status: "error",
+        data: { error: result.reason?.message || "Unknown error" },
+        isDown: true,
+      };
     });
 
     res.json({ services });
