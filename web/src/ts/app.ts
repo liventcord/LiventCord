@@ -709,7 +709,7 @@ export function initialiseApp() {
 window.onerror = (message, source, lineno, colno, error) => {
   const msg = `Error: ${message} at ${source}:${lineno}:${colno}`;
   console.error(msg);
-  alertUser("Error", msg);
+  //alertUser("Error", msg);
 };
 
 setTimeout(() => window.scrollTo(0, 0), 20);
