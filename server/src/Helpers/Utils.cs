@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using LiventCord.Helpers;
 using System.Security.Cryptography;
 using LiventCord.Controllers;
+using System.Diagnostics;
 public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
 {
     private readonly int _idLength;
@@ -122,7 +123,14 @@ namespace LiventCord.Helpers
                 .ToList();
         }
 
-
+        public static string GetProcessUptime()
+        {
+            using (Process process = Process.GetCurrentProcess())
+            {
+                var date = DateTime.Now - process.StartTime;
+                return date.ToString();
+            }
+        }
 
 
     }

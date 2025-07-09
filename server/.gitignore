@@ -12,6 +12,7 @@ appsettings.json
 *.userprefs
 src/wwwroot/404/bodyend.js
 src/wwwroot/app
+src/appstats.json
 LiventCord.sln
 .vs/
 .vscode/

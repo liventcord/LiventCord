@@ -1,0 +1,101 @@
+<!doctype html>
+<html
+  lang="en"
+  class="bg-gradient-to-br from-gray-900 via-gray-950 to-black text-white"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: "Orbitron", sans-serif;
+      }
+
+      .neon-text {
+        text-shadow:
+          0 0 4px #0ff,
+          0 0 8px #0ff;
+      }
+
+      .hud-frame {
+        border: 2px solid #334155;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        background-color: #0f172a99;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.1);
+      }
+
+      .circle-container {
+        position: relative;
+        width: 80px;
+        height: 80px;
+      }
+      .circle-container svg {
+        transform: rotate(-90deg);
+      }
+
+      .circle-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #0ff;
+        text-shadow: 0 0 4px #0ff;
+      }
+
+      .animated-circle {
+        transition: stroke-dashoffset 0.6s ease-in-out;
+      }
+
+      .critical-panel {
+        background: linear-gradient(135deg, #b91c1c, #7f1d1d);
+        color: #fee2e2;
+        box-shadow: 0 0 15px 4px rgba(220, 38, 38, 0.7);
+        border: 2px solid #dc2626;
+        animation: pulse-red 2.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse-red {
+        0%,
+        100% {
+          box-shadow: 0 0 15px 4px rgba(220, 38, 38, 0.7);
+        }
+        50% {
+          box-shadow: 0 0 25px 8px rgba(220, 38, 38, 0.9);
+        }
+      }
+    </style>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body
+    class="min-h-screen flex flex-col items-center justify-start p-4 md:p-6"
+  >
+    <div class="w-full max-w-6xl mb-4">
+      <div class="text-center py-3 border-b border-cyan-500 mb-4">
+        <h1 class="text-3xl md:text-4xl font-bold neon-text">
+          LiventCord System Status
+        </h1>
+      </div>
+    </div>
+
+    <div
+      class="w-full max-w-6xl hud-frame space-y-4 text-cyan-100 text-sm md:text-base"
+    >
+      <div id="statusPanel">
+        <div class="text-cyan-300 animate-pulse text-center">
+          Fetching data...
+        </div>
+      </div>
+    </div>
+
+    <script src="/index.js"></script>
+  </body>
+</html>

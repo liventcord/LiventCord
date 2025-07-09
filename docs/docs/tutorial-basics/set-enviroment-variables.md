@@ -143,6 +143,10 @@ mv .example.env .env
     Use release or debug mode.
     **Defaults to** debug.
 
+  - **AdminPassword**:
+    Password that will be used for authenticating gin ws server
+    **Defaults to** `none`
+
 ## Gin Media Proxy Server Configuration
 ```bash
 cd Liventcord/server/proxy-api
@@ -164,3 +168,7 @@ mv .env.example .env
 
   - **AddToBlacklist**:
     Specifies a list of domains or URLs to be added to the blacklist. This should be provided as a JSON array string.
+
+  - **AdminPassword**:
+    Password that will be used for authenticating proxy server
+    **Defaults to** `none`

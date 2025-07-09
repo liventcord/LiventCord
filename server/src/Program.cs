@@ -18,6 +18,8 @@ ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddSingleton<IAppStatsService, AppStatsService>();
 builder.Services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
 
 builder.Services.AddSingleton<BaseRedisEmitter>();
@@ -38,6 +40,7 @@ builder.Services.AddScoped<AppLogicService>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();
+builder.Services.AddScoped<HealthController>();
 builder.Services.AddScoped<FileController>();
 builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
@@ -174,7 +177,7 @@ else
 {
     app.UseExceptionHandler("/error");
 }
-
+app.UseMiddleware<RequestCountingMiddleware>();
 app.UseCors("AllowSpecificOrigin");
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
@@ -198,6 +201,12 @@ app.UseSwaggerUI(c =>
 });
 
 app.MapControllers();
+
+var statsService = app.Services.GetRequiredService<IAppStatsService>();
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    statsService.Save();
+});
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
