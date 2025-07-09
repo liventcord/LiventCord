@@ -19,13 +19,9 @@
             v-if="
               !failedVideos[attachment.attachment.fileId] &&
               (attachment.attachment.isImageFile ||
-               attachment.attachment.isVideoFile)
+                attachment.attachment.isVideoFile)
             "
-            :is="
-              attachment.attachment.isImageFile
-                ? 'img'
-                : 'video'
-            "
+            :is="attachment.attachment.isImageFile ? 'img' : 'video'"
             :src="getAttachmentSrc(attachment)"
             :data-filesize="attachment.attachment.fileSize"
             @click="handleImageClick(attachment)"

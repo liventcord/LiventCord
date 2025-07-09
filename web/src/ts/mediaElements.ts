@@ -186,7 +186,6 @@ async function createImageElement(
     }
   });
 
-  imgElement.crossOrigin = "anonymous";
   imgElement.alt = inputText ?? "Image";
   imgElement.setAttribute("data-original-src", urlSrc);
 
