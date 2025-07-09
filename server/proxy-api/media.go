@@ -148,15 +148,22 @@ func (c *MediaProxyController) handleRangeRequest(ctx *gin.Context, filePath str
 	}
 	contentLength := end - start + 1
 	contentRange := "bytes " + strconv.FormatInt(start, 10) + "-" + strconv.FormatInt(end, 10) + "/" + strconv.FormatInt(fileLength, 10)
+
+	mType := mime.TypeByExtension(filepath.Ext(filePath))
+	if mType == "" {
+		mType = "application/octet-stream"
+	}
+
 	ctx.Status(206)
 	ctx.Header("Content-Range", contentRange)
 	ctx.Header("Content-Length", strconv.FormatInt(contentLength, 10))
+	ctx.Header("Content-Type", mType)
+
 	f, _ := os.Open(filePath)
 	defer f.Close()
 	f.Seek(start, 0)
 	io.CopyN(ctx.Writer, f, contentLength)
 }
-
 func (c *MediaProxyController) saveResponseToFile(r *http.Response, filePath string) error {
 	tmpPath := filePath + ".tmp"
 	f, err := os.Create(tmpPath)
