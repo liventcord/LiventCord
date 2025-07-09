@@ -2,14 +2,12 @@ const proxyPanel = document.getElementById("statusPanel");
 const liventcord = "LiventCord";
 const wsapi = "WS Api";
 const proxyApi = "Proxy Api";
+
 function interpolateColor(percent) {
   percent = Math.min(Math.max(percent, 0), 100);
-
   const hue = 120 - (120 * percent) / 100;
-
   const saturation = 100;
   const lightness = 50;
-
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
@@ -56,7 +54,7 @@ function isMissingCriticalData(data) {
     !data.service ||
     !data.status ||
     !data.memory?.system?.usedPercent ||
-    !data.cpuUsagePercent
+    data.cpuUsagePercent === undefined
   );
 }
 
@@ -65,18 +63,20 @@ function getPanelClass(isCritical) {
     ? "critical-panel p-4 md:p-5 rounded-lg mb-6 grid md:grid-cols-3 gap-4 items-start"
     : "bg-cyan-900 text-cyan-400 p-4 md:p-5 rounded-lg mb-6 grid md:grid-cols-3 gap-4 items-start";
 }
+
 function formatUptime(uptime) {
   if (!uptime || typeof uptime !== "string") return "N/A";
   return uptime.split(".")[0];
 }
+
 function generateFilesServed(data) {
   let res =
     data?.service === proxyApi || data?.service === liventcord
-      ? `<p><span class="font-semibold">Files Served:</span> ${data?.servedFilesSinceStartup ?? "N/A"}</p>`
-      : `<p><span class="font-semibold">Users Connected:</span> ${data?.usersCount ?? "N/A"}</p>`;
+      ? `<p><span class="font-semibold">Files Served:</span> ${data?.servedFilesSinceStartup ?? "0"}</p>`
+      : `<p><span class="font-semibold">Users Connected:</span> ${data?.usersCount ?? "0"}</p>`;
 
   if (data?.service === liventcord) {
-    res += `<p><span class="font-semibold">Total Requests responded:</span> ${data?.totalRequestsServed ?? "N/A"}</p>`;
+    res += `<p><span class="font-semibold">Total Requests responded:</span> ${data?.totalRequestsServed ?? "0"}</p>`;
   }
 
   return res;
@@ -101,8 +101,8 @@ function renderSystemInfo(data) {
 
   const bubbles = `
     <div class="flex justify-around mb-2">
-        ${createBubble(memPercent, "Memory", `${data.service}-mem`)}
         ${createBubble(cpuPercent, "CPU", `${data.service}-cpu`)}
+        ${createBubble(memPercent, "Memory", `${data.service}-mem`)}
     </div>
     `;
 
@@ -115,7 +115,6 @@ function renderSystemInfo(data) {
     `
     : `
     <p><span class="font-semibold">OS:</span> ${data?.os ? data.os.charAt(0).toUpperCase() + data.os.slice(1) : "N/A"}</p>
-
     <p><span class="font-semibold">Sys:</span> ${data?.memory?.go_sys ?? "N/A"}</p>
     <p><span class="font-semibold">Go Routines:</span> ${data?.goroutines ?? "N/A"}</p>
     <p><span class="font-semibold">GC Count:</span> ${data?.memory?.num_gc ?? "N/A"}</p>
@@ -160,7 +159,7 @@ function renderStorageInfo(data) {
         <div class="flex justify-center mb-2">${createBubble(storageUsed, "Storage", `${data.service}-storage`)}</div>
         <div class="text-sm space-y-1">
         <p><span class="font-semibold">Limit:</span> ${data?.storageStatus?.storageLimitGB ?? "N/A"} GB</p>
-        <p><span class="font-semibold">Used:</span> ${data?.storageStatus?.folderSizeGB.toFixed(2) ?? "N/A"} GB</p>
+        <p><span class="font-semibold">Used:</span> ${data?.storageStatus?.folderSizeGB?.toFixed(2) ?? "N/A"} GB</p>
         </div>
     </div>
     `;
@@ -168,7 +167,6 @@ function renderStorageInfo(data) {
 
 function renderServicePanel(data, url) {
   const isCritical = isMissingCriticalData(data) || data?.isDown;
-
   const panelClass = getPanelClass(isCritical);
 
   const downNotice = data?.isDown
@@ -180,13 +178,14 @@ function renderServicePanel(data, url) {
     : `<h2 class="text-base neon-text mb-2">🛰️ ${url}</h2>`;
 
   return `
-    <div class="${panelClass}">
+    <div class="${panelClass}" id="panel-${data.service}">
         <div>${heading}${renderServiceInfo(data)}</div>
         ${renderSystemInfo(data)}
         ${data?.service === wsapi ? "" : renderStorageInfo(data)}
     </div>
   `;
 }
+
 function formatLastOnline(timestamp) {
   const date = new Date(timestamp);
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
@@ -194,6 +193,19 @@ function formatLastOnline(timestamp) {
 
 function normalizeServiceData(service) {
   const rawData = service.data?.data ?? service.data;
+
+  if (!rawData) {
+    return {
+      service: "Unknown",
+      status: "Unknown",
+      isDown: true,
+      url: service.url,
+      lastOnline: service.lastOnline,
+      memory: { system: { usedPercent: 0 } },
+      cpuUsagePercent: 0,
+    };
+  }
+
   const normalized = {
     ...rawData,
     isDown: service.isDown ?? false,
@@ -238,34 +250,28 @@ async function fetchStatus() {
     }
 
     const combinedData = await res.json();
+    const existingPanels = new Set();
 
     combinedData.services.forEach((service) => {
       const data = normalizeServiceData(service);
       const panelId = `panel-${data.service}`;
+      existingPanels.add(panelId);
+
       let panel = document.getElementById(panelId);
 
-      const newHtml = renderServicePanel(data, service.url);
-
       if (!panel) {
-        const wrapper = document.createElement("div");
-        wrapper.id = panelId;
-        wrapper.innerHTML = newHtml;
         const fetchingText = proxyPanel.querySelector(".text-center");
         if (fetchingText) fetchingText.remove();
-        proxyPanel.appendChild(wrapper);
+
+        const newHtml = renderServicePanel(data, service.url);
+        proxyPanel.insertAdjacentHTML("beforeend", newHtml);
       } else {
         const isCritical = isMissingCriticalData(data) || data?.isDown;
         const wasCritical = panel.classList.contains("critical-panel");
 
         if (isCritical !== wasCritical) {
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = newHtml.trim();
-          const newPanel = tempDiv.firstChild;
-
-          newPanel.id = panelId;
-
-          panel.replaceWith(newPanel);
-          panel = newPanel;
+          const newHtml = renderServicePanel(data, service.url);
+          panel.outerHTML = newHtml;
         } else {
           updateBubble(
             `${data.service}-cpu`,
@@ -282,7 +288,7 @@ async function fetchStatus() {
 
           if (data.service === liventcord) {
             const dbUsed = data?.usedDbSize ?? 0;
-            const dbLimit = 10;
+            const dbLimit = 5;
             updateBubble(
               `${data.service}-db`,
               Math.round((dbUsed / dbLimit) * 100),
@@ -296,6 +302,13 @@ async function fetchStatus() {
             );
           }
         }
+      }
+    });
+
+    const allPanels = proxyPanel.querySelectorAll('[id^="panel-"]');
+    allPanels.forEach((panel) => {
+      if (!existingPanels.has(panel.id)) {
+        panel.remove();
       }
     });
   } catch (err) {
