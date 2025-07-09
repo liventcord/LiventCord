@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 public class RequestCountingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -8,7 +10,7 @@ public class RequestCountingMiddleware
         _next = next;
         _statsService = statsService;
     }
-
+    [NonAction]
     public async Task InvokeAsync(HttpContext context)
     {
         await _next(context);

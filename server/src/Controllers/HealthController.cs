@@ -89,7 +89,7 @@ public class HealthController : ControllerBase
 
         return data;
     }
-
+    [NonAction]
     public async Task<double> GetDbUsedSize()
     {
         var dbType = _configuration["AppSettings:DatabaseType"]?.ToLower();
