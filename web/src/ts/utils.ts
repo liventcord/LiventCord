@@ -176,7 +176,7 @@ export function sanitizeInput(input: string): string {
 }
 
 export function getEmojiPath(emojiId: string, guildId: string): string {
-  return `${import.meta.env.VITE_BACKEND_URL}/guilds/${sanitizeInput(guildId)}/emojis/${sanitizeInput(emojiId)}`;
+  return `${apiClient.getBackendUrl()}/guilds/${sanitizeInput(guildId)}/emojis/${sanitizeInput(emojiId)}`;
 }
 
 export function kebapToSentence(text: string) {

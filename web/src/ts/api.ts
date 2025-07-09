@@ -391,9 +391,14 @@ class ApiClient {
     const urlObj = new URL(url);
     return urlObj.hostname;
   }
-  getBackendUrl(): string | null {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
-    return backendUrl;
+  getBackendUrl(): string {
+    if (import.meta.env.DEV) {
+      return import.meta.env.VITE_FRONTEND_URL;
+    }
+    return import.meta.env.VITE_BACKEND_URL;
+  }
+  getBackendUrlOriginal(): string {
+    return import.meta.env.VITE_BACKEND_URL;
   }
 
   getProxyHostname(): string | null {
@@ -420,7 +425,7 @@ class ApiClient {
     data: Record<string, any> = {},
     queryParams: Record<string, any> = {}
   ): { method: HttpMethod; url: string } | null {
-    const url = this.getBackendUrl();
+    const url = this.getBackendUrlOriginal();
     if (!url) {
       return null;
     }

@@ -108,7 +108,7 @@ async function setPicture(
   }
 
   const imageUrl = !isProfile
-    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${srcId}.webp${cacheInterface.getGuildImageVersion(srcId)}`
+    ? `${apiClient.getBackendUrl()}/guilds/${srcId}.webp${cacheInterface.getGuildImageVersion(srcId)}`
     : `${getProfileUrl(srcId)}`;
 
   try {
@@ -242,7 +242,7 @@ export function updateSelfName(nickName: string) {
 }
 export function getProfileUrl(userId: string) {
   return (
-    import.meta.env.VITE_BACKEND_URL +
+    apiClient.getBackendUrl() +
     `/profiles/${userId}?version=${userManager.getUserProfileVersion(userId)}`
   );
 }
@@ -558,7 +558,7 @@ export function onEditGuildProfile() {
   onEditImage(true);
 }
 export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
-  guildImg.src = `${import.meta.env.VITE_BACKEND_URL}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`;
+  guildImg.src = `${apiClient.getBackendUrl()}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`;
 }
 export function setGuildImage(
   guildId: string,
@@ -566,7 +566,7 @@ export function setGuildImage(
   isUploaded: boolean
 ) {
   imageElement.src = isUploaded
-    ? `${import.meta.env.VITE_BACKEND_URL}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`
+    ? `${apiClient.getBackendUrl()}/guilds/${guildId}?version=${cacheInterface.getGuildImageVersion(guildId)}`
     : blackImage;
 }
 
