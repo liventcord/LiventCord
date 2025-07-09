@@ -3,7 +3,6 @@ package telemetry
 import (
 	"fmt"
 	"runtime"
-	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,16 +11,11 @@ import (
 )
 
 var (
-	StartTime               time.Time
-	ServedFilesSinceStartup *uint64
+	StartTime time.Time
 )
 
-func Init(servedFiles *uint64) {
+func Init() {
 	StartTime = time.Now()
-	if servedFiles == nil {
-		servedFiles = new(uint64)
-	}
-	ServedFilesSinceStartup = servedFiles
 }
 
 func HumanReadableBytes(bytes uint64) string {
@@ -96,10 +90,9 @@ func HealthHandler(
 				"num_gc": m.NumGC,
 				"system": systemMemory,
 			},
-			"os":                      runtime.GOOS,
-			"cpuUsagePercent":         cpuUsage,
-			"goroutines":              runtime.NumGoroutine(),
-			"servedFilesSinceStartup": atomic.LoadUint64(ServedFilesSinceStartup),
+			"os":              runtime.GOOS,
+			"cpuUsagePercent": cpuUsage,
+			"goroutines":      runtime.NumGoroutine(),
 		}
 
 		if storageStatus != nil {
@@ -114,6 +107,7 @@ func HealthHandler(
 			usersCount = getUsersCount()
 		}
 		if usersCount > 0 {
+			response["servedFilesSinceStartup"] = usersCount
 			response["usersCount"] = usersCount
 		}
 		c.JSON(200, response)

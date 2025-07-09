@@ -1,5 +1,7 @@
 const proxyPanel = document.getElementById("statusPanel");
-
+const liventcord = "LiventCord";
+const wsapi = "WS Api";
+const proxyApi = "Proxy Api";
 function interpolateColor(percent) {
   percent = Math.min(Math.max(percent, 0), 100);
 
@@ -43,7 +45,7 @@ function updateBubble(id, percent) {
   const label = document.querySelector(`.circle-text[data-label="${id}"]`);
   if (circle && label) {
     circle.style.strokeDashoffset = offset;
-    circle.style.stroke = strokeColor; // update stroke color here
+    circle.style.stroke = strokeColor;
     label.textContent = percent + "%";
   }
 }
@@ -67,16 +69,27 @@ function formatUptime(uptime) {
   if (!uptime || typeof uptime !== "string") return "N/A";
   return uptime.split(".")[0];
 }
+function generateFilesServed(data) {
+  let res =
+    data?.service === proxyApi || data?.service === liventcord
+      ? `<p><span class="font-semibold">Files Served:</span> ${data?.servedFilesSinceStartup ?? "N/A"}</p>`
+      : `<p><span class="font-semibold">Users Connected:</span> ${data?.usersCount ?? "N/A"}</p>`;
+
+  if (data?.service === liventcord) {
+    res += `<p><span class="font-semibold">Total Requests responded:</span> ${data?.totalRequestsServed ?? "N/A"}</p>`;
+  }
+
+  return res;
+}
 
 function renderServiceInfo(data) {
   return `
     <div class="space-y-1 text-sm">
         <p><span class="font-semibold">Name:</span> ${data?.service ?? "N/A"}</p>
-        <p><span class="font-semibold">Status:</span> ${data?.status ?? "N/A"}</p>
         <p><span class="font-semibold">Uptime:</span> ${formatUptime(data?.uptime)}</p>
-        <p><span class="font-semibold">Files Served:</span> ${data?.servedFilesSinceStartup ?? "N/A"}</p>
+        ${generateFilesServed(data)}
     </div>
-    `;
+  `;
 }
 
 function renderSystemInfo(data) {
@@ -84,7 +97,7 @@ function renderSystemInfo(data) {
     parseFloat(data?.memory?.system?.usedPercent) || 0,
   );
   const cpuPercent = Math.round(parseFloat(data?.cpuUsagePercent) || 0);
-  const isLiventCord = data?.service === "LiventCord";
+  const isLiventCord = data?.service === liventcord;
 
   const bubbles = `
     <div class="flex justify-around mb-2">
@@ -159,7 +172,7 @@ function renderServicePanel(data, url) {
   const panelClass = getPanelClass(isCritical);
 
   const downNotice = data?.isDown
-    ? `(DOWN - CACHED${data.lastOnline ? `, Last Online: ${formatLastOnline(data.lastOnline)}` : ""})`
+    ? `(DOWN ${data.lastOnline ? `, Last Online: ${formatLastOnline(data.lastOnline)}` : ""})`
     : "";
 
   const heading = isCritical
@@ -170,7 +183,7 @@ function renderServicePanel(data, url) {
     <div class="${panelClass}">
         <div>${heading}${renderServiceInfo(data)}</div>
         ${renderSystemInfo(data)}
-        ${data?.service === "WS Api" ? "" : renderStorageInfo(data)}
+        ${data?.service === wsapi ? "" : renderStorageInfo(data)}
     </div>
   `;
 }
@@ -185,7 +198,6 @@ function normalizeServiceData(service) {
     ...rawData,
     isDown: service.isDown ?? false,
     url: service.url,
-    status: service.status,
     lastOnline: service.lastOnline,
   };
 
@@ -232,40 +244,57 @@ async function fetchStatus() {
       const panelId = `panel-${data.service}`;
       let panel = document.getElementById(panelId);
 
+      const newHtml = renderServicePanel(data, service.url);
+
       if (!panel) {
         const wrapper = document.createElement("div");
         wrapper.id = panelId;
-        wrapper.innerHTML = renderServicePanel(data, service.url);
+        wrapper.innerHTML = newHtml;
         const fetchingText = proxyPanel.querySelector(".text-center");
         if (fetchingText) fetchingText.remove();
         proxyPanel.appendChild(wrapper);
       } else {
-        updateBubble(
-          `${data.service}-cpu`,
-          Math.round(data.cpuUsagePercent || 0),
-        );
-        const memUsedPercentRaw = data.memory?.system?.usedPercent || 0;
-        const memUsedPercent =
-          typeof memUsedPercentRaw === "string"
-            ? parseFloat(memUsedPercentRaw.replace("%", ""))
-            : memUsedPercentRaw;
+        const isCritical = isMissingCriticalData(data) || data?.isDown;
+        const wasCritical = panel.classList.contains("critical-panel");
 
-        updateBubble(`${data.service}-mem`, Math.round(memUsedPercent));
+        if (isCritical !== wasCritical) {
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = newHtml.trim();
+          const newPanel = tempDiv.firstChild;
 
-        if (data.service === "LiventCord") {
-          const dbUsed = data?.usedDbSize ?? 0;
-          const dbLimit = 10;
+          newPanel.id = panelId;
+
+          panel.replaceWith(newPanel);
+          panel = newPanel;
+        } else {
           updateBubble(
-            `${data.service}-db`,
-            Math.round((dbUsed / dbLimit) * 100),
+            `${data.service}-cpu`,
+            Math.round(data.cpuUsagePercent || 0),
           );
-        } else if (data?.storageStatus) {
-          const used = data.storageStatus.folderSizeGB || 0;
-          const limit = data.storageStatus.storageLimitGB || 1;
-          updateBubble(
-            `${data.service}-storage`,
-            Math.round((used / limit) * 100),
-          );
+
+          const memUsedPercentRaw = data.memory?.system?.usedPercent || 0;
+          const memUsedPercent =
+            typeof memUsedPercentRaw === "string"
+              ? parseFloat(memUsedPercentRaw.replace("%", ""))
+              : memUsedPercentRaw;
+
+          updateBubble(`${data.service}-mem`, Math.round(memUsedPercent));
+
+          if (data.service === liventcord) {
+            const dbUsed = data?.usedDbSize ?? 0;
+            const dbLimit = 10;
+            updateBubble(
+              `${data.service}-db`,
+              Math.round((dbUsed / dbLimit) * 100),
+            );
+          } else if (data?.storageStatus) {
+            const used = data.storageStatus.folderSizeGB || 0;
+            const limit = data.storageStatus.storageLimitGB || 1;
+            updateBubble(
+              `${data.service}-storage`,
+              Math.round((used / limit) * 100),
+            );
+          }
         }
       }
     });

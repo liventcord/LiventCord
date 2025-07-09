@@ -10,6 +10,7 @@ public class ServiceData
     public int? CpuCores { get; set; }
 
     public double usedDbSize { get; set; }
+    public int totalRequestsServed { get; set; }
 }
 
 public class MemoryInfo

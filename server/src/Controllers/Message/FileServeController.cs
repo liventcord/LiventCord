@@ -70,6 +70,7 @@ namespace LiventCord.Controllers
                 }
                 var contentType = await System.IO.File.ReadAllTextAsync(metaPath);
                 SetCacheHeaders(fileName);
+                _statsService.IncrementServedFiles();
                 return File(fileBytes, contentType);
             }
 
@@ -206,7 +207,7 @@ namespace LiventCord.Controllers
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
 
             SetCacheHeaders(sanitizedFileName);
-            _statsService.ServedFilesSinceStartup++;
+            _statsService.IncrementServedFiles();
             return File(file.Content, contentType);
         }
 

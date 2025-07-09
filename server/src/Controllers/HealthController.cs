@@ -82,7 +82,8 @@ public class HealthController : ControllerBase
             Memory = memory,
             CpuUsagePercent = cpuPercent,
             CpuCores = Environment.ProcessorCount,
-            usedDbSize = usedDbSize
+            usedDbSize = usedDbSize,
+            totalRequestsServed = _statsService.RespondedRequestsSinceStartup
         };
 
 

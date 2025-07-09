@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync/atomic"
 
 	"github.com/liventcord/liventcord/server/telemetry"
 
@@ -13,7 +12,7 @@ import (
 )
 
 var (
-	servedFilesSinceStartup uint64
+	servedFilesSinceStartup int
 )
 
 func main() {
@@ -44,8 +43,7 @@ func main() {
 		})
 	})
 	storageStatus := initializer.GetStorageStatus()
-	var servedFiles uint64 = 0
-	telemetry.Init(&servedFiles)
+	telemetry.Init()
 
 	loadConfig()
 	adminPassword := getEnv("AdminPassword", "")
@@ -53,13 +51,16 @@ func main() {
 	if adminPassword != "" {
 		r.GET("/health",
 			AdminAuthMiddleware(adminPassword),
-			telemetry.HealthHandler("Proxy Api", storageStatus, nil, nil),
+			telemetry.HealthHandler("Proxy Api", storageStatus, nil, func() int {
+				return servedFilesSinceStartup
+			}),
 		)
 	}
 
 	r.GET("/api/proxy/media", func(c *gin.Context) {
 		controller.GetMedia(c)
-		atomic.AddUint64(&servedFilesSinceStartup, 1)
+		servedFilesSinceStartup++
+		fmt.Println("New servedFilesSinceStartup: ", servedFilesSinceStartup)
 	})
 
 	r.POST("/api/proxy/metadata", controller.FetchMetadata)

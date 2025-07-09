@@ -177,7 +177,7 @@ else
 {
     app.UseExceptionHandler("/error");
 }
-
+app.UseMiddleware<RequestCountingMiddleware>();
 app.UseCors("AllowSpecificOrigin");
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
@@ -201,6 +201,12 @@ app.UseSwaggerUI(c =>
 });
 
 app.MapControllers();
+
+var statsService = app.Services.GetRequiredService<IAppStatsService>();
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    statsService.Save();
+});
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {

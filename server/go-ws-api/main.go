@@ -28,8 +28,7 @@ func main() {
 			"status": "Service is running",
 		})
 	})
-	var servedFiles uint64 = 0
-	telemetry.Init(&servedFiles)
+	telemetry.Init()
 
 	adminPassword := getEnv("AdminPassword", "")
 	fmt.Println(adminPassword)
