@@ -35,7 +35,13 @@ function runPrettier(projDir, file) {
         const filePath = relative(projDir, file)
         console.log('Running format for file: ', filePath)
 
-        const proc = spawn('npx', ['prettier', '--write', filePath], { cwd: projDir, stdio: 'inherit' })
+        const isWin = process.platform === 'win32'
+        const proc = spawn(isWin ? 'npx.cmd' : 'npx', ['prettier', '--write', filePath], {
+        cwd: projDir,
+        stdio: 'inherit',
+        shell: true,
+        env: process.env
+        })
 
         proc.on('exit', code => {
             if (code === 0) resolve()
