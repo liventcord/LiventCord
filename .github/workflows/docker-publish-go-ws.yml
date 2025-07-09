@@ -28,7 +28,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: server/go-ws-api/
+          context: server/
           file: server/go-ws-api/Dockerfile
           push: true
           tags: thelp281/liventcord-ws-api:latest
