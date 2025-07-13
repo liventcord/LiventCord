@@ -268,7 +268,10 @@ class ApiClient {
     }
   }
 
-  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  fetch(
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ): Promise<Response | null> {
     try {
       const [preparedUrl, preparedInit] = this.prepareRequest(input, init);
       return window.fetch(preparedUrl, preparedInit).then((response) => {
@@ -279,6 +282,11 @@ class ApiClient {
         return response;
       });
     } catch (error) {
+      if (error instanceof NoSessionError) {
+        router.openLogin();
+        this.clearToken();
+        return Promise.resolve(null);
+      }
       return Promise.reject(error);
     }
   }
@@ -530,6 +538,7 @@ class ApiClient {
         body,
         credentials: "include"
       });
+      if (!response) return;
 
       if (!response.ok) {
         await this.handleError(response, event);
@@ -584,6 +593,7 @@ class ApiClient {
         body: formData,
         credentials: "include"
       });
+      if (!response) return;
 
       if (!response.ok) {
         await this.handleError(response, event);

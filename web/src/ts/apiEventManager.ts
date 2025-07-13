@@ -68,6 +68,7 @@ interface JoinGuildData {
   guild: Guild;
 }
 apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
+  if (!initData) return;
   if (
     initData.message === "User session is no longer valid. Please log in again."
   ) {
