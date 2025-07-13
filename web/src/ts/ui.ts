@@ -350,25 +350,56 @@ function createPopupContent(
   return outerParent;
 }
 
+const popupQueue: Array<{ subject: string; content?: string }> = [];
+let isPopupVisible = false;
+
 export function alertUser(subject: string, content?: string): void {
+  // Enqueue the popup info
+  popupQueue.push({ subject, content });
+
+  // If no popup is currently visible, show the next one
+  if (!isPopupVisible) {
+    showNextPopup();
+  }
+}
+
+function showNextPopup() {
+  if (popupQueue.length === 0) {
+    isPopupVisible = false;
+    return;
+  }
+
+  isPopupVisible = true;
+  const { subject, content } = popupQueue.shift()!;
+
   if (!content && subject) {
-    content = subject;
-  }
-  if (content) {
-    console.error(subject, content);
+    // If content not provided, use subject as content
+    displayPopup(subject, subject);
   } else {
-    console.error(subject);
+    displayPopup(subject, content ?? "");
   }
+}
+
+function displayPopup(subject: string, content: string) {
+  console.error(subject, content);
 
   const outerParent = createPopupContent(
     false,
     subject,
-    content ?? "",
-    translations.getTranslation("ok")
+    content,
+    translations.getTranslation("ok"),
+    () => {
+      // Popup accepted callback - show next popup in queue
+      isPopupVisible = false;
+      showNextPopup();
+    }
   );
 
-  outerParent.style.zIndex = "1000" + errorCount;
-  errorCount++;
+  // Set z-index with errorCount if you still want
+  outerParent.style.zIndex = "1000";
+
+  // Append popup to DOM - assuming createPopUp returns an element ready to insert
+  document.body.appendChild(outerParent);
 }
 
 export function askUser(

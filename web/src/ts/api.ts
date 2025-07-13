@@ -393,7 +393,9 @@ class ApiClient {
   }
   getBackendUrl(): string {
     if (import.meta.env.DEV) {
-      return import.meta.env.VITE_FRONTEND_URL ?? import.meta.env.VITE_BACKEND_URL;
+      return (
+        import.meta.env.VITE_FRONTEND_URL ?? import.meta.env.VITE_BACKEND_URL
+      );
     }
     return import.meta.env.VITE_BACKEND_URL;
   }
@@ -549,8 +551,9 @@ class ApiClient {
           return;
         }
 
-        alertUser("Cant establish connection to server");
-        return;
+        alertUser("Can't establish connection to server");
+
+        throw error;
       }
 
       throw error;
@@ -614,34 +617,61 @@ class ApiClient {
     }
 
     const expectsResponse = !this.nonResponseEvents.includes(event);
+    const result = this.getUrlForEvent(event, data, queryParams);
 
-    try {
-      const result = this.getUrlForEvent(event, data, queryParams);
-      if (!result) {
-        console.error(`Failed to get URL and method for event: ${event}`);
+    if (!result) {
+      console.error(`Failed to get URL and method for event: ${event}`);
+      return;
+    }
+
+    const { url, method } = result;
+
+    const isInitEvent = event === EventType.GET_INIT_DATA;
+    const maxRetries = isInitEvent ? 9999 : 1;
+    const retryDelay = 1000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await this.sendRequest(
+          data,
+          url,
+          method,
+          event,
+          expectsResponse
+        );
+
+        if (response === null && isInitEvent && attempt < maxRetries) {
+          console.warn(
+            `Retrying ${event} - attempt ${attempt}/${maxRetries}...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          continue;
+        }
+
+        if (response !== null) {
+          this.handleMessage(event, response);
+        }
+
         return;
+      } catch (error: any) {
+        console.warn(`Attempt ${attempt} failed for event ${event}`, error);
+
+        if (
+          !isInitEvent ||
+          (attempt === maxRetries && event !== EventType.GET_INIT_DATA)
+        ) {
+          alertUser(
+            `Error during request for event "${event}"`,
+            `${error} ${event} ${JSON.stringify(data)}`
+          );
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
-
-      const { url, method } = result;
-
-      const response = await this.sendRequest(
-        data,
-        url,
-        method,
-        event,
-        expectsResponse
-      );
-
-      if (response) {
-        this.handleMessage(event, response);
-      }
-    } catch (error: any) {
-      alertUser(
-        `Error during request for event "${event}"`,
-        `${error} ${event} ${JSON.stringify(data)}`
-      );
     }
   }
+
   async handleError(response: Response, event: EventType) {
     if (response.ok) {
       return;
