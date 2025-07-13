@@ -213,21 +213,28 @@ const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
 };
 
 export function popKeyboardConfetti() {
-  const selectionStart = chatInput.selectionStart;
-  if (!selectionStart) {
-    return;
-  }
-  const { x, y } = getCursorXY(chatInput, selectionStart);
+  const selection = window.getSelection();
+  let ratioX: number, ratioY: number;
+
   const inputRect = chatInput.getBoundingClientRect();
 
-  let ratioY = y / window.innerHeight + 0.95;
-  let ratioX = (inputRect.left + x) / window.innerWidth;
+  if (selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
 
-  if (ratioY > 1) {
-    ratioY = 1;
-  }
-  if (ratioX < 0.2) {
-    ratioX = 0.2;
+    if (rect && rect.width && rect.height) {
+      ratioX = rect.left / window.innerWidth;
+      ratioY = rect.top / window.innerHeight + 0.95;
+
+      if (ratioY > 1) ratioY = 1;
+      if (ratioX < 0.2) ratioX = 0.2;
+    } else {
+      ratioX = (inputRect.left + inputRect.width / 2) / window.innerWidth;
+      ratioY = (inputRect.top + inputRect.height / 2) / window.innerHeight;
+    }
+  } else {
+    ratioX = (inputRect.left + inputRect.width / 2) / window.innerWidth;
+    ratioY = (inputRect.top + inputRect.height / 2) / window.innerHeight;
   }
 
   setTimeout(() => {
@@ -239,6 +246,7 @@ export function popKeyboardConfetti() {
     });
   }, 0);
 }
+
 export function createFireWorks() {
   confetti({
     particleCount: 100,

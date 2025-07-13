@@ -1322,7 +1322,9 @@ function handleUserKeydown(event: KeyboardEvent) {
   handleKeyboardNavigation(event);
 
   if (isDomLoaded && toggleManager.states["party-toggle"]) {
-    popKeyboardConfetti();
+    setTimeout(() => {
+      popKeyboardConfetti();
+    }, 10);
   }
 }
 
