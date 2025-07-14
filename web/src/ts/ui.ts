@@ -354,10 +354,8 @@ const popupQueue: Array<{ subject: string; content?: string }> = [];
 let isPopupVisible = false;
 
 export function alertUser(subject: string, content?: string): void {
-  // Enqueue the popup info
   popupQueue.push({ subject, content });
 
-  // If no popup is currently visible, show the next one
   if (!isPopupVisible) {
     showNextPopup();
   }
@@ -373,13 +371,12 @@ function showNextPopup() {
   const { subject, content } = popupQueue.shift()!;
 
   if (!content && subject) {
-    // If content not provided, use subject as content
     displayPopup(subject, subject);
   } else {
     displayPopup(subject, content ?? "");
   }
 }
-
+let currentPopupEl: HTMLElement | null = null;
 function displayPopup(subject: string, content: string) {
   console.error(subject, content);
 
@@ -389,17 +386,32 @@ function displayPopup(subject: string, content: string) {
     content,
     translations.getTranslation("ok"),
     () => {
-      // Popup accepted callback - show next popup in queue
       isPopupVisible = false;
       showNextPopup();
     }
   );
 
-  // Set z-index with errorCount if you still want
   outerParent.style.zIndex = "1000";
+  currentPopupEl = outerParent;
 
-  // Append popup to DOM - assuming createPopUp returns an element ready to insert
   document.body.appendChild(outerParent);
+}
+export function dismissCurrentPopupIf(subject: string) {
+  if (!currentPopupEl) return;
+
+  const pop = currentPopupEl.querySelector(".pop-up");
+
+  if (!pop) return;
+
+  const titleEl = pop?.querySelector(".pop-up-subject");
+
+  if (!titleEl) return;
+  if (titleEl && titleEl.textContent === subject) {
+    currentPopupEl.remove();
+    currentPopupEl = null;
+    isPopupVisible = false;
+    showNextPopup();
+  }
 }
 
 export function askUser(

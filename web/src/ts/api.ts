@@ -1,6 +1,6 @@
 import { translations } from "./translations.ts";
 import { printFriendMessage } from "./friendui.ts";
-import { alertUser } from "./ui.ts";
+import { alertUser, dismissCurrentPopupIf } from "./ui.ts";
 import { isOnDm, router } from "./router.ts";
 import { fetchMessages } from "./chat.ts";
 import { friendsCache } from "./friends.ts";
@@ -15,6 +15,7 @@ class NoSessionError extends Error {
     this.name = "NoSessionError";
   }
 }
+const POPUP_SUBJECT_CONNECTION_ERROR = "Can't establish connection to server";
 
 export const EventType = Object.freeze({
   GET_INIT_DATA: "GET_INIT_DATA",
@@ -548,6 +549,12 @@ class ApiClient {
       if (!expectsResponse) {
         return null;
       }
+      if (event === EventType.GET_INIT_DATA) {
+        dismissCurrentPopupIf(POPUP_SUBJECT_CONNECTION_ERROR);
+        setTimeout(() => {
+          dismissCurrentPopupIf(POPUP_SUBJECT_CONNECTION_ERROR);
+        }, 0);
+      }
 
       const responseBody = await response.text();
       return responseBody ? JSON.parse(responseBody) : null;
@@ -560,7 +567,7 @@ class ApiClient {
           return;
         }
 
-        alertUser("Can't establish connection to server");
+        alertUser(POPUP_SUBJECT_CONNECTION_ERROR);
 
         throw error;
       }
