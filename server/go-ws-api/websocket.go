@@ -79,20 +79,28 @@ func authenticateSession(cookie string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error sending request: %v", err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("invalid session. Status code: %d", resp.StatusCode)
 	}
 
-	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("error reading response body: %v", err)
 	}
 
-	userId := string(body)
+	var parsed struct {
+		UserID string `json:"userId"`
+	}
+	err = json.Unmarshal(body, &parsed)
+	if err != nil {
+		return "", fmt.Errorf("error parsing response JSON: %v", err)
+	}
+
+	userId := strings.TrimSpace(parsed.UserID)
 	if userId == "" {
-		return "", fmt.Errorf("invalid user ID")
+		return "", fmt.Errorf("empty user ID returned from API")
 	}
 
 	return userId, nil

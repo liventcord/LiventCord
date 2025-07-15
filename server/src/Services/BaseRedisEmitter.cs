@@ -14,6 +14,7 @@ public class BaseRedisEmitter
     private IConnectionMultiplexer? redis;
     private IDatabase? db;
     private const string? defaultRedisConnectionString = "localhost:6379";
+    ILogger<BaseRedisEmitter> _logger;
 
     private static SemaphoreSlim? _connectionSemaphore;
 
@@ -28,7 +29,7 @@ public class BaseRedisEmitter
 
         int connectionLimit = configuration.GetValue<int>("AppSettings:RedisConnectionLimit", 1);
         _connectionSemaphore = new SemaphoreSlim(connectionLimit);
-
+        _logger = logger;
         Task.Run(ConnectToRedisAsync);
     }
     private static int failedAttempts = 0;
@@ -74,7 +75,7 @@ public class BaseRedisEmitter
                     if (redis.IsConnected)
                     {
                         db = redis.GetDatabase();
-                        Console.WriteLine("Connected to Redis.");
+                        _logger.LogInformation("Connected to Redis.");
                         return;
                     }
                     else
@@ -89,7 +90,7 @@ public class BaseRedisEmitter
 
                     if (failedAttempts < MaxFailedAttemptsBeforeSuppressingLogs)
                     {
-                        Console.WriteLine($"Error: {ex.Message}. Retrying in {delay}ms...");
+                        _logger.LogError($"Error: {ex.Message}. Retrying in {delay}ms...");
                     }
 
                     failedAttempts++;
@@ -100,7 +101,7 @@ public class BaseRedisEmitter
 
             if (failedAttempts < MaxFailedAttemptsBeforeSuppressingLogs)
             {
-                Console.WriteLine("Max retries reached. Could not connect to Redis.");
+                _logger.LogError("Max retries reached. Could not connect to Redis.");
             }
         }
         finally
@@ -117,7 +118,7 @@ public class BaseRedisEmitter
 
         if (redis == null || db == null)
         {
-            Console.WriteLine("Redis connection is not available. Retrying connection...");
+            _logger.LogError("Redis connection is not available. Retrying connection...");
             await ConnectToRedisAsync();
             return;
         }
@@ -136,7 +137,7 @@ public class BaseRedisEmitter
                     await db.StringSetAsync(membershipsKey, membershipsJson, TimeSpan.FromDays(1));
                 }
 
-                Console.WriteLine($"Guild memberships for {guildId} published to Redis.");
+                _logger.LogInformation($"Guild memberships for {guildId} published to Redis.");
             }
             finally
             {
@@ -145,7 +146,7 @@ public class BaseRedisEmitter
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error publishing guild memberships to Redis: {ex.Message}. Retrying...");
+            _logger.LogError($"Error publishing guild memberships to Redis: {ex.Message}. Retrying...");
             await ConnectToRedisAsync();
         }
     }
@@ -156,7 +157,7 @@ public class BaseRedisEmitter
 
         if (redis == null || db == null)
         {
-            Console.WriteLine("Redis connection is not available. Retrying connection...");
+            _logger.LogError("Redis connection is not available. Retrying connection...");
             await ConnectToRedisAsync();
             return;
         }
@@ -182,14 +183,21 @@ public class BaseRedisEmitter
                     new NameValueEntry("UserIDs", JsonSerializer.Serialize(userIds)),
                     new NameValueEntry("Payload", payloadJson)
                 };
-
                 if (db != null)
                 {
-                    await db.StreamAddAsync(streamKey, streamMessage);
-                    await db.KeyExpireAsync(streamKey, TimeSpan.FromMinutes(5));
+                    var batch = db.CreateBatch();
+
+                    var addTask = batch.StreamAddAsync(streamKey, streamMessage);
+                    var expireTask = batch.KeyExpireAsync(streamKey, TimeSpan.FromMinutes(5));
+
+                    batch.Execute();
+
+                    await Task.WhenAll(addTask, expireTask);
+
+                    _logger.LogInformation($"Event of type '{eventType}' published to Redis stream for {userIds.Length} users.");
                 }
 
-                Console.WriteLine($"Event of type {eventType} published to Redis stream for {userIds.Length} users.");
+                _logger.LogInformation($"Event of type {eventType} published to Redis stream for {userIds.Length} users.");
             }
             finally
             {
@@ -198,7 +206,7 @@ public class BaseRedisEmitter
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error publishing message to Redis: {ex.Message}. Retrying...");
+            _logger.LogError($"Error publishing message to Redis: {ex.Message}. Retrying...");
             await ConnectToRedisAsync();
         }
     }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -27,84 +28,120 @@ func initRedisClient(redisURL string) error {
 		return fmt.Errorf("error connecting to Redis: %v", err)
 	}
 
+	fmt.Println("Successfully connected to Redis")
 	return nil
 }
 
 func consumeMessagesFromRedis() {
 	streamName := "event_stream"
-	lastID := "0"
+
+	lastID, err := loadLastID()
+	if err != nil {
+		logErr("Error loading last ID from file", err)
+		lastID = "0"
+	}
 
 	for {
-		messages, err := redisClient.XRead(ctx, &redis.XReadArgs{
-			Streams: []string{streamName, lastID},
-			Block:   0,
-			Count:   1,
-		}).Result()
+		messages, err := readFromRedisStream(streamName, lastID)
 		if err != nil {
-			fmt.Println("Error reading from Redis stream:", err)
+			logErr("Error reading from Redis stream", err)
 			return
 		}
 
 		for _, msg := range messages {
 			for _, xMessage := range msg.Messages {
-				eventType, ok := xMessage.Values["EventType"].(string)
-				if !ok {
-					fmt.Println("Error: EventType field is missing or invalid")
-					continue
-				}
-				rawPayload, ok := xMessage.Values["Payload"].(string)
-				if !ok {
-					fmt.Println("Error: Payload field is missing or invalid")
-					continue
-				}
-				eventMessage := EventMessage{
-					EventType: eventType,
-					Payload:   json.RawMessage(rawPayload),
-				}
-				userIDsStr, ok := xMessage.Values["UserIDs"].(string)
-				if !ok {
-					fmt.Println("Error: UserIDs field is missing or invalid")
-					continue
-				}
-				var userIDs []string
-				err = json.Unmarshal([]byte(userIDsStr), &userIDs)
+				eventMessage, userIDs, err := parseRedisMessage(xMessage)
 				if err != nil {
-					fmt.Println("Error unmarshalling UserIDs:", err)
+					logErr("Error parsing message", err)
 					continue
 				}
 
-				eventDetails := fmt.Sprintf(
-					"Event Type: %s\nPayload: %s\nUserIDs: %v\n",
-					eventType,
-					rawPayload,
-					userIDs,
-				)
-				fmt.Println("New event reached:")
-				fmt.Println(eventDetails)
-
-				hub.lock.RLock()
-				for _, userId := range userIDs {
-					conn, ok := hub.clients[userId]
-					if ok {
-						payload, err := json.Marshal(eventMessage)
-						if err != nil {
-							fmt.Println("Error marshalling message:", err)
-							continue
-						}
-						err = conn.WriteMessage(websocket.TextMessage, payload)
-						if err != nil {
-							fmt.Println("Error sending message to WebSocket client:", err)
-							conn.Close()
-							hub.lock.Lock()
-							delete(hub.clients, userId)
-							hub.lock.Unlock()
-						}
-					}
-				}
-				hub.lock.RUnlock()
+				printEventDetails(eventMessage, userIDs)
+				broadcastToUsers(eventMessage, userIDs)
 
 				lastID = xMessage.ID
+				if err := saveLastID(lastID); err != nil {
+					logErr("Error saving last ID to file", err)
+				}
 			}
+		}
+	}
+}
+
+func readFromRedisStream(streamName, lastID string) ([]redis.XStream, error) {
+	return redisClient.XRead(ctx, &redis.XReadArgs{
+		Streams: []string{streamName, lastID},
+		Block:   0,
+		Count:   1,
+	}).Result()
+}
+
+func parseRedisMessage(xMessage redis.XMessage) (EventMessage, []string, error) {
+	eventType, ok := xMessage.Values["EventType"].(string)
+	if !ok {
+		return EventMessage{}, nil, fmt.Errorf("eventType field missing or invalid")
+	}
+
+	rawPayload, ok := xMessage.Values["Payload"].(string)
+	if !ok {
+		return EventMessage{}, nil, fmt.Errorf("payload field missing or invalid")
+	}
+
+	eventMessage := EventMessage{
+		EventType: eventType,
+		Payload:   json.RawMessage(rawPayload),
+	}
+
+	userIDsStr, ok := xMessage.Values["UserIDs"].(string)
+	if !ok {
+		return EventMessage{}, nil, fmt.Errorf("userIDs field missing or invalid")
+	}
+
+	var userIDs []string
+	if err := json.Unmarshal([]byte(userIDsStr), &userIDs); err != nil {
+		return EventMessage{}, nil, fmt.Errorf("error unmarshalling userIDs: %v", err)
+	}
+
+	return eventMessage, userIDs, nil
+}
+
+func printEventDetails(event EventMessage, userIDs []string) {
+	eventDetails := fmt.Sprintf(
+		"Event Type: %s\nPayload: %s\nUserIDs: %v\n",
+		event.EventType,
+		string(event.Payload),
+		userIDs,
+	)
+	fmt.Println("New event reached:")
+	fmt.Println(eventDetails)
+}
+
+func broadcastToUsers(eventMessage EventMessage, userIDs []string) {
+	hub.lock.RLock()
+	defer hub.lock.RUnlock()
+
+	for _, targetUserID := range userIDs {
+		conn, ok := hub.clients[targetUserID]
+		if !ok {
+			continue
+		}
+
+		payload, err := json.Marshal(eventMessage)
+		if err != nil {
+			fmt.Printf("Error marshalling message for userId %s: %v\n", targetUserID, err)
+			continue
+		}
+
+		err = conn.WriteMessage(websocket.TextMessage, payload)
+		if err != nil {
+			conn.Close()
+			hub.lock.RUnlock()
+			hub.lock.Lock()
+			delete(hub.clients, targetUserID)
+			hub.lock.Unlock()
+			hub.lock.RLock()
+		} else {
+			fmt.Printf("Successfully sent message to WebSocket client for userId %s\n", targetUserID)
 		}
 	}
 }
@@ -141,4 +178,29 @@ func parseRedisURL(redisURL string) (*redis.Options, error) {
 	}
 
 	return options, nil
+}
+
+func logErr(context string, err error) {
+	if err != nil {
+		fmt.Printf("%s: %v\n", context, err)
+	}
+}
+
+// Local state persistence
+
+const lastIDFile = "last_redis_id.txt"
+
+func saveLastID(lastID string) error {
+	return os.WriteFile(lastIDFile, []byte(lastID), 0644)
+}
+
+func loadLastID() (string, error) {
+	data, err := os.ReadFile(lastIDFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "0", nil
+		}
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
 }
