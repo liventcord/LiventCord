@@ -159,6 +159,7 @@ export function handleResize() {
   if (!userList) {
     return;
   }
+  setWidths(getCurrentWidth());
 
   const isSmallScreen = window.innerWidth < 1200;
   setUserListLine();
@@ -1499,7 +1500,7 @@ function updateDmContainers() {
 
     dmContainers.forEach((el) => {
       if (el instanceof HTMLDivElement) {
-        (el as HTMLElement).style.width = `${width + 80}px`;
+        (el as HTMLElement).style.width = `${width + 70}px`;
       }
     });
   }
@@ -1522,7 +1523,7 @@ function updateUIWidths(newWidth: number) {
 
   const input = getId("global-search-input");
   if (input) {
-    input.style.width = `${newWidth + 90}px`;
+    input.style.width = `${newWidth + 83}px`;
   }
 
   const fileBtn = getId("file-button");
@@ -1539,10 +1540,15 @@ function updateUIWidths(newWidth: number) {
     bubble.style.left = `${newWidth + 195}px`;
   }
 
+  const infoContainer = getId("channel-info-container-for-friend");
+  if (infoContainer) {
+    infoContainer.style.paddingLeft = `${newWidth + 20}px`;
+  }
+
   updateDmContainers();
 }
 
-function setAllWidths(newWidth: number) {
+export function setAllWidths(newWidth: number) {
   setWidths(newWidth);
   updateUIWidths(newWidth);
 }
@@ -1603,6 +1609,10 @@ export function initialiseChannelDrag() {
 
       const onMouseUp = () => {
         isDraggingChannel = false;
+        setTimeout(() => {
+          setAllWidths(getCurrentWidth());
+        }, 50);
+
         const computed = window.getComputedStyle(channelList);
         const finalWidth = clamp(parseInt(computed.width, 10));
         localStorage.setItem("channelListWidth", finalWidth.toString());

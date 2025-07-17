@@ -317,10 +317,12 @@ interface AttachmentWithMetaDataAndCount {
 apiClient.on(
   EventType.GET_ATTACHMENTS_GUILD,
   (data: AttachmentWithMetaDataAndCount) => {
-    appendCurrentAttachments(data.attachments);
-    setTimeout(() => {
-      updateAttachmentsCount(data.count);
-    }, 0);
+    if (data.attachments.length > 0) {
+      appendCurrentAttachments(data.attachments);
+      setTimeout(() => {
+        updateAttachmentsCount(data.count);
+      }, 0);
+    }
   }
 );
 

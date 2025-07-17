@@ -4,7 +4,7 @@
   width: 50%;
   height: 60px;
   top: 112px;
-  left: 400px;
+  margin-left: 20px;
   position: absolute;
 }
 .dm-container {
@@ -95,7 +95,6 @@ body.black-theme .dm-selected:hover {
   display: none;
   user-select: none;
   position: relative;
-  left: -10px;
   line-height: 0.8;
   transform: scaleX(1.2);
   color: #949ba4;
@@ -223,8 +222,7 @@ body.black-theme .dm-selected:hover {
 }
 #friend-icon-sign {
   top: 0px;
-  left: 327px;
-  position: absolute;
+  margin-left: 160px;
   z-index: 2;
 }
 #open-friends-button {

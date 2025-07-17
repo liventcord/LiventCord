@@ -503,7 +503,10 @@ export function setWidths(newWidth: number) {
     userInput.style.width = `${availableWidth - leftPadding - rightPadding}px`;
     userInput.style.left = `${channelRect.right + leftPadding}px`;
   }
-
+  const infoContainer = getId("channel-info-container-for-friend");
+  if (infoContainer) {
+    infoContainer.style.paddingLeft = `${newWidth + 15}px`;
+  }
   if (guildContainer) {
     guildContainer.style.width = `${newWidth + 167}px`;
   }

@@ -664,6 +664,7 @@ function getAppearanceHtml() {
           contenteditable="true"
           role="textbox"
           aria-multiline="false"
+          spellcheck="false"
           class="base-user-input">
           ${loadBgVideo()}
         </div>

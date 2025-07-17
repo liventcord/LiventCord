@@ -944,6 +944,18 @@ body.black-theme #settings-menu button.touch-hover {
   padding-bottom: 30vh;
   height: 90%;
 }
+
+#settings-rightcontainer::-webkit-scrollbar {
+  width: 6px;
+}
+#settings-rightcontainer::-webkit-scrollbar-thumb {
+  background-color: #21222200;
+  border-radius: 6px;
+}
+#settings-rightcontainer::-webkit-scrollbar-track {
+  background-color: #2b2d31;
+}
+
 .toggle-card {
   display: flex;
   flex-wrap: wrap;

@@ -30,7 +30,8 @@ import {
   textChanHtml,
   fillDropDownContent,
   isImagePreviewOpen,
-  hideImagePreview
+  hideImagePreview,
+  alertUser
 } from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
@@ -355,6 +356,7 @@ export async function createMentionProfilePop(
     position: "absolute",
     zIndex: "10"
   });
+  pop.classList.add("mention-profile-pop");
 
   const rect = baseMessage.getBoundingClientRect();
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
@@ -399,7 +401,8 @@ export async function createMentionProfilePop(
 
   const bubble = pop.querySelector(".status-bubble") as HTMLElement;
   if (bubble) {
-    bubble.style.top = "12vh";
+    bubble.style.top = "5.5em";
+    bubble.style.left = "3.5em";
   }
 
   const profContainer = pop.querySelector("#profile-container") as HTMLElement;
@@ -781,7 +784,7 @@ function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
   const container = createEl("div", { className: "profile-options-container" });
 
   if (userData.userId !== currentUserId) {
-    container.appendChild(createSendMsgButton(userData));
+    container.appendChild(createSendMsgButton(container, userData));
     if (!friendsCache.isFriend(userData.userId)) {
       container.appendChild(createAddFriendButton(userData));
     }
@@ -792,7 +795,10 @@ function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
 function isMentionPopUp(parent: HTMLElement) {
   return parent.dataset.isMentionPopup === "true";
 }
-function createSendMsgButton(userData: UserInfo): HTMLElement {
+function createSendMsgButton(
+  container: HTMLElement,
+  userData: UserInfo
+): HTMLElement {
   const sendMsgBtn = createEl("button", {
     className: "profile-send-msg-button"
   });
@@ -806,15 +812,30 @@ function createSendMsgButton(userData: UserInfo): HTMLElement {
 
   sendMsgBtn.addEventListener("click", () => {
     loadDmHome();
+    const profilePopContainer = getId("profilePopContainer");
+    if (profilePopContainer) {
+      // if is mention container
+      const isMentionContainer = profilePopContainer.classList.contains(
+        "mention-profile-pop"
+      );
+      if (isMentionContainer) {
+        profilePopContainer.remove();
+      } else {
+        // regular pop
+        setTimeout(() => {
+          const parent = profilePopContainer.parentNode as HTMLElement;
+          if (parent !== document.body) {
+            if (isMentionPopUp(parent)) {
+              profilePopContainer.remove();
+            } else {
+              parent.remove();
+            }
+          }
+        }, 50);
+      }
+    }
     setTimeout(() => {
       openDm(userData.userId);
-      const profilePopContainer = getId("profilePopContainer");
-      if (profilePopContainer) {
-        const parent = profilePopContainer.parentNode as HTMLElement;
-        if (parent !== document.body) {
-          if (isMentionPopUp(parent)) parent.remove();
-        }
-      }
     }, 0);
   });
 
