@@ -98,11 +98,11 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("guilds/{guildId}")]
-        public async Task<IActionResult> GetGuildFile([FromRoute][IdLengthValidation] string guildId, [FromQuery] string? version = null)
+        public async Task<IActionResult> GetGuildFile([FromRoute] string guildId, [FromQuery] string? version = null)
         {
             guildId = RemoveFileExtension(guildId);
 
-            if (string.IsNullOrEmpty(guildId) || ContainsIllegalPathSegments(guildId))
+            if (string.IsNullOrEmpty(guildId) || guildId.Length != 19 || ContainsIllegalPathSegments(guildId))
             {
                 return BadRequest("Invalid guildId.");
             }
