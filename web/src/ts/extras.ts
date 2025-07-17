@@ -102,6 +102,8 @@ export function onEditVideoUrl(value: string) {
 
 export function resetVideoUrl() {
   updateBgVideoSource(defaultVideoUrl);
+  const videoUrlInput = getId("video-url-input") as HTMLInputElement;
+  if (videoUrlInput) videoUrlInput.innerText = defaultVideoUrl;
 }
 
 export function disableBgVideo() {
