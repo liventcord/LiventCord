@@ -31,7 +31,9 @@ describe("Delete Guild", () => {
 
       cy.get("#guilds-list")
         .children()
-        .should("have.length.lessThan", initialCount.length);
+        .should(($children) => {
+          expect($children.length).to.be.at.most(initialCount.length);
+        });
     });
   });
 });
