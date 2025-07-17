@@ -1076,7 +1076,6 @@ export function loadImageWithRetry(
     () =>
       new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "anonymous";
         img.src = url;
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error("Image failed to load"));
