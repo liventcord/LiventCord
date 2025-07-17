@@ -14,11 +14,11 @@ public class BaseRedisEmitter
     private IConnectionMultiplexer? redis;
     private IDatabase? db;
     private const string? defaultRedisConnectionString = "localhost:6379";
-    ILogger<BaseRedisEmitter> _logger;
+    private readonly ILogger _logger;
 
     private static SemaphoreSlim? _connectionSemaphore;
 
-    public BaseRedisEmitter(IServiceProvider serviceProvider, IConfiguration configuration, ILogger<BaseRedisEmitter> logger)
+    public BaseRedisEmitter(IConfiguration configuration, ILoggerFactory loggerFactory)
     {
         redisConnectionString = configuration["AppSettings:RedisConnectionString"];
 
@@ -29,7 +29,7 @@ public class BaseRedisEmitter
 
         int connectionLimit = configuration.GetValue<int>("AppSettings:RedisConnectionLimit", 1);
         _connectionSemaphore = new SemaphoreSlim(connectionLimit);
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger("Redis");
         Task.Run(ConnectToRedisAsync);
     }
     private static int failedAttempts = 0;

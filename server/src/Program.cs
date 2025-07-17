@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,7 @@ builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<MediaProxyController>();
 builder.Services.AddScoped<MetadataController>();
+builder.Services.AddScoped<AttachmentDeduplicationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
@@ -177,6 +179,12 @@ else
 {
     app.UseExceptionHandler("/error");
 }
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
 app.UseMiddleware<RequestCountingMiddleware>();
 app.UseCors("AllowSpecificOrigin");
 app.UseSerilogRequestLogging();
@@ -235,6 +243,10 @@ app.Lifetime.ApplicationStarted.Register(async () =>
         {
             logger.LogWarning(ex, "Unexpected error during Redis sync");
         }
+
+
+        var dedupService = scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
+        await dedupService.DeduplicateAsync(CancellationToken.None);
     }
 });
 
