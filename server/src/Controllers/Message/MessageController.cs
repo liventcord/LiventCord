@@ -162,39 +162,34 @@ namespace LiventCord.Controllers
 
 
         [HttpPost("/api/discord/bot/messages/{guildId}/{channelId}")]
+        [ValidateBotToken]
         public async Task<IActionResult> HandleNewBotMessage(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
-            [FromBody] NewBotMessageRequest request,
-            [FromHeader(Name = "Authorization")] string token
+            [FromBody] NewBotMessageRequest request
+
+
         )
         {
             if (!ModelState.IsValid)
                 return BadRequest();
-
-            if (!_tokenValidationService.ValidateToken(token))
-            {
-                return Unauthorized();
-            }
 
             return await ProcessBotMessage(guildId, channelId, request);
         }
 
         [HttpPost("/api/discord/bot/messages/bulk/{guildId}/{channelId}")]
+        [ValidateBotToken]
         public async Task<IActionResult> HandleBulkMessages(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
-            [FromBody] List<NewBotMessageRequest> requests,
-            [FromHeader(Name = "Authorization")] string token
+            [FromBody] List<NewBotMessageRequest> requests
+
         )
         {
             if (!ModelState.IsValid)
                 return BadRequest();
 
-            if (!_tokenValidationService.ValidateToken(token))
-            {
-                return Unauthorized();
-            }
+
 
             var messagesToAddOrUpdate = new List<Message>();
 

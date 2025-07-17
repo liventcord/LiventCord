@@ -141,12 +141,9 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("/api/discord/bot/guilds/{guildId}/channels/")]
+        [ValidateBotToken]
         public async Task<IActionResult> CreateChannelBot([FromRoute] string guildId, [FromBody] CreateChannelRequestBot request)
         {
-            string? token = Request.Headers["Authorization"];
-            if (token == null || !_tokenValidationService.ValidateToken(token))
-                return Forbid();
-
             return await CreateChannelInternal(null, guildId, request.ChannelId, request.ChannelName, isTextChannel: true, isPrivate: false, recipientId: null, returnResponse: false);
         }
 
