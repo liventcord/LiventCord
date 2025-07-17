@@ -33,6 +33,14 @@ jobs:
           pnpm install
           pnpm cypress install
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Build & start backend
         working-directory: server/src
         run: |
@@ -55,8 +63,12 @@ jobs:
         run: |
           cp src/.env.example src/.env
           nohup pnpm run dev &
-          sleep 5
-          curl --silent --fail localhost:5173 
+          until curl --silent --fail http://localhost:5173; do
+            echo "Waiting for frontend…"
+            sleep 1
+          done
+          echo "✅ Frontend is up!"
+
 
       - name: Run Cypress tests
         working-directory: web
