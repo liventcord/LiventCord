@@ -1,6 +1,13 @@
 describe("Register Test", () => {
   it("Fills out the form and registers", () => {
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
+
     cy.get("#register-link").click();
     cy.get("#register-email").type("test@gmail.com");
     cy.get("#register-nick").type("testuser");
@@ -19,7 +26,13 @@ describe("Register Test", () => {
 describe("Change Name Tests", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
   it("Change name and apply settings", () => {
     cy.get("#settings-button").click();

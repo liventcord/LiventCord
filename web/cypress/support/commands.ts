@@ -28,7 +28,21 @@ Cypress.Commands.add("login", () => {
   cy.session(
     "login",
     () => {
-      cy.visit(Cypress.env("frontendUrl"));
+      cy.visit(Cypress.env("frontendUrl"), {
+        onBeforeLoad: (win) => {
+          const agent = Cypress.env("userAgent");
+          if (agent)
+            Object.defineProperty(win.navigator, "userAgent", {
+              value: agent
+            });
+        }
+      });
+      if (Cypress.env("viewportx") && Cypress.env("viewporty"))
+        cy.viewport(
+          Number(Cypress.env("viewportx")),
+          Number(Cypress.env("viewporty"))
+        );
+
       cy.get("#login-email").type("test@gmail.com");
       cy.get("#login-pass").type("testt");
       cy.get("#login-button").should("be.visible").click();

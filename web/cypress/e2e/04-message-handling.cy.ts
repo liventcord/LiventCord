@@ -1,7 +1,13 @@
 describe("Create, edit and delete message", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
 
   it("Create, edit and delete message", () => {

@@ -936,6 +936,7 @@ body.black-theme .base-user-input {
   #friend-icon-sign {
     top: 15px;
     left: 40px;
+    margin-left: unset;
   }
   #channel-info-for-friend {
     right: 40px;
@@ -979,7 +980,7 @@ body.black-theme .base-user-input {
   }
   #avatar-wrapper {
     background-color: transparent;
-    left: 0px;
+    left: -50px !important;
     width: 140px;
   }
   #self-discriminator {

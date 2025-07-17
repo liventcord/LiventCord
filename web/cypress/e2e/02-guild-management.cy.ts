@@ -1,7 +1,13 @@
 describe("Create Guild", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
   it("Creates guild", () => {
     cy.get("#create-guild-button").click();
@@ -20,7 +26,13 @@ describe("Create Guild", () => {
 describe("Change Guild Name Test", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
   it("Change guild name and apply settings", () => {
     cy.clickFirstGuild();
@@ -46,7 +58,13 @@ describe("Change Guild Name Test", () => {
 describe("Create Channel", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
 
   it("Creates channel", () => {
@@ -79,7 +97,13 @@ describe("Create Channel", () => {
 describe("Change Channel Name", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
 
   it("Changes channel name", () => {
@@ -125,7 +149,13 @@ describe("Change Channel Name", () => {
 describe("Delete Channel", () => {
   before(() => {
     cy.login();
-    cy.visit(Cypress.env("frontendUrl"));
+    cy.visit(Cypress.env("frontendUrl"), {
+      onBeforeLoad: (win) => {
+        Object.defineProperty(win.navigator, "userAgent", {
+          value: Cypress.env("userAgent")
+        });
+      }
+    });
   });
 
   it("Deletes channel", () => {
