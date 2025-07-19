@@ -60,7 +60,10 @@ namespace LiventCord.Controllers
             [FromRoute][IdLengthValidation] string channelId)
         {
             var userId = UserId!;
-            var channel = await _dbContext.Channels.FindAsync(channelId);
+            var channel = await _dbContext.Channels
+                .Include(c => c.Guild)
+                .FirstOrDefaultAsync(c => c.ChannelId == channelId);
+
             if (channel == null)
                 return NotFound();
 
