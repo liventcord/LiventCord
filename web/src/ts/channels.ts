@@ -507,7 +507,8 @@ export function setWidths(newWidth: number) {
       : window.innerWidth - channelRect.right;
 
     userInput.style.width = `${availableWidth - leftPadding - rightPadding}px`;
-    userInput.style.left = `${channelRect.right + leftPadding}px`;
+    if (!isMobile)
+      userInput.style.left = `${channelRect.right + leftPadding}px`;
   }
   const infoContainer = getId("channel-info-container-for-friend");
   if (infoContainer) {
