@@ -38,7 +38,8 @@ import {
   getFileNameFromUrl,
   corsDomainManager,
   debounce,
-  isURL
+  isURL,
+  isImageLoaded
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -838,7 +839,10 @@ export async function displayImagePreview(
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
-  previewImage.src = await corsDomainManager.getProxy(sanitizedSourceImage);
+  const _isImageLoaded = isImageLoaded(imageElement);
+  previewImage.src = _isImageLoaded
+    ? imageElement.src
+    : await corsDomainManager.getProxy(sanitizedSourceImage);
   updateCurrentIndex(sourceImage, isFromMediaPanel);
   handleImageSpoiler(previewImage, isSpoiler);
 

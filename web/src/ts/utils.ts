@@ -1143,3 +1143,5 @@ export async function openBlobUrl(imageElement: HTMLImageElement) {
   window.open(objectUrl, "_blank");
   setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
 }
+export const isImageLoaded = (img: HTMLImageElement) =>
+  img.complete && img.naturalHeight !== 0;
