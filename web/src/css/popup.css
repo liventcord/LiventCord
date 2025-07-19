@@ -746,21 +746,21 @@
 }
 #profile-container {
   display: flex;
-  margin-top: 28vh;
-  margin-left: 20px;
+  margin-top: 24vh;
+  margin-left: 25px;
 }
 #profile-title {
   color: white;
-  font-size: 1.4em;
+  font-size: 24px;
   user-select: text;
   font-weight: bold;
   white-space: nowrap;
 }
 #profile-discriminator {
-  font-weight: bold;
+  font-weight: 100;
   color: rgb(181, 186, 193);
-  font-size: 0.9em;
-  margin-top: 3em;
+  font-size: 1em;
+  margin-top: 3.5em;
   user-select: text;
   position: fixed;
 }

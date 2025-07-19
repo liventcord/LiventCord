@@ -162,7 +162,7 @@ export function handleResize() {
   }
   setWidths(getCurrentWidth());
 
-  const isSmallScreen = window.innerWidth < 1200;
+  const isSmallScreen = window.innerWidth < 600;
   setUserListLine();
 
   if (isSmallScreen) {

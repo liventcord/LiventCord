@@ -202,7 +202,8 @@ const processMembers = async (newMembers) => {
   loading.value = false;
 };
 const processAttachments = async (newAttachments) => {
-  await store.dispatch("setAttachments", newAttachments);
+  const combinedAttachments = [...store.state.attachments, ...newAttachments];
+  await store.dispatch("setAttachments", combinedAttachments);
 };
 
 function getAttachmentSrc(attachment) {
