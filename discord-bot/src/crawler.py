@@ -1,3 +1,5 @@
+import asyncio
+import platform
 import re
 import subprocess
 import sys
@@ -116,6 +118,29 @@ async def process_image_search_command(message: discord.Message, command: str) -
         print(f"Error: {e}")
 
 
+async def process_image_search_command_r34(
+    message: discord.Message, command: str
+) -> None:
+    try:
+        query, number = parse_command_input(message, command)
+        if query is None:
+            await message.channel.send(
+                f"Invalid command format. Usage: {command} {{query}} #{{number}}"
+            )
+            return
+
+        if not isinstance(message.channel, discord.TextChannel):
+            await message.channel.send(
+                "This command can only be used in text channels."
+            )
+            return
+
+        await fetch_and_send_images_n(message.channel, query, number)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+
 def parse_command_input(message: discord.Message, command: str) -> tuple:
     parts = list(
         filter(lambda x: x.strip(), message.content[len(command) :].split("#"))
@@ -138,6 +163,37 @@ async def fetch_and_send_images(
 
     embeds = create_image_embeds(image_urls)
     await send_embeds_in_batches(channel, embeds)
+
+
+async def fetch_and_send_images_n(
+    channel: discord.TextChannel, query: str, number: int
+) -> None:
+    content_urls = await asyncio.to_thread(crawl_images_r, query, number)
+    if not content_urls:
+        await channel.send("No images or videos found.")
+        return
+
+    embeds = []
+    videos = []
+
+    for item in content_urls:
+        if item["type"] == "image":
+            embed = Embed(title="Image", color=0x00FF00)
+            embed.set_image(url=item["url"])
+            embeds.append(embed)
+        elif item["type"] == "video":
+            videos.append(item["url"])
+
+    if embeds:
+        await send_embeds_in_batches(channel, embeds)
+
+    if videos:
+        await send_videos(channel, videos)
+
+
+async def send_videos(channel: discord.TextChannel, video_urls: list) -> None:
+    for video_url in video_urls:
+        await channel.send(video_url)
 
 
 class ImagePaginator(discord.ui.View):
@@ -167,6 +223,98 @@ class ImagePaginator(discord.ui.View):
         if self.current_page < len(self.images) - 1:
             self.current_page += 1
             await self.update_embed(interaction)
+
+
+if platform.system() not in ("Linux", "Windows"):
+    selenium_available = False
+else:
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+
+        selenium_available = True
+    except ImportError:
+        selenium_available = False
+
+if not selenium_available:
+    raise RuntimeError(
+        "Selenium is not supported on this platform or is not installed."
+    )
+
+
+DOMAIN = "rule34.xxx"
+
+
+def crawl_images_r(query: str, number: int) -> list:
+    try:
+        print(f"Rule Crawler Process started with query: {query} and number: {number}")
+        chrome_options = Options()
+        chrome_options.add_argument("--window-size=1280,800")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--proxy-server=socks5://127.0.0.1:9050")  # Use Tor
+
+        with webdriver.Chrome(options=chrome_options) as driver:
+            search_url = f"https://{DOMAIN}/index.php?page=post&s=list&tags={query}"
+            content_urls = []
+            pid = 0
+
+            while len(content_urls) < number:
+                url = f"{search_url}&pid={pid}"
+                driver.get(url)
+
+                image_elements = driver.find_elements(By.CLASS_NAME, "preview")
+                processed_urls = []
+
+                for img in image_elements:
+                    img_url = img.get_attribute("src")
+                    if img_url:
+                        skip_keywords = ["gay", "male_only"]
+                        alt_text = img.get_attribute("alt") or ""
+                        if any(
+                            keyword in alt_text.lower() for keyword in skip_keywords
+                        ):
+                            continue
+
+                        img_url = img_url.split("?")[0]
+
+                        if "webm-thumb" in img.get_attribute("class"):  # video
+                            processed_url = (
+                                img_url.replace(
+                                    f"https://wimg.{DOMAIN}/thumbnails/",
+                                    f"https://ws-cdn-video.{DOMAIN}//images/",
+                                )
+                                .replace("thumbnail_", "")
+                                .replace(".jpg", ".mp4")
+                            )
+                            processed_urls.append({
+                                "url": processed_url,
+                                "type": "video",
+                            })
+                        else:  # image
+                            processed_url = img_url.replace(
+                                f"https://wimg.{DOMAIN}/thumbnails",
+                                f"https://{DOMAIN}//samples",
+                            ).replace("thumbnail_", "sample_")
+                            processed_urls.append({
+                                "url": processed_url,
+                                "type": "image",
+                            })
+
+                content_urls.extend(processed_urls)
+
+                if len(content_urls) >= number:
+                    break
+
+                pid += 42
+
+        content_urls = content_urls[:number]
+        print(f"Downloaded Content URLs: {content_urls}")
+        return content_urls
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
 
 
 if __name__ == "__main__":

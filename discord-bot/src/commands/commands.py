@@ -10,7 +10,7 @@ from commands.chatbot import chat_with_llm_api, handle_ongoing_requests
 from commands.mimic import me_mimic
 from commands.pokemon import generate_pokemon
 from commands.ui import handle_ui
-from crawler import process_image_search_command
+from crawler import process_image_search_command, process_image_search_command_r34
 from utils import OwnerId, isDm
 
 SEARCH_COMMAND1 = "#google"
@@ -30,6 +30,7 @@ ME_COMMAND = "#me"
 YT_CMD = "#yt"
 URL_COMMAND = "#url"
 ONGOING_COMMAND = "#ongoing"
+R34_COMMAND = "#rule34"
 
 
 async def find_message_in_channels(
@@ -272,6 +273,8 @@ async def handle_commands(client: discord.Client, message: discord.Message) -> N
             else SEARCH_COMMAND2
         )
         await process_image_search_command(message, command)
+    elif message_lower.startswith(R34_COMMAND):
+        await process_image_search_command_r34(message, R34_COMMAND)
     elif message_lower.startswith(URL_COMMAND):
         await handle_url(message)
     elif message_lower.startswith(POKEMON_COMMAND):
