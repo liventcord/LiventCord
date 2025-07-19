@@ -75,7 +75,7 @@ import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
-import { currentChannelName } from "./channels.ts";
+import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
 
 export let bottomestChatDateStr: string;
@@ -116,6 +116,25 @@ export function addChatMentionListeners() {
       target.classList.contains("profile-pic")
     ) {
       const userId = target.dataset.userId;
+      const channelId = target.dataset.channelId;
+      if (channelId) {
+        const channelName =
+          cacheInterface.getChannelNameWithoutGuild(channelId);
+        const isTextChannel =
+          cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
+        store.dispatch("selectChannel", {
+          channelId: channelId,
+          isTextChannel: isTextChannel
+        });
+
+        changeChannel({
+          guildId: currentGuildId,
+          channelId: channelId,
+          channelName: channelName,
+          isTextChannel: isTextChannel
+        });
+        return;
+      }
       if (!userId) return;
 
       if (currentMentionPop) {

@@ -182,20 +182,21 @@ export function adjustHeight() {
 
   adjustReplyPosition();
 }
-
-export function appendMemberMentionToInput(
-  userId: string,
-  ignoreChecks?: boolean
+function appendMentionToInput(
+  triggerChar: string,
+  mentionId: string,
+  mentionWrapper: (id: string) => string,
+  ignoreChecks = false
 ) {
   if (!chatInput) return;
-  const message = state.rawContent ?? "";
 
+  const message = state.rawContent ?? "";
   let cursorPos = state.cursorPosition;
   cursorPos = Math.max(0, Math.min(cursorPos, message.length));
 
-  const newMention = `<@${userId}>`;
+  const newMention = mentionWrapper(mentionId);
 
-  const mentionStart = message.lastIndexOf("@", cursorPos - 1);
+  const mentionStart = message.lastIndexOf(triggerChar, cursorPos - 1);
   if (mentionStart === -1 && !ignoreChecks) return;
 
   let mentionEnd = cursorPos;
@@ -203,31 +204,13 @@ export function appendMemberMentionToInput(
     mentionEnd++;
   }
 
-  if (ignoreChecks) {
-    const newMessage =
-      message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
-    const newCursorPos = mentionStart + newMention.length;
-
-    state.rawContent = newMessage;
-    state.cursorPosition = newCursorPos;
-
-    const savedSelection = { start: newCursorPos, end: newCursorPos };
-    requestAnimationFrame(() => {
-      DomUtils.restoreSelection(chatInput, savedSelection);
-    });
-
-    setChatBarState(state);
-    manuallyRenderEmojis(newMessage);
-    setTimeout(() => disableElement("userMentionDropdown"), 0);
-    return;
+  if (!ignoreChecks) {
+    const mentionCandidate = message.slice(mentionStart, cursorPos);
+    if (/\s/.test(mentionCandidate)) return;
   }
-
-  const mentionCandidate = message.slice(mentionStart, cursorPos);
-  if (/\s/.test(mentionCandidate)) return;
 
   const newMessage =
     message.slice(0, mentionStart) + newMention + message.slice(mentionEnd);
-
   const newCursorPos = mentionStart + newMention.length;
 
   state.rawContent = newMessage;
@@ -241,6 +224,17 @@ export function appendMemberMentionToInput(
   setChatBarState(state);
   manuallyRenderEmojis(newMessage);
   setTimeout(() => disableElement("userMentionDropdown"), 0);
+}
+
+export function appendMemberMentionToInput(
+  userId: string,
+  ignoreChecks?: boolean
+) {
+  appendMentionToInput("@", userId, (id) => `<@${id}>`, ignoreChecks);
+}
+
+export function appendChannelMentionToInput(channelId: string) {
+  appendMentionToInput("#", channelId, (id) => `<#${id}>`);
 }
 
 //#region Reply

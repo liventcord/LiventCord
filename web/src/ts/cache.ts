@@ -1,6 +1,5 @@
 import { initialState } from "./app.ts";
 import { Emoji } from "./emoji.ts";
-import { currentGuildId } from "./guild.ts";
 import { Message, MessageReply } from "./message.ts";
 import { currentUserId, Member } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
@@ -711,6 +710,31 @@ class GuildCacheInterface {
   }
   getChannelName(guildId: string, channelId: string): string {
     return this.getChannel(guildId, channelId)?.channelName || "";
+  }
+
+  getChannelNameWithoutGuild(channelId: string): string {
+    const guilds = Object.values(this.guildCache.guilds);
+    for (const guild of guilds) {
+      const channels = this.getChannels(guild.guildId);
+      for (const c of channels) {
+        if (c.channelId === channelId) {
+          return c.channelName ?? "";
+        }
+      }
+    }
+    return "";
+  }
+  getChannelWithoutGuild(channelId: string): CachedChannel | null {
+    const guilds = Object.values(this.guildCache.guilds);
+    for (const guild of guilds) {
+      const channels = this.getChannels(guild.guildId);
+      for (const c of channels) {
+        if (c.channelId === channelId) {
+          return c;
+        }
+      }
+    }
+    return null;
   }
 
   removeChannel(guildId: string, channelId: string): void {

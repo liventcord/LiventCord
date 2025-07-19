@@ -317,7 +317,6 @@ async function loadBuiltinEmojis(): Promise<void> {
     const data = await response.json();
     builtinEmojiPayload = data as BuiltinEmojiPayload;
 
-    // Map emojis object to array with added id property as key
     builtinEmojisCache = Object.entries(builtinEmojiPayload.emojis).map(
       ([id, e]) => ({
         id,
@@ -335,6 +334,8 @@ async function loadBuiltinEmojis(): Promise<void> {
 const regexIdEmojis = /:([0-9A-Fa-f]+):/g;
 
 const regexUserMentions = /<@(\d{18})>/g;
+
+const regexChannelMentions = /<#(\d{19})>/g;
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
   const customEmojisToUse: CustomEmoji[] = getCurrentEmojis() ?? [];
@@ -367,16 +368,26 @@ export function replaceCustomEmojisForChatContainer(content: string): string {
   content = content.replace(regexUserMentions, (match, userId) => {
     const user = userManager.getUserInfo(userId);
     const nick = user?.nickName ?? `@Unknown`;
-    return generateMention(userId, nick);
+    return generateUserMention(userId, nick);
+  });
+
+  content = content.replace(regexChannelMentions, (match, channelId) => {
+    const name = cacheInterface.getChannelNameWithoutGuild(channelId);
+    if (!name) {
+      return match;
+    }
+    return generateChannelMention(channelId, name);
   });
 
   return content;
 }
 
-function generateMention(userId: string, nick: string): string {
+function generateUserMention(userId: string, nick: string): string {
   return `<button class="mention" type="button" data-user-id="${userId}">@${escapeHtml(nick)}</button>`;
 }
-
+function generateChannelMention(channelId: string, name: string): string {
+  return `<button class="mention" type="button" data-channel-id="${channelId}">#${escapeHtml(name)}</button>`;
+}
 function getEmojiCode(builtinIndex: number): string | null {
   const emoji = builtinEmojisCache[builtinIndex];
   if (!emoji) {
