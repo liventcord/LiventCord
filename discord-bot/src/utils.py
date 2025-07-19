@@ -24,6 +24,12 @@ forward_url: str = env.str("FORWARD_URL")
 DATABASE_PATH = "databases"
 DC_TOKEN: str = env.str("DC_TOKEN")
 
+# PromptLama server, can be cloned from https://github.com/thelp281/promptlama
+PROMPTLAMA_BASE_URL: str = env.str(
+    "PROMPTLAMA_BASE_URL", default="http://localhost:8000"
+)
+PROMPTLAMA_MODEL: str = env.str("PROMPTLAMA_MODEL", default="")
+
 
 def isDm(channel: discord.abc.Messageable) -> bool:
     return isinstance(channel, discord.DMChannel)

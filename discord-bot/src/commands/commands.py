@@ -6,6 +6,7 @@ from PIL import Image
 from pytube import Search
 
 from commands.admin import change_avatar, handle_status
+from commands.chatbot import chat_with_llm_api, handle_ongoing_requests
 from commands.mimic import me_mimic
 from commands.pokemon import generate_pokemon
 from commands.ui import handle_ui
@@ -28,6 +29,7 @@ STATUS_COMMAND = "#status"
 ME_COMMAND = "#me"
 YT_CMD = "#yt"
 URL_COMMAND = "#url"
+ONGOING_COMMAND = "#ongoing"
 
 
 async def find_message_in_channels(
@@ -274,8 +276,27 @@ async def handle_commands(client: discord.Client, message: discord.Message) -> N
         await handle_url(message)
     elif message_lower.startswith(POKEMON_COMMAND):
         await generate_pokemon(message)
+    elif await check_reply(client, message) is True:
+        (await chat_with_llm_api(message),)  # type: ignore
+    elif message_lower.startswith(ONGOING_COMMAND):
+        await handle_ongoing_requests(message)
     if message.author.id == OwnerId:
         if message_lower.startswith(CHANGEAVATARCOMMAND) and message.attachments:
             await change_avatar(client, message)
         elif message_lower.startswith(STATUS_COMMAND):
             await handle_status(client, message)
+
+
+async def check_reply(client: discord.Client, message: discord.Message) -> bool:
+    if client.user in message.mentions:
+        return True
+    author = (
+        message.reference.resolved.author
+        if message.reference and message.reference.resolved
+        else None
+    )
+
+    if author == client.user:
+        return True
+
+    return False
