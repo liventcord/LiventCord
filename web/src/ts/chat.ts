@@ -451,6 +451,15 @@ const observer = new IntersectionObserver(
   { threshold: 0.1 }
 );
 
+function isChatScrollNearBottom(offset = 100) {
+  return (
+    chatContent.scrollHeight -
+      chatContent.scrollTop -
+      chatContent.clientHeight <
+    offset
+  );
+}
+
 export function observe(element: HTMLElement) {
   if (!element) {
     return;
@@ -462,6 +471,11 @@ function loadObservedContent(targetElement: HTMLElement) {
   if (jsonData && targetElement.dataset.contentLoaded !== "true") {
     targetElement.dataset.contentLoaded = "true";
     handleLink(targetElement, jsonData);
+
+    if (isChatScrollNearBottom()) {
+      chatContent.scrollTop = chatContent.scrollHeight;
+    }
+    chatContent;
   }
 }
 export interface NewMessageResponse {

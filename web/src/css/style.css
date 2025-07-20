@@ -213,7 +213,7 @@
   align-items: flex-start;
   position: relative;
   color: #dcddde;
-  margin-top: 650px;
+  margin-top: 600px;
 }
 .channelIcon {
   background-color: rgb(65, 67, 74);
@@ -997,11 +997,10 @@ body.black-theme .base-user-input {
 
   #attachments-tray {
     padding: 10px;
-    margin-left: 25px;
+    margin-left: -376px;
     flex-wrap: nowrap;
     gap: 10px;
     justify-content: flex-start;
-    flex-direction: row-reverse;
   }
   #image-container {
     overflow-x: scroll;
@@ -1015,8 +1014,11 @@ body.black-theme .base-user-input {
     width: 120px;
     height: auto;
     max-width: 120px;
-    max-height: 120px;
+    max-height: 160px;
     margin-left: 25px;
+  }
+  .attachment-preview-file {
+    margin-left: 0px !important;
   }
 
   #toolbaroptions {

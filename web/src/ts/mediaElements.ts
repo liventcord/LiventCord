@@ -310,8 +310,7 @@ async function createVideoElement(url: string, isVideoAttachment = false) {
   const videoElement = createEl("video");
   const proxiedUrl = await corsDomainManager.getProxy(url);
   videoElement.src = proxiedUrl;
-  videoElement.width = 560;
-  videoElement.height = 315;
+
   videoElement.controls = true;
   videoElement.loop = true;
   videoElement.playsInline = true;
