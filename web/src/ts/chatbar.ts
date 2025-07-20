@@ -1347,11 +1347,58 @@ function toggleSendButton(hasContent: boolean) {
   gifBtn?.classList.toggle("send-active", hasContent);
 }
 
+let initialHeight = window.innerHeight;
+let keyboardOpen = false;
+function checkKeyboardOpen() {
+  const visualHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+  const delta = initialHeight - visualHeight;
+
+  const HEIGHT_DROP_THRESHOLD = initialHeight * 0.2;
+
+  const isInputFocused =
+    document.activeElement && document.activeElement.id === "user-input";
+  const messageinputcontainer = getId("message-input-container");
+
+  if (isInputFocused) {
+    if (delta > HEIGHT_DROP_THRESHOLD && !keyboardOpen) {
+      keyboardOpen = true;
+      chatContainer.style.height = "20vh";
+      chatContainer.style.marginTop = "-230px";
+      if (messageinputcontainer) {
+        messageinputcontainer.style.bottom = "280px";
+      }
+    }
+  } else {
+    if (keyboardOpen && delta < HEIGHT_DROP_THRESHOLD / 2) {
+      keyboardOpen = false;
+      if (messageinputcontainer) {
+        messageinputcontainer.style.bottom = "20px";
+        chatContainer.style.marginTop = "50px";
+        adjustChatContainerHeight();
+      }
+    }
+  }
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", checkKeyboardOpen);
+}
+window.addEventListener("load", () => {
+  initialHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+  console.log("Initial height set:", initialHeight);
+});
+
+checkKeyboardOpen();
+
 function handleChatInput(event: Event) {
   try {
     if (state.isProcessing) {
       return;
     }
+    checkKeyboardOpen();
 
     if (event instanceof InputEvent === false) {
       return;
