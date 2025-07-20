@@ -554,6 +554,7 @@ export function loadDmHome(isChangingUrl = true): void {
   enableElement("friend-container-item");
   setGuildNameText("");
   disableElement("guild-settings-button");
+  disableElement("channel-info");
   enableElement("global-search-input", false, true);
   enableElement("friends-container-item");
   enableElement("dms-title");

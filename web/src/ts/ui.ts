@@ -1303,13 +1303,15 @@ function handleSwapNavigation(e: TouchEvent) {
       toolbarOptions.style.zIndex = "1";
       mobileMoveToCenter(true);
     } else {
-      mobileMoveToCenter(true);
-      mobileMoveToRight();
-      enableElement(mobileBlackBg);
+      if (!isOnMePage) {
+        mobileMoveToCenter(true);
+        mobileMoveToRight();
+        enableElement(mobileBlackBg);
 
-      if (isOnGuild) {
-        enableElement("channel-info");
-        enableElement("hash-sign");
+        if (isOnGuild) {
+          enableElement("channel-info");
+          enableElement("hash-sign");
+        }
       }
       return;
     }
@@ -1348,11 +1350,12 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean) {
     return;
   }
   if (toRight) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToRight();
+    if (!isOnMePage) {
+      enableElement(mobileBlackBg);
+      chatContainer.style.flexDirection = "column";
+      toolbarOptions.style.zIndex = "";
+      mobileMoveToRight();
+    }
     return;
   }
 
@@ -1576,7 +1579,7 @@ function updateUIWidths(newWidth: number) {
 
   const infoContainer = getId("channel-info-container-for-friend");
   if (infoContainer) {
-    infoContainer.style.paddingLeft = `${newWidth + 20}px`;
+    infoContainer.style.paddingLeft = isMobile ? "40px" : `${newWidth + 20}px`;
   }
 
   updateDmContainers();

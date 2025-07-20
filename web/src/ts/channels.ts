@@ -512,7 +512,7 @@ export function setWidths(newWidth: number) {
   }
   const infoContainer = getId("channel-info-container-for-friend");
   if (infoContainer) {
-    infoContainer.style.paddingLeft = isMobile ? "0px" : `${newWidth + 15}px`;
+    infoContainer.style.paddingLeft = isMobile ? "40px" : `${newWidth + 15}px`;
   }
   if (guildContainer) {
     guildContainer.style.width = `${newWidth + 167}px`;
