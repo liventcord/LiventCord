@@ -249,6 +249,7 @@ namespace LiventCord.Controllers
                 entity.Property(c => c.GuildId).HasColumnName(nameof(Channel.GuildId)).IsRequired(false);
                 entity.Property(c => c.Order).HasColumnName(nameof(Channel.Order)).IsRequired();
                 entity.HasIndex(c => c.GuildId);
+                entity.HasIndex(c => new { c.ChannelId, c.GuildId })
                 entity.HasOne(c => c.Guild).WithMany(g => g.Channels).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
             });
 
