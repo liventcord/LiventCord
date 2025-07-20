@@ -1059,6 +1059,17 @@ body.black-theme .base-user-input {
   #channelul {
     width: 300% !important;
   }
+  #reply-info.reply-user-list-open {
+    width: 93.47vw;
+    background-color: #28282d;
+  }
+  #reply-info {
+    position: unset;
+    margin-left: 15px;
+  }
+  #reply-close-button {
+    right: 30px !important;
+  }
 }
 
 #navigation-bar {
