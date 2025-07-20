@@ -96,7 +96,7 @@ function createPrivateChannelToggle() {
   );
   const toggleElement = createEl("div", { innerHTML: toggleHtml });
 
-  toggleElement.style.marginTop = "50px";
+  toggleElement.style.marginTop = "18px";
 
   const labels = toggleElement.querySelectorAll("label");
   if (labels.length > 0) {

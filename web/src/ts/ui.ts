@@ -721,6 +721,32 @@ let isDragging = false;
 let startX = 0;
 let startY = 0;
 
+const zoomInSVG = `
+  <svg aria-hidden="true" role="img"
+        xmlns="http://www.w3.org/2000/svg"
+        width="24" height="24" fill="none"
+        viewBox="0 0 24 24">
+    <path fill="var(--interactive-normal)" fill-rule="evenodd"
+          d="M15.62 17.03a9 9 0 1 1 1.41-1.41l4.68 4.67a1 1 0 0 1-1.42 1.42l-4.67-4.68ZM17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+          clip-rule="evenodd"></path>
+    <path fill="var(--interactive-normal)"
+          d="M11 7a1 1 0 1 0-2 0v2H7a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V7Z">
+    </path>
+  </svg>
+`;
+
+const zoomOutSVG = `
+  <svg aria-hidden="true" role="img"
+        xmlns="http://www.w3.org/2000/svg"
+        width="24" height="24" fill="none"
+        viewBox="0 0 24 24">
+    <path fill="var(--interactive-normal)" fill-rule="evenodd"
+          d="M15.62 17.03a9 9 0 1 1 1.41-1.41l4.68 4.67a1 1 0 0 1-1.42 1.42l-4.67-4.68ZM17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+          clip-rule="evenodd"></path>
+    <rect x="6" y="9" width="8" height="2" fill="var(--interactive-normal)" rx="1" />
+  </svg>
+`;
+
 function toggleZoom() {
   console.error(isPreviewZoomed);
   const previewImage = getId("preview-image");
@@ -728,6 +754,9 @@ function toggleZoom() {
     return;
   }
   isPreviewZoomed = !isPreviewZoomed;
+  const previewZoomButton = getId("preview-image-zoom") as HTMLButtonElement;
+  const divZoom = previewZoomButton.querySelector("div");
+
   if (isPreviewZoomed) {
     previewImage.classList.add("zoomed");
     previewImage.style.left = "50%";
@@ -743,6 +772,7 @@ function toggleZoom() {
     previewImage.style.width = "";
     previewImage.style.height = "";
   }
+  if (divZoom) divZoom.innerHTML = isPreviewZoomed ? zoomOutSVG : zoomInSVG;
 }
 function handlePreviewDownloadButton(sanitizedSourceImage: string) {
   const previewImageDownload = getId(
@@ -1273,13 +1303,15 @@ function handleSwapNavigation(e: TouchEvent) {
       toolbarOptions.style.zIndex = "1";
       mobileMoveToCenter(true);
     } else {
-      mobileMoveToCenter(true);
-      mobileMoveToRight();
-      enableElement(mobileBlackBg);
+      if (!isOnMePage) {
+        mobileMoveToCenter(true);
+        mobileMoveToRight();
+        enableElement(mobileBlackBg);
 
-      if (isOnGuild) {
-        enableElement("channel-info");
-        enableElement("hash-sign");
+        if (isOnGuild) {
+          enableElement("channel-info");
+          enableElement("hash-sign");
+        }
       }
       return;
     }
@@ -1318,11 +1350,12 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean) {
     return;
   }
   if (toRight) {
-    enableElement(mobileBlackBg);
-    chatContainer.style.flexDirection = "column";
-    toolbarOptions.style.zIndex = "";
-
-    mobileMoveToRight();
+    if (!isOnMePage) {
+      enableElement(mobileBlackBg);
+      chatContainer.style.flexDirection = "column";
+      toolbarOptions.style.zIndex = "";
+      mobileMoveToRight();
+    }
     return;
   }
 
@@ -1546,7 +1579,7 @@ function updateUIWidths(newWidth: number) {
 
   const infoContainer = getId("channel-info-container-for-friend");
   if (infoContainer) {
-    infoContainer.style.paddingLeft = `${newWidth + 20}px`;
+    infoContainer.style.paddingLeft = isMobile ? "40px" : `${newWidth + 20}px`;
   }
 
   updateDmContainers();

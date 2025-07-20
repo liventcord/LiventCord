@@ -391,8 +391,8 @@ body.black-theme #settings-menu button.touch-hover {
 #channel-icon {
   color: white;
   font-size: 20px;
-  padding-left: 10px;
-  margin-top: 310px;
+  padding-left: 25px;
+  margin-top: 280px;
   z-index: 1;
   position: fixed;
 }
@@ -480,6 +480,9 @@ body.black-theme #settings-menu button.touch-hover {
   }
   #set-info-title-guild-name {
     margin-top: 0px;
+  }
+  #channel-icon {
+    padding-left: 10px !important;
   }
 }
 
