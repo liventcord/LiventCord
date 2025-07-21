@@ -153,8 +153,9 @@ const EventUrlMap: Record<EventType, string> = {
   GET_HISTORY_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages?date={date}&messageId={messageId}",
 
-  GET_SCROLL_HISTORY_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
-  GET_SCROLL_HISTORY_DM: "/dms/channels/{friendId}/messages",
+  GET_SCROLL_HISTORY_GUILD:
+    "/guilds/{guildId}/channels/{channelId}/messages?date={date}",
+  GET_SCROLL_HISTORY_DM: "/dms/channels/{friendId}/messages?date={date}",
 
   GET_BULK_REPLY: "/guilds/{guildId}/channels/{channelId}/messages/reply",
   GET_MESSAGE_DATE: "/guilds/{guildId}/channels/{channelId}/messages/date",

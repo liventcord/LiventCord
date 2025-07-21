@@ -426,12 +426,14 @@ export function getOldMessages(date: Date, messageId?: string) {
     isOnDm
   );
 
-  apiClient.send(
-    isOnDm
-      ? EventType.GET_SCROLL_HISTORY_DM
-      : EventType.GET_SCROLL_HISTORY_GUILD,
-    request
-  );
+  const event = isOnDm
+    ? EventType.GET_SCROLL_HISTORY_DM
+    : EventType.GET_SCROLL_HISTORY_GUILD;
+
+  apiClient.send(event, request, {
+    date: date.toISOString(),
+    ...(messageId && { messageId })
+  });
 
   setTimeout(() => {
     setHasJustFetchedMessagesFalse();
