@@ -43,6 +43,7 @@ import {
   moveCursorToEndOf
 } from "./navigation.ts";
 import { gifBtn } from "./mediaPanel.ts";
+import { socketClient } from "./socketEvents.ts";
 
 export let currentReplyingTo = "";
 
@@ -279,34 +280,23 @@ export function closeReplyMenu() {
 let typingTimeout: ReturnType<typeof setTimeout>;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
-const sendTypingData = false;
 
 function handleTypingRequest() {
   if (chatInput.value !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }
-
+    const channelId = isOnDm
+      ? friendsCache.currentDmId
+      : guildCache.currentChannelId;
     if (!typingStarted) {
       typingStarted = true;
-      apiClient.send(EventType.START_TYPING, {
-        channelId: isOnDm
-          ? friendsCache.currentDmId
-          : guildCache.currentChannelId,
-        guildId: currentGuildId,
-        isDm: isOnDm
-      });
+      socketClient.startTyping(channelId, currentGuildId);
     }
 
     typingTimeout = setTimeout(() => {
       typingStarted = false;
-      apiClient.send(EventType.STOP_TYPING, {
-        channelId: isOnDm
-          ? friendsCache.currentDmId
-          : guildCache.currentChannelId,
-        guildId: currentGuildId,
-        isDm: isOnDm
-      });
+      socketClient.stopTyping(channelId, currentGuildId);
     }, TYPING_COOLDOWN);
   }
 }
@@ -1271,9 +1261,7 @@ export function setSuppressSend(val: boolean) {
   suppressSend = val;
 }
 function handleUserKeydown(event: KeyboardEvent) {
-  if (sendTypingData) {
-    handleTypingRequest();
-  }
+  handleTypingRequest();
   if (suppressSend) {
     suppressSend = false;
     return;

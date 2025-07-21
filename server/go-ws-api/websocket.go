@@ -23,6 +23,8 @@ var upgrader = websocket.Upgrader{
 var eventHandlers = map[string]func(*websocket.Conn, EventMessage, string){
 	"UPDATE_USER_STATUS": handleUpdateUserStatus,
 	"GET_USER_STATUS":    handleGetUserStatus,
+	"START_TYPING":       handleStartTyping,
+	"STOP_TYPING":        handleStopTyping,
 }
 
 func handleWebSocket(c *gin.Context) {
@@ -218,6 +220,35 @@ func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
 			}
 		}
 	}
+}
+func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
+	guilds, err := fetchGuildMemberships(userId)
+	if err != nil {
+		fmt.Println("Error fetching guild memberships:", err)
+		return
+	}
+
+	hub.lock.RLock()
+	clients := hub.clients
+	hub.lock.RUnlock()
+
+	seenUsers := make(map[string]struct{})
+	notifyCount := 0
+
+	for _, members := range guilds {
+		for _, targetUserId := range members {
+			if targetUserId != userId {
+				if _, exists := seenUsers[targetUserId]; !exists {
+					if conn, ok := clients[targetUserId]; ok {
+						sendResponse(conn, eventType, payload)
+						seenUsers[targetUserId] = struct{}{}
+						notifyCount++
+					}
+				}
+			}
+		}
+	}
+
 }
 
 func broadcastStatusUpdate(userId string, status UserStatus) {

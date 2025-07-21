@@ -1,6 +1,6 @@
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId } from "./user.ts";
+import { currentUserId, userManager } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
@@ -12,7 +12,12 @@ import {
   handleNewChannel,
   getChannelsUl
 } from "./channels.ts";
-import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
+import {
+  getId,
+  enableElement,
+  convertKeysToCamelCase,
+  disableElement
+} from "./utils.ts";
 import {
   deleteLocalMessage,
   getLastSecondMessageDate,
@@ -31,10 +36,13 @@ import {
 import { isOnGuild } from "./router.ts";
 import { currentGuildId } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
-import { handleFriendEventResponse } from "./friends.ts";
+import { friendsCache, handleFriendEventResponse } from "./friends.ts";
 import { playAudio, clearVoiceChannel } from "./audio.ts";
 import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
+
+const typingText = getId("typing-text") as HTMLElement;
+export const typingStatusMap = new Map<string, Set<string>>();
 
 export const SocketEvent = Object.freeze({
   CREATE_CHANNEL: "CREATE_CHANNEL",
@@ -128,6 +136,23 @@ class WebSocketClient {
       this.pendingRequests.push(() => this.getUserStatus([currentUserId]));
     }
   }
+
+  startTyping(channelId: string, guildId: string | null = null) {
+    this.send(SocketEvent.START_TYPING, {
+      channelId,
+      guildId,
+      routeType: guildId ? "guild" : "dm"
+    });
+  }
+
+  stopTyping(channelId: string, guildId: string | null = null) {
+    this.send(SocketEvent.STOP_TYPING, {
+      channelId,
+      guildId,
+      routeType: guildId ? "guild" : "dm"
+    });
+  }
+
   private attachHandlers() {
     this.socket.onopen = () => {
       console.log("Connected to WebSocket server");
@@ -308,6 +333,12 @@ interface DMEditMessageData {
   content: string;
 }
 
+interface TypingData {
+  userId: string;
+  guildId?: string;
+  channelId: string;
+}
+
 const handleNewGuildMessage = (data: GuildMessageData) => {
   const messageData: NewMessageResponse = {
     guildId: data.guildId,
@@ -384,6 +415,67 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
     editChannelName(data.channelId, data.channelName);
   }
 });
+
+socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
+  const isGuild = !!data.guildId;
+  const isCurrent =
+    (isGuild && data.channelId === guildCache.currentChannelId) ||
+    (!isGuild && data.channelId === friendsCache.currentDmId);
+
+  if (!isCurrent) return;
+
+  if (!typingStatusMap.has(data.channelId)) {
+    typingStatusMap.set(data.channelId, new Set());
+  }
+
+  typingStatusMap.get(data.channelId)!.add(data.userId);
+
+  updateTypingText(data.channelId);
+});
+
+socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
+  const isGuild = !!data.guildId;
+  const isCurrent =
+    (isGuild && data.channelId === guildCache.currentChannelId) ||
+    (!isGuild && data.channelId === friendsCache.currentDmId);
+
+  if (!isCurrent) return;
+
+  const typingSet = typingStatusMap.get(data.channelId);
+  if (typingSet) {
+    typingSet.delete(data.userId);
+    if (typingSet.size === 0) {
+      typingStatusMap.delete(data.channelId);
+    }
+  }
+
+  updateTypingText(data.channelId);
+});
+
+const typingBubbles = getId("typing-bubbles") as HTMLElement;
+
+function updateTypingText(channelId: string) {
+  const typingUsers = typingStatusMap.get(channelId);
+  if (!typingUsers || typingUsers.size === 0) {
+    typingText.textContent = "";
+    disableElement(typingBubbles);
+    return;
+  }
+  enableElement(typingBubbles);
+
+  const names = Array.from(typingUsers).map((userId) =>
+    userManager.getUserNick(userId)
+  );
+  if (names.length > 5) {
+    typingText.textContent = "Several people are typing";
+  } else if (names.length === 1) {
+    typingText.textContent = `${names[0]} is typing`;
+  } else {
+    typingText.textContent = `${names.slice(0, 2).join(", ")}${names.length > 2 ? ", and others" : ""} are typing`;
+  }
+}
+
+updateTypingText("");
 
 interface DeleteMessageEmit {
   messageId: string;

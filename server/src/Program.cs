@@ -31,7 +31,6 @@ builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.Services.AddScoped<DmController>();
 builder.Services.AddScoped<FriendDmService>();
 builder.Services.AddScoped<FriendController>();
-builder.Services.AddScoped<TypingController>();
 builder.Services.AddScoped<MessageController>();
 builder.Services.AddScoped<RegisterController>();
 builder.Services.AddScoped<NickDiscriminatorController>();

@@ -46,8 +46,6 @@ export const EventType = Object.freeze({
   GET_INVITES: "GET_INVITES",
   GET_ATTACHMENTS_GUILD: "GET_ATTACHMENTS_GUILD",
   GET_ATTACHMENTS_DM: "GET_ATTACHMENTS_DM",
-  START_TYPING: "START_TYPING",
-  STOP_TYPING: "STOP_TYPING",
   ADD_FRIEND: "ADD_FRIEND",
   ACCEPT_FRIEND: "ACCEPT_FRIEND",
   REMOVE_FRIEND: "REMOVE_FRIEND",
@@ -109,8 +107,6 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_ATTACHMENTS_GUILD: HttpMethod.GET,
   GET_ATTACHMENTS_DM: HttpMethod.GET,
   GET_MESSAGE_DATES: HttpMethod.GET,
-  START_TYPING: HttpMethod.POST,
-  STOP_TYPING: HttpMethod.POST,
   ADD_FRIEND: HttpMethod.POST,
   ADD_FRIEND_ID: HttpMethod.POST,
   REMOVE_FRIEND: HttpMethod.DELETE,
@@ -162,8 +158,6 @@ const EventUrlMap: Record<EventType, string> = {
 
   GET_BULK_REPLY: "/guilds/{guildId}/channels/{channelId}/messages/reply",
   GET_MESSAGE_DATE: "/guilds/{guildId}/channels/{channelId}/messages/date",
-  START_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/start",
-  STOP_TYPING: "/guilds/{guildId}/channels/{channelId}/typing/stop",
   UPDATE_GUILD_NAME: "/guilds/{guildId}",
   UPDATE_GUILD_IMAGE: "",
 

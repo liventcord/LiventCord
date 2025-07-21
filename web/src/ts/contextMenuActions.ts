@@ -250,9 +250,9 @@ export function createUserContext(userId: string) {
     action: () => drawProfilePopId(userId)
   };
 
-  (context[VoiceActionType.MENTION_USER] = () => mentionUser(userId)),
+  ((context[VoiceActionType.MENTION_USER] = () => mentionUser(userId)),
     (context[VoiceActionType.MUTE_USER] = () => muteUser(userId)),
-    (context[VoiceActionType.DEAFEN_USER] = () => deafenUser(userId));
+    (context[VoiceActionType.DEAFEN_USER] = () => deafenUser(userId)));
 
   if (userId === currentUserId) {
     context[ActionType.EDIT_GUILD_PROFILE] = () => editGuildProfile();
