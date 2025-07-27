@@ -2373,3 +2373,8 @@ h2 {
   background-color: #1d1d21;
   border: 1px solid black;
 }
+
+.userpanel-button.active {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}

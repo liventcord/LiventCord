@@ -650,57 +650,53 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
   });
 }
 export function closeMediaPanel() {
+  console.log("Close media panel");
   const wrapper = getId("media-table-wrapper");
-  if (!wrapper) {
-    return;
-  }
-  if (!userList) {
-    return;
-  }
-
-  if (!userList.contains(wrapper)) {
-    userList.insertBefore(wrapper, userList.firstChild);
-  }
-  const mediaTitle = getId("media-title");
-
-  mediaTitle?.classList.remove("media-open-metadata");
-  if (mediaTitle) {
-    wrapper.insertBefore(mediaTitle, wrapper.firstChild);
-  }
-
-  wrapper.classList.add("media-table-wrapper-on-right");
+  if (wrapper) wrapper.classList.add("media-table-wrapper-on-right");
   enableElement(chatContent, false, true);
+
+  setTimeout(() => {
+    scrollToBottom();
+  }, 0);
 }
-export function openMediaPanel() {
+export function openMediaPanel(type: string) {
+  console.log("Open media panel");
   const wrapper = getId("media-table-wrapper");
-  const mediaTitle = getId("media-title");
   const channelInfo = getId("channel-info");
 
-  if (!wrapper) {
-    return;
+  chatContainer.scrollTop = 0;
+  if (!chatContainer || !channelInfo) return;
+  if (type === "media") {
+    if (wrapper) wrapper.classList.remove("media-table-wrapper-on-right");
+    disableElement(chatContent);
+    if (wrapper) chatContainer.appendChild(wrapper);
   }
-  if (!chatContainer) {
-    return;
+  if (type === "files") {
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+      }
+    }, 0);
   }
-
-  if (!channelInfo) {
-    return;
+  if (type === "pins") {
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+        chatContainer.appendChild(panelWrapper);
+      }
+    }, 0);
   }
-  if (!mediaTitle) {
-    return;
+  if (type === "links") {
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+        chatContainer.appendChild(panelWrapper);
+      }
+    }, 0);
   }
-
-  if (!channelInfo) {
-    return;
-  }
-  if (!chatContainer.contains(wrapper)) {
-    chatContainer.appendChild(wrapper);
-  }
-
-  wrapper.classList.remove("media-table-wrapper-on-right");
-  disableElement("chat-content");
-  channelInfo.appendChild(mediaTitle);
-  mediaTitle?.classList.add("media-open-metadata");
 
   if (isMobile) {
     toggleHamburger(true, false);
@@ -1655,7 +1651,16 @@ export function appendCurrentAttachments(
 export function updateAttachmentsCount(count: number) {
   const mediaTitle = getId("media-title");
   if (mediaTitle) {
-    mediaTitle.textContent = `${translations.getTranslation("media-title")} (${count})`;
+    const svg = mediaTitle.querySelector("svg");
+    if (!svg) return;
+
+    while (svg.nextSibling) {
+      svg.parentNode?.removeChild(svg.nextSibling);
+    }
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = `(${count})`;
+    mediaTitle.appendChild(textSpan);
   } else {
     console.log("Title not found");
   }

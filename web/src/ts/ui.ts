@@ -887,11 +887,19 @@ export async function displayImagePreview(
   );
 }
 
-function getSourceImage(imageElement: HTMLImageElement): string {
+function getSourceImage(imageElement: any): string {
+  console.log(imageElement);
+  if (
+    !imageElement ||
+    typeof imageElement !== "object" ||
+    typeof imageElement.getAttribute !== "function"
+  ) {
+    return "";
+  }
   return (
-    imageElement.dataset.originalSrc ||
+    imageElement.dataset?.originalSrc ||
     imageElement.getAttribute("data-original-src") ||
-    imageElement.getAttribute("src") ||
+    imageElement.src ||
     ""
   );
 }

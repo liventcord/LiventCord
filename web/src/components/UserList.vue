@@ -1,50 +1,97 @@
 <template>
-  <div id="user-list" ref="userList">
-    <div
-      v-if="attachments.length > 0"
-      id="media-table-wrapper"
-      class="user-table-wrapper media-table-wrapper-on-right"
-      @scroll="handleScroll"
-    >
-      <button id="media-title" @click="handleMediaButtonClick()"></button>
-      <div id="media-grid">
-        <div
-          v-for="attachment in attachments"
-          :key="attachment.attachment.fileId"
-          :id="attachment.attachment.fileId"
-          class="image-box"
-          :data-isspoiler="attachment.attachment.isSpoiler"
-        >
-          <component
-            v-if="
-              !failedVideos[attachment.attachment.fileId] &&
-              (attachment.attachment.isImageFile ||
-                attachment.attachment.isVideoFile)
-            "
-            :is="attachment.attachment.isImageFile ? 'img' : 'video'"
-            :src="getAttachmentSrc(attachment)"
-            :data-filesize="attachment.attachment.fileSize"
-            @click="handleImageClick(attachment)"
-            ref="imageBox"
-            :style="{
-              filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
-            }"
-            v-bind="attachment.attachment.isVideoFile ? { controls: true } : {}"
-            v-bind:alt="attachment.attachment.isImageFile ? 'Image' : undefined"
-            @error="
-              attachment.attachment.isVideoFile
-                ? onVideoError(attachment.attachment.fileId)
-                : null
-            "
-          />
+  <div
+    id="user-list"
+    ref="userList"
+    class="black-theme"
+    style="display: flex; flex-direction: column"
+  >
+    <div class="userpanel-container">
+      <button
+        v-for="btn in filteredPanelButtons"
+        :key="btn.id"
+        class="userpanel-button"
+        :class="{ active: selectedPanelType === btn.type }"
+        :id="btn.id"
+        @click="handlePanelButtonClick(btn.type)"
+        @mouseover="() => showTooltipById(btn.id, btn.title)"
+      >
+        <i :class="btn.icon" :title="btn.title"></i>
+      </button>
+    </div>
 
-          <img
-            v-if="failedVideos[attachment.attachment.fileId]"
-            :src="getVideoFallbackImg()"
-            class="fallback-image"
-          />
-        </div>
+    <div
+      v-if="
+        selectedPanelType !== 'media' &&
+        selectedPanelType !== 'files' &&
+        attachments.length > 0
+      "
+    >
+      <MediaGrid
+        :attachments="attachments"
+        :failed-videos="failedVideos"
+        :shouldRenderProfile="false"
+        :getAttachmentSrc="getAttachmentSrc"
+        :getVideoFallbackImg="getVideoFallbackImg"
+        :isFilesList="false"
+        @imageClick="handleImageClick"
+        @videoError="onVideoError"
+      />
+    </div>
+
+    <Teleport to="#chat-container" :disabled="!shouldTeleportMediaPanel">
+      <div
+        v-if="selectedPanelType === 'media'"
+        id="media-table-wrapper"
+        :class="mediaWrapperClasses"
+        @scroll="handleScroll"
+      >
+        <MediaGrid
+          v-if="attachments.length > 0"
+          :attachments="attachments"
+          :failed-videos="failedVideos"
+          :getAttachmentSrc="getAttachmentSrc"
+          :shouldRenderProfile="true"
+          :isFilesList="false"
+          :getVideoFallbackImg="getVideoFallbackImg"
+          @imageClick="handleImageClick"
+          @videoError="onVideoError"
+        />
+        <div v-else class="placeholder-box">No media</div>
       </div>
+    </Teleport>
+
+    <div
+      v-if="selectedPanelType === 'files'"
+      class="media-table-wrapper panel-wrapper"
+    >
+      <div v-if="attachments.length > 0">
+        <MediaGrid
+          v-if="attachments.length > 0"
+          :attachments="attachments"
+          :failed-videos="failedVideos"
+          :getAttachmentSrc="getAttachmentSrc"
+          :getVideoFallbackImg="getVideoFallbackImg"
+          :shouldRenderProfile="true"
+          :isFilesList="true"
+          @imageClick="handleImageClick"
+          @videoError="onVideoError"
+        />
+      </div>
+      <div v-else class="placeholder-box">No files</div>
+    </div>
+
+    <div
+      v-else-if="selectedPanelType === 'pins'"
+      class="user-table-wrapper panel-wrapper"
+    >
+      <div class="placeholder-box">No Pinned messages</div>
+    </div>
+
+    <div
+      v-else-if="selectedPanelType === 'links'"
+      class="user-table-wrapper panel-wrapper"
+    >
+      <div class="placeholder-box">No Links</div>
     </div>
 
     <div class="user-table-wrapper">
@@ -65,6 +112,7 @@
               "
             />
           </template>
+
           <template v-if="offlineUsers.length > 0">
             <CategoryTitle
               :title="`${translations.getTranslation('offline')} — ${offlineUsers.length}`"
@@ -86,7 +134,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, onMounted, defineProps, watch } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
 import CategoryTitle from "./CategoryTitle.vue";
@@ -95,7 +143,7 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import { getId, IMAGE_SRCS, isTenorURL } from "../ts/utils.ts";
+import { getId, IMAGE_SRCS, isTenorURL, isMobile } from "../ts/utils.ts";
 import { displayImagePreview } from "../ts/ui.ts";
 import { fetchMoreAttachments } from "../ts/message.ts";
 import {
@@ -104,6 +152,33 @@ import {
   openMediaPanel
 } from "../ts/chat.ts";
 import { apiClient } from "../ts/api.ts";
+import { createTooltip } from "../ts/tooltip.ts";
+import MediaGrid from "./MediaGrid.vue";
+const selectedPanelType = ref("media");
+const isMediaPanelTeleported = ref(false);
+const isFirstRender = ref(true);
+const hasTeleportedOnce = ref(false);
+const shouldTeleportMediaPanel = computed(
+  () => isMediaPanelTeleported && selectedPanelType.value === "media"
+);
+
+const mediaWrapperClasses = computed(() => {
+  return props.attachments && props.attachments.length > 0
+    ? "media-table-wrapper-on-right"
+    : "table-wrapper";
+});
+
+onMounted(() => {
+  handlePanelButtonClick("media");
+  setTimeout(() => {
+    handlePanelButtonClick("media");
+    isFirstRender.value = false;
+    setTimeout(() => {
+      closeMediaPanel();
+    }, 100);
+  }, 0);
+});
+
 const props = defineProps({
   members: {
     type: Array,
@@ -112,8 +187,73 @@ const props = defineProps({
   ignoreisOnMePage: {
     type: Boolean,
     default: false
-  }
+  },
+  selectedPanelType: String,
+  attachments: Array,
+  failedVideos: Object,
+  getAttachmentSrc: Function,
+  onVideoError: Function,
+  handleImageClick: Function,
+  formatFileSize: Function,
+  handleScroll: Function
 });
+
+const panelButtons = [
+  {
+    id: "members-title",
+    icon: "fas fa-user-group",
+    title: "Members",
+    type: "members"
+  },
+  {
+    id: "media-title",
+    icon: "fas fa-photo-film",
+    title: "Media",
+    type: "media"
+  },
+  { id: "pins-title", icon: "fas fa-thumbtack", title: "Pins", type: "pins" },
+  { id: "links-title", icon: "fas fa-link", title: "Links", type: "links" },
+  { id: "files-title", icon: "fas fa-file", title: "Files", type: "files" }
+];
+
+const filteredPanelButtons = computed(() => {
+  return panelButtons.filter((btn) => {
+    if (btn.id === "members-title" && !isMobile) return false;
+    return true;
+  });
+});
+
+function handlePanelButtonClick(type: string) {
+  const isSameType = selectedPanelType.value === type;
+
+  if (type === "media") {
+    if (!hasTeleportedOnce.value) {
+      isMediaPanelTeleported.value = true;
+      hasTeleportedOnce.value = true;
+      selectedPanelType.value = type;
+      setTimeout(() => openMediaPanel(type), 100);
+      return;
+    }
+
+    if (isSameType) {
+      selectedPanelType.value = "";
+      isMediaPanelTeleported.value = false;
+      closeMediaPanel();
+    } else {
+      selectedPanelType.value = type;
+      isMediaPanelTeleported.value = true;
+      setTimeout(() => openMediaPanel(type), 100);
+    }
+  } else {
+    isMediaPanelTeleported.value = false;
+    selectedPanelType.value = isSameType ? "" : type;
+    if (!isSameType) {
+      setTimeout(() => openMediaPanel(type), 100);
+    } else {
+      closeMediaPanel();
+    }
+  }
+}
 
 const store = useStore();
 const loading = ref(true);
@@ -131,6 +271,13 @@ function onVideoError(fileId) {
 }
 function getVideoFallbackImg() {
   return IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
+}
+
+function showTooltipById(id: string, title: string) {
+  const el = getId(id);
+  if (el) {
+    createTooltip(el, title);
+  }
 }
 
 const loadMoreMedia = async () => {
@@ -164,12 +311,8 @@ const handleScroll = () => {
   }
 };
 
-const handleMediaButtonClick = () => {
-  isMediaPanelOpen = !isMediaPanelOpen;
-  isMediaPanelOpen ? openMediaPanel() : closeMediaPanel();
-};
-
 const handleImageClick = (attachment) => {
+  console.log("Clicked attachment: ", attachment);
   if (attachment.attachment.isVideoFile) return;
   const mediaGrid = getId("media-grid");
   if (!mediaGrid) return;
@@ -178,7 +321,7 @@ const handleImageClick = (attachment) => {
   ) as HTMLElement;
   if (!parent) return;
   const isSpoiler = parent.dataset.isspoiler === "true" || false;
-  const imgElement = parent.firstChild as HTMLImageElement;
+  const imgElement = parent.children[0]?.children[0] as HTMLImageElement;
   if (imgElement) {
     displayImagePreview(
       imgElement,
@@ -258,7 +401,7 @@ watch(
 );
 </script>
 
-<style scoped>
+<style>
 .profile-container {
   display: flex;
   align-items: center;
@@ -300,6 +443,9 @@ watch(
   padding: 0;
   flex-grow: 1;
 }
+.panel-wrapper {
+  min-height: unset;
+}
 #media-table-wrapper {
   margin-bottom: 5px;
   display: flex;
@@ -329,23 +475,42 @@ watch(
     padding-top: 65px;
   }
 }
-#media-title {
-  align-self: center;
-  margin-bottom: 5px;
+.userpanel-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.userpanel-button {
+  flex: 1 0 0;
+  min-width: 0;
+  height: 35px;
   background-color: #151515;
-  width: 200px;
-  color: white;
-  font-size: 1em;
-  padding: 5px;
+  color: #505cdc;
   border: 1px solid #6a6969;
   border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  outline: none;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
+
 .media-open-metadata {
   position: absolute;
   top: 50%;
-  left: 50%;
+  width: 50%;
+  left: 53%;
   transform: translate(-50%, -50%);
-  display: flex;
 }
 
 .image-box {
