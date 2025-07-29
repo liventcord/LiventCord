@@ -134,7 +134,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, defineProps, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import UserProfileItem from "./UserProfileItem.vue";
 import CategoryTitle from "./CategoryTitle.vue";
