@@ -14,7 +14,9 @@
           :is="attachment.attachment.isImageFile ? 'img' : 'video'"
           :src="getAttachmentSrc(attachment)"
           :data-filesize="attachment.attachment.fileSize"
-          :style="{ filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none' }"
+          :style="{
+            filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
+          }"
           v-bind="attachment.attachment.isVideoFile ? { controls: true } : {}"
           :alt="attachment.attachment.isImageFile ? 'Image' : undefined"
           @error="handleMediaError(attachment)"
@@ -25,7 +27,7 @@
           class="fallback-image"
         />
         <img
-          v-if="!isFilesList"
+          v-if="!isFilesList && shouldRenderProfile"
           class="profile-pic top-right"
           :src="getProfileUrl(attachment.userId)"
         />
@@ -33,10 +35,14 @@
 
       <div v-if="isFilesList" class="file-info">
         <span class="filename">{{ attachment.attachment.fileName }}</span>
-        <span class="filesize">{{ formatFileSize(attachment.attachment.fileSize) }}</span>
+        <span class="filesize">{{
+          formatFileSize(attachment.attachment.fileSize)
+        }}</span>
         <div class="profile-bottom" v-if="shouldRenderProfile">
           <div class="nick-channel-wrapper">
-            <span class="nick">{{ userManager.getUserNick(attachment.userId) }}</span>
+            <span class="nick">{{
+              userManager.getUserNick(attachment.userId)
+            }}</span>
             <span class="channel">{{ currentChannelName }}</span>
           </div>
         </div>
@@ -51,54 +57,53 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
-import { getProfileUrl } from '../ts/avatar'
-import { formatFileSize } from "../ts/utils"
-import { AttachmentWithMetaData } from '../ts/message'
-import { userManager } from '../ts/user'
-import { currentChannelName } from '../ts/channels'
+import { ref } from "vue";
+import { getProfileUrl } from "../ts/avatar";
+import { formatFileSize } from "../ts/utils";
+import { AttachmentWithMetaData } from "../ts/message";
+import { userManager } from "../ts/user";
+import { currentChannelName } from "../ts/channels";
 
 const props = defineProps<{
-  attachments: AttachmentWithMetaData[]
-  shouldRenderProfile: boolean
-  isFilesList: boolean
-  failedVideos: Record<string, boolean>
-  getAttachmentSrc: (attachment: AttachmentWithMetaData) => string
-  getVideoFallbackImg: () => string
-}>()
+  attachments: AttachmentWithMetaData[];
+  shouldRenderProfile: boolean;
+  isFilesList: boolean;
+  failedVideos: Record<string, boolean>;
+  getAttachmentSrc: (attachment: AttachmentWithMetaData) => string;
+  getVideoFallbackImg: () => string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'imageClick', attachment: AttachmentWithMetaData): void
-  (e: 'videoError', fileId: string): void
-}>()
+  (e: "imageClick", attachment: AttachmentWithMetaData): void;
+  (e: "videoError", fileId: string): void;
+}>();
 
-const mediaGridRef = ref<HTMLElement | null>(null)
+const mediaGridRef = ref<HTMLElement | null>(null);
 
 function isFailedVideo(attachment: AttachmentWithMetaData) {
-  if (!props.failedVideos) return false
-  return !!props.failedVideos[attachment.attachment.fileId]
+  if (!props.failedVideos) return false;
+  return !!props.failedVideos[attachment.attachment.fileId];
 }
 
 function shouldRenderMedia(attachment: AttachmentWithMetaData) {
-  const fileId = attachment.attachment.fileId
-  const isVideo = attachment.attachment.isVideoFile
-  const isImage = attachment.attachment.isImageFile
-  return !isFailedVideo(attachment) && (isImage || isVideo)
+  const fileId = attachment.attachment.fileId;
+  const isVideo = attachment.attachment.isVideoFile;
+  const isImage = attachment.attachment.isImageFile;
+  return !isFailedVideo(attachment) && (isImage || isVideo);
 }
 
 function handleMediaError(attachment: AttachmentWithMetaData) {
-  const fileId = attachment.attachment.fileId
+  const fileId = attachment.attachment.fileId;
   if (attachment.attachment.isVideoFile) {
-    emit('videoError', fileId)
+    emit("videoError", fileId);
   }
 }
 </script>
 <style scoped>
 #media-grid {
   display: flex;
-  flex-wrap :nowrap !important;
+  flex-wrap: nowrap !important;
   gap: 12px;
-  margin-top: 100px;
 }
 
 .image-box {
