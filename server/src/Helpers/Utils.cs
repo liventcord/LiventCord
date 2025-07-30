@@ -132,6 +132,22 @@ namespace LiventCord.Helpers
             }
         }
 
+        public static List<string> ExtractLinks(string? content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new List<string>();
+
+            var urls = new List<string>();
+            var regex = new Regex(@"https?://[^\s]+", RegexOptions.IgnoreCase);
+            var matches = regex.Matches(content);
+            foreach (Match match in matches)
+            {
+                urls.Add(match.Value);
+            }
+            return urls;
+        }
+
+
 
     }
 }

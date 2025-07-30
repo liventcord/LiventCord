@@ -190,9 +190,6 @@ namespace LiventCord.Controllers
                 return BadRequest();
 
 
-
-            var messagesToAddOrUpdate = new List<Message>();
-
             foreach (var request in requests)
             {
                 var message = await _context.Messages
@@ -202,13 +199,11 @@ namespace LiventCord.Controllers
                 if (message != null)
                 {
                     UpdateMessage(message, request);
-                    messagesToAddOrUpdate.Add(message);
                 }
                 else
                 {
-
                     var newMessage = await CreateNewMessage(request, channelId);
-                    messagesToAddOrUpdate.Add(newMessage);
+                    _context.Messages.Add(newMessage);
                 }
             }
 
@@ -657,6 +652,14 @@ namespace LiventCord.Controllers
                 Attachments = attachments
             };
 
+            var links = Utils.ExtractLinks(message.Content);
+            _context.MessageLinks.RemoveRange(_context.MessageLinks.Where(ml => ml.MessageId == message.MessageId));
+            foreach (var url in links)
+            {
+                _context.MessageLinks.Add(new MessageLink { MessageId = message.MessageId, Url = url });
+            }
+
+
 
             if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
                 message.TemporaryId = temporaryId;
@@ -947,84 +950,76 @@ namespace LiventCord.Controllers
 
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/pin")]
-        public async Task<IActionResult> PinMessage([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId, [IdLengthValidation][FromRoute] string messageId)
+        public async Task<IActionResult> PinMessage(string guildId, string channelId, string messageId)
         {
-
             var userId = UserId!;
-            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
-            if (!userExists)
-            {
+            if (!await _context.DoesMemberExistInGuild(userId, guildId))
                 return NotFound();
-            }
-            var canManageMessages = await _permissionsController.CanManageMessages(userId, guildId);
-            if (!canManageMessages)
-            {
+
+            if (!await _permissionsController.CanManageMessages(userId, guildId))
                 return Forbid();
-            }
 
-            var message = await _context.Messages
-                .Include(m => m.Channel)
-                .FirstOrDefaultAsync(m => m.MessageId == messageId);
+            var messageWithChannel = await _context.Messages
+                .Where(m => m.MessageId == messageId && m.ChannelId == channelId && m.Channel.GuildId == guildId)
+                .Select(m => m.MessageId)
+                .FirstOrDefaultAsync();
 
-            if (message == null)
-                return NotFound(new { Message = "Message not found." });
+            if (messageWithChannel == null)
+                return NotFound();
 
-            var exists = await _context.Set<ChannelPinnedMessage>()
-                .AnyAsync(pm => pm.MessageId == messageId && pm.ChannelId == message.ChannelId);
-
-            if (exists)
-                return Conflict(new { Message = "Message is already pinned." });
-
-            var pinnedEntry = new ChannelPinnedMessage
+            _context.Add(new ChannelPinnedMessage
             {
                 MessageId = messageId,
-                ChannelId = message.ChannelId,
+                ChannelId = channelId,
                 PinnedByUserId = userId,
                 PinnedAt = DateTime.UtcNow
-            };
+            });
 
-            _context.Add(pinnedEntry);
             await _context.SaveChangesAsync();
-
             return Ok();
         }
+
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/unpin")]
-        public async Task<IActionResult> UnpinMessage([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId, [IdLengthValidation][FromRoute] string messageId)
+        public async Task<IActionResult> UnpinMessage(string guildId, string channelId, string messageId)
         {
             var userId = UserId!;
-            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
-            if (!userExists)
-            {
+            if (!await _context.DoesMemberExistInGuild(userId, guildId))
                 return NotFound();
-            }
-            var canManageMessages = await _permissionsController.CanManageMessages(userId, guildId);
-            if (!canManageMessages)
-            {
+
+            if (!await _permissionsController.CanManageMessages(userId, guildId))
                 return Forbid();
-            }
 
             var pinnedEntry = await _context.Set<ChannelPinnedMessage>()
-                .FirstOrDefaultAsync(pm => pm.MessageId == messageId);
+                .Where(pm => pm.MessageId == messageId && pm.ChannelId == channelId && pm.Channel.GuildId == guildId)
+                .FirstOrDefaultAsync();
 
             if (pinnedEntry == null)
-                return NotFound(new { Message = "Message is not pinned." });
+                return NotFound();
 
             _context.Remove(pinnedEntry);
             await _context.SaveChangesAsync();
 
             return Ok();
         }
+
         [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/pinned")]
-        public async Task<IActionResult> GetPinnedMessages([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId)
+        public async Task<IActionResult> GetPinnedMessages(string guildId, string channelId)
         {
             var userId = UserId!;
-            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
-            if (!userExists)
-            {
+
+            var isValid = await (
+                from member in _context.GuildMembers
+                join channel in _context.Channels on guildId equals channel.GuildId
+                where member.User.UserId == userId
+                    && member.GuildId == guildId
+                    && channel.ChannelId == channelId
+                select member
+            ).AnyAsync();
+
+            if (!isValid)
                 return NotFound();
-            }
 
             var pinnedMessages = await _context.Set<ChannelPinnedMessage>()
                 .Where(pm => pm.ChannelId == channelId)
@@ -1033,13 +1028,7 @@ namespace LiventCord.Controllers
                 .Select(pm => pm.Message)
                 .ToListAsync();
 
-            var response = new
-            {
-                messages = pinnedMessages,
-                guildId
-            };
-
-            return Ok(response);
+            return Ok(new { messages = pinnedMessages, guildId });
         }
 
 
