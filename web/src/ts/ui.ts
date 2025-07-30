@@ -176,7 +176,6 @@ export function handleResize() {
       }
     }
   } else {
-    console.log(isUsersOpenGlobal);
     if (isOnMePage) {
       if (activityList) {
         enableElement(activityList);
@@ -275,8 +274,6 @@ export function setInactiveIcon() {
 }
 
 //Generic
-
-let errorCount = 0;
 
 function createPopupContent(
   includeCancel = false,

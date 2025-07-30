@@ -49,7 +49,8 @@ import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
   appendToMessageContextList,
-  editMessageOnContextList
+  editMessageOnContextList,
+  togglePin
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
@@ -123,15 +124,15 @@ export function addChatMentionListeners() {
         const isTextChannel =
           cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
         store.dispatch("selectChannel", {
-          channelId: channelId,
-          isTextChannel: isTextChannel
+          channelId,
+          isTextChannel
         });
 
         changeChannel({
           guildId: currentGuildId,
-          channelId: channelId,
-          channelName: channelName,
-          isTextChannel: isTextChannel
+          channelId,
+          channelName,
+          isTextChannel
         });
         return;
       }
@@ -388,6 +389,7 @@ let isFetchingOldMessages = false;
 let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
+  console.log(isReachedChannelEnd, isOnMePage, stopFetching);
   if (isReachedChannelEnd || isOnMePage || stopFetching) {
     return;
   }
@@ -408,27 +410,39 @@ async function getOldMessagesOnScroll() {
   }, 1000);
 }
 export async function handleScroll() {
-  if (loadingScreen && loadingScreen.style.display === "flex") {
+  if (loadingScreen?.style.display === "flex") {
+    console.log("Not fetching: loading screen is visible");
     return;
   }
+
   const buffer = 10;
   const scrollPosition = chatContainer.scrollTop;
   const isAtTop = scrollPosition <= buffer;
+  const hasMessages = chatContent.children.length > 0;
 
-  if (isAtTop && !isFetchingOldMessages && chatContent.children.length > 0) {
-    isFetchingOldMessages = true;
-    console.log("Fetching old messages...");
+  if (!(isAtTop && !isFetchingOldMessages && hasMessages)) {
+    const reasons = [];
+    if (!isAtTop) reasons.push(`not at top (scroll = ${scrollPosition})`);
+    if (isFetchingOldMessages) reasons.push("already fetching");
+    if (!hasMessages) reasons.push("no messages");
+    console.log("Not fetching:", reasons.join(", "));
+    return;
+  }
 
-    try {
-      const updatedScrollPosition = chatContainer.scrollTop;
-      if (updatedScrollPosition <= buffer) {
-        await getOldMessagesOnScroll();
-      }
-    } catch (error) {
-      console.error("Error fetching old messages:", error);
+  isFetchingOldMessages = true;
+  console.log("Fetching old messages...");
+
+  try {
+    if (chatContainer.scrollTop <= buffer) {
+      await getOldMessagesOnScroll();
+    } else {
+      console.log("Scroll moved before fetch triggered, skipping fetch");
     }
+  } catch (error) {
+    console.error("Error fetching old messages:", error);
   }
 }
+
 const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
@@ -475,7 +489,6 @@ function loadObservedContent(targetElement: HTMLElement) {
     if (isChatScrollNearBottom()) {
       chatContent.scrollTop = chatContent.scrollHeight;
     }
-    chatContent;
   }
 }
 export interface NewMessageResponse {
@@ -520,8 +533,6 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
   const { messages: history, oldestMessageDate } = data;
 
   if (!Array.isArray(history) || history.length === 0) {
-    isReachedChannelEnd = true;
-    displayStartMessage();
     return;
   }
 
@@ -551,6 +562,7 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
       }
     }
   });
+  isFetchingOldMessages = false;
 
   fetchReplies(history, repliesList);
 
@@ -680,6 +692,11 @@ export function openMediaPanel(type: string) {
     }, 0);
   }
   if (type === "pins") {
+    apiClient.send(EventType.GET_PINNED_MESSAGES, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
+
     setTimeout(() => {
       disableElement(chatContent);
       const panelWrapper = document.querySelector(".panel-wrapper");
@@ -703,47 +720,51 @@ export function openMediaPanel(type: string) {
   }
 }
 
-export function handleHistoryResponse(data: NewMessageResponse) {
-  const { messages, channelId, guildId, oldestMessageDate } = data;
-
+export function handleHistoryResponse(
+  data: NewMessageResponse,
+  _chatContainer?: HTMLElement
+) {
+  const { messages, guildId, oldestMessageDate } = data;
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
   }
+  if (!_chatContainer) _chatContainer = chatContent;
+  const isChatContainer = _chatContainer === chatContent;
+  if (isChatContainer) {
+    isLastMessageStart = false;
+    clearMessagesCache();
+    chatContent.innerHTML = "";
+    if (!Array.isArray(messages) || messages.length === 0) {
+      displayStartMessage();
+      return;
+    }
 
-  isLastMessageStart = false;
-  clearMessagesCache();
-  chatContent.innerHTML = "";
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    displayStartMessage();
-    return;
+    if (guildId) {
+      cacheInterface.setMessages(guildId, guildId, messages);
+    }
   }
 
-  validateChannelAndGuild(channelId, guildId);
-
-  if (guildId) {
-    cacheInterface.setMessages(guildId, guildId, messages);
-  }
-
-  processMessages(messages, oldestMessageDate);
+  processMessages(_chatContainer, messages, oldestMessageDate);
 }
 
-function processMessages(messages: any[], oldestMessageDate?: string | null) {
+function processMessages(
+  chatContainer: HTMLElement,
+  messages: any[],
+  oldestMessageDate?: string | null
+) {
   const firstMessageDateOnChannel = oldestMessageDate
     ? new Date(oldestMessageDate)
     : null;
   const repliesList = new Set<string>();
   const wasAtBottom = isScrolledToBottom();
-  chatContainer.style.overflow = "hidden";
-
   messages.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
   for (const msgData of messages) {
     const msg = new Message(msgData);
-    const foundReply = displayChatMessage(msg);
+    const foundReply = displayChatMessage(msg, chatContainer);
 
     if (foundReply) {
       repliesList.add(msg.messageId);
@@ -846,23 +867,6 @@ function setupScrollHandling(wasAtBottom: boolean) {
   }, 200);
 }
 
-function validateChannelAndGuild(channelId: string, guildId?: string) {
-  if (guildId && guildId !== currentGuildId) {
-    console.warn(
-      "History guild ID is different from current guild",
-      guildId,
-      currentGuildId
-    );
-  }
-  if (channelId !== guildCache.currentChannelId) {
-    console.warn(
-      "History channel ID is different from current channel",
-      channelId,
-      guildCache.currentChannelId
-    );
-  }
-}
-
 function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
   return Array.from(mediaElements).map((media) => {
     if (media instanceof HTMLImageElement && !media.complete) {
@@ -879,7 +883,7 @@ function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
     return Promise.resolve();
   });
 }
-function createDateBar(currentDate: string) {
+function createDateBar(container: HTMLElement, currentDate: string) {
   const formattedDate = new Date(currentDate).toLocaleDateString(
     translations.getLocale(),
     {
@@ -893,7 +897,7 @@ function createDateBar(currentDate: string) {
     className: "dateBar",
     textContent: formattedDate
   });
-  chatContent.appendChild(datebar);
+  container.appendChild(datebar);
 }
 export function createProfileImageChat(
   newMessage: HTMLElement,
@@ -1049,10 +1053,14 @@ function editChatMessage(data: EditMessageResponse): void {
   updateMessageContent(messageContentElement, content);
   addEditedIndicator(messageContentElement);
 }
-function displayChatMessage(data: Message): HTMLElement | null {
+function displayChatMessage(
+  data: Message,
+  chatContainer?: HTMLElement
+): HTMLElement | null {
   if (!data || !isValidMessage(data)) {
     return null;
   }
+  if (!chatContainer) chatContainer = chatContent;
 
   const {
     messageId,
@@ -1072,7 +1080,7 @@ function displayChatMessage(data: Message): HTMLElement | null {
     isNotSent,
     replyOf
   } = data;
-  if (currentMessagesCache[messageId]) {
+  if (chatContainer === chatContent && currentMessagesCache[messageId]) {
     return null;
   }
   if (!channelId || !date) {
@@ -1110,6 +1118,7 @@ function displayChatMessage(data: Message): HTMLElement | null {
     );
   } else {
     isCreatedProfile = handleRegularMessage(
+      chatContainer,
       newMessage,
       messageContentElement,
       nick,
@@ -1146,7 +1155,7 @@ function displayChatMessage(data: Message): HTMLElement | null {
   }
 
   updateSenderAndButtons(newMessage, userId, addToTop);
-  appendMessageToChat(newMessage, addToTop, isCreatedProfile);
+  appendMessageToChat(newMessage, chatContainer, addToTop, isCreatedProfile);
 
   if (userId === CLYDE_ID) {
     handleClyde(newMessage, messageContentElement);
@@ -1325,6 +1334,7 @@ function handleAddToTop(
 }
 
 function handleRegularMessage(
+  container: HTMLElement,
   newMessage: HTMLElement,
   messageContentElement: HTMLElement,
   nick: string,
@@ -1337,17 +1347,28 @@ function handleRegularMessage(
   const MILLISECONDS_IN_A_SECOND = 1000;
   const MINIMUM_TIME_GAP_IN_SECONDS = 300;
 
+  if (!container.dataset.lastSenderID) container.dataset.lastSenderID = "";
+  if (!container.dataset.bottomestChatDateStr)
+    container.dataset.bottomestChatDateStr = "";
+  if (!container.dataset.lastMessageDate)
+    container.dataset.lastMessageDate = "";
+
   const currentDateNumber = new Date(date).setHours(0, 0, 0, 0);
-  if (!lastMessageDate || lastMessageDate.getTime() !== currentDateNumber) {
-    createDateBar(new Date(currentDateNumber).toISOString());
-    lastMessageDate = new Date(currentDateNumber);
+  if (
+    !container.dataset.lastMessageDate ||
+    Number(container.dataset.lastMessageDate) !== currentDateNumber
+  ) {
+    createDateBar(container, new Date(currentDateNumber).toISOString());
+    container.dataset.lastMessageDate = currentDateNumber.toString();
   }
 
+  const previousDateStr = container.dataset.bottomestChatDateStr || date;
   const difference =
-    Math.abs(
-      new Date(bottomestChatDateStr).getTime() - new Date(date).getTime()
-    ) / MILLISECONDS_IN_A_SECOND;
+    Math.abs(new Date(previousDateStr).getTime() - new Date(date).getTime()) /
+    MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
+
+  const lastSenderID = container.dataset.lastSenderID;
 
   if (!lastSenderID || isTimeGap || replyToId) {
     createProfileImageChat(
@@ -1374,7 +1395,10 @@ function handleRegularMessage(
       createNonProfileImage(newMessage, date);
     }
   }
-  bottomestChatDateStr = date.toString();
+
+  container.dataset.bottomestChatDateStr = date.toString();
+  container.dataset.lastSenderID = userId;
+
   return true;
 }
 
@@ -1396,14 +1420,15 @@ function updateSenderAndButtons(
 
 function appendMessageToChat(
   newMessage: HTMLElement,
+  chatContainer: HTMLElement,
   addToTop: boolean,
   isCreatedProfile: boolean
 ) {
   if (addToTop) {
-    chatContent.insertBefore(newMessage, chatContent.firstChild);
+    chatContainer.insertBefore(newMessage, chatContainer.firstChild);
     chatContainer.scrollTop = chatContainer.scrollTop + newMessage.clientHeight;
   } else {
-    chatContent.appendChild(newMessage);
+    chatContainer.appendChild(newMessage);
     const previousSibling = newMessage.previousElementSibling;
     if (previousSibling) {
       const previousMsgContent = previousSibling.querySelector(
@@ -1886,5 +1911,24 @@ export function displayStartMessage(
 
     chatContent.insertBefore(message, chatContent.firstChild);
     setIsLastMessageStart(true);
+  }
+}
+
+export function goToMessage(messageId: string) {
+  const msg = getId(messageId) as HTMLElement;
+  if (!msg) return;
+  togglePin();
+
+  if (msg) {
+    scrollToMessage(msg);
+  } else {
+    const message = cacheInterface.getMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      messageId
+    );
+    if (message) {
+      fetchReplies([message], new Set<string>(), true);
+    }
   }
 }

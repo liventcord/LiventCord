@@ -305,6 +305,16 @@ apiClient.on(EventType.GET_HISTORY_DM, (data: DMHistoryResponse) => {
   handleHistoryResponse(data);
 });
 
+apiClient.on(EventType.GET_PINNED_MESSAGES, (data: DMHistoryResponse) => {
+  const pinContainer = getId("pin-container");
+  if (!pinContainer) return;
+  if (pinContainer.children.length === 0) {
+    pinContainer.innerHTML =
+      "<h3 style='flex-direction:column; align-items: center; display:flex; ' >Pinned Messages</h3>";
+  }
+  handleHistoryResponse(data, pinContainer);
+});
+
 interface MessageDatesResponse {
   messageId: string;
   messageDate: Date;

@@ -528,7 +528,7 @@ namespace LiventCord.Controllers
 
             var messages = await query
                 .OrderByDescending(m => m.Date)
-                .Take(25)
+                .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -943,6 +943,103 @@ namespace LiventCord.Controllers
                 .ToListAsync();
 
             return Ok(new { attachments = channelAttachments, count = totalAttachmentsCountForChannel });
+        }
+
+        [Authorize]
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/pin")]
+        public async Task<IActionResult> PinMessage([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId, [IdLengthValidation][FromRoute] string messageId)
+        {
+
+            var userId = UserId!;
+            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
+            var canManageMessages = await _permissionsController.CanManageMessages(userId, guildId);
+            if (!canManageMessages)
+            {
+                return Forbid();
+            }
+
+            var message = await _context.Messages
+                .Include(m => m.Channel)
+                .FirstOrDefaultAsync(m => m.MessageId == messageId);
+
+            if (message == null)
+                return NotFound(new { Message = "Message not found." });
+
+            var exists = await _context.Set<ChannelPinnedMessage>()
+                .AnyAsync(pm => pm.MessageId == messageId && pm.ChannelId == message.ChannelId);
+
+            if (exists)
+                return Conflict(new { Message = "Message is already pinned." });
+
+            var pinnedEntry = new ChannelPinnedMessage
+            {
+                MessageId = messageId,
+                ChannelId = message.ChannelId,
+                PinnedByUserId = userId,
+                PinnedAt = DateTime.UtcNow
+            };
+
+            _context.Add(pinnedEntry);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+        [Authorize]
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/unpin")]
+        public async Task<IActionResult> UnpinMessage([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId, [IdLengthValidation][FromRoute] string messageId)
+        {
+            var userId = UserId!;
+            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
+            var canManageMessages = await _permissionsController.CanManageMessages(userId, guildId);
+            if (!canManageMessages)
+            {
+                return Forbid();
+            }
+
+            var pinnedEntry = await _context.Set<ChannelPinnedMessage>()
+                .FirstOrDefaultAsync(pm => pm.MessageId == messageId);
+
+            if (pinnedEntry == null)
+                return NotFound(new { Message = "Message is not pinned." });
+
+            _context.Remove(pinnedEntry);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+        [Authorize]
+        [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/pinned")]
+        public async Task<IActionResult> GetPinnedMessages([IdLengthValidation][FromRoute] string guildId, [IdLengthValidation][FromRoute] string channelId)
+        {
+            var userId = UserId!;
+            bool userExists = await _context.DoesMemberExistInGuild(userId, guildId);
+            if (!userExists)
+            {
+                return NotFound();
+            }
+
+            var pinnedMessages = await _context.Set<ChannelPinnedMessage>()
+                .Where(pm => pm.ChannelId == channelId)
+                .Include(pm => pm.Message)
+                .OrderByDescending(pm => pm.PinnedAt)
+                .Select(pm => pm.Message)
+                .ToListAsync();
+
+            var response = new
+            {
+                messages = pinnedMessages,
+                guildId
+            };
+
+            return Ok(response);
         }
 
 

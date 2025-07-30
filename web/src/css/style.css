@@ -2378,3 +2378,7 @@ h2 {
   background-color: #2a2a2a;
   color: #ffffff;
 }
+
+#pin-container > div {
+  top: 0px;
+}

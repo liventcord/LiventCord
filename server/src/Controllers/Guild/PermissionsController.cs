@@ -32,6 +32,10 @@ namespace LiventCord.Controllers
             => await CheckPermission(userId, guildId, PermissionFlags.ManageGuild);
 
         [NonAction]
+        public async Task<bool> CanManageMessages(string userId, string guildId)
+            => await CheckPermission(userId, guildId, PermissionFlags.ManageMessages);
+
+        [NonAction]
         public async Task<bool> CanInvite(string userId, string guildId)
             => await CheckPermission(userId, guildId, PermissionFlags.CanInvite);
 

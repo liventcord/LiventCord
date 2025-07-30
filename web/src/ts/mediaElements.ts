@@ -674,7 +674,7 @@ export function handleLink(
     content = content.replace(existingTextNode.textContent || "", "");
   }
 
-  while ((match = urlPattern.exec(content)) != null) {
+  while ((match = urlPattern.exec(content)) !== null) {
     const url = match[0];
 
     if (seenUrls.has(url)) {

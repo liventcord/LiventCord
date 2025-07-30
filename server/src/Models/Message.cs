@@ -44,6 +44,8 @@ namespace LiventCord.Models
         public virtual Channel Channel { get; set; } = null!;
 
         public List<Embed> Embeds { get; set; } = new();
+        public ICollection<ChannelPinnedMessage> PinnedInChannels { get; set; } = new List<ChannelPinnedMessage>();
+
 
     }
     public class Attachment
@@ -63,7 +65,20 @@ namespace LiventCord.Models
 
         [JsonIgnore]
         public Message Message { get; set; } = null!;
+
     }
+
+    public class ChannelPinnedMessage
+    {
+        public string ChannelId { get; set; } = null!;
+        public string MessageId { get; set; } = null!;
+        public string? PinnedByUserId { get; set; }
+        public DateTime PinnedAt { get; set; }
+
+        public Channel Channel { get; set; } = null!;
+        public Message Message { get; set; } = null!;
+    }
+
 
 
 }

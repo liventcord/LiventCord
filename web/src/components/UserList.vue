@@ -84,7 +84,7 @@
       v-else-if="selectedPanelType === 'pins'"
       class="user-table-wrapper panel-wrapper"
     >
-      <div class="placeholder-box">No Pinned messages</div>
+      <div id="pin-container"></div>
     </div>
 
     <div
@@ -154,13 +154,10 @@ import {
 import { apiClient } from "../ts/api.ts";
 import { createTooltip } from "../ts/tooltip.ts";
 import MediaGrid from "./MediaGrid.vue";
-const selectedPanelType = ref("media");
-const isMediaPanelTeleported = ref(false);
-const isFirstRender = ref(true);
-const hasTeleportedOnce = ref(false);
 const shouldTeleportMediaPanel = computed(
   () => isMediaPanelTeleported && selectedPanelType.value === "media"
 );
+const isFirstRender = ref(true);
 
 const mediaWrapperClasses = computed(() => {
   return props.attachments && props.attachments.length > 0
@@ -223,36 +220,26 @@ const filteredPanelButtons = computed(() => {
   });
 });
 
+import {
+  handlePanelButtonClickExternal,
+  hasTeleportedOnce,
+  isMediaPanelTeleported,
+  selectedPanelType
+} from "../ts/panelHandler.ts";
+
 function handlePanelButtonClick(type: string) {
-  const isSameType = selectedPanelType.value === type;
-
-  if (type === "media") {
-    if (!hasTeleportedOnce.value) {
-      isMediaPanelTeleported.value = true;
-      hasTeleportedOnce.value = true;
-      selectedPanelType.value = type;
-      setTimeout(() => openMediaPanel(type), 100);
-      return;
+  handlePanelButtonClickExternal(
+    type,
+    {
+      selectedPanelType,
+      isMediaPanelTeleported,
+      hasTeleportedOnce
+    },
+    {
+      openMediaPanel,
+      closeMediaPanel
     }
-
-    if (isSameType) {
-      selectedPanelType.value = "";
-      isMediaPanelTeleported.value = false;
-      closeMediaPanel();
-    } else {
-      selectedPanelType.value = type;
-      isMediaPanelTeleported.value = true;
-      setTimeout(() => openMediaPanel(type), 100);
-    }
-  } else {
-    isMediaPanelTeleported.value = false;
-    selectedPanelType.value = isSameType ? "" : type;
-    if (!isSameType) {
-      setTimeout(() => openMediaPanel(type), 100);
-    } else {
-      closeMediaPanel();
-    }
-  }
+  );
 }
 
 const store = useStore();

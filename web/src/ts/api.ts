@@ -64,7 +64,10 @@ export const EventType = Object.freeze({
   GET_BULK_REPLY: "GET_BULK_REPLY",
   UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
   GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
-  READ_MESSAGE: "READ_MESSAGE"
+  READ_MESSAGE: "READ_MESSAGE",
+  PIN_MESSAGE: "PIN_MESSAGE",
+  GET_PINNED_MESSAGES: "GET_PINNED_MESSAGES",
+  UNPIN_MESSAGE: "UNPIN_MESSAGE"
 } as const);
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -129,7 +132,10 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   DELETE_EMOJI: HttpMethod.DELETE,
   UPLOAD_GUILD_IMAGE: HttpMethod.POST,
   UPLOAD_PROFILE_IMAGE: HttpMethod.POST,
-  UPLOAD_EMOJI_IMAGE: HttpMethod.POST
+  UPLOAD_EMOJI_IMAGE: HttpMethod.POST,
+  GET_PINNED_MESSAGES: HttpMethod.GET,
+  PIN_MESSAGE: HttpMethod.POST,
+  UNPIN_MESSAGE: HttpMethod.POST
 };
 
 const EventUrlMap: Record<EventType, string> = {
@@ -180,7 +186,11 @@ const EventUrlMap: Record<EventType, string> = {
   DELETE_MESSAGE_DM: "/dms/channels/{friendId}/messages/{messageId}",
   DELETE_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
-
+  PIN_MESSAGE:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}/pin",
+  UNPIN_MESSAGE:
+    "/guilds/{guildId}/channels/{channelId}/messages/{messageId}/unpin",
+  GET_PINNED_MESSAGES: "/guilds/{guildId}/channels/{channelId}/messages/pinned",
   CHANGE_NICK: "/nicks",
   LEAVE_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
   JOIN_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",

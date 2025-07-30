@@ -19,16 +19,29 @@ import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser, askUser } from "./ui.ts";
-import { cacheInterface } from "./cache.ts";
+import { cacheInterface, guildCache } from "./cache.ts";
 import { copyText } from "./tooltip.ts";
 import { convertToEditUi, deleteMessage } from "./message.ts";
-import { scrollToMessage } from "./chat.ts";
+import {
+  openMediaPanel,
+  scrollToMessage,
+  closeMediaPanel,
+  goToMessage
+} from "./chat.ts";
+import {
+  selectedPanelType,
+  isMediaPanelTeleported,
+  hasTeleportedOnce,
+  handlePanelButtonClickExternal
+} from "./panelHandler.ts";
+
 import {
   createDeleteChannelPrompt,
   openSettings,
   SettingType
 } from "./settingsui.ts";
 import { changeChannel } from "./channels.ts";
+import { apiClient, EventType } from "./api.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
@@ -85,6 +98,7 @@ const MessagesActionType = {
   ADD_REACTION: "ADD_REACTION",
   EDIT_MESSAGE: "EDIT_MESSAGE",
   PIN_MESSAGE: "PIN_MESSAGE",
+  GO_TO_MESSAGE: "GO_TO_MESSAGE",
   REPLY: "REPLY",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
   DELETE_MESSAGE: "DELETE_MESSAGE",
@@ -111,8 +125,12 @@ function openEditMessage(messageId: string) {
   }
 }
 
-export function pinMessage(messageId: string) {
-  alertUser("Not implemented: Pinning message ");
+export async function pinMessage(messageId: string) {
+  await apiClient.send(EventType.PIN_MESSAGE, {
+    guildId: currentGuildId,
+    channelId: guildCache.currentChannelId,
+    messageId
+  });
 }
 
 function markAsUnread(messageId: string) {
@@ -173,7 +191,18 @@ function muteUser(userId: string) {}
 function deafenUser(userId: string) {}
 
 export function togglePin() {
-  alertUser("Not implemented: Pin");
+  handlePanelButtonClickExternal(
+    "pins",
+    {
+      selectedPanelType,
+      isMediaPanelTeleported,
+      hasTeleportedOnce
+    },
+    {
+      openMediaPanel,
+      closeMediaPanel
+    }
+  );
 }
 function mentionUser(userId: string) {
   appendMemberMentionToInput(userId, true);
@@ -465,7 +494,6 @@ function createMessageContext(messageId: string, userId: string) {
       action: () => openEditMessage(messageId)
     };
   }
-
   if (
     permissionManager.canManageMessages() ||
     (isOnDm && userId === currentUserId)
@@ -475,6 +503,10 @@ function createMessageContext(messageId: string, userId: string) {
       action: () => pinMessage(messageId)
     };
   }
+  context[MessagesActionType.GO_TO_MESSAGE] = {
+    label: MessagesActionType.GO_TO_MESSAGE,
+    action: () => goToMessage(messageId)
+  };
 
   context[MessagesActionType.REPLY] = {
     label: MessagesActionType.REPLY,
