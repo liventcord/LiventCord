@@ -25,10 +25,16 @@ import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
-import { Attachment } from "./message.ts";
+import { Attachment, Metadata } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import { apiClient } from "./api.ts";
-import { currentAttachments } from "./chat.ts";
+import { changeChannelWithId, currentAttachments } from "./chat.ts";
+import { deletedUser, userManager } from "./user.ts";
+import { translations } from "./translations.ts";
+import { togglePin } from "./contextMenuActions.ts";
+import { createMentionProfilePop } from "./popups.ts";
+import { cacheInterface, guildCache } from "./cache.ts";
+import { currentGuildId } from "./guild.ts";
 
 interface Embed {
   id: string;
@@ -360,7 +366,8 @@ export async function createMediaElement(
   content: string,
   messageContentElement: HTMLElement,
   newMessage: HTMLElement,
-  metadata: MetaData,
+  metaData: MetaData,
+  metadata: Metadata,
   embeds: Embed[],
   senderId: string,
   date: Date,
@@ -384,7 +391,7 @@ export async function createMediaElement(
           messageContentElement,
           embed,
           "",
-          metadata,
+          metaData,
           senderId,
           date
         );
@@ -404,6 +411,7 @@ export async function createMediaElement(
             attachment,
             messageContentElement,
             content,
+            metaData,
             metadata,
             embeds,
             senderId,
@@ -438,6 +446,7 @@ export async function createMediaElement(
           null,
           messageContentElement,
           content,
+          metaData,
           metadata,
           embeds,
           senderId,
@@ -511,7 +520,8 @@ function processMediaLink(
   attachment: Attachment | null,
   messageContentElement: HTMLElement,
   content: string,
-  metadata: MetaData,
+  metaData: MetaData,
+  metadata: Metadata,
   embeds: Embed[],
   senderId: string,
   date: Date,
@@ -583,7 +593,12 @@ function processMediaLink(
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
-      handleLink(messageContentElement, content, isSystemMessage);
+      handleLink(
+        messageContentElement,
+        content,
+        isSystemMessage,
+        metaData as any
+      );
       if (doesMessageHasProxyiedLink(link)) {
         mediaElement = createImageElement(
           attachment?.fileName ?? "",
@@ -648,46 +663,69 @@ function attachMediaElement(
   }
   messageContentElement.appendChild(mediaElement);
 }
-export function handleLink(
+
+export async function handleLink(
   messageContentElement: HTMLElement,
   content: string,
-  isSystemMessage: boolean = false
+  isSystemMessage: boolean = false,
+  metadata?: Metadata
+) {
+  messageContentElement.innerHTML = "";
+
+  if (isSystemMessage && metadata?.type === "pin_notification") {
+    content = await buildPinSystemMessage(metadata);
+  }
+
+  renderContent(messageContentElement, content, isSystemMessage);
+
+  if (isSystemMessage) {
+    bindSystemMessageLinks(messageContentElement, metadata);
+    messageContentElement.classList.add("system-message-container");
+  }
+
+  messageContentElement.dataset.contentLoaded = "true";
+  setupEmojiListeners();
+}
+
+async function buildPinSystemMessage(metadata: Metadata): Promise<string> {
+  const nickname = !metadata.pinnerUserId
+    ? deletedUser
+    : await userManager.getUserNick(metadata.pinnerUserId);
+  const pinnedAtDate = new Date(metadata.pinnedAt ? metadata.pinnedAt : "");
+  const locale = translations.getLocale();
+  const formattedDate = pinnedAtDate.toLocaleString(locale, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `<a href="#" id="pinner-name" class="pinner-name-link">${nickname}</a> pinned a message to <a href="#" id="channel-link" class="channel-link">this channel</a>. <a href="#" id="see-all-pinned" class="see-all-pinned-link">See all pinned messages</a> — ${formattedDate}`;
+}
+
+function renderContent(
+  container: HTMLElement,
+  content: string,
+  isSystemMessage: boolean
 ) {
   const urlPattern = /https?:\/\/[^\s<>"']+/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-  const seenUrls = new Set();
-
-  const prependToMessage = (el: HTMLElement | DocumentFragment) => {
-    messageContentElement.insertBefore(el, messageContentElement.firstChild);
-  };
+  const seenUrls = new Set<string>();
 
   const insertTextOrHTML = (text: string) => {
-    if (!text.trim()) {
-      return;
-    }
+    if (!text.trim()) return;
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span", { innerHTML: replaced });
-
-    if (isSystemMessage) {
-      span.classList.add("system-message");
-    }
-
-    setupEmojiListeners();
-    prependToMessage(span);
+    if (isSystemMessage) span.classList.add("system-message");
+    container.appendChild(span);
   };
-
-  const fragment = document.createDocumentFragment();
-
-  const existingTextNode = messageContentElement.firstChild;
-  if (existingTextNode && existingTextNode.nodeType === Node.TEXT_NODE) {
-    content = content.replace(existingTextNode.textContent || "", "");
-  }
 
   while ((match = urlPattern.exec(content)) !== null) {
     const url = match[0];
-
     if (seenUrls.has(url)) {
+      lastIndex = match.index + url.length;
       continue;
     }
     seenUrls.add(url);
@@ -695,40 +733,62 @@ export function handleLink(
     const start = match.index;
     const end = start + url.length;
 
-    if (start > lastIndex) {
-      const text = content.slice(lastIndex, start);
-      insertTextOrHTML(text);
-    }
+    if (start > lastIndex) insertTextOrHTML(content.slice(lastIndex, start));
 
-    const urlLink = createEl("a", { textContent: url });
-    urlLink.classList.add("url-link");
+    const urlLink = createEl("a", {
+      textContent: url,
+      href: url,
+      className: "url-link"
+    });
 
-    if (isSystemMessage) {
-      urlLink.classList.add("system-message-link");
-    }
+    urlLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      openExternalUrl(url);
+    });
 
-    urlLink.addEventListener("click", () => openExternalUrl(url));
-    prependToMessage(urlLink);
-
+    container.appendChild(urlLink);
     lastIndex = end;
   }
 
   if (lastIndex < content.length) {
-    const remainingText = content.slice(lastIndex);
-    insertTextOrHTML(remainingText);
+    insertTextOrHTML(content.slice(lastIndex));
   }
+}
+function bindSystemMessageLinks(container: HTMLElement, metadata?: Metadata) {
+  if (!container.parentElement) return;
 
-  messageContentElement.insertBefore(
-    fragment,
-    messageContentElement.firstChild
+  const m = cacheInterface.getMessage(
+    currentGuildId,
+    guildCache.currentChannelId,
+    container.parentElement.id
   );
-  messageContentElement.dataset.contentLoaded = "true";
 
-  if (isSystemMessage) {
-    messageContentElement.classList.add("system-message-container");
+  const events: [string, () => void][] = [
+    ["#see-all-pinned", togglePin],
+    [
+      "#pinner-name",
+      () => {
+        if (metadata?.pinnerUserId)
+          createMentionProfilePop(container, metadata.pinnerUserId);
+      }
+    ],
+    [
+      "#channel-link",
+      () => {
+        if (m?.channelId) changeChannelWithId(m.channelId);
+      }
+    ]
+  ];
+
+  for (const [selector, handler] of events) {
+    const el = container.querySelector(selector);
+    if (el) {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        handler();
+      });
+    }
   }
-
-  setupEmojiListeners();
 }
 
 function applyBorderColor(element: HTMLElement, decimalColor: number) {

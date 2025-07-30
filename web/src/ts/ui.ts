@@ -3,7 +3,6 @@ import DOMPurify from "dompurify";
 
 import {
   activityList,
-  isUsersOpenGlobal,
   setUserListLine,
   toggleUsersList,
   userLine,
@@ -63,7 +62,6 @@ import {
 } from "./mediaElements.ts";
 import { selfName, setProfilePic } from "./avatar.ts";
 import { createTooltip } from "./tooltip.ts";
-import { pinMessage } from "./contextMenuActions.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
 import { setWidths } from "./channels.ts";
@@ -1523,10 +1521,6 @@ export function initialiseMobile() {
   }
 }
 function initialiseListeners() {
-  const tbPinMessage = getId("tb-pin");
-  tbPinMessage?.addEventListener("click", () => {
-    pinMessage("");
-  });
   const tbHamburger = getId("tb-hamburger");
   tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
   mobileBlackBg.addEventListener("click", () => {

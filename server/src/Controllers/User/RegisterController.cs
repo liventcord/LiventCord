@@ -116,6 +116,25 @@ namespace LiventCord.Controllers
             return user;
         }
 
+        public async Task EnsureSystemUserExistsAsync()
+        {
+            var systemUserId = Utils.SystemId;
+            if (!_context.Users.Any(u => u.UserId == systemUserId))
+            {
+                var systemUser = Models.User.Create(
+                    systemUserId,
+                    "system@liventcord.com",
+                    "System",
+                    "0000",
+                    Utils.CreateRandomUserId(),
+                    _passwordHasher
+                );
+                _context.Users.Add(systemUser);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+
 
 
 

@@ -908,12 +908,15 @@ class PinnedMessagesCache {
         const messages = channels[channelId].messages;
         const index = messages.findIndex((msg) => msg.messageId === messageId);
         if (index !== -1) {
-          messages.splice(index, 1);
+          const [removedMessage] = messages.splice(index, 1);
           if (messages.length === 0) {
             delete channels[channelId];
             if (Object.keys(channels).length === 0) {
               delete this.cachedPinnedMessages[guildId];
             }
+          }
+          if (removedMessage && removedMessage.userId) {
+            appendToMessageContextList(messageId, removedMessage.userId, false);
           }
           return;
         }
@@ -927,7 +930,7 @@ class PinnedMessagesCache {
     }
     this.cachedPinnedMessages[data.guildId][data.channelId] = data;
     data.messages.forEach((m: Message) => {
-      appendToMessageContextList(m.messageId, m.userId);
+      appendToMessageContextList(m.messageId, m.userId, false);
       console.log(messageContextList[m.messageId]);
     });
   }

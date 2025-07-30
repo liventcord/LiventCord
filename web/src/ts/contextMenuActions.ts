@@ -253,8 +253,16 @@ export function appendToChannelContextList(channelId: string) {
   contextList[channelId] = createChannelsContext(channelId);
 }
 
-export function appendToMessageContextList(messageId: string, userId: string) {
-  messageContextList[messageId] = createMessageContext(messageId, userId);
+export function appendToMessageContextList(
+  messageId: string,
+  userId: string,
+  isSystemMessage: boolean
+) {
+  messageContextList[messageId] = createMessageContext(
+    messageId,
+    userId,
+    isSystemMessage
+  );
 }
 
 export function editMessageOnContextList(
@@ -264,7 +272,7 @@ export function editMessageOnContextList(
 ) {
   if (messageContextList[oldId]) {
     delete messageContextList[oldId];
-    messageContextList[newId] = createMessageContext(newId, userId);
+    messageContextList[newId] = createMessageContext(newId, userId, false);
   }
 }
 
@@ -488,50 +496,58 @@ function createChannelsContext(channelId: string) {
   return context;
 }
 
-function createMessageContext(messageId: string, userId: string) {
+function createMessageContext(
+  messageId: string,
+  userId: string,
+  isSystemMessage: boolean
+) {
   const context: { [key: string]: any } = {};
 
   context[MessagesActionType.ADD_REACTION] = {
     label: MessagesActionType.ADD_REACTION,
     action: () => openReactionMenu(messageId)
   };
-
-  if (userId === currentUserId) {
-    context[MessagesActionType.EDIT_MESSAGE] = {
-      label: MessagesActionType.EDIT_MESSAGE,
-      action: () => openEditMessage(messageId)
-    };
-  }
-  if (
-    permissionManager.canManageMessages() ||
-    (isOnDm && userId === currentUserId)
-  ) {
-    const exist = pinnedMessagesCache.doesMessageExist(
-      currentGuildId,
-      guildCache.currentChannelId,
-      messageId
-    );
-
-    if (exist) {
-      context[MessagesActionType.UNPIN_MESSAGE] = {
-        label: MessagesActionType.UNPIN_MESSAGE,
-        action: () => unpinMessage(messageId)
-      };
-    } else {
-      context[MessagesActionType.PIN_MESSAGE] = {
-        label: MessagesActionType.PIN_MESSAGE,
-        action: () => pinMessage(messageId)
+  if (!isSystemMessage) {
+    if (userId === currentUserId) {
+      context[MessagesActionType.EDIT_MESSAGE] = {
+        label: MessagesActionType.EDIT_MESSAGE,
+        action: () => openEditMessage(messageId)
       };
     }
-  }
-  context[MessagesActionType.GO_TO_MESSAGE] = {
-    label: MessagesActionType.GO_TO_MESSAGE,
-    action: () => goToMessage(messageId)
-  };
+    if (
+      permissionManager.canManageMessages() ||
+      (isOnDm && userId === currentUserId)
+    ) {
+      const exist = pinnedMessagesCache.doesMessageExist(
+        currentGuildId,
+        guildCache.currentChannelId,
+        messageId
+      );
 
+      if (exist) {
+        context[MessagesActionType.UNPIN_MESSAGE] = {
+          label: MessagesActionType.UNPIN_MESSAGE,
+          action: () => unpinMessage(messageId)
+        };
+      } else {
+        context[MessagesActionType.PIN_MESSAGE] = {
+          label: MessagesActionType.PIN_MESSAGE,
+          action: () => pinMessage(messageId)
+        };
+      }
+    }
+    context[MessagesActionType.GO_TO_MESSAGE] = {
+      label: MessagesActionType.GO_TO_MESSAGE,
+      action: () => goToMessage(messageId)
+    };
+  }
   context[MessagesActionType.REPLY] = {
     label: MessagesActionType.REPLY,
     action: () => showReplyMenu(messageId, userId)
+  };
+  context[MessagesActionType.COPY_MESSAGE] = {
+    label: MessagesActionType.COPY_MESSAGE,
+    action: (event: MouseEvent) => copyMessage(event, messageId)
   };
 
   context[MessagesActionType.MARK_AS_UNREAD] = {
@@ -539,22 +555,12 @@ function createMessageContext(messageId: string, userId: string) {
     action: () => markAsUnread(messageId)
   };
 
-  context[MessagesActionType.COPY_MESSAGE] = {
-    label: MessagesActionType.COPY_MESSAGE,
-    action: (event: MouseEvent) => copyMessage(event, messageId)
-  };
-
   if (isOnDm) {
-    if (userId === currentUserId) {
-      context[MessagesActionType.DELETE_MESSAGE] = {
-        label: MessagesActionType.DELETE_MESSAGE,
-        action: () => deleteMessagePrompt(messageId)
-      };
-    }
-  } else if (
-    (isOnGuild && userId === currentUserId) ||
-    permissionManager.canManageMessages()
-  ) {
+    context[MessagesActionType.DELETE_MESSAGE] = {
+      label: MessagesActionType.DELETE_MESSAGE,
+      action: () => deleteMessagePrompt(messageId)
+    };
+  } else if (isOnGuild && permissionManager.canManageMessages()) {
     context[MessagesActionType.DELETE_MESSAGE] = {
       label: MessagesActionType.DELETE_MESSAGE,
       action: () => deleteMessagePrompt(messageId)

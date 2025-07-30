@@ -5,7 +5,8 @@ import {
   getMessageDate,
   getOldMessages,
   Message,
-  MessageReply
+  MessageReply,
+  Metadata
 } from "./message.ts";
 import {
   chatInput,
@@ -107,8 +108,24 @@ let isReachedChannelEnd = false;
 export function setReachedChannelEnd(val: boolean) {
   isReachedChannelEnd = val;
 }
+export function changeChannelWithId(channelId: string) {
+  const channelName = cacheInterface.getChannelNameWithoutGuild(channelId);
+  const isTextChannel =
+    cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
+  store.dispatch("selectChannel", {
+    channelId,
+    isTextChannel
+  });
 
-export const CLYDE_ID = "1";
+  changeChannel({
+    guildId: currentGuildId,
+    channelId,
+    channelName,
+    isTextChannel
+  });
+}
+export const CLYDE_ID = "2";
+export const SYSTEM_ID = "1";
 let currentMentionPop: HTMLElement | null;
 export function addChatMentionListeners() {
   chatContainer?.addEventListener("click", async (event) => {
@@ -120,21 +137,7 @@ export function addChatMentionListeners() {
       const userId = target.dataset.userId;
       const channelId = target.dataset.channelId;
       if (channelId) {
-        const channelName =
-          cacheInterface.getChannelNameWithoutGuild(channelId);
-        const isTextChannel =
-          cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
-        store.dispatch("selectChannel", {
-          channelId,
-          isTextChannel
-        });
-
-        changeChannel({
-          guildId: currentGuildId,
-          channelId,
-          channelName,
-          isTextChannel
-        });
+        changeChannelWithId(channelId);
         return;
       }
       if (!userId) return;
@@ -218,7 +221,6 @@ function handleReplyMessage(
       const content = foundReply.dataset.content;
       const attachmentUrls = foundReply.dataset.attachmentUrls;
       if (_messageId && userId) {
-        console.log("Creatingn reply:");
         createReplyBar(
           newMessage,
           messageId,
@@ -261,13 +263,6 @@ export function handleReplies() {
           msg.content,
           attachmentUrls
         );
-        console.log(
-          "Creating reply bar.",
-          replier,
-          message.messageId,
-          msg.userId,
-          msg.content
-        );
       });
     });
   });
@@ -281,7 +276,6 @@ function createReplyBar(
   attachmentUrls: string | string[] | undefined,
   content?: string
 ) {
-  console.log("Create reply bar: ", newMessage, messageId, userId, content);
   if (newMessage.querySelector(".replyBar")) {
     return;
   }
@@ -296,29 +290,45 @@ function createReplyBar(
 
   const nick = userManager.getUserNick(userId);
   replyBar.style.height = "100px";
-  const replyAvatar = createEl("img", {
-    className: "profile-pic reply-avatar",
-    id: userId
-  });
 
-  setProfilePic(replyAvatar, userId);
+  let replyAvatar: HTMLElement;
+
   const replyNick = createEl("span", {
     textContent: nick,
     className: "reply-nick"
   });
 
-  replyAvatar.addEventListener("click", () => {
-    drawProfilePopId(userId);
-  });
-  replyNick.addEventListener("click", () => {
-    drawProfilePopId(userId);
-  });
+  if (userId === SYSTEM_ID) {
+    replyAvatar = createEl("div", {
+      className: "profile-pic reply-avatar",
+      id: userId
+    });
+    replyAvatar.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
+      </svg>
+    `;
+  } else {
+    replyAvatar = createEl("img", {
+      className: "profile-pic reply-avatar",
+      id: userId
+    });
+    setProfilePic(replyAvatar as HTMLImageElement, userId);
+    replyAvatar.addEventListener("click", () => {
+      drawProfilePopId(userId);
+    });
+
+    replyNick.addEventListener("click", () => {
+      drawProfilePopId(userId);
+    });
+  }
 
   const textToWrite = content
     ? content
     : attachmentUrls
       ? attachmentUrls
       : translations.getTranslation("click-to-attachment");
+
   const replyContent = createEl("span", {
     className: "replyContent",
     textContent: textToWrite
@@ -344,6 +354,7 @@ function createReplyBar(
       }
     }
   };
+
   replyBar.appendChild(replyAvatar);
   replyBar.appendChild(replyNick);
   replyBar.appendChild(replyContent);
@@ -390,7 +401,6 @@ let isFetchingOldMessages = false;
 let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
-  console.log(isReachedChannelEnd, isOnMePage, stopFetching);
   if (isReachedChannelEnd || isOnMePage || stopFetching || isMediaPanelOpen()) {
     return;
   }
@@ -422,16 +432,10 @@ export async function handleScroll() {
   const hasMessages = chatContent.children.length > 0;
 
   if (!(isAtTop && !isFetchingOldMessages && hasMessages)) {
-    const reasons = [];
-    if (!isAtTop) reasons.push(`not at top (scroll = ${scrollPosition})`);
-    if (isFetchingOldMessages) reasons.push("already fetching");
-    if (!hasMessages) reasons.push("no messages");
-    console.log("Not fetching:", reasons.join(", "));
     return;
   }
 
   isFetchingOldMessages = true;
-  console.log("Fetching old messages...");
 
   try {
     if (chatContainer.scrollTop <= buffer) {
@@ -454,11 +458,9 @@ const observer = new IntersectionObserver(
           entry.isIntersecting &&
           target.dataset.contentLoaded !== "true"
         ) {
-          setTimeout(() => {
-            loadObservedContent(target);
-            observer.unobserve(target);
-            target.dataset.contentLoaded = "true";
-          }, 100);
+          loadObservedContent(target);
+          observer.unobserve(target);
+          target.dataset.contentLoaded = "true";
         }
       }
     });
@@ -482,16 +484,27 @@ export function observe(element: HTMLElement) {
   observer.observe(element);
 }
 function loadObservedContent(targetElement: HTMLElement) {
+  if (!targetElement.parentElement) return;
   const jsonData = targetElement.dataset.content_observe;
+
   if (jsonData && targetElement.dataset.contentLoaded !== "true") {
     targetElement.dataset.contentLoaded = "true";
-    handleLink(targetElement, jsonData);
+
+    const message = cacheInterface.getMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      targetElement.parentElement.id
+    );
+    const isSystemMessage = message?.isSystemMessage ?? false;
+    const metadata = message?.metadata;
+    handleLink(targetElement, jsonData, isSystemMessage, metadata);
 
     if (isChatScrollNearBottom()) {
       chatContent.scrollTop = chatContent.scrollHeight;
     }
   }
 }
+
 export interface NewMessageResponse {
   guildId?: string;
   isOldMessages: boolean;
@@ -728,7 +741,7 @@ export function handleHistoryResponse(
   data: NewMessageResponse,
   _chatContainer?: HTMLElement
 ) {
-  const { messages, guildId, oldestMessageDate } = data;
+  const { messages, guildId, channelId, oldestMessageDate } = data;
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
@@ -745,7 +758,7 @@ export function handleHistoryResponse(
     }
 
     if (guildId) {
-      cacheInterface.setMessages(guildId, guildId, messages);
+      cacheInterface.setMessages(guildId, channelId, messages);
     }
   }
 
@@ -918,26 +931,50 @@ export function createProfileImageChat(
     console.error("No msg content element. ", replyBar);
     return;
   }
-  const profileImg = createEl("img", {
-    className: "profile-pic",
-    id: userId,
-    style: {
-      width: "40px",
-      height: "40px"
-    }
-  });
 
-  profileImg.dataset.userId = userId;
-  setProfilePic(profileImg, userId);
+  let profileElement: HTMLElement;
+
+  if (userId === SYSTEM_ID) {
+    profileElement = createEl("div", {
+      className: "profile-pic",
+      style: {
+        width: "40px",
+        height: "40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }
+    });
+
+    profileElement.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
+      </svg>
+    `;
+  } else {
+    const profileImg = createEl("img", {
+      className: "profile-pic",
+      id: userId,
+      style: {
+        width: "40px",
+        height: "40px"
+      }
+    });
+
+    profileImg.dataset.userId = userId;
+    setProfilePic(profileImg, userId);
+
+    profileImg.addEventListener("mouseover", () => {
+      profileImg.style.borderRadius = "0px";
+    });
+    profileImg.addEventListener("mouseout", () => {
+      profileImg.style.borderRadius = "25px";
+    });
+
+    profileElement = profileImg;
+  }
 
   appendToProfileContextList(userInfo, userId);
-
-  profileImg.addEventListener("mouseover", () => {
-    profileImg.style.borderRadius = "0px";
-  });
-  profileImg.addEventListener("mouseout", () => {
-    profileImg.style.borderRadius = "25px";
-  });
 
   const authorAndDate = createEl("div", { className: "author-and-date" });
   const nickElement = createEl("span", {
@@ -955,22 +992,19 @@ export function createProfileImageChat(
   authorAndDate.appendChild(dateElement);
 
   if (replyBar) {
-    newMessage.appendChild(profileImg);
+    newMessage.appendChild(profileElement);
     newMessage.appendChild(authorAndDate);
-
     newMessage.appendChild(messageContentElement);
 
     const mediaElement = newMessage.querySelector(".imageElement");
     if (mediaElement) {
       messageContentElement.appendChild(mediaElement);
     }
-    if (replyBar) {
-      newMessage.insertBefore(replyBar, newMessage.firstChild);
-    }
+    newMessage.insertBefore(replyBar, newMessage.firstChild);
     newMessage.classList.add("replier");
   } else {
     if (isAfterDeleting) {
-      newMessage.appendChild(profileImg);
+      newMessage.appendChild(profileElement);
       newMessage.appendChild(authorAndDate);
       newMessage.appendChild(messageContentElement);
       const mediaElement = newMessage.querySelector(".imageElement");
@@ -978,13 +1012,12 @@ export function createProfileImageChat(
         messageContentElement.appendChild(mediaElement);
       }
     } else {
-      newMessage.appendChild(profileImg);
+      newMessage.appendChild(profileElement);
       newMessage.appendChild(authorAndDate);
-
       newMessage.appendChild(messageContentElement);
     }
   }
-  setProfilePic(profileImg, userId);
+
   messageContentElement.classList.add("onsmallprofile");
 }
 
@@ -994,11 +1027,12 @@ export function setLastMessageDate(date: Date) {
 function createOptions3Button(
   message: HTMLElement,
   messageId: string,
-  userId: string
+  userId: string,
+  isSystemMessage: boolean
 ) {
   const button = createMsgOptionButton(message, false);
   button.dataset.m_id = messageId;
-  appendToMessageContextList(messageId, userId);
+  appendToMessageContextList(messageId, userId, isSystemMessage);
 }
 export function addEditedIndicator(
   messageElement: HTMLElement,
@@ -1079,6 +1113,7 @@ function displayChatMessage(
     reactionEmojisIds,
     addToTop,
     metadata,
+    metaData,
     embeds,
     willDisplayProfile,
     isNotSent,
@@ -1095,7 +1130,6 @@ function displayChatMessage(
     return null;
   }
   const nick = userManager.getUserNick(userId);
-
   const newMessage = createMessageElement(
     messageId,
     userId,
@@ -1143,6 +1177,7 @@ function displayChatMessage(
     content,
     messageContentElement,
     newMessage,
+    metaData,
     metadata,
     embeds,
     userId,
@@ -1160,7 +1195,13 @@ function displayChatMessage(
     addEditedIndicator(messageContentElement, lastEdited);
   }
 
-  updateSenderAndButtons(newMessage, userId, addToTop);
+  updateSenderAndButtons(
+    newMessage,
+    userId,
+    addToTop,
+    isSystemMessage,
+    metaData
+  );
   appendMessageToChat(newMessage, chatContainer, addToTop, isCreatedProfile);
 
   if (userId === CLYDE_ID) {
@@ -1233,7 +1274,7 @@ export function handleSelfSentMessage(data: Message) {
           data.content,
           messageContentElement,
           element,
-          data.metadata,
+          data.metaData,
           data.embeds,
           data.attachments
         );
@@ -1245,6 +1286,7 @@ export function handleSelfSentMessage(data: Message) {
             data.content,
             messageContentElement,
             element,
+            data.metaData,
             data.metadata,
             data.embeds,
             data.userId,
@@ -1376,8 +1418,11 @@ function handleRegularMessage(
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
 
   const lastSenderID = container.dataset.lastSenderID;
+  const isNewProfileNeeded: boolean =
+    !lastSenderID || isTimeGap || !!replyToId || lastSenderID !== userId;
 
-  if (!lastSenderID || isTimeGap || replyToId) {
+  const shouldRenderProfile = userId === SYSTEM_ID || isNewProfileNeeded;
+  if (shouldRenderProfile) {
     createProfileImageChat(
       newMessage,
       messageContentElement,
@@ -1388,31 +1433,17 @@ function handleRegularMessage(
       isBot
     );
   } else {
-    if (lastSenderID !== userId || isTimeGap) {
-      createProfileImageChat(
-        newMessage,
-        messageContentElement,
-        nick,
-        userInfo,
-        userId,
-        date,
-        isBot
-      );
-    } else {
-      createNonProfileImage(newMessage, date);
-    }
+    createNonProfileImage(newMessage, date);
   }
-
-  container.dataset.bottomestChatDateStr = date.toString();
-  container.dataset.lastSenderID = userId;
-
-  return true;
+  return shouldRenderProfile;
 }
 
 function updateSenderAndButtons(
   newMessage: HTMLElement,
   userId: string,
-  addToTop: boolean
+  addToTop: boolean,
+  isSystemMessage: boolean,
+  metadata: Metadata
 ) {
   if (!addToTop) {
     lastSenderID = userId;
@@ -1422,7 +1453,7 @@ function updateSenderAndButtons(
   if (userId !== currentUserId) {
     createMsgOptionButton(newMessage, true);
   }
-  createOptions3Button(newMessage, newMessage.id, userId);
+  createOptions3Button(newMessage, newMessage.id, userId, isSystemMessage);
 }
 
 function appendMessageToChat(

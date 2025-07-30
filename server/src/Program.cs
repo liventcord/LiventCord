@@ -246,6 +246,9 @@ app.Lifetime.ApplicationStarted.Register(async () =>
 
         var dedupService = scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
         await dedupService.DeduplicateAsync(CancellationToken.None);
+
+        var userService = scope.ServiceProvider.GetRequiredService<RegisterController>();
+        await userService.EnsureSystemUserExistsAsync();
     }
 });
 

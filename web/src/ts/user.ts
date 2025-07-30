@@ -5,6 +5,7 @@ import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
+import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
 
 export interface Member {
   userId: string;
@@ -123,11 +124,18 @@ class UserManager {
   private userNames: { [userId: string]: UserInfo } = {};
   private readonly isSelfOnline: boolean = false;
   private statusCache: Record<string, Promise<boolean> | boolean> = {};
-
   constructor() {
-    this.userNames["1"] = {
-      userId: "1",
+    this.userNames[CLYDE_ID] = {
+      userId: CLYDE_ID,
       nickName: "Clyde",
+      discriminator: "0000",
+      isBlocked: false,
+      status: "offline",
+      description: ""
+    };
+    this.userNames[SYSTEM_ID] = {
+      userId: SYSTEM_ID,
+      nickName: "System",
       discriminator: "0000",
       isBlocked: false,
       status: "offline",

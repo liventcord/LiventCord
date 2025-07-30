@@ -57,6 +57,7 @@ interface MessageData {
   addToTop?: boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
+  metaData?: any;
   embeds?: any;
   willDisplayProfile?: boolean;
   isNotSent: boolean;
@@ -122,6 +123,7 @@ export class Message {
   isBot: boolean;
   reactionEmojisIds: string[] | undefined;
   addToTop: boolean;
+  metaData: any;
   metadata: any;
   embeds: any;
   willDisplayProfile: boolean;
@@ -143,6 +145,7 @@ export class Message {
     isBot,
     reactionEmojisIds,
     metadata,
+    metaData,
     embeds,
     willDisplayProfile,
     isNotSent: isSent,
@@ -162,6 +165,7 @@ export class Message {
     this.isBot = isBot;
     this.reactionEmojisIds = reactionEmojisIds;
     this.addToTop = addToTop;
+    this.metaData = metadata;
     this.metadata = metadata;
     this.embeds = embeds;
     this.willDisplayProfile = willDisplayProfile || false;
@@ -171,6 +175,12 @@ export class Message {
     this.replies = replies;
   }
 }
+
+export type Metadata = {
+  type?: string;
+  pinnerUserId?: string;
+  pinnedAt?: string;
+};
 
 function createNewMessageFormData(
   temporaryId: string,

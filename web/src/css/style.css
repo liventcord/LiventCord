@@ -720,9 +720,9 @@
   padding-left: 15px;
   padding-top: 10px;
   padding-bottom: 27px;
+  left: 282px;
   color: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #313338;
+  background-color: #1f2023;
   border: none;
   line-height: 20px;
   position: absolute;
@@ -736,11 +736,13 @@
   z-index: 1;
   outline: none;
   resize: none;
-  display: flex;
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  width: calc(100vw - 646px);
+  width: calc(100vw - 540px);
+}
+.system-message a {
+  color: white;
 }
 #reply-info.reply-user-list-open {
   width: calc(100vw - 400px);
@@ -1247,8 +1249,8 @@ body.black-theme .base-user-input {
 }
 #reply-close-button {
   position: absolute;
-  bottom: 52px;
-  right: 360px;
+  bottom: 55px;
+  right: 270px;
   border: none;
   border-radius: 50%;
   z-index: 10;

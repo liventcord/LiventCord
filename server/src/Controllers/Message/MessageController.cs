@@ -979,6 +979,27 @@ namespace LiventCord.Controllers
                 PinnedAt = DateTime.UtcNow
             });
 
+            await NewMessage(Utils.CreateRandomId(), Utils.CreateRandomId(), Utils.SystemId, channelId, guildId, " ", DateTime.UtcNow, null, null, null, null, null);
+
+            var pinNotificationMessage = new Message
+            {
+                MessageId = Utils.CreateRandomId(),
+                ChannelId = channelId,
+                Date = DateTime.UtcNow,
+                IsSystemMessage = true,
+                UserId = Utils.SystemId,
+                Content = Guid.NewGuid().ToString()
+            };
+            pinNotificationMessage.IsSystemMessage = true;
+            pinNotificationMessage.IsSystemMessage = true;
+            pinNotificationMessage.Metadata = new Metadata
+            {
+                Type = "pin_notification",
+                PinnerUserId = member.User.UserId,
+                PinnedAt = DateTime.UtcNow
+            };
+            await _context.Messages.AddAsync(pinNotificationMessage);
+
             await _context.SaveChangesAsync();
             return Ok();
         }
