@@ -22,6 +22,7 @@
     "ADD_REACTION": "Add Reaction",
     "EDIT_MESSAGE": "Edit Message",
     "PIN_MESSAGE": "Pin Message",
+    "UNPIN_MESSAGE": "Unpin Message",
     "GO_TO_MESSAGE": "Go To Message",
     "REPLY": "Reply",
     "MARK_AS_UNREAD": "Mark As Unread",

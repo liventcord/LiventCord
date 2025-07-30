@@ -19,7 +19,7 @@ import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { alertUser, askUser } from "./ui.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { cacheInterface, guildCache, pinnedMessagesCache } from "./cache.ts";
 import { copyText } from "./tooltip.ts";
 import { convertToEditUi, deleteMessage } from "./message.ts";
 import {
@@ -45,7 +45,7 @@ import { apiClient, EventType } from "./api.ts";
 
 const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
-const messageContextList: { [key: string]: any } = {};
+export const messageContextList: { [key: string]: any } = {};
 
 type ItemOption = {
   label: string;
@@ -98,6 +98,7 @@ const MessagesActionType = {
   ADD_REACTION: "ADD_REACTION",
   EDIT_MESSAGE: "EDIT_MESSAGE",
   PIN_MESSAGE: "PIN_MESSAGE",
+  UNPIN_MESSAGE: "UNPIN_MESSAGE",
   GO_TO_MESSAGE: "GO_TO_MESSAGE",
   REPLY: "REPLY",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
@@ -127,6 +128,13 @@ function openEditMessage(messageId: string) {
 
 export async function pinMessage(messageId: string) {
   await apiClient.send(EventType.PIN_MESSAGE, {
+    guildId: currentGuildId,
+    channelId: guildCache.currentChannelId,
+    messageId
+  });
+}
+export async function unpinMessage(messageId: string) {
+  await apiClient.send(EventType.UNPIN_MESSAGE, {
     guildId: currentGuildId,
     channelId: guildCache.currentChannelId,
     messageId
@@ -498,10 +506,23 @@ function createMessageContext(messageId: string, userId: string) {
     permissionManager.canManageMessages() ||
     (isOnDm && userId === currentUserId)
   ) {
-    context[MessagesActionType.PIN_MESSAGE] = {
-      label: MessagesActionType.PIN_MESSAGE,
-      action: () => pinMessage(messageId)
-    };
+    const exist = pinnedMessagesCache.doesMessageExist(
+      currentGuildId,
+      guildCache.currentChannelId,
+      messageId
+    );
+
+    if (exist) {
+      context[MessagesActionType.UNPIN_MESSAGE] = {
+        label: MessagesActionType.UNPIN_MESSAGE,
+        action: () => unpinMessage(messageId)
+      };
+    } else {
+      context[MessagesActionType.PIN_MESSAGE] = {
+        label: MessagesActionType.PIN_MESSAGE,
+        action: () => pinMessage(messageId)
+      };
+    }
   }
   context[MessagesActionType.GO_TO_MESSAGE] = {
     label: MessagesActionType.GO_TO_MESSAGE,

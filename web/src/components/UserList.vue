@@ -56,7 +56,12 @@
           @imageClick="handleImageClick"
           @videoError="onVideoError"
         />
-        <div v-else class="placeholder-box">No media</div>
+        <h3
+          v-else
+          style="flex-direction: column; align-items: center; display: flex"
+        >
+          No Media
+        </h3>
       </div>
     </Teleport>
 
@@ -77,7 +82,12 @@
           @videoError="onVideoError"
         />
       </div>
-      <div v-else class="placeholder-box">No files</div>
+      <h3
+        v-else
+        style="flex-direction: column; align-items: center; display: flex"
+      >
+        No Files
+      </h3>
     </div>
 
     <div
@@ -91,7 +101,7 @@
       v-else-if="selectedPanelType === 'links'"
       class="user-table-wrapper panel-wrapper"
     >
-      <div class="placeholder-box">No Links</div>
+      <div id="links-container"></div>
     </div>
 
     <div class="user-table-wrapper">

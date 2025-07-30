@@ -1,5 +1,6 @@
 // panelHandler.ts
 import { ref, type Ref } from "vue";
+import { chatContainer, chatContent } from "./chatbar";
 
 interface PanelState {
   selectedPanelType: Ref<string>;
@@ -61,3 +62,9 @@ interface PanelState {
   hasTeleportedOnce: Ref<boolean>;
 }
 
+export function isMediaPanelOpen() {
+  return (
+    chatContent.style.display === "none" ||
+    chatContainer.querySelector(".panel-wrapper") !== null
+  );
+}

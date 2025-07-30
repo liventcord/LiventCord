@@ -364,6 +364,7 @@ export async function createMediaElement(
   embeds: Embed[],
   senderId: string,
   date: Date,
+  isSystemMessage: boolean,
   attachments?: Attachment[]
 ) {
   const attachmentsToUse = processAttachments(attachments);
@@ -406,7 +407,8 @@ export async function createMediaElement(
             metadata,
             embeds,
             senderId,
-            date
+            date,
+            isSystemMessage
           );
         } else {
           const previewElement = createFileAttachmentPreview(attachment);
@@ -439,7 +441,8 @@ export async function createMediaElement(
           metadata,
           embeds,
           senderId,
-          date
+          date,
+          isSystemMessage
         );
         if (!isError) {
           mediaCount++;
@@ -511,7 +514,8 @@ function processMediaLink(
   metadata: MetaData,
   embeds: Embed[],
   senderId: string,
-  date: Date
+  date: Date,
+  isSystemMessage: boolean
 ): Promise<boolean> {
   return new Promise<boolean>(async (resolve) => {
     let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
@@ -579,7 +583,7 @@ function processMediaLink(
     } else if (isJsonUrl(link)) {
       mediaElement = createJsonElement(link);
     } else if (isURL(link)) {
-      handleLink(messageContentElement, content);
+      handleLink(messageContentElement, content, isSystemMessage);
       if (doesMessageHasProxyiedLink(link)) {
         mediaElement = createImageElement(
           attachment?.fileName ?? "",
@@ -646,7 +650,8 @@ function attachMediaElement(
 }
 export function handleLink(
   messageContentElement: HTMLElement,
-  content: string
+  content: string,
+  isSystemMessage: boolean = false
 ) {
   const urlPattern = /https?:\/\/[^\s<>"']+/g;
   let lastIndex = 0;
@@ -663,6 +668,11 @@ export function handleLink(
     }
     const replaced = replaceCustomEmojisForChatContainer(text);
     const span = createEl("span", { innerHTML: replaced });
+
+    if (isSystemMessage) {
+      span.classList.add("system-message");
+    }
+
     setupEmojiListeners();
     prependToMessage(span);
   };
@@ -692,6 +702,11 @@ export function handleLink(
 
     const urlLink = createEl("a", { textContent: url });
     urlLink.classList.add("url-link");
+
+    if (isSystemMessage) {
+      urlLink.classList.add("system-message-link");
+    }
+
     urlLink.addEventListener("click", () => openExternalUrl(url));
     prependToMessage(urlLink);
 
@@ -708,8 +723,14 @@ export function handleLink(
     messageContentElement.firstChild
   );
   messageContentElement.dataset.contentLoaded = "true";
+
+  if (isSystemMessage) {
+    messageContentElement.classList.add("system-message-container");
+  }
+
   setupEmojiListeners();
 }
+
 function applyBorderColor(element: HTMLElement, decimalColor: number) {
   if (
     !Number.isInteger(decimalColor) ||

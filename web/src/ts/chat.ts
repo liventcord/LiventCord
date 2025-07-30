@@ -78,6 +78,7 @@ import {
 } from "./emoji.ts";
 import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
+import { isMediaPanelOpen } from "./panelHandler.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -390,7 +391,7 @@ let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
   console.log(isReachedChannelEnd, isOnMePage, stopFetching);
-  if (isReachedChannelEnd || isOnMePage || stopFetching) {
+  if (isReachedChannelEnd || isOnMePage || stopFetching || isMediaPanelOpen()) {
     return;
   }
   const oldestDate = getMessageDate();
@@ -662,7 +663,6 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
   });
 }
 export function closeMediaPanel() {
-  console.log("Close media panel");
   const wrapper = getId("media-table-wrapper");
   if (wrapper) wrapper.classList.add("media-table-wrapper-on-right");
   enableElement(chatContent, false, true);
@@ -672,7 +672,6 @@ export function closeMediaPanel() {
   }, 0);
 }
 export function openMediaPanel(type: string) {
-  console.log("Open media panel");
   const wrapper = getId("media-table-wrapper");
   const channelInfo = getId("channel-info");
 
@@ -706,6 +705,11 @@ export function openMediaPanel(type: string) {
     }, 0);
   }
   if (type === "links") {
+    apiClient.send(EventType.GET_GUILD_MESSAGE_LINKS, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
+
     setTimeout(() => {
       disableElement(chatContent);
       const panelWrapper = document.querySelector(".panel-wrapper");
@@ -1078,7 +1082,8 @@ function displayChatMessage(
     embeds,
     willDisplayProfile,
     isNotSent,
-    replyOf
+    replyOf,
+    isSystemMessage
   } = data;
   if (chatContainer === chatContent && currentMessagesCache[messageId]) {
     return null;
@@ -1142,6 +1147,7 @@ function displayChatMessage(
     embeds,
     userId,
     new Date(date),
+    isSystemMessage,
     attachments
   );
 
@@ -1243,6 +1249,7 @@ export function handleSelfSentMessage(data: Message) {
             data.embeds,
             data.userId,
             data.date ? new Date(data.date) : new Date(),
+            data.isSystemMessage,
             data.attachments
           );
         }
@@ -1781,6 +1788,7 @@ export function displayLocalMessage(
     willDisplayProfile: false,
     isNotSent: true,
     replyOf: undefined,
+    isSystemMessage: false,
     replies: []
   });
 
@@ -1819,6 +1827,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     willDisplayProfile: true,
     isNotSent: true,
     replyOf: "",
+    isSystemMessage: false,
     replies: []
   });
 

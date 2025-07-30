@@ -67,7 +67,8 @@ export const EventType = Object.freeze({
   READ_MESSAGE: "READ_MESSAGE",
   PIN_MESSAGE: "PIN_MESSAGE",
   GET_PINNED_MESSAGES: "GET_PINNED_MESSAGES",
-  UNPIN_MESSAGE: "UNPIN_MESSAGE"
+  UNPIN_MESSAGE: "UNPIN_MESSAGE",
+  GET_GUILD_MESSAGE_LINKS: "GET_GUILD_MESSAGE_LINKS"
 } as const);
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -135,7 +136,8 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   UPLOAD_EMOJI_IMAGE: HttpMethod.POST,
   GET_PINNED_MESSAGES: HttpMethod.GET,
   PIN_MESSAGE: HttpMethod.POST,
-  UNPIN_MESSAGE: HttpMethod.POST
+  UNPIN_MESSAGE: HttpMethod.POST,
+  GET_GUILD_MESSAGE_LINKS: HttpMethod.GET
 };
 
 const EventUrlMap: Record<EventType, string> = {
@@ -202,7 +204,9 @@ const EventUrlMap: Record<EventType, string> = {
   DELETE_EMOJI: "/guilds/{guildId}/emojis/{emojiId}",
   UPLOAD_EMOJI_IMAGE: "/guilds/emojis",
   UPLOAD_GUILD_IMAGE: "/images/guild",
-  UPLOAD_PROFILE_IMAGE: "/images/profile"
+  UPLOAD_PROFILE_IMAGE: "/images/profile",
+  GET_GUILD_MESSAGE_LINKS:
+    "/guilds/{guildId}/channels/{channelId}/messages/links"
 };
 
 type ListenerCallback = (data: any) => void;
