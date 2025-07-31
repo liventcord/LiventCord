@@ -103,6 +103,13 @@
     >
       <div id="links-container"></div>
     </div>
+    <div
+      v-if="isMobile && canInviteUser()"
+      id="invite-button"
+      @click="createInvitePop"
+    >
+      {{ translations.getTranslation("invite-dropdown-button") }}
+    </div>
 
     <div class="user-table-wrapper">
       <table class="user-table">
@@ -142,7 +149,24 @@
     </div>
   </div>
 </template>
-
+<style>
+#invite-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 90%;
+  padding: 5px;
+  margin-left: 10px;
+  margin-bottom: 20px;
+  background-color: #505cdc;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+</style>
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
@@ -154,7 +178,8 @@ import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
 import { getId, IMAGE_SRCS, isTenorURL, isMobile } from "../ts/utils.ts";
-import { displayImagePreview } from "../ts/ui.ts";
+import { permissionManager } from "../ts/guildPermissions.ts";
+import { createInvitePop, displayImagePreview } from "../ts/ui.ts";
 import { fetchMoreAttachments } from "../ts/message.ts";
 import {
   closeMediaPanel,
@@ -168,6 +193,9 @@ const shouldTeleportMediaPanel = computed(
   () => isMediaPanelTeleported && selectedPanelType.value === "media"
 );
 const isFirstRender = ref(true);
+function canInviteUser() {
+  return permissionManager.canInvite();
+}
 
 const mediaWrapperClasses = computed(() => {
   return props.attachments && props.attachments.length > 0
@@ -435,6 +463,7 @@ watch(
   min-height: 90%;
   overflow-y: auto;
   width: 90%;
+  margin-top: 25px;
   overflow-x: hidden;
   margin-left: 5%;
   padding: 0;
