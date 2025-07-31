@@ -132,7 +132,8 @@ export function addChatMentionListeners() {
     const target = event.target as HTMLElement;
     if (
       target.classList.contains("mention") ||
-      target.classList.contains("profile-pic")
+      target.classList.contains("profile-pic") ||
+      target.classList.contains("pinner-name-link")
     ) {
       const userId = target.dataset.userId;
       const channelId = target.dataset.channelId;
@@ -148,7 +149,6 @@ export function addChatMentionListeners() {
       }
 
       const pop = await createMentionProfilePop(target, userId);
-      console.log(pop?.parentElement);
       if (pop) {
         currentMentionPop = pop;
       }
@@ -165,7 +165,8 @@ export function addChatMentionListeners() {
 
     if (
       target.classList.contains("mention") ||
-      target.classList.contains("profile-pic")
+      target.classList.contains("profile-pic") ||
+      target.classList.contains("pinner-name-link")
     ) {
       return;
     }

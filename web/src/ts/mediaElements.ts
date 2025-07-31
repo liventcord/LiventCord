@@ -691,7 +691,8 @@ async function buildPinSystemMessage(metadata: Metadata): Promise<string> {
   const nickname = !metadata.pinnerUserId
     ? deletedUser
     : await userManager.getUserNick(metadata.pinnerUserId);
-  const pinnedAtDate = new Date(metadata.pinnedAt ? metadata.pinnedAt : "");
+
+  const pinnedAtDate = new Date(metadata.pinnedAt || "");
   const locale = translations.getLocale();
   const formattedDate = pinnedAtDate.toLocaleString(locale, {
     year: "numeric",
@@ -701,7 +702,7 @@ async function buildPinSystemMessage(metadata: Metadata): Promise<string> {
     minute: "2-digit"
   });
 
-  return `<a href="#" id="pinner-name" class="pinner-name-link">${nickname}</a> pinned a message to <a href="#" id="channel-link" class="channel-link">this channel</a>. <a href="#" id="see-all-pinned" class="see-all-pinned-link">See all pinned messages</a> — ${formattedDate}`;
+  return `<a href="#" class="pinner-name-link">${nickname}</a> pinned a message to <a href="#" class="channel-link">this channel</a>. <a href="#" class="see-all-pinned-link">See all pinned messages</a> — ${formattedDate}`;
 }
 
 function renderContent(
@@ -754,6 +755,7 @@ function renderContent(
     insertTextOrHTML(content.slice(lastIndex));
   }
 }
+
 function bindSystemMessageLinks(container: HTMLElement, metadata?: Metadata) {
   if (!container.parentElement) return;
 
@@ -764,27 +766,30 @@ function bindSystemMessageLinks(container: HTMLElement, metadata?: Metadata) {
   );
 
   const events: [string, () => void][] = [
-    ["#see-all-pinned", togglePin],
+    [".see-all-pinned-link", togglePin],
     [
-      "#pinner-name",
+      ".pinner-name-link",
       () => {
         if (metadata?.pinnerUserId)
           createMentionProfilePop(container, metadata.pinnerUserId);
       }
     ],
     [
-      "#channel-link",
+      ".channel-link",
       () => {
         if (m?.channelId) changeChannelWithId(m.channelId);
       }
     ]
   ];
 
+  console.log(m);
   for (const [selector, handler] of events) {
-    const el = container.querySelector(selector);
+    const el = container.querySelector(selector) as HTMLElement;
     if (el) {
       el.addEventListener("click", (e) => {
         e.preventDefault();
+        if (metadata?.pinnerUserId)
+          el.setAttribute("data-user-id", metadata?.pinnerUserId);
         handler();
       });
     }
