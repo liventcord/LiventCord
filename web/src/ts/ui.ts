@@ -44,7 +44,12 @@ import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnGuild, isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe, scrollToMessage, updateChatWidth } from "./chat.ts";
+import {
+  observe,
+  scrollToBottom,
+  scrollToMessage,
+  updateChatWidth
+} from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
 import { changePassword, userManager } from "./user.ts";
@@ -1414,11 +1419,15 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   if (!isOnMePage) {
     enableElement(chatContainer);
   }
-
   guildContainer.classList.remove("visible");
   disableElement(horizontalLineGuild);
 
   chatContainer.classList.remove("chat-container-mobile-left");
+  scrollToBottom();
+
+  setTimeout(() => {
+    scrollToBottom();
+  }, 100);
   if (!isOnMePage) {
     enableElement("hash-sign");
     enableElement("channel-info");
