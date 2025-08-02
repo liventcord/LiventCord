@@ -57,11 +57,13 @@ interface MessageData {
   addToTop?: boolean;
   reactionEmojisIds?: string[];
   metadata?: any;
+  metaData?: any;
   embeds?: any;
   willDisplayProfile?: boolean;
   isNotSent: boolean;
   replyOf?: string | null;
   replies?: Message[];
+  isSystemMessage: boolean;
   temporaryId?: string;
 }
 
@@ -85,6 +87,29 @@ export interface AttachmentWithMetaData {
   content: string;
   date: string;
 }
+export interface MessageResponse {
+  isOldMessages: boolean;
+  isDm: boolean;
+  history: Message[];
+}
+export interface GuildHistoryResponse extends MessageResponse {
+  messages: Message[];
+  channelId: string;
+  guildId: string;
+  oldestMessageDate: string | null;
+  isOldMessages: boolean;
+  isDm: false;
+  history: Message[];
+}
+export interface DMHistoryResponse extends MessageResponse {
+  messages: Message[];
+  channelId: string;
+  guildId: string;
+  oldestMessageDate: string | null;
+  isOldMessages: boolean;
+  isDm: true;
+  history: Message[];
+}
 
 export class Message {
   messageId: string;
@@ -98,12 +123,14 @@ export class Message {
   isBot: boolean;
   reactionEmojisIds: string[] | undefined;
   addToTop: boolean;
+  metaData: any;
   metadata: any;
   embeds: any;
   willDisplayProfile: boolean;
   isNotSent: boolean;
   replyOf: string | undefined;
   replies: Message[];
+  isSystemMessage: boolean;
   temporaryId: string | undefined;
 
   constructor({
@@ -118,11 +145,13 @@ export class Message {
     isBot,
     reactionEmojisIds,
     metadata,
+    metaData,
     embeds,
     willDisplayProfile,
     isNotSent: isSent,
     replyOf,
     replies = [],
+    isSystemMessage,
     addToTop = false
   }: MessageData) {
     this.messageId = messageId;
@@ -136,14 +165,22 @@ export class Message {
     this.isBot = isBot;
     this.reactionEmojisIds = reactionEmojisIds;
     this.addToTop = addToTop;
+    this.metaData = metadata;
     this.metadata = metadata;
     this.embeds = embeds;
     this.willDisplayProfile = willDisplayProfile || false;
     this.isNotSent = isSent || false;
     this.replyOf = replyOf || undefined;
+    this.isSystemMessage = isSystemMessage;
     this.replies = replies;
   }
 }
+
+export type Metadata = {
+  type?: string;
+  pinnerUserId?: string;
+  pinnedAt?: string;
+};
 
 function createNewMessageFormData(
   temporaryId: string,

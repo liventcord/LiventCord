@@ -132,6 +132,7 @@ function selectChannelElement(channelId: string) {
   }
   channel.style.backgroundColor = selectedChanColor();
 }
+let hasChannelChangedOnce = false;
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) {
     return;
@@ -157,7 +158,10 @@ export async function changeChannel(newChannel?: ChannelData) {
   const newChannelName = newChannel.channelName;
   setReachedChannelEnd(false);
 
-  closeMediaPanel();
+  if (hasChannelChangedOnce) {
+    closeMediaPanel();
+  }
+  hasChannelChangedOnce = true;
 
   if (isTextChannel) {
     guildCache.currentChannelId = channelId;

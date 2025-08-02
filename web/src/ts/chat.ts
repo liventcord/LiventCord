@@ -5,7 +5,8 @@ import {
   getMessageDate,
   getOldMessages,
   Message,
-  MessageReply
+  MessageReply,
+  Metadata
 } from "./message.ts";
 import {
   chatInput,
@@ -49,7 +50,8 @@ import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
 import {
   appendToProfileContextList,
   appendToMessageContextList,
-  editMessageOnContextList
+  editMessageOnContextList,
+  togglePin
 } from "./contextMenuActions.ts";
 import { setProfilePic } from "./avatar.ts";
 import { currentGuildId } from "./guild.ts";
@@ -77,6 +79,7 @@ import {
 } from "./emoji.ts";
 import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
+import { isMediaPanelOpen } from "./panelHandler.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -105,34 +108,37 @@ let isReachedChannelEnd = false;
 export function setReachedChannelEnd(val: boolean) {
   isReachedChannelEnd = val;
 }
+export function changeChannelWithId(channelId: string) {
+  const channelName = cacheInterface.getChannelNameWithoutGuild(channelId);
+  const isTextChannel =
+    cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
+  store.dispatch("selectChannel", {
+    channelId,
+    isTextChannel
+  });
 
-export const CLYDE_ID = "1";
+  changeChannel({
+    guildId: currentGuildId,
+    channelId,
+    channelName,
+    isTextChannel
+  });
+}
+export const CLYDE_ID = "2";
+export const SYSTEM_ID = "1";
 let currentMentionPop: HTMLElement | null;
 export function addChatMentionListeners() {
   chatContainer?.addEventListener("click", async (event) => {
     const target = event.target as HTMLElement;
     if (
       target.classList.contains("mention") ||
-      target.classList.contains("profile-pic")
+      target.classList.contains("profile-pic") ||
+      target.classList.contains("pinner-name-link")
     ) {
       const userId = target.dataset.userId;
       const channelId = target.dataset.channelId;
       if (channelId) {
-        const channelName =
-          cacheInterface.getChannelNameWithoutGuild(channelId);
-        const isTextChannel =
-          cacheInterface.getChannelWithoutGuild(channelId)?.isTextChannel;
-        store.dispatch("selectChannel", {
-          channelId: channelId,
-          isTextChannel: isTextChannel
-        });
-
-        changeChannel({
-          guildId: currentGuildId,
-          channelId: channelId,
-          channelName: channelName,
-          isTextChannel: isTextChannel
-        });
+        changeChannelWithId(channelId);
         return;
       }
       if (!userId) return;
@@ -143,7 +149,6 @@ export function addChatMentionListeners() {
       }
 
       const pop = await createMentionProfilePop(target, userId);
-      console.log(pop?.parentElement);
       if (pop) {
         currentMentionPop = pop;
       }
@@ -160,7 +165,8 @@ export function addChatMentionListeners() {
 
     if (
       target.classList.contains("mention") ||
-      target.classList.contains("profile-pic")
+      target.classList.contains("profile-pic") ||
+      target.classList.contains("pinner-name-link")
     ) {
       return;
     }
@@ -216,7 +222,6 @@ function handleReplyMessage(
       const content = foundReply.dataset.content;
       const attachmentUrls = foundReply.dataset.attachmentUrls;
       if (_messageId && userId) {
-        console.log("Creatingn reply:");
         createReplyBar(
           newMessage,
           messageId,
@@ -259,13 +264,6 @@ export function handleReplies() {
           msg.content,
           attachmentUrls
         );
-        console.log(
-          "Creating reply bar.",
-          replier,
-          message.messageId,
-          msg.userId,
-          msg.content
-        );
       });
     });
   });
@@ -279,7 +277,6 @@ function createReplyBar(
   attachmentUrls: string | string[] | undefined,
   content?: string
 ) {
-  console.log("Create reply bar: ", newMessage, messageId, userId, content);
   if (newMessage.querySelector(".replyBar")) {
     return;
   }
@@ -294,29 +291,45 @@ function createReplyBar(
 
   const nick = userManager.getUserNick(userId);
   replyBar.style.height = "100px";
-  const replyAvatar = createEl("img", {
-    className: "profile-pic reply-avatar",
-    id: userId
-  });
 
-  setProfilePic(replyAvatar, userId);
+  let replyAvatar: HTMLElement;
+
   const replyNick = createEl("span", {
     textContent: nick,
     className: "reply-nick"
   });
 
-  replyAvatar.addEventListener("click", () => {
-    drawProfilePopId(userId);
-  });
-  replyNick.addEventListener("click", () => {
-    drawProfilePopId(userId);
-  });
+  if (userId === SYSTEM_ID) {
+    replyAvatar = createEl("div", {
+      className: "profile-pic reply-avatar",
+      id: userId
+    });
+    replyAvatar.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
+      </svg>
+    `;
+  } else {
+    replyAvatar = createEl("img", {
+      className: "profile-pic reply-avatar",
+      id: userId
+    });
+    setProfilePic(replyAvatar as HTMLImageElement, userId);
+    replyAvatar.addEventListener("click", () => {
+      drawProfilePopId(userId);
+    });
+
+    replyNick.addEventListener("click", () => {
+      drawProfilePopId(userId);
+    });
+  }
 
   const textToWrite = content
     ? content
     : attachmentUrls
       ? attachmentUrls
       : translations.getTranslation("click-to-attachment");
+
   const replyContent = createEl("span", {
     className: "replyContent",
     textContent: textToWrite
@@ -342,6 +355,7 @@ function createReplyBar(
       }
     }
   };
+
   replyBar.appendChild(replyAvatar);
   replyBar.appendChild(replyNick);
   replyBar.appendChild(replyContent);
@@ -388,7 +402,7 @@ let isFetchingOldMessages = false;
 let stopFetching = false;
 
 async function getOldMessagesOnScroll() {
-  if (isReachedChannelEnd || isOnMePage || stopFetching) {
+  if (isReachedChannelEnd || isOnMePage || stopFetching || isMediaPanelOpen()) {
     return;
   }
   const oldestDate = getMessageDate();
@@ -408,27 +422,33 @@ async function getOldMessagesOnScroll() {
   }, 1000);
 }
 export async function handleScroll() {
-  if (loadingScreen && loadingScreen.style.display === "flex") {
+  if (loadingScreen?.style.display === "flex") {
+    console.log("Not fetching: loading screen is visible");
     return;
   }
+
   const buffer = 10;
   const scrollPosition = chatContainer.scrollTop;
   const isAtTop = scrollPosition <= buffer;
+  const hasMessages = chatContent.children.length > 0;
 
-  if (isAtTop && !isFetchingOldMessages && chatContent.children.length > 0) {
-    isFetchingOldMessages = true;
-    console.log("Fetching old messages...");
+  if (!(isAtTop && !isFetchingOldMessages && hasMessages)) {
+    return;
+  }
 
-    try {
-      const updatedScrollPosition = chatContainer.scrollTop;
-      if (updatedScrollPosition <= buffer) {
-        await getOldMessagesOnScroll();
-      }
-    } catch (error) {
-      console.error("Error fetching old messages:", error);
+  isFetchingOldMessages = true;
+
+  try {
+    if (chatContainer.scrollTop <= buffer) {
+      await getOldMessagesOnScroll();
+    } else {
+      console.log("Scroll moved before fetch triggered, skipping fetch");
     }
+  } catch (error) {
+    console.error("Error fetching old messages:", error);
   }
 }
+
 const observer = new IntersectionObserver(
   (entries, _observer) => {
     entries.forEach((entry) => {
@@ -439,11 +459,9 @@ const observer = new IntersectionObserver(
           entry.isIntersecting &&
           target.dataset.contentLoaded !== "true"
         ) {
-          setTimeout(() => {
-            loadObservedContent(target);
-            observer.unobserve(target);
-            target.dataset.contentLoaded = "true";
-          }, 100);
+          loadObservedContent(target);
+          observer.unobserve(target);
+          target.dataset.contentLoaded = "true";
         }
       }
     });
@@ -467,17 +485,27 @@ export function observe(element: HTMLElement) {
   observer.observe(element);
 }
 function loadObservedContent(targetElement: HTMLElement) {
+  if (!targetElement.parentElement) return;
   const jsonData = targetElement.dataset.content_observe;
+
   if (jsonData && targetElement.dataset.contentLoaded !== "true") {
     targetElement.dataset.contentLoaded = "true";
-    handleLink(targetElement, jsonData);
+
+    const message = cacheInterface.getMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      targetElement.parentElement.id
+    );
+    const isSystemMessage = message?.isSystemMessage ?? false;
+    const metadata = message?.metadata;
+    handleLink(targetElement, jsonData, isSystemMessage, metadata);
 
     if (isChatScrollNearBottom()) {
       chatContent.scrollTop = chatContent.scrollHeight;
     }
-    chatContent;
   }
 }
+
 export interface NewMessageResponse {
   guildId?: string;
   isOldMessages: boolean;
@@ -520,8 +548,6 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
   const { messages: history, oldestMessageDate } = data;
 
   if (!Array.isArray(history) || history.length === 0) {
-    isReachedChannelEnd = true;
-    displayStartMessage();
     return;
   }
 
@@ -551,6 +577,7 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
       }
     }
   });
+  isFetchingOldMessages = false;
 
   fetchReplies(history, repliesList);
 
@@ -651,103 +678,111 @@ function isAllMediaLoaded(elements: NodeListOf<Element>) {
 }
 export function closeMediaPanel() {
   const wrapper = getId("media-table-wrapper");
-  if (!wrapper) {
-    return;
-  }
-  if (!userList) {
-    return;
-  }
-
-  if (!userList.contains(wrapper)) {
-    userList.insertBefore(wrapper, userList.firstChild);
-  }
-  const mediaTitle = getId("media-title");
-
-  mediaTitle?.classList.remove("media-open-metadata");
-  if (mediaTitle) {
-    wrapper.insertBefore(mediaTitle, wrapper.firstChild);
-  }
-
-  wrapper.classList.add("media-table-wrapper-on-right");
+  if (wrapper) wrapper.classList.add("media-table-wrapper-on-right");
   enableElement(chatContent, false, true);
+
+  setTimeout(() => {
+    scrollToBottom();
+  }, 0);
 }
-export function openMediaPanel() {
+export function openMediaPanel(type: string) {
   const wrapper = getId("media-table-wrapper");
-  const mediaTitle = getId("media-title");
   const channelInfo = getId("channel-info");
 
-  if (!wrapper) {
-    return;
+  chatContainer.scrollTop = 0;
+  if (!chatContainer || !channelInfo) return;
+  if (type === "media") {
+    if (wrapper) wrapper.classList.remove("media-table-wrapper-on-right");
+    disableElement(chatContent);
+    if (wrapper) chatContainer.appendChild(wrapper);
   }
-  if (!chatContainer) {
-    return;
+  if (type === "files") {
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+      }
+    }, 0);
   }
+  if (type === "pins") {
+    apiClient.send(EventType.GET_PINNED_MESSAGES, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
 
-  if (!channelInfo) {
-    return;
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+        chatContainer.appendChild(panelWrapper);
+      }
+    }, 0);
   }
-  if (!mediaTitle) {
-    return;
-  }
+  if (type === "links") {
+    apiClient.send(EventType.GET_GUILD_MESSAGE_LINKS, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
 
-  if (!channelInfo) {
-    return;
+    setTimeout(() => {
+      disableElement(chatContent);
+      const panelWrapper = document.querySelector(".panel-wrapper");
+      if (panelWrapper) {
+        chatContainer.appendChild(panelWrapper);
+      }
+    }, 0);
   }
-  if (!chatContainer.contains(wrapper)) {
-    chatContainer.appendChild(wrapper);
-  }
-
-  wrapper.classList.remove("media-table-wrapper-on-right");
-  disableElement("chat-content");
-  channelInfo.appendChild(mediaTitle);
-  mediaTitle?.classList.add("media-open-metadata");
 
   if (isMobile) {
     toggleHamburger(true, false);
   }
 }
 
-export function handleHistoryResponse(data: NewMessageResponse) {
-  const { messages, channelId, guildId, oldestMessageDate } = data;
-
+export function handleHistoryResponse(
+  data: NewMessageResponse,
+  _chatContainer?: HTMLElement
+) {
+  const { messages, guildId, channelId, oldestMessageDate } = data;
   if (isChangingPage) {
     console.log("Got history response while changing page, ignoring");
     return;
   }
+  if (!_chatContainer) _chatContainer = chatContent;
+  const isChatContainer = _chatContainer === chatContent;
+  if (isChatContainer) {
+    isLastMessageStart = false;
+    clearMessagesCache();
+    chatContent.innerHTML = "";
+    if (!Array.isArray(messages) || messages.length === 0) {
+      displayStartMessage();
+      return;
+    }
 
-  isLastMessageStart = false;
-  clearMessagesCache();
-  chatContent.innerHTML = "";
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    displayStartMessage();
-    return;
+    if (guildId) {
+      cacheInterface.setMessages(guildId, channelId, messages);
+    }
   }
 
-  validateChannelAndGuild(channelId, guildId);
-
-  if (guildId) {
-    cacheInterface.setMessages(guildId, guildId, messages);
-  }
-
-  processMessages(messages, oldestMessageDate);
+  processMessages(_chatContainer, messages, oldestMessageDate);
 }
 
-function processMessages(messages: any[], oldestMessageDate?: string | null) {
+function processMessages(
+  chatContainer: HTMLElement,
+  messages: any[],
+  oldestMessageDate?: string | null
+) {
   const firstMessageDateOnChannel = oldestMessageDate
     ? new Date(oldestMessageDate)
     : null;
   const repliesList = new Set<string>();
   const wasAtBottom = isScrolledToBottom();
-  chatContainer.style.overflow = "hidden";
-
   messages.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
   for (const msgData of messages) {
     const msg = new Message(msgData);
-    const foundReply = displayChatMessage(msg);
+    const foundReply = displayChatMessage(msg, chatContainer);
 
     if (foundReply) {
       repliesList.add(msg.messageId);
@@ -850,23 +885,6 @@ function setupScrollHandling(wasAtBottom: boolean) {
   }, 200);
 }
 
-function validateChannelAndGuild(channelId: string, guildId?: string) {
-  if (guildId && guildId !== currentGuildId) {
-    console.warn(
-      "History guild ID is different from current guild",
-      guildId,
-      currentGuildId
-    );
-  }
-  if (channelId !== guildCache.currentChannelId) {
-    console.warn(
-      "History channel ID is different from current channel",
-      channelId,
-      guildCache.currentChannelId
-    );
-  }
-}
-
 function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
   return Array.from(mediaElements).map((media) => {
     if (media instanceof HTMLImageElement && !media.complete) {
@@ -883,7 +901,7 @@ function createMediaLoadPromises(mediaElements: NodeListOf<Element>) {
     return Promise.resolve();
   });
 }
-function createDateBar(currentDate: string) {
+function createDateBar(container: HTMLElement, currentDate: string) {
   const formattedDate = new Date(currentDate).toLocaleDateString(
     translations.getLocale(),
     {
@@ -897,7 +915,7 @@ function createDateBar(currentDate: string) {
     className: "dateBar",
     textContent: formattedDate
   });
-  chatContent.appendChild(datebar);
+  container.appendChild(datebar);
 }
 export function createProfileImageChat(
   newMessage: HTMLElement,
@@ -914,26 +932,50 @@ export function createProfileImageChat(
     console.error("No msg content element. ", replyBar);
     return;
   }
-  const profileImg = createEl("img", {
-    className: "profile-pic",
-    id: userId,
-    style: {
-      width: "40px",
-      height: "40px"
-    }
-  });
 
-  profileImg.dataset.userId = userId;
-  setProfilePic(profileImg, userId);
+  let profileElement: HTMLElement;
+
+  if (userId === SYSTEM_ID) {
+    profileElement = createEl("div", {
+      className: "profile-pic",
+      style: {
+        width: "40px",
+        height: "40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }
+    });
+
+    profileElement.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
+      </svg>
+    `;
+  } else {
+    const profileImg = createEl("img", {
+      className: "profile-pic",
+      id: userId,
+      style: {
+        width: "40px",
+        height: "40px"
+      }
+    });
+
+    profileImg.dataset.userId = userId;
+    setProfilePic(profileImg, userId);
+
+    profileImg.addEventListener("mouseover", () => {
+      profileImg.style.borderRadius = "0px";
+    });
+    profileImg.addEventListener("mouseout", () => {
+      profileImg.style.borderRadius = "25px";
+    });
+
+    profileElement = profileImg;
+  }
 
   appendToProfileContextList(userInfo, userId);
-
-  profileImg.addEventListener("mouseover", () => {
-    profileImg.style.borderRadius = "0px";
-  });
-  profileImg.addEventListener("mouseout", () => {
-    profileImg.style.borderRadius = "25px";
-  });
 
   const authorAndDate = createEl("div", { className: "author-and-date" });
   const nickElement = createEl("span", {
@@ -951,22 +993,19 @@ export function createProfileImageChat(
   authorAndDate.appendChild(dateElement);
 
   if (replyBar) {
-    newMessage.appendChild(profileImg);
+    newMessage.appendChild(profileElement);
     newMessage.appendChild(authorAndDate);
-
     newMessage.appendChild(messageContentElement);
 
     const mediaElement = newMessage.querySelector(".imageElement");
     if (mediaElement) {
       messageContentElement.appendChild(mediaElement);
     }
-    if (replyBar) {
-      newMessage.insertBefore(replyBar, newMessage.firstChild);
-    }
+    newMessage.insertBefore(replyBar, newMessage.firstChild);
     newMessage.classList.add("replier");
   } else {
     if (isAfterDeleting) {
-      newMessage.appendChild(profileImg);
+      newMessage.appendChild(profileElement);
       newMessage.appendChild(authorAndDate);
       newMessage.appendChild(messageContentElement);
       const mediaElement = newMessage.querySelector(".imageElement");
@@ -974,13 +1013,12 @@ export function createProfileImageChat(
         messageContentElement.appendChild(mediaElement);
       }
     } else {
-      newMessage.appendChild(profileImg);
+      newMessage.appendChild(profileElement);
       newMessage.appendChild(authorAndDate);
-
       newMessage.appendChild(messageContentElement);
     }
   }
-  setProfilePic(profileImg, userId);
+
   messageContentElement.classList.add("onsmallprofile");
 }
 
@@ -990,11 +1028,12 @@ export function setLastMessageDate(date: Date) {
 function createOptions3Button(
   message: HTMLElement,
   messageId: string,
-  userId: string
+  userId: string,
+  isSystemMessage: boolean
 ) {
   const button = createMsgOptionButton(message, false);
   button.dataset.m_id = messageId;
-  appendToMessageContextList(messageId, userId);
+  appendToMessageContextList(messageId, userId, isSystemMessage);
 }
 export function addEditedIndicator(
   messageElement: HTMLElement,
@@ -1053,10 +1092,14 @@ function editChatMessage(data: EditMessageResponse): void {
   updateMessageContent(messageContentElement, content);
   addEditedIndicator(messageContentElement);
 }
-function displayChatMessage(data: Message): HTMLElement | null {
+function displayChatMessage(
+  data: Message,
+  chatContainer?: HTMLElement
+): HTMLElement | null {
   if (!data || !isValidMessage(data)) {
     return null;
   }
+  if (!chatContainer) chatContainer = chatContent;
 
   const {
     messageId,
@@ -1071,12 +1114,14 @@ function displayChatMessage(data: Message): HTMLElement | null {
     reactionEmojisIds,
     addToTop,
     metadata,
+    metaData,
     embeds,
     willDisplayProfile,
     isNotSent,
-    replyOf
+    replyOf,
+    isSystemMessage
   } = data;
-  if (currentMessagesCache[messageId]) {
+  if (chatContainer === chatContent && currentMessagesCache[messageId]) {
     return null;
   }
   if (!channelId || !date) {
@@ -1086,7 +1131,6 @@ function displayChatMessage(data: Message): HTMLElement | null {
     return null;
   }
   const nick = userManager.getUserNick(userId);
-
   const newMessage = createMessageElement(
     messageId,
     userId,
@@ -1114,6 +1158,7 @@ function displayChatMessage(data: Message): HTMLElement | null {
     );
   } else {
     isCreatedProfile = handleRegularMessage(
+      chatContainer,
       newMessage,
       messageContentElement,
       nick,
@@ -1133,10 +1178,12 @@ function displayChatMessage(data: Message): HTMLElement | null {
     content,
     messageContentElement,
     newMessage,
+    metaData,
     metadata,
     embeds,
     userId,
     new Date(date),
+    isSystemMessage,
     attachments
   );
 
@@ -1149,8 +1196,14 @@ function displayChatMessage(data: Message): HTMLElement | null {
     addEditedIndicator(messageContentElement, lastEdited);
   }
 
-  updateSenderAndButtons(newMessage, userId, addToTop);
-  appendMessageToChat(newMessage, addToTop, isCreatedProfile);
+  updateSenderAndButtons(
+    newMessage,
+    userId,
+    addToTop,
+    isSystemMessage,
+    metaData
+  );
+  appendMessageToChat(newMessage, chatContainer, addToTop, isCreatedProfile);
 
   if (userId === CLYDE_ID) {
     handleClyde(newMessage, messageContentElement);
@@ -1222,7 +1275,7 @@ export function handleSelfSentMessage(data: Message) {
           data.content,
           messageContentElement,
           element,
-          data.metadata,
+          data.metaData,
           data.embeds,
           data.attachments
         );
@@ -1234,10 +1287,12 @@ export function handleSelfSentMessage(data: Message) {
             data.content,
             messageContentElement,
             element,
+            data.metaData,
             data.metadata,
             data.embeds,
             data.userId,
             data.date ? new Date(data.date) : new Date(),
+            data.isSystemMessage,
             data.attachments
           );
         }
@@ -1329,6 +1384,7 @@ function handleAddToTop(
 }
 
 function handleRegularMessage(
+  container: HTMLElement,
   newMessage: HTMLElement,
   messageContentElement: HTMLElement,
   nick: string,
@@ -1341,19 +1397,33 @@ function handleRegularMessage(
   const MILLISECONDS_IN_A_SECOND = 1000;
   const MINIMUM_TIME_GAP_IN_SECONDS = 300;
 
+  if (!container.dataset.lastSenderID) container.dataset.lastSenderID = "";
+  if (!container.dataset.bottomestChatDateStr)
+    container.dataset.bottomestChatDateStr = "";
+  if (!container.dataset.lastMessageDate)
+    container.dataset.lastMessageDate = "";
+
   const currentDateNumber = new Date(date).setHours(0, 0, 0, 0);
-  if (!lastMessageDate || lastMessageDate.getTime() !== currentDateNumber) {
-    createDateBar(new Date(currentDateNumber).toISOString());
-    lastMessageDate = new Date(currentDateNumber);
+  if (
+    !container.dataset.lastMessageDate ||
+    Number(container.dataset.lastMessageDate) !== currentDateNumber
+  ) {
+    createDateBar(container, new Date(currentDateNumber).toISOString());
+    container.dataset.lastMessageDate = currentDateNumber.toString();
   }
 
+  const previousDateStr = container.dataset.bottomestChatDateStr || date;
   const difference =
-    Math.abs(
-      new Date(bottomestChatDateStr).getTime() - new Date(date).getTime()
-    ) / MILLISECONDS_IN_A_SECOND;
+    Math.abs(new Date(previousDateStr).getTime() - new Date(date).getTime()) /
+    MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
 
-  if (!lastSenderID || isTimeGap || replyToId) {
+  const lastSenderID = container.dataset.lastSenderID;
+  const isNewProfileNeeded: boolean =
+    !lastSenderID || isTimeGap || !!replyToId || lastSenderID !== userId;
+
+  const shouldRenderProfile = userId === SYSTEM_ID || isNewProfileNeeded;
+  if (shouldRenderProfile) {
     createProfileImageChat(
       newMessage,
       messageContentElement,
@@ -1364,28 +1434,17 @@ function handleRegularMessage(
       isBot
     );
   } else {
-    if (lastSenderID !== userId || isTimeGap) {
-      createProfileImageChat(
-        newMessage,
-        messageContentElement,
-        nick,
-        userInfo,
-        userId,
-        date,
-        isBot
-      );
-    } else {
-      createNonProfileImage(newMessage, date);
-    }
+    createNonProfileImage(newMessage, date);
   }
-  bottomestChatDateStr = date.toString();
-  return true;
+  return shouldRenderProfile;
 }
 
 function updateSenderAndButtons(
   newMessage: HTMLElement,
   userId: string,
-  addToTop: boolean
+  addToTop: boolean,
+  isSystemMessage: boolean,
+  metadata: Metadata
 ) {
   if (!addToTop) {
     lastSenderID = userId;
@@ -1395,19 +1454,20 @@ function updateSenderAndButtons(
   if (userId !== currentUserId) {
     createMsgOptionButton(newMessage, true);
   }
-  createOptions3Button(newMessage, newMessage.id, userId);
+  createOptions3Button(newMessage, newMessage.id, userId, isSystemMessage);
 }
 
 function appendMessageToChat(
   newMessage: HTMLElement,
+  chatContainer: HTMLElement,
   addToTop: boolean,
   isCreatedProfile: boolean
 ) {
   if (addToTop) {
-    chatContent.insertBefore(newMessage, chatContent.firstChild);
+    chatContainer.insertBefore(newMessage, chatContainer.firstChild);
     chatContainer.scrollTop = chatContainer.scrollTop + newMessage.clientHeight;
   } else {
-    chatContent.appendChild(newMessage);
+    chatContainer.appendChild(newMessage);
     const previousSibling = newMessage.previousElementSibling;
     if (previousSibling) {
       const previousMsgContent = previousSibling.querySelector(
@@ -1655,7 +1715,16 @@ export function appendCurrentAttachments(
 export function updateAttachmentsCount(count: number) {
   const mediaTitle = getId("media-title");
   if (mediaTitle) {
-    mediaTitle.textContent = `${translations.getTranslation("media-title")} (${count})`;
+    const svg = mediaTitle.querySelector("svg");
+    if (!svg) return;
+
+    while (svg.nextSibling) {
+      svg.parentNode?.removeChild(svg.nextSibling);
+    }
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = `(${count})`;
+    mediaTitle.appendChild(textSpan);
   } else {
     console.log("Title not found");
   }
@@ -1751,6 +1820,7 @@ export function displayLocalMessage(
     willDisplayProfile: false,
     isNotSent: true,
     replyOf: undefined,
+    isSystemMessage: false,
     replies: []
   });
 
@@ -1789,6 +1859,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     willDisplayProfile: true,
     isNotSent: true,
     replyOf: "",
+    isSystemMessage: false,
     replies: []
   });
 
@@ -1881,5 +1952,24 @@ export function displayStartMessage(
 
     chatContent.insertBefore(message, chatContent.firstChild);
     setIsLastMessageStart(true);
+  }
+}
+
+export function goToMessage(messageId: string) {
+  const msg = getId(messageId) as HTMLElement;
+  if (!msg) return;
+  togglePin();
+
+  if (msg) {
+    scrollToMessage(msg);
+  } else {
+    const message = cacheInterface.getMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      messageId
+    );
+    if (message) {
+      fetchReplies([message], new Set<string>(), true);
+    }
   }
 }

@@ -1,4 +1,10 @@
-import { AttachmentWithMetaData, getOldMessages, Message } from "./message.ts";
+import {
+  AttachmentWithMetaData,
+  DMHistoryResponse,
+  getOldMessages,
+  GuildHistoryResponse,
+  Message
+} from "./message.ts";
 import {
   currentLastDate,
   handleReplies,
@@ -9,7 +15,7 @@ import {
   appendCurrentAttachments,
   updateAttachmentsCount
 } from "./chat.ts";
-import { replyCache, cacheInterface } from "./cache.ts";
+import { replyCache, cacheInterface, pinnedMessagesCache } from "./cache.ts";
 import {
   editChannelName,
   handleChannelDelete,
@@ -261,31 +267,6 @@ apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
   });
 });
 
-interface MessageResponse {
-  isOldMessages: boolean;
-  isDm: boolean;
-  history: Message[];
-}
-
-interface GuildHistoryResponse extends MessageResponse {
-  messages: Message[];
-  channelId: string;
-  guildId: string;
-  oldestMessageDate: string | null;
-  isOldMessages: boolean;
-  isDm: false;
-  history: Message[];
-}
-
-interface DMHistoryResponse extends MessageResponse {
-  messages: Message[];
-  channelId: string;
-  oldestMessageDate: string | null;
-  isOldMessages: boolean;
-  isDm: true;
-  history: Message[];
-}
-
 apiClient.on(
   EventType.GET_SCROLL_HISTORY_GUILD,
   (data: GuildHistoryResponse) => {
@@ -303,6 +284,63 @@ apiClient.on(EventType.GET_HISTORY_GUILD, (data: GuildHistoryResponse) => {
 
 apiClient.on(EventType.GET_HISTORY_DM, (data: DMHistoryResponse) => {
   handleHistoryResponse(data);
+});
+
+function initContainer(containerId: string, title: string): HTMLElement | null {
+  const container = getId(containerId);
+  if (!container) return null;
+  if (container.children.length === 0) {
+    container.innerHTML = `<h3 style="flex-direction:column; align-items: center; display:flex;">${title}</h3>`;
+  }
+  return container;
+}
+
+function showNoMessages(
+  container: HTMLElement,
+  msg: string = "No messages found."
+) {
+  container.innerHTML += `<h3>${msg}</h3>`;
+}
+
+apiClient.on(EventType.GET_PINNED_MESSAGES, (data: DMHistoryResponse) => {
+  pinnedMessagesCache.cachePinnedMessages(data);
+
+  const pinContainer = initContainer("pin-container", "Pinned Messages");
+  if (!pinContainer) return;
+
+  if (data.messages.length === 0) {
+    showNoMessages(pinContainer);
+    return;
+  }
+
+  handleHistoryResponse(data, pinContainer);
+});
+
+apiClient.on(EventType.UNPIN_MESSAGE, (data: { messageId: string }) => {
+  const pinContainer = getId("pin-container");
+  if (!pinContainer) return;
+
+  const messageId = data.messageId;
+
+  const message = pinContainer.querySelector(`.message[id="${messageId}"]`);
+  if (message) message.remove();
+  pinnedMessagesCache.removeCachedPinnedMessage(messageId);
+
+  if (pinContainer.querySelectorAll(".message").length === 0) {
+    pinContainer.innerHTML = `<h3 style="flex-direction:column; align-items: center; display:flex;">Pinned Messages</h3>`;
+    showNoMessages(pinContainer);
+  }
+});
+
+apiClient.on(EventType.GET_GUILD_MESSAGE_LINKS, (data: DMHistoryResponse) => {
+  const linksContainer = initContainer("links-container", "Message Links");
+  if (!linksContainer) return;
+
+  if (data.messages.length === 0) {
+    showNoMessages(linksContainer);
+  }
+
+  handleHistoryResponse(data, linksContainer);
 });
 
 interface MessageDatesResponse {

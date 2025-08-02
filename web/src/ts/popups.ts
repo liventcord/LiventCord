@@ -351,12 +351,12 @@ export async function createMentionProfilePop(
 
   Object.assign(pop.style, {
     animation: "unset",
-    width: "17vw",
     backgroundColor: "rgb(36,36,41)",
     position: "absolute",
-    zIndex: "10"
+    zIndex: "10",
+    class: "mention-profile-pop"
   });
-  pop.classList.add("mention-profile-pop");
+  pop.style.width = isMobile ? "62vw" : "17vw";
 
   const rect = baseMessage.getBoundingClientRect();
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;

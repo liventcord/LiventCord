@@ -1,6 +1,10 @@
 import { initialState } from "./app.ts";
+import {
+  appendToMessageContextList,
+  messageContextList
+} from "./contextMenuActions.ts";
 import { Emoji } from "./emoji.ts";
-import { Message, MessageReply } from "./message.ts";
+import { DMHistoryResponse, Message, MessageReply } from "./message.ts";
 import { currentUserId, Member } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
 
@@ -882,6 +886,66 @@ class GuildCacheInterface {
     return sharedGuildsCache.hasSharedGuild(friendId);
   }
 }
+
+class PinnedMessagesCache {
+  private cachedPinnedMessages: Record<
+    string,
+    Record<string, DMHistoryResponse>
+  > = {};
+
+  getCachedPinnedMessages(
+    guildId: string,
+    channelId: string
+  ): DMHistoryResponse | undefined {
+    console.warn(this.cachedPinnedMessages);
+    return this.cachedPinnedMessages[guildId]?.[channelId];
+  }
+
+  removeCachedPinnedMessage(messageId: string): void {
+    for (const guildId in this.cachedPinnedMessages) {
+      const channels = this.cachedPinnedMessages[guildId];
+      for (const channelId in channels) {
+        const messages = channels[channelId].messages;
+        const index = messages.findIndex((msg) => msg.messageId === messageId);
+        if (index !== -1) {
+          const [removedMessage] = messages.splice(index, 1);
+          if (messages.length === 0) {
+            delete channels[channelId];
+            if (Object.keys(channels).length === 0) {
+              delete this.cachedPinnedMessages[guildId];
+            }
+          }
+          if (removedMessage && removedMessage.userId) {
+            appendToMessageContextList(messageId, removedMessage.userId, false);
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  cachePinnedMessages(data: DMHistoryResponse): void {
+    if (!this.cachedPinnedMessages[data.guildId]) {
+      this.cachedPinnedMessages[data.guildId] = {};
+    }
+    this.cachedPinnedMessages[data.guildId][data.channelId] = data;
+    data.messages.forEach((m: Message) => {
+      appendToMessageContextList(m.messageId, m.userId, false);
+      console.log(messageContextList[m.messageId]);
+    });
+  }
+
+  doesMessageExist(
+    guildId: string,
+    channelId: string,
+    messageId: string
+  ): boolean {
+    const messages = this.cachedPinnedMessages[guildId]?.[channelId]?.messages;
+    if (!messages) return false;
+    return messages.some((msg) => msg.messageId === messageId);
+  }
+}
+export const pinnedMessagesCache = new PinnedMessagesCache();
 
 export let currentMessagesCache: { [messageId: string]: HTMLElement } = {};
 

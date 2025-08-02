@@ -3,7 +3,6 @@ import DOMPurify from "dompurify";
 
 import {
   activityList,
-  isUsersOpenGlobal,
   setUserListLine,
   toggleUsersList,
   userLine,
@@ -45,7 +44,12 @@ import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { isOnGuild, isOnMePage, router } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-import { observe, scrollToMessage, updateChatWidth } from "./chat.ts";
+import {
+  observe,
+  scrollToBottom,
+  scrollToMessage,
+  updateChatWidth
+} from "./chat.ts";
 import { apiClient, EventType } from "./api.ts";
 import { guildCache } from "./cache.ts";
 import { changePassword, userManager } from "./user.ts";
@@ -63,7 +67,6 @@ import {
 } from "./mediaElements.ts";
 import { selfName, setProfilePic } from "./avatar.ts";
 import { createTooltip } from "./tooltip.ts";
-import { pinMessage } from "./contextMenuActions.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
 import { setWidths } from "./channels.ts";
@@ -176,7 +179,6 @@ export function handleResize() {
       }
     }
   } else {
-    console.log(isUsersOpenGlobal);
     if (isOnMePage) {
       if (activityList) {
         enableElement(activityList);
@@ -275,8 +277,6 @@ export function setInactiveIcon() {
 }
 
 //Generic
-
-let errorCount = 0;
 
 function createPopupContent(
   includeCancel = false,
@@ -887,11 +887,19 @@ export async function displayImagePreview(
   );
 }
 
-function getSourceImage(imageElement: HTMLImageElement): string {
+function getSourceImage(imageElement: any): string {
+  console.log(imageElement);
+  if (
+    !imageElement ||
+    typeof imageElement !== "object" ||
+    typeof imageElement.getAttribute !== "function"
+  ) {
+    return "";
+  }
   return (
-    imageElement.dataset.originalSrc ||
+    imageElement.dataset?.originalSrc ||
     imageElement.getAttribute("data-original-src") ||
-    imageElement.getAttribute("src") ||
+    imageElement.src ||
     ""
   );
 }
@@ -1411,11 +1419,15 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   if (!isOnMePage) {
     enableElement(chatContainer);
   }
-
   guildContainer.classList.remove("visible");
   disableElement(horizontalLineGuild);
 
   chatContainer.classList.remove("chat-container-mobile-left");
+  scrollToBottom();
+
+  setTimeout(() => {
+    scrollToBottom();
+  }, 100);
   if (!isOnMePage) {
     enableElement("hash-sign");
     enableElement("channel-info");
@@ -1518,10 +1530,6 @@ export function initialiseMobile() {
   }
 }
 function initialiseListeners() {
-  const tbPinMessage = getId("tb-pin");
-  tbPinMessage?.addEventListener("click", () => {
-    pinMessage("");
-  });
   const tbHamburger = getId("tb-hamburger");
   tbHamburger?.addEventListener("click", () => toggleHamburger(true, false));
   mobileBlackBg.addEventListener("click", () => {

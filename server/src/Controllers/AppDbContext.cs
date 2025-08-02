@@ -29,9 +29,10 @@ namespace LiventCord.Controllers
         public DbSet<Attachment> Attachments { get; set; }
         public DbSet<GuildInvite> GuildInvites { get; set; }
         public DbSet<UrlMetadata> UrlMetadata { get; set; }
-
+        public DbSet<ChannelPinnedMessage> ChannelPinnedMessages { get; set; }
         public DbSet<MediaUrl> MediaUrls { get; set; }
         public DbSet<MessageUrl> MessageUrls { get; set; }
+
         public void RecreateDatabase()
         {
             Database.EnsureDeleted();
@@ -237,6 +238,7 @@ namespace LiventCord.Controllers
                 .HasForeignKey(gp => gp.GuildId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+
             modelBuilder.Entity<Channel>(entity =>
             {
                 entity.ToTable(nameof(Channel));
@@ -252,6 +254,24 @@ namespace LiventCord.Controllers
                 entity.HasIndex(c => new { c.ChannelId, c.GuildId });
                 entity.HasOne(c => c.Guild).WithMany(g => g.Channels).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
             });
+            modelBuilder.Entity<ChannelPinnedMessage>(entity =>
+            {
+                entity.ToTable(nameof(ChannelPinnedMessage));
+                entity.HasKey(e => new { e.ChannelId, e.MessageId });
+
+                entity.Property(e => e.PinnedAt).IsRequired();
+
+                entity.HasOne(e => e.Channel)
+                    .WithMany(c => c.PinnedMessages)
+                    .HasForeignKey(e => e.ChannelId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Message)
+                    .WithMany(m => m.PinnedInChannels)
+                    .HasForeignKey(e => e.MessageId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
 
             modelBuilder.Entity<Guild>(entity =>
             {

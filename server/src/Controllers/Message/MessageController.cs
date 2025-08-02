@@ -190,9 +190,6 @@ namespace LiventCord.Controllers
                 return BadRequest();
 
 
-
-            var messagesToAddOrUpdate = new List<Message>();
-
             foreach (var request in requests)
             {
                 var message = await _context.Messages
@@ -202,13 +199,11 @@ namespace LiventCord.Controllers
                 if (message != null)
                 {
                     UpdateMessage(message, request);
-                    messagesToAddOrUpdate.Add(message);
                 }
                 else
                 {
-
-                    var newMessage = await CreateNewMessage(request, channelId);
-                    messagesToAddOrUpdate.Add(newMessage);
+                    var newMessage = await CreateNewMessage(request, guildId, channelId);
+                    _context.Messages.Add(newMessage);
                 }
             }
 
@@ -245,7 +240,7 @@ namespace LiventCord.Controllers
                 }
             }
 
-            var newMessage = await CreateNewMessage(request, channelId);
+            var newMessage = await CreateNewMessage(request, guildId, channelId);
             _context.Messages.Add(newMessage);
             await _context.SaveChangesAsync();
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
@@ -306,13 +301,13 @@ namespace LiventCord.Controllers
             }
         }
 
-        private async Task<Message> CreateNewMessage(NewBotMessageRequest request, string channelId)
+        private async Task<Message> CreateNewMessage(NewBotMessageRequest request, string guildId, string channelId)
         {
             if (request.Content != null)
             {
                 await Task.Run(async () =>
                 {
-                    var urls = await HandleMessageUrls(request.MessageId, request.Content);
+                    var urls = await HandleMessageUrls(guildId, channelId, request.UserId, request.MessageId, request.Content);
                     try
                     {
                         var metadata = await ExtractMetadataIfUrl(urls, request.MessageId);
@@ -528,7 +523,7 @@ namespace LiventCord.Controllers
 
             var messages = await query
                 .OrderByDescending(m => m.Date)
-                .Take(25)
+                .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -591,7 +586,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        private async Task<List<string>> HandleMessageUrls(string messageId, string content)
+        private async Task<List<string>> HandleMessageUrls(string? guildId, string channelId, string userId, string messageId, string content)
         {
             var urls = Utils.ExtractUrls(content);
             var existing = await _context.MessageUrls.FindAsync(messageId);
@@ -600,7 +595,7 @@ namespace LiventCord.Controllers
             {
                 try
                 {
-                    await _context.MessageUrls.AddAsync(new MessageUrl { MessageId = messageId, Urls = urls });
+                    await _context.MessageUrls.AddAsync(new MessageUrl { ChannelId = channelId, CreatedAt = DateTime.UtcNow, GuildId = guildId, UserId = userId, MessageId = messageId, Urls = urls });
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateException ex)
@@ -657,6 +652,7 @@ namespace LiventCord.Controllers
                 Attachments = attachments
             };
 
+            var links = Utils.ExtractLinks(message.Content);
 
             if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
                 message.TemporaryId = temporaryId;
@@ -678,7 +674,7 @@ namespace LiventCord.Controllers
 
             if (content != null)
             {
-                var urls = await HandleMessageUrls(messageId, content);
+                var urls = await HandleMessageUrls(guildId, channelId, userId, messageId, content);
                 await Task.Run(async () =>
                 {
                     try
@@ -944,6 +940,163 @@ namespace LiventCord.Controllers
 
             return Ok(new { attachments = channelAttachments, count = totalAttachmentsCountForChannel });
         }
+
+        [Authorize]
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/pin")]
+        public async Task<IActionResult> PinMessage(string guildId, string channelId, string messageId)
+        {
+            var userId = UserId!;
+
+            var member = await _context.GuildMembers
+                .Include(m => m.User)
+                .Where(m => m.User.UserId == userId && m.GuildId == guildId)
+                .FirstOrDefaultAsync();
+
+            if (member == null)
+                return NotFound();
+
+            var canManage = await _permissionsController.CanManageMessages(userId, guildId);
+            if (!canManage)
+                return Forbid();
+
+            var messageExists = await _context.Messages
+                .AnyAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
+
+            if (!messageExists)
+                return NotFound();
+
+            var alreadyPinned = await _context.Set<ChannelPinnedMessage>()
+                .AnyAsync(pm => pm.MessageId == messageId && pm.ChannelId == channelId);
+
+            if (alreadyPinned)
+                return Ok();
+
+            _context.Add(new ChannelPinnedMessage
+            {
+                MessageId = messageId,
+                ChannelId = channelId,
+                PinnedByUserId = userId,
+                PinnedAt = DateTime.UtcNow
+            });
+
+            await NewMessage(Utils.CreateRandomId(), Utils.CreateRandomId(), Utils.SystemId, channelId, guildId, " ", DateTime.UtcNow, null, null, null, null, null);
+
+            var pinNotificationMessage = new Message
+            {
+                MessageId = Utils.CreateRandomId(),
+                ChannelId = channelId,
+                Date = DateTime.UtcNow,
+                IsSystemMessage = true,
+                UserId = Utils.SystemId,
+                Content = Guid.NewGuid().ToString()
+            };
+            pinNotificationMessage.IsSystemMessage = true;
+            pinNotificationMessage.IsSystemMessage = true;
+            pinNotificationMessage.Metadata = new Metadata
+            {
+                Type = "pin_notification",
+                PinnerUserId = member.User.UserId,
+                PinnedAt = DateTime.UtcNow
+            };
+            await _context.Messages.AddAsync(pinNotificationMessage);
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/unpin")]
+        public async Task<IActionResult> UnpinMessage(string guildId, string channelId, string messageId)
+        {
+            var userId = UserId!;
+            if (!await _context.DoesMemberExistInGuild(userId, guildId))
+                return NotFound();
+
+            if (!await _permissionsController.CanManageMessages(userId, guildId))
+                return Forbid();
+
+            var pinnedEntry = await _context.Set<ChannelPinnedMessage>()
+                .Include(pm => pm.Channel)
+                .Where(pm => pm.MessageId == messageId && pm.ChannelId == channelId && pm.Channel.GuildId == guildId)
+                .FirstOrDefaultAsync();
+
+            if (pinnedEntry == null)
+                return NotFound();
+
+            _context.Remove(pinnedEntry);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound();
+            }
+
+            return Ok(new { messageId });
+        }
+
+
+        [Authorize]
+        [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/pinned")]
+        public async Task<IActionResult> GetPinnedMessages(string guildId, string channelId)
+        {
+            var userId = UserId!;
+
+            var isValid = await (
+                from member in _context.GuildMembers
+                join channel in _context.Channels on guildId equals channel.GuildId
+                where member.User.UserId == userId
+                    && member.GuildId == guildId
+                    && channel.ChannelId == channelId
+                select member
+            ).AnyAsync();
+
+            if (!isValid)
+                return NotFound();
+
+            var pinnedMessages = await _context.Set<ChannelPinnedMessage>()
+                .Where(pm => pm.ChannelId == channelId)
+                .Include(pm => pm.Message)
+                .OrderByDescending(pm => pm.PinnedAt)
+                .Select(pm => pm.Message)
+                .ToListAsync();
+
+            return Ok(new { messages = pinnedMessages, guildId, channelId });
+        }
+        [Authorize]
+        [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/links")]
+        public async Task<IActionResult> GetGuildMessages(string guildId, string channelId)
+        {
+            var userId = UserId!;
+            if (!await _context.DoesMemberExistInGuild(userId, guildId))
+                return NotFound();
+
+            bool channelExists = await _context.Channels
+                .AnyAsync(c => c.ChannelId == channelId && c.GuildId == guildId);
+            if (!channelExists)
+                return NotFound();
+
+            var messages = await _context.Messages
+                .Where(m => m.ChannelId == channelId)
+                .Include(m => m.Channel)
+                .Where(m => m.Channel.GuildId == guildId)
+                .ToListAsync();
+
+            var response = new
+            {
+                channelId,
+                messages
+            };
+
+            return Ok(response);
+        }
+
+
+
+
+
 
 
 

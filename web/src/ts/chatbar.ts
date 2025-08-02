@@ -169,7 +169,7 @@ function adjustChatContainerHeight() {
   const chatInputHeight = chatInput.scrollHeight;
   const viewportHeight = window.innerHeight;
   const availableHeight = viewportHeight - chatInputHeight;
-  const newHeight = Math.max(MIN_CHAT_HEIGHT, availableHeight);
+  const newHeight = Math.max(MIN_CHAT_HEIGHT, availableHeight) - 20;
   chatContainer.style.height = `${newHeight}px`;
 }
 

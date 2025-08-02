@@ -73,59 +73,52 @@ export default defineConfig(({ mode }) => {
         plugins: [autoprefixer, cssnano({ preset: "default" })]
       }
     },
-
     plugins: [
       vue(),
       eslintPlugin({ emitWarning: false }),
-      VitePWA({
-        registerType: "autoUpdate",
-        injectRegister: "inline",
-        devOptions: {
-          enabled: true
-        },
-        manifest: {
-          name: "LiventCord",
-          short_name: "App",
-          description: "LiventCord Desktop App",
-          start_url: "/channels",
-          scope: "/channels",
-          display: "standalone",
-          background_color: "#ffffff",
-          theme_color: "#000000",
-          icons: [
-            {
-              src: "https://liventcord.github.io/LiventCord/app/images/icons/icon192.webp",
-              sizes: "192x192",
-              type: "image/webp"
-            },
-            {
-              src: "https://liventcord.github.io/LiventCord/app/images/icons/icon512.webp",
-              sizes: "512x512",
-              type: "image/webp"
-            }
-          ]
-        },
-        workbox: {
-          runtimeCaching: [
-            {
-              urlPattern: ({ request }) => request.destination === "document",
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "html-cache"
+      !isDev &&
+        VitePWA({
+          registerType: "autoUpdate",
+          injectRegister: "inline",
+          manifest: {
+            name: "LiventCord",
+            short_name: "App",
+            description: "LiventCord Desktop App",
+            start_url: "/channels",
+            scope: "/channels",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#000000",
+            icons: [
+              {
+                src: "https://liventcord.github.io/LiventCord/app/images/icons/icon192.webp",
+                sizes: "192x192",
+                type: "image/webp"
+              },
+              {
+                src: "https://liventcord.github.io/LiventCord/app/images/icons/icon512.webp",
+                sizes: "512x512",
+                type: "image/webp"
               }
-            },
-            {
-              urlPattern: ({ request }) =>
-                ["style", "script", "worker"].includes(request.destination),
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "assets-cache"
+            ]
+          },
+          workbox: {
+            runtimeCaching: [
+              {
+                urlPattern: ({ request }) => request.destination === "document",
+                handler: "NetworkFirst",
+                options: { cacheName: "html-cache" }
+              },
+              {
+                urlPattern: ({ request }) =>
+                  ["style", "script", "worker"].includes(request.destination),
+                handler: "StaleWhileRevalidate",
+                options: { cacheName: "assets-cache" }
               }
-            }
-          ]
-        }
-      })
-    ],
+            ]
+          }
+        })
+    ].filter(Boolean),
 
     server: {
       hmr: true,

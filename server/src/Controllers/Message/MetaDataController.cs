@@ -5,28 +5,34 @@ using LiventCord.Helpers;
 using System.Text.Json;
 public class Metadata
 {
+    public string? Type { get; set; }
+
+    public string? PinnerUserId { get; set; }
+
+    public DateTime? PinnedAt { get; set; }
+
     public string? Title { get; set; }
     public string? Description { get; set; }
     public string? SiteName { get; set; }
     public string? Image { get; set; }
     public string? Url { get; set; }
-    public string? Type { get; set; }
     public string? Keywords { get; set; }
     public string? Author { get; set; }
 
     public bool IsEmpty()
     {
-        return string.IsNullOrWhiteSpace(Title) &&
+        return string.IsNullOrWhiteSpace(Type) &&
+               string.IsNullOrWhiteSpace(PinnerUserId) &&
+               PinnedAt == null &&
+               string.IsNullOrWhiteSpace(Title) &&
                string.IsNullOrWhiteSpace(Description) &&
                string.IsNullOrWhiteSpace(SiteName) &&
                string.IsNullOrWhiteSpace(Image) &&
                string.IsNullOrWhiteSpace(Url) &&
-               string.IsNullOrWhiteSpace(Type) &&
                string.IsNullOrWhiteSpace(Keywords) &&
                string.IsNullOrWhiteSpace(Author);
     }
 }
-
 
 public class UrlMetadata : Metadata
 {
