@@ -110,7 +110,10 @@
     >
       {{ translations.getTranslation("invite-dropdown-button") }}
     </div>
-
+    <div
+      v-if="onlineUsers.length > 0 || offlineUsers.length > 0"
+      class="user-table-wrapper"
+    >
     <div class="user-table-wrapper">
       <table class="user-table">
         <tbody>
@@ -146,6 +149,7 @@
           </template>
         </tbody>
       </table>
+    </div>
     </div>
   </div>
 </template>
