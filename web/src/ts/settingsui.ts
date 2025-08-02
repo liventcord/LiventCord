@@ -641,6 +641,11 @@ function getAppearanceHtml() {
       id: "video-toggle",
       label: translations.getSettingsTranslation("VideoMode"),
       description: translations.getSettingsTranslation("EnableVideoMode")
+    },
+    {
+      id: "developer-toggle",
+      label: translations.getSettingsTranslation("DeveloperTitle"),
+      description: translations.getSettingsTranslation("DeveloperDescription")
     }
   ];
 
@@ -651,13 +656,16 @@ function getAppearanceHtml() {
             createToggle(toggle.id, toggle.label, toggle.description)
           )
           .join("")}
-        <h3 style="margin: 0px;" >${translations.getSettingsTranslation("Theme")}</h3>
+          </div>
+
+        <h3 style="margin: 0px;" >${translations.getSettingsTranslation("Theme")}</h3>  
         <p style="color: #C4C5C9; margin: 0px;" >${translations.getSettingsTranslation("ThemeDescription")}</p>
 
         <div class="theme-selector-container">
           <span id="ash-theme-selector" class="theme-circle ash-theme"></span>
           <span id="dark-theme-selector" class="theme-circle dark-theme"></span>
-        </div>
+        </div>  
+
         <h3>${translations.getSettingsTranslation("VideoUrlTitle")}</h3>
         <div
           id="video-url-input"
@@ -683,6 +691,7 @@ function getAppearanceHtml() {
         value="0.25"
         style=" bottom: 20px; left: 20px; z-index: 1000;">
 
+        
 
     `;
 }

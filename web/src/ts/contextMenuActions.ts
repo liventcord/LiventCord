@@ -42,8 +42,8 @@ import {
 } from "./settingsui.ts";
 import { changeChannel } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
+import { isDeveloperMode } from "./settings.ts";
 
-const isDeveloperMode = true;
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};
 
@@ -303,7 +303,7 @@ export function createUserContext(userId: string) {
     context[ActionType.EDIT_GUILD_PROFILE] = () => editGuildProfile();
   }
 
-  if (isDeveloperMode) {
+  if (isDeveloperMode()) {
     context[ActionType.COPY_ID] = (event: MouseEvent) => copyId(userId, event);
   }
 
@@ -354,7 +354,7 @@ function createProfileContext(userData: UserInfo) {
     }
   }
 
-  if (isDeveloperMode) {
+  if (isDeveloperMode()) {
     context[ActionType.COPY_USER_ID] = {
       action: (event: MouseEvent) => copyId(userId, event)
     };
@@ -448,7 +448,7 @@ function createGuildContext(guildId: string) {
     };
   }
 
-  if (isDeveloperMode) {
+  if (isDeveloperMode()) {
     context[GuildActionType.COPY_GUILD_ID] = {
       action: (event: MouseEvent) => copyId(guildId, event)
     };
@@ -487,7 +487,7 @@ function createChannelsContext(channelId: string) {
     };
   }
 
-  if (isDeveloperMode) {
+  if (isDeveloperMode()) {
     context[ActionType.COPY_ID] = {
       action: (event: MouseEvent) => copyId(channelId, event)
     };
@@ -567,7 +567,7 @@ function createMessageContext(
     };
   }
 
-  if (isDeveloperMode) {
+  if (isDeveloperMode()) {
     context[ActionType.COPY_ID] = {
       action: (event: MouseEvent) => copyId(messageId, event)
     };

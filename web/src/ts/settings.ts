@@ -82,6 +82,7 @@ type ToggleState = {
   "slide-toggle": boolean;
   "video-toggle": boolean;
   "private-channel-toggle": boolean;
+  "developer-toggle": boolean;
 };
 const bgVideoKey = "videoUrl";
 export function saveBgVideo(url: string) {
@@ -106,6 +107,7 @@ class ToggleManager {
       "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
       "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
       "video-toggle": loadBooleanCookie("video-toggle") ?? false,
+      "developer-toggle": loadBooleanCookie("developer-toggle") ?? false,
       "private-channel-toggle": false
     };
 
@@ -327,7 +329,7 @@ export function saveThemeCookie(val: boolean) {
 export function isBlackTheme() {
   return loadBooleanCookie(themeCookieKey);
 }
-
+export const isDeveloperMode = () => toggleManager.states["developer-toggle"];
 export function triggerFileInput() {
   const profileImageInput = getProfileImageFile();
   if (profileImageInput) {

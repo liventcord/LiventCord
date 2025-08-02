@@ -132,7 +132,9 @@
     "ThemeDescription": "Adjust the colour of interface for better visibility.",
     "VideoTransparency": "Video Transparency",
     "VideoUrlTitle": "Background Video URL",
-    "ResetVideoUrlButton": "Reset Video URL"
+    "ResetVideoUrlButton": "Reset Video URL",
+    "DeveloperTitle": "Developer Mode",
+    "DeveloperDescription": "Developer mode exposes additional context menu items."
   },
   "textTranslations": {
     "online": "Online",
