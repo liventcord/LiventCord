@@ -670,8 +670,6 @@ export async function handleLink(
   isSystemMessage: boolean = false,
   metadata?: Metadata
 ) {
-  messageContentElement.innerHTML = "";
-
   if (isSystemMessage && metadata?.type === "pin_notification") {
     content = await buildPinSystemMessage(metadata);
   }
