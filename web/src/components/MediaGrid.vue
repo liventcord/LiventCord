@@ -1,9 +1,14 @@
 <template>
-  <div id="media-grid" ref="mediaGridRef">
+  <div
+    id="media-grid"
+    :class="{ 'limited-grid': shouldLimit9 }"
+    ref="mediaGridRef"
+  >
     <div
-      v-for="attachment in attachments"
+      v-for="attachment in shouldLimit9 ? attachments.slice(0, 9) : attachments"
       :key="attachment.attachment.fileId"
       class="image-box"
+      :class="{ 'limited-grid': shouldLimit9 }"
       :data-isspoiler="attachment.attachment.isSpoiler"
       :id="attachment.attachment.fileId"
       @click="() => emit('imageClick', attachment)"
@@ -56,6 +61,7 @@
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
 import { ref } from "vue";
 import { getProfileUrl } from "../ts/avatar";
@@ -68,6 +74,7 @@ const props = defineProps<{
   attachments: AttachmentWithMetaData[];
   shouldRenderProfile: boolean;
   isFilesList: boolean;
+  shouldLimit9?: boolean;
   failedVideos: Record<string, boolean>;
   getAttachmentSrc: (attachment: AttachmentWithMetaData) => string;
   getVideoFallbackImg: () => string;
@@ -100,12 +107,6 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
 }
 </script>
 <style scoped>
-#media-grid {
-  display: flex;
-  flex-wrap: nowrap !important;
-  gap: 12px;
-}
-
 .image-box {
   position: relative;
   width: 250px;

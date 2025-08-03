@@ -29,6 +29,7 @@
       <MediaGrid
         :attachments="attachments"
         :failed-videos="failedVideos"
+        :shouldLimit9="true"
         :shouldRenderProfile="false"
         :getAttachmentSrc="getAttachmentSrc"
         :getVideoFallbackImg="getVideoFallbackImg"
@@ -488,9 +489,17 @@ watch(
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 5px;
   width: 100%;
+  flex-wrap: nowrap !important;
+  gap: 12px;
 }
+
+.limited-grid {
+  width: 70px !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-rows: repeat(3, 1fr) !important;
+}
+
 @media (max-width: 600px) {
   #media-grid {
     grid-template-columns: repeat(2, 1fr);
