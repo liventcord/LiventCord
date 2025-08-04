@@ -76,7 +76,11 @@
     "channel-manage-fail": "{{guildName}} sunucusunda kanal yönetme iznin yok!",
     "shared-guilds": "{{count}} Ortak Sunucu",
     "shared-friends": "{{count}} Ortak Arkadaş",
-    "drop_zone_channel": "{{channelName}} Kanalına yükle"
+    "drop_zone_channel": "{{channelName}} Kanalına yükle",
+    "file-is-large": "Dosya {{fileName}} çok büyük.",
+    "max-size-is": "Maksimum dosya boyutu {{maxSize}} MB.",
+    "exceed-total-size": "{{fileName}} dosyasının eklenmesi, izin verilen toplam boyutu geçiyor.",
+    "allowed-size-count": "En fazla {{count}} dosya yükleyebilirsin."
   },
   "settingTranslations": {
     "en": "İngilizce",
@@ -271,7 +275,8 @@
     "EMAIL_MISMATCH": "Google hesabınızın e-postası, kayıtlı e-postanızla eşleşmiyor.",
     "INVALID_GOOGLE_TOKEN": "Google doğrulaması başarısız oldu. Lütfen tekrar deneyin.",
     "GOOGLE_LINK_FAILED": "Google hesabı bağlanırken sunucu hatası oluştu.",
-    "UNKNOWN_LINK_ERROR": "Bilinmeyen bir hata nedeniyle Google hesabı bağlanamadı."
+    "UNKNOWN_LINK_ERROR": "Bilinmeyen bir hata nedeniyle Google hesabı bağlanamadı.",
+    "MAXIMUM_LIMIT_REACHED": "Maksimum dosya limitine ulaşıldı."
   },
   "tooltipTranslations": {
     "settings-button": "Kullanıcı Ayarları",

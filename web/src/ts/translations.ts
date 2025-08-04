@@ -192,6 +192,25 @@ class Translations {
   getSharedFriendsPlaceholder(count: number | null): string {
     return this.replacePlaceholder("shared-friends", { count: String(count) });
   }
+  getFileIsLarge(fileName: string): string {
+    return this.replacePlaceholder("file-is-large", {
+      fileName: String(fileName)
+    });
+  }
+  getMaxSize(maxSize: number): string {
+    return this.replacePlaceholder("maxSize", { maxSize: String(maxSize) });
+  }
+  getExceedSize(fileName: string): string {
+    return this.replacePlaceholder("exceed-total-size", {
+      fileName: String(fileName)
+    });
+  }
+
+  getAllowedSizeCount(count: number): string {
+    return this.replacePlaceholder("allowed-size-count", {
+      count: String(count)
+    });
+  }
 
   initializeTranslations() {
     const currentTranslations = this.textTranslations;

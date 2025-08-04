@@ -1,6 +1,5 @@
 import DOMPurify from "dompurify";
 import { fileTypeFromBuffer } from "file-type";
-import { apiClient, EventType } from "./api.ts";
 import { friendsCache } from "./friends.ts";
 import { scrollToBottom, updateChatWidth } from "./chat.ts";
 import { sendMessage } from "./message.ts";
@@ -18,7 +17,8 @@ import {
   formatFileSize,
   isCompressedFile,
   renderFileIcon,
-  isMobile
+  isMobile,
+  truncateString
 } from "./utils.ts";
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
@@ -310,7 +310,6 @@ export class FileHandler {
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
   ): void {
-    console.log("File input changed. files: ", eventOrFiles);
     const max = maxAttachmentSize * 1024 * 1024;
 
     const filesToProcessOriginal = FileHandler.extractFiles(eventOrFiles);
@@ -321,13 +320,32 @@ export class FileHandler {
     const filteredFiles: File[] = [];
 
     for (const file of validFiles) {
-      if (file.size <= remainingSize && file.size <= max) {
-        filteredFiles.push(file);
-        remainingSize -= file.size;
+      const fileName = truncateString(file.name, 40);
+      if (file.size > max) {
+        alertUser(
+          translations.getFileIsLarge(fileName),
+          translations.getMaxSize(maxAttachmentSize)
+        );
+        continue;
       }
+      if (file.size > remainingSize) {
+        alertUser(
+          translations.getExceedSize(fileName),
+          translations.getMaxSize(maxAttachmentSize)
+        );
+        continue;
+      }
+
+      filteredFiles.push(file);
+      remainingSize -= file.size;
     }
 
     if (fileList.length + filteredFiles.length > maxAttachmentsCount) {
+      alertUser(
+        translations.getErrorMessage("MAXIMUM_LIMIT_REACHED"),
+        translations.getAllowedSizeCount(maxAttachmentsCount)
+      );
+
       filteredFiles.splice(maxAttachmentsCount - fileList.length);
     }
 
@@ -359,10 +377,7 @@ export class FileHandler {
   }
 
   static filterValidFiles(files: File[]): File[] {
-    return files.filter(
-      (file) =>
-        file instanceof Blob && file.size <= maxAttachmentSize * 1024 * 1024
-    );
+    return files.filter((file) => file instanceof Blob);
   }
 
   static async processFile(file: File) {
