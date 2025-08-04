@@ -127,6 +127,7 @@
               :user-data="user"
               :is-online="true"
               :status="user.status"
+              :is-typing="user.isTyping"
               :is-guild-owner="
                 cacheInterface.isGuildOwner(currentGuildId, user.userId)
               "

@@ -9,6 +9,7 @@ interface UserMember {
   nickName?: string;
   discriminator?: string;
   isOnline?: boolean;
+  isTyping?: boolean;
 }
 
 interface UserState {
@@ -113,7 +114,7 @@ export default createStore<RootState>({
       guildCache.currentChannelId = channelId;
     },
 
-    updateUserStatus(state, { userId, status }) {
+    updateUserStatus(state, { userId, status, isTyping }) {
       if (!userId) {
         throw new Error("User ID cannot be null or undefined");
       }
@@ -140,7 +141,8 @@ export default createStore<RootState>({
         const updatedUser = {
           ...existingUser,
           isOnline: status !== "offline",
-          status
+          status,
+          isTyping
         };
 
         state.user.onlineUsers = state.user.onlineUsers.filter(
@@ -186,11 +188,11 @@ export default createStore<RootState>({
   },
 
   actions: {
-    async updateStatusInMembersList({ commit }, { userId, status }) {
+    async updateStatusInMembersList({ commit }, { userId, status, isTyping }) {
       if (!userId) {
         throw new Error("User ID cannot be null or undefined");
       }
-      commit("updateUserStatus", { userId, status });
+      commit("updateUserStatus", { userId, status, isTyping });
       return { userId, status };
     },
 
@@ -223,6 +225,7 @@ export default createStore<RootState>({
         }
 
         const isOnline = await userManager.isNotOffline(member.userId);
+        console.log(member, isOnline);
         const categorizedMember = {
           ...member,
           isOnline,

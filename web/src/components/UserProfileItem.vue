@@ -26,7 +26,7 @@
     />
     <StatusBubble
       ref="bubble"
-      :status="status"
+      :status="isTyping ? 'typing' : status"
       :is-profile-bubble="true"
       :is-member-bubble="false"
       :is-user-online="isOnline"
@@ -67,15 +67,20 @@ export default {
     isGuildOwner: {
       type: Boolean,
       default: false
+    },
+    isTyping: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
-    const store = useStore();
+    const isTyping = ref(false);
 
     const profileImg = ref<HTMLImageElement | null>(null);
 
     const bubble = ref(null as null | InstanceType<typeof StatusBubble>);
     const status = ref(props.status);
+    let typingTimeout: number;
 
     const onProfileImageHover = (isHovering) => {
       if (profileImg.value) {

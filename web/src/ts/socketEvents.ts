@@ -143,6 +143,7 @@ class WebSocketClient {
       guildId,
       routeType: guildId ? "guild" : "dm"
     });
+    userStatus.updateUserOnlineStatus(currentUserId, "", true);
   }
 
   stopTyping(channelId: string, guildId: string | null = null) {
@@ -151,6 +152,7 @@ class WebSocketClient {
       guildId,
       routeType: guildId ? "guild" : "dm"
     });
+    userStatus.updateUserOnlineStatus(currentUserId, "", false);
   }
 
   private attachHandlers() {
@@ -429,6 +431,7 @@ socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
   }
 
   typingStatusMap.get(data.channelId)!.add(data.userId);
+  userStatus.updateUserOnlineStatus(data.userId, "", true);
 
   updateTypingText(data.channelId);
 });
@@ -448,6 +451,7 @@ socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
       typingStatusMap.delete(data.channelId);
     }
   }
+  userStatus.updateUserOnlineStatus(data.userId, "", false);
 
   updateTypingText(data.channelId);
 });

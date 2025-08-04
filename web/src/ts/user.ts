@@ -207,7 +207,7 @@ class UserManager {
     };
   }
 
-  updateMemberStatus(userId: string, status: string): void {
+  updateMemberStatus(userId: string, status: string, isTyping?: boolean): void {
     if (!this.userNames[userId]) {
       console.error(userId, "does not exist!");
       this.addUser(userId);
@@ -218,7 +218,8 @@ class UserManager {
       if (store) {
         store.dispatch("updateStatusInMembersList", {
           userId,
-          status
+          status,
+          isTyping
         });
       }
     } else {

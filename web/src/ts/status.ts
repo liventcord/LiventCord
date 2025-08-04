@@ -250,12 +250,12 @@ export class UserStatus {
     this.setSelfStatus(status);
   }
 
-  updateUserOnlineStatus(userId: string, status: string) {
-    if (userId === currentUserId) {
+  updateUserOnlineStatus(userId: string, status: string, isTyping?: boolean) {
+    if (status && userId === currentUserId) {
       this.updateSelfStatus(status);
     }
     console.log(userId, status);
-    userManager.updateMemberStatus(userId, status);
+    userManager.updateMemberStatus(userId, status, isTyping);
   }
 
   createSetStatusButton(container: HTMLElement): HTMLElement {

@@ -1324,7 +1324,7 @@ body.black-theme .base-user-input {
   padding: 5px;
   border-radius: 20px;
   position: absolute;
-  margin-left: 22px;
+  margin-left: 14px;
   margin-top: 22px;
   transition: opacity 0.5s ease-in-out;
   border: 3px solid #313338;
