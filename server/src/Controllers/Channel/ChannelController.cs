@@ -71,13 +71,12 @@ namespace LiventCord.Controllers
                 return Forbid();
 
             var rootId = channel.Guild?.RootChannel;
-            var guildChannels = await _dbContext.Channels
-                .Where(c => c.GuildId == guildId
-                        && c.ChannelId != channelId
-                        && c.ChannelId != rootId)
-                .ToListAsync();
 
-            if (!guildChannels.Any())
+            var guildChannels = await _dbContext.Channels
+                .Where(c => c.GuildId == guildId && c.ChannelId != rootId)
+                .Select(c => c.ChannelId)
+                .ToListAsync();
+            if (!guildChannels.Any() || (guildChannels.Count == 1 && guildChannels.First() == rootId))
                 return BadRequest(new { Type = "error", Message = "Cannot delete the last channel." });
 
             var strategy = _dbContext.Database.CreateExecutionStrategy();
@@ -85,9 +84,8 @@ namespace LiventCord.Controllers
             await strategy.ExecuteAsync(async () =>
             {
                 using var tx = await _dbContext.Database.BeginTransactionAsync();
-
                 if (rootId == channelId && channel.Guild != null)
-                    channel.Guild.RootChannel = guildChannels.Where(c => c.ChannelId != rootId).First().ChannelId;
+                    channel.Guild.RootChannel = guildChannels.First(c => c != rootId);
 
                 var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
                 await _imageController.DeleteAttachmentFiles(messages);
