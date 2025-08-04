@@ -115,7 +115,7 @@ namespace LiventCord.Controllers
 
             return user;
         }
-
+        [NonAction]
         public async Task EnsureSystemUserExistsAsync()
         {
             var systemUserId = Utils.SystemId;
