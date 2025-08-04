@@ -595,8 +595,10 @@ body.black-theme #media-menu-search-bar {
 #preview-content {
   font-size: 16px;
   color: #767676;
-  max-width: 71vw;
-  word-break: break-word;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 70vw;
 }
 
 #preview-date {

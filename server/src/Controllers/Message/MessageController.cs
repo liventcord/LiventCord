@@ -1132,11 +1132,11 @@ public class NewBotMessageRequest
 }
 
 
-public class NewMessageRequest
+public class NewMessageRequest : IValidatableObject
 {
     [BindProperty(Name = "content")]
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
-    public required string Content { get; set; }
+    public string? Content { get; set; }
 
     [BindProperty(Name = "files[]")]
     public IEnumerable<IFormFile>? Files { get; set; }
@@ -1149,6 +1149,20 @@ public class NewMessageRequest
 
     [BindProperty(Name = "temporaryId")]
     public string? TemporaryId { get; set; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        bool hasFiles = Files != null && Files.Any();
+        bool hasContent = !string.IsNullOrWhiteSpace(Content);
+
+        if (!hasContent && !hasFiles)
+        {
+            yield return new ValidationResult(
+                "Either content or at least one file must be provided.",
+                new[] { nameof(Content), nameof(Files) }
+            );
+        }
+    }
 }
 
 

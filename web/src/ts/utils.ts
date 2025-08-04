@@ -1145,3 +1145,7 @@ export async function openBlobUrl(imageElement: HTMLImageElement) {
 }
 export const isImageLoaded = (img: HTMLImageElement) =>
   img.complete && img.naturalHeight !== 0;
+
+export function isContentValid(content: string) {
+  return typeof content === "string" && content.trim() !== "";
+}

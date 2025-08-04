@@ -319,7 +319,6 @@ async function createVideoElement(url: string, isVideoAttachment = false) {
 
   videoElement.controls = true;
   videoElement.loop = true;
-  videoElement.playsInline = true;
 
   const downloadButton = createEl("a", {
     href: url,
@@ -670,6 +669,7 @@ export async function handleLink(
   isSystemMessage: boolean = false,
   metadata?: Metadata
 ) {
+  if (!content) return;
   if (isSystemMessage && metadata?.type === "pin_notification") {
     content = await buildPinSystemMessage(metadata);
   }

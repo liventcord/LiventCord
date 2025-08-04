@@ -36,7 +36,8 @@ import {
   createNowDate,
   enableElement,
   disableElement,
-  isMobile
+  isMobile,
+  isContentValid
 } from "./utils.ts";
 import {
   currentUserId,
@@ -1170,7 +1171,12 @@ function displayChatMessage(
     );
   }
 
-  messageContentElement.dataset.content_observe = isURL(content) ? "" : content;
+  if (isContentValid(content)) {
+    messageContentElement.dataset.content_observe = isURL(content)
+      ? ""
+      : content;
+  }
+
   requestAnimationFrame(() => observe(messageContentElement));
 
   newMessage.appendChild(messageContentElement);
@@ -1329,7 +1335,7 @@ function createMessageElement(
   newMessage.id = messageId;
   newMessage.dataset.userId = userId;
   newMessage.dataset.date = date;
-  newMessage.dataset.content = content;
+  newMessage.dataset.content = isContentValid(content) ? content : "";
 
   if (replyToId) {
     newMessage.dataset.replyToId = replyToId;

@@ -713,6 +713,10 @@ function setupPreviewMetadata(
       event.preventDefault();
       focusOnMessage(imageElement);
     });
+
+    previewContent?.addEventListener("mouseover", () =>
+      createTooltip(previewContent, content || "")
+    );
   }
 }
 

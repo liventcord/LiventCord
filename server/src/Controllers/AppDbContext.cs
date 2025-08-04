@@ -301,7 +301,6 @@ namespace LiventCord.Controllers
                 entity.Property(m => m.UserId).IsRequired();
                 entity.Property(m => m.ChannelId).IsRequired();
                 entity.Property(m => m.Content)
-                    .IsRequired()
                     .HasMaxLength(2000);
                 entity.Property(m => m.Date).IsRequired();
                 entity.Property(m => m.LastEdited);
