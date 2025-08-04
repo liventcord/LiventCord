@@ -5,7 +5,7 @@
     class="black-theme"
     style="display: flex; flex-direction: column"
   >
-    <div class="userpanel-container">
+    <div v-if="!isOnMePage" class="userpanel-container">
       <button
         v-for="btn in filteredPanelButtons"
         :key="btn.id"

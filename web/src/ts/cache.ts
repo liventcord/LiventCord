@@ -931,7 +931,6 @@ class PinnedMessagesCache {
     this.cachedPinnedMessages[data.guildId][data.channelId] = data;
     data.messages.forEach((m: Message) => {
       appendToMessageContextList(m.messageId, m.userId, false);
-      console.log(messageContextList[m.messageId]);
     });
   }
 

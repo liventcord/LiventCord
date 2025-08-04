@@ -482,24 +482,21 @@ namespace LiventCord.Controllers
         [NonAction]
         private async Task<List<Message>> GetMessages(string? date = null, string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null, string? messageId = null)
         {
-            IQueryable<Message> query = _context.Messages
-                .Include(m => m.Attachments)
-                .AsQueryable();
-
             DateTime? parsedDate = null;
 
-            if (date != null)
+            if (date != null && DateTime.TryParse(date, out DateTime tempParsedDate))
             {
-                if (DateTime.TryParse(date, out DateTime tempParsedDate))
-                {
-                    parsedDate = tempParsedDate.ToUniversalTime();
-                }
+                parsedDate = tempParsedDate.ToUniversalTime();
             }
 
+
+            var query = _context.Messages
+                .Include(m => m.Attachments)
+                .Include(m => m.Channel)
+                .AsQueryable();
+
             if (parsedDate != null)
-            {
                 query = query.Where(m => m.Date < parsedDate);
-            }
 
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
             {
@@ -512,31 +509,36 @@ namespace LiventCord.Controllers
             }
 
             if (!string.IsNullOrEmpty(guildId))
-            {
                 query = query.Where(m => m.Channel.GuildId == guildId);
-            }
 
             if (!string.IsNullOrEmpty(messageId))
-            {
                 query = query.Where(m => m.MessageId == messageId);
-            }
 
-            var messages = await query
+            var result = await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
+                .Select(m => new
+                {
+                    Message = m,
+                    IsPinned = _context.ChannelPinnedMessages.Any(pm => pm.MessageId == m.MessageId)
+                })
                 .AsNoTracking()
                 .ToListAsync();
 
-            foreach (var message in messages)
+            foreach (var item in result)
             {
-                if (!message.ShouldSerializeMetadata())
+                item.Message.IsPinned = item.IsPinned;
+
+                if (!item.Message.ShouldSerializeMetadata())
                 {
-                    message.Metadata = null;
+                    item.Message.Metadata = null;
                 }
             }
 
-            return messages;
+            return result.Select(r => r.Message).ToList();
+
         }
+
 
         [NonAction]
         private async Task<IActionResult?> ValidateNewMessage(

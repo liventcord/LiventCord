@@ -65,6 +65,7 @@ interface MessageData {
   replies?: Message[];
   isSystemMessage: boolean;
   temporaryId?: string;
+  isPinned?: boolean;
 }
 
 export interface MessageReply {
@@ -130,6 +131,7 @@ export class Message {
   isNotSent: boolean;
   replyOf: string | undefined;
   replies: Message[];
+  isPinned: boolean;
   isSystemMessage: boolean;
   temporaryId: string | undefined;
 
@@ -152,6 +154,7 @@ export class Message {
     replyOf,
     replies = [],
     isSystemMessage,
+    isPinned,
     addToTop = false
   }: MessageData) {
     this.messageId = messageId;
@@ -173,6 +176,7 @@ export class Message {
     this.replyOf = replyOf || undefined;
     this.isSystemMessage = isSystemMessage;
     this.replies = replies;
+    this.isPinned = isPinned || false;
   }
 }
 

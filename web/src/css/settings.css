@@ -78,6 +78,14 @@ table {
   display: block;
   max-width: 300px;
 }
+.context-item-danger {
+  color: #f57976;
+  font-weight: 500;
+}
+
+.context-item-danger:hover {
+  background-color: #ffe5e5;
+}
 
 .guilds-list li img:not([src="https://liventcord.github.io/LiventCord/app/images/icons/icon.webp"]):hover
 {

@@ -399,34 +399,80 @@ export function addContextListeners() {
       showContextMenu(event.pageX, event.pageY, options);
     }
   });
-
-  document.addEventListener("click", function (event) {
-    const target = event.target as HTMLSelectElement;
-    if (
-      target.dataset.m_id &&
-      messageContextList.hasOwnProperty(target.dataset.m_id)
-    ) {
-      const options = messageContextList[target.dataset.m_id];
-      if (options) {
-        hideContextMenu();
-        showContextMenu(event.pageX, event.pageY, options);
-      }
-    }
-
-    if (
-      target.classList &&
-      !target.classList.contains("message") &&
-      target.id &&
-      messageContextList.hasOwnProperty(target.id)
-    ) {
-      const options = messageContextList[target.id];
-      if (options) {
-        hideContextMenu();
-        showContextMenu(event.pageX, event.pageY, options);
-      }
-    }
-  });
 }
+document.addEventListener("click", function (event) {
+  const target = event.target as HTMLElement;
+
+  if (
+    target.dataset.m_id &&
+    messageContextList.hasOwnProperty(target.dataset.m_id)
+  ) {
+    const messageId = target.dataset.m_id;
+    const message = cacheInterface.getMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      messageId
+    );
+    const doesExist = pinnedMessagesCache.doesMessageExist(
+      currentGuildId,
+      guildCache.currentChannelId,
+      messageId
+    );
+
+    const isPinned = message?.isPinned || doesExist;
+    const oldContext = { ...messageContextList[messageId] };
+
+    delete oldContext[MessagesActionType.PIN_MESSAGE];
+    delete oldContext[MessagesActionType.UNPIN_MESSAGE];
+
+    const goToMessageEntry = {
+      [MessagesActionType.GO_TO_MESSAGE]: {
+        label: "Go to Message",
+        action: () => goToMessage(messageId)
+      }
+    };
+
+    const pinOrUnpinEntry = isPinned
+      ? {
+          [MessagesActionType.UNPIN_MESSAGE]: {
+            label: "Unpin Message",
+            action: () => unpinMessage(messageId)
+          }
+        }
+      : {
+          [MessagesActionType.PIN_MESSAGE]: {
+            label: "Pin Message",
+            action: () => pinMessage(messageId)
+          }
+        };
+
+    messageContextList[messageId] = {
+      ...pinOrUnpinEntry,
+      ...goToMessageEntry,
+      ...oldContext
+    };
+
+    const options = messageContextList[messageId];
+    if (options) {
+      hideContextMenu();
+      showContextMenu(event.pageX, event.pageY, options);
+    }
+  }
+
+  if (
+    target.classList &&
+    !target.classList.contains("message") &&
+    target.id &&
+    messageContextList.hasOwnProperty(target.id)
+  ) {
+    const options = messageContextList[target.id];
+    if (options) {
+      hideContextMenu();
+      showContextMenu(event.pageX, event.pageY, options);
+    }
+  }
+});
+
 function createGuildContext(guildId: string) {
   const context: { [key: string]: any } = {};
   context[GuildActionType.MARK_AS_READ] = {
@@ -536,10 +582,6 @@ function createMessageContext(
         };
       }
     }
-    context[MessagesActionType.GO_TO_MESSAGE] = {
-      label: MessagesActionType.GO_TO_MESSAGE,
-      action: () => goToMessage(messageId)
-    };
   }
   context[MessagesActionType.REPLY] = {
     label: MessagesActionType.REPLY,
@@ -576,6 +618,14 @@ function createMessageContext(
   return context;
 }
 
+const dangerActions = new Set([
+  MessagesActionType.DELETE_MESSAGE,
+  ActionType.REMOVE_USER,
+  ChannelsActionType.DELETE_CHANNEL,
+  VoiceActionType.DEAFEN_USER,
+  VoiceActionType.MUTE_USER
+]);
+
 function createMenuItem(
   labelKey: string,
   itemOptions: ItemOptions
@@ -586,7 +636,13 @@ function createMenuItem(
         labelKey.toUpperCase().replace(/ /g, "_")
       )
     : labelKey;
+
   const li = createEl("li", { textContent: translatedLabel });
+
+  if (dangerActions.has(labelKey)) {
+    li.classList.add("context-item-danger");
+  }
+
   li.addEventListener("click", function (event: Event) {
     event.stopPropagation();
     hideContextMenu();
@@ -594,6 +650,7 @@ function createMenuItem(
       itemOptions.action(event);
     }
   });
+
   if (itemOptions.subOptions) {
     const subUl = createEl("ul");
     itemOptions.subOptions.forEach((subOption: any) => {
@@ -602,6 +659,7 @@ function createMenuItem(
     });
     li.appendChild(subUl);
   }
+
   li.addEventListener("mouseenter", function () {
     const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
@@ -619,12 +677,14 @@ function createMenuItem(
       }
     }
   });
+
   li.addEventListener("mouseleave", function () {
     const subMenu = li.querySelector("ul") as HTMLElement;
     if (subMenu) {
       subMenu.style.display = "none";
     }
   });
+
   return li;
 }
 

@@ -46,6 +46,8 @@ namespace LiventCord.Models
 
         public List<Embed> Embeds { get; set; } = new();
         public ICollection<ChannelPinnedMessage> PinnedInChannels { get; set; } = new List<ChannelPinnedMessage>();
+        [NotMapped]
+        public bool IsPinned { get; set; }
 
     }
     public class Attachment
