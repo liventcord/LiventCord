@@ -857,6 +857,16 @@ namespace LiventCord.Controllers
             try
             {
                 await _imageController.DeleteAttachmentFile(message);
+
+                var pinnedEntries = await _context.ChannelPinnedMessages
+                    .Where(p => p.MessageId == messageId)
+                    .ToListAsync();
+
+                if (pinnedEntries.Any())
+                {
+                    _context.ChannelPinnedMessages.RemoveRange(pinnedEntries);
+                }
+
                 _context.Messages.Attach(message);
                 _context.Messages.Remove(message);
 
@@ -883,6 +893,7 @@ namespace LiventCord.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
                 _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
             }
             catch (Exception ex)
