@@ -99,7 +99,6 @@ import {
 } from "./utils.ts";
 import { setProfilePic, updateSelfProfile, setUploadSize } from "./avatar.ts";
 import { addDm, friendsCache } from "./friends.ts";
-import { addChannelSearchListeners } from "./search.ts";
 import { initializeCookies } from "./settings.ts";
 import {
   isOnMePage,
@@ -171,7 +170,6 @@ export let userStatus: UserStatus;
 export function initializeApp() {
   userStatus = new UserStatus();
   window.scrollTo(0, 0);
-  addChannelSearchListeners();
   initializeElements();
   initializeSettings();
   initializeListeners();

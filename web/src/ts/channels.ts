@@ -114,6 +114,7 @@ export function handleNewChannel(data: Channel) {
   }
   if (isTextChannel) {
     changeChannel(data);
+    router.switchToGuild(data.guildId, data.channelId);
   }
   cacheInterface.addChannel(guildId, data);
   createFireWorks();
