@@ -423,11 +423,113 @@ namespace LiventCord.Controllers
             await DeleteMessage(constructedFriendUserChannel, messageId);
             return Ok(deleteBroadcast);
         }
+
+        private string ConstructDmId(string userId, string friendId)
+        {
+            return string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
+        }
+
         [Authorize]
-        [HttpGet("/api/{type}/{id}/search")]
-        public async Task<ActionResult<IEnumerable<Message>>> SearchMessages(
-            [FromRoute] MessageType type,
-            [IdLengthValidation][FromRoute] string id,
+        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/search")]
+        public async Task<ActionResult<SearchMessagesResponse>> SearchGuildChannelMessages(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId,
+            [FromBody] SearchRequest request)
+        {
+            var fromUserId = request.FromUserId;
+            if (string.IsNullOrWhiteSpace(fromUserId) && string.IsNullOrWhiteSpace(request.BeforeDate) && string.IsNullOrWhiteSpace(request.DuringDate) && string.IsNullOrWhiteSpace(request.AfterDate) && string.IsNullOrWhiteSpace(request.Query))
+                return BadRequest("Query cannot be empty.");
+
+            if (request.PageNumber < 1)
+                request.PageNumber = 1;
+            if (request.PageSize < 1)
+                request.PageSize = 50;
+
+            var isReversing = request.isOldMessages;
+
+            if (!await _context.DoesMemberExistInGuild(UserId!, guildId))
+                return Forbid();
+
+            try
+            {
+                var filteredQuery = BuildFilteredMessagesQuery(guildId, channelId, request.Query, fromUserId, request);
+
+                var totalCount = await filteredQuery.CountAsync();
+
+                if (totalCount == 0)
+                    return Ok(new SearchMessagesResponse
+                    {
+                        TotalCount = 0,
+                        Messages = new List<Message>()
+                    });
+
+                var orderedQuery = isReversing
+                    ? filteredQuery.OrderBy(m => m.Date)
+                    : filteredQuery.OrderByDescending(m => m.Date);
+
+                var messages = await orderedQuery
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToListAsync();
+
+                return Ok(new SearchMessagesResponse
+                {
+                    TotalCount = totalCount,
+                    Messages = messages
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while searching: {ex.Message}");
+            }
+        }
+
+
+        private IQueryable<Message> BuildFilteredMessagesQuery(
+    string guildId, string channelId, string? query, string? fromUserId, SearchRequest request)
+        {
+            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
+            queryable = queryable.Where(m => m.ChannelId == channelId && m.Channel.GuildId == guildId);
+
+            if (!string.IsNullOrEmpty(fromUserId))
+                queryable = queryable.Where(m => m.UserId == fromUserId);
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                if (Utils.IsPostgres(_context))
+                    queryable = queryable.Where(m => m.Content != null && EF.Functions.ILike(m.Content, $"%{query}%"));
+                else
+                    queryable = queryable.Where(m => m.Content != null && m.Content.Contains(query));
+            }
+
+            if (DateTime.TryParse(request.BeforeDate, out var beforeDate))
+            {
+                beforeDate = DateTime.SpecifyKind(beforeDate, DateTimeKind.Utc);
+                queryable = queryable.Where(m => m.Date < beforeDate);
+            }
+
+            if (DateTime.TryParse(request.DuringDate, out var duringDate))
+            {
+                duringDate = DateTime.SpecifyKind(duringDate, DateTimeKind.Utc);
+                queryable = queryable.Where(m => m.Date >= duringDate && m.Date < duringDate.AddDays(1));
+            }
+
+            if (DateTime.TryParse(request.AfterDate, out var afterDate))
+            {
+                afterDate = DateTime.SpecifyKind(afterDate, DateTimeKind.Utc);
+                queryable = queryable.Where(m => m.Date > afterDate);
+            }
+
+            return queryable;
+        }
+
+
+
+        [Authorize]
+        [HttpGet("/api/dms/{dmId}/messages/search")]
+        public async Task<ActionResult<IEnumerable<Message>>> SearchDmMessages(
+            [FromRoute][IdLengthValidation] string dmId,
+            [FromQuery] string? fromUserId,
             [FromBody] string query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -435,7 +537,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                var results = await SearchMessagesInContext(id, query, type, UserId!);
+                var results = await SearchDmMessagesInContext(dmId, query, UserId!, fromUserId);
                 if (results == null || !results.Any())
                     return NotFound("No messages found matching your query.");
 
@@ -446,39 +548,30 @@ namespace LiventCord.Controllers
                 return StatusCode(500, $"An error occurred while searching: {ex.Message}");
             }
         }
-        private string ConstructDmId(string userId, string friendId)
-        {
-            return string.Compare(userId, friendId) < 0 ? $"{userId}_{friendId}" : $"{friendId}_{userId}";
-        }
 
-        private async Task<List<Message>?> SearchMessagesInContext(string id, string query, MessageType type, string userId)
+        private async Task<List<Message>?> SearchDmMessagesInContext(string dmId, string query, string currentUserId, string? fromUserId)
         {
+            if (!await CanUsersDm(currentUserId, dmId))
+                return null;
+
+            var channelId = ConstructDmId(currentUserId, dmId);
+
             IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
 
             queryable = Utils.IsPostgres(_context)
                 ? queryable.Where(m => m.Content != null && EF.Functions.ToTsVector("english", m.Content).Matches(query))
                 : queryable.Where(m => m.Content != null && m.Content.Contains(query));
 
-            switch (type)
-            {
-                case MessageType.Guilds:
-                    queryable = queryable.Where(m => m.Channel.GuildId == id);
-                    if (!await _context.DoesMemberExistInGuild(userId, id))
-                        return null;
-                    break;
-                case MessageType.Dms:
-                    queryable = queryable.Where(m => m.ChannelId == ConstructDmId(userId, id));
-                    bool canUsersDm = await CanUsersDm(userId, id);
-                    if (!canUsersDm)
-                    {
-                        return null;
-                    }
+            queryable = queryable.Where(m => m.ChannelId == channelId);
 
-                    break;
-            }
+            if (!string.IsNullOrEmpty(fromUserId))
+                queryable = queryable.Where(m => m.UserId == fromUserId);
 
             return await queryable.ToListAsync();
         }
+
+
+
         [NonAction]
         private async Task<List<Message>> GetMessages(string? date = null, string? userId = null, string? friendId = null, string? channelId = null, string? guildId = null, string? messageId = null)
         {
@@ -1188,4 +1281,23 @@ public enum MessageType
 {
     Guilds,
     Dms
+}
+
+public class SearchRequest
+{
+    public string? Query { get; set; }
+    public string? FromUserId { get; set; }
+    public string? MentioningUserId { get; set; }
+    public string? BeforeDate { get; set; }
+    public string? DuringDate { get; set; }
+    public string? AfterDate { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 50;
+    public bool isOldMessages { get; set; } = false;
+}
+
+public class SearchMessagesResponse
+{
+    public int TotalCount { get; set; }
+    public List<Message> Messages { get; set; } = new List<Message>();
 }

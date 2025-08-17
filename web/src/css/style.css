@@ -516,6 +516,7 @@
   margin-bottom: 50px;
 }
 #chat-container::-webkit-scrollbar,
+.search-messages-container::-webkit-scrollbar,
 #channel-list::-webkit-scrollbar,
 #activity-list::-webkit-scrollbar,
 #user-list::-webkit-scrollbar,
@@ -528,6 +529,7 @@
 }
 
 #chat-container::-webkit-scrollbar-thumb,
+.search-messages-container::-webkit-scrollbar-thumb,
 #channel-list::-webkit-scrollbar-thumb,
 #user-list::-webkit-scrollbar-thumb,
 #activity-list::-webkit-scrollbar-thumb,
@@ -539,6 +541,7 @@
 }
 
 #chat-container::-webkit-scrollbar-track,
+.search-messages-container::-webkit-scrollbar-track,
 #user-list::-webkit-scrollbar-track,
 #activity-list::-webkit-scrollbar-track,
 .emoji-container::-webkit-scrollbar-track,
@@ -920,15 +923,23 @@ body.black-theme .base-user-input {
   #file-button {
     left: 25px !important;
   }
-
-  #tb-search {
-    display: none !important;
+  #channelSearchInput.search-input-mobile {
+    display: flex;
   }
+  #channelSearchInput {
+    top: 10px;
+    right: 10px;
+    display: none;
+  }
+  .close-button {
+    display: none;
+  }
+  .close-button.search-input-mobile {
+    display: flex;
+  }
+
   .iconWrapper {
     margin-top: 0;
-  }
-  .toolbarIconMobile {
-    margin-top: 10px;
   }
   #hash-sign {
     left: 50px !important;
@@ -1032,7 +1043,9 @@ body.black-theme .base-user-input {
   }
 
   #toolbaroptions {
-    z-index: 1px !important;
+    top: 10px;
+    right: 50px;
+    z-index: 3;
   }
   #dm-profile-sign {
     left: 50px !important;

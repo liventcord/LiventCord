@@ -1149,3 +1149,24 @@ export const isImageLoaded = (img: HTMLImageElement) =>
 export function isContentValid(content: string) {
   return typeof content === "string" && content.trim() !== "";
 }
+
+export const getMonthValue = (query: string) => {
+  if (!query.length) return ["Not Specified"];
+  const lower = query.toLowerCase();
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+  const matches = months.filter((m) => m.toLowerCase().startsWith(lower));
+  return matches.length ? matches : ["Not Specified"];
+};

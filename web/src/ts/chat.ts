@@ -1961,10 +1961,10 @@ export function displayStartMessage(
   }
 }
 
-export function goToMessage(messageId: string) {
+export function goToMessage(messageId: string, ignorePinToggle = false) {
   const msg = getId(messageId) as HTMLElement;
   if (!msg) return;
-  togglePin();
+  if (!ignorePinToggle) togglePin();
 
   if (msg) {
     scrollToMessage(msg);
