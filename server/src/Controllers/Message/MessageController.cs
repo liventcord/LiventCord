@@ -430,16 +430,11 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/search")]
+        [HttpPost("/api/guilds/{guildId}/messages/search")]
         public async Task<ActionResult<SearchMessagesResponse>> SearchGuildChannelMessages(
             [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId,
             [FromBody] SearchRequest request)
         {
-            var fromUserId = request.FromUserId;
-            if (string.IsNullOrWhiteSpace(fromUserId) && string.IsNullOrWhiteSpace(request.BeforeDate) && string.IsNullOrWhiteSpace(request.DuringDate) && string.IsNullOrWhiteSpace(request.AfterDate) && string.IsNullOrWhiteSpace(request.Query))
-                return BadRequest("Query cannot be empty.");
-
             if (request.PageNumber < 1)
                 request.PageNumber = 1;
             if (request.PageSize < 1)
@@ -452,16 +447,9 @@ namespace LiventCord.Controllers
 
             try
             {
-                var filteredQuery = BuildFilteredMessagesQuery(guildId, channelId, request.Query, fromUserId, request);
+                var filteredQuery = BuildFilteredMessagesQuery(guildId, request.channelId, request.Query, request.FromUserId, request);
 
                 var totalCount = await filteredQuery.CountAsync();
-
-                if (totalCount == 0)
-                    return Ok(new SearchMessagesResponse
-                    {
-                        TotalCount = 0,
-                        Messages = new List<Message>()
-                    });
 
                 var orderedQuery = isReversing
                     ? filteredQuery.OrderBy(m => m.Date)
@@ -485,11 +473,12 @@ namespace LiventCord.Controllers
         }
 
 
+
         private IQueryable<Message> BuildFilteredMessagesQuery(
-    string guildId, string channelId, string? query, string? fromUserId, SearchRequest request)
+            string guildId, string? channelId, string? query, string? fromUserId, SearchRequest request)
         {
             IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
-            queryable = queryable.Where(m => m.ChannelId == channelId && m.Channel.GuildId == guildId);
+            queryable = queryable.Where(m => m.Channel.GuildId == guildId && (channelId == null || m.ChannelId == channelId));
 
             if (!string.IsNullOrEmpty(fromUserId))
                 queryable = queryable.Where(m => m.UserId == fromUserId);
@@ -522,6 +511,7 @@ namespace LiventCord.Controllers
 
             return queryable;
         }
+
 
 
 
@@ -1285,6 +1275,7 @@ public enum MessageType
 
 public class SearchRequest
 {
+    public string? channelId { get; set; }
     public string? Query { get; set; }
     public string? FromUserId { get; set; }
     public string? MentioningUserId { get; set; }

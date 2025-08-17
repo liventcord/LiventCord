@@ -566,6 +566,7 @@ export function loadDmHome(isChangingUrl = true): void {
   if (cachedFriMenuContent && chanList) {
     chanList.innerHTML = cachedFriMenuContent;
   }
+  disableElement("search-messages-root");
 
   handleResize();
 }
@@ -630,6 +631,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
     channelInputStates[guildCache.currentChannelId] = getChatBarState();
     manuallyRenderEmojis(oldState.rawContent);
   }
+  enableElement("search-messages-root");
 
   function handleDm(id: string) {
     loadDmToolbar();

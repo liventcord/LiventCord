@@ -716,7 +716,7 @@ function renderContent(
   const insertTextOrHTML = (text: string) => {
     if (!text.trim()) return;
     const replaced = replaceCustomEmojisForChatContainer(text);
-    const span = createEl("span", { innerHTML: replaced });
+    const span = createEl("span", { textContent: replaced });
     if (isSystemMessage) span.classList.add("system-message");
     container.appendChild(span);
   };

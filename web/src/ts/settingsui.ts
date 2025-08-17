@@ -571,7 +571,7 @@ function getAccountSettingsHtml() {
                 <div id="set-info-title-nick">${translations.getSettingsTranslation(
                   "Username"
                 )}</div>
-                <div id="set-info-nick">${currentUserNick}</div>
+                <div id="set-info-nick"></div>
                 <div id="set-info-title-email">${translations.getSettingsTranslation(
                   "Email"
                 )}</div>
@@ -583,7 +583,7 @@ function getAccountSettingsHtml() {
                 <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
                 </form>
-                <span id="settings-self-name">${currentUserNick}</span>
+                <span id="settings-self-name"></span>
                 <button id="change-password-button" class="settings-buttons settings-button">${translations.getSettingsTranslation("ChangePassword")}</button>
                 <button id="link-google-btn" class="settings-buttons settings-button" >Link Google Account</button>
                 <div id="google-link-wrapper" >
@@ -898,6 +898,10 @@ function initialiseSettingComponents(
     });
   }
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
+  const selfName = getId("settings-self-name");
+  if (selfName) selfName.textContent = currentUserNick;
+  const setInfoNick = getId("set-info-nick");
+  if (setInfoNick) setInfoNick.textContent = currentUserNick;
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getId("guild-image") as HTMLImageElement;

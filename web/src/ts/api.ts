@@ -187,8 +187,7 @@ const EventUrlMap: Record<EventType, string> = {
   SEND_MESSAGE_GUILD: "/guilds/{guildId}/channels/{channelId}/messages",
   SEND_MESSAGE_DM: "/dms/channels/{friendId}/messages",
   SEARCH_MESSAGE_DM: "/guilds/{guildId}/channels/{channelId}/messages/search",
-  SEARCH_MESSAGE_GUILD:
-    "/guilds/{guildId}/channels/{channelId}/messages/search",
+  SEARCH_MESSAGE_GUILD: "/guilds/{guildId}/messages/search",
   EDIT_MESSAGE_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}",
   EDIT_MESSAGE_DM: "/dms/channels/{friendId}/messages/{messageId}",

@@ -30,14 +30,12 @@
     <div
       id="search-dropdown"
       class="search-dropdown"
+      @click="handleMentionClick"
       :class="{ hidden: dropdownHidden }"
       ref="dropdownElement"
       role="listbox"
     >
       <div v-if="showDefaultOptions" class="section default-options">
-        <div v-if="currentSearchDisplay" class="current-search-display">
-          {{ currentSearchDisplay }}
-        </div>
         <div class="section-title">
           {{ translations.getTranslation("search-options") }}:
         </div>
@@ -90,7 +88,7 @@
               translations.getTranslation("spesific-date")
             }}</span>
           </li>
-          <li class="search-button">
+          <li class="search-button" @click.stop="selectChannelsList()">
             <span class="label gray"
               >{{ translations.getTranslation("in-channel") }}:</span
             >
@@ -98,7 +96,7 @@
               translations.getTranslation("channel")
             }}</span>
           </li>
-          <li class="search-button">
+          <li class="search-button" @click.stop="selectPinList()">
             <span class="label gray"
               >{{ translations.getTranslation("pinned") }}:</span
             >
@@ -133,6 +131,32 @@
         </div>
       </div>
 
+      <div v-if="showAllChannelsList && allChannelsList.length" class="section">
+        <div class="section-title">
+          {{ translations.getTranslation("select-channel") }}
+        </div>
+        <ul class="search-content">
+          <li
+            v-for="channel in allChannelsList"
+            :key="channel.channelName + '-all-channels'"
+            class="search-button"
+            @click="handleChannelClick(channel)"
+          >
+            <span class="label gray"
+              >{{ translations.getTranslation("in-channel") }}:</span
+            >
+            <span class="channel-name">{{ channel.channelName }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div v-if="isPinSelected" class="section">
+        <ul class="search-content">
+          <li @click="TogglePinState(true)" class="search-button">True</li>
+          <li @click="TogglePinState(false)" class="search-button">False</li>
+        </ul>
+      </div>
+
       <div v-if="showAllUsersList && allUsersList.length" class="section">
         <div class="section-title">
           {{ translations.getTranslation("select-user") }}
@@ -150,7 +174,12 @@
             <span class="label gray" v-else>{{
               translations.getTranslation("from-user")
             }}</span>
-            <img :src="user.image" :alt="user.name" class="user-img" />
+            <img
+              :src="user.image"
+              :alt="user.name"
+              class="user-img"
+              @click="clickOnFilteredUser($event, user.userId)"
+            />
             <span class="username">{{ user.name }}</span>
           </li>
         </ul>
@@ -170,7 +199,12 @@
             <span class="label gray">{{
               translations.getTranslation("from-user")
             }}</span>
-            <img :src="user.image" :alt="user.name" class="user-img" />
+            <img
+              :src="user.image"
+              :alt="user.name"
+              class="user-img"
+              @click="clickOnFilteredUser($event, user.userId)"
+            />
             <span class="username">{{ user.name }}</span>
           </li>
         </ul>
@@ -190,7 +224,12 @@
             <span class="label gray"
               >{{ translations.getTranslation("mentioning") }}:</span
             >
-            <img :src="user.image" :alt="user.name" class="user-img" />
+            <img
+              :src="user.image"
+              :alt="user.name"
+              class="user-img"
+              @click="clickOnFilteredUser($event, user.userId)"
+            />
             <span class="username">{{ user.name }}</span>
           </li>
         </ul>
@@ -212,41 +251,127 @@
         </ul>
       </div>
 
+      <div
+        v-if="hasActiveFilters && !dropdownHidden"
+        class="section active-filters-section"
+      >
+        <div class="section-title">
+          {{ translations.getTranslation("active-filters") }}
+        </div>
+        <ul class="search-content active-filters-content">
+          <li
+            v-if="currentFilteredFromUserName"
+            class="search-button filter-item"
+          >
+            <span class="label gray"
+              >{{ translations.getTranslation("from-user") }}:</span
+            >
+            <span
+              class="filter-value"
+              @click="clickOnFilteredUser($event, currentFilteredFromUserId)"
+            >
+              <img
+                :src="getProfileUrl(currentFilteredFromUserId)"
+                :alt="userManager.getUserNick(currentFilteredFromUserId)"
+                class="user-img"
+              />
+              <span class="username">{{
+                userManager.getUserNick(currentFilteredFromUserId)
+              }}</span>
+            </span>
+            <button @click="removeUserFilter('from')" class="remove-filter-btn">
+              ×
+            </button>
+          </li>
+          <li
+            v-if="currentFilteredMentioningUserName"
+            class="search-button filter-item"
+          >
+            <span class="label gray"
+              >{{ translations.getTranslation("mentions") }}:</span
+            >
+            <span class="filter-value">{{
+              currentFilteredMentioningUserName
+            }}</span>
+            <button
+              @click="removeUserFilter('mentions')"
+              class="remove-filter-btn"
+            >
+              ×
+            </button>
+          </li>
+          <li v-if="currentFilteredChannel" class="search-button filter-item">
+            <span class="label gray"
+              >{{ translations.getTranslation("in-channel") }}:</span
+            >
+
+            <span class="filter-value"
+              >#{{ currentFilteredChannel.channelName }}</span
+            >
+
+            <button @click="removeChannelFilter()" class="remove-filter-btn">
+              ×
+            </button>
+          </li>
+
+          <li v-if="currentFilteredPinState" class="search-button filter-item">
+            <span class="label gray"
+              >{{ translations.getTranslation("pinned") }}:</span
+            >
+
+            <span class="filter-value">{{ currentFilteredPinState }}</span>
+
+            <button @click="removePinFilter()" class="remove-filter-btn">
+              ×
+            </button>
+          </li>
+        </ul>
+      </div>
+
       <div v-if="hasActiveDateFilters" class="section dates-section">
         <div class="section-title">
           {{ translations.getTranslation("active-date-filters") }}
         </div>
         <ul class="search-content dates-content">
-          <li v-if="dateFilters.before" class="search-button date-filter-item">
+          <li v-if="dateFilters.before" class="search-button filter-item">
             <span class="label gray"
               >{{ translations.getTranslation("before") }}:</span
             >
             <span class="date-value">{{
               formatDateForDisplay(dateFilters.before)
             }}</span>
-            <button @click="removeDateFilter('before')" class="remove-date-btn">
+            <button
+              @click="removeDateFilter('before')"
+              class="remove-filter-btn"
+            >
               ×
             </button>
           </li>
-          <li v-if="dateFilters.during" class="search-button date-filter-item">
+          <li v-if="dateFilters.during" class="search-button filter-item">
             <span class="label gray"
               >{{ translations.getTranslation("during") }}:</span
             >
             <span class="date-value">{{
               formatDateForDisplay(dateFilters.during)
             }}</span>
-            <button @click="removeDateFilter('during')" class="remove-date-btn">
+            <button
+              @click="removeDateFilter('during')"
+              class="remove-filter-btn"
+            >
               ×
             </button>
           </li>
-          <li v-if="dateFilters.after" class="search-button date-filter-item">
+          <li v-if="dateFilters.after" class="search-button filter-item">
             <span class="label gray"
               >{{ translations.getTranslation("after") }}:</span
             >
             <span class="date-value">{{
               formatDateForDisplay(dateFilters.after)
             }}</span>
-            <button @click="removeDateFilter('after')" class="remove-date-btn">
+            <button
+              @click="removeDateFilter('after')"
+              class="remove-filter-btn"
+            >
               ×
             </button>
           </li>
@@ -254,6 +379,7 @@
       </div>
     </div>
   </div>
+
   <teleport to="#search-messages-root">
     <div
       v-if="(messages.length > 0 && showMessages) || showError"
@@ -349,11 +475,11 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { currentGuildId, getGuildMembers, GuildMember } from "../ts/guild";
 import { deletedUser, userManager } from "../ts/user";
-import { CachedChannel, cacheInterface, guildCache } from "../ts/cache";
+import { CachedChannel, cacheInterface } from "../ts/cache";
 import { apiClient, EventType } from "../ts/api";
 import { getFormattedDate, IMAGE_SRCS } from "../ts/utils";
 import { getProfileUrl } from "../ts/avatar";
-import { goToMessage } from "../ts/chat";
+import { goToMessage, handleMentionClick } from "../ts/chat";
 import { Message } from "../ts/message";
 import { translations } from "../ts/translations";
 
@@ -366,6 +492,7 @@ const currentFilteredFromUserName = ref("");
 const currentFilteredMentioningUserId = ref("");
 const currentFilteredMentioningUserName = ref("");
 const currentFilteredChannel = ref<CachedChannel | null>(null);
+const currentFilteredPinState = ref<boolean>(false);
 const channelSearchInputElement = ref<HTMLInputElement | null>(null);
 const dropdownElement = ref<HTMLDivElement | null>(null);
 const dateInput = ref<HTMLInputElement | null>(null);
@@ -377,8 +504,9 @@ const isNewSelected = ref(true);
 const showMessages = ref(true);
 const showError = ref(false);
 const isMentionOpen = ref(false);
+const showAllChannelsList = ref(false);
+const isPinSelected = ref(false);
 const isSelectingMentions = ref(false);
-
 const showDatePicker = ref(false);
 const currentDateType = ref<"before" | "during" | "after">("before");
 const selectedDate = ref("");
@@ -388,41 +516,13 @@ const dateFilters = ref({
   after: ""
 });
 
-const currentSearchDisplay = computed(() => {
-  const parts = [];
-
-  if (currentFilteredFromUserName.value) {
-    parts.push(
-      `${translations.getTranslation("from-user")} ${currentFilteredFromUserName.value}`
-    );
-  }
-  if (currentFilteredMentioningUserName.value) {
-    parts.push(
-      `${translations.getTranslation("mentioning")}: ${currentFilteredMentioningUserName.value}`
-    );
-  }
-  if (currentFilteredChannel.value) {
-    parts.push(`in: ${currentFilteredChannel.value.channelName}`);
-  }
-  if (dateFilters.value.before) {
-    parts.push(
-      `${translations.getTranslation("before")}: ${formatDateForDisplay(dateFilters.value.before)}`
-    );
-  }
-  if (dateFilters.value.during) {
-    parts.push(
-      `${translations.getTranslation("during")}: ${formatDateForDisplay(dateFilters.value.during)}`
-    );
-  }
-  if (dateFilters.value.after) {
-    parts.push(
-      `${translations.getTranslation("after")}: ${formatDateForDisplay(dateFilters.value.after)}`
-    );
-  }
-
-  return parts.length > 0
-    ? `${translations.getTranslation("search-for")}: ${parts.join(", ")}`
-    : "";
+const hasActiveFilters = computed(() => {
+  return (
+    currentFilteredFromUserId.value ||
+    currentFilteredMentioningUserId.value ||
+    currentFilteredChannel.value ||
+    currentFilteredPinState.value
+  );
 });
 
 const hasActiveDateFilters = computed(() => {
@@ -436,21 +536,24 @@ const hasActiveDateFilters = computed(() => {
 const showDefaultOptions = computed(() => {
   const cond1 = !dropdownHidden.value;
   const cond2 = !query.value.trim();
-  const cond3 = !currentFilteredFromUserId.value;
-  const cond4 = !currentFilteredMentioningUserId.value;
-  const cond5 = !currentFilteredChannel.value;
   const cond6 = !showAllUsersList.value;
   const cond7 = !showDatePicker.value;
+  const cond8 = !showAllChannelsList.value;
 
-  const result = cond1 && cond2 && cond3 && cond4 && cond5 && cond6 && cond7;
+  const result = cond1 && cond2 && cond6 && cond7 && cond8;
 
   return result;
+});
+
+const allChannelsList = computed(() => {
+  if (!showAllChannelsList.value) return [];
+  channels.value = cacheInterface.getChannels(currentGuildId) || [];
+  return channels.value.slice(0, 50);
 });
 
 const allUsersList = computed(() => {
   if (!showAllUsersList.value) return [];
   users.value = getGuildMembers() || [];
-
   return users.value.slice(0, 50);
 });
 
@@ -458,12 +561,13 @@ users.value = getGuildMembers() || [];
 
 watch(query, () => {
   users.value = getGuildMembers() || [];
-  channels.value = cacheInterface.getChannels(currentGuildId);
+  channels.value = cacheInterface.getChannels(currentGuildId) || [];
   if (dropdownElement.value) dropdownElement.value.style.display = "block";
 
   if (query.value.trim()) {
     showAllUsersList.value = false;
     showDatePicker.value = false;
+    showAllChannelsList.value = false;
   }
 });
 
@@ -478,22 +582,38 @@ const filteredUsers = computed(() => {
 });
 
 const usersSection = computed(() => {
-  if (showAllUsersList.value || showDatePicker.value) return [];
+  if (
+    showAllUsersList.value ||
+    showDatePicker.value ||
+    showAllChannelsList.value
+  )
+    return [];
   return filteredUsers.value;
 });
 
 const mentioningSection = computed(() => {
-  if (showAllUsersList.value || showDatePicker.value) return [];
+  if (
+    showAllUsersList.value ||
+    showDatePicker.value ||
+    showAllChannelsList.value
+  )
+    return [];
   return filteredUsers.value;
 });
 
 const channelSection = computed(() => {
-  if (!query.value.trim() || showAllUsersList.value || showDatePicker.value)
+  if (
+    showAllUsersList.value ||
+    showDatePicker.value ||
+    showAllChannelsList.value
+  )
     return [];
+  if (!query.value.trim()) return [];
+
   return channels.value
     .filter((channel) => {
       const name = channel.channelName?.toLowerCase() || "";
-      return name.startsWith(query.value.toLowerCase());
+      return name.includes(query.value.toLowerCase());
     })
     .slice(0, 3);
 });
@@ -506,12 +626,13 @@ function formatDateForDisplay(dateString: string) {
 
 function openDatePicker(dateType: "before" | "during" | "after") {
   setTimeout(() => {
-    dropdownHidden.value = false;
+    showDatePicker.value = true;
   }, 0);
+  dropdownHidden.value = false;
   currentDateType.value = dateType;
   selectedDate.value = dateFilters.value[dateType] || "";
-  showDatePicker.value = true;
   showAllUsersList.value = false;
+  showAllChannelsList.value = false;
 }
 
 function onDateSelected() {}
@@ -544,6 +665,38 @@ function removeDateFilter(dateType: "before" | "during" | "after") {
   performSearch();
 }
 
+function removeUserFilter(filterType: "from" | "mentions") {
+  if (filterType === "from") {
+    currentFilteredFromUserId.value = "";
+    currentFilteredFromUserName.value = "";
+  } else {
+    currentFilteredMentioningUserId.value = "";
+    currentFilteredMentioningUserName.value = "";
+  }
+  performSearch();
+}
+function removeChannelFilter() {
+  currentFilteredChannel.value = null;
+  performSearch();
+}
+function removePinFilter() {
+  currentFilteredPinState.value = false;
+  performSearch();
+}
+
+function clickOnFilteredUser(e: MouseEvent, userId: string) {
+  handleMentionClick(e, currentFilteredFromUserId.value);
+}
+
+function validateSearchBody(body: any): boolean {
+  const hasQuery = body.query && body.query.trim().length > 0;
+  const hasFromUser = !!body.fromUserId;
+  const hasDateFilters =
+    !!body.beforeDate || !!body.duringDate || !!body.afterDate;
+
+  return hasQuery || hasFromUser || hasDateFilters || body.channelId != null;
+}
+
 function buildSearchBody() {
   const body: any = {
     query: query.value.trim(),
@@ -574,43 +727,57 @@ function buildSearchBody() {
 }
 
 async function runSearch() {
-  if (
-    currentFilteredFromUserId.value ||
-    currentFilteredMentioningUserId.value ||
-    currentFilteredChannel.value ||
-    hasActiveDateFilters.value
-  ) {
-    await performSearch();
-  } else {
-    const body = buildSearchBody();
-    await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
-      guildId: currentGuildId,
-      channelId: guildCache.currentChannelId,
-      ...body
-    });
+  const body = buildSearchBody();
+
+  if (!validateSearchBody(body)) {
+    return;
   }
+
+  await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
+    guildId: currentGuildId,
+    ...body
+  });
 }
 
 async function performSearch() {
   const body = buildSearchBody();
+
+  if (!validateSearchBody(body)) {
+    console.log("Search body rejected: ", body);
+    return;
+  }
+
   await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
     guildId: currentGuildId,
-    channelId: guildCache.currentChannelId,
     ...body
   });
 }
 
 function selectUsersList(isMentioning: any) {
+  resetDropdownStates();
   showAllUsersList.value = true;
-  showDatePicker.value = false;
   isSelectingMentions.value = Boolean(isMentioning);
   query.value = "";
   inputWidth.value = "225px";
 }
 
+function selectChannelsList() {
+  resetDropdownStates();
+  showAllChannelsList.value = true;
+  query.value = "";
+  inputWidth.value = "225px";
+}
+
+function selectPinList() {
+  dropdownHidden.value = true;
+  resetDropdownStates();
+  isPinSelected.value = true;
+  query.value = "";
+  inputWidth.value = "225px";
+}
 async function handleUserClick(user: GuildMember, isMentioning = false) {
-  clearCurrentFilters();
   showAllUsersList.value = false;
+  showAllChannelsList.value = false;
 
   const shouldSetMentioning =
     isMentioning !== null ? isMentioning : isSelectingMentions.value;
@@ -630,23 +797,29 @@ async function handleUserClick(user: GuildMember, isMentioning = false) {
   await performSearch();
 }
 
-function handleChannelClick(channel: CachedChannel) {
-  clearCurrentFilters();
+async function handleChannelClick(channel: CachedChannel) {
   showAllUsersList.value = false;
   showDatePicker.value = false;
+  showAllChannelsList.value = false;
   currentFilteredChannel.value = channel;
   query.value = "";
   dropdownHidden.value = true;
   inputWidth.value = "150px";
+  setTimeout(async () => {
+    await performSearch();
+  }, 0);
 }
-
-function clearCurrentFilters() {
-  currentFilteredFromUserId.value = "";
-  currentFilteredFromUserName.value = "";
-  currentFilteredMentioningUserId.value = "";
-  currentFilteredMentioningUserName.value = "";
-  currentFilteredChannel.value = null;
-  isSelectingMentions.value = false;
+function TogglePinState(bool: boolean) {
+  showAllUsersList.value = false;
+  showDatePicker.value = false;
+  showAllChannelsList.value = false;
+  currentFilteredPinState.value = bool;
+  query.value = "";
+  setTimeout(() => {
+    dropdownHidden.value = false;
+  }, 0);
+  isPinSelected.value = false;
+  inputWidth.value = "150px";
 }
 
 function jumpToMessage(messageId: string) {
@@ -679,23 +852,31 @@ function clearSearch() {
   currentFilteredMentioningUserId.value = "";
   currentFilteredFromUserName.value = "";
   currentFilteredMentioningUserName.value = "";
+  currentFilteredChannel.value = null;
+  currentFilteredPinState.value = false;
+
+  dropdownHidden.value = true;
   dateFilters.value = {
     before: "",
     during: "",
     after: ""
   };
-  showDatePicker.value = false;
+
+  resetDropdownStates();
 }
+
 interface SearchMessagesResponse {
   messages?: Message[];
   totalCount?: string;
 }
+
 apiClient.on(
   EventType.SEARCH_MESSAGE_GUILD,
   async (data: SearchMessagesResponse) => {
     if (data.messages && data.messages.length > 0) {
-      messages.value = data.messages;
       showMessages.value = true;
+      messages.value = data.messages;
+      console.log(messages.value);
     } else {
       showError.value = true;
     }
@@ -704,36 +885,50 @@ apiClient.on(
   }
 );
 
-function onFocusInput() {
+function resetDropdownStates() {
+  showAllUsersList.value = false;
+  showAllChannelsList.value = false;
+  showDatePicker.value = false;
+  isPinSelected.value = false;
+}
+
+function showDropdown() {
   dropdownHidden.value = false;
+  if (dropdownElement.value) {
+    dropdownElement.value.style.display = "block";
+  }
+}
+
+function onFocusInput() {
+  resetDropdownStates();
+  showDropdown();
 }
 
 function onInputChange() {
-  dropdownHidden.value = false;
+  resetDropdownStates();
   inputWidth.value = "225px";
-  resetToDefaultOptions();
-}
-function resetToDefaultOptions() {
-  dropdownHidden.value = false;
-  query.value = "";
-  currentFilteredFromUserId.value = "";
-  currentFilteredMentioningUserId.value = "";
-  currentFilteredChannel.value = null;
-  showAllUsersList.value = true;
-  showDatePicker.value = true;
+  showDropdown();
 }
 
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as Element;
+  const searchContainer =
+    channelSearchInputElement.value?.closest(".search-container");
+
   if (
-    !channelSearchInputElement.value?.contains(target) &&
+    !searchContainer?.contains(target) &&
     !dropdownElement.value?.contains(target)
   ) {
-    if (!query.value.trim()) {
+    dropdownHidden.value = true;
+    resetDropdownStates();
+
+    if (
+      !query.value.trim() &&
+      !hasActiveFilters.value &&
+      !hasActiveDateFilters.value
+    ) {
       inputWidth.value = "150px";
     }
-    dropdownHidden.value = true;
-    showAllUsersList.value = false;
   }
 }
 
@@ -796,13 +991,13 @@ onBeforeUnmount(() => {
   background-color: #545b62;
 }
 
-.date-filter-item {
+.filter-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.remove-date-btn {
+.remove-filter-btn {
   margin-left: 8px;
   background: none;
   border: none;
@@ -812,7 +1007,7 @@ onBeforeUnmount(() => {
   padding: 0 4px;
 }
 
-.remove-date-btn:hover {
+.remove-filter-btn:hover {
   color: #ff4444;
 }
 </style>
@@ -908,6 +1103,7 @@ onBeforeUnmount(() => {
 
 .message {
   transform: translateY(70px);
+  padding-right: 17px;
 }
 
 .current-search-display {
@@ -932,7 +1128,7 @@ onBeforeUnmount(() => {
 #search-messages-count {
   color: white;
   position: static;
-  margin-left: 0;
+  margin-left: 5px;
   top: auto;
 }
 
@@ -941,7 +1137,9 @@ onBeforeUnmount(() => {
   color: white;
   cursor: pointer;
   background-color: transparent;
-  width: 50px;
+  width: 60px;
+  height: 30px;
+  font-size: 16px;
 }
 
 #search-messages-old-button {
@@ -949,7 +1147,9 @@ onBeforeUnmount(() => {
   color: white;
   cursor: pointer;
   background-color: transparent;
-  width: 50px;
+  width: 60px;
+  height: 30px;
+  font-size: 16px;
 }
 #search-messages-old-button:focus {
   outline: none;
@@ -989,5 +1189,9 @@ onBeforeUnmount(() => {
 .label.gray,
 .placeholder {
   text-transform: lowercase;
+}
+.filter-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

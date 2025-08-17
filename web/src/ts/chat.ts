@@ -128,49 +128,47 @@ export function changeChannelWithId(channelId: string) {
 export const CLYDE_ID = "2";
 export const SYSTEM_ID = "1";
 let currentMentionPop: HTMLElement | null;
+
+function isMentionTarget(target: HTMLElement): boolean {
+  return (
+    target.classList.contains("mention") ||
+    target.classList.contains("profile-pic") ||
+    target.classList.contains("pinner-name-link") ||
+    target.classList.contains("user-img")
+  );
+}
+
+export async function handleMentionClick(event: MouseEvent, userId?: string) {
+  const target = event.target as HTMLElement;
+  if (!isMentionTarget(target)) return;
+
+  const _userId = userId ?? target.dataset.userId;
+  const channelId = target.dataset.channelId;
+
+  if (channelId) {
+    changeChannelWithId(channelId);
+    return;
+  }
+  if (!_userId) return;
+
+  if (currentMentionPop) {
+    currentMentionPop.remove();
+    currentMentionPop = null;
+  }
+
+  const pop = await createMentionProfilePop(target, _userId);
+  if (pop) currentMentionPop = pop;
+}
+
 export function addChatMentionListeners() {
-  chatContainer?.addEventListener("click", async (event) => {
-    const target = event.target as HTMLElement;
-    if (
-      target.classList.contains("mention") ||
-      target.classList.contains("profile-pic") ||
-      target.classList.contains("pinner-name-link")
-    ) {
-      const userId = target.dataset.userId;
-      const channelId = target.dataset.channelId;
-      if (channelId) {
-        changeChannelWithId(channelId);
-        return;
-      }
-      if (!userId) return;
-
-      if (currentMentionPop) {
-        currentMentionPop.remove();
-        currentMentionPop = null;
-      }
-
-      const pop = await createMentionProfilePop(target, userId);
-      if (pop) {
-        currentMentionPop = pop;
-      }
-    }
-  });
+  chatContainer?.addEventListener("click", (e) => handleMentionClick(e));
 
   document.body.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
     if (!target) return;
 
-    if (currentMentionPop && currentMentionPop.contains(target)) {
-      return;
-    }
-
-    if (
-      target.classList.contains("mention") ||
-      target.classList.contains("profile-pic") ||
-      target.classList.contains("pinner-name-link")
-    ) {
-      return;
-    }
+    if (currentMentionPop && currentMentionPop.contains(target)) return;
+    if (isMentionTarget(target)) return;
 
     if (currentMentionPop) {
       currentMentionPop.remove();
