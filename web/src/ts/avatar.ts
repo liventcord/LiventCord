@@ -563,7 +563,9 @@ export function onEditGuildProfile() {
   onEditImage(true);
 }
 export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
-  guildImg.src = getGuildUrl(guildId);
+  guildImg.src = cacheInterface.getIsUploaded(guildId)
+    ? getGuildUrl(guildId)
+    : blackImage;
 }
 export function setGuildImage(
   guildId: string,

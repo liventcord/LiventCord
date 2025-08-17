@@ -1678,6 +1678,7 @@ export function fetchCurrentAttachments() {
   fetchAttachments(guildCache.currentChannelId);
 }
 function fetchAttachments(channelId: string, isDm = false) {
+  if (!channelId) return;
   store.commit("setCurrentPage", 1);
 
   const attachmentType = isOnGuild
