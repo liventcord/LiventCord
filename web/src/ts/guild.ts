@@ -23,7 +23,7 @@ import {
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
-import { UserInfo } from "./user.ts";
+import { UserInfo, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
 
@@ -42,7 +42,12 @@ export interface Guild {
   isGuildUploadedImg: boolean;
   guildMembers: string[];
 }
-
+export interface GuildMember {
+  name: string;
+  image: string;
+  userId: string;
+  discriminator: string;
+}
 export function setGuildNameText(guildName: string) {
   guildNameText.innerText = guildName;
 }
@@ -191,8 +196,8 @@ export function fetchMembers() {
   }
 }
 
-export function getGuildMembers() {
-  if (!cacheInterface.isMembersEmpty(currentGuildId) || !currentGuildId) {
+export function getGuildMembers(): GuildMember[] {
+  if (cacheInterface.isMembersEmpty(currentGuildId) || !currentGuildId) {
     return [];
   }
 
@@ -201,17 +206,17 @@ export function getGuildMembers() {
     return [];
   }
 
-  const usersToReturn = [];
+  const usersToReturn: GuildMember[] = [];
 
   for (const userId in guildMembers) {
     const user = guildMembers[userId];
     usersToReturn.push({
       name: user.nickName,
-      image: getProfileUrl(user.userId)
+      userId: user.userId,
+      image: getProfileUrl(user.userId),
+      discriminator: userManager.getUserDiscriminator(user.userId)
     });
   }
-  console.log(usersToReturn);
-  console.log(guildMembers);
 
   return usersToReturn;
 }

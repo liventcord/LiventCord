@@ -1312,7 +1312,6 @@ function handleSwapNavigation(e: TouchEvent) {
 
     if (isOnLeft) {
       chatContainer.style.flexDirection = "";
-      toolbarOptions.style.zIndex = "1";
       mobileMoveToCenter(true);
     } else {
       if (!isOnMePage) {
@@ -1335,7 +1334,6 @@ function handleSwapNavigation(e: TouchEvent) {
 function handleRightCenterCheck() {
   disableElement(mobileBlackBg);
   chatContainer.style.flexDirection = "";
-  toolbarOptions.style.zIndex = "1";
 }
 
 export function handleMembersClick() {
@@ -1395,6 +1393,9 @@ function mobileMoveToRight() {
   disableElement("channel-info");
   disableElement("hash-sign");
 
+  getId("channelSearchInput")?.classList.add("search-input-mobile");
+  document.querySelector(".close-button")?.classList.add("search-input-mobile");
+
   disableElement("scroll-to-bottom");
 }
 
@@ -1420,6 +1421,11 @@ function mobileMoveToCenter(excludeChannelList: boolean = false) {
   getId("message-input-container")?.classList.remove(
     "message-input-container-mobile-left"
   );
+  getId("channelSearchInput")?.classList.remove("search-input-mobile");
+  document
+    .querySelector(".close-button")
+    ?.classList.remove("search-input-mobile");
+
   if (!isOnMePage) {
     enableElement(chatContainer);
   }
