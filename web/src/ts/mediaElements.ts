@@ -715,8 +715,9 @@ function renderContent(
 
   const insertTextOrHTML = (text: string) => {
     if (!text.trim()) return;
-    const replaced = replaceCustomEmojisForChatContainer(text);
-    const span = createEl("span", { textContent: replaced });
+    const processedContent = replaceCustomEmojisForChatContainer(text);
+    const span = createEl("span");
+    span.innerHTML = processedContent;
     if (isSystemMessage) span.classList.add("system-message");
     container.appendChild(span);
   };
@@ -732,20 +733,21 @@ function renderContent(
     const start = match.index;
     const end = start + url.length;
 
-    if (start > lastIndex) insertTextOrHTML(content.slice(lastIndex, start));
+    if (start > lastIndex) {
+      insertTextOrHTML(content.slice(lastIndex, start));
+    }
 
     const urlLink = createEl("a", {
       textContent: url,
       href: url,
       className: "url-link"
     });
-
     urlLink.addEventListener("click", (e) => {
       e.preventDefault();
       openExternalUrl(url);
     });
-
     container.appendChild(urlLink);
+
     lastIndex = end;
   }
 

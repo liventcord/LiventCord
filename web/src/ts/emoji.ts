@@ -288,21 +288,6 @@ export function getGuildEmojiHtml(): string {
   `;
   return initialHtml;
 }
-function generateEmojiTag(id: string): string {
-  const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
-
-  if (builtinIndex !== -1) {
-    const adjustedIndex = builtinIndex - 1;
-    const col = adjustedIndex % columns;
-    const row = Math.floor(adjustedIndex / columns);
-    const x = -(col * spriteWidth);
-    const y = -(row * spriteHeight);
-
-    return `<div data-emoji-id="${sanitizeInput(id)}" data-id="${sanitizeInput(id)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" class="emoji builtin-emoji" style="width:${spriteWidth}px; height:${spriteHeight}px; background-position: ${x}px ${y}px;"></div>`;
-  } else {
-    return `<img data-id="${sanitizeInput(id)}" class="chat-emoji" src="${getEmojiPath(id, currentGuildId)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" />`;
-  }
-}
 
 let builtinEmojiPayload: BuiltinEmojiPayload | null = null;
 
@@ -332,62 +317,142 @@ async function loadBuiltinEmojis(): Promise<void> {
 }
 
 const regexIdEmojis = /:([0-9A-Fa-f]+):/g;
-
 const regexUserMentions = /<@(\d{18})>/g;
-
 const regexChannelMentions = /<#(\d{19})>/g;
 
 export function replaceCustomEmojisForChatContainer(content: string): string {
+  if (!content) return "";
+
   const customEmojisToUse: CustomEmoji[] = getCurrentEmojis() ?? [];
 
-  type UnifiedEmoji = { id: string; emoji: string };
-
-  const customUnified: UnifiedEmoji[] = customEmojisToUse.map((e) => ({
+  const customUnified = customEmojisToUse.map((e) => ({
     id: e.fileId,
     emoji: e.fileName
   }));
 
-  const builtinUnified: UnifiedEmoji[] = builtinEmojisCache.map((e) => ({
+  const builtinUnified = builtinEmojisCache.map((e) => ({
     id: e.id,
     emoji: e.names[0]
   }));
 
   const emojisToUse = [...customUnified, ...builtinUnified];
 
-  if (!content || emojisToUse.length === 0) {
+  if (emojisToUse.length === 0) {
     return escapeHtml(content);
   }
 
   const emojiMap = new Map(emojisToUse.map((e) => [e.id, e]));
 
-  content = content.replace(regexIdEmojis, (match, emojiId) => {
-    const emoji = emojiMap.get(emojiId);
-    return emoji ? generateEmojiTag(emojiId) : escapeHtml(match);
-  });
+  const parts: Array<{
+    type: "text" | "emoji" | "user" | "channel";
+    content: string;
+    data?: any;
+  }> = [];
+  let lastIndex = 0;
 
-  content = content.replace(regexUserMentions, (match, userId) => {
-    const user = userManager.getUserInfo(userId);
-    const nick = user?.nickName ?? `@Unknown`;
-    return generateUserMention(userId, nick);
-  });
+  const allMatches: Array<{
+    match: RegExpMatchArray;
+    type: "emoji" | "user" | "channel";
+  }> = [];
 
-  content = content.replace(regexChannelMentions, (match, channelId) => {
-    const name = cacheInterface.getChannelNameWithoutGuild(channelId);
-    if (!name) {
-      return match;
+  let match;
+  regexIdEmojis.lastIndex = 0;
+  while ((match = regexIdEmojis.exec(content)) !== null) {
+    allMatches.push({ match, type: "emoji" });
+  }
+
+  regexUserMentions.lastIndex = 0;
+  while ((match = regexUserMentions.exec(content)) !== null) {
+    allMatches.push({ match, type: "user" });
+  }
+
+  regexChannelMentions.lastIndex = 0;
+  while ((match = regexChannelMentions.exec(content)) !== null) {
+    allMatches.push({ match, type: "channel" });
+  }
+
+  allMatches.sort((a, b) => a.match.index! - b.match.index!);
+
+  for (const { match, type } of allMatches) {
+    const start = match.index!;
+    const end = start + match[0].length;
+
+    if (start > lastIndex) {
+      parts.push({ type: "text", content: content.slice(lastIndex, start) });
     }
-    return generateChannelMention(channelId, name);
-  });
 
-  return content;
+    if (type === "emoji") {
+      const emojiId = match[1];
+      const emoji = emojiMap.get(emojiId);
+      if (emoji) {
+        parts.push({ type: "emoji", content: "", data: { id: emojiId } });
+      } else {
+        parts.push({ type: "text", content: match[0] });
+      }
+    } else if (type === "user") {
+      const userId = match[1];
+      const user = userManager.getUserInfo(userId);
+      const nick = user?.nickName ?? "Unknown";
+      parts.push({ type: "user", content: "", data: { userId, nick } });
+    } else if (type === "channel") {
+      const channelId = match[1];
+      const name = cacheInterface.getChannelNameWithoutGuild(channelId);
+      if (name) {
+        parts.push({ type: "channel", content: "", data: { channelId, name } });
+      } else {
+        parts.push({ type: "text", content: match[0] });
+      }
+    }
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push({ type: "text", content: content.slice(lastIndex) });
+  }
+
+  return parts
+    .map((part) => {
+      switch (part.type) {
+        case "text":
+          return escapeHtml(part.content);
+        case "emoji":
+          return generateEmojiTag(part.data.id);
+        case "user":
+          return generateUserMention(part.data.userId, part.data.nick);
+        case "channel":
+          return generateChannelMention(part.data.channelId, part.data.name);
+        default:
+          return "";
+      }
+    })
+    .join("");
+}
+
+function generateEmojiTag(id: string): string {
+  const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
+
+  if (builtinIndex !== -1) {
+    const adjustedIndex = builtinIndex - 1;
+    const col = adjustedIndex % columns;
+    const row = Math.floor(adjustedIndex / columns);
+    const x = -(col * spriteWidth);
+    const y = -(row * spriteHeight);
+
+    return `<div data-emoji-id="${sanitizeInput(id)}" data-id="${sanitizeInput(id)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" class="emoji builtin-emoji" style="width:${spriteWidth}px; height:${spriteHeight}px; background-position: ${x}px ${y}px;"></div>`;
+  } else {
+    return `<img data-id="${sanitizeInput(id)}" class="chat-emoji" src="${getEmojiPath(id, currentGuildId)}" alt="Emoji ${sanitizeInput(cacheInterface.getEmojiName(id))}" />`;
+  }
 }
 
 function generateUserMention(userId: string, nick: string): string {
-  return `<button class="mention" type="button" data-user-id="${userId}">@${escapeHtml(nick)}</button>`;
+  return `<button class="mention" type="button" data-user-id="${sanitizeInput(userId)}">@${escapeHtml(nick)}</button>`;
 }
+
 function generateChannelMention(channelId: string, name: string): string {
-  return `<button class="mention" type="button" data-channel-id="${channelId}">#${escapeHtml(name)}</button>`;
+  return `<button class="mention" type="button" data-channel-id="${sanitizeInput(channelId)}">#${escapeHtml(name)}</button>`;
 }
+
 function getEmojiCode(builtinIndex: number): string | null {
   const emoji = builtinEmojisCache[builtinIndex];
   if (!emoji) {
