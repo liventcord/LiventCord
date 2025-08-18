@@ -581,7 +581,6 @@ class GuildCacheInterface {
     this.getGuild(guildId)?.setGuildVersion(ownerId);
   }
   isGuildOwner(guildId: string, ownerId: string): boolean {
-    console.log(guildId, this.getGuild(guildId)?.getOwner());
     return this.getGuild(guildId)?.getOwner() === ownerId;
   }
 

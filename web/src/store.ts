@@ -225,7 +225,6 @@ export default createStore<RootState>({
         }
 
         const isOnline = await userManager.isNotOffline(member.userId);
-        console.log(member, isOnline);
         const categorizedMember = {
           ...member,
           isOnline,

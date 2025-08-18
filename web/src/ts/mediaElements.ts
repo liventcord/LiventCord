@@ -403,7 +403,6 @@ export async function createMediaElement(
   if (attachments && attachments.length > 0) {
     for (const attachment of attachments) {
       try {
-        console.log("Processing attachment: ", attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),

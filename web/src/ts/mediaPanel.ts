@@ -200,7 +200,6 @@ function renderEmojis(
       const indexStr = target.getAttribute("data-index");
       if (indexStr) {
         const index = parseInt(indexStr, 10);
-        console.log("Delegated emoji click", index);
         appendBuiltinEmojiChat(index);
       }
     }
@@ -409,7 +408,6 @@ function toggleMediaMenu(isClickingTop?: boolean) {
     disableElement(mediaMenu);
     isMediaMenuOpen = false;
   } else {
-    console.error("Opening media menu");
     enableElement(mediaMenu, false, true);
     isMediaMenuOpen = true;
   }

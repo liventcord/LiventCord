@@ -293,7 +293,9 @@ let builtinEmojiPayload: BuiltinEmojiPayload | null = null;
 
 async function loadBuiltinEmojis(): Promise<void> {
   try {
-    const response = await fetch("/emojis.json");
+    const response = await fetch(
+      "https://raw.githubusercontent.com/liventcord/LiventCord/refs/heads/main/web/public/emojis.json"
+    );
     if (!response.ok) {
       builtinEmojisCache = [];
       builtinEmojiPayload = null;
@@ -433,9 +435,8 @@ function generateEmojiTag(id: string): string {
   const builtinIndex = builtinEmojisCache.findIndex((e) => e.id === id);
 
   if (builtinIndex !== -1) {
-    const adjustedIndex = builtinIndex - 1;
-    const col = adjustedIndex % columns;
-    const row = Math.floor(adjustedIndex / columns);
+    const col = builtinIndex % columns;
+    const row = Math.floor(builtinIndex / columns);
     const x = -(col * spriteWidth);
     const y = -(row * spriteHeight);
 
@@ -746,7 +747,7 @@ function appendEmojiToInput(text: string) {
     }
     endIndex++;
   }
-  const textToInsert = " " + text;
+  const textToInsert = " " + text + " ";
 
   state.rawContent =
     raw.slice(0, startIndex) + textToInsert + raw.slice(endIndex);
