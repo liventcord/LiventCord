@@ -18,7 +18,8 @@ import {
   isCompressedFile,
   renderFileIcon,
   isMobile,
-  truncateString
+  truncateString,
+  insertHTML
 } from "./utils.ts";
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
@@ -1335,8 +1336,10 @@ function handleUserBeforeInput(event: InputEvent) {
 const emojiBtn = getId("emojibtn") as HTMLElement;
 const sendBtn = getId("sendbtn") as HTMLElement;
 
-function toggleSendButton(hasContent: boolean) {
-  const canSend = hasContent && isMobile;
+function toggleSendButton(canSubmitMessage?: boolean) {
+  const hasContent =
+    state.rawContent.trim().length > 0 || (fileInput.files?.length ?? 0) > 0;
+  const canSend = canSubmitMessage && hasContent && isMobile;
 
   if (canSend) {
     enableElement(sendBtn);
@@ -1345,9 +1348,8 @@ function toggleSendButton(hasContent: boolean) {
   }
 
   sendBtn.classList.toggle("sendbtn-active", canSend);
-
-  emojiBtn?.classList.toggle("send-active", hasContent);
-  gifBtn?.classList.toggle("send-active", hasContent);
+  emojiBtn?.classList.toggle("send-active", canSend);
+  gifBtn?.classList.toggle("send-active", canSend);
 }
 
 let initialHeight = window.innerHeight;
@@ -1413,8 +1415,7 @@ function handleChatInput(event: Event) {
       start: state.selectionStart,
       end: state.selectionEnd
     };
-    const hasContent = state.rawContent.trim().length > 0;
-    toggleSendButton(hasContent);
+    toggleSendButton(true);
 
     const selection = window.getSelection();
 
@@ -1471,29 +1472,30 @@ export function initialiseChatInput() {
   chatInput.addEventListener("paste", (e: ClipboardEvent) => {
     e.preventDefault();
     const items = e.clipboardData?.items;
-    if (items) {
-      let foundMedia = false;
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.kind === "file") {
-          foundMedia = true;
-          const file = item.getAsFile();
-          if (file) {
-            FileHandler.handleFileInput([file]);
-          }
+    if (!items) return;
+
+    let foundMedia = false;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === "file") {
+        foundMedia = true;
+        const file = item.getAsFile();
+        if (file) {
+          FileHandler.handleFileInput([file]);
         }
       }
-      if (!foundMedia) {
-        const text = e.clipboardData?.getData("text/plain") || "";
-        const html = text
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/ {2}/g, " &nbsp;")
-          .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
-          .replace(/\n/g, "<br>");
-        document.execCommand("insertHTML", false, html);
-      }
+    }
+
+    if (!foundMedia) {
+      const text = e.clipboardData?.getData("text/plain") || "";
+      const html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/ {2}/g, " &nbsp;")
+        .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+        .replace(/\n/g, "<br>");
+      insertHTML(html);
     }
   });
 
@@ -1514,7 +1516,8 @@ export function initialiseChatInput() {
     const message = state.rawContent;
     chatInput.innerHTML = "";
     disableElement("userMentionDropdown");
+    toggleSendButton(false);
     sendMessage(message);
   });
-  toggleSendButton(false);
+  toggleSendButton(true);
 }

@@ -1170,3 +1170,13 @@ export const getMonthValue = (query: string) => {
   const matches = months.filter((m) => m.toLowerCase().startsWith(lower));
   return matches.length ? matches : ["Not Specified"];
 };
+
+export function insertHTML(html: string) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  const fragment = range.createContextualFragment(html);
+  range.insertNode(fragment);
+  range.collapse(false);
+}

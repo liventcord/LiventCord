@@ -1174,20 +1174,23 @@ namespace LiventCord.Controllers
             if (!channelExists)
                 return NotFound();
 
-            var messages = await _context.Messages
-                .Where(m => m.ChannelId == channelId)
-                .Include(m => m.Channel)
-                .Where(m => m.Channel.GuildId == guildId)
+
+
+            var messagesWithLinks = await _context.Messages
+                .Where(m => m.ChannelId == channelId && m.Channel.GuildId == guildId)
+                .Where(m => _context.MessageUrls.Any(mu => mu.MessageId == m.MessageId))
                 .ToListAsync();
+
 
             var response = new
             {
                 channelId,
-                messages
+                messages = messagesWithLinks
             };
 
             return Ok(response);
         }
+
 
 
 
