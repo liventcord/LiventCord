@@ -591,7 +591,7 @@ export function renderEmojisFromContent(content: string): string {
       result += ":";
       i++;
     } else {
-      result += content[i];
+      result += escapeHtml(content[i]);
       i++;
     }
   }
@@ -839,23 +839,21 @@ export function applyActiveEmojiSuggestion() {
 
 export function handleEmojiSuggestions(event: KeyboardEvent) {
   const state = getChatBarState();
-  if (!state.emojiSuggestionsVisible || !emojiSuggestionDropdown) {
-    return;
-  }
+  if (!state.emojiSuggestionsVisible || !emojiSuggestionDropdown) return;
+
+  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
 
   const items = Array.from(emojiSuggestionDropdown.children) as HTMLElement[];
   const currentIndex = items.findIndex((el) => el.classList.contains("active"));
-  const direction = event.key === "ArrowDown" ? 1 : -1;
+
+  const direction = event.key === "ArrowRight" ? 1 : -1;
   let newIndex = currentIndex + direction;
 
-  if (newIndex < 0) {
-    newIndex = items.length - 1;
-  }
-  if (newIndex >= items.length) {
-    newIndex = 0;
-  }
+  if (newIndex < 0) newIndex = items.length - 1;
+  if (newIndex >= items.length) newIndex = 0;
 
   highlightSuggestion(newIndex);
+  event.preventDefault();
 }
 
 function highlightSuggestion(index: number) {

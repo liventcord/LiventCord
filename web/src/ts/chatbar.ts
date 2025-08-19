@@ -1041,17 +1041,37 @@ export function handleEmojiJump(event: KeyboardEvent) {
   const range = selection.getRangeAt(0);
   const currentNode = range.startContainer;
   const currentOffset = range.startOffset;
-  if (!chatInput || !chatInput.contains(currentNode)) {
-    console.log("Current node is outside the input box — aborting");
+
+  function moveCursorToEndOfChatInput() {
+    chatInput.focus();
+    const lastChild = chatInput.lastChild;
+    const newRange = document.createRange();
+    if (lastChild) {
+      if (lastChild.nodeType === Node.TEXT_NODE) {
+        newRange.setStart(lastChild, lastChild.textContent?.length || 0);
+      } else {
+        newRange.setStartAfter(lastChild);
+      }
+    } else {
+      newRange.setStart(chatInput, 0);
+    }
+    newRange.collapse(true);
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+  }
+
+  if (!chatInput.contains(currentNode)) {
+    moveCursorToEndOfChatInput();
     return;
   }
+
   if (event.key === "ArrowRight") {
     let nextNode: Node | null = null;
 
     if (currentNode.nodeType === Node.TEXT_NODE) {
-      if (currentOffset < (currentNode.textContent?.length || 0)) {
-        return;
-      }
+      if (currentOffset < (currentNode.textContent?.length || 0)) return;
       nextNode = getNextFocusableNode(currentNode);
     } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
       const children = Array.from(currentNode.childNodes);
@@ -1090,24 +1110,13 @@ export function handleEmojiJump(event: KeyboardEvent) {
     const atStart = currentOffset === 0;
     const parentNode = currentNode.parentNode;
 
-    console.log("ArrowLeft pressed");
-    console.log("Current node:", currentNode);
-    console.log("Current offset:", currentOffset);
-    console.log("At start of node:", atStart);
-
     if (!atStart) {
-      if (currentNode.nodeType === Node.TEXT_NODE) {
-        console.log("Cursor not at start, inside TEXT_NODE – do nothing");
-        return;
-      }
+      if (currentNode.nodeType === Node.TEXT_NODE) return;
 
       if (currentNode.nodeType === Node.ELEMENT_NODE) {
         const children = Array.from(currentNode.childNodes);
         const previousSibling = children[currentOffset - 1];
-        console.log("Previous sibling of ELEMENT_NODE:", previousSibling);
-
         if (previousSibling) {
-          console.log("Moving cursor to end of previous sibling");
           moveCursorToEndOf(previousSibling);
           event.preventDefault();
           return;
@@ -1119,11 +1128,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
       const root = parentNode;
       const firstChild = root.firstChild;
 
-      console.log("At start and parent exists:", root);
-      console.log("First child of root:", firstChild);
-
       if (isEmoji(firstChild)) {
-        console.log("First child is emoji – inserting text node before it");
         const newTextNode = document.createTextNode("");
         root.insertBefore(newTextNode, firstChild);
         moveCursorTo(newTextNode);
@@ -1132,12 +1137,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
       }
 
       const prevSibling = currentNode.previousSibling;
-      console.log("Previous sibling of current node:", prevSibling);
-
       if (isEmoji(prevSibling)) {
-        console.log(
-          "Previous sibling is emoji – inserting text node before it"
-        );
         const newTextNode = document.createTextNode("");
         root.insertBefore(newTextNode, prevSibling);
         moveCursorTo(newTextNode);
@@ -1146,14 +1146,10 @@ export function handleEmojiJump(event: KeyboardEvent) {
       }
 
       const prevNode = getPreviousFocusableNode(currentNode);
-      console.log("Previous focusable node found:", prevNode);
-
       if (prevNode) {
-        console.log("Moving cursor to end of previous focusable node");
         moveCursorToEndOf(prevNode);
         event.preventDefault();
       } else {
-        console.log("No previous node found – inserting fallback text node");
         const fallback = document.createTextNode("");
         root.insertBefore(fallback, currentNode);
         moveCursorTo(fallback);
@@ -1195,39 +1191,49 @@ export function manuallyRenderEmojis(rawContent: string): void {
 }
 
 function handleSpace(event: KeyboardEvent) {
-  console.log(state, chatInput.innerHTML);
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
     return;
   }
 
   const range = selection.getRangeAt(0);
-  if (!range.collapsed) {
-    return;
-  }
-
-  const currentAbsolutePosition = DomUtils.calculatePositionFromNode(
-    range.startContainer,
-    range.startOffset
-  );
-
-  if (currentAbsolutePosition === 0) {
-    return;
-  }
+  if (!range.collapsed) return;
 
   const currentNode = range.startContainer;
-  const currentOffset = range.startOffset;
 
+  function moveCursorToEnd() {
+    chatInput.focus();
+    const lastChild = chatInput.lastChild;
+    const newRange = document.createRange();
+    if (lastChild) {
+      if (lastChild.nodeType === Node.TEXT_NODE) {
+        newRange.setStart(lastChild, lastChild.textContent?.length || 0);
+      } else {
+        newRange.setStartAfter(lastChild);
+      }
+    } else {
+      newRange.setStart(chatInput, 0);
+    }
+    newRange.collapse(true);
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+  }
+
+  if (!chatInput.contains(currentNode)) {
+    moveCursorToEnd();
+    return;
+  }
+
+  const currentOffset = range.startOffset;
   const isEmptyTextNode =
     currentNode.nodeType === Node.TEXT_NODE &&
     (currentNode.textContent === "\u200B" || currentNode.textContent === "");
-
   const isAtEndOfText =
     currentNode.nodeType === Node.TEXT_NODE &&
     currentOffset === (currentNode.textContent?.length || 0);
-
   const isPrevSiblingImg = currentNode.previousSibling?.nodeName === "IMG";
-
   const isLastNode = !findNextNode(currentNode);
 
   if (
@@ -1236,7 +1242,6 @@ function handleSpace(event: KeyboardEvent) {
   ) {
     event.preventDefault();
     document.execCommand("insertText", false, " ");
-
     requestAnimationFrame(() => {
       state.rawContent = preserveEmojiContent(chatInput);
       const currentSelection = window.getSelection();
@@ -1252,8 +1257,8 @@ function handleSpace(event: KeyboardEvent) {
       DomUtils.syncCursorPosition();
     });
   }
-  console.log(state, chatInput.innerHTML);
 }
+
 function insertNewlineAtCaret() {
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return;
