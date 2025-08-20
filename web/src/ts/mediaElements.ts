@@ -882,9 +882,27 @@ async function appendEmbedToMessage(
   messageElement.appendChild(embedContainer);
 }
 
-export function shouldRenderMedia(attachment: AttachmentWithMetaData) {
-  const fileId = attachment.attachment.fileId;
-  const isVideo = attachment.attachment.isVideoFile;
-  const isImage = attachment.attachment.isImageFile;
-  return isImage || isVideo;
+export function shouldRenderMedia(
+  attachment: AttachmentWithMetaData,
+  isFilesList: boolean
+) {
+  const { isImageFile, isVideoFile, proxyUrl, fileId } = attachment.attachment;
+
+  if (isFilesList) {
+    if (!isImageFile && !isVideoFile) {
+      console.log(`Attachment ${fileId} skipped: not an image or video`);
+      return false;
+    }
+    if (!proxyUrl) {
+      console.log(`Attachment ${fileId} skipped: proxyUrl is null`);
+      return false;
+    }
+    console.log(
+      `Attachment ${fileId} will render: isFilesList=false, valid media`
+    );
+    return true;
+  }
+
+  console.log(`Attachment ${fileId} will render: isFilesList=true`);
+  return true;
 }

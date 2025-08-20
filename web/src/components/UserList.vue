@@ -186,7 +186,7 @@ import { currentGuildId } from "../ts/guild.ts";
 import { getId, IMAGE_SRCS, isTenorURL, isMobile } from "../ts/utils.ts";
 import { permissionManager } from "../ts/guildPermissions.ts";
 import { createInvitePop, displayImagePreview } from "../ts/ui.ts";
-import { fetchMoreAttachments } from "../ts/message.ts";
+import { AttachmentWithMetaData, fetchMoreAttachments } from "../ts/message.ts";
 import {
   closeMediaPanel,
   currentAttachments,
@@ -270,7 +270,6 @@ import {
   isMediaPanelTeleported,
   selectedPanelType
 } from "../ts/panelHandler.ts";
-import { shouldRenderMedia } from "../ts/mediaElements.ts";
 
 function handlePanelButtonClick(type: string) {
   handlePanelButtonClickExternal(
@@ -316,10 +315,7 @@ const loadMoreMedia = async () => {
   loading.value = true;
   try {
     console.log("Loading more media... " + currentPage.value);
-    const newAttachments = await fetchMoreAttachments(
-      currentPage.value,
-      pageSize
-    );
+    await fetchMoreAttachments(currentPage.value, pageSize);
 
     store.commit("increaseCurrentPage");
     store.commit("setHasMoreAttachments", false);
@@ -342,6 +338,11 @@ const handleScroll = () => {
     }
   }
 };
+function shouldRenderMedia(attachment: AttachmentWithMetaData) {
+  const isVideo = attachment.attachment.isVideoFile;
+  const isImage = attachment.attachment.isImageFile;
+  return isImage || isVideo;
+}
 
 const handleImageClick = (attachment) => {
   console.log("Clicked attachment: ", attachment);

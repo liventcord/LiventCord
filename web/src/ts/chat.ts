@@ -1727,8 +1727,7 @@ export function updateAttachmentsCount(count: number) {
       svg.parentNode?.removeChild(svg.nextSibling);
     }
 
-    const textSpan = document.createElement("span");
-    textSpan.textContent = `(${count})`;
+    const textSpan = createEl("span", { textContent: `(${count})` });
     mediaTitle.appendChild(textSpan);
   } else {
     console.log("Title not found");

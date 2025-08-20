@@ -5,7 +5,7 @@
     ref="mediaGridRef"
   >
     <div
-      v-for="attachment in shouldLimit9 ? attachments.slice(0, 9) : attachments"
+      v-for="attachment in mediaAttachments"
       :key="attachment.attachment.fileId"
       class="image-box"
       :class="{ 'limited-grid': shouldLimit9 }"
@@ -15,7 +15,6 @@
     >
       <div class="media-wrapper">
         <component
-          v-if="shouldRenderMedia(attachment)"
           :is="attachment.attachment.isImageFile ? 'img' : 'video'"
           :src="getAttachmentSrc(attachment)"
           :data-filesize="attachment.attachment.fileSize"
@@ -28,7 +27,7 @@
         />
 
         <img
-          v-else-if="isFailedVideo(attachment)"
+          v-if="isFailedVideo(attachment)"
           :src="getVideoFallbackImg()"
           class="fallback-image"
         />
@@ -77,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { getProfileUrl } from "../ts/avatar";
 import { formatFileSize } from "../ts/utils";
 import { AttachmentWithMetaData } from "../ts/message";
@@ -85,6 +84,9 @@ import { userManager } from "../ts/user";
 import { currentChannelName } from "../ts/channels";
 import { shouldRenderMedia } from "../ts/mediaElements";
 
+const mediaAttachments = computed(() =>
+  props.attachments.filter((att) => !shouldRenderMedia(att, props.isFilesList))
+);
 const props = defineProps<{
   attachments: AttachmentWithMetaData[];
   shouldRenderProfile: boolean;

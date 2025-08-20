@@ -1001,10 +1001,12 @@ namespace LiventCord.Controllers
                 return NotFound();
             }
 
-            pageSize = pageSize > 500 ? 500 : pageSize;
+            pageSize = Math.Min(pageSize, 500);
             int skip = (page - 1) * pageSize;
 
             var query = _context.Attachments
+                .Where(a => a.IsImageFile || (a.IsVideoFile ?? false))
+
                 .Join(
                     _context.Messages,
                     attachment => attachment.MessageId,
@@ -1036,6 +1038,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { attachments = channelAttachments, count = totalAttachmentsCountForChannel });
         }
+
 
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}/pin")]
