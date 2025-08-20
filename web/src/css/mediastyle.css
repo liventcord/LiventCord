@@ -460,7 +460,8 @@ body.black-theme #media-menu-search-bar {
   width: 100%;
   max-width: 560px;
   aspect-ratio: 16 / 9;
-  margin-left: -30px;
+  margin-top: 10px;
+  margin-left: -10px;
   overflow: hidden;
   background: black;
 }

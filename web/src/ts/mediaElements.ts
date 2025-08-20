@@ -845,7 +845,7 @@ async function appendEmbedToMessage(
     embed.video.url
   ) {
     const videoContainer = createEl("div", {
-      className: "embed-video-container"
+      className: "embed-video-container video-container"
     });
     const videoElement = await createVideoElement(embed.video.url);
     videoElement.className = "embed-video";

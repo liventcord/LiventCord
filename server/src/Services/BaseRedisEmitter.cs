@@ -1,6 +1,7 @@
 using System.Text.Json;
 using StackExchange.Redis;
 using MessagePack;
+using System.Collections.Concurrent;
 public class BaseRedisEmitter
 {
     private readonly string? redisConnectionString;
@@ -17,6 +18,7 @@ public class BaseRedisEmitter
     private readonly ILogger _logger;
 
     private static SemaphoreSlim? _connectionSemaphore;
+    private readonly ConcurrentDictionary<string, string[]> _pendingGuildMembers = new();
 
     public BaseRedisEmitter(IConfiguration configuration, ILoggerFactory loggerFactory)
     {
@@ -111,45 +113,65 @@ public class BaseRedisEmitter
     }
 
 
+
     public async Task EmitGuildMembersToRedisStream(string guildId, string[] userIds)
     {
-        if (_connectionSemaphore == null) return;
-        if (userIds.Length == 0) return;
+        if (_connectionSemaphore == null || userIds.Length == 0) return;
 
-        if (redis == null || db == null)
+        _pendingGuildMembers[guildId] = userIds;
+
+        int maxRetries = 5;
+        TimeSpan baseDelay = TimeSpan.FromSeconds(1);
+
+        for (int attempt = 0; attempt < maxRetries; attempt++)
         {
-            _logger.LogError("Redis connection is not available. Retrying connection...");
-            await ConnectToRedisAsync();
-            return;
-        }
-
-        try
-        {
-            await _connectionSemaphore.WaitAsync();
-
             try
             {
-                var membershipsKey = $"guild_memberships:{guildId}";
-                var membershipsJson = JsonSerializer.Serialize(userIds);
+                if (redis == null || db == null)
+                {
+                    _logger.LogWarning("Redis connection is not available. Attempting to reconnect...");
+                    await ConnectToRedisAsync();
+                }
 
                 if (db != null)
                 {
-                    await db.StringSetAsync(membershipsKey, membershipsJson, TimeSpan.FromDays(1));
-                }
+                    await _connectionSemaphore.WaitAsync();
 
-                _logger.LogInformation($"Guild memberships for {guildId} published to Redis.");
+                    try
+                    {
+                        if (_pendingGuildMembers.TryGetValue(guildId, out var members))
+                        {
+                            var membershipsJson = JsonSerializer.Serialize(members);
+                            await db.StringSetAsync($"guild_memberships:{guildId}", membershipsJson, TimeSpan.FromDays(1));
+                            _logger.LogInformation($"Guild memberships for {guildId} published to Redis.");
+
+                            _pendingGuildMembers.TryRemove(guildId, out _);
+                            return;
+                        }
+                    }
+                    finally
+                    {
+                        _connectionSemaphore.Release();
+                    }
+                }
             }
-            finally
+            catch (Exception ex)
             {
-                _connectionSemaphore.Release();
+                _logger.LogError($"Attempt {attempt + 1}: Error publishing guild memberships to Redis: {ex.Message}");
+            }
+
+            if (attempt < maxRetries - 1)
+            {
+                var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt));
+                _logger.LogInformation($"Retrying in {delay.TotalSeconds} seconds...");
+                await Task.Delay(delay);
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error publishing guild memberships to Redis: {ex.Message}. Retrying...");
-            await ConnectToRedisAsync();
-        }
+
+        _logger.LogError($"Failed to publish guild memberships for {guildId} after {maxRetries} attempts. Data is buffered in memory.");
     }
+
+
     public async Task EmitToRedisStream(string[] userIds, EventType eventType, object message)
     {
         if (_connectionSemaphore == null) return;
