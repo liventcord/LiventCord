@@ -19,6 +19,20 @@ namespace LiventCord.Controllers
         private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
         private readonly IAppStatsService _statsService;
 
+        private static readonly HashSet<string> VideoMimeTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "video/mp4",
+            "video/webm",
+            "video/ogg",
+            "video/avi",
+            "video/mov",
+            "video/wmv",
+            "video/flv",
+            "video/mkv",
+            "video/3gp",
+            "video/quicktime"
+        };
+
         public FileServeController(
             AppDbContext context,
             FileExtensionContentTypeProvider fileTypeProvider,
@@ -58,8 +72,16 @@ namespace LiventCord.Controllers
 
             if (System.IO.File.Exists(fullRequestedPath) && System.IO.File.Exists(metaPath))
             {
-                byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
                 string contentType = await System.IO.File.ReadAllTextAsync(metaPath);
+
+                if (IsVideoContent(contentType))
+                {
+                    SetCacheHeaders(fileName);
+                    _statsService.IncrementServedFiles();
+                    return PhysicalFile(fullRequestedPath, contentType, fileName, enableRangeProcessing: true);
+                }
+
+                byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
                 SetCacheHeaders(fileName);
                 _statsService.IncrementServedFiles();
                 return File(fileBytes, contentType);
@@ -82,6 +104,11 @@ namespace LiventCord.Controllers
             }
 
             return result;
+        }
+
+        private bool IsVideoContent(string contentType)
+        {
+            return VideoMimeTypes.Contains(contentType);
         }
 
         private Task<(bool found, string cacheFilePath)> FindCachedProfileFile(string userId, string? requestedVersion = null)
@@ -233,9 +260,16 @@ namespace LiventCord.Controllers
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
             string contentType = GetContentType(file);
 
+            if (IsVideoContent(contentType))
+            {
+                var stream = new MemoryStream(file.Content);
+                SetCacheHeaders(sanitizedFileName);
+                _statsService.IncrementServedFiles();
+                return File(stream, contentType, sanitizedFileName, enableRangeProcessing: true);
+            }
+
             SetCacheHeaders(sanitizedFileName);
             _statsService.IncrementServedFiles();
-
             return File(file.Content, contentType);
         }
 
