@@ -66,44 +66,46 @@
       </div>
     </Teleport>
 
-    <div
-      v-if="selectedPanelType === 'files'"
-      class="media-table-wrapper panel-wrapper"
-    >
-      <div v-if="attachments.length > 0">
-        <MediaGrid
-          v-if="attachments.length > 0"
-          :attachments="attachments"
-          :failed-videos="failedVideos"
-          :getAttachmentSrc="getAttachmentSrc"
-          :getVideoFallbackImg="getVideoFallbackImg"
-          :shouldRenderProfile="true"
-          :isFilesList="true"
-          @imageClick="handleImageClick"
-          @videoError="onVideoError"
-        />
-      </div>
-      <h3
-        v-else
-        style="flex-direction: column; align-items: center; display: flex"
+    <Teleport to="#chat-container">
+      <div
+        v-if="selectedPanelType === 'files'"
+        class="media-table-wrapper panel-wrapper"
       >
-        No Files
-      </h3>
-    </div>
+        <div v-if="attachments.length > 0">
+          <MediaGrid
+            v-if="attachments.length > 0"
+            :attachments="attachments"
+            :failed-videos="failedVideos"
+            :getAttachmentSrc="getAttachmentSrc"
+            :getVideoFallbackImg="getVideoFallbackImg"
+            :shouldRenderProfile="true"
+            :isFilesList="true"
+            @imageClick="handleImageClick"
+            @videoError="onVideoError"
+          />
+        </div>
+        <h3
+          v-else
+          style="flex-direction: column; align-items: center; display: flex"
+        >
+          No Files
+        </h3>
+      </div>
 
-    <div
-      v-else-if="selectedPanelType === 'pins'"
-      class="user-table-wrapper panel-wrapper"
-    >
-      <div id="pin-container"></div>
-    </div>
+      <div
+        v-else-if="selectedPanelType === 'pins'"
+        class="user-table-wrapper panel-wrapper"
+      >
+        <div id="pin-container"></div>
+      </div>
 
-    <div
-      v-else-if="selectedPanelType === 'links'"
-      class="user-table-wrapper panel-wrapper"
-    >
-      <div id="links-container"></div>
-    </div>
+      <div
+        v-else-if="selectedPanelType === 'links'"
+        class="user-table-wrapper panel-wrapper"
+      >
+        <div id="links-container"></div>
+      </div>
+    </Teleport>
     <div
       v-if="isMobile && canInviteUser()"
       id="invite-button"
@@ -268,6 +270,7 @@ import {
   isMediaPanelTeleported,
   selectedPanelType
 } from "../ts/panelHandler.ts";
+import { shouldRenderMedia } from "../ts/mediaElements.ts";
 
 function handlePanelButtonClick(type: string) {
   handlePanelButtonClickExternal(
@@ -343,6 +346,7 @@ const handleScroll = () => {
 const handleImageClick = (attachment) => {
   console.log("Clicked attachment: ", attachment);
   if (attachment.attachment.isVideoFile) return;
+  if (!shouldRenderMedia(attachment)) return;
   const mediaGrid = getId("media-grid");
   if (!mediaGrid) return;
   const parent = mediaGrid.querySelector(

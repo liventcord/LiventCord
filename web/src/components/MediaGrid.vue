@@ -26,11 +26,25 @@
           :alt="attachment.attachment.isImageFile ? 'Image' : undefined"
           @error="handleMediaError(attachment)"
         />
+
         <img
           v-else-if="isFailedVideo(attachment)"
           :src="getVideoFallbackImg()"
           class="fallback-image"
         />
+
+        <div
+          v-else
+          class="generic-file-preview"
+          :title="attachment.attachment.fileName"
+        >
+          <i class="fas fa-file"></i>
+          <span class="filename">{{ attachment.attachment.fileName }}</span>
+          <span class="filesize">{{
+            formatFileSize(attachment.attachment.fileSize)
+          }}</span>
+        </div>
+
         <img
           v-if="!isFilesList && shouldRenderProfile"
           class="profile-pic top-right"
@@ -48,7 +62,7 @@
             <span class="nick">{{
               userManager.getUserNick(attachment.userId)
             }}</span>
-            <span class="channel">{{ currentChannelName }}</span>
+            <span class="channel"># {{ currentChannelName }}</span>
           </div>
         </div>
       </div>
@@ -69,6 +83,7 @@ import { formatFileSize } from "../ts/utils";
 import { AttachmentWithMetaData } from "../ts/message";
 import { userManager } from "../ts/user";
 import { currentChannelName } from "../ts/channels";
+import { shouldRenderMedia } from "../ts/mediaElements";
 
 const props = defineProps<{
   attachments: AttachmentWithMetaData[];
@@ -92,13 +107,6 @@ function isFailedVideo(attachment: AttachmentWithMetaData) {
   return !!props.failedVideos[attachment.attachment.fileId];
 }
 
-function shouldRenderMedia(attachment: AttachmentWithMetaData) {
-  const fileId = attachment.attachment.fileId;
-  const isVideo = attachment.attachment.isVideoFile;
-  const isImage = attachment.attachment.isImageFile;
-  return !isFailedVideo(attachment) && (isImage || isVideo);
-}
-
 function handleMediaError(attachment: AttachmentWithMetaData) {
   const fileId = attachment.attachment.fileId;
   if (attachment.attachment.isVideoFile) {
@@ -109,20 +117,21 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
 <style scoped>
 .image-box {
   position: relative;
-  width: 250px;
+  width: 200px;
   display: flex;
   flex-direction: column;
   padding: 2px;
   border-radius: 8px;
   box-sizing: border-box;
+  background: #1f1f1f;
+  overflow: hidden;
 }
 
 .media-wrapper {
   position: relative;
   width: 100%;
-  max-height: 250px;
+  max-height: 200px;
   overflow: hidden;
-  background: #111;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -139,20 +148,22 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
   user-select: none;
 }
 
-.fallback-image {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  display: block;
-}
-
 .file-info {
-  margin-top: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   color: #ddd;
-  user-select: text;
+  text-align: center;
+  padding: 4px 6px;
+  box-sizing: border-box;
 }
 
 .file-info .filename,
@@ -160,38 +171,23 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  width: 90%;
 }
 
-.profile-bottom {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.nick-channel-wrapper {
+.file-info .nick-channel-wrapper {
   display: flex;
   flex-direction: column;
-  max-width: 100px;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
 }
 
-.nick {
-  font-size: 13px;
-  color: #ddd;
+.file-info .nick,
+.file-info .channel {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 20px;
-}
-
-.channel {
-  font-size: 13px;
-  color: #ddd;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 4px;
+  line-height: 18px;
 }
 
 .profile-pic {
@@ -209,5 +205,33 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
 .top-right {
   top: 6px;
   right: 6px;
+}
+
+.generic-file-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+}
+
+.generic-file-preview .filename {
+  font-weight: 500;
+  margin-top: 4px;
+  max-width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.generic-file-preview .filesize {
+  font-size: 0.75rem;
+}
+.filesize {
+  color: #666;
 }
 </style>

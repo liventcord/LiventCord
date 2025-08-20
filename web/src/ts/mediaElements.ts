@@ -25,7 +25,7 @@ import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
-import { Attachment, Metadata } from "./message.ts";
+import { Attachment, AttachmentWithMetaData, Metadata } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import { apiClient } from "./api.ts";
 import { changeChannelWithId, currentAttachments } from "./chat.ts";
@@ -403,6 +403,7 @@ export async function createMediaElement(
   if (attachments && attachments.length > 0) {
     for (const attachment of attachments) {
       try {
+        console.log("Processing attachment: ", attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),
@@ -714,9 +715,8 @@ function renderContent(
 
   const insertTextOrHTML = (text: string) => {
     if (!text.trim()) return;
-    const processedContent = replaceCustomEmojisForChatContainer(text);
-    const span = createEl("span");
-    span.innerHTML = processedContent;
+    const replaced = replaceCustomEmojisForChatContainer(text);
+    const span = createEl("span", { innerHTML: replaced });
     if (isSystemMessage) span.classList.add("system-message");
     container.appendChild(span);
   };
@@ -732,21 +732,20 @@ function renderContent(
     const start = match.index;
     const end = start + url.length;
 
-    if (start > lastIndex) {
-      insertTextOrHTML(content.slice(lastIndex, start));
-    }
+    if (start > lastIndex) insertTextOrHTML(content.slice(lastIndex, start));
 
     const urlLink = createEl("a", {
       textContent: url,
       href: url,
       className: "url-link"
     });
+
     urlLink.addEventListener("click", (e) => {
       e.preventDefault();
       openExternalUrl(url);
     });
-    container.appendChild(urlLink);
 
+    container.appendChild(urlLink);
     lastIndex = end;
   }
 
@@ -881,4 +880,11 @@ async function appendEmbedToMessage(
   }
 
   messageElement.appendChild(embedContainer);
+}
+
+export function shouldRenderMedia(attachment: AttachmentWithMetaData) {
+  const fileId = attachment.attachment.fileId;
+  const isVideo = attachment.attachment.isVideoFile;
+  const isImage = attachment.attachment.isImageFile;
+  return isImage || isVideo;
 }
