@@ -640,9 +640,11 @@ function isThereMultipleMessageContentElements(
 
   return profilelessBefore || profilelessAfter;
 }
-
+let currentEditUiMessageId = "";
 export function convertToEditUi(message: HTMLElement) {
   editMessageCurrentContent = message.outerHTML;
+  if (currentEditUiMessageId === message.id) return;
+  currentEditUiMessageId = message.id;
 
   const messageContentElement = message.querySelector(
     "#message-content-element"
@@ -702,7 +704,10 @@ function createEditDiv(contentElement: HTMLElement) {
     contentEditable: "true"
   });
   div.innerText =
-    contentElement.textContent?.replace(/\s*\([^)]*\)\s*$/, "") || "";
+    contentElement.parentElement?.dataset.content?.replace(
+      /\s*\([^)]*\)\s*$/,
+      ""
+    ) || "";
   return div;
 }
 
