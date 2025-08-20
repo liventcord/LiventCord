@@ -496,8 +496,13 @@ function loadObservedContent(targetElement: HTMLElement) {
       targetElement.parentElement.id
     );
     const isSystemMessage = message?.isSystemMessage ?? false;
-    const metadata = message?.metadata;
-    handleLink(targetElement, jsonData, isSystemMessage, metadata);
+    handleLink(
+      targetElement,
+      jsonData,
+      isSystemMessage,
+      message?.metaData,
+      message?.lastEdited
+    );
 
     if (isChatScrollNearBottom()) {
       chatContent.scrollTop = chatContent.scrollHeight;
@@ -1188,16 +1193,12 @@ function displayChatMessage(
     userId,
     new Date(date),
     isSystemMessage,
-    attachments
+    attachments,
+    lastEdited
   );
 
   if (!currentLastDate) {
     currentLastDate = new Date(date);
-  }
-
-  const isEdited = lastEdited !== null;
-  if (isEdited) {
-    addEditedIndicator(messageContentElement, lastEdited);
   }
 
   updateSenderAndButtons(
@@ -1297,7 +1298,8 @@ export function handleSelfSentMessage(data: Message) {
             data.userId,
             data.date ? new Date(data.date) : new Date(),
             data.isSystemMessage,
-            data.attachments
+            data.attachments,
+            data.lastEdited
           );
         }
       }

@@ -28,7 +28,11 @@ import {
 import { Attachment, AttachmentWithMetaData, Metadata } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import { apiClient } from "./api.ts";
-import { changeChannelWithId, currentAttachments } from "./chat.ts";
+import {
+  addEditedIndicator,
+  changeChannelWithId,
+  currentAttachments
+} from "./chat.ts";
 import { deletedUser, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { togglePin } from "./contextMenuActions.ts";
@@ -371,7 +375,8 @@ export async function createMediaElement(
   senderId: string,
   date: Date,
   isSystemMessage: boolean,
-  attachments?: Attachment[]
+  attachments?: Attachment[],
+  lastEdited?: string | null
 ) {
   const attachmentsToUse = processAttachments(attachments);
   if (attachmentsToUse.length) {
@@ -403,7 +408,6 @@ export async function createMediaElement(
   if (attachments && attachments.length > 0) {
     for (const attachment of attachments) {
       try {
-        console.log("Processing attachment: ", attachment);
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
             getAttachmentUrl(attachment.fileId),
@@ -415,7 +419,8 @@ export async function createMediaElement(
             embeds,
             senderId,
             date,
-            isSystemMessage
+            isSystemMessage,
+            lastEdited
           );
         } else {
           const previewElement = createFileAttachmentPreview(attachment);
@@ -450,7 +455,8 @@ export async function createMediaElement(
           embeds,
           senderId,
           date,
-          isSystemMessage
+          isSystemMessage,
+          lastEdited
         );
         if (!isError) {
           mediaCount++;
@@ -524,7 +530,8 @@ function processMediaLink(
   embeds: Embed[],
   senderId: string,
   date: Date,
-  isSystemMessage: boolean
+  isSystemMessage: boolean,
+  lastEdited?: string | null
 ): Promise<boolean> {
   return new Promise<boolean>(async (resolve) => {
     let mediaElement: HTMLElement | Promise<HTMLElement | null> | null = null;
@@ -596,7 +603,8 @@ function processMediaLink(
         messageContentElement,
         content,
         isSystemMessage,
-        metaData as any
+        metaData as any,
+        lastEdited
       );
       if (doesMessageHasProxyiedLink(link)) {
         mediaElement = createImageElement(
@@ -667,7 +675,8 @@ export async function handleLink(
   messageContentElement: HTMLElement,
   content: string,
   isSystemMessage: boolean = false,
-  metadata?: Metadata
+  metadata?: Metadata,
+  lastEdited?: string | null
 ) {
   if (!content) return;
   if (isSystemMessage && metadata?.type === "pin_notification") {
@@ -683,6 +692,10 @@ export async function handleLink(
 
   messageContentElement.dataset.contentLoaded = "true";
   setupEmojiListeners();
+
+  if (lastEdited) {
+    addEditedIndicator(messageContentElement, lastEdited);
+  }
 }
 
 async function buildPinSystemMessage(metadata: Metadata): Promise<string> {
