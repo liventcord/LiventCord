@@ -198,7 +198,6 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
   border: 1.5px solid #222;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
   user-select: none;
-  -webkit-user-drag: none;
   position: absolute;
 }
 

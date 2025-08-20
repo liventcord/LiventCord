@@ -569,14 +569,6 @@ export function clickMainLogo(logo: HTMLElement) {
   loadDmHome();
 }
 
-export const preventDrag = (element: HTMLElement) => {
-  if (element) {
-    element.addEventListener("dragstart", function (event) {
-      event.preventDefault();
-    });
-  }
-};
-
 export function logOutPrompt() {
   const logOut = translations.getTranslation("log-out-button");
   askUser(
@@ -1681,3 +1673,9 @@ export function initialiseChannelDrag() {
     });
   }
 }
+document.addEventListener("dragstart", (e: DragEvent) => {
+  const target = e.target as HTMLElement | null;
+  if (target?.tagName === "IMG") {
+    e.preventDefault();
+  }
+});

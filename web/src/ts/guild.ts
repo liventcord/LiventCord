@@ -1,5 +1,5 @@
 import { getId, createEl, blackImage, IMAGE_SRCS } from "./utils.ts";
-import { clickMainLogo, preventDrag } from "./ui.ts";
+import { clickMainLogo } from "./ui.ts";
 import {
   isChangingPage,
   initialState,
@@ -494,8 +494,6 @@ function createNewGuildButton() {
   newElement.style.marginTop = "5px";
   newElement.style.marginLeft = "13px";
 
-  preventDrag(createGuildImage);
-
   createGuildImage.addEventListener("click", () => {
     showGuildPop();
   });
@@ -520,8 +518,6 @@ function createMainLogo() {
   mainLogo.addEventListener("mouseleave", () => {
     mainLogoImg.classList.remove("rotate-element");
   });
-
-  preventDrag(mainLogoImg);
 
   mainLogoImg.addEventListener("click", () => {
     document

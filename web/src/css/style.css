@@ -5,7 +5,6 @@
   width: 30px;
   height: 30px;
   border: 10px solid rgb(49, 51, 56);
-  -webkit-user-drag: none;
   display: inline-block;
   user-select: none;
 }
@@ -741,7 +740,6 @@ body.black-theme .base-user-input {
   transform-origin: center;
   width: 50px;
   height: 50px;
-  -webkit-user-drag: none;
   display: flex;
   user-select: none;
   background-color: #313338;
@@ -1358,7 +1356,6 @@ body.black-theme .status-bubble {
 }
 
 #imageElement {
-  -webkit-user-drag: none;
   user-select: none;
   cursor: pointer;
   z-index: 1;
@@ -1551,7 +1548,6 @@ textarea::-webkit-scrollbar-track {
   height: 30px;
   border-radius: 50%;
   transition: border-radius 0.5s ease-out;
-  -webkit-user-drag: none;
   user-select: none;
   -moz-user-select: none;
   -webkit-user-select: none;

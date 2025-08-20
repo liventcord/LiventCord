@@ -771,7 +771,6 @@ body.black-theme #media-menu-search-bar {
 }
 
 #preview-image {
-  -webkit-user-drag: none;
   animation: preview-image-animation 0.3s forwards;
   max-width: 80%;
   max-height: 80%;
