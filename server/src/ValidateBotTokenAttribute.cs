@@ -14,7 +14,8 @@ public class ValidateBotTokenAttribute : Attribute, IAsyncActionFilter
         }
 
         var tokenValidator = context.HttpContext.RequestServices.GetService<ITokenValidationService>();
-        if (tokenValidator == null || !tokenValidator.ValidateToken(token))
+        if (tokenValidator == null || !tokenValidator.ValidateToken(token.ToString()))
+
         {
             context.Result = new ForbidResult();
             return;
