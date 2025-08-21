@@ -48,7 +48,7 @@ import { socketClient } from "./socketEvents.ts";
 
 export let currentReplyingTo = "";
 
-export const chatInput = getId("user-input") as HTMLInputElement;
+export const chatInput = getId("user-input") as HTMLElement;
 export const chatContainer = getId("chat-container") as HTMLElement;
 export const chatContent = getId("chat-content") as HTMLElement;
 export const replyInfo = getId("reply-info") as HTMLElement;
@@ -283,7 +283,7 @@ let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
 
 function handleTypingRequest() {
-  if (chatInput.value !== "") {
+  if (state.rawContent !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }
@@ -871,14 +871,6 @@ function handleKeyboardNavigation(event: KeyboardEvent) {
     (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
 
   if (isCtrlC) {
-    const isAllSelected =
-      chatInput.selectionStart === 0 &&
-      chatInput.selectionEnd === chatInput.value.length;
-    if (isAllSelected) {
-      navigator.clipboard.writeText(state.rawContent).then(() => {
-        console.log("Full content copied to clipboard");
-      });
-    }
     return;
   }
 
@@ -1510,7 +1502,6 @@ export function initialiseChatInput() {
 
   chatInput.addEventListener("input", handleChatInput);
   chatInput.addEventListener("click", updateCursorOnClick);
-  chatInput.addEventListener("keydown", handleUserKeydown);
 
   chatInput.addEventListener("beforeinput", handleUserBeforeInput);
   updatePlaceholderVisibility();

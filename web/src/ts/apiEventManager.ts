@@ -29,7 +29,8 @@ import {
   updateGuildImage,
   currentGuildId,
   setGuildNameText,
-  Guild
+  Guild,
+  onLeaveGuild
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
@@ -123,12 +124,7 @@ apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
 });
 
 apiClient.on(EventType.LEAVE_GUILD, (data: any) => {
-  closeSettings();
-  const guildId = data.guildId;
-  cacheInterface.removeGuild(guildId);
-  console.log(guildId);
-  loadDmHome();
-  removeFromGuildList(guildId);
+  onLeaveGuild(data.guildId);
 });
 
 apiClient.on(EventType.DELETE_GUILD, (data) => {

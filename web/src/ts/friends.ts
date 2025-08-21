@@ -103,6 +103,7 @@ class FriendsCache {
         friend.userId,
         friend.nickName,
         friend.discriminator,
+        "",
         false
       );
     }

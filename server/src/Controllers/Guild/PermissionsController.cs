@@ -65,6 +65,14 @@ namespace LiventCord.Controllers
             var guild = await _dbContext.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
             return guild?.OwnerId ?? throw new Exception("Guild not found");
         }
+        public async Task<bool> CanKickUser(string guildId, string kickerId, string memberId)
+        {
+            var ownerId = await GetGuildOwner(guildId);
+            if (ownerId == null) return false;
+            if (ownerId == memberId) return false;
+            if (ownerId == kickerId) return true;
+            return await CheckPermission(kickerId, guildId, PermissionFlags.KickMembers);
+        }
 
         [NonAction]
         public async Task<bool> HasPermission(
@@ -163,6 +171,20 @@ namespace LiventCord.Controllers
                 await _dbContext.SaveChangesAsync();
             }
         }
+        public async Task RemoveAllPermissions(string guildId, string userId)
+        {
+            var existingPermissions = await _dbContext.GuildPermissions.FirstOrDefaultAsync(gp =>
+                gp.GuildId == guildId && gp.UserId == userId
+            );
+
+            if (existingPermissions != null)
+            {
+                existingPermissions.Permissions = PermissionFlags.None;
+                _dbContext.GuildPermissions.Update(existingPermissions);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
     }
 }
 

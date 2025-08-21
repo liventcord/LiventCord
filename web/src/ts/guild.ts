@@ -4,10 +4,15 @@ import {
   isChangingPage,
   initialState,
   loadApp,
-  changeCurrentGuild
+  changeCurrentGuild,
+  loadDmHome
 } from "./app.ts";
 import { isOnGuild, isOnMePage, isOnDm, router } from "./router.ts";
-import { updateMemberList } from "./userList.ts";
+import {
+  addUserToMemberList,
+  removeUserFromMemberList,
+  updateMemberList
+} from "./userList.ts";
 import { showGuildPop } from "./popups.ts";
 import {
   validateAvatar,
@@ -23,9 +28,10 @@ import {
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
-import { UserInfo, userManager } from "./user.ts";
+import { currentUserId, UserInfo, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
+import { GuildMemberAddedMessage } from "./socketEvents.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
@@ -172,6 +178,10 @@ export function refreshInviteId() {
   }
 }
 
+export function kickMember(memberId: string) {
+  apiClient.send(EventType.KICK_MEMBER, { guildId: currentGuildId, memberId });
+}
+
 export function fetchMembers() {
   if (!currentGuildId) {
     console.warn("Current guild id is null! can't fetch members");
@@ -239,7 +249,24 @@ export function leaveCurrentGuild() {
   leftGuilds.add(currentGuildId);
   apiClient.send(EventType.LEAVE_GUILD, { guildId: currentGuildId });
 }
-
+export function onLeaveGuild(guildId: string) {
+  cacheInterface.removeGuild(guildId);
+  if (guildId === currentGuildId) {
+    loadDmHome();
+  }
+  removeFromGuildList(guildId);
+}
+export function handleKickMemberResponse(data: any) {
+  const userId = data.userId;
+  if (userId === currentUserId) {
+    onLeaveGuild(data.guildId);
+  } else {
+    removeUserFromMemberList(userId);
+  }
+}
+export function handleGuildMemberAdded(data: GuildMemberAddedMessage) {
+  addUserToMemberList(data.userData);
+}
 //ui
 
 let keybindHandlers: { [key: string]: (event: KeyboardEvent) => void } = {};

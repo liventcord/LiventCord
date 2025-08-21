@@ -111,6 +111,9 @@ class PermissionManager {
   canManageGuild() {
     return this.getPermission(Permission.MANAGE_GUILD);
   }
+  canKickMember() {
+    return this.getPermission(Permission.KICK_MEMBERS);
+  }
 
   canManageChannels() {
     return this.getPermission(Permission.MANAGE_CHANNELS);

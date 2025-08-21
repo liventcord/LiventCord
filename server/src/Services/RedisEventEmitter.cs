@@ -13,12 +13,12 @@ public class RedisEventEmitter
         _redisEmitter = redisEmitter;
     }
 
-    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string? userId)
+    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string userIdToExclude = "")
     {
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var userIds = await dbContext.GetGuildUserIds(guildId, userId);
+            var userIds = await dbContext.GetGuildUserIds(guildId, userIdToExclude);
 
             _backgroundTaskService.QueueBackgroundWorkItem(async token =>
             {
@@ -72,6 +72,9 @@ public enum EventType
 {
     CREATE_CHANNEL,
     JOIN_GUILD,
+    GUILD_MEMBER_ADDED,
+    GUILD_MEMBER_REMOVED,
+    KICK_MEMBER,
     LEAVE_GUILD,
     DELETE_GUILD,
     DELETE_GUILD_IMAGE,

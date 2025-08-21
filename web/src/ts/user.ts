@@ -7,6 +7,15 @@ import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
 import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
 
+export interface PublicUser {
+  userId?: string;
+  nickName?: string;
+  discriminator?: string;
+  createdAt?: Date;
+  description?: string;
+  socialMediaLinks?: string;
+}
+
 export interface Member {
   userId: string;
   nickName: string;

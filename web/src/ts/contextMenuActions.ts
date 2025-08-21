@@ -12,7 +12,7 @@ import {
   UserInfo,
   userManager
 } from "./user.ts";
-import { getManageableGuilds, currentGuildId } from "./guild.ts";
+import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
 import { createEl, getId } from "./utils.ts";
 import { isOnMePage, isOnDm, isOnGuild, router } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
@@ -65,6 +65,7 @@ const ActionType = {
   ADD_FRIEND: "ADD_FRIEND",
   BLOCK_USER: "BLOCK_USER",
   REMOVE_USER: "REMOVE_USER",
+  KICK_MEMBER: "KICK_MEMBER",
   EDIT_GUILD_PROFILE: "EDIT_GUILD_PROFILE",
   MENTION_USER: "MENTION_USER"
 };
@@ -352,6 +353,15 @@ function createProfileContext(userData: UserInfo) {
         action: () => addFriendId(userId)
       };
     }
+
+    if (
+      permissionManager.canKickMember() &&
+      !cacheInterface.isGuildOwner(currentGuildId, userId)
+    ) {
+      context[ActionType.KICK_MEMBER] = {
+        action: () => kickMember(userId)
+      };
+    }
   }
 
   if (isDeveloperMode()) {
@@ -621,6 +631,7 @@ function createMessageContext(
 const dangerActions = new Set([
   MessagesActionType.DELETE_MESSAGE,
   ActionType.REMOVE_USER,
+  ActionType.KICK_MEMBER,
   ChannelsActionType.DELETE_CHANNEL,
   VoiceActionType.DEAFEN_USER,
   VoiceActionType.MUTE_USER

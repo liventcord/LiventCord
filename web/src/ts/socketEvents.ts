@@ -1,6 +1,6 @@
 import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId, userManager } from "./user.ts";
+import { currentUserId, UserInfo, userManager } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
@@ -34,7 +34,11 @@ import {
   handleEditMessage
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
-import { currentGuildId } from "./guild.ts";
+import {
+  currentGuildId,
+  handleGuildMemberAdded,
+  handleKickMemberResponse
+} from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { friendsCache, handleFriendEventResponse } from "./friends.ts";
 import { playAudio, clearVoiceChannel } from "./audio.ts";
@@ -71,7 +75,9 @@ export const SocketEvent = Object.freeze({
   UPDATE_USER_NAME: "UPDATE_USER_NAME",
   UPDATE_USER_STATUS: "UPDATE_USER_STATUS",
   UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
-  GET_USER_STATUS: "GET_USER_STATUS"
+  GET_USER_STATUS: "GET_USER_STATUS",
+  KICK_MEMBER: "KICK_MEMBER",
+  GUILD_MEMBER_ADDED: "GUILD_MEMBER_ADDED"
 } as const);
 
 type SocketEventType = keyof typeof SocketEvent;
@@ -416,6 +422,22 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
   if (data.guildId === currentGuildId) {
     editChannelName(data.channelId, data.channelName);
   }
+});
+
+export interface GuildMemberAddedMessage {
+  guildId: string;
+  userId: string;
+  userData: UserInfo;
+}
+socketClient.on(
+  SocketEvent.GUILD_MEMBER_ADDED,
+  (data: GuildMemberAddedMessage) => {
+    handleGuildMemberAdded(data);
+  }
+);
+
+socketClient.on(SocketEvent.KICK_MEMBER, (data: any) => {
+  handleKickMemberResponse(data);
 });
 
 socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {

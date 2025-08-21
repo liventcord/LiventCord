@@ -48,7 +48,22 @@ export async function updateMemberList(
   const userIds = members.map((member) => member.userId);
   setTimeout(() => {
     socketClient.getUserStatus(userIds);
-  }, 500);
+  }, 100);
+}
+export async function removeUserFromMemberList(userId: string) {
+  const index = currentUsers.findIndex((user) => user.userId === userId);
+  if (index !== -1) {
+    currentUsers.splice(index, 1);
+  }
+}
+export async function addUserToMemberList(user: UserInfo) {
+  const exists = currentUsers.some((u) => u.userId === user.userId);
+  if (!exists) {
+    currentUsers.push(user);
+    setTimeout(() => {
+      socketClient.getUserStatus([user.userId]);
+    }, 100);
+  }
 }
 
 export function toggleUsersList() {

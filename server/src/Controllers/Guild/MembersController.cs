@@ -91,6 +91,24 @@ namespace LiventCord.Controllers
         }
 
 
+        [HttpDelete("/api/guilds/{guildId}/members/{memberId}")]
+        public async Task<IActionResult> HandleGuildKick([FromRoute][IdLengthValidation] string guildId,
+                                                        [FromRoute][UserIdLengthValidation] string memberId)
+        {
+            var canKickUser = await _permissionsController.CanKickUser(guildId, UserId!, memberId);
+            if (!canKickUser) return Forbid();
+            var userId = memberId;
+            var payload = new { guildId, userId };
+            await _redisEventEmitter.EmitToGuild(EventType.KICK_MEMBER, payload, guildId);
+            await RemoveMemberFromGuild(memberId, guildId);
+            await InvalidateGuildMemberCaches(memberId, guildId);
+
+
+
+            return Ok(payload);
+        }
+
+
         private async Task AddMemberToGuild(string userId, string guildId)
         {
             var guild = await _dbContext
@@ -119,8 +137,9 @@ namespace LiventCord.Controllers
             await _permissionsController.AddPermissions(guildId, userId, combinedPermissions);
 
             await _dbContext.SaveChangesAsync();
-
-
+            var userData = await GetMemberInfo(guildId, userId);
+            var payload = new { guildId, userId, userData };
+            await _redisEventEmitter.EmitToGuild(EventType.GUILD_MEMBER_ADDED, payload, guildId, userId);
             await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
         }
 
@@ -137,12 +156,13 @@ namespace LiventCord.Controllers
 
             if (guildMember == null)
                 throw new Exception("User is not a member of this guild");
+            var payload = new { guildId, userId };
+            await _redisEventEmitter.EmitToUser(EventType.GUILD_MEMBER_REMOVED, payload, guildId);
 
             guild.GuildMembers.Remove(guildMember);
 
-            await _permissionsController.RemovePermissions(guildId, userId, PermissionFlags.ReadMessages);
-            await _permissionsController.RemovePermissions(guildId, userId, PermissionFlags.SendMessages);
-            await _permissionsController.RemovePermissions(guildId, userId, PermissionFlags.MentionEveryone);
+            await _permissionsController.RemoveAllPermissions(guildId, userId);
+
 
             await _dbContext.SaveChangesAsync();
             await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
@@ -203,6 +223,7 @@ namespace LiventCord.Controllers
                 .ToListAsync();
         }
 
+
         [NonAction]
         public async Task<Dictionary<string, List<string>>> GetSharedGuilds(string userId, List<PublicUserWithFriendData?>? friends, List<GuildDto> guilds)
         {
@@ -246,6 +267,26 @@ namespace LiventCord.Controllers
             return sharedGuildsWithFriends;
         }
 
+        [NonAction]
+        public async Task<PublicUser?> GetMemberInfo(string guildId, string userId)
+        {
+            if (string.IsNullOrEmpty(guildId) || string.IsNullOrEmpty(userId))
+                return null;
+
+            return await _dbContext
+                .GuildMembers
+                .Where(gu => gu.GuildId == guildId && gu.User.UserId == userId)
+                .Select(gu => new PublicUser
+                {
+                    UserId = gu.User.UserId,
+                    NickName = gu.User.Nickname,
+                    Discriminator = gu.User.Discriminator,
+                    Description = gu.User.Description,
+                    CreatedAt = gu.User.CreatedAt,
+                    SocialMediaLinks = gu.User.SocialMediaLinks,
+                })
+                .FirstOrDefaultAsync();
+        }
 
         [NonAction]
         public async Task<GuildDto?> GetUserGuildAsync(string userId, string guildId)

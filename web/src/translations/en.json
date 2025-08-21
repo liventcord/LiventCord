@@ -31,7 +31,8 @@
     "ADD_FRIEND": "Add Friend",
     "ADDED_FRIEND": "Added Friend!",
     "VOICE_CALL": "Start Video Call",
-    "VIDEO_CALL": "Start Video Call"
+    "VIDEO_CALL": "Start Video Call",
+    "KICK_MEMBER": "Kick Member"
   },
   "friendErrorTranslations": {
     "ERR_FRIEND_REQUEST_NOT_EXISTS": "The friend request was not found.",
