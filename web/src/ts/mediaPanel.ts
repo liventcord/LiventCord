@@ -7,7 +7,7 @@ import {
   enableElement,
   disableElement
 } from "./utils.ts";
-import { sendMessage } from "./message.ts";
+import { trySendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
 import { hideImagePreviewRequest } from "./ui.ts";
 import { translations } from "./translations.ts";
@@ -256,7 +256,7 @@ function displayContent(
         });
         img.addEventListener("click", () => {
           toggleMediaMenu();
-          sendMessage(data.gif);
+          trySendMessage(data.gif);
         });
         mediaMenuContainer.appendChild(img);
       }
@@ -468,7 +468,7 @@ function handleCategoryGifs(responseText: string) {
     });
     gifImg.addEventListener("click", () => {
       toggleMediaMenu();
-      sendMessage(gifData.media[0].gif.url);
+      trySendMessage(gifData.media[0].gif.url);
     });
     gifImg.src = IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
     mediaMenuContainer.appendChild(gifImg);
@@ -622,7 +622,7 @@ function initialiseMedia() {
           const query = mediaMenuSearchbar.value;
           await loadGifContent(query);
         } else if (currentMenuType === MediaTypes.Emoji) {
-          // Add emoji querying
+          //TODO: Add emoji querying
         }
       }, GIF_DEBOUNCE_TIME)
     );

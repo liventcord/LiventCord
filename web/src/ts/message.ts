@@ -41,6 +41,7 @@ import { maxAttachmentSize } from "./avatar.ts";
 import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
+import { shakeScreen } from "./settingsui.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -251,21 +252,33 @@ async function processFiles(
     }
   }
 }
-
 let messageQueue = Promise.resolve();
 
-export async function sendMessage(content: string, user_ids?: string[]) {
-  const hasContent = content.trim().length > 0;
+export const MESSAGE_LIMIT = 2000;
+
+export async function trySendMessage(
+  content: string,
+  user_ids?: string[]
+): Promise<boolean> {
+  const trimmedContent = content.trim();
+  const hasContent = trimmedContent.length > 0;
   const hasFiles = fileInput?.files && fileInput.files.length > 0;
 
-  if (!hasContent && !hasFiles) {
-    return;
+  if (!hasContent && !hasFiles) return false;
+  if (trimmedContent.length > MESSAGE_LIMIT) {
+    shakeScreen(chatInput);
+    return false;
   }
   if (isOnDm && !canSendMessageToDm(friendsCache.currentDmId)) {
     displayCannotSendMessage(friendsCache.currentDmId, content);
-    return;
+    return false;
   }
 
+  await sendMessage(trimmedContent, user_ids);
+  return true;
+}
+
+async function sendMessage(content: string, user_ids?: string[]) {
   chatInput.textContent = "";
   resetChatInputState();
 

@@ -1166,9 +1166,9 @@ export function generateConfirmationPanel() {
   return popupDiv;
 }
 
-export function shakeScreen() {
+export function shakeScreen(container = document.body) {
   let SHAKE_FORCE = 1;
-  const RESET_TIMEOUT_DURATION = 800;
+  const RESET_TIMEOUT_DURATION = 600;
 
   regenerateConfirmationPanel();
   if (currentPopUp) {
@@ -1182,12 +1182,12 @@ export function shakeScreen() {
 
   clearTimeout(resetTimeout);
 
-  document.body.classList.remove("shake-screen");
-  document.body.classList.add("shake-screen");
+  container.classList.remove("shake-screen");
+  container.classList.add("shake-screen");
 
   resetTimeout = setTimeout(() => {
     SHAKE_FORCE = 1;
-    document.body.classList.remove("shake-screen");
+    container.classList.remove("shake-screen");
     if (currentPopUp) {
       currentPopUp.style.backgroundColor = "#0f0f0f";
     }

@@ -15,7 +15,8 @@ import {
   showReplyMenu,
   chatContainer,
   chatContent,
-  attachmentsTray
+  attachmentsTray,
+  messageLimitText
 } from "./chatbar.ts";
 import {
   cacheInterface,
@@ -1564,24 +1565,17 @@ function fetchReplies(
 }
 
 export function updateChatWidth() {
-  if (!userList) {
-    return;
-  }
-  if (userList.style.display === "none") {
-    chatInput.classList.add("user-list-hidden");
-    replyInfo.classList.add("reply-user-list-open");
-    gifBtn.classList.add("gifbtn-user-list-open");
-    emojiBtn.classList.add("emojibtn-user-list-open");
-    newMessagesBar.classList.add("new-messages-bar-user-list-open");
-    attachmentsTray.classList.add("attachments-tray-user-list-open");
-  } else {
-    chatInput.classList.remove("user-list-hidden");
-    replyInfo.classList.remove("reply-user-list-open");
-    gifBtn.classList.remove("gifbtn-user-list-open");
-    emojiBtn.classList.remove("emojibtn-user-list-open");
-    newMessagesBar.classList.remove("new-messages-bar-user-list-open");
-    attachmentsTray.classList.remove("attachments-tray-user-list-open");
-  }
+  if (!userList) return;
+
+  const isHidden = userList.style.display === "none";
+
+  chatInput.classList.toggle("user-list-hidden", isHidden);
+  replyInfo.classList.toggle("reply-user-list-open", isHidden);
+  gifBtn.classList.toggle("gifbtn-user-list-open", isHidden);
+  emojiBtn.classList.toggle("emojibtn-user-list-open", isHidden);
+  newMessagesBar.classList.toggle("new-messages-bar-user-list-open", isHidden);
+  attachmentsTray.classList.toggle("attachments-tray-user-list-open", isHidden);
+  messageLimitText.classList.toggle("user-list-hidden", isHidden);
 }
 
 export function getMessageFromChat(top = true): HTMLElement | null {

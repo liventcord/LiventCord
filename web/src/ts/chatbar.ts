@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import { fileTypeFromBuffer } from "file-type";
 import { friendsCache } from "./friends.ts";
 import { scrollToBottom, updateChatWidth } from "./chat.ts";
-import { sendMessage } from "./message.ts";
+import { MESSAGE_LIMIT, trySendMessage } from "./message.ts";
 import { isDomLoaded, readCurrentMessages } from "./app.ts";
 import { toggleManager } from "./settings.ts";
 import { popKeyboardConfetti } from "./extras.ts";
@@ -59,7 +59,18 @@ export const newMessagesBar = getId("newMessagesBar") as HTMLElement;
 
 const newMessagesText = getId("newMessagesText") as HTMLSpanElement;
 const replyCloseButton = getId("reply-close-button") as HTMLButtonElement;
-
+export const messageLimitText = getId("message-limit") as HTMLSpanElement;
+function setMessageLimitText(text: string) {
+  const length = text.length;
+  const bigText = MESSAGE_LIMIT - length;
+  const threshold = MESSAGE_LIMIT * 0.9;
+  const isBiggerThanThreshold = length > threshold;
+  const isBiggerThanLimit = length > MESSAGE_LIMIT;
+  messageLimitText.classList.toggle("message-limit-white", !isBiggerThanLimit);
+  messageLimitText.textContent = isBiggerThanThreshold
+    ? bigText.toString()
+    : "";
+}
 export interface ChatBarState {
   rawContent: string;
   renderedContent: string;
@@ -174,16 +185,23 @@ function adjustChatContainerHeight() {
   chatContainer.style.height = `${newHeight}px`;
 }
 
+let resizeListenerAttached = false;
+
 export function adjustHeight() {
   chatInput.style.height = "auto";
   chatInput.style.height = chatInput.scrollHeight + "px";
   chatInput.scrollTop = chatInput.scrollHeight - chatInput.clientHeight;
 
   adjustChatContainerHeight();
-  window.addEventListener("resize", adjustChatContainerHeight);
+
+  if (!resizeListenerAttached) {
+    window.addEventListener("resize", adjustChatContainerHeight);
+    resizeListenerAttached = true;
+  }
 
   adjustReplyPosition();
 }
+
 function appendMentionToInput(
   triggerChar: string,
   mentionId: string,
@@ -1233,7 +1251,6 @@ function handleSpace(event: KeyboardEvent) {
     (isEmptyTextNode && isPrevSiblingImg)
   ) {
     event.preventDefault();
-    document.execCommand("insertText", false, " ");
     requestAnimationFrame(() => {
       state.rawContent = preserveEmojiContent(chatInput);
       const currentSelection = window.getSelection();
@@ -1304,17 +1321,28 @@ function handleUserKeydown(event: KeyboardEvent) {
     }
 
     event.preventDefault();
-    sendMessage(state.rawContent).then(() => {
-      chatInput.innerHTML = "";
-      toggleSendButton(false);
-      isAttachmentsAdded = false;
-      adjustHeight();
-    });
+    state.rawContent = preserveEmojiContent(chatInput);
+
+    setTimeout(() => {
+      trySendMessage(state.rawContent).then((sent) => {
+        if (!sent) return;
+        chatInput.innerHTML = "";
+        setMessageLimitText("");
+        toggleSendButton(false);
+        isAttachmentsAdded = false;
+        adjustHeight();
+      });
+    }, 0);
 
     return;
   }
 
   handleKeyboardNavigation(event);
+
+  setTimeout(() => {
+    setMessageLimitText(state.rawContent);
+    adjustHeight();
+  }, 0);
 
   if (isDomLoaded && toggleManager.states["party-toggle"]) {
     setTimeout(() => {
@@ -1447,6 +1475,7 @@ function handleChatInput(event: Event) {
 
         requestAnimationFrame(() => {
           DomUtils.syncCursorPosition();
+          adjustHeight();
         });
       }
 
@@ -1493,6 +1522,10 @@ export function initialiseChatInput() {
         .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
         .replace(/\n/g, "<br>");
       insertHTML(html);
+
+      state.rawContent = preserveEmojiContent(chatInput);
+
+      setMessageLimitText(state.rawContent);
     }
   });
 
@@ -1513,7 +1546,7 @@ export function initialiseChatInput() {
     chatInput.innerHTML = "";
     disableElement("userMentionDropdown");
     toggleSendButton(false);
-    sendMessage(message);
+    trySendMessage(message);
   });
   toggleSendButton(true);
 }

@@ -2357,3 +2357,20 @@ h2 {
 #pin-container > div {
   top: 0px;
 }
+.message-limit {
+  color: oklab(0.71874 0.140726 0.0598935);
+  align-items: center;
+  border: none;
+  right: 330px;
+  bottom: 10px;
+  position: absolute;
+  z-index: 1;
+}
+
+.message-limit-white {
+  color: white;
+}
+
+.message-limit.user-list-hidden {
+  right: 100px;
+}
