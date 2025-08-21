@@ -714,7 +714,8 @@ namespace LiventCord.Controllers
             List<Attachment>? attachments,
             string? replyToId,
             string? reactionEmojisIds,
-            List<Embed>? embeds)
+            List<Embed>? embeds,
+            bool? IsSystemMessage = false)
         {
             var validationResult = await ValidateNewMessage(userId, channelId, guildId, replyToId);
             if (validationResult != null)
@@ -734,7 +735,8 @@ namespace LiventCord.Controllers
                 ReactionEmojisIds = reactionEmojisIds,
                 Embeds = embeds ?? new List<Embed>(),
                 Metadata = new Metadata(),
-                Attachments = attachments
+                Attachments = attachments,
+                IsSystemMessage = IsSystemMessage
             };
 
             var links = Utils.ExtractLinks(message.Content);
@@ -1078,7 +1080,6 @@ namespace LiventCord.Controllers
                 PinnedAt = DateTime.UtcNow
             });
 
-            await NewMessage(Utils.CreateRandomId(), Utils.CreateRandomId(), Utils.SystemId, channelId, guildId, " ", DateTime.UtcNow, null, null, null, null, null);
 
             var pinNotificationMessage = new Message
             {
@@ -1090,7 +1091,6 @@ namespace LiventCord.Controllers
                 Content = Guid.NewGuid().ToString()
             };
             pinNotificationMessage.IsSystemMessage = true;
-            pinNotificationMessage.IsSystemMessage = true;
             pinNotificationMessage.Metadata = new Metadata
             {
                 Type = "pin_notification",
@@ -1098,9 +1098,18 @@ namespace LiventCord.Controllers
                 PinnedAt = DateTime.UtcNow
             };
             await _context.Messages.AddAsync(pinNotificationMessage);
-
             await _context.SaveChangesAsync();
-            return Ok();
+
+            var broadcastMessage = new
+            {
+                guildId,
+                messages = new[] { pinNotificationMessage },
+                channelId,
+                userId
+            };
+            await _redisEventEmitter.EmitToGuild(EventType.SEND_MESSAGE_GUILD, broadcastMessage, guildId, userId);
+
+            return Ok(new { pinNotificationMessage });
         }
 
         [Authorize]

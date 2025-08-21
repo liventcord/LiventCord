@@ -13,7 +13,8 @@ import {
   handleSelfSentMessage,
   handleOldMessagesResponse,
   appendCurrentAttachments,
-  updateAttachmentsCount
+  updateAttachmentsCount,
+  displayChatMessage
 } from "./chat.ts";
 import { replyCache, cacheInterface, pinnedMessagesCache } from "./cache.ts";
 import {
@@ -66,6 +67,7 @@ import { createFireWorks } from "./extras.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { alertUser } from "./ui.ts";
 import { populateEmojis } from "./emoji.ts";
+import { chatContent } from "./chatbar.ts";
 
 // Events triggered upon successful requests to endpoints
 
@@ -328,6 +330,12 @@ apiClient.on(EventType.UNPIN_MESSAGE, (data: { messageId: string }) => {
     showNoMessages(pinContainer);
   }
 });
+apiClient.on(
+  EventType.PIN_MESSAGE,
+  (data: { pinNotificationMessage: Message }) => {
+    displayChatMessage(data.pinNotificationMessage, chatContent);
+  }
+);
 
 apiClient.on(EventType.GET_GUILD_MESSAGE_LINKS, (data: DMHistoryResponse) => {
   const linksContainer = initContainer("links-container", "Message Links");

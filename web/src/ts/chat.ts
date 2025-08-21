@@ -1097,7 +1097,7 @@ function editChatMessage(data: EditMessageResponse): void {
   updateMessageContent(messageContentElement, content);
   addEditedIndicator(messageContentElement);
 }
-function displayChatMessage(
+export function displayChatMessage(
   data: Message,
   chatContainer?: HTMLElement
 ): HTMLElement | null {

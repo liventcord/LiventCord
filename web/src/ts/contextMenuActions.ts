@@ -435,26 +435,34 @@ document.addEventListener("click", function (event) {
     delete oldContext[MessagesActionType.PIN_MESSAGE];
     delete oldContext[MessagesActionType.UNPIN_MESSAGE];
 
-    const goToMessageEntry = {
-      [MessagesActionType.GO_TO_MESSAGE]: {
-        label: "Go to Message",
-        action: () => goToMessage(messageId)
-      }
-    };
+    let goToMessageEntry = {};
+    const pinContainer = getId("pin-container");
 
-    const pinOrUnpinEntry = isPinned
-      ? {
-          [MessagesActionType.UNPIN_MESSAGE]: {
-            label: "Unpin Message",
-            action: () => unpinMessage(messageId)
-          }
+    if (pinContainer) {
+      goToMessageEntry = {
+        [MessagesActionType.GO_TO_MESSAGE]: {
+          label: "Go to Message",
+          action: () => goToMessage(messageId)
         }
-      : {
-          [MessagesActionType.PIN_MESSAGE]: {
-            label: "Pin Message",
-            action: () => pinMessage(messageId)
+      };
+    }
+
+    let pinOrUnpinEntry = {};
+    if (!message?.isSystemMessage) {
+      pinOrUnpinEntry = isPinned
+        ? {
+            [MessagesActionType.UNPIN_MESSAGE]: {
+              label: "Unpin Message",
+              action: () => unpinMessage(messageId)
+            }
           }
-        };
+        : {
+            [MessagesActionType.PIN_MESSAGE]: {
+              label: "Pin Message",
+              action: () => pinMessage(messageId)
+            }
+          };
+    }
 
     messageContextList[messageId] = {
       ...pinOrUnpinEntry,

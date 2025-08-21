@@ -57,6 +57,8 @@ describe("Create, edit and delete message", () => {
 
     cy.get("#contextMenu").children().contains("Edit Message").click();
 
+    cy.wait(100);
+
     const editedMessage = "Lorem ipsum";
     cy.get("#chat-content")
       .children(".message")
