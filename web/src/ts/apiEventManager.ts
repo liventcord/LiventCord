@@ -258,7 +258,8 @@ apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
     userManager.addUser(
       userInfo.userId,
       userInfo.nickName,
-      userInfo.discriminator
+      userInfo.discriminator,
+      userInfo.profileVersion
     );
   });
 });

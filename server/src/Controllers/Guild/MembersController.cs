@@ -200,28 +200,37 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(guildId))
                 return new List<PublicUser>();
 
-            return await _dbContext
-                .GuildMembers.Where(gu => gu.GuildId == guildId)
-                .Select(gu => new PublicUser
+            var usersWithProfile = await _dbContext.GuildMembers
+                .Where(gu => gu.GuildId == guildId)
+                .Select(gu => new
                 {
-                    UserId = gu.User.UserId,
-                    NickName = gu.User.Nickname,
-                    Discriminator = gu.User.Discriminator,
-                    Description = gu.User.Description,
-                    CreatedAt = gu.User.CreatedAt,
-                    SocialMediaLinks = gu.User.SocialMediaLinks,
+                    gu.User.UserId,
+                    gu.User.Nickname,
+                    gu.User.Discriminator,
+                    gu.User.Description,
+                    gu.User.CreatedAt,
+                    gu.User.SocialMediaLinks,
+                    ProfileVersion = _dbContext.ProfileFiles
+                        .Where(pf => pf.UserId == gu.User.UserId)
+                        .Select(pf => pf.Version)
+                        .FirstOrDefault()
                 })
+                .ToListAsync();
+
+            return usersWithProfile
                 .Select(user => new PublicUser
                 {
                     UserId = user.UserId,
-                    NickName = user.NickName,
+                    NickName = user.Nickname,
                     Discriminator = user.Discriminator,
                     Description = user.Description,
                     CreatedAt = user.CreatedAt,
                     SocialMediaLinks = user.SocialMediaLinks,
+                    ProfileVersion = user.ProfileVersion
                 })
-                .ToListAsync();
+                .ToList();
         }
+
 
 
         [NonAction]
