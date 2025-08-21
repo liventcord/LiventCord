@@ -72,7 +72,7 @@ func readFromRedisStream(streamName, lastID string) ([]redis.XStream, error) {
 	return redisClient.XRead(ctx, &redis.XReadArgs{
 		Streams: []string{streamName, lastID},
 		Block:   0,
-		Count:   1,
+		Count:   100,
 	}).Result()
 }
 
