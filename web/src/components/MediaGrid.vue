@@ -14,38 +14,46 @@
       @click="() => emit('imageClick', attachment)"
     >
       <div class="media-wrapper">
-        <component
-          :is="attachment.attachment.isImageFile ? 'img' : 'video'"
-          :src="getAttachmentSrc(attachment)"
-          :data-filesize="attachment.attachment.fileSize"
-          :style="{
-            filter: attachment.attachment.isSpoiler ? 'blur(10px)' : 'none'
-          }"
-          v-bind="attachment.attachment.isVideoFile ? { controls: true } : {}"
-          :alt="attachment.attachment.isImageFile ? 'Image' : undefined"
-          @error="handleMediaError(attachment)"
-        />
+        <template v-if="attachment.attachment.isImageFile">
+          <img
+            :src="getAttachmentSrc(attachment)"
+            :alt="attachment.attachment.fileName"
+            :data-filesize="attachment.attachment.fileSize"
+            :style="getSpoilerStyle(attachment.attachment.isSpoiler)"
+            @error="handleMediaError(attachment)"
+          />
+        </template>
+
+        <template v-else-if="attachment.attachment.isVideoFile">
+          <div class="video-preview-wrapper">
+            <img
+              :src="getAttachmentSrc(attachment) + '/preview'"
+              :alt="attachment.attachment.fileName"
+              :data-filesize="attachment.attachment.fileSize"
+              :style="getSpoilerStyle(attachment.attachment.isSpoiler)"
+              @error="handleMediaError(attachment)"
+            />
+            <div class="play-button-overlay">
+              <i class="fas fa-play"></i>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div
+            class="generic-file-preview"
+            :title="attachment.attachment.fileName"
+          >
+            <i class="fas fa-file"></i>
+            <span class="filename">{{ attachment.attachment.fileName }}</span>
+            <span class="filesize">{{
+              formatFileSize(attachment.attachment.fileSize)
+            }}</span>
+          </div>
+        </template>
 
         <img
-          v-if="isFailedVideo(attachment)"
-          :src="getVideoFallbackImg()"
-          class="fallback-image"
-        />
-
-        <div
-          v-else
-          class="generic-file-preview"
-          :title="attachment.attachment.fileName"
-        >
-          <i class="fas fa-file"></i>
-          <span class="filename">{{ attachment.attachment.fileName }}</span>
-          <span class="filesize">{{
-            formatFileSize(attachment.attachment.fileSize)
-          }}</span>
-        </div>
-
-        <img
-          v-if="!isFilesList && shouldRenderProfile"
+          v-if="shouldShowTopRightProfile(attachment)"
           class="profile-pic top-right"
           :src="getProfileUrl(attachment.userId)"
         />
@@ -65,12 +73,6 @@
           </div>
         </div>
       </div>
-
-      <img
-        v-if="isFilesList"
-        class="profile-pic top-right"
-        :src="getProfileUrl(attachment.userId)"
-      />
     </div>
   </div>
 </template>
@@ -83,10 +85,13 @@ import { AttachmentWithMetaData } from "../ts/message";
 import { userManager } from "../ts/user";
 import { currentChannelName } from "../ts/channels";
 import { shouldRenderMedia } from "../ts/mediaElements";
+const mediaAttachments = computed(() => {
+  const filtered = props.attachments.filter((att) =>
+    shouldRenderMedia(att, props.isFilesList)
+  );
+  return props.shouldLimit9 ? filtered.slice(0, 9) : filtered;
+});
 
-const mediaAttachments = computed(() =>
-  props.attachments.filter((att) => !shouldRenderMedia(att, props.isFilesList))
-);
 const props = defineProps<{
   attachments: AttachmentWithMetaData[];
   shouldRenderProfile: boolean;
@@ -96,6 +101,13 @@ const props = defineProps<{
   getAttachmentSrc: (attachment: AttachmentWithMetaData) => string;
   getVideoFallbackImg: () => string;
 }>();
+function getSpoilerStyle(isSpoiler) {
+  return { filter: isSpoiler ? "blur(10px)" : "none" };
+}
+
+function shouldShowTopRightProfile(attachment) {
+  return props.shouldRenderProfile && !props.isFilesList;
+}
 
 const emit = defineEmits<{
   (e: "imageClick", attachment: AttachmentWithMetaData): void;
@@ -234,5 +246,25 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
 }
 .filesize {
   color: #666;
+}
+.video-preview-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.video-preview-wrapper img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.play-button-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.3rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 }
 </style>

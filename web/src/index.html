@@ -296,26 +296,25 @@
 
     
     
-    <div id="image-preview-container" >
-        <img id="preview-image" src="https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp">
-        <div id="preview-author">
-        <img class="profile-pic preview-avatar">
+<div id="image-preview-container">
+    <video id="preview-video" src="" controls style="display:none; max-width:100%; border-radius:12px;"></video>
+    <img id="preview-image"  style="max-width:100%; border-radius:12px;">
+    <div id="preview-author" style="display:flex; align-items:center; margin-top:8px;">
+        <img class="profile-pic preview-avatar" style="width:40px; height:40px; border-radius:50%; margin-right:8px;">
         <div class="preview-text">
-            <div class="line-one">
-            <span id="preview-nick"></span>
-            <span id="preview-content"></span>
+            <div class="line-one" style="display:flex; flex-wrap:wrap; align-items:center;">
+                <span id="preview-nick" style="font-weight:bold; margin-right:6px;"></span>
+                <span id="preview-content"></span>
             </div>
-            <span id="preview-date"></span>
+            <span id="preview-date" style="font-size:12px; color:#888;"></span>
         </div>
-        </div>
-
-
-        <button id="popup-close" class="popup-close">
-            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
-            </svg>
-          </button>
-        <div class="actions-container">
+    </div>
+    <button id="popup-close" class="popup-close" style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer;">
+        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
+        </svg>
+    </button>
+    <div class="actions-container">
             <button id="preview-image-zoom"  type="button">
                 <div >
                     <svg aria-hidden="true" role="img"
@@ -356,8 +355,7 @@
             </div>
  
         </div>
-    </div>
-
+</div>
     <div id="json-preview-container" >
         <pre id="json-preview-element"  class="jsonContainer" style="white-space: pre-wrap; user-select: text;">...</pre>
     </div>

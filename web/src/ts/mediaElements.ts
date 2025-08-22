@@ -903,19 +903,14 @@ export function shouldRenderMedia(
 
   if (isFilesList) {
     if (!isImageFile && !isVideoFile) {
-      console.log(`Attachment ${fileId} skipped: not an image or video`);
       return false;
     }
     if (!proxyUrl) {
-      console.log(`Attachment ${fileId} skipped: proxyUrl is null`);
       return false;
     }
-    console.log(
-      `Attachment ${fileId} will render: isFilesList=false, valid media`
-    );
+
     return true;
   }
 
-  console.log(`Attachment ${fileId} will render: isFilesList=true`);
   return true;
 }

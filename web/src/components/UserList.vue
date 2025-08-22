@@ -183,16 +183,19 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import { getId, IMAGE_SRCS, isTenorURL, isMobile } from "../ts/utils.ts";
+import { getId, IMAGE_SRCS, isMobile, getAttachmentUrl } from "../ts/utils.ts";
 import { permissionManager } from "../ts/guildPermissions.ts";
-import { createInvitePop, displayImagePreview } from "../ts/ui.ts";
+import {
+  createInvitePop,
+  displayImagePreview,
+  displayVideoPreview
+} from "../ts/ui.ts";
 import { AttachmentWithMetaData, fetchMoreAttachments } from "../ts/message.ts";
 import {
   closeMediaPanel,
   currentAttachments,
   openMediaPanel
 } from "../ts/chat.ts";
-import { apiClient } from "../ts/api.ts";
 import { createTooltip } from "../ts/tooltip.ts";
 import MediaGrid from "./MediaGrid.vue";
 const shouldTeleportMediaPanel = computed(
@@ -345,16 +348,19 @@ function shouldRenderMedia(attachment: AttachmentWithMetaData) {
 }
 
 const handleImageClick = (attachment) => {
-  console.log("Clicked attachment: ", attachment);
-  if (attachment.attachment.isVideoFile) return;
   if (!shouldRenderMedia(attachment)) return;
   const mediaGrid = getId("media-grid");
+
   if (!mediaGrid) return;
   const parent = mediaGrid.querySelector(
     `div[id='${attachment.attachment.fileId}']`
   ) as HTMLElement;
   if (!parent) return;
   const isSpoiler = parent.dataset.isspoiler === "true" || false;
+  if (attachment.attachment.isVideoFile) {
+    displayVideoPreview(attachment.attachment, attachment.userId);
+    return;
+  }
   const imgElement = parent.children[0]?.children[0] as HTMLImageElement;
   if (imgElement) {
     displayImagePreview(
@@ -383,19 +389,9 @@ const processAttachments = async (newAttachments) => {
   await store.dispatch("setAttachments", combinedAttachments);
 };
 
-function getAttachmentSrc(attachment) {
+function getAttachmentSrc(attachment: AttachmentWithMetaData) {
   const file = attachment.attachment;
-  const isTenor = isTenorURL(file.proxyUrl);
-
-  if (isTenor) {
-    return file.proxyUrl;
-  } else if (file.isProxyFile) {
-    return apiClient.getProxyUrl(file.proxyUrl);
-  } else if (file.isImageFile) {
-    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
-  } else {
-    return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
-  }
+  return getAttachmentUrl(file);
 }
 
 watch(

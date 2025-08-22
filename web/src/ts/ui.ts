@@ -38,7 +38,9 @@ import {
   corsDomainManager,
   debounce,
   isURL,
-  isImageLoaded
+  isImageLoaded,
+  getAttachmentUrl,
+  estimateVideoSizeBytes
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -70,6 +72,7 @@ import { createTooltip } from "./tooltip.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
 import { setWidths } from "./channels.ts";
+import { Attachment } from "./message.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -622,10 +625,11 @@ function focusOnMessage(imageElement: HTMLElement) {
 }
 
 function setupPreviewMetadata(
-  imageElement: HTMLImageElement,
+  mediaElement: HTMLImageElement | HTMLVideoElement,
   sourceImage: string,
   senderId?: string,
-  date?: Date
+  date?: Date,
+  fileSize?: number
 ) {
   const previewAuthor = getId("preview-author");
   const previewNick = getId("preview-nick");
@@ -647,7 +651,7 @@ function setupPreviewMetadata(
   }
 
   const filename =
-    imageElement.dataset.filename ||
+    mediaElement.dataset.filename ||
     getFileNameFromUrl(sourceImage) ||
     sourceImage;
 
@@ -659,42 +663,54 @@ function setupPreviewMetadata(
     );
   }
 
-  const dataFileSize = imageElement.dataset.filesize;
-  const extension = getImageExtension(imageElement);
+  const dataFileSize = fileSize;
   let size = Number(dataFileSize);
   let isEstimated = false;
 
   if (!size || isNaN(size)) {
-    size = estimateImageSizeBytes(
-      imageElement.naturalWidth,
-      imageElement.naturalHeight,
-      extension
-    );
+    if (mediaElement instanceof HTMLImageElement) {
+      size = estimateImageSizeBytes(
+        mediaElement.naturalWidth,
+        mediaElement.naturalHeight,
+        getImageExtension(mediaElement)
+      );
+    } else if (mediaElement instanceof HTMLVideoElement) {
+      const videoEl = mediaElement as HTMLVideoElement;
+      size = estimateVideoSizeBytes(
+        videoEl.videoWidth,
+        videoEl.videoHeight,
+        videoEl.duration
+      );
+    }
     isEstimated = true;
   }
 
   if (descriptionSize) {
-    const formattedSize = formatFileSize(size);
-    const sizeText = `${getResolution(imageElement)} (${formattedSize}${isEstimated ? " roughly" : ""})`;
-    descriptionSize.textContent = sizeText;
-    descriptionSize.addEventListener("mouseover", () =>
-      createTooltip(descriptionSize, sizeText)
-    );
+    setTimeout(() => {
+      const formattedSize = formatFileSize(size);
+      const res = getResolution(mediaElement);
+      console.warn("Found resolution: ", res);
+      const sizeText = `${res} (${formattedSize}${isEstimated ? " roughly" : ""})`;
+      descriptionSize.textContent = sizeText;
+      descriptionSize.addEventListener("mouseover", () =>
+        createTooltip(descriptionSize, sizeText)
+      );
+    }, 100);
   }
 
   if (previewDate && date) {
     previewDate.textContent = formatDateGood(date);
     previewDate.addEventListener("click", (event: MouseEvent) => {
       event.preventDefault();
-      focusOnMessage(imageElement);
+      focusOnMessage(mediaElement);
     });
   }
 
   let content: string | undefined;
   if (isOnMediaPanel) {
-    content = imageElement.parentElement?.dataset.content;
+    content = mediaElement.parentElement?.dataset.content;
   } else {
-    const grandParent = imageElement.parentNode
+    const grandParent = mediaElement.parentNode
       ?.parentNode as HTMLElement | null;
     content = grandParent?.dataset.content;
   }
@@ -703,7 +719,7 @@ function setupPreviewMetadata(
     previewContent.textContent = content || "";
     previewContent.addEventListener("click", (event: MouseEvent) => {
       event.preventDefault();
-      focusOnMessage(imageElement);
+      focusOnMessage(mediaElement);
     });
 
     previewContent?.addEventListener("mouseover", () =>
@@ -744,7 +760,6 @@ const zoomOutSVG = `
 `;
 
 function toggleZoom() {
-  console.error(isPreviewZoomed);
   const previewImage = getId("preview-image");
   if (!previewImage) {
     return;
@@ -852,6 +867,28 @@ export async function displayImagePreviewBlob(imageElement: HTMLImageElement) {
   URL.revokeObjectURL(objectUrl);
 }
 
+export async function displayVideoPreview(a: Attachment, senderId: string) {
+  const previewVideo = getId("preview-video") as HTMLVideoElement;
+  const previewImage = getId("preview-image") as HTMLImageElement;
+  enableElement("image-preview-container");
+  enableElement(previewVideo);
+
+  const sourceVideo = getAttachmentUrl(a);
+  const sanitizedVideo = DOMPurify.sanitize(sourceVideo);
+  previewVideo.src = sanitizedVideo;
+
+  previewImage.style.animation = "preview-image-animation 0.2s forwards";
+  handlePreviewOpenButton(sanitizedVideo);
+  handlePreviewDownloadButton(sanitizedVideo);
+  setupPreviewMetadata(
+    previewVideo,
+    sanitizedVideo,
+    senderId,
+    new Date(),
+    a.fileSize
+  );
+}
+
 export async function displayImagePreview(
   imageElement: HTMLImageElement,
   senderId?: string,
@@ -859,8 +896,12 @@ export async function displayImagePreview(
   isSpoiler = false,
   isFromMediaPanel = false
 ): Promise<void> {
-  enableElement("image-preview-container");
   const previewImage = getId("preview-image") as HTMLImageElement;
+  const previewVideo = getId("preview-video") as HTMLVideoElement;
+
+  enableElement("image-preview-container");
+  disableElement(previewVideo);
+
   const sourceImage = getSourceImage(imageElement);
   const sanitizedSourceImage = DOMPurify.sanitize(sourceImage);
 
@@ -1202,6 +1243,7 @@ export function hideImagePreview() {
   const previewImage = getId("preview-image") as HTMLImageElement;
   previewImage.style.animation =
     "preview-image-disappear-animation 0.15s forwards";
+  const previewVideo = getId("preview-video") as HTMLVideoElement;
 
   if (isPreviewZoomed) {
     toggleZoom();
@@ -1210,6 +1252,7 @@ export function hideImagePreview() {
     disableElement(imagePreviewContainer);
 
     previewImage.src = "";
+    previewVideo.src = "";
   }, 150);
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;

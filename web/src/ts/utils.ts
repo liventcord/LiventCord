@@ -7,6 +7,7 @@ import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
 import { apiClient } from "./api.ts";
+import { Attachment } from "./message.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
@@ -804,9 +805,44 @@ export function formatFileSize(bytes: number): string {
   return `${size.toFixed(2)} ${units[i]}`;
 }
 
-export function getResolution(image: HTMLImageElement): string {
-  return `${image.naturalWidth}x${image.naturalHeight}`;
+export function getResolution(
+  media: HTMLImageElement | HTMLVideoElement
+): string {
+  if (media instanceof HTMLImageElement) {
+    return `${media.naturalWidth}x${media.naturalHeight}`;
+  }
+  if (media instanceof HTMLVideoElement) {
+    return `${media.videoWidth}x${media.videoHeight}`;
+  }
+  throw new Error("Unsupported media type");
 }
+export function estimateVideoSizeBytes(
+  width: number,
+  height: number,
+  durationSeconds: number,
+  format: string = "mp4"
+): number {
+  const totalPixels = width * height;
+  let bpp = 0.1;
+
+  switch (format.toLowerCase()) {
+    case "mp4":
+    case "mov":
+      bpp = 0.07;
+      break;
+    case "webm":
+      bpp = 0.06;
+      break;
+    case "avi":
+      bpp = 0.15;
+      break;
+    default:
+      bpp = 0.1;
+  }
+
+  return Math.round(totalPixels * durationSeconds * bpp);
+}
+
 export function estimateImageSizeBytes(
   width: number,
   height: number,
@@ -827,7 +863,9 @@ export function estimateImageSizeBytes(
       return totalPixels * 0.25;
   }
 }
-export function getImageExtension(img: HTMLImageElement): string {
+export function getImageExtension(
+  img: HTMLImageElement | HTMLVideoElement
+): string {
   const src = img.src;
 
   const url = new URL(src, window.location.href);
@@ -1179,4 +1217,20 @@ export function insertHTML(html: string) {
   const fragment = range.createContextualFragment(html);
   range.insertNode(fragment);
   range.collapse(false);
+}
+
+export function getAttachmentUrl(file: Attachment) {
+  const isTenor = isTenorURL(file.proxyUrl);
+
+  if (isTenor) {
+    return file.proxyUrl;
+  } else if (file.isProxyFile) {
+    return apiClient.getProxyUrl(file.proxyUrl);
+  } else if (file.isImageFile) {
+    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
+  } else if (file.isVideoFile) {
+    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
+  } else {
+    return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
+  }
 }
