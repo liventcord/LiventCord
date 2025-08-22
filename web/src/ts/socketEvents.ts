@@ -31,7 +31,8 @@ import {
   handleNewMessage,
   NewMessageResponse,
   EditMessageResponse,
-  handleEditMessage
+  handleEditMessage,
+  TypingData
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
 import {
@@ -341,12 +342,6 @@ interface DMEditMessageData {
   content: string;
 }
 
-interface TypingData {
-  userId: string;
-  guildId?: string;
-  channelId: string;
-}
-
 const handleNewGuildMessage = (data: GuildMessageData) => {
   const messageData: NewMessageResponse = {
     guildId: data.guildId,
@@ -356,6 +351,18 @@ const handleNewGuildMessage = (data: GuildMessageData) => {
     channelId: data.channelId
   };
   handleNewMessage(messageData);
+
+  if (
+    data.guildId === currentGuildId &&
+    data.channelId === guildCache.currentChannelId
+  ) {
+    const typingData: TypingData = {
+      userId: data.messages[0].userId,
+      guildId: data.guildId,
+      channelId: data.channelId
+    };
+    handleStopTyping(typingData);
+  }
 };
 
 const handleNewDmMessage = (data: DMMessageData) => {
@@ -459,6 +466,9 @@ socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
 });
 
 socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
+  handleStopTyping(data);
+});
+export function handleStopTyping(data: TypingData) {
   const isGuild = !!data.guildId;
   const isCurrent =
     (isGuild && data.channelId === guildCache.currentChannelId) ||
@@ -476,7 +486,7 @@ socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
   userStatus.updateUserOnlineStatus(data.userId, "", false);
 
   updateTypingText(data.channelId);
-});
+}
 
 const typingBubbles = getId("typing-bubbles") as HTMLElement;
 

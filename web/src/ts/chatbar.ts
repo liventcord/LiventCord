@@ -301,7 +301,8 @@ let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
 
 function handleTypingRequest() {
-  if (state.rawContent !== "") {
+  const c = preserveEmojiContent(chatInput);
+  if (c !== "") {
     if (typingTimeout) {
       clearTimeout(typingTimeout);
     }

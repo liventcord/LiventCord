@@ -362,10 +362,10 @@ apiClient.on(
   (data: AttachmentWithMetaDataAndCount) => {
     if (data.attachments.length > 0) {
       appendCurrentAttachments(data.attachments);
-      setTimeout(() => {
-        updateAttachmentsCount(data.count);
-      }, 0);
     }
+    setTimeout(() => {
+      updateAttachmentsCount(data.count);
+    }, 0);
   }
 );
 

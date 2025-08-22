@@ -82,6 +82,7 @@ import {
 import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
 import { isMediaPanelOpen } from "./panelHandler.ts";
+import { handleStopTyping } from "./socketEvents.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -1241,7 +1242,11 @@ const selfSentMessages: SentMessage[] = [];
 function appendtoSelfSentMessages(temporaryId: string) {
   selfSentMessages.push({ id: temporaryId });
 }
-
+export interface TypingData {
+  userId: string;
+  guildId?: string;
+  channelId: string;
+}
 export function handleSelfSentMessage(data: Message) {
   console.log("Handle self-sent message: ", data);
 
@@ -1253,6 +1258,14 @@ export function handleSelfSentMessage(data: Message) {
     "Found message: ",
     selfSentMessages[foundMessageIndex]
   );
+  if (data.channelId === guildCache.currentChannelId) {
+    const typingData: TypingData = {
+      userId: currentUserId,
+      guildId: currentGuildId,
+      channelId: data.channelId
+    };
+    handleStopTyping(typingData);
+  }
 
   if (foundMessageIndex !== -1) {
     const element = chatContainer.querySelector(
