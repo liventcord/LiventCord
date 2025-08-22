@@ -1622,18 +1622,29 @@ export function getHistoryFromOneChannel(
   const messages = cacheInterface.getMessages(currentGuildId, channelId);
   console.log(messages);
 
+  chatContent.innerHTML = "";
+
   if (!isDm && messages && Array.isArray(messages)) {
     const repliesList = new Set<string>();
 
     if (messages.length > 0) {
       clearMessagesCache();
 
+      const chatMessages = chatContent.querySelectorAll(".message");
+
       for (const msg of messages) {
-        const foundReply = displayChatMessage(msg);
-        if (foundReply) {
-          repliesList.add(msg.messageId);
+        const exists = Array.from(chatMessages).some(
+          (c) => msg.messageId === c.id
+        );
+
+        if (!exists) {
+          const foundReply = displayChatMessage(msg);
+          if (foundReply) {
+            repliesList.add(msg.messageId);
+          }
         }
       }
+
       fetchReplies(messages, repliesList);
 
       return;
