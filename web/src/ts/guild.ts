@@ -130,7 +130,6 @@ export function loadGuild(
   currentGuildId = guildId;
   populateEmojis();
 
-  console.log(initialState.permissionsMap);
   const permissionsObject: PermissionsRecord = Object.fromEntries(
     Object.entries(initialState.permissionsMap).map(
       ([_guildId, permissions]) => [_guildId, permissions]
@@ -397,6 +396,31 @@ export const createGuildListItem = (
   listItem.appendChild(imgElement);
   return listItem;
 };
+
+function createAndCacheGuildItem(guild: {
+  guildId: string;
+  guildName: string;
+  isGuildUploadedImg: boolean;
+  rootChannel: string;
+  guildMembers: string[];
+  ownerId: string;
+  guildVersion: string;
+}): HTMLElement {
+  cacheInterface.setName(guild.guildId, guild.guildName);
+  cacheInterface.setRootChannel(guild.guildId, guild.rootChannel);
+  cacheInterface.setGuildOwner(guild.guildId, guild.ownerId);
+  cacheInterface.setGuildVersion(guild.guildId, guild.guildVersion);
+  cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
+
+  return createGuildListItem(
+    guild.guildId,
+    guild.rootChannel,
+    guild.guildName,
+    guild.isGuildUploadedImg,
+    true
+  );
+}
+
 export function updateGuilds(guildsJson: Array<any>) {
   if (!guildsJson || !Array.isArray(guildsJson)) {
     console.error("Invalid guild data");
@@ -415,32 +439,11 @@ export function updateGuilds(guildsJson: Array<any>) {
   mainLogoItem.appendChild(pendingAlertMain);
 
   wrapWhiteRod(mainLogoItem);
-  guildsJson.forEach(
-    ({
-      guildId,
-      guildName,
-      isGuildUploadedImg,
-      rootChannel,
-      guildMembers,
-      ownerId,
-      guildVersion
-    }) => {
-      cacheInterface.setName(guildId, guildName);
-      cacheInterface.setRootChannel(guildId, rootChannel);
-      cacheInterface.setGuildOwner(guildId, ownerId);
-      cacheInterface.setGuildVersion(guildId, guildVersion);
-      cacheInterface.setMemberIds(guildId, guildMembers);
 
-      const listItem = createGuildListItem(
-        guildId,
-        rootChannel,
-        guildName,
-        isGuildUploadedImg,
-        true
-      );
-      fragment.appendChild(listItem);
-    }
-  );
+  guildsJson.forEach((guild) => {
+    const listItem = createAndCacheGuildItem(guild);
+    fragment.appendChild(listItem);
+  });
 
   const createGuildButton = createNewGuildButton();
   fragment.appendChild(createGuildButton);
@@ -450,6 +453,30 @@ export function updateGuilds(guildsJson: Array<any>) {
   const selectedGuild = getGuildFromBar(currentGuildId);
   if (selectedGuild) {
     (selectedGuild.parentNode as HTMLElement).classList.add("selected-guild");
+  }
+}
+
+export function addToGuildsList(guild: {
+  guildId: string;
+  guildName: string;
+  isGuildUploadedImg: boolean;
+  rootChannel: string;
+  guildMembers: string[];
+  ownerId: string;
+  guildVersion: string;
+}) {
+  if (!guild || typeof guild !== "object") {
+    console.error("Invalid guild data");
+    return;
+  }
+
+  const listItem = createAndCacheGuildItem(guild);
+
+  guildsList.appendChild(listItem);
+
+  const createGuildButton = guildsList.querySelector("#create-guild-button");
+  if (createGuildButton) {
+    guildsList.appendChild(createGuildButton);
   }
 }
 
@@ -471,30 +498,6 @@ function removeWhiteRod(element: HTMLElement) {
     return;
   }
   whiteRod.remove();
-}
-
-function appendToGuildList(guild: Guild) {
-  if (getGuildFromBar(guild.guildId)) {
-    return;
-  }
-
-  const listItem = createGuildListItem(
-    guild.guildId,
-    guild.rootChannel,
-    guild.guildName,
-    guild.isGuildUploadedImg,
-    true
-  );
-
-  guildsList.appendChild(listItem);
-
-  const createGuildButton = guildsList.querySelector("#create-guild-button");
-  if (createGuildButton) {
-    guildsList.appendChild(createGuildButton);
-  }
-
-  cacheInterface.setName(guild.guildId, guild.guildName);
-  cacheInterface.setMemberIds(guild.guildId, guild.guildMembers);
 }
 
 function createNewGuildButton() {

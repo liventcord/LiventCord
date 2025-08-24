@@ -73,7 +73,8 @@ namespace LiventCord.Controllers
                 await AddMemberToGuild(UserId!, guildId);
                 var guild = await GetUserGuildAsync(UserId!, guildId);
                 await InvalidateGuildMemberCaches(UserId!, guildId);
-                return Ok(new { success = true, guild, joinedChannelId });
+                var permissions = await _permissionsController.GetPermissionsMapForUser(UserId!);
+                return Ok(new { success = true, guild, joinedChannelId, permissions });
             }
             catch (Exception ex)
             {

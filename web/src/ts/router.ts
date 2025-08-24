@@ -92,9 +92,6 @@ class Router {
     apiClient.clearToken();
     window.location.reload();
   }
-  reloadLocation() {
-    window.location.reload();
-  }
 
   isIdDefined(id: string) {
     return id;

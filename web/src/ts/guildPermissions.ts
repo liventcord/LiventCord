@@ -121,3 +121,14 @@ class PermissionManager {
 }
 
 export const permissionManager = new PermissionManager();
+
+export function updatePermissions(
+  guildId: string,
+  permissionsObject: PermissionsRecord | undefined
+) {
+  if (permissionsObject) {
+    permissionManager.updatePermissions(guildId, permissionsObject);
+  } else {
+    console.error("Permissions not found for the given guildId:", guildId);
+  }
+}

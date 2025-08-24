@@ -162,9 +162,10 @@ namespace LiventCord.Controllers
             if (newGuild == null)
                 return Problem("Guild creation failed");
 
-            var guildDto = MapToGuildDto(newGuild);
+            var guild = MapToGuildDto(newGuild);
+            var permissions = await _permissionsController.GetPermissionsMapForUser(userId);
 
-            return StatusCode(201, guildDto);
+            return StatusCode(201, new { guild, permissions });
         }
 
         [HttpDelete("{guildId}")]

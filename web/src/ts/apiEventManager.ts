@@ -14,11 +14,18 @@ import {
   handleOldMessagesResponse,
   appendCurrentAttachments,
   updateAttachmentsCount,
-  displayChatMessage
+  displayChatMessage,
+  getHistoryFromOneChannel
 } from "./chat.ts";
-import { replyCache, cacheInterface, pinnedMessagesCache } from "./cache.ts";
+import {
+  replyCache,
+  cacheInterface,
+  pinnedMessagesCache,
+  guildCache
+} from "./cache.ts";
 import {
   editChannelName,
+  getChannels,
   handleChannelDelete,
   handleNewChannel
 } from "./channels.ts";
@@ -31,7 +38,8 @@ import {
   currentGuildId,
   setGuildNameText,
   Guild,
-  onLeaveGuild
+  onLeaveGuild,
+  addToGuildsList
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
@@ -54,7 +62,11 @@ import {
   setLastConfirmedProfileImage
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { permissionManager } from "./guildPermissions.ts";
+import {
+  permissionManager,
+  PermissionsRecord,
+  updatePermissions
+} from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
@@ -75,7 +87,13 @@ interface JoinGuildData {
   success: boolean;
   joinedChannelId: string;
   guild: Guild;
+  permissions: PermissionsRecord;
 }
+interface GuildResponse {
+  guild: Guild;
+  permissions: PermissionsRecord;
+}
+
 apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
   if (!initData) return;
   if (
@@ -104,7 +122,30 @@ apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
   refreshUserProfile(currentUserId, currentUserNick);
   setLastConfirmedProfileImage();
 });
+function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
+  updatePermissions(guild.guildId, permissions);
 
+  cacheInterface.addGuild(
+    guild.guildId,
+    guild.guildName,
+    guild.isGuildUploadedImg
+  );
+
+  addToGuildsList({
+    guildId: guild.guildId,
+    guildName: guild.guildName,
+    isGuildUploadedImg: guild.isGuildUploadedImg,
+    rootChannel: guild.rootChannel,
+    guildMembers: guild.guildMembers,
+    ownerId: currentUserId,
+    guildVersion: ""
+  });
+
+  appendToGuildContextList(guild.guildId);
+  loadGuild(guild.guildId, guild.rootChannel, guild.guildName, true);
+  getChannels();
+  getHistoryFromOneChannel(guildCache.currentChannelId);
+}
 apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
   if (!data.success) {
     const errormsg = translations.getTranslation("join-error-response");
@@ -115,14 +156,11 @@ apiClient.on(EventType.JOIN_GUILD, (data: JoinGuildData) => {
     return;
   }
 
-  permissionManager.initialiseGuild(data.guild.guildId);
-
-  loadGuild(data.guild.guildId, data.joinedChannelId, data.guild.guildName);
-
-  router.reloadLocation();
   if (closeCurrentJoinPop) {
     closeCurrentJoinPop();
   }
+
+  addNewGuild(data.guild, data.permissions);
 });
 
 apiClient.on(EventType.LEAVE_GUILD, (data: any) => {
@@ -168,7 +206,8 @@ apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
 apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   handleNewChannel(data);
 });
-function handleGuildCreationResponse(data: Guild) {
+
+function handleGuildCreationResponse(data: GuildResponse) {
   const popup = getId("guild-pop-up");
   if (popup) {
     const parentNode = popup.parentNode as HTMLElement;
@@ -176,22 +215,15 @@ function handleGuildCreationResponse(data: Guild) {
       parentNode.remove();
     }
   }
-
-  cacheInterface.addGuild(
-    data.guildId,
-    data.guildName,
-    data.isGuildUploadedImg
-  );
-
+  addNewGuild(data.guild, data.permissions);
   createFireWorks();
-  appendToGuildContextList(data.guildId);
-  loadGuild(data.guildId, data.rootChannel, data.guildName, true);
-  setTimeout(() => {
-    router.reloadLocation();
-  }, 500);
 }
+apiClient.on(EventType.GET_CHANNELS, (data: any) => {
+  cacheInterface.setChannels(data.guildId, data.channels);
+  getChannels();
+});
 
-apiClient.on(EventType.CREATE_GUILD, (data: Guild) => {
+apiClient.on(EventType.CREATE_GUILD, (data: GuildResponse) => {
   handleGuildCreationResponse(data);
 });
 

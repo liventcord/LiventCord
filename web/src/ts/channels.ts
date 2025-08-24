@@ -55,38 +55,36 @@ export function setChannelTitle(channelTitleText: string) {
 
 let isKeyDown = false;
 let currentChannelIndex = 0;
+
 export function getChannels() {
-  console.log("Getting channels...");
-  if (guildCache.currentChannelId) {
-    const rawChannels: CachedChannel[] =
-      cacheInterface.getChannels(currentGuildId);
+  const rawChannels: CachedChannel[] =
+    cacheInterface.getChannels(currentGuildId);
 
-    if (rawChannels.length > 0) {
-      const channels: Channel[] = rawChannels
-        .map((channelData) => {
-          if (!channelData) {
-            console.warn("Skipping undefined channelData");
-            return null;
-          }
-
-          return new Channel({
-            channelId: channelData.channelId,
-            channelName: channelData.channelName,
-            isTextChannel: channelData.isTextChannel || false,
-            guildId: currentGuildId
-          });
-        })
-        .filter((channel) => channel !== null);
-
-      updateChannels(channels);
-      console.log("Using cached channels: ", channels);
-    } else {
-      console.warn("Channel cache is empty. fetching channels...");
-      apiClient.send(EventType.GET_CHANNELS, { guildId: currentGuildId });
-    }
+  if (rawChannels.length > 0) {
+    useChannels(rawChannels);
   } else {
-    console.warn("Current channel id is null!");
+    apiClient.send(EventType.GET_CHANNELS, { guildId: currentGuildId });
   }
+}
+
+function useChannels(rawChannels: CachedChannel[]) {
+  const channels: Channel[] = rawChannels
+    .map((channelData) => {
+      if (!channelData) {
+        console.warn("Skipping undefined channelData");
+        return null;
+      }
+
+      return new Channel({
+        channelId: channelData.channelId,
+        channelName: channelData.channelName,
+        isTextChannel: channelData.isTextChannel || false,
+        guildId: currentGuildId
+      });
+    })
+    .filter((channel) => channel !== null);
+
+  updateChannels(channels);
 }
 
 const currentSelectedChannels: { [guildId: string]: string } = {};
@@ -148,7 +146,10 @@ export async function changeChannel(newChannel?: ChannelData) {
   const channelId = newChannel.channelId;
   const isTextChannel = newChannel.isTextChannel;
 
-  if (channelId === guildCache.currentChannelId) {
+  if (
+    channelId === guildCache.currentChannelId &&
+    newChannel.guildId !== currentGuildId
+  ) {
     return;
   }
 
