@@ -1,8 +1,5 @@
 import { initialState } from "./app.ts";
-import {
-  appendToMessageContextList,
-  messageContextList
-} from "./contextMenuActions.ts";
+import { appendToMessageContextList } from "./contextMenuActions.ts";
 import { Emoji } from "./emoji.ts";
 import { DMHistoryResponse, Message, MessageReply } from "./message.ts";
 import { currentUserId, Member } from "./user.ts";
@@ -231,6 +228,11 @@ class MessagesCache extends BaseCache {
 
   getMessages(channelId: string): Message[] {
     return this.get(channelId) || [];
+  }
+  addMessage(channelId: string, message: Message): void {
+    const messages = this.getMessages(channelId);
+    messages.push(message);
+    this.setMessages(channelId, messages);
   }
 
   removeMessage(messageId: string, channelId: string): void {
@@ -838,6 +840,10 @@ class GuildCacheInterface {
   removeMessage(messageId: string, channelId: string, guildId: string): void {
     this.getGuild(guildId)?.messages.removeMessage(messageId, channelId);
   }
+  addMessage(guildId: string, channelId: string, message: Message): void {
+    this.getGuild(guildId)?.messages.addMessage(channelId, message);
+  }
+
   //Emojis
   private loadingCache: { [key: string]: boolean } = {}; // Track emoji loading state per guild
 

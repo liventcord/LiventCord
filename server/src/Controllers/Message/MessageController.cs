@@ -779,7 +779,7 @@ namespace LiventCord.Controllers
             }
 
 
-            return Ok(message);
+            return Ok(new { message, guildId });
         }
 
 

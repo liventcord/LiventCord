@@ -62,11 +62,7 @@ import {
   setLastConfirmedProfileImage
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import {
-  permissionManager,
-  PermissionsRecord,
-  updatePermissions
-} from "./guildPermissions.ts";
+import { PermissionsRecord, updatePermissions } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
@@ -446,10 +442,15 @@ apiClient.on(EventType.GET_FRIENDS, (data) => {
   updateFriendsList(data);
 });
 
-apiClient.on(EventType.SEND_MESSAGE_GUILD, (data: Message) => {
+export interface NewMessageResponseSelf {
+  message: Message;
+  guildId: string;
+}
+
+apiClient.on(EventType.SEND_MESSAGE_GUILD, (data: NewMessageResponseSelf) => {
   handleSelfSentMessage(data);
 });
-apiClient.on(EventType.SEND_MESSAGE_DM, (data: Message) => {
+apiClient.on(EventType.SEND_MESSAGE_DM, (data: NewMessageResponseSelf) => {
   handleSelfSentMessage(data);
 });
 

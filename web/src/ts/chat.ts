@@ -83,6 +83,7 @@ import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
 import { isMediaPanelOpen } from "./panelHandler.ts";
 import { handleStopTyping } from "./socketEvents.ts";
+import { NewMessageResponseSelf } from "./apiEventManager.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -607,6 +608,8 @@ export function handleNewMessage(data: NewMessageResponse): void {
       handleOldMessagesResponse(data);
       return;
     }
+    if (data.guildId)
+      cacheInterface.addMessage(data.guildId, data.channelId, data.messages[0]);
 
     const { isDm, channelId } = data;
     const userId = data.messages[0].userId;
@@ -1247,93 +1250,103 @@ export interface TypingData {
   guildId?: string;
   channelId: string;
 }
-export function handleSelfSentMessage(data: Message) {
-  console.log("Handle self-sent message: ", data);
 
-  const foundMessageIndex = selfSentMessages.findIndex(
-    (message) => message.id === data.temporaryId
+export function handleSelfSentMessage(data: NewMessageResponseSelf) {
+  const { message } = data;
+  console.log("Handle self-sent message:", message);
+
+  const foundIndex = selfSentMessages.findIndex(
+    (m) => m.id === message.temporaryId
   );
-  console.log(
-    selfSentMessages,
-    "Found message: ",
-    selfSentMessages[foundMessageIndex]
-  );
-  if (data.channelId === guildCache.currentChannelId) {
-    const typingData: TypingData = {
-      userId: currentUserId,
-      guildId: currentGuildId,
-      channelId: data.channelId
-    };
-    handleStopTyping(typingData);
+  console.log(selfSentMessages, "Found message:", selfSentMessages[foundIndex]);
+
+  if (message.channelId) {
+    cacheInterface.addMessage(data.guildId, message.channelId, message);
   }
 
-  if (foundMessageIndex !== -1) {
-    const element = chatContainer.querySelector(
-      `#${CSS.escape(selfSentMessages[foundMessageIndex].id)}`
-    ) as HTMLElement;
-    if (element) {
-      const authorAndDate = element.querySelector(".author-and-date");
-      if (authorAndDate && data.date) {
-        const dateElement = authorAndDate.querySelector(".date-element");
-        if (dateElement) {
-          dateElement.textContent = getFormattedDateSelfMessage(data.date);
-        }
-      }
-      const smallDateElement = element.querySelector(".small-date-element");
-      if (smallDateElement && data.date) {
-        smallDateElement.textContent = getFormattedDateForSmall(data.date);
-      }
-      element.style.color = "unset";
-      const messageContentElement = element.querySelector(
-        "#message-content-element"
-      ) as HTMLElement;
-      console.log(messageContentElement);
-      if (messageContentElement && data.attachments) {
-        console.log(
-          "Create media element: ",
-          data.content,
-          messageContentElement,
-          element,
-          data.metaData,
-          data.embeds,
-          data.attachments
-        );
-        if (
-          data.attachments.length > 0 &&
-          data.attachments.every((attachment) => !attachment.isProxyFile)
-        ) {
-          createMediaElement(
-            data.content,
-            messageContentElement,
-            element,
-            data.metaData,
-            data.metadata,
-            data.embeds,
-            data.userId,
-            data.date ? new Date(data.date) : new Date(),
-            data.isSystemMessage,
-            data.attachments,
-            data.lastEdited
-          );
-        }
-      }
-      element.id = data.messageId;
-      const messagesOptionsButton = element.querySelector(
-        ".message-button-container"
-      ) as HTMLElement;
-      if (messagesOptionsButton) {
-        const msgButton = messagesOptionsButton.querySelector(
-          ".message-button"
-        ) as HTMLElement;
-        if (msgButton) {
-          msgButton.dataset.m_id = data.messageId;
-        }
-      }
-      if (data.temporaryId) {
-        editMessageOnContextList(data.temporaryId, data.messageId, data.userId);
-      }
-    }
-    selfSentMessages.splice(foundMessageIndex, 1);
+  if (message.channelId === guildCache.currentChannelId) {
+    handleStopTyping({
+      userId: currentUserId,
+      guildId: currentGuildId,
+      channelId: message.channelId
+    });
+  }
+
+  if (foundIndex === -1) return;
+
+  const element = chatContainer.querySelector(
+    `#${CSS.escape(selfSentMessages[foundIndex].id)}`
+  ) as HTMLElement;
+  if (!element) {
+    selfSentMessages.splice(foundIndex, 1);
+    return;
+  }
+
+  updateMessageTimestamps(element, message);
+  element.style.color = "unset";
+  handleAttachments(element, message);
+  updateMessageIdAndButton(element, message);
+  syncContextList(message);
+
+  selfSentMessages.splice(foundIndex, 1);
+}
+
+function updateMessageTimestamps(element: HTMLElement, message: Message) {
+  if (!message.date) return;
+
+  const authorAndDate = element.querySelector(".author-and-date");
+  if (authorAndDate) {
+    const dateElement = authorAndDate.querySelector(".date-element");
+    if (dateElement)
+      dateElement.textContent = getFormattedDateSelfMessage(message.date);
+  }
+
+  const smallDate = element.querySelector(".small-date-element");
+  if (smallDate) smallDate.textContent = getFormattedDateForSmall(message.date);
+}
+
+function handleAttachments(element: HTMLElement, message: Message) {
+  const contentEl = element.querySelector(
+    "#message-content-element"
+  ) as HTMLElement;
+  if (!contentEl || !message.attachments || message.attachments.length === 0)
+    return;
+
+  const hasNoProxy = message.attachments.every((a) => !a.isProxyFile);
+  if (hasNoProxy) {
+    createMediaElement(
+      message.content,
+      contentEl,
+      element,
+      message.metaData,
+      message.metadata,
+      message.embeds,
+      message.userId,
+      message.date ? new Date(message.date) : new Date(),
+      message.isSystemMessage,
+      message.attachments,
+      message.lastEdited
+    );
+  }
+}
+
+function updateMessageIdAndButton(element: HTMLElement, message: Message) {
+  element.id = message.messageId;
+
+  const btnContainer = element.querySelector(
+    ".message-button-container"
+  ) as HTMLElement;
+  const btn = btnContainer?.querySelector(".message-button") as HTMLElement;
+  if (btn) btn.dataset.m_id = message.messageId;
+}
+
+function syncContextList(message: Message) {
+  if (message.temporaryId) {
+    editMessageOnContextList(
+      message.temporaryId,
+      message.messageId,
+      message.userId
+    );
   }
 }
 
