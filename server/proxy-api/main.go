@@ -57,13 +57,19 @@ func main() {
 		)
 	}
 
-	r.GET("/api/proxy/media", func(c *gin.Context) {
-		controller.GetMedia(c)
-		servedFilesSinceStartup++
-		fmt.Println("New servedFilesSinceStartup: ", servedFilesSinceStartup)
-	})
+	r.GET("/api/proxy/media",
+		AdminAuthMiddleware(adminPassword),
+		func(c *gin.Context) {
+			controller.GetMedia(c)
+			servedFilesSinceStartup++
+			fmt.Println("New servedFilesSinceStartup: ", servedFilesSinceStartup)
+		},
+	)
 
-	r.POST("/api/proxy/metadata", controller.FetchMetadata)
+	r.POST("/api/proxy/metadata",
+		AdminAuthMiddleware(adminPassword),
+		controller.FetchMetadata,
+	)
 
 	host := os.Getenv("HOST")
 	if host == "" {

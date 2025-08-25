@@ -18,8 +18,10 @@ public class MediaProxyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostMediaUrl([FromBody] MediaUrl mediaUrl)
+    public async Task<IActionResult> PostMediaUrl([FromBody] MediaUrl mediaUrl, [FromHeader(Name = "Authorization")] string? token)
     {
+        if (string.IsNullOrEmpty(SharedAppConfig.AdminKey)) return Unauthorized();
+        if (token != SharedAppConfig.AdminKey) return Unauthorized();
         return await AddMediaUrl(mediaUrl);
     }
 

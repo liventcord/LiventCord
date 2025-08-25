@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"image"
 	"net/http"
 	"os"
@@ -47,13 +46,32 @@ func parseUrl(url string) (string, string) {
 	return domain, routePath
 }
 
+func postWithAuth(url string, body []byte) error {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", os.Getenv("AdminPassword"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 403 {
+		return nil
+	}
+	return nil
+}
+
 func sendMediaUrlsToMainServer(mainServerUrl string, mediaUrl MediaUrl) error {
 	if mainServerUrl == "" {
 		return nil
 	}
 	b, _ := json.Marshal(mediaUrl)
-	_, err := http.Post(mainServerUrl+"/api/media", "application/json", bytes.NewReader(b))
-	return err
+	return postWithAuth(mainServerUrl+"/api/media", b)
 }
 
 func sendHtmlToMainServer(mainServerUrl, url, htmlStr string) error {
@@ -62,45 +80,7 @@ func sendHtmlToMainServer(mainServerUrl, url, htmlStr string) error {
 	}
 	meta := extractMetadataFromHtml(url, htmlStr)
 	b, _ := json.Marshal(meta)
-	resp, err := http.Post(mainServerUrl+"/api/metadata", "application/json", bytes.NewReader(b))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == 403 {
-		return nil
-	}
-	return nil
-}
-
-func humanReadableBytes(bytes uint64) string {
-	const (
-		KB = 1024
-		MB = KB * 1024
-		GB = MB * 1024
-	)
-
-	switch {
-	case bytes >= GB:
-		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(GB))
-	case bytes >= MB:
-		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(MB))
-	case bytes >= KB:
-		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(KB))
-	default:
-		return fmt.Sprintf("%d B", bytes)
-	}
-}
-func humanReadableDuration(d time.Duration) string {
-	hours := int(d.Hours())
-	minutes := int(d.Minutes()) % 60
-
-	if hours >= 24 {
-		days := hours / 24
-		hours = hours % 24
-		return fmt.Sprintf("%dd %dh", days, hours)
-	}
-	return fmt.Sprintf("%dh %dm", hours, minutes)
+	return postWithAuth(mainServerUrl+"/api/metadata", b)
 }
 
 // Blacklist

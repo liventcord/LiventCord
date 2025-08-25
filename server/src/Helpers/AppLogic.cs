@@ -14,6 +14,7 @@ namespace LiventCord.Helpers
         public static string WsUrl { get; private set; }
         public static float MaxAvatarSize { get; private set; }
         public static float MaxAttachmentSize { get; private set; }
+        public static string? AdminKey { get; private set; }
 
         static SharedAppConfig()
         {
@@ -23,6 +24,7 @@ namespace LiventCord.Helpers
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080/ws";
+            AdminKey = "";
         }
 
         public static void Initialize(IConfiguration configuration)
@@ -39,6 +41,7 @@ namespace LiventCord.Helpers
             MaxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var attachmentSize)
                 ? attachmentSize
                 : MaxAttachmentSize;
+            AdminKey = configuration["AppSettings:AdminKey"];
         }
         public static long GetMaxAttachmentSize()
         {

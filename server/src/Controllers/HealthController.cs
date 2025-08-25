@@ -15,11 +15,9 @@ public class HealthController : ControllerBase
     private static PerformanceCounter? cpuCounter;
     private static PerformanceCounter? memCounter;
     private readonly IAppStatsService _statsService;
-    private readonly string? adminKey;
     private readonly IConfiguration _configuration;
     public HealthController(IAppStatsService statsService, IConfiguration configuration)
     {
-        adminKey = configuration["AppSettings:AdminKey"];
         _statsService = statsService;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -35,8 +33,8 @@ public class HealthController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetHealth([FromHeader(Name = "Authorization")] string? token)
     {
-        if (string.IsNullOrEmpty(adminKey)) return Unauthorized();
-        if (token != adminKey) return Unauthorized();
+        if (string.IsNullOrEmpty(SharedAppConfig.AdminKey)) return Unauthorized();
+        if (token != SharedAppConfig.AdminKey) return Unauthorized();
         var data = await GetServiceDataAsync();
         return Ok(new { data });
     }

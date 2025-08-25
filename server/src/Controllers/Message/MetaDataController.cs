@@ -74,11 +74,17 @@ public class MetadataController : ControllerBase
         if (urls.Count == 0)
             return new Metadata();
 
-        var response = await _httpClient.PostAsync(
-            SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata",
-            JsonContent.Create(urls),
-            CancellationToken.None
-        );
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata"
+        )
+        {
+            Content = JsonContent.Create(urls)
+        };
+
+        request.Headers.Add("Authorization", SharedAppConfig.AdminKey);
+
+        var response = await _httpClient.SendAsync(request, CancellationToken.None);
 
         _logger.LogInformation("Status Code: " + response.StatusCode);
 
