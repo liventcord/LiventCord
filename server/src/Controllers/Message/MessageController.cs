@@ -1175,7 +1175,7 @@ namespace LiventCord.Controllers
         }
         [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels/{channelId}/messages/links")]
-        public async Task<IActionResult> GetGuildMessages(string guildId, string channelId)
+        public async Task<IActionResult> GetGuildMessagesWithLinks(string guildId, string channelId)
         {
             var userId = UserId!;
             if (!await _context.DoesMemberExistInGuild(userId, guildId))
@@ -1186,13 +1186,10 @@ namespace LiventCord.Controllers
             if (!channelExists)
                 return NotFound();
 
-
-
             var messagesWithLinks = await _context.Messages
                 .Where(m => m.ChannelId == channelId && m.Channel.GuildId == guildId)
                 .Where(m => _context.MessageUrls.Any(mu => mu.MessageId == m.MessageId))
                 .ToListAsync();
-
 
             var response = new
             {
@@ -1202,6 +1199,8 @@ namespace LiventCord.Controllers
 
             return Ok(response);
         }
+
+
 
 
 
