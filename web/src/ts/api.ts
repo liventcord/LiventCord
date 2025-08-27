@@ -61,8 +61,6 @@ export const EventType = Object.freeze({
   UPLOAD_EMOJI_IMAGE: "UPLOAD_EMOJI_IMAGE",
   ADD_DM: "ADD_DM",
   REMOVE_DM: "REMOVE_DM",
-  LEAVE_VOICE_CHANNEL: "LEAVE_VOICE_CHANNEL",
-  JOIN_VOICE_CHANNEL: "JOIN_VOICE_CHANNEL",
   GET_BULK_REPLY: "GET_BULK_REPLY",
   UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
   GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
@@ -127,8 +125,6 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_BULK_REPLY: HttpMethod.GET,
   UPDATE_GUILD_NAME: HttpMethod.PUT,
   DELETE_CHANNEL: HttpMethod.DELETE,
-  LEAVE_VOICE_CHANNEL: HttpMethod.PUT,
-  JOIN_VOICE_CHANNEL: HttpMethod.POST,
   DELETE_MESSAGE_DM: HttpMethod.DELETE,
   DELETE_MESSAGE_GUILD: HttpMethod.DELETE,
   UPDATE_GUILD_IMAGE: HttpMethod.PUT,
@@ -202,8 +198,6 @@ const EventUrlMap: Record<EventType, string> = {
     "/guilds/{guildId}/channels/{channelId}/messages/{messageId}/unpin",
   GET_PINNED_MESSAGES: "/guilds/{guildId}/channels/{channelId}/messages/pinned",
   CHANGE_NICK: "/nicks",
-  LEAVE_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
-  JOIN_VOICE_CHANNEL: "/guilds/{guildId}/channels/{channelId}/voice",
   ACCEPT_FRIEND: "/friends/accept/{friendId}",
   DENY_FRIEND: "/friends/deny/{friendId}",
   GET_MESSAGE_DATES: "",
@@ -319,7 +313,9 @@ class ApiClient {
 
     if (import.meta.env.DEV) {
       this.validateEventMaps();
-      this.checkFullCrud();
+      if (import.meta.env.DEV) {
+        this.checkFullCrud();
+      }
     }
     if (!this.getBackendUrl()) {
       setTimeout(() => {

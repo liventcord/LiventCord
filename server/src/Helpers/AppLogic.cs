@@ -12,6 +12,8 @@ namespace LiventCord.Helpers
         public static string MediaProxyApiUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
+        public static string RtcWsUrl { get; private set; }
+
         public static float MaxAvatarSize { get; private set; }
         public static float MaxAttachmentSize { get; private set; }
         public static string? AdminKey { get; private set; }
@@ -20,10 +22,11 @@ namespace LiventCord.Helpers
         {
             GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
             ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
-            MediaProxyApiUrl = "https://liventcord-proxy-api.onrender.com";
+            MediaProxyApiUrl = "http://localhost:5000";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080/ws";
+            RtcWsUrl = "ws://localhost:5010/ws";
             AdminKey = "";
         }
 
@@ -33,6 +36,7 @@ namespace LiventCord.Helpers
             ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
             MediaProxyApiUrl = configuration["AppSettings:MediaProxyApiUrl"] ?? MediaProxyApiUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
+            RtcWsUrl = configuration["AppSettings:RtcWsUrl"] ?? RtcWsUrl;
 
             MaxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize)
                 ? avatarSize
@@ -142,7 +146,8 @@ namespace LiventCord.Helpers
                     mediaProxyApiUrl = SharedAppConfig.MediaProxyApiUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
-                    wsUrl = SharedAppConfig.WsUrl
+                    wsUrl = SharedAppConfig.WsUrl,
+                    rtcWsUrl = SharedAppConfig.RtcWsUrl
                 };
 
                 _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(100));

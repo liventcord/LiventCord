@@ -97,7 +97,8 @@ import {
 } from "../ts/ui";
 import { openChannelSettings } from "../ts/settingsui";
 import { appendToChannelContextList } from "../ts/contextMenuActions";
-import { currentGuildId } from "../ts/guild";
+import { currentGuildId, joinVoiceChannel } from "../ts/guild";
+import { enterVoiceChannel } from "../ts/chatroom";
 export default defineComponent({
   name: "Channel",
   props: {
@@ -174,7 +175,7 @@ export default defineComponent({
 
     const handleClick = () => {
       if (!props.isTextChannel) {
-        alertUser("Voice channels are not supported yet");
+        enterVoiceChannel(props.channelId, currentGuildId);
         return;
       }
       store.dispatch("selectChannel", {

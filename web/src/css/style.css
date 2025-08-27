@@ -111,41 +111,6 @@
 #user-input {
   right: 10px !important;
 }
-#sound-panel-status {
-  left: 30px;
-  top: 4px;
-  font-size: auto;
-  color: rgb(41, 199, 112);
-  position: absolute;
-}
-#sound-connection-icon {
-  color: rgb(41, 199, 112);
-  font-size: auto;
-  position: absolute;
-  left: 5px;
-  top: 10px;
-  transform: rotate(45deg);
-}
-#sound-info-icon {
-  color: rgb(148, 155, 164);
-  font-size: 11px;
-  position: absolute;
-  left: 5px;
-  width: 80%;
-  top: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#close-call-button {
-  cursor: pointer;
-  font-size: auto;
-  position: absolute;
-  right: 15px;
-  background-color: transparent;
-  bottom: 50px;
-  border: none;
-}
 
 #self-discriminator {
   position: absolute;

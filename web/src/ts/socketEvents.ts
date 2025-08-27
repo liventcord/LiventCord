@@ -45,6 +45,21 @@ import { friendsCache, handleFriendEventResponse } from "./friends.ts";
 import { playAudio, clearVoiceChannel } from "./audio.ts";
 import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
+import {
+  peerList,
+  addVideoElement,
+  closeConnection,
+  removeVideoElement,
+  setVoiceUserId
+} from "./chatroom.ts";
+import {
+  handleAnswerMsg,
+  handleNewICECandidateMsg,
+  handleOfferMsg,
+  setRtcStatus,
+  startWebRTC
+} from "./rtc.ts";
+import { alertUser } from "./ui.ts";
 
 const typingText = getId("typing-text") as HTMLElement;
 export const typingStatusMap = new Map<string, Set<string>>();
@@ -81,36 +96,186 @@ export const SocketEvent = Object.freeze({
   GUILD_MEMBER_ADDED: "GUILD_MEMBER_ADDED"
 } as const);
 
-type SocketEventType = keyof typeof SocketEvent;
+type EventHandler = (...args: any[]) => void;
 
-class WebSocketClient {
-  private socket!: WebSocket;
-  private eventHandlers: Record<string, ((...args: any[]) => any)[]> = {};
-  private socketUrl: string = "";
-  private retryCount: number = 0;
-  private readonly maxRetryDelay: number = 30000;
-  private static instance: WebSocketClient | null = null;
-  private readonly heartbeatInterval: number = 30000;
-  private heartbeatTimer: number | null = null;
-  private readonly pendingRequests: Array<() => void> = [];
-  private readonly inProgressRequests: Set<string> = new Set();
-  private hasReconnected: boolean = false;
+export abstract class WebSocketClientBase {
+  protected socket!: WebSocket;
+  protected socketUrl: string = "";
+  protected retryCount: number = 0;
+  protected readonly maxRetryDelay: number = 30000;
+  protected readonly heartbeatInterval: number = 30000;
+  protected heartbeatTimer: number | null = null;
+  protected pendingRequests: Array<() => void> = [];
+  protected inProgressRequests: Set<string> = new Set();
 
-  private constructor(url: string = "") {
+  constructor(url: string = "") {
     this.socketUrl = url;
     if (this.socketUrl) {
       this.connectSocket();
     }
   }
 
-  private async connectSocket() {
+  protected abstract handleEvent(message: any): void;
+
+  protected async connectSocket(): Promise<void> {
     const cookie = await apiClient.getAuthCookie();
     if (cookie !== "undefined") {
       try {
         this.socket = new WebSocket(this.socketUrl, [`cookie-${cookie}`]);
         this.attachHandlers();
-      } catch (ex) {}
+      } catch (err) {
+        console.error("WebSocket connection failed", err);
+      }
     }
+  }
+
+  public async setSocketUrl(url: string) {
+    if (!this.socketUrl) {
+      this.socketUrl = url;
+      await this.connectSocket();
+    }
+  }
+
+  private attachHandlers() {
+    this.socket.onopen = () => {
+      this.retryCount = 0;
+      this.startHeartbeat();
+      this.processPendingRequests();
+      this.onOpen();
+    };
+
+    this.socket.onmessage = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        this.handleEvent(message);
+      } catch (err) {
+        console.error("Error parsing WebSocket message", err);
+      }
+    };
+
+    this.socket.onclose = (event: CloseEvent) => {
+      this.stopHeartbeat();
+      if (!event.wasClean) {
+        const retryDelay = Math.min(
+          Math.pow(2, this.retryCount) * 1000,
+          this.maxRetryDelay
+        );
+        setTimeout(() => this.reconnect(), retryDelay);
+        this.retryCount = Math.min(this.retryCount + 1, 10);
+      }
+      this.onClose();
+    };
+
+    this.socket.onerror = (err: Event) => {
+      console.error("WebSocket error", err);
+      this.onError(err);
+    };
+  }
+
+  protected onOpen(): void {}
+  protected onClose(): void {}
+  protected onError(err: any): void {}
+
+  private startHeartbeat() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = window.setInterval(() => {
+      if (this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify({ type: "ping" }));
+      }
+    }, this.heartbeatInterval);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+  }
+
+  private processPendingRequests() {
+    while (this.pendingRequests.length > 0) {
+      const req = this.pendingRequests.shift();
+      if (req) req();
+    }
+  }
+
+  protected sendRaw(data: any) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      this.pendingRequests.push(() => this.sendRaw(data));
+      return;
+    }
+    this.socket.send(JSON.stringify(data));
+  }
+
+  public close() {
+    this.socket.close();
+  }
+
+  private async reconnect() {
+    await this.connectSocket();
+  }
+}
+interface UserListEvent {
+  list: string[];
+  rtcUserId: string;
+}
+
+interface UserConnectEvent {
+  sid: string;
+  name: string;
+}
+
+interface UserDisconnectEvent {
+  sid: string;
+}
+
+export interface DataMessage {
+  type: "offer" | "answer" | "newIceCandidate";
+  [key: string]: any;
+}
+interface Envelope<T = any> {
+  event: string;
+  data: T;
+}
+
+export class WebSocketClient extends WebSocketClientBase {
+  private eventHandlers: Record<string, EventHandler[]> = {};
+  private static instance: WebSocketClient | null = null;
+
+  private constructor(url: string = "") {
+    super(url);
+  }
+
+  protected handleEvent(message: any) {
+    const { event_type, payload } = message;
+    if (this.eventHandlers[event_type]) {
+      const camelCasedPayload = convertKeysToCamelCase(payload);
+      this.eventHandlers[event_type].forEach((handler) =>
+        handler(camelCasedPayload)
+      );
+    } else {
+      console.log("No handler for event type:", event_type);
+    }
+  }
+
+  public static getInstance(): WebSocketClient {
+    if (!WebSocketClient.instance) {
+      WebSocketClient.instance = new WebSocketClient();
+    }
+    return WebSocketClient.instance;
+  }
+
+  on(eventType: string, handler: EventHandler) {
+    if (!this.eventHandlers[eventType]) this.eventHandlers[eventType] = [];
+    this.eventHandlers[eventType].push(handler);
+  }
+
+  off(eventType: string, handler: EventHandler) {
+    const handlers = this.eventHandlers[eventType];
+    if (!handlers) return;
+    const index = handlers.indexOf(handler);
+    if (index !== -1) handlers.splice(index, 1);
+  }
+
+  send(eventType: string, data: any) {
+    this.sendRaw({ event_type: eventType, payload: data });
   }
 
   getUserStatus(userIds: string[]) {
@@ -122,10 +287,7 @@ class WebSocketClient {
     }
 
     userIds.forEach((userId) => {
-      if (this.inProgressRequests.has(userId)) {
-        return;
-      }
-
+      if (this.inProgressRequests.has(userId)) return;
       this.inProgressRequests.add(userId);
 
       if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
@@ -161,144 +323,151 @@ class WebSocketClient {
     });
     userStatus.updateUserOnlineStatus(currentUserId, "", false);
   }
+}
+export class RTCWebSocketClient extends WebSocketClientBase {
+  private static instance: RTCWebSocketClient | null = null;
+  private currentRoomID = "";
 
-  private attachHandlers() {
-    this.socket.onopen = () => {
-      console.log("Connected to WebSocket server");
-      this.retryCount = 0;
-      this.startHeartbeat();
-      this.processPendingRequests();
-      if (this.hasReconnected) {
-        apiClient.onWebsocketReconnect();
-      }
-      this.hasReconnected = true;
-    };
-
-    this.socket.onmessage = (event) => {
-      console.log("Received message:", event.data);
-      try {
-        const message = JSON.parse(event.data);
-        const { event_type, payload } = message;
-
-        if (Object.values(SocketEvent).includes(event_type)) {
-          const eventEnumValue = event_type as SocketEventType;
-          const camelCasedPayload = convertKeysToCamelCase(payload);
-
-          if (this.eventHandlers[eventEnumValue]) {
-            this.eventHandlers[eventEnumValue].forEach((handler) => {
-              console.log("Calling handler with payload:", camelCasedPayload);
-              handler(camelCasedPayload);
-            });
-          } else {
-            console.log("No handler for event type:", event_type);
-          }
-        } else {
-          console.log("Invalid event type:", event_type);
-        }
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-
-    this.socket.onclose = (event) => {
-      if (!event.wasClean) {
-        const retryDelay = Math.min(
-          Math.pow(2, this.retryCount) * 1000,
-          this.maxRetryDelay
-        );
-        setTimeout(() => this.reconnect(), retryDelay);
-        this.retryCount = Math.min(this.retryCount + 1, 10);
-      }
-      this.stopHeartbeat();
-    };
+  private constructor() {
+    super();
   }
 
-  private startHeartbeat() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
+  public static getInstance(): RTCWebSocketClient {
+    if (!RTCWebSocketClient.instance) {
+      RTCWebSocketClient.instance = new RTCWebSocketClient();
     }
-    this.heartbeatTimer = window.setInterval(() => {
-      if (this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "ping" }));
-      }
-    }, this.heartbeatInterval);
+    return RTCWebSocketClient.instance;
   }
 
-  private stopHeartbeat() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-    }
-  }
-
-  private async reconnect() {
-    const previousHandlers = this.eventHandlers;
-    await this.connectSocket();
-    this.eventHandlers = previousHandlers;
-  }
-
-  private processPendingRequests() {
-    while (this.pendingRequests.length > 0) {
-      const request = this.pendingRequests.shift();
-      if (request) {
-        request();
-      }
-    }
-  }
-
-  public static getInstance(url: string = ""): WebSocketClient {
-    if (!WebSocketClient.instance) {
-      WebSocketClient.instance = new WebSocketClient(url);
-    }
-    return WebSocketClient.instance;
-  }
-
-  on(eventType: SocketEventType, handler: (...args: any[]) => any) {
-    if (!this.eventHandlers[eventType]) {
-      this.eventHandlers[eventType] = [];
-    }
-    this.eventHandlers[eventType].push(handler);
-  }
-
-  off(eventType: SocketEventType, handler: (...args: any[]) => any) {
-    const handlers = this.eventHandlers[eventType];
-    if (!handlers) {
-      return;
-    }
-
-    const index = handlers.indexOf(handler);
-    if (index !== -1) {
-      handlers.splice(index, 1);
-    }
-  }
-
-  send(event: SocketEventType, data: any) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.pendingRequests.push(() => this.send(event, data));
-      return;
-    }
-    const eventMessage = {
-      event_type: event,
-      payload: data
-    };
-    this.socket.send(JSON.stringify(eventMessage));
-  }
-
-  close() {
-    this.socket.close();
-  }
-
-  async setSocketUrl(url: string) {
+  public async setTokenAndUrl(serverUrl: string) {
     if (!this.socketUrl) {
-      this.socketUrl = url;
-      await this.connectSocket();
+      await this.setSocketUrl(`${serverUrl}/ws`);
     }
+  }
+
+  protected onOpen(): void {
+    setRtcStatus(true);
+  }
+
+  protected onClose(): void {
+    setRtcStatus(false);
+  }
+
+  public joinRoom(guildId: string, channelId: string) {
+    this.currentRoomID = channelId;
+    this.sendRaw({
+      event: "join-room",
+      data: { guildId: guildId, roomId: channelId }
+    });
+  }
+
+  public switchRoom(newRoomID: string) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      this.pendingRequests.push(() => this.switchRoom(newRoomID));
+      return;
+    }
+
+    if (this.currentRoomID === newRoomID) return;
+
+    if (this.currentRoomID) {
+      this.sendRaw({
+        event: "leave-room",
+        data: { roomId: this.currentRoomID }
+      });
+    }
+
+    this.currentRoomID = newRoomID;
+    this.sendRaw({ event: "join-room", data: { roomId: newRoomID } });
+  }
+
+  protected handleEvent(message: Envelope) {
+    const { event, data } = message;
+
+    switch (event) {
+      case "userList": {
+        const payload = data as UserListEvent;
+        const nicknames = payload.list.map(
+          (id: string) => userManager.getUserNick(id) || id
+        );
+        alertUser("RTC user list received: " + nicknames.join(", "));
+        setVoiceUserId(payload.rtcUserId);
+
+        for (const peer_id of payload.list) {
+          peerList[peer_id] = undefined;
+          addVideoElement(peer_id, peer_id);
+        }
+        startWebRTC();
+        break;
+      }
+
+      case "userConnect": {
+        const payload = data as UserConnectEvent;
+        alertUser("RTC user connected: " + JSON.stringify(payload));
+        const peer_id: string = payload.sid;
+        const display_name: string = payload.name;
+        peerList[peer_id] = undefined;
+        addVideoElement(peer_id, display_name);
+        break;
+      }
+
+      case "userDisconnect": {
+        const payload = data as UserDisconnectEvent;
+        alertUser("RTC user disconnected: " + JSON.stringify(payload));
+        const left_peer_id: string = payload.sid;
+        closeConnection(left_peer_id);
+        removeVideoElement(left_peer_id);
+        delete peerList[left_peer_id];
+        break;
+      }
+
+      case "data": {
+        const msg = data as DataMessage;
+        switch (msg.type) {
+          case "offer":
+            handleOfferMsg(msg);
+            break;
+          case "answer":
+            handleAnswerMsg(msg);
+            break;
+          case "newIceCandidate":
+            handleNewICECandidateMsg(msg);
+            break;
+          default:
+            console.warn("Unknown signaling message:", msg);
+        }
+        break;
+      }
+
+      case "disconnect":
+        console.log("Disconnected from server.", data);
+        break;
+
+      default:
+        console.log("Unknown event:", message);
+    }
+  }
+
+  public sendToPeer(targetId: string, payload: DataMessage) {
+    this.sendRaw({
+      event: "data",
+      data: {
+        target_id: targetId,
+        type: payload.type,
+        sdp: payload.sdp,
+        candidate: payload.candidate
+      }
+    });
   }
 }
-
 export const socketClient = WebSocketClient.getInstance();
+export const rtcWsClient = RTCWebSocketClient.getInstance();
 
 export async function setSocketClient(wsUrl: string) {
   await socketClient.setSocketUrl(wsUrl);
+}
+
+export async function setRTCWsClient(wsUrl: string) {
+  await rtcWsClient.setSocketUrl(wsUrl);
 }
 
 interface UpdateUserData {

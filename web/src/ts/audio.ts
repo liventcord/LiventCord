@@ -42,11 +42,14 @@ const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 const WIGGLE_DELAY = 500;
 let isInitializedAudio: boolean;
-export const earphoneButton = getId("earphone-button");
-export const microphoneButton = getId("microphone-button");
+export let earphoneButton = getId("earphone-button");
+export let microphoneButton = getId("microphone-button");
 const containers = document.querySelectorAll(".voice-button-container");
+
 containers.forEach((container) => {
   container.addEventListener("click", function (event) {
+    earphoneButton = getId("earphone-button");
+    microphoneButton = getId("microphone-button");
     const target = event.target as HTMLElement;
     if (target.id === "microphone-button") {
       setMicrophone();
@@ -476,20 +479,20 @@ function activateSoundOutput() {
 
 let isMicrophoneOpen = true;
 function setMicrophone() {
-  console.log("Set microphone! to ", isMicrophoneOpen);
-  if (!microphoneButton) {
-    return;
-  }
-  microphoneButton.classList.toggle("fa-microphone", !isMicrophoneOpen);
-  microphoneButton.classList.toggle("fa-microphone-slash", isMicrophoneOpen);
-
+  if (!microphoneButton) return;
   isMicrophoneOpen = !isMicrophoneOpen;
+  microphoneButton.classList.toggle("on", isMicrophoneOpen);
+  microphoneButton.classList.toggle("off", !isMicrophoneOpen);
+  console.log("Microphone is now", isMicrophoneOpen ? "ON" : "OFF");
 }
 
 let isEarphonesOpen = true;
 function setEarphones() {
-  console.log("Set earphones! to ", isEarphonesOpen);
+  if (!earphoneButton) return;
   isEarphonesOpen = !isEarphonesOpen;
+  earphoneButton.classList.toggle("on", isEarphonesOpen);
+  earphoneButton.classList.toggle("off", !isEarphonesOpen);
+  console.log("Earphones are now", isEarphonesOpen ? "ON" : "OFF");
 }
 
 async function activateMicAndSoundOutput() {

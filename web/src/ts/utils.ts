@@ -1234,3 +1234,22 @@ export function getAttachmentUrl(file: Attachment) {
     return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
   }
 }
+
+export function createBlackStream(fps = 1): MediaStream {
+  const width = 640;
+  const height = 480;
+  const canvas = createEl("canvas", { width: width, height: height });
+  const context = canvas.getContext("2d");
+
+  function drawBlackFrame() {
+    if (context) {
+      context.fillStyle = "black";
+      context.fillRect(0, 0, width, height);
+    }
+  }
+
+  drawBlackFrame();
+  setInterval(drawBlackFrame, 5000);
+
+  return canvas.captureStream(fps);
+}

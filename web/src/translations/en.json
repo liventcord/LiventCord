@@ -163,7 +163,6 @@
     "open-friends-button": "Add Friend",
     "channel-info-for-friend": "Friends",
     "open-in-browser": "Open in Browser",
-    "sound-panel-status": "Sound connection established",
     "left-settings-title": "User Settings",
     "my-account-button": "My Account",
     "sound-and-video-button": "Sound and Video",
@@ -275,7 +274,10 @@
     "true-or-false": "true or false",
     "spesific-date": "Spesific Date",
     "search-for": "Search For",
-    "link-embed-file": "link, embed or file"
+    "link-embed-file": "link, embed or file",
+    "sound-connection-established": "Sound Connection Established",
+    "sound-connection-failed": "Sound Connection Failed",
+    "connecting": "Connecting..."
   },
   "errorTranslations": {
     "LOGIN_ERROR_TITLE": "Login Error",
