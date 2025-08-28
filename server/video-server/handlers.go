@@ -9,6 +9,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type DataPayload struct {
+	TargetID  string          `json:"targetId"`
+	Type      string          `json:"type"`
+	SDP       json.RawMessage `json:"sdp,omitempty"`
+	Candidate json.RawMessage `json:"candidate,omitempty"`
+}
+
 func handleWS(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w, r)
 
@@ -105,15 +112,43 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 			notifyUserConnect(client)
 
 		case "data":
-			var raw map[string]interface{}
-			if err := json.Unmarshal(env.Data, &raw); err != nil {
+			var payload DataPayload
+			if err := json.Unmarshal(env.Data, &payload); err != nil {
 				log.Println("[WS] data payload parse failed:", err)
 				continue
 			}
-			target, _ := raw["targetId"].(string)
 
-			log.Println("[WS] Forwarding data from", userID, "to", target, ":", string(env.Data))
-			forwardData(client.ID, target, env.Data)
+			if payload.TargetID == "" {
+				log.Println("[WS] data event missing targetId from", userID)
+				continue
+			}
+
+			signalData := map[string]interface{}{
+				"type": payload.Type,
+			}
+
+			if payload.SDP != nil {
+				var sdp interface{}
+				if err := json.Unmarshal(payload.SDP, &sdp); err == nil {
+					signalData["sdp"] = sdp
+				}
+			}
+
+			if payload.Candidate != nil {
+				var candidate interface{}
+				if err := json.Unmarshal(payload.Candidate, &candidate); err == nil {
+					signalData["candidate"] = candidate
+				}
+			}
+
+			signalDataJSON, err := json.Marshal(signalData)
+			if err != nil {
+				log.Println("[WS] Failed to marshal signal data:", err)
+				continue
+			}
+
+			log.Println("[WS] Forwarding data from", userID, "to", payload.TargetID, ":", string(signalDataJSON))
+			forwardData(client.ID, payload.TargetID, signalDataJSON)
 		}
 	}
 
@@ -121,6 +156,44 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 	close(client.Send)
 	client.Conn.Close()
 	log.Println("[WS] Client disconnected:", userID)
+}
+
+func forwardData(fromID, targetID string, data []byte) {
+	if targetID == "" {
+		for _, c := range hub.clients {
+			if c.ID != fromID {
+				c.Send <- data
+			}
+		}
+		return
+	}
+
+	hub.mu.RLock()
+	targetClient, exists := hub.clients[targetID]
+	hub.mu.RUnlock()
+
+	if !exists {
+		log.Println("[WS] Target client not found:", targetID)
+		return
+	}
+
+	envelope := Envelope{
+		Event: "data",
+		Data:  data,
+	}
+
+	envelopeJSON, err := json.Marshal(envelope)
+	if err != nil {
+		log.Println("[WS] Failed to marshal envelope:", err)
+		return
+	}
+
+	select {
+	case targetClient.Send <- envelopeJSON:
+		log.Println("[WS] Successfully forwarded message to", targetID)
+	default:
+		log.Println("[WS] Failed to send to", targetID, "- channel full or closed")
+	}
 }
 
 func enableCORS(w http.ResponseWriter, r *http.Request) {

@@ -12,19 +12,6 @@ export let rtcWS: RTCWebSocketClient | null = null;
 export let myRoomID = "1";
 let localStream: MediaStream | null = null;
 
-export interface PeerData {
-  sid: string;
-  name: string;
-}
-
-export interface SignalingMessage {
-  type: "offer" | "answer" | "newIceCandidate";
-  senderId: string;
-  targetId: string;
-  sdp?: RTCSessionDescriptionInit;
-  candidate?: RTCIceCandidateInit;
-}
-
 const mediaConstraints: MediaStreamConstraints = {
   audio: true,
   video: true

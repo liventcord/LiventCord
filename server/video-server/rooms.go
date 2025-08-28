@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 )
 
@@ -35,21 +34,6 @@ func notifyUserConnect(c *Client) {
 			continue
 		}
 		sendJSON(other.Conn, Envelope{Event: "userConnect", Data: mustJSON(UserConnect{SID: c.ID})})
-	}
-}
-
-func forwardData(senderID string, targetID string, data json.RawMessage) {
-	if targetID == "" {
-		for _, c := range hub.clients {
-			if c.ID != senderID {
-				c.Send <- data
-			}
-		}
-		return
-	}
-
-	if c, ok := hub.clients[targetID]; ok && targetID != senderID {
-		c.Send <- data
 	}
 }
 
