@@ -40,13 +40,14 @@ dotnet run
 
 Note : This would automatically run pnpm install and build/serve frontend
 
-### Run Vite for Development (SPA)
+### Run Farm for Development (SPA)
 ```bash
 cd web
 ppm install
+mv .env.example .env
 pnpm run dev
 ```
-Vite runs at `http://localhost:5173`.
+Dev server runs at `http://localhost:3000`.
 
 ### Run Redis
 ```bash

@@ -15,7 +15,7 @@
     "MaxPoolSize": "3",
     "Host": "0.0.0.0",
     "Port": "5005",
-    "FrontendUrl": "http://localhost:5173",
+    "FrontendUrl": "http://localhost:3000",
     "GifWorkerUrl": "liventcord-gif-worker.efekantunc0.workers.dev",
     "MediaProxyApiUrl": "http://127.0.0.1:5000",
     "MaxAvatarSize": "3",

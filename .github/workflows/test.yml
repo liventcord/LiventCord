@@ -63,7 +63,7 @@ jobs:
         run: |
           cp src/.env.example src/.env
           nohup pnpm run dev &
-          until curl --silent --fail http://localhost:5173; do
+          until curl --silent --fail http://localhost:3000; do
             echo "Waiting for frontend…"
             sleep 1
           done

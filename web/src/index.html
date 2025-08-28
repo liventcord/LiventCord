@@ -65,6 +65,8 @@
 
     <div id="loading-screen"><img id="loading-element" src="https://liventcord.github.io/LiventCord/app/images/icons/icon.webp"></div>
 
+
+
     <div id="channel-list">
 
         <div class="friend-container dm-selected" id="friend-container-item">
@@ -142,7 +144,6 @@
                 </svg>
               </button>
               
-        </div>
         
     </div>
     
@@ -207,7 +208,12 @@
     </div>
 
 
-
+    <ul id="guilds-list" class="guilds-list">
+        <li class='selected-guild'>
+            <img id="main-logo" src="https://liventcord.github.io/LiventCord/app/images/icons/icon.webp" style="width: 30px; height: 30px; border: 10px solid #313338;" alt="Main Logo">
+            <div class="white-rod"></div>
+    </li>
+    </ul>
     
     <div class="vertical-line-long-black" id="vertical-line-long-black-item"></div>
     <div id="channel-info-container-for-friend">
@@ -294,68 +300,65 @@
     <div class="iconWrapper" id="tb-notify" role="button"  > <svg x="0" y="0"  role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"> <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.13 16.13c.11.27.46.28.66.08L15.73 4.27a.47.47 0 0 0-.07-.74 6.97 6.97 0 0 0-1.35-.64.62.62 0 0 1-.38-.43 2 2 0 0 0-3.86 0 .62.62 0 0 1-.38.43A7 7 0 0 0 5 9.5v2.09a.5.5 0 0 1-.13.33l-1.1 1.22A3 3 0 0 0 3 15.15v.28c0 .24.04.48.13.7ZM18.64 9.36c.13-.13.36-.05.36.14v2.09c0 .12.05.24.13.33l1.1 1.22a3 3 0 0 1 .77 2.01v.28c0 .67-.34 1.29-.95 1.56-1.31.6-4 1.51-8.05 1.51-.46 0-.9-.01-1.33-.03a.48.48 0 0 1-.3-.83l8.27-8.28ZM9.18 19.84A.16.16 0 0 0 9 20a3 3 0 1 0 6 0c0-.1-.09-.17-.18-.16a24.84 24.84 0 0 1-5.64 0Z" class=""></path> </svg> </div>
     -->
 
-    
-    
-<div id="image-preview-container">
-    <video id="preview-video" src="" controls style="display:none; max-width:100%; border-radius:12px;"></video>
-    <img id="preview-image"  style="max-width:100%; border-radius:12px;">
-    <div id="preview-author" style="display:flex; align-items:center; margin-top:8px;">
-        <img class="profile-pic preview-avatar" style="width:40px; height:40px; border-radius:50%; margin-right:8px;">
-        <div class="preview-text">
-            <div class="line-one" style="display:flex; flex-wrap:wrap; align-items:center;">
-                <span id="preview-nick" style="font-weight:bold; margin-right:6px;"></span>
-                <span id="preview-content"></span>
-            </div>
-            <span id="preview-date" style="font-size:12px; color:#888;"></span>
-        </div>
-    </div>
-    <button id="popup-close" class="popup-close" style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer;">
-        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
-        </svg>
-    </button>
-    <div class="actions-container">
-            <button id="preview-image-zoom"  type="button">
-                <div >
-                    <svg aria-hidden="true" role="img"
-                     xmlns="http://www.w3.org/2000/svg"
-                      width="24" height="24" fill="none" 
-                      viewBox="0 0 24 24"><path fill="var(--interactive-normal)" fill-rule="evenodd" 
-                      d="M15.62 17.03a9 9 0 1 1 1.41-1.41l4.68 4.67a1 1 0 0 1-1.42 1.42l-4.67-4.68ZM17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" 
-                      clip-rule="evenodd" class=""></path><path fill="var(--interactive-normal)"
-                       d="M11 7a1 1 0 1 0-2 0v2H7a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V7Z" >
-                    </path>
-                </svg>
-            </div>
-            
-        </button>
-        <button id="preview-image-reply" type="button" ><div ><svg aria-hidden="true" role="img"  xmlns="http://www.w3.org/2000/svg"
-             width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)" 
-             d="M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z" >
-            </path></svg></div></button>
-            <button id="preview-image-download" type="button">
-                <svg width="24" height="24" viewBox="0 0 24 24" ><g fill="var(--interactive-normal)"><path d="M17.707 10.708L16.293 9.29398L13 12.587V2.00098H11V12.587L7.70697 9.29398L6.29297 10.708L12 16.415L17.707 10.708Z"></path><path d="M18 18.001V20.001H6V18.001H4V20.001C4 21.103 4.897 22.001 6 22.001H18C19.104 22.001 20 21.103 20 20.001V18.001H18Z"></path></g></svg>
+    <div id="login-panel" style = "display:none">
+    <video id="video-background" autoplay muted loop></video>
 
-            </button>
+    <div class="wrapper">
+        <form id="login-form">
+          <h2 data-i18n="login"></h2>
+          <div class="input-field">
+            <input id="login-email" name="email" type="text" spellcheck="false" tabindex="1" />
+            <label for="login-email" data-i18n="emailLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="login-pass" name="pass" type="password" spellcheck="false" tabindex="2" />
+            <label for="login-pass" data-i18n="passwordLabel"></label>
+          </div>
+          <div class="forget">
+            <a href="#" data-i18n="forgotPassword" tabindex="3"></a>
+          </div>
+          <button id="login-button" class="auth-button" type="submit" data-i18n="login" tabindex="4"></button>
+          <div class="register">
+            <p data-i18n="registerPrompt">
+              <a id="register-link" data-i18n="register" tabindex="5"></a>
+            </p>
+          </div>
+        </form>
+        <form id="register-form" style="display: none;">
+          <h2 data-i18n="register"></h2>
+          <div class="input-field">
+            <input id="register-email" name="email" type="text" spellcheck="false" tabindex="1" />
+            <label for="register-email" data-i18n="emailLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="register-nick" name="nick" type="text" spellcheck="false" tabindex="2" />
+            <p id="discriminatorText"></p>
+            <label for="register-nick" data-i18n="nickLabel"></label>
+          </div>
+          <div class="input-field">
+            <input id="register-pass" name="pass" type="password" spellcheck="false" tabindex="3" />
+            <label for="register-pass" data-i18n="passwordLabel"></label>
+          </div>
+          <div class="forget">
+            <a data-i18n="forgotPassword" tabindex="4"></a>
+          </div>
+          <button id="register-button" class="auth-button" type="submit" data-i18n="register" tabindex="5"></button>
+          <div class="login">
+            <p data-i18n="loginPrompt">
+              <a id="login-link" data-i18n="login" tabindex="6"></a>
+            </p>
+          </div>
+        </form>
 
-            <button  id="preview-image-open" type="button"><div><svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" 
-                height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)"
-                 d="M15 2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V4.41l-4.3 4.3a1 1 0 1 1-1.4-1.42L19.58 3H16a1 1 0 0 1-1-1Z"
-                  ></path><path fill="var(--interactive-normal)" 
-                  d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 1 0-2 0v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 1 0 0-2H5Z" 
-                  ></path></svg></div></div>
-        <div class="details-container">
-            <div class="details-blob">
-                <span id="details-container-title-1" class="details-container-title"></span>
-                <span id="details-container-description-1" class="details-container-description"></span>
-            </div>
-            <div class="details-blob">
-                <span id="details-container-title-2" class="details-container-title"></span>
-                <span id="details-container-description-2" class="details-container-description"></span>
-            </div>
- 
+        <div id="google-signin-wrapper">
         </div>
-</div>
+      </div>
+    <div class="language-selector">
+      <button id="en-button" tabindex="6">English</button>
+      <button id="tr-button" tabindex="7">Turkish</button>
+    </div></div>
+    
+
     <div id="json-preview-container" >
         <pre id="json-preview-element"  class="jsonContainer" style="white-space: pre-wrap; user-select: text;">...</pre>
     </div>
@@ -376,22 +379,17 @@
 <hr
 class="horizontal-line"
 ref="userLine"
-></hr>
+>
     <div id="searchbar"></div>
         
     <div id="app"></div>
     
     <audio id="audio-player" style="display: none;"></audio>
 
-    <ul id="guilds-list" class="guilds-list">
-        <li class='selected-guild'>
-            <img id="main-logo" src="https://liventcord.github.io/LiventCord/app/images/icons/icon.webp" style="width: 30px; height: 30px; border: 10px solid #313338;" alt="Main Logo">
-            <div class="white-rod"></div>
-    </li>
-    </ul>
+
 <hr
 id="horizontal-line-guild"
-></hr>
+>
 
 
 
@@ -450,27 +448,86 @@ id="horizontal-line-guild"
             <span id="self-discriminator"></span>
             <span id="self-status"></span>
             <span id="self-bubble" class="offline"></span>
-        </span>
         <defs><clipPath ><rect width="24" height="24" x="0" y="0"></rect></clipPath><clipPath ><path d="M0,0 L600,0 L600,600 L0,600z"></path></clipPath><clipPath ><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath ><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><mask id="__lottie_element_39"><rect fill="#ffffff" width="600" height="600" transform="matrix(1,0,0,1,200,200)"></rect><path fill="#000000" clip-rule="nonzero" d=" M681.219970703125,212.79600524902344 C681.219970703125,212.79600524902344 215.69700622558594,681.75 215.69700622558594,681.75 C215.69700622558594,681.75 151.75999450683594,749.2319946289062 201.13699340820312,798.8619995117188 C255,853 319.67999267578125,785.0560302734375 319.67999267578125,785.0560302734375 C319.67999267578125,785.0560302734375 785.2030029296875,316.10198974609375 785.2030029296875,316.10198974609375 C785.2030029296875,316.10198974609375 868,234 816.2150268554688,184.4459991455078 C764.781005859375,135.22799682617188 681.219970703125,212.79600524902344 681.219970703125,212.79600524902344" fill-opacity="1"></path><path fill="#ffffff" clip-rule="nonzero" d=" M698,405 C698,405 642,405 642,405 C642,405 642,479 642,479 C642,479 698,479 698,479 C698,479 698,405 698,405" fill-opacity="1"></path></mask></defs>
         </div>  
         <div class="voice-button-container"> <i id="microphone-button" class="fa-solid fa-microphone"></i></div>
         <div class="voice-button-container"> <i id="earphone-button" class="fa-solid fa-headphones"></i></div>
         <div class="voice-button-container" >
             <button id="settings-button" >
-                <svg style="margin-left:-4px;" viewBox="0 0 24 24" width="20px" height="20px" fill="white" xmlns="http://www.w3.org/2000/svg" style="pointer-events:none;">
+                <svg style="margin-left:-4px; pointer-events:none;" viewBox="0 0 24 24" width="20px" height="20px" fill="white" xmlns="http://www.w3.org/2000/svg" >
                     <path fill="#a7a7ae"  fill-rule="evenodd" d="M10.56 1.1c-.46.05-.7.53-.64.98.18 1.16-.19 2.2-.98 2.53-.8.33-1.79-.15-2.49-1.1-.27-.36-.78-.52-1.14-.24-.77.59-1.45 1.27-2.04 2.04-.28.36-.12.87.24 1.14.96.7 1.43 1.7 1.1 2.49-.33.8-1.37 1.16-2.53.98-.45-.07-.93.18-.99.64a11.1 11.1 0 0 0 0 2.88c.06.46.54.7.99.64 1.16-.18 2.2.19 2.53.98.33.8-.14 1.79-1.1 2.49-.36.27-.52.78-.24 1.14.59.77 1.27 1.45 2.04 2.04.36.28.87.12 1.14-.24.7-.95 1.7-1.43 2.49-1.1.8.33 1.16 1.37.98 2.53-.07.45.18.93.64.99a11.1 11.1 0 0 0 2.88 0c.46-.06.7-.54.64-.99-.18-1.16.19-2.2.98-2.53.8-.33 1.79.14 2.49 1.1.27.36.78.52 1.14.24.77-.59 1.45-1.27 2.04-2.04.28-.36.12-.87-.24-1.14-.96-.7-1.43-1.7-1.1-2.49.33-.8 1.37-1.16 2.53-.98.45.07.93-.18.99-.64a11.1 11.1 0 0 0 0-2.88c-.06-.46-.54-.7-.99-.64-1.16.18-2.2-.19-2.53-.98-.33-.8.14-1.79 1.1-2.49.36-.27.52-.78.24-1.14a11.07 11.07 0 0 0-2.04-2.04c-.36-.28-.87-.12-1.14.24-.7.96-1.7 1.43-2.49 1.1-.8-.33-1.16-1.37-.98-2.53.07-.45-.18-.93-.64-.99a11.1 11.1 0 0 0-2.88 0ZM16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" class=""></path>
                 </svg>
             </button>
         </div>
     </div>
 
-    
+    <div id="image-preview-container">
+    <video id="preview-video" src="" controls style="display:none; max-width:100%; border-radius:12px;"></video>
+    <img id="preview-image"  style="max-width:100%; border-radius:12px;">
+    <div id="preview-author" style="display:flex; align-items:center; margin-top:8px;">
+        <img class="profile-pic preview-avatar" style="width:40px; height:40px; border-radius:50%; margin-right:8px;">
+        <div class="preview-text">
+            <div class="line-one" style="display:flex; flex-wrap:wrap; align-items:center;">
+                <span id="preview-nick" style="font-weight:bold; margin-right:6px;"></span>
+                <span id="preview-content"></span>
+            </div>
+            <span id="preview-date" style="font-size:12px; color:#888;"></span>
+        </div>
+    </div>
+    <div class="actions-container">
+            <button id="preview-image-zoom"  type="button">
+                <div >
+                    <svg aria-hidden="true" role="img"
+                     xmlns="http://www.w3.org/2000/svg"
+                      width="24" height="24" fill="none" 
+                      viewBox="0 0 24 24"><path fill="var(--interactive-normal)" fill-rule="evenodd" 
+                      d="M15.62 17.03a9 9 0 1 1 1.41-1.41l4.68 4.67a1 1 0 0 1-1.42 1.42l-4.67-4.68ZM17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" 
+                      clip-rule="evenodd" class=""></path><path fill="var(--interactive-normal)"
+                       d="M11 7a1 1 0 1 0-2 0v2H7a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V7Z" >
+                    </path>
+                </svg>
+            </div>
+            
+        </button>
+        <button id="preview-image-reply" type="button" ><div ><svg aria-hidden="true" role="img"  xmlns="http://www.w3.org/2000/svg"
+             width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)" 
+             d="M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z" >
+            </path></svg></div></button>
+            <button id="preview-image-download" type="button">
+                <svg width="24" height="24" viewBox="0 0 24 24" ><g fill="var(--interactive-normal)"><path d="M17.707 10.708L16.293 9.29398L13 12.587V2.00098H11V12.587L7.70697 9.29398L6.29297 10.708L12 16.415L17.707 10.708Z"></path><path d="M18 18.001V20.001H6V18.001H4V20.001C4 21.103 4.897 22.001 6 22.001H18C19.104 22.001 20 21.103 20 20.001V18.001H18Z"></path></g></svg>
+
+            </button>
+
+            <button  id="preview-image-open" type="button"> <div><svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" 
+                height="24" fill="none" viewBox="0 0 24 24"><path fill="var(--interactive-normal)"
+                 d="M15 2a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V4.41l-4.3 4.3a1 1 0 1 1-1.4-1.42L19.58 3H16a1 1 0 0 1-1-1Z"
+                  ></path><path fill="var(--interactive-normal)" 
+                  d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-6a1 1 0 1 0-2 0v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a1 1 0 1 0 0-2H5Z" 
+                  ></path></svg></div></button>
+        </div>
+        <div class="details-container">
+            <div class="details-blob">
+                <span id="details-container-title-1" class="details-container-title"></span>
+                <span id="details-container-description-1" class="details-container-description"></span>
+            </div>
+            <div class="details-blob">
+                <span id="details-container-title-2" class="details-container-title"></span>
+                <span id="details-container-description-2" class="details-container-description"></span>
+            </div>
+ 
+        </div>
+        <button id="popup-close" class="popup-close" style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer;">
+            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
+            </svg>
+        </button>
+    </div>
     <div id="audio-parent">
     
     
     <div id="player01"  class="player">
         <div class="wrapper">
-        <a></a>
+        <a>
         <img alt="LogoMusicImage">
         </a>
         <div class="info">
@@ -510,6 +567,9 @@ id="horizontal-line-guild"
 
 
 
+
+
+
     <div id="settings-overlay" class="outer-parent">
         <div id="settings-menu">
             <button id="close-settings-button" aria-label="Close settings" role="button" tabindex="0">
@@ -527,63 +587,6 @@ id="horizontal-line-guild"
     </div>
 
 
-    <div id="login-panel" style = "display:none">
-    <video id="video-background" autoplay muted loop></video>
-
-    <div class="wrapper">
-        <form id="login-form">
-          <h2 data-i18n="login"></h2>
-          <div class="input-field">
-            <input id="login-email" name="email" type="text" spellcheck="false" tabindex="1" />
-            <label for="login-email" data-i18n="emailLabel"></label>
-          </div>
-          <div class="input-field">
-            <input id="login-pass" name="pass" type="password" spellcheck="false" tabindex="2" />
-            <label for="login-pass" data-i18n="passwordLabel"></label>
-          </div>
-          <div class="forget">
-            <a href="#" data-i18n="forgotPassword" tabindex="3"></a>
-          </div>
-          <button id="login-button" class="auth-button" type="submit" data-i18n="login" tabindex="4"></button>
-          <div class="register">
-            <p data-i18n="registerPrompt">
-              <a id="register-link" data-i18n="register" tabindex="5"></a>
-            </p>
-          </div>
-        </form>
-        <form id="register-form" style="display: none;">
-          <h2 data-i18n="register"></h2>
-          <div class="input-field">
-            <input id="register-email" name="email" type="text" spellcheck="false" tabindex="1" />
-            <label for="register-email" data-i18n="emailLabel"></label>
-          </div>
-          <div class="input-field">
-            <input id="register-nick" name="nick" type="text" spellcheck="false" tabindex="2" />
-            <p id="discriminatorText"></p>
-            <label for="register-nick" data-i18n="nickLabel"></label>
-          </div>
-          <div class="input-field">
-            <input id="register-pass" name="pass" type="password" spellcheck="false" tabindex="3" />
-            <label for="register-pass" data-i18n="passwordLabel"></label>
-          </div>
-          <div class="forget">
-            <a data-i18n="forgotPassword" tabindex="4"></a>
-          </div>
-          <button id="register-button" class="auth-button" type="submit" data-i18n="register" tabindex="5"></button>
-          <div class="login">
-            <p data-i18n="loginPrompt">
-              <a id="login-link" data-i18n="login" tabindex="6"></a>
-            </p>
-          </div>
-        </form>
-
-        <div id="google-signin-wrapper">
-        </div>
-      </div>
-    <div class="language-selector">
-      <button id="en-button" tabindex="6">English</button>
-      <button id="tr-button" tabindex="7">Turkish</button>
-    </div>
     <script>
         function handleCredentialResponse(response) {
             window.handleCredentialResponse(response);
@@ -593,10 +596,5 @@ id="horizontal-line-guild"
         }
     </script>
 
-</html>
 
-</div>
-
-
-</body>
-</html>
+</body></html>
