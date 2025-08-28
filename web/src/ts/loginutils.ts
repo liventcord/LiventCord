@@ -124,8 +124,12 @@ export function initialiseLoginPage() {
   if (loginForm) {
     setupForm(loginForm, false);
 
-    const loginEmailInput = loginForm.querySelector('input[name="email"]');
-    const loginPassInput = loginForm.querySelector('input[name="pass"]');
+    const loginEmailInput = loginForm.querySelector(
+      'input[name="email"]'
+    ) as HTMLInputElement;
+    const loginPassInput = loginForm.querySelector(
+      'input[name="pass"]'
+    ) as HTMLInputElement;
 
     if (loginEmailInput && loginPassInput) {
       addInputValidationListeners(loginEmailInput, loginPassInput);

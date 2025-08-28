@@ -1,6 +1,11 @@
 import { cacheInterface } from "./cache";
 import { currentVoiceChannelGuild, currentVoiceChannelId } from "./channels";
-import { peerList, getVideoObj, currentVoiceUserId } from "./chatroom";
+import {
+  peerList,
+  getVideoObj,
+  currentVoiceUserId,
+  addVideoElement
+} from "./chatroom";
 import { DataMessage, rtcWsClient } from "./socketEvents";
 import { translations } from "./translations";
 import { createBlackStream, getId } from "./utils";
@@ -25,7 +30,7 @@ function logError(e: any) {
 }
 
 function sendViaServer(data: DataMessage) {
-  rtcWsClient.sendToPeer(data.target_id, data);
+  rtcWsClient.sendToPeer(data.targetId, data);
 }
 
 export function startWebRTC() {
@@ -83,8 +88,8 @@ function handleNegotiationNeededEvent(peerId: string) {
     .then(() => {
       console.log(`Sending offer to <${peerId}>...`);
       sendViaServer({
-        sender_id: currentVoiceUserId!,
-        target_id: peerId,
+        senderId: currentVoiceUserId!,
+        targetId: peerId,
         type: "offer",
         sdp: pc.localDescription!
       });
@@ -93,16 +98,17 @@ function handleNegotiationNeededEvent(peerId: string) {
 }
 
 function getStream(): MediaStream | null {
-  const myVideo = getId("myVideo") as HTMLVideoElement | null;
+  const myVideo = getId("local_vid") as HTMLVideoElement | null;
   if (myVideo && myVideo.srcObject) return myVideo.srcObject as MediaStream;
   if (isRenderingBlackScreen) return createBlackStream();
   return null;
 }
 
-export function handleOfferMsg(msg: DataMessage) {
-  const peerId = msg.sender_id;
-  createPeerConnection(peerId);
+const pendingCandidates: { [peerId: string]: RTCIceCandidateInit[] } = {};
 
+export function handleOfferMsg(msg: DataMessage) {
+  const peerId = msg.senderId;
+  if (!peerList[peerId]) createPeerConnection(peerId);
   const pc = peerList[peerId];
   if (!pc || !msg.sdp) return;
 
@@ -114,27 +120,42 @@ export function handleOfferMsg(msg: DataMessage) {
           .getTracks()
           .forEach((track) => pc.addTrack(track, localStream));
       }
+      return pc.createAnswer();
     })
-    .then(() => pc.createAnswer())
     .then((answer) => pc.setLocalDescription(answer))
     .then(() => {
-      console.log(`Sending answer to <${peerId}>...`);
       sendViaServer({
-        sender_id: currentVoiceUserId!,
-        target_id: peerId,
+        senderId: currentVoiceUserId!,
+        targetId: peerId,
         type: "answer",
         sdp: pc.localDescription!
       });
+      flushPendingCandidates(peerId);
     })
     .catch(logError);
+
+  let videoEl = getVideoObj(peerId);
+  if (!videoEl) addVideoElement(peerId, peerId);
+
+  pc.ontrack = (event: RTCTrackEvent) => {
+    if (event.streams && event.streams[0]) {
+      const vEl = getVideoObj(peerId);
+      if (vEl) {
+        vEl.srcObject = event.streams[0];
+        vEl.onloadedmetadata = () => vEl.play().catch(console.error);
+      }
+    }
+  };
 }
 
 export function handleAnswerMsg(msg: DataMessage) {
-  const peerId = msg.sender_id;
+  const peerId = msg.senderId;
   const pc = peerList[peerId];
   if (!pc || !msg.sdp) return;
 
-  pc.setRemoteDescription(new RTCSessionDescription(msg.sdp)).catch(logError);
+  pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+    .then(() => flushPendingCandidates(peerId))
+    .catch(logError);
 }
 
 function handleICECandidateEvent(
@@ -143,8 +164,8 @@ function handleICECandidateEvent(
 ) {
   if (event.candidate) {
     sendViaServer({
-      sender_id: currentVoiceUserId!,
-      target_id: peerId,
+      senderId: currentVoiceUserId!,
+      targetId: peerId,
       type: "newIceCandidate",
       candidate: event.candidate.toJSON()
     });
@@ -152,11 +173,27 @@ function handleICECandidateEvent(
 }
 
 export function handleNewICECandidateMsg(msg: DataMessage) {
-  const peerId = msg.sender_id;
+  const peerId = msg.senderId || msg.targetId;
   const pc = peerList[peerId];
-  if (!pc || !msg.candidate) return;
+  if (!msg.candidate) return;
 
-  pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(logError);
+  if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+    pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(logError);
+  } else {
+    if (!pendingCandidates[peerId]) pendingCandidates[peerId] = [];
+    pendingCandidates[peerId].push(msg.candidate);
+  }
+}
+
+function flushPendingCandidates(peerId: string) {
+  const pc = peerList[peerId];
+  if (!pc || !pc.remoteDescription) return;
+  if (pendingCandidates[peerId]) {
+    pendingCandidates[peerId].forEach((c) =>
+      pc.addIceCandidate(new RTCIceCandidate(c)).catch(logError)
+    );
+    delete pendingCandidates[peerId];
+  }
 }
 
 function handleTrackEvent(event: RTCTrackEvent, peerId: string) {
@@ -185,6 +222,7 @@ export function setRtcStatus(status: boolean, isWaiting?: boolean) {
     : "sound-connection-failed";
   soundChannel.textContent =
     cacheInterface.getGuildName(currentVoiceChannelGuild) +
+    " / " +
     cacheInterface.getChannelName(
       currentVoiceChannelGuild,
       currentVoiceChannelId

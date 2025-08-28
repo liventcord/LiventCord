@@ -2,17 +2,16 @@ import { selfProfileImage } from "./avatar.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelGuild,
-  currentVoiceChannelGuild,
   getChannelsUl
 } from "./channels.ts";
-import { apiClient, EventType } from "./api.ts";
-import { getId, createEl, IMAGE_SRCS } from "./utils.ts";
+import { getId, createEl } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
 import { currentUserId } from "./user.ts";
 import { isOnGuild } from "./router.ts";
 import { translations } from "./translations.ts";
 import { currentProfileImg } from "./popups.ts";
+import { rtcWsClient } from "./socketEvents.ts";
 
 declare global {
   interface Window {
@@ -610,11 +609,7 @@ function closeCurrentCall() {
     `li[id="${oldVoiceId}"]`
   ) as HTMLElement;
 
-  const data = {
-    guildId: currentVoiceChannelGuild,
-    channelId: currentVoiceChannelId
-  };
-  apiClient.send(EventType.LEAVE_VOICE_CHANNEL, data);
+  rtcWsClient.exitRoom();
 }
 export function clearVoiceChannel(channelId: string) {
   const channelButton = getChannelsUl().querySelector(`li[id="${channelId}"]`);

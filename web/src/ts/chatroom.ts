@@ -12,10 +12,6 @@ export let rtcWS: RTCWebSocketClient | null = null;
 export let myRoomID = "1";
 let localStream: MediaStream | null = null;
 
-export function setVoiceUserId(id: string) {
-  currentVoiceUserId = id;
-}
-
 export interface PeerData {
   sid: string;
   name: string;
@@ -23,8 +19,8 @@ export interface PeerData {
 
 export interface SignalingMessage {
   type: "offer" | "answer" | "newIceCandidate";
-  sender_id: string;
-  target_id: string;
+  senderId: string;
+  targetId: string;
   sdp?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
 }
@@ -119,7 +115,7 @@ export async function startCamera() {
     } else if (err.name === "NotFoundError") {
       alertUser("No media devices found.");
     } else {
-      alertUser("Error obtaining media stream: " + err);
+      alertUser("Error accessing camera: " + err);
     }
     console.error("Error accessing camera:", err);
   }
@@ -183,6 +179,7 @@ function makeVideoElementCustom(
 }
 
 export function addVideoElement(element_id: string, display_name: string) {
+  console.log("Displaying video for: ", element_id, display_name);
   if (element_id === currentVoiceUserId) {
     console.warn(element_id, currentVoiceUserId);
     return;

@@ -49,8 +49,7 @@ import {
   peerList,
   addVideoElement,
   closeConnection,
-  removeVideoElement,
-  setVoiceUserId
+  removeVideoElement
 } from "./chatroom.ts";
 import {
   handleAnswerMsg,
@@ -324,6 +323,7 @@ export class WebSocketClient extends WebSocketClientBase {
     userStatus.updateUserOnlineStatus(currentUserId, "", false);
   }
 }
+
 export class RTCWebSocketClient extends WebSocketClientBase {
   private static instance: RTCWebSocketClient | null = null;
   private currentRoomID = "";
@@ -356,9 +356,24 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   public joinRoom(guildId: string, channelId: string) {
     this.currentRoomID = channelId;
     this.sendRaw({
-      event: "join-room",
+      event: "joinRoom",
       data: { guildId: guildId, roomId: channelId }
     });
+  }
+  public exitRoom() {
+    if (
+      !this.currentRoomID ||
+      !this.socket ||
+      this.socket.readyState !== WebSocket.OPEN
+    )
+      return;
+
+    this.sendRaw({
+      event: "leaveRoom",
+      data: { roomId: this.currentRoomID }
+    });
+
+    this.currentRoomID = "";
   }
 
   public switchRoom(newRoomID: string) {
@@ -371,26 +386,21 @@ export class RTCWebSocketClient extends WebSocketClientBase {
 
     if (this.currentRoomID) {
       this.sendRaw({
-        event: "leave-room",
+        event: "leaveRoom",
         data: { roomId: this.currentRoomID }
       });
     }
 
     this.currentRoomID = newRoomID;
-    this.sendRaw({ event: "join-room", data: { roomId: newRoomID } });
+    this.sendRaw({ event: "joinRoom", data: { roomId: newRoomID } });
   }
 
   protected handleEvent(message: Envelope) {
     const { event, data } = message;
-
+    console.log("Rtc ws event received: ", event);
     switch (event) {
       case "userList": {
         const payload = data as UserListEvent;
-        const nicknames = payload.list.map(
-          (id: string) => userManager.getUserNick(id) || id
-        );
-        alertUser("RTC user list received: " + nicknames.join(", "));
-        setVoiceUserId(payload.rtcUserId);
 
         for (const peer_id of payload.list) {
           peerList[peer_id] = undefined;
@@ -402,7 +412,6 @@ export class RTCWebSocketClient extends WebSocketClientBase {
 
       case "userConnect": {
         const payload = data as UserConnectEvent;
-        alertUser("RTC user connected: " + JSON.stringify(payload));
         const peer_id: string = payload.sid;
         const display_name: string = payload.name;
         peerList[peer_id] = undefined;
@@ -412,7 +421,6 @@ export class RTCWebSocketClient extends WebSocketClientBase {
 
       case "userDisconnect": {
         const payload = data as UserDisconnectEvent;
-        alertUser("RTC user disconnected: " + JSON.stringify(payload));
         const left_peer_id: string = payload.sid;
         closeConnection(left_peer_id);
         removeVideoElement(left_peer_id);
@@ -421,6 +429,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       }
 
       case "data": {
+        console.log("Received data : ", data);
         const msg = data as DataMessage;
         switch (msg.type) {
           case "offer":
@@ -443,7 +452,8 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         break;
 
       default:
-        console.log("Unknown event:", message);
+        console.error(message);
+        alertUser("Unknown event received:", String(message));
     }
   }
 
@@ -451,7 +461,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     this.sendRaw({
       event: "data",
       data: {
-        target_id: targetId,
+        targetId: targetId,
         type: payload.type,
         sdp: payload.sdp,
         candidate: payload.candidate

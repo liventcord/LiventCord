@@ -4,21 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
 var hub = newHub()
 
 func main() {
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "0.0.0.0"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5000"
-	}
+	host := getEnv("HOST", "0.0.0.0")
+	port := getEnv("PORT", "5010")
+	addr := host + ":" + port
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]string{"status": "RTC server is running"}
@@ -27,9 +22,9 @@ func main() {
 	http.HandleFunc("/ws", handleWS)
 
 	s := &http.Server{
-		Addr:              ":5010",
+		Addr:              addr,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	log.Println("Starting server on port 5010")
+	log.Printf("Starting server on %s\n", addr)
 	log.Fatal(s.ListenAndServe())
 }
