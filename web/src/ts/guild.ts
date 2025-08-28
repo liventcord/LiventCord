@@ -27,7 +27,12 @@ import {
   PermissionsRecord
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
+import {
+  currentVoiceChannelId,
+  getSeletedChannel,
+  setCurrentVoiceChannelGuild,
+  setCurrentVoiceChannelId
+} from "./channels.ts";
 import { currentUserId, UserInfo, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
@@ -167,6 +172,8 @@ export function joinVoiceChannel(channelId: string, guildId: string) {
     return;
   }
   rtcWsClient.joinRoom(currentGuildId, channelId);
+  setCurrentVoiceChannelGuild(guildId);
+  setCurrentVoiceChannelId(channelId);
   return;
 }
 

@@ -220,6 +220,12 @@ export function setRtcStatus(status: boolean, isWaiting?: boolean) {
   const translation = status
     ? "sound-connection-established"
     : "sound-connection-failed";
+  console.log(
+    "currentVoiceChannelGuild: ",
+    currentVoiceChannelGuild,
+    "currentVoiceChannelId : ",
+    currentVoiceChannelId
+  );
   soundChannel.textContent =
     cacheInterface.getGuildName(currentVoiceChannelGuild) +
     " / " +

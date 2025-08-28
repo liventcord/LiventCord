@@ -111,8 +111,9 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			target, _ := raw["targetId"].(string)
+
 			log.Println("[WS] Forwarding data from", userID, "to", target, ":", string(env.Data))
-			forwardData(target, env.Data)
+			forwardData(client.ID, target, env.Data)
 		}
 	}
 

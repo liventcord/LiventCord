@@ -38,14 +38,19 @@ func notifyUserConnect(c *Client) {
 	}
 }
 
-func forwardData(target string, data json.RawMessage) {
-	hub.mu.RLock()
-	defer hub.mu.RUnlock()
-	t, ok := hub.clients[target]
-	if !ok {
+func forwardData(senderID string, targetID string, data json.RawMessage) {
+	if targetID == "" {
+		for _, c := range hub.clients {
+			if c.ID != senderID {
+				c.Send <- data
+			}
+		}
 		return
 	}
-	sendJSON(t.Conn, Envelope{Event: "data", Data: data})
+
+	if c, ok := hub.clients[targetID]; ok && targetID != senderID {
+		c.Send <- data
+	}
 }
 
 func cleanupClient(c *Client) {

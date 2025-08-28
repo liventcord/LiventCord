@@ -49,7 +49,7 @@ export async function enterVoiceChannel(
   const muteButton = getId("microphone-button");
   const toggleCamera = getId("camera-sound-panel");
   const closeCallButton = getId("close-call-button");
-  joinVoiceChannel(newVoiceChannelGuildId, newVoiceChannelId);
+  joinVoiceChannel(newVoiceChannelId, newVoiceChannelGuildId);
 
   toggleSoundPanel(true);
   setAudioMuteState(audioMuted);
