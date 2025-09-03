@@ -111,6 +111,13 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 			emitUserList(client)
 			notifyUserConnect(client)
 
+			joinedEnvelope := Envelope{
+				Event: "joined",
+				Data:  mustJSON(map[string]string{"sid": userID}),
+			}
+			msg, _ := json.Marshal(joinedEnvelope)
+			client.Send <- msg
+
 		case "data":
 			var payload DataPayload
 			if err := json.Unmarshal(env.Data, &payload); err != nil {

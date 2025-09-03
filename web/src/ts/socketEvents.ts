@@ -327,6 +327,7 @@ export class WebSocketClient extends WebSocketClientBase {
 export class RTCWebSocketClient extends WebSocketClientBase {
   private static instance: RTCWebSocketClient | null = null;
   private currentRoomID = "";
+  private myId: string = "";
 
   private constructor() {
     super();
@@ -446,6 +447,12 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         }
         break;
       }
+      case "joined": {
+        const payload = data as { sid: string };
+        this.myId = payload.sid;
+        console.log("My ID is", this.myId);
+        break;
+      }
 
       case "disconnect":
         console.log("Disconnected from server.", data);
@@ -458,10 +465,14 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   }
 
   public sendToPeer(targetId: string, payload: DataMessage) {
+    if (!targetId || targetId === this.myId) {
+      console.warn("Attempted to send signaling to self, skipping:", targetId);
+      return;
+    }
     this.sendRaw({
       event: "data",
       data: {
-        targetId: targetId,
+        targetId,
         type: payload.type,
         sdp: payload.sdp,
         candidate: payload.candidate

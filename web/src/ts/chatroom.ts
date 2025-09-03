@@ -24,10 +24,6 @@ let myVideo = getId("local_vid") as HTMLVideoElement | null;
 
 export async function initializeVideoComponent() {
   initialiseSelfVideo();
-
-  if (import.meta.env.DEV) {
-    await enterVoiceChannel("7835472386745152068", "4068271457781826330");
-  }
 }
 export async function enterVoiceChannel(
   newVoiceChannelGuildId: string,
