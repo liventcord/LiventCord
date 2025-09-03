@@ -357,9 +357,6 @@ export class Channel implements ChannelData {
 
 function addChannel(channelData: Channel) {
   const channel = new Channel(channelData);
-
-  console.warn(typeof channel, channel);
-
   store.dispatch("setChannel", channel);
   cacheInterface.addChannel(channel.guildId, channel);
 
@@ -507,6 +504,8 @@ export function setWidths(newWidth: number) {
     channelList.style.width = `${newWidth}px`;
   }
 
+  const callContainer = getId("call-container");
+
   if (channelList && userList && userInput) {
     const leftPadding = 10;
     const rightPadding = 20;
@@ -519,6 +518,11 @@ export function setWidths(newWidth: number) {
     userInput.style.width = `${availableWidth - leftPadding - rightPadding}px`;
     if (!isMobile)
       userInput.style.left = `${channelRect.right + leftPadding}px`;
+
+    if (callContainer) {
+      callContainer.style.right = "0px";
+      callContainer.style.width = `${availableWidth + 240}px`;
+    }
   }
   const infoContainer = getId("channel-info-container-for-friend");
   if (infoContainer) {
@@ -526,6 +530,10 @@ export function setWidths(newWidth: number) {
   }
   if (guildContainer) {
     guildContainer.style.width = `${newWidth + 167}px`;
+  }
+  const soundPanel = getId("sound-panel");
+  if (soundPanel) {
+    soundPanel.style.width = `${newWidth + 165}px`;
   }
 }
 

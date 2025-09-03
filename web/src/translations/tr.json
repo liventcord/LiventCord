@@ -176,7 +176,6 @@
     "open-friends-button": "Arkadaş Ekle",
     "channel-info-for-friend": "Arkadaşlar",
     "open-in-browser": "Tarayıcıda aç",
-    "sound-panel-status": "Ses bağlantısı kuruldu",
     "left-settings-title": "Kullanıcı Ayarları",
     "my-account-button": "Hesabım",
     "sound-and-video-button": "Ses Ve Görüntü",
@@ -288,7 +287,10 @@
     "true-or-false": "doğru veya yanlış",
     "spesific-date": "Spesifik Tarih",
     "search-for": "İçin ara",
-    "link-embed-file": "Link, Ek veya Dosya"
+    "link-embed-file": "Link, Ek veya Dosya",
+    "sound-connection-established": "Ses Bağlantısı Kuruldu",
+    "sound-connection-failed": "Ses Bağlantısı Kurulamadı",
+    "connecting": "Bağlanıyor..."
   },
   "errorTranslations": {
     "LOGIN_ERROR_TITLE": "Giriş Hatası",

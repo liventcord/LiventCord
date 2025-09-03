@@ -113,6 +113,7 @@ import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
+import { initializeVideoComponent } from "./chatroom.ts";
 
 interface InitialStateData {
   email: string;
@@ -134,6 +135,7 @@ interface InitialStateData {
   maxAvatarSize: number;
   maxAttachmentSize: number;
   wsUrl: string;
+  rtcWsUrl: string;
 }
 
 interface User {
@@ -159,6 +161,7 @@ interface InitialState {
   maxAttachmentSize: number;
   sharedGuildsMap: Map<string, any>;
   wsUrl: string;
+  rtcWsUrl: string;
 }
 
 const ELEMENT_IDS = {
@@ -194,7 +197,7 @@ export function initialiseState(data: InitialStateData): void {
     email,
     userId,
     nickName,
-    userStatus: _userStatus,
+    userStatus,
     userDiscriminator,
     profileVersion,
     guildName,
@@ -209,6 +212,7 @@ export function initialiseState(data: InitialStateData): void {
     mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
+    rtcWsUrl,
     wsUrl
   } = data;
 
@@ -218,7 +222,7 @@ export function initialiseState(data: InitialStateData): void {
     user: {
       userId,
       nickname: nickName,
-      status: _userStatus,
+      status: userStatus,
       discriminator: userDiscriminator,
       profileVersion,
       maskedEmail: getMaskedEmail(email),
@@ -234,7 +238,8 @@ export function initialiseState(data: InitialStateData): void {
     mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
-    wsUrl
+    wsUrl,
+    rtcWsUrl
   };
 
   setSocketClient(wsUrl);
@@ -678,6 +683,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
   adjustHeight();
 
   handleResize();
+  initializeVideoComponent();
   isChangingPage = false;
 }
 

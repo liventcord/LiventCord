@@ -77,9 +77,16 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     **Defaults to** `"proxy.liventcord-a60.workers.dev"`
 
   - **MediaProxyApiUrl**:
-    Url of the Media Proxy url for proxying external resources on media previews.
-    **Defaults to** `https://liventcord-proxy-api.onrender.com`
+    Url of the gin media proxy server for proxying external resources on media previews.
+    **Defaults to** `http://localhost:5000`
     
+  - **WsUrl**:
+    Url of the websocket golang server for emitting events.
+    **Defaults to** `http://localhost:8080`
+
+  - **RTCWsUrl**:
+    Url of the video websocket golang server for audio/voice.
+    **Defaults to** `http://localhost:5010`
 
   - **MaxAvatarSize**:
     Maximum upload size(in MB) for avatar on guilds and profiles.
@@ -113,7 +120,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Maximum number of concurrent redis connectons. 
     **Defaults** to 1.
 
-## Gin Server Configuration
+## Gin WS Server Configuration
 ```bash
 cd Liventcord/server/go-ws-api
 ```
@@ -172,3 +179,27 @@ mv .env.example .env
   - **AdminPassword**:
     Password that will be used for authenticating proxy server
     **Defaults to** `none`
+
+
+## Golang Video Server Configuration
+```bash
+cd Liventcord/server/video-server
+```
+1. Move `.env.example` to `.env`.
+```bash
+mv .env.example .env
+```
+
+#### Configuration Options
+
+  - **Host**:
+    Hostname the server will run at.
+    **Defaults to** `0.0.0.0`
+
+  - **Port**:
+    Port the server will run at.
+    **Defaults to** `8080`
+
+  - **DotnetApiUrl**:
+    The URL used to verify the WebSocket authentication by passing the cookie to the .NET server.
+    **Defaults to** `http://localhost:5005`

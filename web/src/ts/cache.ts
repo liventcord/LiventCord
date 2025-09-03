@@ -590,9 +590,9 @@ class GuildCacheInterface {
     return this.guildCache.doesGuildExist(guildId);
   }
 
-  getGuildName(guildId: string): string | null {
+  getGuildName(guildId: string): string {
     const guild = this.getGuild(guildId);
-    return guild ? guild.guildName : null;
+    return guild ? guild.guildName : "";
   }
   getIsUploaded(guildId: string): boolean | null {
     const guild = this.getGuild(guildId);

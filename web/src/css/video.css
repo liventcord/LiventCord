@@ -1,0 +1,229 @@
+#call-container {
+  width: 68vw;
+  margin-left: 22.5vw;
+  height: 93.3%;
+  bottom: 0px;
+  right: 0px;
+  display: none;
+  position: absolute;
+  background-color: black;
+  z-index: 6;
+}
+
+#local_vid {
+  width: 320px;
+  height: 180px;
+  z-index: 5;
+  border-radius: 5px;
+  position: fixed;
+  bottom: 5%;
+  right: 2.5%;
+  background-color: black;
+}
+
+#video_grid {
+  display: flex;
+  position: absolute;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+}
+
+#video_grid video {
+  background-color: transparent;
+  z-index: 2;
+  position: absolute;
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.video-button-container {
+  z-index: 3;
+  position: absolute;
+  display: flex;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  margin-bottom: 100px;
+  margin-left: 25px;
+}
+
+.icon {
+  font-size: 80px;
+  color: white;
+}
+
+.icon-off {
+  color: red;
+}
+
+#sound-panel {
+  align-items: center;
+  position: fixed;
+  display: none;
+  bottom: 70px;
+  height: 90px;
+  z-index: 3;
+  background-color: #202024;
+}
+
+.sound-panel-button {
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  background-color: #313338;
+  flex: 1 1 20%;
+  height: 40%;
+  margin-top: 50px;
+  margin-left: 5px;
+  transition: background-color 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sound-panel-button svg {
+  width: 60%;
+  height: 60%;
+  pointer-events: none;
+}
+
+.sound-panel-button:hover {
+  background-color: #444;
+}
+
+.sound-panel-button svg {
+  pointer-events: none;
+}
+
+#camera-sound-panel {
+  color: white;
+  font-size: 17px;
+}
+
+#sharescreen-sound-panel {
+  padding-left: 15px;
+  padding-top: 5px;
+}
+#sharescreen-sound-panel svg {
+  transform: scale(0.5);
+  transform-origin: center;
+  display: block;
+}
+
+#sound-panel-status {
+  position: absolute;
+  left: 30px;
+  top: 4px;
+  font-size: 14px;
+  color: #29c770;
+}
+#sound-panel-channel {
+  position: absolute;
+  left: 30px;
+  top: 24px;
+  font-size: 14px;
+  color: #29c770;
+}
+
+#sound-connection-icon {
+  position: absolute;
+  left: 5px;
+  top: 10px;
+  transform: rotate(45deg);
+  color: #29c770;
+}
+
+#sound-panel-status.voice-critical {
+  color: red;
+}
+
+#sound-info-icon {
+  position: absolute;
+  left: 5px;
+  width: 80%;
+  top: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#close-call-button {
+  cursor: pointer;
+  font-size: auto;
+  position: absolute;
+  right: 15px;
+  background-color: transparent;
+  bottom: 50px;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  #local_vid {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .icon {
+    font-size: 60px;
+  }
+
+  .button {
+    width: 150px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .icon {
+    font-size: 40px;
+  }
+
+  .button {
+    width: 100px;
+    height: 60px;
+  }
+}
+
+.voice-button-container {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#microphone-button,
+#earphone-button,
+#settings-button {
+  user-select: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: #a7a7ae;
+  background-color: transparent;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+#earphone-button:hover,
+#microphone-button:hover,
+#settings-button:hover {
+  background-color: #535353;
+}
+
+#microphone-button.on,
+#earphone-button.on {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+#microphone-button.off,
+#earphone-button.off {
+  color: #f44336 !important;
+  background-color: rgba(244, 67, 54, 0.1);
+}

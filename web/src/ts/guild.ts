@@ -27,11 +27,16 @@ import {
   PermissionsRecord
 } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
-import { currentVoiceChannelId, getSeletedChannel } from "./channels.ts";
+import {
+  currentVoiceChannelId,
+  getSeletedChannel,
+  setCurrentVoiceChannelGuild,
+  setCurrentVoiceChannelId
+} from "./channels.ts";
 import { currentUserId, UserInfo, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
-import { GuildMemberAddedMessage } from "./socketEvents.ts";
+import { GuildMemberAddedMessage, rtcWsClient } from "./socketEvents.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
@@ -162,12 +167,13 @@ export function loadGuild(
   }
 }
 
-export function joinVoiceChannel(channelId: string) {
+export function joinVoiceChannel(channelId: string, guildId: string) {
   if (currentVoiceChannelId === channelId) {
     return;
   }
-  const data = { guildId: currentGuildId, channelId };
-  apiClient.send(EventType.JOIN_VOICE_CHANNEL, data);
+  rtcWsClient.joinRoom(currentGuildId, channelId);
+  setCurrentVoiceChannelGuild(guildId);
+  setCurrentVoiceChannelId(channelId);
   return;
 }
 
