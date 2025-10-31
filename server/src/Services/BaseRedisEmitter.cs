@@ -1,7 +1,8 @@
-using System.Text.Json;
-using StackExchange.Redis;
-using MessagePack;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using MessagePack;
+using StackExchange.Redis;
+
 public class BaseRedisEmitter
 {
     private readonly string? redisConnectionString;
@@ -34,13 +35,16 @@ public class BaseRedisEmitter
         _logger = loggerFactory.CreateLogger("Redis");
         Task.Run(ConnectToRedisAsync);
     }
+
     private static int failedAttempts = 0;
     private const int MaxFailedAttemptsBeforeSuppressingLogs = 3;
 
     private async Task ConnectToRedisAsync()
     {
-        if (string.IsNullOrEmpty(redisConnectionString)) return;
-        if (!await _reconnectLock.WaitAsync(0)) return;
+        if (string.IsNullOrEmpty(redisConnectionString))
+            return;
+        if (!await _reconnectLock.WaitAsync(0))
+            return;
 
         try
         {
@@ -52,7 +56,16 @@ public class BaseRedisEmitter
                     redis?.Dispose();
 
                     ConfigurationOptions config;
-                    if (redisConnectionString.StartsWith("redis://", StringComparison.OrdinalIgnoreCase) || redisConnectionString.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+                    if (
+                        redisConnectionString.StartsWith(
+                            "redis://",
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                        || redisConnectionString.StartsWith(
+                            "rediss://",
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                    )
                     {
                         var uri = new Uri(redisConnectionString);
                         var userInfoParts = uri.UserInfo?.Split(':', 2);
@@ -62,7 +75,7 @@ public class BaseRedisEmitter
                             User = userInfoParts?.Length > 0 ? userInfoParts[0] : null,
                             Password = userInfoParts?.Length > 1 ? userInfoParts[1] : null,
                             Ssl = uri.Scheme == "rediss",
-                            AbortOnConnectFail = false
+                            AbortOnConnectFail = false,
                         };
                     }
                     else
@@ -88,7 +101,10 @@ public class BaseRedisEmitter
                 catch (Exception ex)
                 {
                     attempt++;
-                    int delay = Math.Min(InitialDelayMilliseconds * attempt, MaxBackoffMilliseconds);
+                    int delay = Math.Min(
+                        InitialDelayMilliseconds * attempt,
+                        MaxBackoffMilliseconds
+                    );
 
                     if (failedAttempts < MaxFailedAttemptsBeforeSuppressingLogs)
                     {
@@ -112,11 +128,10 @@ public class BaseRedisEmitter
         }
     }
 
-
-
     public async Task EmitGuildMembersToRedisStream(string guildId, string[] userIds)
     {
-        if (_connectionSemaphore == null || userIds.Length == 0) return;
+        if (_connectionSemaphore == null || userIds.Length == 0)
+            return;
 
         _pendingGuildMembers[guildId] = userIds;
 
@@ -129,7 +144,9 @@ public class BaseRedisEmitter
             {
                 if (redis == null || db == null)
                 {
-                    _logger.LogWarning("Redis connection is not available. Attempting to reconnect...");
+                    _logger.LogWarning(
+                        "Redis connection is not available. Attempting to reconnect..."
+                    );
                     await ConnectToRedisAsync();
                 }
 
@@ -142,8 +159,14 @@ public class BaseRedisEmitter
                         if (_pendingGuildMembers.TryGetValue(guildId, out var members))
                         {
                             var membershipsJson = JsonSerializer.Serialize(members);
-                            await db.StringSetAsync($"guild_memberships:{guildId}", membershipsJson, TimeSpan.FromDays(1));
-                            _logger.LogInformation($"Guild memberships for {guildId} published to Redis.");
+                            await db.StringSetAsync(
+                                $"guild_memberships:{guildId}",
+                                membershipsJson,
+                                TimeSpan.FromDays(1)
+                            );
+                            _logger.LogInformation(
+                                $"Guild memberships for {guildId} published to Redis."
+                            );
 
                             _pendingGuildMembers.TryRemove(guildId, out _);
                             return;
@@ -157,25 +180,32 @@ public class BaseRedisEmitter
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Attempt {attempt + 1}: Error publishing guild memberships to Redis: {ex.Message}");
+                _logger.LogError(
+                    $"Attempt {attempt + 1}: Error publishing guild memberships to Redis: {ex.Message}"
+                );
             }
 
             if (attempt < maxRetries - 1)
             {
-                var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt));
+                var delay = TimeSpan.FromMilliseconds(
+                    baseDelay.TotalMilliseconds * Math.Pow(2, attempt)
+                );
                 _logger.LogInformation($"Retrying in {delay.TotalSeconds} seconds...");
                 await Task.Delay(delay);
             }
         }
 
-        _logger.LogError($"Failed to publish guild memberships for {guildId} after {maxRetries} attempts. Data is buffered in memory.");
+        _logger.LogError(
+            $"Failed to publish guild memberships for {guildId} after {maxRetries} attempts. Data is buffered in memory."
+        );
     }
-
 
     public async Task EmitToRedisStream(string[] userIds, EventType eventType, object message)
     {
-        if (_connectionSemaphore == null) return;
-        if (userIds.Length == 0) return;
+        if (_connectionSemaphore == null)
+            return;
+        if (userIds.Length == 0)
+            return;
 
         if (redis == null || db == null)
         {
@@ -195,15 +225,16 @@ public class BaseRedisEmitter
                 {
                     EventType = eventType.ToString(),
                     UserIDs = userIds,
-                    Payload = payloadJson
+                    Payload = payloadJson,
                 };
 
                 var messageBytes = MessagePackSerializer.Serialize(eventPayload);
 
-                var streamMessage = new NameValueEntry[] {
+                var streamMessage = new NameValueEntry[]
+                {
                     new NameValueEntry("EventType", eventType.ToString()),
                     new NameValueEntry("UserIDs", JsonSerializer.Serialize(userIds)),
-                    new NameValueEntry("Payload", payloadJson)
+                    new NameValueEntry("Payload", payloadJson),
                 };
                 if (db != null)
                 {
@@ -216,10 +247,14 @@ public class BaseRedisEmitter
 
                     await Task.WhenAll(addTask, expireTask);
 
-                    _logger.LogInformation($"Event of type '{eventType}' published to Redis stream for {userIds.Length} users.");
+                    _logger.LogInformation(
+                        $"Event of type '{eventType}' published to Redis stream for {userIds.Length} users."
+                    );
                 }
 
-                _logger.LogInformation($"Event of type {eventType} published to Redis stream for {userIds.Length} users.");
+                _logger.LogInformation(
+                    $"Event of type {eventType} published to Redis stream for {userIds.Length} users."
+                );
             }
             finally
             {

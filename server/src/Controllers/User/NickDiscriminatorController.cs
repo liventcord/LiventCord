@@ -16,6 +16,7 @@ namespace LiventCord.Controllers
         {
             _context = context;
         }
+
         [HttpGet("discriminators")]
         public async Task<IActionResult> GetNickDiscriminator([FromQuery] string nick)
         {
@@ -34,6 +35,7 @@ namespace LiventCord.Controllers
             _discriminatorCache[nick] = discriminator;
             return Ok(new { discriminator });
         }
+
         [NonAction]
         public async Task<string?> GetCachedOrNewDiscriminator(string nickName)
         {
@@ -44,13 +46,14 @@ namespace LiventCord.Controllers
             }
             return await GetOrCreateDiscriminator(nickName);
         }
+
         [NonAction]
         public async Task<string?> GetOrCreateDiscriminator(string nickName)
         {
             var existingDiscriminators = await _context
-            .Users.Where(u => u.Nickname == nickName)
-            .Select(u => u.Discriminator)
-            .ToListAsync();
+                .Users.Where(u => u.Nickname == nickName)
+                .Select(u => u.Discriminator)
+                .ToListAsync();
 
             if (!existingDiscriminators.Contains("0000"))
             {
@@ -65,6 +68,7 @@ namespace LiventCord.Controllers
             string newDiscriminator = SelectDiscriminator(existingDiscriminators);
             return newDiscriminator;
         }
+
         [Authorize]
         [HttpPut("nicks")]
         public async Task<IActionResult> ChangeNickname([FromBody] ChangeNicknameRequest request)
@@ -82,6 +86,7 @@ namespace LiventCord.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
         private string SelectDiscriminator(IEnumerable<string> existing)
         {
             var set = new HashSet<string>(existing);
@@ -90,9 +95,10 @@ namespace LiventCord.Controllers
 
             var random = new Random();
             return Enumerable
-                .Range(0, 10000)
-                .Select(_ => random.Next(0, 10000).ToString("D4"))
-                .FirstOrDefault(d => !set.Contains(d)) ?? throw new InvalidOperationException();
+                    .Range(0, 10000)
+                    .Select(_ => random.Next(0, 10000).ToString("D4"))
+                    .FirstOrDefault(d => !set.Contains(d))
+                ?? throw new InvalidOperationException();
         }
     }
 }

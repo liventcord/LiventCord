@@ -196,7 +196,7 @@ export function getFormattedDate(input: string) {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (messageDate.toDateString() === today.toDateString()) {
-    return `ㅤ${translations.getTranslation(
+    return `${translations.getTranslation(
       "today"
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
@@ -205,7 +205,7 @@ export function getFormattedDate(input: string) {
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else if (messageDate.toDateString() === yesterday.toDateString()) {
-    return `ㅤ${translations.getTranslation(
+    return `${translations.getTranslation(
       "yesterday"
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
@@ -214,7 +214,7 @@ export function getFormattedDate(input: string) {
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else {
-    return `ㅤ${messageDate.toLocaleDateString(
+    return `${messageDate.toLocaleDateString(
       translations.getLocale()
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",

@@ -20,8 +20,8 @@ namespace LiventCord.Controllers
             AppDbContext dbContext,
             InviteController inviteController,
             PermissionsController permissionsController,
-            ICacheService cacheService
-            , RedisEventEmitter redisEventEmitter
+            ICacheService cacheService,
+            RedisEventEmitter redisEventEmitter
         )
         {
             _dbContext = dbContext;
@@ -63,7 +63,9 @@ namespace LiventCord.Controllers
                 return Ok(new { success = false, message = "Join ID is required." });
             }
 
-            var (guildId, joinedChannelId) = await _inviteController.GetGuildIdByInviteAsync(inviteId);
+            var (guildId, joinedChannelId) = await _inviteController.GetGuildIdByInviteAsync(
+                inviteId
+            );
 
             if (string.IsNullOrEmpty(guildId))
                 return Ok(new { success = false, message = "Invalid or expired invite." });
@@ -74,7 +76,15 @@ namespace LiventCord.Controllers
                 var guild = await GetUserGuildAsync(UserId!, guildId);
                 await InvalidateGuildMemberCaches(UserId!, guildId);
                 var permissions = await _permissionsController.GetPermissionsMapForUser(UserId!);
-                return Ok(new { success = true, guild, joinedChannelId, permissions });
+                return Ok(
+                    new
+                    {
+                        success = true,
+                        guild,
+                        joinedChannelId,
+                        permissions,
+                    }
+                );
             }
             catch (Exception ex)
             {
@@ -82,33 +92,33 @@ namespace LiventCord.Controllers
             }
         }
 
-
         [HttpDelete("/api/guilds/{guildId}/members")]
-        public async Task<IActionResult> HandleGuildLeave([FromRoute][IdLengthValidation] string guildId)
+        public async Task<IActionResult> HandleGuildLeave(
+            [FromRoute][IdLengthValidation] string guildId
+        )
         {
             await RemoveMemberFromGuild(UserId!, guildId);
             await InvalidateGuildMemberCaches(UserId!, guildId);
             return Ok(new { guildId });
         }
 
-
         [HttpDelete("/api/guilds/{guildId}/members/{memberId}")]
-        public async Task<IActionResult> HandleGuildKick([FromRoute][IdLengthValidation] string guildId,
-                                                        [FromRoute][UserIdLengthValidation] string memberId)
+        public async Task<IActionResult> HandleGuildKick(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][UserIdLengthValidation] string memberId
+        )
         {
             var canKickUser = await _permissionsController.CanKickUser(guildId, UserId!, memberId);
-            if (!canKickUser) return Forbid();
+            if (!canKickUser)
+                return Forbid();
             var userId = memberId;
             var payload = new { guildId, userId };
             await _redisEventEmitter.EmitToGuild(EventType.KICK_MEMBER, payload, guildId);
             await RemoveMemberFromGuild(memberId, guildId);
             await InvalidateGuildMemberCaches(memberId, guildId);
 
-
-
             return Ok(payload);
         }
-
 
         private async Task AddMemberToGuild(string userId, string guildId)
         {
@@ -134,13 +144,26 @@ namespace LiventCord.Controllers
                     }
                 );
             }
-            PermissionFlags combinedPermissions = PermissionFlags.ReadMessages | PermissionFlags.SendMessages | PermissionFlags.MentionEveryone;
+            PermissionFlags combinedPermissions =
+                PermissionFlags.ReadMessages
+                | PermissionFlags.SendMessages
+                | PermissionFlags.MentionEveryone;
             await _permissionsController.AddPermissions(guildId, userId, combinedPermissions);
 
             await _dbContext.SaveChangesAsync();
             var userData = await GetMemberInfo(guildId, userId);
-            var payload = new { guildId, userId, userData };
-            await _redisEventEmitter.EmitToGuild(EventType.GUILD_MEMBER_ADDED, payload, guildId, userId);
+            var payload = new
+            {
+                guildId,
+                userId,
+                userData,
+            };
+            await _redisEventEmitter.EmitToGuild(
+                EventType.GUILD_MEMBER_ADDED,
+                payload,
+                guildId,
+                userId
+            );
             await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
         }
 
@@ -164,12 +187,9 @@ namespace LiventCord.Controllers
 
             await _permissionsController.RemoveAllPermissions(guildId, userId);
 
-
             await _dbContext.SaveChangesAsync();
             await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
-
         }
-
 
         [NonAction]
         public async Task<bool> DoesMemberExistInGuild(string userId, string guildId)
@@ -181,7 +201,6 @@ namespace LiventCord.Controllers
                 .GuildMembers.Where(gu => gu.MemberId == userId && gu.GuildId == guildId)
                 .AnyAsync();
         }
-
 
         [NonAction]
         public async Task<List<string>> GetGuildMembersIds(string guildId)
@@ -201,8 +220,8 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(guildId))
                 return new List<PublicUser>();
 
-            var usersWithProfile = await _dbContext.GuildMembers
-                .Where(gu => gu.GuildId == guildId)
+            var usersWithProfile = await _dbContext
+                .GuildMembers.Where(gu => gu.GuildId == guildId)
                 .Select(gu => new
                 {
                     gu.User.UserId,
@@ -211,10 +230,10 @@ namespace LiventCord.Controllers
                     gu.User.Description,
                     gu.User.CreatedAt,
                     gu.User.SocialMediaLinks,
-                    ProfileVersion = _dbContext.ProfileFiles
-                        .Where(pf => pf.UserId == gu.User.UserId)
+                    ProfileVersion = _dbContext
+                        .ProfileFiles.Where(pf => pf.UserId == gu.User.UserId)
                         .Select(pf => pf.Version)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
                 })
                 .ToListAsync();
 
@@ -227,15 +246,17 @@ namespace LiventCord.Controllers
                     Description = user.Description,
                     CreatedAt = user.CreatedAt,
                     SocialMediaLinks = user.SocialMediaLinks,
-                    ProfileVersion = user.ProfileVersion
+                    ProfileVersion = user.ProfileVersion,
                 })
                 .ToList();
         }
 
-
-
         [NonAction]
-        public async Task<Dictionary<string, List<string>>> GetSharedGuilds(string userId, List<PublicUserWithFriendData?>? friends, List<GuildDto> guilds)
+        public async Task<Dictionary<string, List<string>>> GetSharedGuilds(
+            string userId,
+            List<PublicUserWithFriendData?>? friends,
+            List<GuildDto> guilds
+        )
         {
             if (string.IsNullOrEmpty(userId) || friends == null || !friends.Any())
                 return new Dictionary<string, List<string>>();
@@ -284,8 +305,7 @@ namespace LiventCord.Controllers
                 return null;
 
             return await _dbContext
-                .GuildMembers
-                .Where(gu => gu.GuildId == guildId && gu.User.UserId == userId)
+                .GuildMembers.Where(gu => gu.GuildId == guildId && gu.User.UserId == userId)
                 .Select(gu => new PublicUser
                 {
                     UserId = gu.User.UserId,
@@ -301,8 +321,8 @@ namespace LiventCord.Controllers
         [NonAction]
         public async Task<GuildDto?> GetUserGuildAsync(string userId, string guildId)
         {
-            var guild = await _dbContext.GuildMembers
-                .Where(gm => gm.MemberId == userId && gm.GuildId == guildId)
+            var guild = await _dbContext
+                .GuildMembers.Where(gm => gm.MemberId == userId && gm.GuildId == guildId)
                 .Include(gm => gm.Guild)
                 .ThenInclude(g => g.Channels)
                 .Select(gm => new GuildDto
@@ -313,39 +333,46 @@ namespace LiventCord.Controllers
                     RootChannel = gm.Guild.RootChannel,
                     Region = gm.Guild.Region,
                     IsGuildUploadedImg = gm.Guild.IsGuildUploadedImg,
-                    GuildMembers = _dbContext.GuildMembers
-                        .Where(g => g.GuildId == gm.Guild.GuildId)
+                    GuildMembers = _dbContext
+                        .GuildMembers.Where(g => g.GuildId == gm.Guild.GuildId)
                         .Select(g => g.MemberId)
                         .ToList(),
                     GuildChannels = new List<ChannelWithLastRead>(),
-                    GuildVersion = _dbContext.GuildFiles.Where(g => g.GuildId == gm.Guild.GuildId)
-                        .Select(g => g.Version).FirstOrDefault()
+                    GuildVersion = _dbContext
+                        .GuildFiles.Where(g => g.GuildId == gm.Guild.GuildId)
+                        .Select(g => g.Version)
+                        .FirstOrDefault(),
                 })
                 .FirstOrDefaultAsync();
 
-            if (guild == null) return null;
+            if (guild == null)
+                return null;
 
-            var allChannels = await _dbContext.Channels
-                .Where(c => c.GuildId == guildId)
+            var allChannels = await _dbContext
+                .Channels.Where(c => c.GuildId == guildId)
                 .Select(c => new
                 {
                     c.ChannelId,
                     c.ChannelName,
                     c.IsTextChannel,
-                    LastReadDateTime = _dbContext.UserChannels
-                        .Where(uc => uc.UserId == userId && uc.ChannelId == c.ChannelId)
+                    LastReadDateTime = _dbContext
+                        .UserChannels.Where(uc =>
+                            uc.UserId == userId && uc.ChannelId == c.ChannelId
+                        )
                         .Select(uc => uc.LastReadDatetime)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
                 })
                 .ToListAsync();
 
-            guild.GuildChannels = allChannels.Select(c => new ChannelWithLastRead
-            {
-                ChannelId = c.ChannelId,
-                ChannelName = c.ChannelName,
-                IsTextChannel = c.IsTextChannel,
-                LastReadDateTime = c.LastReadDateTime
-            }).ToList();
+            guild.GuildChannels = allChannels
+                .Select(c => new ChannelWithLastRead
+                {
+                    ChannelId = c.ChannelId,
+                    ChannelName = c.ChannelName,
+                    IsTextChannel = c.IsTextChannel,
+                    LastReadDateTime = c.LastReadDateTime,
+                })
+                .ToList();
 
             return guild;
         }
@@ -363,7 +390,8 @@ namespace LiventCord.Controllers
                     OwnerId = gu.Guild.OwnerId,
                     GuildVersion = _dbContext
                         .GuildFiles.Where(g => g.GuildId == gu.Guild.GuildId)
-                        .Select(g => g.Version).FirstOrDefault(),
+                        .Select(g => g.Version)
+                        .FirstOrDefault(),
                     GuildName = gu.Guild.GuildName,
                     RootChannel = gu.Guild.RootChannel,
                     Region = gu.Guild.Region,
@@ -407,6 +435,7 @@ namespace LiventCord.Controllers
 
             return guilds;
         }
+
         [NonAction]
         public async Task InvalidateGuildMemberCaches(string? userId, string guildId)
         {
@@ -414,24 +443,22 @@ namespace LiventCord.Controllers
             {
                 _cacheService.InvalidateCache(userId);
             }
-            var guild = await _dbContext.Guilds
-                .Include(g => g.GuildMembers)
+            var guild = await _dbContext
+                .Guilds.Include(g => g.GuildMembers)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);
             if (guild != null)
             {
-
                 var cachedUserIds = _cacheService.GetCachedUserIds();
 
-                var memberIdsToInvalidate = await _dbContext.GuildMembers
-                    .Where(m => m.GuildId == guildId && cachedUserIds.Contains(m.MemberId))
+                var memberIdsToInvalidate = await _dbContext
+                    .GuildMembers.Where(m =>
+                        m.GuildId == guildId && cachedUserIds.Contains(m.MemberId)
+                    )
                     .Select(m => m.MemberId)
                     .ToArrayAsync();
 
                 _cacheService.InvalidateGuildMemberCaches(memberIdsToInvalidate);
             }
         }
-
-
     }
-
 }

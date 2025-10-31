@@ -429,8 +429,15 @@
   width: 100%;
   height: 38%;
   position: fixed;
-  background-color: rgb(17, 18, 20);
+  background-color: #191a1d;
+
   animation: pop-up-animation-profile 0.3s forwards;
+}
+.statusPanelContainer {
+  background-color: #232428 !important;
+}
+.statusPanelContainer button {
+  background-color: #3e4147 !important;
 }
 #createChannelPopContainer {
   bottom: 0px;
@@ -746,7 +753,7 @@
 }
 #profile-container {
   display: flex;
-  margin-top: 24vh;
+  margin-top: 26vh;
   margin-left: 25px;
 }
 #profile-title {
@@ -797,8 +804,8 @@
   cursor: pointer;
   transition: border-radius 0.2s ease-out;
 }
-body.black-theme .profile-display {
-  border: solid rgb(36, 36, 41) 8px;
+body.black-theme .status-profile {
+  border: solid #383a40 8px;
 }
 .profile-options-container {
   font-size: 16px;

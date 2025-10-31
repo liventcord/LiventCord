@@ -10,6 +10,7 @@ public class RequestCountingMiddleware
         _next = next;
         _statsService = statsService;
     }
+
     [NonAction]
     public async Task InvokeAsync(HttpContext context)
     {

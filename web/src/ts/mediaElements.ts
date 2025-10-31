@@ -543,7 +543,6 @@ function processMediaLink(
       console.error("Error loading media element");
       resolve(true);
     };
-    console.log(link, isTenorURL(link));
     if (isImageURL(link) || isAttachmentUrl(link)) {
       if (!embeds || embeds.length <= 0) {
         if (!attachment) {

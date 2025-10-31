@@ -1,12 +1,12 @@
+using System.Data.Common;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using LiventCord.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using MySqlConnector;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
-using System.Data.Common;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 [ApiController]
 [Route("/health")]
@@ -16,6 +16,7 @@ public class HealthController : ControllerBase
     private static PerformanceCounter? memCounter;
     private readonly IAppStatsService _statsService;
     private readonly IConfiguration _configuration;
+
     public HealthController(IAppStatsService statsService, IConfiguration configuration)
     {
         _statsService = statsService;
@@ -27,14 +28,18 @@ public class HealthController : ControllerBase
         }
         _configuration = configuration;
     }
+
     private double? _cachedCpuPercent = null;
     private DateTime _lastCpuFetchTime = DateTime.MinValue;
     private readonly TimeSpan _cpuCacheDuration = TimeSpan.FromSeconds(30);
+
     [HttpGet]
     public async Task<IActionResult> GetHealth([FromHeader(Name = "Authorization")] string? token)
     {
-        if (string.IsNullOrEmpty(SharedAppConfig.AdminKey)) return Unauthorized();
-        if (token != SharedAppConfig.AdminKey) return Unauthorized();
+        if (string.IsNullOrEmpty(SharedAppConfig.AdminKey))
+            return Unauthorized();
+        if (token != SharedAppConfig.AdminKey)
+            return Unauthorized();
         var data = await GetServiceDataAsync();
         return Ok(new { data });
     }
@@ -60,14 +65,14 @@ public class HealthController : ControllerBase
         {
             UsedPercent = usedPercent,
             Used = $"{usedMemMB:F1} MB",
-            Total = $"{totalMemMB:F1} MB"
+            Total = $"{totalMemMB:F1} MB",
         };
 
         var memory = new MemoryInfo
         {
             System = systemMemory,
             OS = RuntimeInformation.OSDescription,
-            NumGc = GC.CollectionCount(0)
+            NumGc = GC.CollectionCount(0),
         };
         var usedDbSize = await GetDbUsedSize();
 
@@ -81,12 +86,12 @@ public class HealthController : ControllerBase
             CpuUsagePercent = cpuPercent,
             CpuCores = Environment.ProcessorCount,
             usedDbSize = usedDbSize,
-            totalRequestsServed = _statsService.RespondedRequestsSinceStartup
+            totalRequestsServed = _statsService.RespondedRequestsSinceStartup,
         };
-
 
         return data;
     }
+
     [NonAction]
     public async Task<double> GetDbUsedSize()
     {
@@ -113,7 +118,8 @@ public class HealthController : ControllerBase
             case "mysql":
             case "mariadb":
                 conn = new MySqlConnection(connectionString);
-                sizeQuery = "SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()";
+                sizeQuery =
+                    "SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()";
                 break;
 
             case "oracle":
@@ -146,7 +152,8 @@ public class HealthController : ControllerBase
 
             case "sqlserver":
                 conn = new SqlConnection(connectionString);
-                sizeQuery = @"
+                sizeQuery =
+                    @"
                     SELECT SUM(size) * 8 * 1024 
                     FROM sys.master_files 
                     WHERE database_id = DB_ID()";
@@ -173,9 +180,6 @@ public class HealthController : ControllerBase
             throw new Exception("Failed to retrieve database size.");
         }
     }
-
-
-
 
     private async Task<double> GetCpuUsagePercentAsync()
     {
@@ -252,6 +256,4 @@ public class HealthController : ControllerBase
 
         return (idle + iowait, total);
     }
-
-
 }

@@ -33,8 +33,8 @@ importers:
         specifier: ^3.5.18
         version: 3.5.18(typescript@5.9.2)
       vuex:
-        specifier: ^4.1.0
-        version: 4.1.0(vue@3.5.18(typescript@5.9.2))
+        specifier: ^4.0.2
+        version: 4.0.2(vue@3.5.18(typescript@5.9.2))
     devDependencies:
       '@types/canvas-confetti':
         specifier: ^1.9.0
@@ -3880,10 +3880,10 @@ packages:
       typescript:
         optional: true
 
-  vuex@4.1.0:
-    resolution: {integrity: sha512-hmV6UerDrPcgbSy9ORAtNXDr9M4wlNP4pEFKye4ujJF8oqgFFuxDCdOLS3eNoRTtq5O3hoBDh9Doj1bQMYHRbQ==}
+  vuex@4.0.2:
+    resolution: {integrity: sha512-M6r8uxELjZIK8kTKDGgZTYX/ahzblnzC4isU1tpmEuOIIKmV+TRdc+H4s8ds2NuZ7wpUTdGRzJRtoj+lI+pc0Q==}
     peerDependencies:
-      vue: ^3.2.0
+      vue: ^3.0.2
 
   webidl-conversions@4.0.2:
     resolution: {integrity: sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==}
@@ -8229,7 +8229,7 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.2
 
-  vuex@4.1.0(vue@3.5.18(typescript@5.9.2)):
+  vuex@4.0.2(vue@3.5.18(typescript@5.9.2)):
     dependencies:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.18(typescript@5.9.2)

@@ -300,7 +300,21 @@ let typingTimeout: ReturnType<typeof setTimeout>;
 let typingStarted = false;
 const TYPING_COOLDOWN = 2000;
 
-function handleTypingRequest() {
+function shouldTriggerTyping(e: KeyboardEvent): boolean {
+  if (
+    e.key.length !== 1 ||
+    e.ctrlKey ||
+    e.metaKey ||
+    e.altKey ||
+    e.key === " " ||
+    e.key === "Enter"
+  )
+    return false;
+  return true;
+}
+
+function handleTypingRequest(e: KeyboardEvent) {
+  if (!shouldTriggerTyping(e)) return;
   const c = preserveEmojiContent(chatInput);
   if (c !== "") {
     if (typingTimeout) {
@@ -1292,7 +1306,7 @@ export function setSuppressSend(val: boolean) {
   suppressSend = val;
 }
 function handleUserKeydown(event: KeyboardEvent) {
-  handleTypingRequest();
+  handleTypingRequest(event);
   if (suppressSend) {
     suppressSend = false;
     return;

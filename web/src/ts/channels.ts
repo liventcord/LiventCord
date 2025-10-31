@@ -27,8 +27,9 @@ import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
+import { hideCallContainer } from "./chatroom.ts";
 
-export const currentChannels: Channel[] = [];
+const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
 const channelList = getId("channel-list") as HTMLElement;
 export let currentChannelName: string;
@@ -139,6 +140,7 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel.isTextChannel) {
     return;
   }
+  hideCallContainer();
   console.log("Changed channel: ", newChannel);
   if (isOnMePage || isOnDm) {
     return;
@@ -187,14 +189,8 @@ export async function changeChannel(newChannel?: ChannelData) {
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
   } else {
-    joinVoiceChannel(channelId);
+    joinVoiceChannel(channelId, guildCache.currentGuildId);
   }
-  console.log(currentChannels);
-  if (!currentChannels) {
-    return;
-  }
-
-  setCurrentChannel(channelId);
 }
 export function getChannelsUl() {
   const container = getId("channel-container");
@@ -202,39 +198,6 @@ export function getChannelsUl() {
   return container?.querySelector("#channelul") as HTMLElement;
 }
 //channels
-function setCurrentChannel(channelId: string) {
-  currentChannels.forEach((channel) => {
-    const channelButton = getChannelsUl().querySelector(
-      `li[id="${channel.channelId}"]`
-    ) as HTMLElement;
-
-    if (!channel.isTextChannel) {
-      //voice channel
-      const voiceUsersInChannel =
-        cacheInterface.getVoiceChannelMembers(channelId);
-      if (voiceUsersInChannel) {
-        let allUsersContainer = channelButton.querySelector(
-          ".channel-users-container"
-        ) as HTMLElement;
-        if (!allUsersContainer) {
-          allUsersContainer = createEl("div", {
-            className: "channel-users-container"
-          });
-        }
-        channelButton.style.width = "100%";
-        voiceUsersInChannel.forEach((userId: string, index: number) => {
-          drawVoiceChannelUser(
-            index,
-            userId,
-            channelId,
-            channelButton,
-            allUsersContainer
-          );
-        });
-      }
-    }
-  });
-}
 
 function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
@@ -328,6 +291,7 @@ export class Channel implements ChannelData {
   channelId!: string;
   channelName!: string;
   isTextChannel!: boolean;
+  voiceUsers?: { id: string; name: string }[];
   guildId!: string;
   lastReadDateTime!: Date | null;
   voiceMembers!: Member[];
@@ -470,8 +434,7 @@ function drawVoiceChannelUser(
   setProfilePic(userElement, userId);
   userContainer.appendChild(userElement);
   userContainer.style.marginTop = index === 0 ? "30px" : "10px";
-  userContainer.style.marginLeft = "-220px";
-  userContainer.style.width = "90%";
+  userContainer.style.marginLeft = "60px";
   userContainer.style.justifyContent = "center";
   userContainer.style.alignItems = "center";
 
@@ -497,6 +460,7 @@ function drawVoiceChannelUser(
 }
 
 export function setWidths(newWidth: number) {
+  if (document.hidden) return;
   const userInput = getId("user-input");
   const guildContainer = getId("guild-container");
 

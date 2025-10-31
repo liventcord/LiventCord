@@ -1,9 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+
 public class ValidateBotTokenAttribute : Attribute, IAsyncActionFilter
 {
     private readonly string _headerName = "Authorization";
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+
+    public async Task OnActionExecutionAsync(
+        ActionExecutingContext context,
+        ActionExecutionDelegate next
+    )
     {
         var request = context.HttpContext.Request;
 
@@ -13,9 +18,9 @@ public class ValidateBotTokenAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
-        var tokenValidator = context.HttpContext.RequestServices.GetService<ITokenValidationService>();
+        var tokenValidator =
+            context.HttpContext.RequestServices.GetService<ITokenValidationService>();
         if (tokenValidator == null || !tokenValidator.ValidateToken(token.ToString()))
-
         {
             context.Result = new ForbidResult();
             return;
@@ -24,4 +29,3 @@ public class ValidateBotTokenAttribute : Attribute, IAsyncActionFilter
         await next();
     }
 }
-

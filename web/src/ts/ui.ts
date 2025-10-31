@@ -1257,6 +1257,7 @@ export function hideImagePreview() {
 }
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
+
 function hideJsonPreview(event: Event) {
   const target = event.target as HTMLElement;
 
@@ -1265,38 +1266,41 @@ function hideJsonPreview(event: Event) {
   }
 }
 
-export async function createInvitePop() {
+export async function createInvitePop(e: MouseEvent) {
   await apiClient.send(EventType.GET_INVITES, {
     guildId: currentGuildId,
     channelId: guildCache.currentChannelId
   });
-  createInviteUsersPop();
+  createInviteUsersPop(e);
 }
-export function openGuildSettingsDropdown(event: Event) {
-  const handlers: Record<string, () => void> = {
-    "invite-dropdown-button": createInvitePop,
-    "settings-dropdown-button": () => {
+
+export function openGuildSettingsDropdown(event: MouseEvent) {
+  toggleDropdown();
+
+  const target = event.target as HTMLElement;
+  const button = target.closest("button[id]") as HTMLElement;
+  if (!button) return;
+
+  const clickedId = button.id;
+
+  switch (clickedId) {
+    case "invite-dropdown-button":
+      createInvitePop(event);
+      break;
+    case "settings-dropdown-button":
       openSettings(SettingType.GUILD);
-    },
-    "channel-dropdown-button": () => {
+      break;
+    case "channel-dropdown-button":
       createChannelsPop(currentGuildId);
-    },
-    "exit-dropdown-button": () => {
+      break;
+    case "exit-dropdown-button":
       askUser(
         translations.getTranslation("exit-dropdown-button"),
         translations.getTranslation("leave-guild-detail"),
         translations.getTranslation("exit-dropdown-button"),
         leaveCurrentGuild
       );
-    }
-  };
-
-  const clickedId = (event.target as HTMLElement).id;
-
-  toggleDropdown();
-
-  if (clickedId in handlers) {
-    handlers[clickedId]();
+      break;
   }
 }
 

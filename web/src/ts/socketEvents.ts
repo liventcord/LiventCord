@@ -10,7 +10,8 @@ import {
   ChannelData,
   editChannelName,
   handleNewChannel,
-  getChannelsUl
+  getChannelsUl,
+  currentVoiceChannelGuild
 } from "./channels.ts";
 import {
   getId,
@@ -42,23 +43,30 @@ import {
 } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { friendsCache, handleFriendEventResponse } from "./friends.ts";
-import { playAudio, clearVoiceChannel } from "./audio.ts";
+import {
+  playAudio,
+  clearVoiceChannel,
+  playAudioType,
+  AudioType
+} from "./audio.ts";
 import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
 import {
   peerList,
   addVideoElement,
   closeConnection,
-  removeVideoElement
+  removeVideoElement,
+  currentVoiceUserId
 } from "./chatroom.ts";
 import {
+  createPeerConnection,
   handleAnswerMsg,
   handleNewICECandidateMsg,
   handleOfferMsg,
-  setRtcStatus,
-  startWebRTC
+  setRtcStatus
 } from "./rtc.ts";
 import { alertUser } from "./ui.ts";
+import store from "../store.ts";
 
 const typingText = getId("typing-text") as HTMLElement;
 export const typingStatusMap = new Map<string, Set<string>>();
@@ -179,7 +187,7 @@ export abstract class WebSocketClientBase {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = window.setInterval(() => {
       if (this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "ping" }));
+        this.socket.send(JSON.stringify({ event: "ping", data: {} }));
       }
     }, this.heartbeatInterval);
   }
@@ -218,7 +226,6 @@ interface UserListEvent {
 
 interface UserConnectEvent {
   sid: string;
-  name: string;
 }
 
 interface UserDisconnectEvent {
@@ -353,6 +360,9 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   protected onClose(): void {
     setRtcStatus(false);
   }
+  public isOnRoom(channelId: string): boolean {
+    return this.currentRoomID === channelId;
+  }
 
   public joinRoom(guildId: string, channelId: string) {
     this.currentRoomID = channelId;
@@ -368,13 +378,18 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       this.socket.readyState !== WebSocket.OPEN
     )
       return;
-
+    playAudioType(AudioType.ExitVC);
     this.sendRaw({
       event: "leaveRoom",
       data: { roomId: this.currentRoomID }
     });
 
     this.currentRoomID = "";
+    store.dispatch("removeVoiceUser", {
+      guildId: currentVoiceChannelGuild,
+      channelId: currentVoiceChannelId,
+      userId: currentUserId
+    });
   }
 
   public switchRoom(newRoomID: string) {
@@ -396,27 +411,32 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     this.sendRaw({ event: "joinRoom", data: { roomId: newRoomID } });
   }
 
-  protected handleEvent(message: Envelope) {
+  protected async handleEvent(message: Envelope) {
     const { event, data } = message;
     console.log("Rtc ws event received: ", event);
     switch (event) {
       case "userList": {
         const payload = data as UserListEvent;
-
+        store.dispatch("updateVoiceUsers", {
+          guildId: currentVoiceChannelGuild,
+          channelId: currentVoiceChannelId,
+          userIds: payload.list
+        });
         for (const peer_id of payload.list) {
-          peerList[peer_id] = undefined;
-          addVideoElement(peer_id, peer_id);
+          if (peer_id === currentVoiceUserId()) continue;
+          if (!peerList[peer_id]) {
+            addVideoElement(peer_id, peer_id);
+            createPeerConnection(peer_id);
+          }
         }
-        startWebRTC();
         break;
       }
 
       case "userConnect": {
         const payload = data as UserConnectEvent;
         const peer_id: string = payload.sid;
-        const display_name: string = payload.name;
         peerList[peer_id] = undefined;
-        addVideoElement(peer_id, display_name);
+        addVideoElement(peer_id, userManager.getUserNick(peer_id));
         break;
       }
 
@@ -426,6 +446,11 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         closeConnection(left_peer_id);
         removeVideoElement(left_peer_id);
         delete peerList[left_peer_id];
+        store.dispatch("removeVoiceUser", {
+          guildId: currentVoiceChannelGuild,
+          channelId: currentVoiceChannelId,
+          userId: left_peer_id
+        });
         break;
       }
 
@@ -448,14 +473,14 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         break;
       }
       case "joined": {
-        const payload = data as { sid: string };
-        this.myId = payload.sid;
-        console.log("My ID is", this.myId);
+        playAudioType(AudioType.EnterVC);
+        setRtcStatus(true, false);
         break;
       }
 
       case "disconnect":
         console.log("Disconnected from server.", data);
+        playAudioType(AudioType.ExitVC);
         break;
 
       default:
@@ -801,6 +826,7 @@ socketClient.on(
     const channelId = data.channelId;
     const guildId = data.guildId;
     const voiceUsers = data.usersList;
+    console.log(voiceUsers);
     if (!channelId) {
       console.error("Channel id is null on voice users response");
       return;
@@ -817,7 +843,6 @@ socketClient.on(
     if (isOnGuild) {
       setCurrentVoiceChannelGuild(guildId);
     }
-    cacheInterface.setVoiceChannelMembers(channelId, voiceUsers);
     const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
     soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
 

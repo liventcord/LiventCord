@@ -1,8 +1,8 @@
+using Google.Apis.Auth;
 using LiventCord.Helpers;
 using LiventCord.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
-using Google.Apis.Auth;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
@@ -22,7 +22,7 @@ namespace LiventCord.Controllers
             AppDbContext context,
             NickDiscriminatorController nickDiscriminatorController,
             FileController fileController
-            )
+        )
         {
             _googleClientId = configuration["AppSettings:GoogleClientId"];
             _context = context;
@@ -34,28 +34,41 @@ namespace LiventCord.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAuth([FromBody] RegisterRequest request)
         {
-            if (!ModelState.IsValid || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
+            if (
+                !ModelState.IsValid
+                || _context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower())
+            )
                 return Conflict();
 
-            var discriminator = await _nickDiscriminatorController.GetCachedOrNewDiscriminator(request.Nickname);
+            var discriminator = await _nickDiscriminatorController.GetCachedOrNewDiscriminator(
+                request.Nickname
+            );
             if (discriminator == null)
                 return BadRequest("Could not generate discriminator");
 
             var userId = Utils.CreateRandomUserId();
-            var user = Models.User.Create(userId, request.Email, request.Nickname, discriminator, request.Password, _passwordHasher);
+            var user = Models.User.Create(
+                userId,
+                request.Email,
+                request.Nickname,
+                discriminator,
+                request.Password,
+                _passwordHasher
+            );
 
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
             return Ok();
         }
+
         [NonAction]
         public async Task<User> RegisterByGoogleAsync(string idToken)
         {
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = [_googleClientId]
-            });
+            var payload = await GoogleJsonWebSignature.ValidateAsync(
+                idToken,
+                new GoogleJsonWebSignature.ValidationSettings { Audience = [_googleClientId] }
+            );
 
             if (payload == null || !payload.EmailVerified)
                 throw new Exception("Invalid Google token or unverified email");
@@ -65,14 +78,23 @@ namespace LiventCord.Controllers
             if (_context.Users.Any(u => u.Email.ToLower() == email))
                 throw new Exception("User already exists");
 
-            var discriminator = await _nickDiscriminatorController.GetCachedOrNewDiscriminator(payload.GivenName);
+            var discriminator = await _nickDiscriminatorController.GetCachedOrNewDiscriminator(
+                payload.GivenName
+            );
             if (discriminator == null)
                 throw new Exception("Could not generate discriminator");
 
             var userId = Utils.CreateRandomUserId();
 
             var dummyPassword = Utils.CreateRandomIdSecure();
-            var user = Models.User.Create(userId, email, payload.GivenName, discriminator, dummyPassword, _passwordHasher);
+            var user = Models.User.Create(
+                userId,
+                email,
+                payload.GivenName,
+                discriminator,
+                dummyPassword,
+                _passwordHasher
+            );
             user.IsGoogleUser = true;
 
             await _fileController.UploadProfileImageFromGoogle(userId, payload.Picture);
@@ -82,18 +104,20 @@ namespace LiventCord.Controllers
 
             return user;
         }
+
         [NonAction]
         public bool isGoogleClientIdNull()
         {
             return _googleClientId == null;
         }
+
         [NonAction]
         public async Task<User> LoginOrRegisterGoogleUserAsync(string idToken)
         {
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = [_googleClientId]
-            });
+            var payload = await GoogleJsonWebSignature.ValidateAsync(
+                idToken,
+                new GoogleJsonWebSignature.ValidationSettings { Audience = [_googleClientId] }
+            );
 
             if (payload == null || !payload.EmailVerified)
                 throw new Exception("Invalid Google token or unverified email");
@@ -112,9 +136,9 @@ namespace LiventCord.Controllers
                     throw new AuthConflictException("EMAIL_EXISTS_WITH_PASSWORD");
             }
 
-
             return user;
         }
+
         [NonAction]
         public async Task EnsureSystemUserExistsAsync()
         {
@@ -133,10 +157,5 @@ namespace LiventCord.Controllers
                 await _context.SaveChangesAsync();
             }
         }
-
-
-
-
-
     }
 }

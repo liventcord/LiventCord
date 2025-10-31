@@ -1,9 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
-using LiventCord.Helpers;
-using System.Security.Cryptography;
-using LiventCord.Controllers;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using LiventCord.Controllers;
+using LiventCord.Helpers;
+
 public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
 {
     private readonly int _idLength;
@@ -18,12 +19,16 @@ public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
     {
         if (value is not string id || string.IsNullOrWhiteSpace(id))
         {
-            return new ValidationResult($"The {validationContext.MemberName ?? "value"} is required and cannot be null or empty.");
+            return new ValidationResult(
+                $"The {validationContext.MemberName ?? "value"} is required and cannot be null or empty."
+            );
         }
 
         if (id.Length != _idLength)
         {
-            return new ValidationResult($"The {validationContext.MemberName ?? "value"} must be exactly {_idLength} characters long.");
+            return new ValidationResult(
+                $"The {validationContext.MemberName ?? "value"} must be exactly {_idLength} characters long."
+            );
         }
 
         return ValidationResult.Success;
@@ -32,18 +37,22 @@ public abstract class BaseIdLengthValidationAttribute : ValidationAttribute
 
 public class UserIdLengthValidationAttribute : BaseIdLengthValidationAttribute
 {
-    public UserIdLengthValidationAttribute() : base(Utils.USER_ID_LENGTH) { }
+    public UserIdLengthValidationAttribute()
+        : base(Utils.USER_ID_LENGTH) { }
 }
 
 public class IdLengthValidationAttribute : BaseIdLengthValidationAttribute
 {
-    public IdLengthValidationAttribute() : base(Utils.ID_LENGTH) { }
+    public IdLengthValidationAttribute()
+        : base(Utils.ID_LENGTH) { }
 }
+
 namespace LiventCord.Helpers
 {
     public static partial class Utils
     {
-        public static string DefaultJwtKey = "9cb2c90f2f8f10041efc1a40d7d126f2faa1ce67363dfacbb252d7cb7909ae71";
+        public static string DefaultJwtKey =
+            "9cb2c90f2f8f10041efc1a40d7d126f2faa1ce67363dfacbb252d7cb7909ae71";
         public static string SystemId = "1";
         private static readonly Random _random = new();
         public static int ID_LENGTH = 19;
@@ -80,7 +89,9 @@ namespace LiventCord.Helpers
 
         public static bool IsValidId(string input)
         {
-            return !string.IsNullOrEmpty(input) && input.Length == 19 && Regex.IsMatch(input, "^\\d{19}$");
+            return !string.IsNullOrEmpty(input)
+                && input.Length == 19
+                && Regex.IsMatch(input, "^\\d{19}$");
         }
 
         public static string SanitizeFileName(string fileName)
@@ -117,7 +128,8 @@ namespace LiventCord.Helpers
 
         public static List<string> ExtractUrls(string input)
         {
-            return UrlPattern.Matches(input)
+            return UrlPattern
+                .Matches(input)
                 .Cast<Match>()
                 .Select(m => m.Value)
                 .Where(url => !ControlCharPattern.IsMatch(url))
@@ -147,8 +159,5 @@ namespace LiventCord.Helpers
             }
             return urls;
         }
-
-
-
     }
 }

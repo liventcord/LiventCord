@@ -10,7 +10,7 @@ import {
 } from "./guild.ts";
 import { getId, getAverageRGB, createEl, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import { createChannel, currentChannelName } from "./channels.ts";
+import { createChannel } from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -21,17 +21,12 @@ import {
 import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
 import { isOnGuild } from "./router.ts";
-import {
-  showContextMenu,
-  contextList,
-  appendToProfileContextList
-} from "./contextMenuActions.ts";
+import { showContextMenu, contextList } from "./contextMenuActions.ts";
 import {
   textChanHtml,
   fillDropDownContent,
   isImagePreviewOpen,
-  hideImagePreview,
-  alertUser
+  hideImagePreview
 } from "./ui.ts";
 import { setProfilePic } from "./avatar.ts";
 import { translations } from "./translations.ts";
@@ -326,7 +321,8 @@ function closeCurrentProfileDisplay() {
 }
 export async function createMentionProfilePop(
   baseMessage: HTMLElement,
-  userId: string
+  userId: string,
+  topOffset?: number
 ) {
   const container = await drawProfilePopId(userId);
   if (!container) return;
@@ -379,7 +375,9 @@ export async function createMentionProfilePop(
   } else {
     topPos = scrollTop + rect.bottom - 50;
   }
-
+  if (topOffset) {
+    topPos += topOffset;
+  }
   let leftPos = scrollLeft + rect.left + 50;
   const minLeft = scrollLeft + 20;
   const maxLeft = scrollLeft + viewportWidth - popWidth - 20;
@@ -401,7 +399,7 @@ export async function createMentionProfilePop(
 
   const bubble = pop.querySelector(".status-bubble") as HTMLElement;
   if (bubble) {
-    bubble.style.top = "5.5em";
+    bubble.style.top = "5em";
     bubble.style.left = "3.5em";
   }
 
@@ -437,6 +435,14 @@ export async function createMentionProfilePop(
         btn.style.width = "15vw";
         btn.style.height = "40px";
         btn.style.marginRight = "0px";
+      }
+      const btn2 = optionsContainer.querySelector(
+        ".profile-add-friend-button"
+      ) as HTMLElement;
+      if (btn2) {
+        btn2.style.width = "15vw";
+        btn2.style.height = "40px";
+        btn2.style.marginRight = "0px";
       }
     }
   }
@@ -476,7 +482,6 @@ export async function drawProfilePop(
     userId,
     currentGuildId
   );
-
   const popBottomContainer = !shouldDrawPanel
     ? createPopBottomContainer(
         userData.description,
@@ -512,8 +517,6 @@ export async function drawProfilePop(
   if (!shouldDrawPanel) {
     currentProfileDisplay = createdPop;
   }
-
-  appendToProfileContextList(userData, userId);
   return createdPop;
 }
 
@@ -928,7 +931,12 @@ export function createPopUp({
   return parentContainer;
 }
 
-export function createInviteUsersPop() {
+export function createInviteUsersPop(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  const channelElement = target.closest<HTMLLIElement>(".channel-button");
+  if (!channelElement) return;
+  const channelId = channelElement.id;
+  const channelName = cacheInterface.getChannelName(currentGuildId, channelId);
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
   const invitelink = `${window.location.protocol}//${window.location.hostname}${
@@ -946,7 +954,7 @@ export function createInviteUsersPop() {
 
   const channelNameText = createEl("p", {
     id: "invite-users-channel-name-text",
-    textContent: currentChannelName
+    textContent: channelName
   });
   const sendInvText = createEl("p", {
     id: "invite-users-send-text",

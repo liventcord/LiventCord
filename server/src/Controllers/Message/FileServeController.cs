@@ -1,10 +1,10 @@
+using System.Diagnostics;
+using FileTypeChecker;
+using LiventCord.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using LiventCord.Helpers;
 using MimeKit;
-using FileTypeChecker;
-using System.Diagnostics;
 
 namespace LiventCord.Controllers
 {
@@ -17,11 +17,14 @@ namespace LiventCord.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly PermissionsController _permissionsController;
         private readonly string _cacheFilePath = "FileCache";
-        private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
+        private string CacheDirectory =>
+            Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
         private readonly IAppStatsService _statsService;
         private readonly ILogger<FileServeController> _logger;
 
-        private static readonly HashSet<string> VideoMimeTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> VideoMimeTypes = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase
+        )
         {
             "video/mp4",
             "video/webm",
@@ -32,7 +35,7 @@ namespace LiventCord.Controllers
             "video/flv",
             "video/mkv",
             "video/3gp",
-            "video/quicktime"
+            "video/quicktime",
         };
 
         public FileServeController(
@@ -64,7 +67,11 @@ namespace LiventCord.Controllers
             return userId;
         }
 
-        private async Task<IActionResult> GetFileFromCacheOrDatabase(string cacheFilePath, Func<Task<IActionResult>>? fetchFile, string fileName)
+        private async Task<IActionResult> GetFileFromCacheOrDatabase(
+            string cacheFilePath,
+            Func<Task<IActionResult>>? fetchFile,
+            string fileName
+        )
         {
             var fullCacheDirPath = Path.GetFullPath(CacheDirectory);
             var fullRequestedPath = Path.GetFullPath(cacheFilePath);
@@ -82,7 +89,12 @@ namespace LiventCord.Controllers
                 {
                     SetCacheHeaders(fileName);
                     _statsService.IncrementServedFiles();
-                    return PhysicalFile(fullRequestedPath, contentType, fileName, enableRangeProcessing: true);
+                    return PhysicalFile(
+                        fullRequestedPath,
+                        contentType,
+                        fileName,
+                        enableRangeProcessing: true
+                    );
                 }
 
                 byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
@@ -100,8 +112,14 @@ namespace LiventCord.Controllers
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(fullRequestedPath)!);
 
-                await System.IO.File.WriteAllBytesAsync(fullRequestedPath + ".tmp", fileResult.FileContents);
-                await System.IO.File.WriteAllTextAsync(metaPath + ".tmp", fileResult.ContentType ?? "application/octet-stream");
+                await System.IO.File.WriteAllBytesAsync(
+                    fullRequestedPath + ".tmp",
+                    fileResult.FileContents
+                );
+                await System.IO.File.WriteAllTextAsync(
+                    metaPath + ".tmp",
+                    fileResult.ContentType ?? "application/octet-stream"
+                );
 
                 System.IO.File.Move(fullRequestedPath + ".tmp", fullRequestedPath, overwrite: true);
                 System.IO.File.Move(metaPath + ".tmp", metaPath, overwrite: true);
@@ -115,7 +133,10 @@ namespace LiventCord.Controllers
             return VideoMimeTypes.Contains(contentType);
         }
 
-        private Task<(bool found, string cacheFilePath)> FindCachedProfileFile(string userId, string? requestedVersion = null)
+        private Task<(bool found, string cacheFilePath)> FindCachedProfileFile(
+            string userId,
+            string? requestedVersion = null
+        )
         {
             var cachePattern = Path.Combine(CacheDirectory, $"profile_{userId}_*.file");
             var cacheDir = Path.GetDirectoryName(cachePattern);
@@ -128,7 +149,10 @@ namespace LiventCord.Controllers
 
             if (!string.IsNullOrEmpty(requestedVersion))
             {
-                var specificVersionPath = Path.Combine(CacheDirectory, $"profile_{userId}_{requestedVersion}.file");
+                var specificVersionPath = Path.Combine(
+                    CacheDirectory,
+                    $"profile_{userId}_{requestedVersion}.file"
+                );
                 if (matchingFiles.Contains(specificVersionPath))
                     return Task.FromResult((true, specificVersionPath));
             }
@@ -146,11 +170,18 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("guilds/{guildId}")]
-        public async Task<IActionResult> GetGuildFile([FromRoute] string guildId, [FromQuery] string? version = null)
+        public async Task<IActionResult> GetGuildFile(
+            [FromRoute] string guildId,
+            [FromQuery] string? version = null
+        )
         {
             guildId = RemoveFileExtension(guildId);
 
-            if (string.IsNullOrEmpty(guildId) || guildId.Length != 19 || ContainsIllegalPathSegments(guildId))
+            if (
+                string.IsNullOrEmpty(guildId)
+                || guildId.Length != 19
+                || ContainsIllegalPathSegments(guildId)
+            )
                 return BadRequest("Invalid guildId.");
 
             var cachePattern = Path.Combine(CacheDirectory, $"guild_{guildId}_*.file");
@@ -163,7 +194,10 @@ namespace LiventCord.Controllers
                 var matchingFiles = Directory.GetFiles(cacheDir, searchPattern);
                 if (!string.IsNullOrEmpty(version))
                 {
-                    var specificVersionPath = Path.Combine(CacheDirectory, $"guild_{guildId}_{version}.file");
+                    var specificVersionPath = Path.Combine(
+                        CacheDirectory,
+                        $"guild_{guildId}_{version}.file"
+                    );
                     if (matchingFiles.Contains(specificVersionPath))
                         cachedPath = specificVersionPath;
                 }
@@ -183,14 +217,25 @@ namespace LiventCord.Controllers
             if (file == null)
                 return NotFound();
 
-            var versionPart = !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
-            var finalCacheFilePath = Path.Combine(CacheDirectory, $"guild_{guildId}_{versionPart}.file");
+            var versionPart =
+                !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
+            var finalCacheFilePath = Path.Combine(
+                CacheDirectory,
+                $"guild_{guildId}_{versionPart}.file"
+            );
 
-            return await GetFileFromCacheOrDatabase(finalCacheFilePath, () => Task.FromResult(GetFileResult(file)), guildId);
+            return await GetFileFromCacheOrDatabase(
+                finalCacheFilePath,
+                () => Task.FromResult(GetFileResult(file)),
+                guildId
+            );
         }
 
         [HttpGet("profiles/{userId}")]
-        public async Task<IActionResult> GetProfileFile([FromRoute] string userId, [FromQuery] string? version = null)
+        public async Task<IActionResult> GetProfileFile(
+            [FromRoute] string userId,
+            [FromQuery] string? version = null
+        )
         {
             userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
@@ -207,79 +252,113 @@ namespace LiventCord.Controllers
             if (file == null)
                 return NotFound();
 
-            var versionPart = !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
-            var finalCacheFilePath = Path.Combine(CacheDirectory, $"profile_{userId}_{versionPart}.file");
+            var versionPart =
+                !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
+            var finalCacheFilePath = Path.Combine(
+                CacheDirectory,
+                $"profile_{userId}_{versionPart}.file"
+            );
 
-            return await GetFileFromCacheOrDatabase(finalCacheFilePath, () => Task.FromResult(GetFileResult(file)), userId);
+            return await GetFileFromCacheOrDatabase(
+                finalCacheFilePath,
+                () => Task.FromResult(GetFileResult(file)),
+                userId
+            );
         }
 
         [HttpGet("attachments/{attachmentId}")]
-        public async Task<IActionResult> GetAttachmentFile([FromRoute][IdLengthValidation] string attachmentId)
+        public async Task<IActionResult> GetAttachmentFile(
+            [FromRoute][IdLengthValidation] string attachmentId
+        )
         {
             if (ContainsIllegalPathSegments(attachmentId))
                 return BadRequest("Invalid attachmentId.");
 
             var cacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}.file");
 
-            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
-            {
-                var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
-                if (file == null)
-                    return NotFound();
+            return await GetFileFromCacheOrDatabase(
+                cacheFilePath,
+                async () =>
+                {
+                    var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f =>
+                        f.FileId == attachmentId
+                    );
+                    if (file == null)
+                        return NotFound();
 
-                return GetFileResult(file);
-            }, attachmentId);
+                    return GetFileResult(file);
+                },
+                attachmentId
+            );
         }
 
         [HttpGet("attachments/{attachmentId}/preview")]
-        public async Task<IActionResult> GetVideoAttachmentPreview([FromRoute][IdLengthValidation] string attachmentId)
+        public async Task<IActionResult> GetVideoAttachmentPreview(
+            [FromRoute][IdLengthValidation] string attachmentId
+        )
         {
             if (ContainsIllegalPathSegments(attachmentId))
                 return BadRequest("Invalid attachmentId.");
 
             var previewCacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}_preview.jpg");
 
-            return await GetFileFromCacheOrDatabase(previewCacheFilePath, async () =>
-            {
-                var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f => f.FileId == attachmentId);
-                if (file == null)
-                    return NotFound();
+            return await GetFileFromCacheOrDatabase(
+                previewCacheFilePath,
+                async () =>
+                {
+                    var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f =>
+                        f.FileId == attachmentId
+                    );
+                    if (file == null)
+                        return NotFound();
 
-                var fileName = file.FileName;
-                if (string.IsNullOrEmpty(fileName))
-                    return BadRequest("File name is missing.");
+                    var fileName = file.FileName;
+                    if (string.IsNullOrEmpty(fileName))
+                        return BadRequest("File name is missing.");
 
-                var isVideo = IsVideoContent(GetContentType(file));
+                    var isVideo = IsVideoContent(GetContentType(file));
 
-                if (!isVideo)
-                    return BadRequest($"File is not a video. Content type: {GetContentType(file)}");
+                    if (!isVideo)
+                        return BadRequest(
+                            $"File is not a video. Content type: {GetContentType(file)}"
+                        );
 
-                var thumbnailBytes = await GenerateVideoThumbnail(file.Content, fileName);
-                if (thumbnailBytes == null)
-                    return StatusCode(500, "Failed to generate thumbnail.");
+                    var thumbnailBytes = await GenerateVideoThumbnail(file.Content, fileName);
+                    if (thumbnailBytes == null)
+                        return StatusCode(500, "Failed to generate thumbnail.");
 
-                return File(thumbnailBytes, "image/jpeg");
-            }, $"{attachmentId}_preview.jpg");
+                    return File(thumbnailBytes, "image/jpeg");
+                },
+                $"{attachmentId}_preview.jpg"
+            );
         }
 
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
-        public async Task<IActionResult> GetEmojiFile([FromRoute][IdLengthValidation] string guildId, [FromRoute][IdLengthValidation] string emojiId)
+        public async Task<IActionResult> GetEmojiFile(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string emojiId
+        )
         {
             if (ContainsIllegalPathSegments(guildId) || ContainsIllegalPathSegments(emojiId))
                 return BadRequest("Invalid input.");
 
             var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
 
-            return await GetFileFromCacheOrDatabase(cacheFilePath, async () =>
-            {
-                var file = await _context.EmojiFiles.FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
-                if (file == null)
-                    return NotFound();
+            return await GetFileFromCacheOrDatabase(
+                cacheFilePath,
+                async () =>
+                {
+                    var file = await _context.EmojiFiles.FirstOrDefaultAsync(f =>
+                        f.FileId == emojiId && f.GuildId == guildId
+                    );
+                    if (file == null)
+                        return NotFound();
 
-                return GetFileResult(file, true);
-            }, emojiId);
+                    return GetFileResult(file, true);
+                },
+                emojiId
+            );
         }
-
 
         private async Task<byte[]?> GenerateVideoThumbnail(byte[] videoContent, string fileName)
         {
@@ -289,7 +368,10 @@ namespace LiventCord.Controllers
                 if (!Directory.Exists(tempDir))
                     Directory.CreateDirectory(tempDir);
 
-                var tempVideoPath = Path.Combine(tempDir, $"{Guid.NewGuid()}{Path.GetExtension(fileName)}");
+                var tempVideoPath = Path.Combine(
+                    tempDir,
+                    $"{Guid.NewGuid()}{Path.GetExtension(fileName)}"
+                );
                 var tempThumbnailPath = Path.Combine(tempDir, $"{Guid.NewGuid()}.jpg");
 
                 try
@@ -299,11 +381,12 @@ namespace LiventCord.Controllers
                     var processInfo = new ProcessStartInfo
                     {
                         FileName = "ffmpeg",
-                        Arguments = $"-i \"{tempVideoPath}\" -ss 00:00:01 -vframes 1 -q:v 2 -y \"{tempThumbnailPath}\"",
+                        Arguments =
+                            $"-i \"{tempVideoPath}\" -ss 00:00:01 -vframes 1 -q:v 2 -y \"{tempThumbnailPath}\"",
                         UseShellExecute = false,
                         CreateNoWindow = true,
                         RedirectStandardError = true,
-                        RedirectStandardOutput = true
+                        RedirectStandardOutput = true,
                     };
 
                     using var process = Process.Start(processInfo);
@@ -380,7 +463,10 @@ namespace LiventCord.Controllers
             try
             {
                 file.Content = FileDecompressor.DecompressGzip(file.Content);
-                string originalExt = Path.GetExtension(Path.GetFileNameWithoutExtension(file.FileName)).ToLowerInvariant();
+                string originalExt = Path.GetExtension(
+                        Path.GetFileNameWithoutExtension(file.FileName)
+                    )
+                    .ToLowerInvariant();
 
                 return originalExt switch
                 {
@@ -389,7 +475,7 @@ namespace LiventCord.Controllers
                     ".xml" => "application/xml",
                     ".csv" => "text/csv",
                     ".html" => "text/html",
-                    _ => "application/octet-stream"
+                    _ => "application/octet-stream",
                 };
             }
             catch

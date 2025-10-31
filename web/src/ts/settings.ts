@@ -44,15 +44,20 @@ import { currentUserId, currentUserNick, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
 import { disableBgVideo, createBGVideo } from "./extras.ts";
+import {
+  updateAutoGain,
+  updateEchoCancellation,
+  updateNoiseSuppression
+} from "./chatroom.ts";
 
 const confetti = confettiImport as unknown as (options: any) => void;
 
 const isImagePreviewOpen = false;
 const CHANGE_NAME_COOLDOWN = 1000;
 
-let changeNicknameTimeout: number;
-let changeGuildNameTimeout: number;
-let changeChannelNameTimeout: number;
+let changeNicknameTimeout: ReturnType<typeof setTimeout> | null = null;
+let changeGuildNameTimeout: ReturnType<typeof setTimeout> | null = null;
+let changeChannelNameTimeout: ReturnType<typeof setTimeout> | null = null;
 export let isSettingsOpen = false;
 export let currentPopUp: HTMLElement | undefined;
 export function setIsSettingsOpen(val: boolean) {
@@ -83,6 +88,9 @@ type ToggleState = {
   "video-toggle": boolean;
   "private-channel-toggle": boolean;
   "developer-toggle": boolean;
+  "noise-suppression-toggle": boolean;
+  "echo-cancellation-toggle": boolean;
+  "auto-gain-toggle": boolean;
 };
 const bgVideoKey = "videoUrl";
 export function saveBgVideo(url: string) {
@@ -100,25 +108,30 @@ class ToggleManager {
   states: ToggleState;
 
   private constructor() {
-    this.states = {
-      "notify-toggle": loadBooleanCookie("notify-toggle") ?? false,
-      "snow-toggle": loadBooleanCookie("snow-toggle") ?? false,
-      "party-toggle": loadBooleanCookie("party-toggle") ?? false,
-      "activity-toggle": loadBooleanCookie("activity-toggle") ?? false,
-      "slide-toggle": loadBooleanCookie("slide-toggle") ?? false,
-      "video-toggle": loadBooleanCookie("video-toggle") ?? false,
-      "developer-toggle": loadBooleanCookie("developer-toggle") ?? false,
-      "private-channel-toggle": false
-    };
+    const toggleKeys: (keyof ToggleState)[] = [
+      "notify-toggle",
+      "snow-toggle",
+      "party-toggle",
+      "activity-toggle",
+      "slide-toggle",
+      "video-toggle",
+      "developer-toggle",
+      "noise-suppression-toggle",
+      "echo-cancellation-toggle",
+      "auto-gain-toggle"
+    ];
 
-    if (this.states["snow-toggle"]) {
-      this.startSnowEffect();
+    this.states = {} as ToggleState;
+    for (const key of toggleKeys) {
+      this.states[key] = loadBooleanCookie(key) ?? false;
     }
-    const savedValue = readTransparencyValue();
+    this.states["private-channel-toggle"] = false;
+
+    if (this.states["snow-toggle"]) this.startSnowEffect();
+
     if (this.states["video-toggle"]) {
-      setTimeout(() => {
-        createBGVideo(savedValue);
-      }, 0);
+      const savedValue = readTransparencyValue();
+      setTimeout(() => createBGVideo(savedValue), 0);
     }
   }
 
@@ -240,25 +253,19 @@ class ToggleManager {
   }
 
   triggerActions(toggleId: keyof ToggleState, newValue: boolean) {
-    const toggleActions: Record<string, () => void> = {
-      "snow-toggle": this.toggleEffect.bind(this, "snow", newValue),
-      "party-toggle": this.toggleEffect.bind(this, "party", newValue),
-      "video-toggle": this.toggleEffect.bind(this, "video", newValue)
+    const effectsMap: Record<string, (enable: boolean) => void> = {
+      "snow-toggle": (enable) =>
+        enable ? this.startSnowEffect() : this.stopSnowEffect(),
+      "party-toggle": (enable) =>
+        enable ? this.startPartyEffect() : this.stopPartyEffect(),
+      "video-toggle": (enable) => (enable ? createBGVideo() : disableBgVideo()),
+      "noise-suppression-toggle": (enable) => updateNoiseSuppression(enable),
+      "echo-cancellation-toggle": (enable) => updateEchoCancellation(enable),
+      "auto-gain-toggle": (enable) => updateAutoGain(enable)
     };
 
-    if (toggleActions[toggleId]) {
-      toggleActions[toggleId]();
-    }
-  }
-
-  toggleEffect(effect: string, enable: boolean) {
-    if (effect === "snow") {
-      enable ? this.startSnowEffect() : this.stopSnowEffect();
-    } else if (effect === "party") {
-      enable ? this.startPartyEffect() : this.stopPartyEffect();
-    } else if (effect === "video") {
-      enable ? createBGVideo() : disableBgVideo();
-    }
+    const action = effectsMap[toggleId];
+    if (action) action(newValue);
   }
 
   isSlide() {
@@ -314,15 +321,17 @@ export function initializeCookies() {
   });
 
   if (toggleManager.states["snow-toggle"]) {
-    toggleManager.toggleEffect("snow", true);
+    toggleManager.triggerActions("snow-toggle", true);
   }
+
   if (toggleManager.states["party-toggle"]) {
-    toggleManager.toggleEffect("party", true);
+    toggleManager.triggerActions("party-toggle", true);
   }
 
   const black = isBlackTheme();
   selectTheme(black ? Themes.Dark : Themes.Ash);
 }
+
 export function saveThemeCookie(val: boolean) {
   return saveBooleanCookie(themeCookieKey, val ? 1 : 0);
 }
@@ -330,6 +339,12 @@ export function isBlackTheme() {
   return loadBooleanCookie(themeCookieKey);
 }
 export const isDeveloperMode = () => toggleManager.states["developer-toggle"];
+export const useNoiseSuppression = () =>
+  toggleManager.states["noise-suppression-toggle"];
+export const useEchoCancellation = () =>
+  toggleManager.states["echo-cancellation-toggle"];
+export const useAutoGain = () => toggleManager.states["auto-gain-toggle"];
+
 export function triggerFileInput() {
   const profileImageInput = getProfileImageFile();
   if (profileImageInput) {
@@ -423,7 +438,7 @@ function changeNickname() {
     newNicknameInput.value = newNickname;
 
     changeNicknameTimeout = setTimeout(() => {
-      changeNicknameTimeout = 0;
+      changeNicknameTimeout = null;
     }, CHANGE_NAME_COOLDOWN);
   }
 }
@@ -446,7 +461,7 @@ function changeGuildName() {
     });
     newGuildInput.value = newGuildName;
     changeGuildNameTimeout = setTimeout(
-      () => (changeGuildNameTimeout = 0),
+      () => (changeGuildNameTimeout = null),
       CHANGE_NAME_COOLDOWN
     );
   }
@@ -472,7 +487,7 @@ function changeChannelName() {
     });
     channelNameInput.value = newChannelName;
     changeChannelNameTimeout = setTimeout(
-      () => (changeChannelNameTimeout = 0),
+      () => (changeChannelNameTimeout = null),
       CHANGE_NAME_COOLDOWN
     );
   }

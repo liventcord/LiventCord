@@ -3,8 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 
-
-
 namespace LiventCord.Models
 {
     public class User
@@ -25,7 +23,6 @@ namespace LiventCord.Models
 
         [Column("google_id")]
         public string? GoogleId { get; set; }
-
 
         [Required]
         [StringLength(4)]
@@ -81,7 +78,8 @@ namespace LiventCord.Models
             string nickname,
             string discriminator,
             string plainPassword,
-            IPasswordHasher<User> hasher)
+            IPasswordHasher<User> hasher
+        )
         {
             var dummyUser = new User
             {
@@ -90,7 +88,7 @@ namespace LiventCord.Models
                 Nickname = nickname,
                 Discriminator = discriminator,
                 Bot = 0,
-                Password = ""
+                Password = "",
             };
 
             var hashedPassword = hasher.HashPassword(dummyUser, plainPassword);
@@ -102,11 +100,9 @@ namespace LiventCord.Models
                 Nickname = nickname,
                 Discriminator = discriminator,
                 Bot = 0,
-                Password = hashedPassword
+                Password = hashedPassword,
             };
         }
-
-
 
         public PublicUser GetPublicUser()
         {
@@ -127,8 +123,6 @@ namespace LiventCord.Models
         public virtual ICollection<UserChannel>? UserChannels { get; set; }
         public virtual ICollection<GuildPermissions> GuildPermissions { get; set; } =
             new List<GuildPermissions>();
-
-
     }
 
     public class PublicUser

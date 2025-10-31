@@ -26,9 +26,10 @@ namespace LiventCord.Controllers
             FileController uploadController,
             MessageController messageController,
             MembersController membersController,
-            PermissionsController permissionsController, InviteController inviteController, ILogger<GuildController> logger,
+            PermissionsController permissionsController,
+            InviteController inviteController,
+            ILogger<GuildController> logger,
             ICacheService cacheService
-
         )
         {
             _dbContext = dbContext;
@@ -38,7 +39,6 @@ namespace LiventCord.Controllers
             _inviteController = inviteController;
             _logger = logger;
             _cacheService = cacheService;
-
         }
 
         [HttpGet("")]
@@ -48,10 +48,11 @@ namespace LiventCord.Controllers
             return Ok(guilds);
         }
 
-
-
         [HttpPut("{guildId}")]
-        public async Task<IActionResult> ChangeGuildName([FromRoute][IdLengthValidation] string guildId, [FromBody] ChangeGuildNameRequest request)
+        public async Task<IActionResult> ChangeGuildName(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromBody] ChangeGuildNameRequest request
+        )
         {
             var guild = await _dbContext.Guilds.FindAsync(guildId);
             if (guild == null)
@@ -87,16 +88,18 @@ namespace LiventCord.Controllers
                 isPublic != false
             );
 
-            guild.Channels.Add(new Channel
-            {
-                ChannelId = rootChannel,
-                GuildId = guildId,
-                ChannelName = DEFAULT_CHANNEL_NAME,
-                ChannelDescription = "",
-                IsPrivate = false,
-                IsTextChannel = true,
-                Order = 0,
-            });
+            guild.Channels.Add(
+                new Channel
+                {
+                    ChannelId = rootChannel,
+                    GuildId = guildId,
+                    ChannelName = DEFAULT_CHANNEL_NAME,
+                    ChannelDescription = "",
+                    IsPrivate = false,
+                    IsTextChannel = true,
+                    Order = 0,
+                }
+            );
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == ownerId);
             if (user == null)
@@ -108,13 +111,15 @@ namespace LiventCord.Controllers
             if (guild.GuildMembers.Any(gu => gu.MemberId == ownerId))
                 throw new Exception("User already in guild");
 
-            guild.GuildMembers.Add(new GuildMember
-            {
-                MemberId = ownerId,
-                GuildId = guildId,
-                Guild = guild,
-                User = user,
-            });
+            guild.GuildMembers.Add(
+                new GuildMember
+                {
+                    MemberId = ownerId,
+                    GuildId = guildId,
+                    Guild = guild,
+                    User = user,
+                }
+            );
 
             _dbContext.Guilds.Add(guild);
 
@@ -124,9 +129,6 @@ namespace LiventCord.Controllers
 
             return guild;
         }
-
-
-
 
         private GuildDto MapToGuildDto(Guild guild)
         {
@@ -142,8 +144,6 @@ namespace LiventCord.Controllers
             };
         }
 
-
-
         [HttpPost("")]
         public async Task<IActionResult> CreateGuildEndpoint([FromForm] CreateGuildRequest request)
         {
@@ -158,7 +158,14 @@ namespace LiventCord.Controllers
 
             _cacheService.InvalidateCache(userId);
 
-            var newGuild = await CreateGuild(userId, guildName, rootChannel, guildId, photo, isPublic);
+            var newGuild = await CreateGuild(
+                userId,
+                guildName,
+                rootChannel,
+                guildId,
+                photo,
+                isPublic
+            );
             if (newGuild == null)
                 return Problem("Guild creation failed");
 
@@ -169,19 +176,26 @@ namespace LiventCord.Controllers
         }
 
         [HttpDelete("{guildId}")]
-        public async Task<IActionResult> DeleteGuildEndpoint([FromRoute][IdLengthValidation] string guildId)
+        public async Task<IActionResult> DeleteGuildEndpoint(
+            [FromRoute][IdLengthValidation] string guildId
+        )
         {
             try
             {
                 var guild = await _dbContext.Guilds.FindAsync(guildId);
-                if (guild == null) return NotFound();
+                if (guild == null)
+                    return NotFound();
 
                 string userId = UserId!;
                 if (!await _permissionsController.IsUserAdmin(userId, guildId))
                     return StatusCode(StatusCodes.Status403Forbidden);
 
-                var messages = await _dbContext.Messages
-                    .Where(m => _dbContext.Channels.Any(c => c.GuildId == guildId && c.ChannelId == m.ChannelId))
+                var messages = await _dbContext
+                    .Messages.Where(m =>
+                        _dbContext.Channels.Any(c =>
+                            c.GuildId == guildId && c.ChannelId == m.ChannelId
+                        )
+                    )
                     .ToListAsync();
 
                 await _imageController.DeleteAttachmentFiles(messages);
@@ -206,10 +220,12 @@ namespace LiventCord.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while deleting the guild." });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while deleting the guild." }
+                );
             }
         }
-
     }
 }
 
@@ -220,6 +236,7 @@ public class CreateGuildRequest
     public bool? IsPublic { get; set; }
     public IFormFile? Photo { get; set; }
 }
+
 public class ChangeGuildNameRequest
 {
     [MaxLength(32)]

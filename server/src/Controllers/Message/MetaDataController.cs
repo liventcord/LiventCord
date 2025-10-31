@@ -1,8 +1,9 @@
-using LiventCord.Controllers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
-using LiventCord.Helpers;
 using System.Text.Json;
+using LiventCord.Controllers;
+using LiventCord.Helpers;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
 public class Metadata
 {
     public string? Type { get; set; }
@@ -21,16 +22,16 @@ public class Metadata
 
     public bool IsEmpty()
     {
-        return string.IsNullOrWhiteSpace(Type) &&
-               string.IsNullOrWhiteSpace(PinnerUserId) &&
-               PinnedAt == null &&
-               string.IsNullOrWhiteSpace(Title) &&
-               string.IsNullOrWhiteSpace(Description) &&
-               string.IsNullOrWhiteSpace(SiteName) &&
-               string.IsNullOrWhiteSpace(Image) &&
-               string.IsNullOrWhiteSpace(Url) &&
-               string.IsNullOrWhiteSpace(Keywords) &&
-               string.IsNullOrWhiteSpace(Author);
+        return string.IsNullOrWhiteSpace(Type)
+            && string.IsNullOrWhiteSpace(PinnerUserId)
+            && PinnedAt == null
+            && string.IsNullOrWhiteSpace(Title)
+            && string.IsNullOrWhiteSpace(Description)
+            && string.IsNullOrWhiteSpace(SiteName)
+            && string.IsNullOrWhiteSpace(Image)
+            && string.IsNullOrWhiteSpace(Url)
+            && string.IsNullOrWhiteSpace(Keywords)
+            && string.IsNullOrWhiteSpace(Author);
     }
 }
 
@@ -46,8 +47,8 @@ public class MetadataWithMedia
 {
     public Metadata? metadata { get; set; }
     public MediaUrl? mediaUrl { get; set; }
-
 }
+
 [Route("api/metadata")]
 [ApiController]
 public class MetadataController : ControllerBase
@@ -59,7 +60,13 @@ public class MetadataController : ControllerBase
     private readonly ILogger<MetadataController> _logger;
     private readonly MediaProxyController _mediaProxycontroller;
 
-    public MetadataController(AppDbContext dbContext, IConfiguration configuration, HttpClient httpClient, MediaProxyController mediaProxyController, ILogger<MetadataController> logger)
+    public MetadataController(
+        AppDbContext dbContext,
+        IConfiguration configuration,
+        HttpClient httpClient,
+        MediaProxyController mediaProxyController,
+        ILogger<MetadataController> logger
+    )
     {
         _dbContext = dbContext;
         _isMetadataEnabled = configuration.GetValue<bool>("AppSettings:EnableMetadataIndexing");
@@ -68,6 +75,7 @@ public class MetadataController : ControllerBase
         _logger = logger;
         _mediaProxycontroller = mediaProxyController;
     }
+
     [NonAction]
     public async Task<Metadata> FetchMetadataFromProxyAsync(List<string> urls, string messageId)
     {
@@ -79,7 +87,7 @@ public class MetadataController : ControllerBase
             SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata"
         )
         {
-            Content = JsonContent.Create(urls)
+            Content = JsonContent.Create(urls),
         };
 
         request.Headers.Add("Authorization", SharedAppConfig.AdminKey);
@@ -93,8 +101,12 @@ public class MetadataController : ControllerBase
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogError(
-                SharedAppConfig.MediaProxyApiUrl + "/api/proxy/metadata" +
-                " Request to proxy server failed: " + response.StatusCode + " " + rawResponse
+                SharedAppConfig.MediaProxyApiUrl
+                    + "/api/proxy/metadata"
+                    + " Request to proxy server failed: "
+                    + response.StatusCode
+                    + " "
+                    + rawResponse
             );
             return new Metadata();
         }
@@ -117,8 +129,6 @@ public class MetadataController : ControllerBase
         var metadataResult = metadataList.Select(m => m.metadata).ToList();
         return metadataResult[0] ?? new Metadata();
     }
-
-
 
     [HttpPost("")]
     public async Task<IActionResult> SaveMetadataAsync([FromBody] UrlMetadata urlMetadata)
@@ -146,7 +156,10 @@ public class MetadataController : ControllerBase
 
         if (urlCountForDomain >= MetadataDomainLimit)
         {
-            return StatusCode(StatusCodes.Status429TooManyRequests, "Rate limit exceeded for this domain.");
+            return StatusCode(
+                StatusCodes.Status429TooManyRequests,
+                "Rate limit exceeded for this domain."
+            );
         }
 
         try
@@ -160,5 +173,4 @@ public class MetadataController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, ex);
         }
     }
-
 }

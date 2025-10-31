@@ -100,9 +100,7 @@ namespace LiventCord.Models
         public virtual Guild? Guild { get; set; }
 
         public virtual ICollection<UserChannel>? UserChannels { get; set; }
-        public ICollection<ChannelPinnedMessage> PinnedMessages { get; set; } = new List<ChannelPinnedMessage>();
-
-
-
+        public ICollection<ChannelPinnedMessage> PinnedMessages { get; set; } =
+            new List<ChannelPinnedMessage>();
     }
 }

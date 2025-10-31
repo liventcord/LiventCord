@@ -132,20 +132,30 @@ export const CLYDE_ID = "2";
 export const SYSTEM_ID = "1";
 let currentMentionPop: HTMLElement | null;
 
+const mentionClasses = new Set([
+  "mention",
+  "profile-pic",
+  "pinner-name-link",
+  "user-img",
+  "voice-user-item",
+  "profile-container"
+]);
+
 function isMentionTarget(target: HTMLElement): boolean {
-  return (
-    target.classList.contains("mention") ||
-    target.classList.contains("profile-pic") ||
-    target.classList.contains("pinner-name-link") ||
-    target.classList.contains("user-img")
-  );
+  return Array.from(target.classList).some((c) => mentionClasses.has(c));
 }
 
-export async function handleMentionClick(event: MouseEvent, userId?: string) {
+export async function handleMentionClick(
+  event: MouseEvent,
+  userId?: string,
+  topOffset?: number
+) {
   const target = event.target as HTMLElement;
-  if (!isMentionTarget(target)) return;
+  if (!isMentionTarget(target)) {
+    return;
+  }
 
-  const _userId = userId ?? target.dataset.userId;
+  const _userId = userId != "" ? userId : (target.dataset.userId ?? target.id);
   const channelId = target.dataset.channelId;
 
   if (channelId) {
@@ -158,13 +168,14 @@ export async function handleMentionClick(event: MouseEvent, userId?: string) {
     currentMentionPop.remove();
     currentMentionPop = null;
   }
-
-  const pop = await createMentionProfilePop(target, _userId);
+  const pop = await createMentionProfilePop(target, _userId, topOffset);
   if (pop) currentMentionPop = pop;
 }
 
 export function addChatMentionListeners() {
-  chatContainer?.addEventListener("click", (e) => handleMentionClick(e));
+  document.body.addEventListener("click", (e) =>
+    handleMentionClick(e, "", 200)
+  );
 
   document.body.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
@@ -1668,8 +1679,7 @@ export function getHistoryFromOneChannel(
   fetchMessages(channelId, isDm);
 }
 
-let timeoutId: number | null = null;
-
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
 export function fetchMessages(channelId: string, isDm = false) {
   const FETCH_MESSAGES_COOLDOWN = 5000;
 

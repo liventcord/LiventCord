@@ -114,6 +114,7 @@ import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
 import { initializeVideoComponent } from "./chatroom.ts";
+import { setRTCWsClient } from "./socketEvents";
 
 interface InitialStateData {
   email: string;
@@ -243,6 +244,7 @@ export function initialiseState(data: InitialStateData): void {
   };
 
   setSocketClient(wsUrl);
+  setRTCWsClient(rtcWsUrl);
   guildCache.currentGuildName = guildName;
   updateDmsList(dmFriends);
   initialiseChannelDrag();

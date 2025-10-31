@@ -53,6 +53,7 @@ public class CacheService : ICacheService
     {
         return _userKeys.ToArray();
     }
+
     public void InvalidateGuildMemberCaches(IEnumerable<string> memberIds)
     {
         foreach (var memberId in memberIds)
