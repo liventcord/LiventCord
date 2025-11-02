@@ -28,6 +28,7 @@ import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
+import { VoiceUser } from "./socketEvents.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
@@ -291,7 +292,7 @@ export class Channel implements ChannelData {
   channelId!: string;
   channelName!: string;
   isTextChannel!: boolean;
-  voiceUsers?: { id: string; name: string }[];
+  voiceUsers?: VoiceUser[];
   guildId!: string;
   lastReadDateTime!: Date | null;
   voiceMembers!: Member[];

@@ -219,8 +219,14 @@ export abstract class WebSocketClientBase {
     await this.connectSocket();
   }
 }
+export interface VoiceUser {
+  id: string;
+  isNoisy: boolean;
+  isMuted: boolean;
+  isDeafened: boolean;
+}
 interface UserListEvent {
-  list: string[];
+  list: VoiceUser[];
   rtcUserId: string;
 }
 
@@ -240,6 +246,15 @@ interface Envelope<T = any> {
   event: string;
   data: T;
 }
+
+type ExistingUserList = {
+  Guilds: {
+    [guildId: string]: {
+      [channelId: string]: string[];
+    };
+  };
+  RtcUserId: string;
+};
 
 export class WebSocketClient extends WebSocketClientBase {
   private eventHandlers: Record<string, EventHandler[]> = {};
@@ -410,24 +425,63 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     this.currentRoomID = newRoomID;
     this.sendRaw({ event: "joinRoom", data: { roomId: newRoomID } });
   }
+  public toggleMute() {
+    this.sendRaw({ event: "toggleMute" });
+  }
+  public toggleDeafen() {
+    this.sendRaw({ event: "toggleDeafen" });
+  }
 
   protected async handleEvent(message: Envelope) {
     const { event, data } = message;
     console.log("Rtc ws event received: ", event);
-    switch (event) {
-      case "userList": {
-        const payload = data as UserListEvent;
-        store.dispatch("updateVoiceUsers", {
-          guildId: currentVoiceChannelGuild,
-          channelId: currentVoiceChannelId,
-          userIds: payload.list
-        });
-        for (const peer_id of payload.list) {
-          if (peer_id === currentVoiceUserId()) continue;
-          if (!peerList[peer_id]) {
+
+    const processUserList = (channelId: string, users: VoiceUser[]) => {
+      store.dispatch("updateVoiceUsers", { channelId, users });
+
+      for (const user of users) {
+        const peer_id = user.id;
+        if (peer_id === currentVoiceUserId()) continue;
+
+        if (!peerList[peer_id]) {
+          const isOnSameChannel = currentVoiceChannelId === channelId;
+          if (isOnSameChannel) {
             addVideoElement(peer_id, peer_id);
             createPeerConnection(peer_id);
           }
+          store.dispatch("addVoiceUser", {
+            channelId,
+            userId: peer_id,
+            isNoisy: user.isNoisy,
+            isMuted: user.isMuted,
+            isDeafened: user.isDeafened
+          });
+        } else {
+          store.dispatch("updateVoiceUserStatus", {
+            userId: peer_id,
+            isNoisy: user.isNoisy,
+            isMuted: user.isMuted,
+            isDeafened: user.isDeafened
+          });
+        }
+      }
+    };
+
+    switch (event) {
+      case "userList": {
+        const payload = data as UserListEvent;
+        processUserList(currentVoiceChannelId, payload.list);
+        break;
+      }
+
+      case "existingUserList": {
+        const payload = data as ExistingUserList;
+        if (!payload?.Guilds) return;
+
+        for (const guildId in payload.Guilds) {
+          const userIds = payload.Guilds[guildId];
+          if (!Array.isArray(userIds)) continue;
+          processUserList(guildId, userIds);
         }
         break;
       }
@@ -437,6 +491,10 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         const peer_id: string = payload.sid;
         peerList[peer_id] = undefined;
         addVideoElement(peer_id, userManager.getUserNick(peer_id));
+        store.dispatch("addVoiceUser", {
+          channelId: currentVoiceChannelId,
+          userId: peer_id
+        });
         break;
       }
 
@@ -481,6 +539,21 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       case "disconnect":
         console.log("Disconnected from server.", data);
         playAudioType(AudioType.ExitVC);
+        break;
+      case "userStatusUpdate":
+        const status = data as {
+          id: string;
+          isNoisy: boolean;
+          isMuted: boolean;
+          isDeafened: boolean;
+        };
+        console.log("userStatusUpdate received:", status);
+        store.commit("updateVoiceUserStatusMutation", {
+          userId: status.id,
+          isNoisy: status.isNoisy,
+          isMuted: status.isMuted,
+          isDeafened: status.isDeafened
+        });
         break;
 
       default:

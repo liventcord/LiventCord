@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 )
 
@@ -13,17 +14,6 @@ func registerToRoom(c *Client) {
 	hub.rooms[c.RoomID][c.ID] = c
 	hub.roomMembers[c.RoomID] = append(hub.roomMembers[c.RoomID], c.ID)
 	log.Printf("[%s] New member joined: %s", c.RoomID, c.ID)
-}
-
-func emitUserList(c *Client) {
-	hub.mu.RLock()
-	defer hub.mu.RUnlock()
-	members := hub.roomMembers[c.RoomID]
-	payload := UserList{
-		List:      members,
-		RtcUserId: c.ID,
-	}
-	sendJSON(c.Conn, Envelope{Event: "userList", Data: mustJSON(payload)})
 }
 
 func notifyUserConnect(c *Client) {
@@ -65,4 +55,48 @@ func cleanupClient(c *Client) {
 		log.Printf("[%s] Member left: %s", c.RoomID, c.ID)
 	}
 	delete(hub.clients, c.ID)
+}
+
+func notifyUserLeave(client *Client, roomID string) {
+	hub.mu.RLock()
+	roomClients, exists := hub.rooms[roomID]
+	hub.mu.RUnlock()
+	if !exists {
+		return
+	}
+
+	data := map[string]string{"userId": client.ID}
+	envelope := Envelope{
+		Event: "userLeft",
+		Data:  mustJSON(data),
+	}
+	msg, _ := json.Marshal(envelope)
+
+	for _, c := range roomClients {
+		if c.ID == client.ID {
+			continue
+		}
+		select {
+		case c.Send <- msg:
+		default:
+			log.Println("[WS] Failed to notify userLeft to", c.ID)
+		}
+	}
+}
+
+func unregisterFromRoom(client *Client) {
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+
+	roomClients, exists := hub.rooms[client.RoomID]
+	if !exists {
+		return
+	}
+
+	delete(roomClients, client.ID)
+	if len(roomClients) == 0 {
+		delete(hub.rooms, client.RoomID)
+	} else {
+		hub.rooms[client.RoomID] = roomClients
+	}
 }

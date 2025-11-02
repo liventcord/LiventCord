@@ -8,6 +8,7 @@ import { translations } from "./translations.ts";
 import { currentProfileImg } from "./popups.ts";
 import { apiClient } from "./api.ts";
 import { setAudioMuteState } from "./chatroom.ts";
+import { rtcWsClient } from "./socketEvents.ts";
 
 declare global {
   interface Window {
@@ -489,9 +490,11 @@ function setMicrophone() {
   isMicrophoneOpen = !isMicrophoneOpen;
   microphoneButton.classList.toggle("on", isMicrophoneOpen);
   microphoneButton.classList.toggle("off", !isMicrophoneOpen);
-  console.log("Microphone is now", isMicrophoneOpen ? "ON" : "OFF");
   setAudioMuteState(isMicrophoneOpen);
+  console.log("Microphone is now", isMicrophoneOpen ? "ON" : "OFF");
+  rtcWsClient.toggleMute();
 }
+1;
 
 let isEarphonesOpen = true;
 function setEarphones() {
@@ -500,6 +503,7 @@ function setEarphones() {
   earphoneButton.classList.toggle("on", isEarphonesOpen);
   earphoneButton.classList.toggle("off", !isEarphonesOpen);
   console.log("Earphones are now", isEarphonesOpen ? "ON" : "OFF");
+  rtcWsClient.toggleDeafen();
 }
 
 async function activateMicAndSoundOutput() {

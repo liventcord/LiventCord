@@ -2,6 +2,7 @@ import { createStore } from "vuex";
 import { userManager } from "./ts/user";
 import { Channel } from "./ts/channels";
 import { AttachmentWithMetaData } from "./ts/message";
+import { VoiceUser } from "./ts/socketEvents";
 
 interface UserMember {
   userId: string;
@@ -22,6 +23,19 @@ interface ChannelHoverInfo {
   isTextChannel: boolean;
 }
 
+interface VoiceUserStatus {
+  isNoisy: boolean;
+  isMuted: boolean;
+  isDeafened: boolean;
+}
+
+interface StoredVoiceUser {
+  id: string;
+  isNoisy: boolean;
+  isMuted: boolean;
+  isDeafened: boolean;
+}
+
 interface RootState {
   hasMoreAttachments: boolean;
   user: UserState;
@@ -31,6 +45,7 @@ interface RootState {
   selectedVoiceChannelId: string | null;
   attachments: AttachmentWithMetaData[];
   currentPage: number;
+  voiceUserStatuses: Record<string, VoiceUserStatus>;
 }
 
 export default createStore<RootState>({
@@ -46,7 +61,8 @@ export default createStore<RootState>({
     selectedVoiceChannelId: null,
     attachments: [],
     hasMoreAttachments: true,
-    currentPage: 1
+    currentPage: 1,
+    voiceUserStatuses: {}
   },
   mutations: {
     setAttachments(state, attachments: AttachmentWithMetaData[]) {
@@ -183,25 +199,108 @@ export default createStore<RootState>({
 
     updateVoiceChannelUsers(
       state,
-      { channelId, userIds }: { channelId: string; userIds: string[] }
+      { channelId, users }: { channelId: string; users: VoiceUser[] }
     ) {
       const channel = state.channels.find((c) => c.channelId === channelId);
       if (channel) {
-        const uniqueIds = [...new Set(userIds)];
-        channel.voiceUsers = uniqueIds.map((userId) => ({
-          id: userId,
-          name: userManager.getUserNick(userId)
-        }));
+        const uniqueUsersMap: Record<string, StoredVoiceUser> = {};
+        users.forEach((u) => {
+          const status = {
+            isNoisy: u.isNoisy ?? false,
+            isMuted: u.isMuted ?? false,
+            isDeafened: u.isDeafened ?? false
+          };
+          uniqueUsersMap[u.id] = { id: u.id, ...status };
+          state.voiceUserStatuses[u.id] = status;
+        });
+        channel.voiceUsers = Object.values(uniqueUsersMap);
       }
     },
+
     removeVoiceUser(
       state,
       { channelId, userId }: { channelId: string; userId: string }
     ) {
       const channel = state.channels.find((c) => c.channelId === channelId);
-      if (channel && channel.voiceUsers) {
+      if (channel?.voiceUsers) {
         channel.voiceUsers = channel.voiceUsers.filter((u) => u.id !== userId);
+        delete state.voiceUserStatuses[userId];
       }
+    },
+
+    addVoiceUser(
+      state,
+      { channelId, user }: { channelId: string; user: VoiceUser }
+    ) {
+      if (!user || !user.id) return;
+      const channel = state.channels.find((c) => c.channelId === channelId);
+      if (!channel) return;
+      if (!channel.voiceUsers) channel.voiceUsers = [];
+
+      const exists = channel.voiceUsers.some((u) => u && u.id === user.id);
+      if (!exists) {
+        const status = {
+          isNoisy: user.isNoisy ?? false,
+          isMuted: user.isMuted ?? false,
+          isDeafened: user.isDeafened ?? false
+        };
+        channel.voiceUsers.push({ id: user.id, ...status });
+        state.voiceUserStatuses[user.id] = status;
+      }
+    },
+
+    updateVoiceUserStatusMutation(
+      state,
+      {
+        userId,
+        isNoisy,
+        isMuted,
+        isDeafened
+      }: {
+        userId: string;
+        isNoisy: boolean;
+        isMuted: boolean;
+        isDeafened: boolean;
+      }
+    ) {
+      console.log(`[Mutation] Updating voice user status for ${userId}`);
+      console.log(`Incoming status:`, { isNoisy, isMuted, isDeafened });
+
+      const status = { isNoisy, isMuted, isDeafened };
+      state.voiceUserStatuses[userId] = status;
+      console.log(
+        `Updated state.voiceUserStatuses[${userId}]`,
+        state.voiceUserStatuses[userId]
+      );
+
+      let found = false;
+
+      for (const [i, channel] of state.channels.entries()) {
+        if (!channel.voiceUsers) {
+          console.log(`Channel ${i} has no voiceUsers, skipping`);
+          continue;
+        }
+
+        const userIndex = channel.voiceUsers.findIndex((u) => u.id === userId);
+        if (userIndex !== -1) {
+          console.log(
+            `Found user ${userId} in channel ${i} at index ${userIndex}`
+          );
+          channel.voiceUsers[userIndex] = { id: userId, ...status };
+          console.log(
+            `Updated channel ${i} voiceUsers[${userIndex}]`,
+            channel.voiceUsers[userIndex]
+          );
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        console.warn(`User ${userId} not found in any channel voiceUsers`);
+      }
+
+      console.log(`[Mutation Complete]`, { userId, newStatus: status });
     }
   },
 
@@ -288,11 +387,12 @@ export default createStore<RootState>({
     clearSelectedVoiceChannel({ commit }) {
       commit("CLEAR_SELECTED_VOICE_CHANNEL");
     },
+
     updateVoiceUsers(
       { commit },
-      { channelId, userIds }: { channelId: string; userIds: string[] }
+      { channelId, users }: { channelId: string; users: VoiceUser[] }
     ) {
-      commit("updateVoiceChannelUsers", { channelId, userIds });
+      commit("updateVoiceChannelUsers", { channelId, users });
     },
 
     removeVoiceUser(
@@ -300,6 +400,35 @@ export default createStore<RootState>({
       { channelId, userId }: { channelId: string; userId: string }
     ) {
       commit("removeVoiceUser", { channelId, userId });
+    },
+
+    addVoiceUser(
+      { commit },
+      { channelId, user }: { channelId: string; user: VoiceUser }
+    ) {
+      commit("addVoiceUser", { channelId, user });
+    },
+
+    updateVoiceUserStatus(
+      { commit },
+      {
+        userId,
+        isNoisy,
+        isMuted,
+        isDeafened
+      }: {
+        userId: string;
+        isNoisy: boolean;
+        isMuted: boolean;
+        isDeafened: boolean;
+      }
+    ) {
+      commit("updateVoiceUserStatusMutation", {
+        userId,
+        isNoisy,
+        isMuted,
+        isDeafened
+      });
     }
   },
 
@@ -327,6 +456,13 @@ export default createStore<RootState>({
 
     hasMoreAttachments: (state) => state.hasMoreAttachments,
 
-    currentPage: (state) => state.currentPage
+    currentPage: (state) => state.currentPage,
+
+    getVoiceUserStatus: (state) => (userId: string) =>
+      state.voiceUserStatuses[userId] || {
+        isNoisy: false,
+        isMuted: false,
+        isDeafened: false
+      }
   }
 });

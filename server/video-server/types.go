@@ -15,11 +15,14 @@ type SessionData struct {
 }
 
 type Client struct {
-	ID     string
-	Conn   *websocket.Conn
-	RoomID string
-	SessID string
-	Send   chan []byte
+	ID         string
+	Conn       *websocket.Conn
+	RoomID     string
+	SessID     string
+	Send       chan []byte
+	IsNoisy    bool
+	IsMuted    bool
+	IsDeafened bool
 }
 
 type Hub struct {
@@ -46,8 +49,8 @@ type UserConnect struct {
 }
 
 type UserList struct {
-	List      []string `json:"list"`
-	RtcUserId string   `json:"rtcUserId"`
+	List      []VoiceUser `json:"list"`
+	RtcUserId string      `json:"rtcUserId"`
 }
 
 type UserDisconnect struct {
@@ -81,4 +84,18 @@ var upgrader = websocket.Upgrader{
 		_, ok := hub.allowedOrigins[origin]
 		return ok
 	},
+}
+
+type DataPayload struct {
+	TargetID  string          `json:"targetId"`
+	Type      string          `json:"type"`
+	SDP       json.RawMessage `json:"sdp,omitempty"`
+	Candidate json.RawMessage `json:"candidate,omitempty"`
+}
+
+type VoiceUser struct {
+	ID         string `json:"id"`
+	IsNoisy    bool   `json:"isNoisy"`
+	IsMuted    bool   `json:"isMuted"`
+	IsDeafened bool   `json:"isDeafened"`
 }
