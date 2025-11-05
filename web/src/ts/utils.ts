@@ -1238,7 +1238,7 @@ export function getAttachmentUrl(file: Attachment) {
 export function createBlackStream(fps = 1): MediaStream {
   const width = 640;
   const height = 480;
-  const canvas = createEl("canvas", { width: width, height: height });
+  const canvas = createEl("canvas", { width, height });
   const context = canvas.getContext("2d");
 
   function drawBlackFrame() {

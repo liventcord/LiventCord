@@ -20,7 +20,7 @@ const PC_CONFIG: RTCConfiguration = {
 };
 
 let localStream: MediaStream | null = null;
-let isRenderingBlackScreen = false;
+const isRenderingBlackScreen = false;
 const pendingCandidates: Record<string, RTCIceCandidateInit[]> = {};
 const sentCandidates = new Set<string>();
 

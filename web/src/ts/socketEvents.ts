@@ -383,7 +383,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     this.currentRoomID = channelId;
     this.sendRaw({
       event: "joinRoom",
-      data: { guildId: guildId, roomId: channelId }
+      data: { guildId, roomId: channelId }
     });
   }
   public exitRoom() {

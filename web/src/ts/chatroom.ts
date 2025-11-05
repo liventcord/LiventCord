@@ -19,8 +19,8 @@ import { createEl, disableElement, enableElement, getId } from "./utils";
 import { checkVideoLayout, initialiseSelfVideo } from "./videoManager";
 
 export const peerList: Record<string, RTCPeerConnection | undefined> = {};
-export let rtcWS: RTCWebSocketClient | null = null;
-export let myRoomID = "1";
+export const rtcWS: RTCWebSocketClient | null = null;
+export const myRoomID = "1";
 
 let localStream: MediaStream | null = null;
 let audioMuted = false;

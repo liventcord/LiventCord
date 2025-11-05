@@ -1,6 +1,6 @@
 import { getId, isMobile } from "./utils";
 
-let myVideo: HTMLVideoElement | null = getId(
+const myVideo: HTMLVideoElement | null = getId(
   "local_vid"
 ) as HTMLVideoElement | null;
 
@@ -117,7 +117,7 @@ function setupMobileDragging() {
     offsetX = 0,
     offsetY = 0;
   let dragging = false;
-  let stabilizer: number = 0;
+  const stabilizer: number = 0;
 
   myVideo.addEventListener("touchstart", (e: TouchEvent) => {
     if (!isDraggable()) return;
