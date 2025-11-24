@@ -235,7 +235,7 @@ interface UserConnectEvent {
 }
 
 interface UserDisconnectEvent {
-  sid: string;
+  userId: string;
 }
 
 export interface DataMessage {
@@ -500,7 +500,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
 
       case "userDisconnect": {
         const payload = data as UserDisconnectEvent;
-        const left_peer_id: string = payload.sid;
+        const left_peer_id = payload.userId;
         closeConnection(left_peer_id);
         removeVideoElement(left_peer_id);
         delete peerList[left_peer_id];

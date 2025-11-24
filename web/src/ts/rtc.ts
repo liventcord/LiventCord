@@ -169,13 +169,27 @@ export function handleNewICECandidateMsg(msg: DataMessage) {
   sendOrQueueIceCandidate(peerId, msg.candidate);
 }
 
-function sendOrQueueIceCandidate(
+async function sendOrQueueIceCandidate(
   peerId: string,
   candidate: RTCIceCandidateInit
 ) {
   const pc = peerList[peerId];
-  if (pc && pc.remoteDescription && pc.remoteDescription.type) {
-    pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(logError);
+  if (!pc) return;
+
+  if (pc.remoteDescription && pc.remoteDescription.type) {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (err: any) {
+      if (
+        err.name === "OperationError" ||
+        err.message.includes("Unknown ufrag")
+      ) {
+        if (!pendingCandidates[peerId]) pendingCandidates[peerId] = [];
+        pendingCandidates[peerId].push(candidate);
+      } else {
+        logError(err);
+      }
+    }
   } else {
     if (!pendingCandidates[peerId]) pendingCandidates[peerId] = [];
     pendingCandidates[peerId].push(candidate);

@@ -46,6 +46,8 @@ import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
 import {
   currentUserId,
   currentUserNick,
+  DEFAULT_DISCRIMINATOR,
+  deletedUser,
   Member,
   UserInfo,
   userManager
@@ -267,8 +269,9 @@ function userInfosToMembers(userInfos: UserInfo[]): Member[] {
   return userInfos.map((userInfo) => {
     return {
       userId: String(userInfo.userId),
-      nickName: userInfo.nickName || "",
-      status: userInfo.status ?? "offline"
+      nickName: userInfo.nickName || deletedUser,
+      status: userInfo.status ?? "offline",
+      discriminator: userInfo.status ?? DEFAULT_DISCRIMINATOR
     } as Member;
   });
 }

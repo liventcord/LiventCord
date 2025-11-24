@@ -29,8 +29,13 @@ let myVideo = getId("local_vid") as HTMLVideoElement | null;
 const callContainer = getId("call-container");
 
 let isClicked = false;
+
 myVideo?.addEventListener("click", () => {
-  if (isClicked) showCallContainer();
+  if (isClicked) {
+    showCallContainer();
+    isClicked = false;
+    return;
+  }
   isClicked = true;
 });
 

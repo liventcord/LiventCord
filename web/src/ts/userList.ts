@@ -1,11 +1,6 @@
 import { reactive } from "vue";
 
-import {
-  getId,
-  createEl,
-  DEFAULT_DISCRIMINATOR,
-  saveBooleanCookie
-} from "./utils.ts";
+import { getId, createEl, saveBooleanCookie } from "./utils.ts";
 import { isOnMePage } from "./router.ts";
 import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
@@ -15,7 +10,8 @@ import {
   currentUserId,
   currentDiscriminator,
   UserInfo,
-  userManager
+  userManager,
+  DEFAULT_DISCRIMINATOR
 } from "./user.ts";
 import { handleResize, handleResizeWidth } from "./ui.ts";
 import { socketClient } from "./socketEvents.ts";

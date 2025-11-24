@@ -143,7 +143,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted, watch, nextTick } from "vue";
+import { ref, onMounted, watch, nextTick, computed } from "vue";
 import { useStore } from "vuex";
 import { guildCache } from "../ts/cache";
 import { changeChannel, currentVoiceChannelId } from "../ts/channels";
@@ -166,24 +166,43 @@ const props = defineProps<{
 const store = useStore();
 const isHovered = ref(false);
 
-const voiceChannelUsers = computed(() => {
+const voiceChannelUsers = ref<
+  {
+    id: string;
+    name: string;
+    isNoisy: boolean;
+    isMuted: boolean;
+    isDeafened: boolean;
+  }[]
+>([]);
+
+async function updateVoiceUsers() {
   const channel = store.getters.getChannelById(props.channelId);
-  if (!channel?.voiceUsers) return [];
-  const res = channel.voiceUsers.map((u: VoiceUser) => {
-    const status = store.getters.getVoiceUserStatus(u.id);
-    return {
-      id: u.id,
-      name: userManager.getUserNick(u.id),
-      isNoisy: status.isNoisy,
-      isMuted: status.isMuted,
-      isDeafened: status.isDeafened
-    };
-  });
-  return res;
-});
+  if (!channel?.voiceUsers) {
+    voiceChannelUsers.value = [];
+    return;
+  }
+
+  const users = await Promise.all(
+    channel.voiceUsers.map(async (u: VoiceUser) => {
+      const status = store.getters.getVoiceUserStatus(u.id);
+      let name = await userManager.fetchUserNickOnce(u.id);
+      return {
+        id: u.id,
+        name,
+        isNoisy: status.isNoisy,
+        isMuted: status.isMuted,
+        isDeafened: status.isDeafened
+      };
+    })
+  );
+
+  voiceChannelUsers.value = users;
+}
 
 onMounted(() => {
   appendToChannelContextList(props.channelId);
+  updateVoiceUsers();
   if (props.isTextChannel && props.channelId === guildCache.currentChannelId) {
     selectChannel(props.channelId, true);
   }
@@ -192,9 +211,15 @@ onMounted(() => {
   }
 });
 
+watch(
+  () => store.getters.getChannelById(props.channelId)?.voiceUsers,
+  updateVoiceUsers,
+  { deep: true }
+);
+
 watch(voiceChannelUsers, async () => {
   await nextTick();
-  voiceChannelUsers.value.forEach((user: VoiceUser) => {
+  voiceChannelUsers.value.forEach((user) => {
     const imgEl = document.querySelector<HTMLImageElement>(
       `.voice-user-item[data-user-id="${user.id}"] img.profile-pic`
     );

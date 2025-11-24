@@ -5,13 +5,13 @@ import {
   getId,
   disableElementHTML,
   disableElement,
-  IMAGE_SRCS,
-  DEFAULT_DISCRIMINATOR
+  IMAGE_SRCS
 } from "./utils.ts";
 import {
   currentDiscriminator,
   currentUserId,
   currentUserNick,
+  DEFAULT_DISCRIMINATOR,
   deletedUser,
   UserInfo,
   userManager

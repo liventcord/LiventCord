@@ -67,7 +67,7 @@ func notifyUserLeave(client *Client, roomID string) {
 
 	data := map[string]string{"userId": client.ID}
 	envelope := Envelope{
-		Event: "userLeft",
+		Event: "userDisconnect",
 		Data:  mustJSON(data),
 	}
 	msg, _ := json.Marshal(envelope)
@@ -79,7 +79,7 @@ func notifyUserLeave(client *Client, roomID string) {
 		select {
 		case c.Send <- msg:
 		default:
-			log.Println("[WS] Failed to notify userLeft to", c.ID)
+			log.Println("[WS] Failed to notify userDisconnect to", c.ID)
 		}
 	}
 }

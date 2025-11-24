@@ -48,7 +48,6 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
-export const DEFAULT_DISCRIMINATOR = "0000";
 export const isMobile = getMobile();
 export const STATUS_200 = 200;
 export const blackImage =

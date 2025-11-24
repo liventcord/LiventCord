@@ -33,7 +33,12 @@ import {
   setCurrentVoiceChannelGuild,
   setCurrentVoiceChannelId
 } from "./channels.ts";
-import { currentUserId, UserInfo, userManager } from "./user.ts";
+import {
+  currentUserId,
+  DEFAULT_DISCRIMINATOR,
+  UserInfo,
+  userManager
+} from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
 import { GuildMemberAddedMessage, rtcWsClient } from "./socketEvents.ts";
@@ -207,7 +212,7 @@ export function fetchMembers() {
     const userInfoList: UserInfo[] = members.map((member) => ({
       userId: member.userId,
       nickName: member.nickName,
-      discriminator: "0000"
+      discriminator: DEFAULT_DISCRIMINATOR
     }));
 
     updateMemberList(userInfoList);

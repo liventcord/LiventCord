@@ -6,7 +6,7 @@
   bottom: 0;
   background: #2f3495;
   display: none;
-  z-index: 1;
+  z-index: 2;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   grid-auto-rows: 1fr;
   gap: 10px;

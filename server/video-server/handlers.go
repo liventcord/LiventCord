@@ -56,16 +56,22 @@ func buildExistingUserList() map[string][]UserStatus {
 	result := make(map[string][]UserStatus)
 	for roomID, clients := range hub.rooms {
 		users := make([]UserStatus, 0, len(clients))
-		for userID := range clients {
+
+		for userID, client := range clients {
+			if client == nil {
+				continue
+			}
 			users = append(users, UserStatus{
 				ID:         userID,
-				IsNoisy:    false,
-				IsMuted:    false,
-				IsDeafened: false,
+				IsNoisy:    client.IsNoisy,
+				IsMuted:    client.IsMuted,
+				IsDeafened: client.IsDeafened,
 			})
 		}
+
 		result[roomID] = users
 	}
+
 	return result
 }
 
