@@ -2,11 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,6 +33,7 @@ func handleWebSocket(c *gin.Context) {
 	registerClient(userId, conn)
 	go handleWebSocketMessages(userId, conn)
 }
+
 func registerClient(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
 	defer hub.lock.Unlock()
@@ -44,7 +42,7 @@ func registerClient(userId string, conn *websocket.Conn) {
 		hub.clients = make(map[string]map[*WSConnection]bool)
 	}
 	if hub.connectivityStatus == nil {
-		hub.connectivityStatus = make(map[string]UserStatus)
+		hub.connectivityStatus = make(map[string]ConnectivityStatus)
 	}
 	if hub.userStatus == nil {
 		hub.userStatus = make(map[string]UserStatus)
@@ -57,89 +55,25 @@ func registerClient(userId string, conn *websocket.Conn) {
 	}
 	connLookup[conn] = ws
 
-	if _, exists := hub.clients[userId]; !exists {
+	if _, ok := hub.clients[userId]; !ok {
 		hub.clients[userId] = make(map[*WSConnection]bool)
 	}
-
 	hub.clients[userId][ws] = true
 
-	hub.connectivityStatus[userId] = StatusOnline
+	previousConnectivity := hub.connectivityStatus[userId]
+	hub.connectivityStatus[userId] = Connected
+
 	if _, exists := hub.userStatus[userId]; !exists {
-		hub.userStatus[userId] = StatusOnline
+		hub.userStatus[userId] = Online
 	}
 
-	go broadcastStatusUpdate(userId, hub.connectivityStatus[userId])
-}
+	effectiveStatus := hub.userStatus[userId]
 
-func establishWebSocketConnection(c *gin.Context) (string, *websocket.Conn, error) {
-	userId, conn, err := getSessionAndUpgradeConnection(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-		return "", nil, err
+	shouldBroadcast := previousConnectivity != Connected
+
+	if shouldBroadcast {
+		go broadcastStatusUpdate(userId, effectiveStatus)
 	}
-	return userId, conn, nil
-}
-
-func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, error) {
-	protocolHeader := c.Request.Header.Get("Sec-WebSocket-Protocol")
-	cookie := strings.TrimPrefix(protocolHeader, "cookie-")
-	if cookie == "" {
-		return "", nil, errors.New("session missing")
-	}
-
-	userId, err := authenticateSession(cookie)
-	if err != nil {
-		return "", nil, err
-	}
-
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, http.Header{
-		"Sec-WebSocket-Protocol": []string{"cookie-" + cookie},
-	})
-	if err != nil {
-		return "", nil, err
-	}
-
-	return userId, conn, nil
-}
-
-func authenticateSession(cookie string) (string, error) {
-	DOTNET_API_URL := getEnv("DotnetApiUrl", "http://localhost:5005")
-	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-token", nil)
-	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+cookie)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error sending request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("invalid session. Status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
-	}
-
-	var parsed struct {
-		UserID string `json:"userId"`
-	}
-	err = json.Unmarshal(body, &parsed)
-	if err != nil {
-		return "", fmt.Errorf("error parsing response JSON: %v", err)
-	}
-
-	userId := strings.TrimSpace(parsed.UserID)
-	if userId == "" {
-		return "", fmt.Errorf("empty user ID returned from API")
-	}
-
-	return userId, nil
 }
 
 func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) error {
@@ -168,26 +102,28 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 		ws.Conn.Close()
 
 		hub.lock.Lock()
+
 		for userId, conns := range hub.clients {
 			if _, exists := conns[ws]; exists {
 				delete(conns, ws)
+
 				if len(conns) == 0 {
+					hub.connectivityStatus[userId] = Disconnected
+
 					delete(hub.clients, userId)
-					delete(hub.connectivityStatus, userId)
+
 					go handleDisconnectionWithTimeout(userId)
 				}
+
 				break
 			}
 		}
+
 		hub.lock.Unlock()
 		delete(connLookup, conn)
 	}
 
 	return err
-}
-
-func unmarshalPayload(event EventMessage, v interface{}) error {
-	return json.Unmarshal(event.Payload, v)
 }
 
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
@@ -204,6 +140,7 @@ func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 					delete(connLookup, conn)
 
 					if len(conns) == 0 {
+						hub.connectivityStatus[userId] = Disconnected
 						go handleDisconnectionWithTimeout(userId)
 					} else {
 						fmt.Printf("User %s still has %d active connections, staying online\n", userId, len(conns))
@@ -237,34 +174,38 @@ func handleDisconnectionWithTimeout(userId string) {
 	for {
 		select {
 		case <-timeout:
-			fmt.Printf("Timeout reached for user %s, checking if still offline\n", userId)
+			fmt.Printf("Timeout reached for user %s\n", userId)
 
 			hub.lock.Lock()
 			conns, exists := hub.clients[userId]
+			stillDisconnected := !exists || len(conns) == 0
 
-			if !exists || len(conns) == 0 {
-				delete(hub.clients, userId)
-				delete(hub.connectivityStatus, userId)
+			if stillDisconnected {
+				hub.connectivityStatus[userId] = Disconnected
 				hub.lock.Unlock()
-				broadcastStatusUpdate(userId, StatusOffline)
+
+				effective := hub.userStatus[userId]
+				broadcastStatusUpdate(userId, effective)
+
 			} else {
-				fmt.Printf("User %s reconnected during timeout, staying online\n", userId)
 				hub.lock.Unlock()
 			}
+
 			return
 
 		case <-ticker.C:
 			hub.lock.RLock()
-			conns, reconnected := hub.clients[userId]
+			conns, exists := hub.clients[userId]
 			hub.lock.RUnlock()
 
-			if reconnected && len(conns) > 0 {
+			if exists && len(conns) > 0 {
 				fmt.Printf("User %s reconnected, aborting disconnection timeout\n", userId)
 				return
 			}
 		}
 	}
 }
+
 func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
 	guilds, err := fetchGuildMemberships(userId)
 	if err != nil {

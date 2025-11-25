@@ -73,3 +73,6 @@ func extractToken(r *http.Request) string {
 	}
 	return r.URL.Query().Get("token")
 }
+func unmarshalPayload(event EventMessage, v interface{}) error {
+	return json.Unmarshal(event.Payload, v)
+}
