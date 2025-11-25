@@ -61,7 +61,7 @@ func newHub() *Hub {
 		roomMembers: make(map[string][]string),
 		sessions:    make(map[string]map[string]SessionData),
 		allowedOrigins: map[string]struct{}{
-			"http://localhost:5173":        {},
+			"http://localhost:3000":        {},
 			"https://liventcord.github.io": {},
 		},
 	}
