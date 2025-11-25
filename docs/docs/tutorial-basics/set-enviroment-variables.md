@@ -116,7 +116,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Maximum number of concurrent redis connectons. 
     **Defaults** to 1.
 
-## Gin WS Server Configuration
+## Go WS Server Configuration
 ```bash
 cd Liventcord/server/go-ws-api
 ```
@@ -149,6 +149,15 @@ mv .example.env .env
   - **AdminPassword**:
     Password that will be used for authenticating gin ws server
     **Defaults to** `none`
+
+  - **PostgresURI**:
+    Connection string for connecting PostgreSQL.
+    **Defaults to** `postgres://postgres@localhost:5432/postgres?sslmode=disable`
+
+  - **EnableHitlogs**:
+    Enables the IP hit tracker for incoming requests.
+    **Defaults to** `false`
+
 
 ## Gin Media Proxy Server Configuration
 ```bash
