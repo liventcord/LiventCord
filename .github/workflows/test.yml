@@ -67,8 +67,8 @@ jobs:
       - name: Start frontend server
         working-directory: web
         run: |
-          nohup pnpm serve &
-          until curl --silent --fail http://localhost:1911; do
+          nohup pnpm farm --port 3000 &
+          until curl --silent --fail http://localhost:3000; do
             echo "Waiting for frontend…"
             sleep 1
           done
