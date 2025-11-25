@@ -174,7 +174,7 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 				if len(conns) == 0 {
 					delete(hub.clients, userId)
 					delete(hub.connectivityStatus, userId)
-					broadcastStatusUpdate(userId, StatusOffline)
+					go handleDisconnectionWithTimeout(userId)
 				}
 				break
 			}
