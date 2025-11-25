@@ -68,7 +68,7 @@ jobs:
         working-directory: web
         run: |
           nohup pnpm serve &
-          until curl --silent --fail http://localhost:3000; do
+          until curl --silent --fail http://localhost:1911; do
             echo "Waiting for frontend…"
             sleep 1
           done
