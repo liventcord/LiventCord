@@ -37,14 +37,13 @@ namespace LiventCord.Controllers
             _redisEventEmitter = redisEventEmitter;
             _imageController = imageController;
             _cacheService = cacheService;
-
         }
-        [Authorize]
 
+        [Authorize]
         [HttpGet("/api/guilds/{guildId}/channels")]
         public async Task<IActionResult> HandleGetChannels(
-                [FromRoute][IdLengthValidation] string guildId
-            )
+            [FromRoute][IdLengthValidation] string guildId
+        )
         {
             var channels = await GetGuildChannels(UserId!, guildId);
 
@@ -53,31 +52,44 @@ namespace LiventCord.Controllers
 
             return Ok(new { guildId, channels });
         }
+
         [Authorize]
         [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
             [FromRoute][IdLengthValidation] string guildId,
-            [FromRoute][IdLengthValidation] string channelId)
+            [FromRoute][IdLengthValidation] string channelId
+        )
         {
             var userId = UserId!;
-            var channel = await _dbContext.Channels
-                .Include(c => c.Guild)
+            var channel = await _dbContext
+                .Channels.Include(c => c.Guild)
                 .FirstOrDefaultAsync(c => c.ChannelId == channelId);
 
             if (channel == null)
                 return NotFound();
 
-            if (!await _permissionsController.HasPermission(userId, guildId, PermissionFlags.ManageChannels))
+            if (
+                !await _permissionsController.HasPermission(
+                    userId,
+                    guildId,
+                    PermissionFlags.ManageChannels
+                )
+            )
                 return Forbid();
 
             var rootId = channel.Guild?.RootChannel;
 
-            var guildChannels = await _dbContext.Channels
-                .Where(c => c.GuildId == guildId && c.ChannelId != rootId)
+            var guildChannels = await _dbContext
+                .Channels.Where(c => c.GuildId == guildId && c.ChannelId != rootId)
                 .Select(c => c.ChannelId)
                 .ToListAsync();
-            if (!guildChannels.Any() || (guildChannels.Count == 1 && guildChannels.First() == rootId))
-                return BadRequest(new { Type = "error", Message = "Cannot delete the last channel." });
+            if (
+                !guildChannels.Any()
+                || (guildChannels.Count == 1 && guildChannels.First() == rootId)
+            )
+                return BadRequest(
+                    new { Type = "error", Message = "Cannot delete the last channel." }
+                );
 
             var strategy = _dbContext.Database.CreateExecutionStrategy();
 
@@ -87,7 +99,9 @@ namespace LiventCord.Controllers
                 if (rootId == channelId && channel.Guild != null)
                     channel.Guild.RootChannel = guildChannels.First(c => c != rootId);
 
-                var messages = await _dbContext.Messages.Where(m => m.ChannelId == channelId).ToListAsync();
+                var messages = await _dbContext
+                    .Messages.Where(m => m.ChannelId == channelId)
+                    .ToListAsync();
                 await _imageController.DeleteAttachmentFiles(messages);
 
                 _dbContext.Channels.Remove(channel);
@@ -95,12 +109,16 @@ namespace LiventCord.Controllers
                 await tx.CommitAsync();
             });
 
-            await _redisEventEmitter.EmitToGuild(EventType.DELETE_CHANNEL, channel, guildId, userId);
+            await _redisEventEmitter.EmitToGuild(
+                EventType.DELETE_CHANNEL,
+                channel,
+                guildId,
+                userId
+            );
             await _membersController.InvalidateGuildMemberCaches(userId, guildId);
 
             return Ok(new { guildId, channelId });
         }
-
 
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels/{channelId}")]
@@ -123,59 +141,149 @@ namespace LiventCord.Controllers
             }
             channel.ChannelName = request.ChannelName;
             await _dbContext.SaveChangesAsync();
-            var channelToEmit = new { channelId, channelName = request.ChannelName, guildId };
+            var channelToEmit = new
+            {
+                channelId,
+                channelName = request.ChannelName,
+                guildId,
+            };
 
-            await _redisEventEmitter.EmitToGuild(EventType.UPDATE_CHANNEL_NAME, channelToEmit, guildId, UserId!);
+            await _redisEventEmitter.EmitToGuild(
+                EventType.UPDATE_CHANNEL_NAME,
+                channelToEmit,
+                guildId,
+                UserId!
+            );
             await _membersController.InvalidateGuildMemberCaches(UserId!, guildId);
 
-            return Ok(new { guildId, channelId, request.ChannelName });
+            return Ok(
+                new
+                {
+                    guildId,
+                    channelId,
+                    request.ChannelName,
+                }
+            );
         }
-
 
         [Authorize]
         [HttpPost("/api/guilds/{guildId}/channels")]
-        public async Task<IActionResult> CreateChannel([FromRoute][IdLengthValidation] string guildId, [FromBody] CreateChannelRequest request)
+        public async Task<IActionResult> CreateChannel(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromBody] CreateChannelRequest request
+        )
         {
             if (!await _permissionsController.CanManageChannels(UserId!, guildId))
                 return Forbid();
-            return await CreateChannelInternal(UserId!, guildId, Utils.CreateRandomId(), request.ChannelName, request.IsTextChannel, request.IsPrivate, recipientId: null, returnResponse: true);
+            return await CreateChannelInternal(
+                UserId!,
+                guildId,
+                Utils.CreateRandomId(),
+                request.ChannelName,
+                request.IsTextChannel,
+                request.IsPrivate,
+                recipientId: null,
+                returnResponse: true
+            );
         }
 
         [HttpPost("/api/discord/bot/guilds/{guildId}/channels/")]
         [ValidateBotToken]
-        public async Task<IActionResult> CreateChannelBot([FromRoute] string guildId, [FromBody] CreateChannelRequestBot request)
+        public async Task<IActionResult> CreateChannelBot(
+            [FromRoute] string guildId,
+            [FromBody] CreateChannelRequestBot request
+        )
         {
-            return await CreateChannelInternal(null, guildId, request.ChannelId, request.ChannelName, isTextChannel: true, isPrivate: false, recipientId: null, returnResponse: false);
+            return await CreateChannelInternal(
+                null,
+                guildId,
+                request.ChannelId,
+                request.ChannelName,
+                isTextChannel: true,
+                isPrivate: false,
+                recipientId: null,
+                returnResponse: false
+            );
         }
 
         [NonAction]
-        public async Task<IActionResult> CreateChannelInternal(string? userId, string? guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, string? recipientId, bool returnResponse)
+        public async Task<IActionResult> CreateChannelInternal(
+            string? userId,
+            string? guildId,
+            string channelId,
+            string channelName,
+            bool isTextChannel,
+            bool isPrivate,
+            string? recipientId,
+            bool returnResponse
+        )
         {
             if (string.IsNullOrEmpty(guildId) && string.IsNullOrEmpty(recipientId))
-                return BadRequest(new { Type = "error", Message = "Either GuildId or RecipientId must be provided." });
+                return BadRequest(
+                    new
+                    {
+                        Type = "error",
+                        Message = "Either GuildId or RecipientId must be provided.",
+                    }
+                );
 
             if (!string.IsNullOrEmpty(guildId))
             {
-                return await HandleGuildChannelCreation(userId, guildId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
+                return await HandleGuildChannelCreation(
+                    userId,
+                    guildId,
+                    channelId,
+                    channelName,
+                    isTextChannel,
+                    isPrivate,
+                    returnResponse
+                );
             }
             else if (!string.IsNullOrEmpty(recipientId) && userId != null)
             {
-                return await HandleDmChannelCreation(userId, recipientId, channelId, channelName, isTextChannel, isPrivate, returnResponse);
+                return await HandleDmChannelCreation(
+                    userId,
+                    recipientId,
+                    channelId,
+                    channelName,
+                    isTextChannel,
+                    isPrivate,
+                    returnResponse
+                );
             }
 
             return BadRequest(new { Type = "error", Message = "Invalid request." });
         }
 
-        private async Task<IActionResult> HandleGuildChannelCreation(string? userId, string guildId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
+        private async Task<IActionResult> HandleGuildChannelCreation(
+            string? userId,
+            string guildId,
+            string channelId,
+            string channelName,
+            bool isTextChannel,
+            bool isPrivate,
+            bool returnResponse
+        )
         {
-            var guild = await _dbContext.Guilds.Include(g => g.Channels).FirstOrDefaultAsync(g => g.GuildId == guildId);
+            var guild = await _dbContext
+                .Guilds.Include(g => g.Channels)
+                .FirstOrDefaultAsync(g => g.GuildId == guildId);
             var dbguilds = await _dbContext.Guilds.Select(g => g.GuildId).ToListAsync();
 
             if (guild == null)
-                return NotFound(new { Type = "error", Message = "Guild does not exist. Available guilds: " + string.Join(", ", dbguilds) });
+                return NotFound(
+                    new
+                    {
+                        Type = "error",
+                        Message = "Guild does not exist. Available guilds: "
+                            + string.Join(", ", dbguilds),
+                    }
+                );
 
             if (guild.Channels.Any(c => c.ChannelId == channelId))
-                return Conflict(new { Type = "error", Message = "Channel with the same ID already exists." });
+                return Conflict(
+                    new { Type = "error", Message = "Channel with the same ID already exists." }
+                );
 
             var newChannel = new Channel
             {
@@ -184,27 +292,55 @@ namespace LiventCord.Controllers
                 IsTextChannel = isTextChannel,
                 IsPrivate = isPrivate,
                 GuildId = guildId,
-                Order = guild.Channels.Count
+                Order = guild.Channels.Count,
             };
 
             guild.Channels.Add(newChannel);
             await _dbContext.SaveChangesAsync();
-            await _redisEventEmitter.EmitToGuild(EventType.CREATE_CHANNEL, newChannel, guildId, userId ?? "");
+            await _redisEventEmitter.EmitToGuild(
+                EventType.CREATE_CHANNEL,
+                newChannel,
+                guildId,
+                userId ?? ""
+            );
 
             await _membersController.InvalidateGuildMemberCaches(userId, guildId);
 
-
-            return returnResponse ? Ok(new { guildId, newChannel.ChannelId, isTextChannel, channelName }) : Ok();
+            return returnResponse
+                ? Ok(
+                    new
+                    {
+                        guildId,
+                        newChannel.ChannelId,
+                        isTextChannel,
+                        channelName,
+                    }
+                )
+                : Ok();
         }
 
-
-        private async Task<IActionResult> HandleDmChannelCreation(string userId, string recipientId, string channelId, string channelName, bool isTextChannel, bool isPrivate, bool returnResponse)
+        private async Task<IActionResult> HandleDmChannelCreation(
+            string userId,
+            string recipientId,
+            string channelId,
+            string channelName,
+            bool isTextChannel,
+            bool isPrivate,
+            bool returnResponse
+        )
         {
-            var existingChannel = await _dbContext.Channels
-                .FirstOrDefaultAsync(c => c.RecipientId == recipientId && c.IsPrivate && c.IsTextChannel);
+            var existingChannel = await _dbContext.Channels.FirstOrDefaultAsync(c =>
+                c.RecipientId == recipientId && c.IsPrivate && c.IsTextChannel
+            );
 
             if (existingChannel != null)
-                return Conflict(new { Type = "error", Message = "DM channel with this recipient already exists." });
+                return Conflict(
+                    new
+                    {
+                        Type = "error",
+                        Message = "DM channel with this recipient already exists.",
+                    }
+                );
 
             var newDmChannel = new Channel
             {
@@ -213,14 +349,29 @@ namespace LiventCord.Controllers
                 IsTextChannel = isTextChannel,
                 IsPrivate = isPrivate,
                 RecipientId = recipientId,
-                Order = 0
+                Order = 0,
             };
 
             _dbContext.Channels.Add(newDmChannel);
             await _dbContext.SaveChangesAsync();
-            await _redisEventEmitter.EmitToFriend(EventType.CREATE_CHANNEL, newDmChannel, userId, recipientId);
+            await _redisEventEmitter.EmitToFriend(
+                EventType.CREATE_CHANNEL,
+                newDmChannel,
+                userId,
+                recipientId
+            );
 
-            return returnResponse ? Ok(new { recipientId, newDmChannel.ChannelId, isTextChannel, channelName }) : Ok();
+            return returnResponse
+                ? Ok(
+                    new
+                    {
+                        recipientId,
+                        newDmChannel.ChannelId,
+                        isTextChannel,
+                        channelName,
+                    }
+                )
+                : Ok();
         }
 
         [NonAction]
@@ -260,12 +411,13 @@ public class CreateChannelRequestBot
 {
     [IdLengthValidation]
     public required string ChannelId { get; set; }
+
     [MaxLength(100)]
     public required string ChannelName { get; set; }
 }
+
 public class ChangeChannelNameRequest
 {
     [MaxLength(100)]
     public required string ChannelName { get; set; }
-
 }

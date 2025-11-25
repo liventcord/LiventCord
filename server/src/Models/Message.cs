@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+
 namespace LiventCord.Models
 {
     public class Message
@@ -11,7 +12,6 @@ namespace LiventCord.Models
 
         [NotMapped]
         public string? TemporaryId { get; set; } // Client generated and used for local display
-
 
         [ForeignKey("User")]
         public required string UserId { get; set; }
@@ -38,6 +38,7 @@ namespace LiventCord.Models
         {
             return Metadata != null && !Metadata.IsEmpty();
         }
+
         [JsonIgnore]
         public virtual User User { get; set; } = null!;
 
@@ -45,11 +46,13 @@ namespace LiventCord.Models
         public virtual Channel Channel { get; set; } = null!;
 
         public List<Embed> Embeds { get; set; } = new();
-        public ICollection<ChannelPinnedMessage> PinnedInChannels { get; set; } = new List<ChannelPinnedMessage>();
+        public ICollection<ChannelPinnedMessage> PinnedInChannels { get; set; } =
+            new List<ChannelPinnedMessage>();
+
         [NotMapped]
         public bool IsPinned { get; set; }
-
     }
+
     public class Attachment
     {
         [Key]
@@ -67,7 +70,6 @@ namespace LiventCord.Models
 
         [JsonIgnore]
         public Message Message { get; set; } = null!;
-
     }
 
     public class ChannelPinnedMessage
@@ -80,9 +82,4 @@ namespace LiventCord.Models
         public Channel Channel { get; set; } = null!;
         public Message Message { get; set; } = null!;
     }
-
-
-
-
-
 }

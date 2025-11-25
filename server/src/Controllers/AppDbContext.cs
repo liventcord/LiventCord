@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.EntityFrameworkCore;
-using LiventCord.Helpers;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace LiventCord.Controllers
@@ -53,24 +53,27 @@ namespace LiventCord.Controllers
                 gu.MemberId == userId && gu.GuildId == guildId
             );
         }
+
         public async Task<string[]> GetAllGuildIds()
         {
-            return await Guilds
-                .Select(g => g.GuildId)
-                .ToArrayAsync();
+            return await Guilds.Select(g => g.GuildId).ToArrayAsync();
         }
+
         public async Task<bool> AreUsersSharingGuild(string userId, string friendId)
         {
             var sharedGuildIds = await Set<GuildMember>()
                 .Where(gm => gm.MemberId == userId || gm.MemberId == friendId)
                 .GroupBy(gm => gm.GuildId)
-                .Where(group => group.Any(g => g.MemberId == userId) && group.Any(g => g.MemberId == friendId))
+                .Where(group =>
+                    group.Any(g => g.MemberId == userId) && group.Any(g => g.MemberId == friendId)
+                )
                 .Select(g => g.Key)
                 .Distinct()
                 .ToListAsync();
 
             return sharedGuildIds.Any();
         }
+
         public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
         {
             var query = Set<GuildMember>().Where(gm => gm.GuildId == guildId);
@@ -91,7 +94,6 @@ namespace LiventCord.Controllers
             );
         }
 
-
         public async Task<bool> IsGuildPublic(string guildId)
         {
             if (string.IsNullOrEmpty(guildId))
@@ -109,12 +111,11 @@ namespace LiventCord.Controllers
                 CreatedAt = DateTime.UtcNow,
                 Email = Utils.CreateRandomId(),
                 Discriminator = "0000",
-                Password = Utils.CreateRandomIdSecure()
+                Password = Utils.CreateRandomIdSecure(),
             };
 
             return newUser;
         }
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -123,9 +124,20 @@ namespace LiventCord.Controllers
                 entity.ToTable(nameof(User));
                 entity.HasKey(u => u.UserId);
                 entity.Property(u => u.UserId).HasColumnName(nameof(User.UserId)).IsRequired();
-                entity.Property(u => u.Email).HasColumnName(nameof(User.Email)).IsRequired().HasMaxLength(128);
-                entity.Property(u => u.Password).HasColumnName(nameof(User.Password)).IsRequired().HasMaxLength(128);
-                entity.Property(u => u.Nickname).HasColumnName(nameof(User.Nickname)).HasMaxLength(128);
+                entity
+                    .Property(u => u.Email)
+                    .HasColumnName(nameof(User.Email))
+                    .IsRequired()
+                    .HasMaxLength(128);
+                entity
+                    .Property(u => u.Password)
+                    .HasColumnName(nameof(User.Password))
+                    .IsRequired()
+                    .HasMaxLength(128);
+                entity
+                    .Property(u => u.Nickname)
+                    .HasColumnName(nameof(User.Nickname))
+                    .HasMaxLength(128);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
@@ -133,8 +145,16 @@ namespace LiventCord.Controllers
             {
                 entity.ToTable(nameof(Discriminator));
                 entity.HasKey(d => d.Id);
-                entity.Property(d => d.Nickname).HasColumnName(nameof(Discriminator.Nickname)).IsRequired().HasMaxLength(128);
-                entity.Property(d => d.Value).HasColumnName(nameof(Discriminator.Value)).IsRequired().HasMaxLength(128);
+                entity
+                    .Property(d => d.Nickname)
+                    .HasColumnName(nameof(Discriminator.Nickname))
+                    .IsRequired()
+                    .HasMaxLength(128);
+                entity
+                    .Property(d => d.Value)
+                    .HasColumnName(nameof(Discriminator.Value))
+                    .IsRequired()
+                    .HasMaxLength(128);
                 entity.HasIndex(d => new { d.Nickname, d.Value }).IsUnique();
             });
 
@@ -143,19 +163,28 @@ namespace LiventCord.Controllers
                 entity.ToTable(nameof(Friend));
                 entity.HasKey(f => new { f.UserId, f.FriendId });
                 entity.Property(f => f.UserId).HasColumnName(nameof(Friend.UserId)).IsRequired();
-                entity.Property(f => f.FriendId).HasColumnName(nameof(Friend.FriendId)).IsRequired();
-                entity.Property(f => f.Status).HasColumnName(nameof(Friend.Status)).IsRequired().HasMaxLength(20);
+                entity
+                    .Property(f => f.FriendId)
+                    .HasColumnName(nameof(Friend.FriendId))
+                    .IsRequired();
+                entity
+                    .Property(f => f.Status)
+                    .HasColumnName(nameof(Friend.Status))
+                    .IsRequired()
+                    .HasMaxLength(20);
                 entity.Property(f => f.Status).HasConversion<int>();
             });
 
             modelBuilder.Entity<UserDm>().ToTable(nameof(UserDm));
             modelBuilder.Entity<UserDm>().HasKey(ud => new { ud.UserId, ud.FriendId });
-            modelBuilder.Entity<UserDm>()
+            modelBuilder
+                .Entity<UserDm>()
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(ud => ud.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<UserDm>()
+            modelBuilder
+                .Entity<UserDm>()
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(ud => ud.FriendId)
@@ -167,8 +196,14 @@ namespace LiventCord.Controllers
                 entity.Property(f => f.FileId).HasColumnName(nameof(FileBase.FileId)).IsRequired();
                 entity.Property(f => f.FileName).HasColumnName(nameof(FileBase.FileName));
                 entity.Property(f => f.GuildId).HasColumnName(nameof(FileBase.GuildId));
-                entity.Property(f => f.Content).HasColumnName(nameof(FileBase.Content)).IsRequired();
-                entity.Property(f => f.Extension).HasColumnName(nameof(FileBase.Extension)).IsRequired();
+                entity
+                    .Property(f => f.Content)
+                    .HasColumnName(nameof(FileBase.Content))
+                    .IsRequired();
+                entity
+                    .Property(f => f.Extension)
+                    .HasColumnName(nameof(FileBase.Extension))
+                    .IsRequired();
             });
 
             modelBuilder.Entity<AttachmentFile>(entity =>
@@ -186,17 +221,17 @@ namespace LiventCord.Controllers
             {
                 entity.Property(f => f.UserId).HasColumnName(nameof(GuildFile.UserId));
             });
-            modelBuilder.Entity<ProfileFile>()
-                .HasIndex(p => p.UserId)
-                .IsUnique();
+            modelBuilder.Entity<ProfileFile>().HasIndex(p => p.UserId).IsUnique();
 
             modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
-            modelBuilder.Entity<GuildMember>()
+            modelBuilder
+                .Entity<GuildMember>()
                 .HasOne(gu => gu.Guild)
                 .WithMany(g => g.GuildMembers)
                 .HasForeignKey(gu => gu.GuildId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<GuildMember>()
+            modelBuilder
+                .Entity<GuildMember>()
                 .HasOne(gu => gu.User)
                 .WithMany()
                 .HasForeignKey(gu => gu.MemberId)
@@ -204,21 +239,23 @@ namespace LiventCord.Controllers
 
             modelBuilder.Entity<UserChannel>().ToTable(nameof(UserChannel));
             modelBuilder.Entity<UserChannel>().HasKey(uc => new { uc.UserId, uc.ChannelId });
-            modelBuilder.Entity<UserChannel>()
+            modelBuilder
+                .Entity<UserChannel>()
                 .HasOne(uc => uc.User)
                 .WithMany(u => u.UserChannels)
                 .HasForeignKey(uc => uc.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<UserChannel>()
+            modelBuilder
+                .Entity<UserChannel>()
                 .HasOne(uc => uc.Channel)
                 .WithMany(c => c.UserChannels)
                 .HasForeignKey(uc => uc.ChannelId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<GuildPermissions>()
+            modelBuilder
+                .Entity<GuildPermissions>()
                 .ToTable(nameof(GuildPermissions))
                 .HasKey(gp => new { gp.GuildId, gp.UserId });
-
 
             modelBuilder.Entity<GuildPermissions>().Property(gp => gp.GuildId).IsRequired();
 
@@ -238,21 +275,42 @@ namespace LiventCord.Controllers
                 .HasForeignKey(gp => gp.GuildId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-
             modelBuilder.Entity<Channel>(entity =>
             {
                 entity.ToTable(nameof(Channel));
                 entity.HasKey(c => c.ChannelId);
-                entity.Property(c => c.ChannelId).HasColumnName(nameof(Channel.ChannelId)).IsRequired();
-                entity.Property(c => c.ChannelName).HasColumnName(nameof(Channel.ChannelName)).IsRequired().HasMaxLength(128);
-                entity.Property(c => c.ChannelDescription).HasColumnName(nameof(Channel.ChannelDescription)).HasMaxLength(256);
-                entity.Property(c => c.IsTextChannel).HasColumnName(nameof(Channel.IsTextChannel)).IsRequired();
-                entity.Property(c => c.LastReadDateTime).HasColumnName(nameof(Channel.LastReadDateTime));
-                entity.Property(c => c.GuildId).HasColumnName(nameof(Channel.GuildId)).IsRequired(false);
+                entity
+                    .Property(c => c.ChannelId)
+                    .HasColumnName(nameof(Channel.ChannelId))
+                    .IsRequired();
+                entity
+                    .Property(c => c.ChannelName)
+                    .HasColumnName(nameof(Channel.ChannelName))
+                    .IsRequired()
+                    .HasMaxLength(128);
+                entity
+                    .Property(c => c.ChannelDescription)
+                    .HasColumnName(nameof(Channel.ChannelDescription))
+                    .HasMaxLength(256);
+                entity
+                    .Property(c => c.IsTextChannel)
+                    .HasColumnName(nameof(Channel.IsTextChannel))
+                    .IsRequired();
+                entity
+                    .Property(c => c.LastReadDateTime)
+                    .HasColumnName(nameof(Channel.LastReadDateTime));
+                entity
+                    .Property(c => c.GuildId)
+                    .HasColumnName(nameof(Channel.GuildId))
+                    .IsRequired(false);
                 entity.Property(c => c.Order).HasColumnName(nameof(Channel.Order)).IsRequired();
                 entity.HasIndex(c => c.GuildId);
                 entity.HasIndex(c => new { c.ChannelId, c.GuildId });
-                entity.HasOne(c => c.Guild).WithMany(g => g.Channels).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
+                entity
+                    .HasOne(c => c.Guild)
+                    .WithMany(g => g.Channels)
+                    .HasForeignKey(c => c.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
             modelBuilder.Entity<ChannelPinnedMessage>(entity =>
             {
@@ -261,17 +319,18 @@ namespace LiventCord.Controllers
 
                 entity.Property(e => e.PinnedAt).IsRequired();
 
-                entity.HasOne(e => e.Channel)
+                entity
+                    .HasOne(e => e.Channel)
                     .WithMany(c => c.PinnedMessages)
                     .HasForeignKey(e => e.ChannelId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.Message)
+                entity
+                    .HasOne(e => e.Message)
                     .WithMany(m => m.PinnedInChannels)
                     .HasForeignKey(e => e.MessageId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
-
 
             modelBuilder.Entity<Guild>(entity =>
             {
@@ -279,19 +338,45 @@ namespace LiventCord.Controllers
                 entity.HasKey(g => g.GuildId);
                 entity.Property(g => g.GuildId).HasColumnName(nameof(Guild.GuildId)).IsRequired();
                 entity.Property(g => g.OwnerId).HasColumnName(nameof(Guild.OwnerId)).IsRequired();
-                entity.Property(g => g.GuildName).HasColumnName(nameof(Guild.GuildName)).IsRequired().HasMaxLength(128);
-                entity.Property(g => g.CreatedAt).HasColumnName(nameof(Guild.CreatedAt)).IsRequired();
-                entity.Property(g => g.RootChannel).HasColumnName(nameof(Guild.RootChannel)).IsRequired();
+                entity
+                    .Property(g => g.GuildName)
+                    .HasColumnName(nameof(Guild.GuildName))
+                    .IsRequired()
+                    .HasMaxLength(128);
+                entity
+                    .Property(g => g.CreatedAt)
+                    .HasColumnName(nameof(Guild.CreatedAt))
+                    .IsRequired();
+                entity
+                    .Property(g => g.RootChannel)
+                    .HasColumnName(nameof(Guild.RootChannel))
+                    .IsRequired();
                 entity.Property(g => g.Region).HasColumnName(nameof(Guild.Region)).HasMaxLength(64);
-                entity.Property(g => g.Settings).HasColumnName(nameof(Guild.Settings)).HasMaxLength(1024);
-                entity.Property(g => g.IsGuildUploadedImg).HasColumnName(nameof(Guild.IsGuildUploadedImg)).IsRequired();
+                entity
+                    .Property(g => g.Settings)
+                    .HasColumnName(nameof(Guild.Settings))
+                    .HasMaxLength(1024);
+                entity
+                    .Property(g => g.IsGuildUploadedImg)
+                    .HasColumnName(nameof(Guild.IsGuildUploadedImg))
+                    .IsRequired();
                 entity.HasIndex(g => g.OwnerId);
-                entity.HasMany(g => g.GuildMembers).WithOne(gu => gu.Guild).HasForeignKey(gu => gu.GuildId).OnDelete(DeleteBehavior.Cascade);
-                entity.HasMany(g => g.GuildPermissions).WithOne(gp => gp.Guild).HasForeignKey(gp => gp.GuildId).OnDelete(DeleteBehavior.Cascade);
-                entity.HasMany(g => g.Channels).WithOne(c => c.Guild).HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Cascade);
+                entity
+                    .HasMany(g => g.GuildMembers)
+                    .WithOne(gu => gu.Guild)
+                    .HasForeignKey(gu => gu.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity
+                    .HasMany(g => g.GuildPermissions)
+                    .WithOne(gp => gp.Guild)
+                    .HasForeignKey(gp => gp.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity
+                    .HasMany(g => g.Channels)
+                    .WithOne(c => c.Guild)
+                    .HasForeignKey(c => c.GuildId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
-
-
 
             modelBuilder.Entity<Message>(entity =>
             {
@@ -300,117 +385,168 @@ namespace LiventCord.Controllers
                 entity.Property(m => m.MessageId).IsRequired();
                 entity.Property(m => m.UserId).IsRequired();
                 entity.Property(m => m.ChannelId).IsRequired();
-                entity.Property(m => m.Content)
-                    .HasMaxLength(2000);
+                entity.Property(m => m.Content).HasMaxLength(2000);
                 entity.Property(m => m.Date).IsRequired();
                 entity.Property(m => m.LastEdited);
                 entity.Property(m => m.ReplyToId);
                 entity.Property(m => m.ReactionEmojisIds).HasMaxLength(512);
 
-                entity.HasIndex(m => new { m.ChannelId, m.Date, m.MessageId });
+                entity.HasIndex(m => new
+                {
+                    m.ChannelId,
+                    m.Date,
+                    m.MessageId,
+                });
 
-                entity.HasOne(m => m.User)
+                entity
+                    .HasOne(m => m.User)
                     .WithMany()
                     .HasForeignKey(m => m.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(m => m.Attachments)
+                entity
+                    .HasMany(m => m.Attachments)
                     .WithOne(a => a.Message)
                     .HasForeignKey(a => a.MessageId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(m => m.Channel)
+                entity
+                    .HasOne(m => m.Channel)
                     .WithMany()
                     .HasForeignKey(m => m.ChannelId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.Property(m => m.Metadata)
+                entity
+                    .Property(m => m.Metadata)
                     .HasConversion(
-                        v => JsonSerializer.Serialize(v, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }),
-                        v => JsonSerializer.Deserialize<Metadata>(v, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                        v =>
+                            JsonSerializer.Serialize(
+                                v,
+                                new JsonSerializerOptions
+                                {
+                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                                }
+                            ),
+                        v =>
+                            JsonSerializer.Deserialize<Metadata>(
+                                v,
+                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                            )
                     )
                     .HasColumnType("json");
 
-                entity.OwnsMany(m => m.Embeds, embed =>
-                {
-                    embed.WithOwner().HasForeignKey("MessageId");
-                    embed.HasKey("MessageId", "Id");
-
-                    embed.Property(e => e.Id).IsRequired();
-
-                    embed.Property(e => e.Title);
-
-                    embed.Property(e => e.Type)
-                        .HasDefaultValue(EmbedType.Rich)
-                        .HasConversion<string>();
-
-                    embed.Property(e => e.Description);
-                    embed.Property(e => e.Url);
-                    embed.Property(e => e.Color).HasDefaultValue(0x808080);
-
-                    embed.OwnsOne(e => e.Author, author =>
+                entity.OwnsMany(
+                    m => m.Embeds,
+                    embed =>
                     {
-                        author.Property(a => a.Name).IsRequired();
-                        author.Property(a => a.Url);
-                        author.Property(a => a.IconUrl);
-                    });
+                        embed.WithOwner().HasForeignKey("MessageId");
+                        embed.HasKey("MessageId", "Id");
 
-                    embed.OwnsOne(e => e.Thumbnail, thumbnail =>
-                    {
-                        thumbnail.Property(t => t.Url).IsRequired();
-                    });
+                        embed.Property(e => e.Id).IsRequired();
 
-                    embed.OwnsOne(e => e.Video, video =>
-                    {
-                        video.Property(v => v.Url).IsRequired();
-                        video.Property(v => v.Width);
-                        video.Property(v => v.Height);
-                    });
+                        embed.Property(e => e.Title);
 
-                    embed.OwnsOne(e => e.Image, image =>
-                    {
-                        image.Property(i => i.Url).IsRequired();
-                        image.Property(i => i.Width);
-                        image.Property(i => i.Height);
-                    });
+                        embed
+                            .Property(e => e.Type)
+                            .HasDefaultValue(EmbedType.Rich)
+                            .HasConversion<string>();
 
-                    embed.OwnsOne(e => e.Footer, footer =>
-                    {
-                        footer.Property(f => f.Text).IsRequired();
-                        footer.Property(f => f.IconUrl);
-                    });
+                        embed.Property(e => e.Description);
+                        embed.Property(e => e.Url);
+                        embed.Property(e => e.Color).HasDefaultValue(0x808080);
 
-                    embed.Property(e => e.Fields)
-                        .HasColumnType("json")
-                        .HasConversion(
-                            v => v != null
-                                ? JsonSerializer.Serialize(v, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull })
-                                : null,
-                            v => v != null
-                                ? JsonSerializer.Deserialize<List<EmbedField>>(v, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<EmbedField>()
-                                : new List<EmbedField>()
-                        )
-                        .Metadata.SetValueComparer(
-                            new ValueComparer<List<EmbedField>>(
-                                (c1, c2) => c1 == null && c2 == null ||
-                                            c1 != null && c2 != null && c1.SequenceEqual(c2),
-                                c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
-                                c => c == null ? new List<EmbedField>() : c.ToList()
-                            )
+                        embed.OwnsOne(
+                            e => e.Author,
+                            author =>
+                            {
+                                author.Property(a => a.Name).IsRequired();
+                                author.Property(a => a.Url);
+                                author.Property(a => a.IconUrl);
+                            }
                         );
-                });
+
+                        embed.OwnsOne(
+                            e => e.Thumbnail,
+                            thumbnail =>
+                            {
+                                thumbnail.Property(t => t.Url).IsRequired();
+                            }
+                        );
+
+                        embed.OwnsOne(
+                            e => e.Video,
+                            video =>
+                            {
+                                video.Property(v => v.Url).IsRequired();
+                                video.Property(v => v.Width);
+                                video.Property(v => v.Height);
+                            }
+                        );
+
+                        embed.OwnsOne(
+                            e => e.Image,
+                            image =>
+                            {
+                                image.Property(i => i.Url).IsRequired();
+                                image.Property(i => i.Width);
+                                image.Property(i => i.Height);
+                            }
+                        );
+
+                        embed.OwnsOne(
+                            e => e.Footer,
+                            footer =>
+                            {
+                                footer.Property(f => f.Text).IsRequired();
+                                footer.Property(f => f.IconUrl);
+                            }
+                        );
+
+                        embed
+                            .Property(e => e.Fields)
+                            .HasColumnType("json")
+                            .HasConversion(
+                                v =>
+                                    v != null
+                                        ? JsonSerializer.Serialize(
+                                            v,
+                                            new JsonSerializerOptions
+                                            {
+                                                DefaultIgnoreCondition =
+                                                    JsonIgnoreCondition.WhenWritingNull,
+                                            }
+                                        )
+                                        : null,
+                                v =>
+                                    v != null
+                                        ? JsonSerializer.Deserialize<List<EmbedField>>(
+                                            v,
+                                            new JsonSerializerOptions
+                                            {
+                                                PropertyNameCaseInsensitive = true,
+                                            }
+                                        ) ?? new List<EmbedField>()
+                                        : new List<EmbedField>()
+                            )
+                            .Metadata.SetValueComparer(
+                                new ValueComparer<List<EmbedField>>(
+                                    (c1, c2) =>
+                                        c1 == null && c2 == null
+                                        || c1 != null && c2 != null && c1.SequenceEqual(c2),
+                                    c =>
+                                        c == null
+                                            ? 0
+                                            : c.Aggregate(
+                                                0,
+                                                (a, v) => HashCode.Combine(a, v.GetHashCode())
+                                            ),
+                                    c => c == null ? new List<EmbedField>() : c.ToList()
+                                )
+                            );
+                    }
+                );
             });
-            modelBuilder.Entity<MediaUrl>()
-                .ToTable(nameof(MediaUrls))
-                .HasKey(m => new { m.Url });
-
-
-
-
-
+            modelBuilder.Entity<MediaUrl>().ToTable(nameof(MediaUrls)).HasKey(m => new { m.Url });
         }
-
     }
-
 }
-

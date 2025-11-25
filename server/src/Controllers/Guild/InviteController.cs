@@ -19,6 +19,7 @@ namespace LiventCord.Controllers
             _dbContext = dbContext;
             _permissionController = permissionController;
         }
+
         [HttpGet("guilds/{guildId}/channels/{channelId}/invites")]
         public async Task<IActionResult> HandleGetInvites(
             [FromRoute][IdLengthValidation] string guildId,
@@ -38,14 +39,13 @@ namespace LiventCord.Controllers
             if (inviteId == null)
             {
                 await AddInviteAsync(guildId, channelId);
-                inviteId = _dbContext.GuildInvites
-                                    .Where(g => g.GuildId == guildId)
-                                    .Select(g => g.InviteId)
-                                    .FirstOrDefault();
+                inviteId = _dbContext
+                    .GuildInvites.Where(g => g.GuildId == guildId)
+                    .Select(g => g.InviteId)
+                    .FirstOrDefault();
             }
             return Ok(new { inviteId });
         }
-
 
         private string CreateRandomInviteId()
         {
@@ -59,6 +59,7 @@ namespace LiventCord.Controllers
                     .ToArray()
             );
         }
+
         [NonAction]
         public async Task AddInviteAsync(string guildId, string channelId)
         {
@@ -77,14 +78,16 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<(string? GuildId, string? ChannelId)> GetGuildIdByInviteAsync(string inviteId)
+        public async Task<(string? GuildId, string? ChannelId)> GetGuildIdByInviteAsync(
+            string inviteId
+        )
         {
-            var guildInvite = await _dbContext.GuildInvites
-                .FirstOrDefaultAsync(g => g.InviteId == inviteId);
+            var guildInvite = await _dbContext.GuildInvites.FirstOrDefaultAsync(g =>
+                g.InviteId == inviteId
+            );
 
             return (guildInvite?.GuildId, guildInvite?.InviteChannelId);
         }
-
 
         [NonAction]
         public async Task<string?> GetInviteIdByGuildAsync(string guildId)
@@ -94,7 +97,6 @@ namespace LiventCord.Controllers
             );
             return guildInvite?.InviteId;
         }
-
     }
 }
 

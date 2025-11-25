@@ -281,10 +281,22 @@ export function appendToProfileContextList(userData: UserInfo, userId: string) {
   if (!userData && userId) {
     userData = userManager.getUserInfo(userId);
   }
+
   if (userId && userData) {
-    contextList[userId] = createProfileContext(userData);
+    const newContext = createProfileContext(userData);
+
+    if (!contextList[userId]) {
+      contextList[userId] = newContext;
+    } else {
+      for (const key in newContext) {
+        if (!(key in contextList[userId])) {
+          contextList[userId][key] = newContext[key];
+        }
+      }
+    }
   }
 }
+
 export function appendToGuildContextList(guildId: string) {
   contextList[guildId] = createGuildContext(guildId);
 }

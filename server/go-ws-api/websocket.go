@@ -36,6 +36,40 @@ func handleWebSocket(c *gin.Context) {
 	registerClient(userId, conn)
 	go handleWebSocketMessages(userId, conn)
 }
+func registerClient(userId string, conn *websocket.Conn) {
+	hub.lock.Lock()
+	defer hub.lock.Unlock()
+
+	if hub.clients == nil {
+		hub.clients = make(map[string]map[*WSConnection]bool)
+	}
+	if hub.connectivityStatus == nil {
+		hub.connectivityStatus = make(map[string]UserStatus)
+	}
+	if hub.userStatus == nil {
+		hub.userStatus = make(map[string]UserStatus)
+	}
+
+	ws := &WSConnection{Conn: conn}
+
+	if connLookup == nil {
+		connLookup = make(map[*websocket.Conn]*WSConnection)
+	}
+	connLookup[conn] = ws
+
+	if _, exists := hub.clients[userId]; !exists {
+		hub.clients[userId] = make(map[*WSConnection]bool)
+	}
+
+	hub.clients[userId][ws] = true
+
+	hub.connectivityStatus[userId] = StatusOnline
+	if _, exists := hub.userStatus[userId]; !exists {
+		hub.userStatus[userId] = StatusOnline
+	}
+
+	go broadcastStatusUpdate(userId, hub.connectivityStatus[userId])
+}
 
 func establishWebSocketConnection(c *gin.Context) (string, *websocket.Conn, error) {
 	userId, conn, err := getSessionAndUpgradeConnection(c)
@@ -108,35 +142,15 @@ func authenticateSession(cookie string) (string, error) {
 	return userId, nil
 }
 
-func registerClient(userId string, conn *websocket.Conn) {
-	hub.lock.Lock()
-	defer hub.lock.Unlock()
-
-	if hub.clients == nil {
-		hub.clients = make(map[string]*websocket.Conn)
-	}
-	if hub.connectivityStatus == nil {
-		hub.connectivityStatus = make(map[string]UserStatus)
-	}
-	if hub.userStatus == nil {
-		hub.userStatus = make(map[string]UserStatus)
-	}
-
-	hub.clients[userId] = conn
-	hub.connectivityStatus[userId] = StatusOnline
-
-	if _, exists := hub.userStatus[userId]; !exists {
-		hub.userStatus[userId] = StatusOnline
-	}
-
-	go broadcastStatusUpdate(userId, hub.connectivityStatus[userId])
-}
-
-func unmarshalPayload(event EventMessage, v interface{}) error {
-	return json.Unmarshal(event.Payload, v)
-}
-
 func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) error {
+	ws, ok := connLookup[conn]
+	if !ok {
+		return fmt.Errorf("connection not found")
+	}
+
+	ws.Mutex.Lock()
+	defer ws.Mutex.Unlock()
+
 	response, err := json.Marshal(struct {
 		EventType string      `json:"event_type"`
 		Payload   interface{} `json:"payload"`
@@ -147,21 +161,40 @@ func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) e
 	if err != nil {
 		return err
 	}
-	return conn.WriteMessage(websocket.TextMessage, response)
+
+	err = ws.Conn.WriteMessage(websocket.TextMessage, response)
+	if err != nil {
+		fmt.Printf("WebSocket write error: %v\n", err)
+		ws.Conn.Close()
+
+		hub.lock.Lock()
+		for userId, conns := range hub.clients {
+			if _, exists := conns[ws]; exists {
+				delete(conns, ws)
+				if len(conns) == 0 {
+					delete(hub.clients, userId)
+					delete(hub.connectivityStatus, userId)
+					broadcastStatusUpdate(userId, StatusOffline)
+				}
+				break
+			}
+		}
+		hub.lock.Unlock()
+		delete(connLookup, conn)
+	}
+
+	return err
 }
+
+func unmarshalPayload(event EventMessage, v interface{}) error {
+	return json.Unmarshal(event.Payload, v)
+}
+
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Printf("WebSocket error for user %s: %v\n", userId, err)
-
-			hub.lock.Lock()
-			if currentConn, exists := hub.clients[userId]; exists && currentConn == conn {
-				delete(hub.clients, userId)
-				fmt.Printf("Removed connection for user %s from active clients\n", userId)
-			}
-			hub.lock.Unlock()
-
 			go handleDisconnectionWithTimeout(userId, conn)
 			return
 		}
@@ -176,7 +209,6 @@ func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 		}
 	}
 }
-
 func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
 	fmt.Printf("Starting disconnection timeout handler for user %s\n", userId)
 
@@ -184,43 +216,53 @@ func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
+	ws, ok := connLookup[conn]
+	if !ok {
+		fmt.Printf("Connection not found in lookup for user %s\n", userId)
+		return
+	}
+
 	for {
 		select {
 		case <-timeout:
 			fmt.Printf("Timeout reached for user %s, cleaning up status\n", userId)
 
 			hub.lock.Lock()
-			hasOtherConnections := false
-			for id, _ := range hub.clients {
-				if id == userId {
-					hasOtherConnections = true
-					break
-				}
+			defer hub.lock.Unlock()
+
+			conns, exists := hub.clients[userId]
+			if !exists {
+				return
 			}
 
-			if !hasOtherConnections {
+			// Remove this WSConnection
+			delete(conns, ws)
+			delete(connLookup, conn)
+
+			if len(conns) == 0 {
+				delete(hub.clients, userId)
 				delete(hub.connectivityStatus, userId)
-				hub.lock.Unlock()
 				broadcastStatusUpdate(userId, StatusOffline)
 			} else {
-				hub.lock.Unlock()
+				fmt.Printf("User %s still has %d active connections, keeping online\n", userId, len(conns))
 			}
 
-			conn.Close()
+			ws.Conn.Close()
 			return
 
 		case <-ticker.C:
 			hub.lock.RLock()
-			_, reconnected := hub.clients[userId]
+			conns, reconnected := hub.clients[userId]
 			hub.lock.RUnlock()
 
-			if reconnected {
-				fmt.Printf("User %s has reconnected, aborting disconnection timeout\n", userId)
+			if reconnected && len(conns) > 0 {
+				fmt.Printf("User %s has other connections, aborting disconnection timeout\n", userId)
 				return
 			}
 		}
 	}
 }
+
 func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
 	guilds, err := fetchGuildMemberships(userId)
 	if err != nil {
@@ -239,8 +281,10 @@ func EmitToGuild(eventType string, payload interface{}, key string, userId strin
 		for _, targetUserId := range members {
 			if targetUserId != userId {
 				if _, exists := seenUsers[targetUserId]; !exists {
-					if conn, ok := clients[targetUserId]; ok {
-						sendResponse(conn, eventType, payload)
+					if conns, ok := clients[targetUserId]; ok {
+						for c := range conns {
+							sendResponse(c.Conn, eventType, payload)
+						}
 						seenUsers[targetUserId] = struct{}{}
 						notifyCount++
 					}
@@ -249,6 +293,7 @@ func EmitToGuild(eventType string, payload interface{}, key string, userId strin
 		}
 	}
 
+	fmt.Printf("Broadcasted %s to %d users\n", eventType, notifyCount)
 }
 
 func broadcastStatusUpdate(userId string, status UserStatus) {
@@ -269,11 +314,13 @@ func broadcastStatusUpdate(userId string, status UserStatus) {
 		for _, targetUserId := range members {
 			if targetUserId != userId {
 				if _, exists := seenUsers[targetUserId]; !exists {
-					if conn, ok := clients[targetUserId]; ok {
-						sendResponse(conn, "UPDATE_USER_STATUS", UserStatusResponse{
-							UserId:             userId,
-							ConnectivityStatus: string(status),
-						})
+					if conns, ok := clients[targetUserId]; ok {
+						for c := range conns {
+							sendResponse(c.Conn, "UPDATE_USER_STATUS", UserStatusResponse{
+								UserId:             userId,
+								ConnectivityStatus: string(status),
+							})
+						}
 						seenUsers[targetUserId] = struct{}{}
 						notifyCount++
 					}

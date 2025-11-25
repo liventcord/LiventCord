@@ -4,7 +4,6 @@ namespace LiventCord.Models
 {
     public class ChangePasswordRequest
     {
-
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(
             128,

@@ -553,12 +553,35 @@ function getGuildOverviewHtml() {
 `;
 }
 function getSoundAndVideoHtml() {
+  const toggles = [
+    {
+      id: "noise-suppression-toggle",
+      label: translations.getSettingsTranslation("NoiseToggle"),
+      description: translations.getSettingsTranslation("NoiseToggleDescription")
+    },
+    {
+      id: "echo-cancellation-toggle",
+      label: "Echo Cancellation",
+      description: "Toggle microphone echo cancellation on or off"
+    },
+    {
+      id: "auto-gain-toggle",
+      label: "Auto Gain Control",
+      description: "Toggle automatic microphone gain adjustment"
+    }
+  ];
+
   return `
-  <h3>${translations.getSettingsTranslation("SoundAndVideo")}</h3>
-  <select id="microphone-dropdown" class="dropdown"></select>
-  <select id="earphones-dropdown" class="dropdown"></select>
-  <select id="speakers-dropdown" class="dropdown"></select>`;
+    <h3>${translations.getSettingsTranslation("SoundAndVideo")}</h3>
+    ${toggles
+      .map((toggle) =>
+        createToggle(toggle.id, toggle.label, toggle.description)
+      )
+      .join("")}
+    </div>
+  `;
 }
+
 function getAccountSettingsHtml() {
   const _isBlackTheme = isBlackTheme();
   return `
@@ -1185,12 +1208,10 @@ export function shakeScreen(container = document.body) {
   container.classList.remove("shake-screen");
   container.classList.add("shake-screen");
 
-  resetTimeout = setTimeout(() => {
+  resetTimeout = window.setTimeout(() => {
     SHAKE_FORCE = 1;
     container.classList.remove("shake-screen");
-    if (currentPopUp) {
-      currentPopUp.style.backgroundColor = "#0f0f0f";
-    }
+    if (currentPopUp) currentPopUp.style.backgroundColor = "#0f0f0f";
   }, RESET_TIMEOUT_DURATION);
 
   return;

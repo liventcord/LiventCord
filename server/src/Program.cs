@@ -14,7 +14,6 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
@@ -52,44 +51,48 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 SharedAppConfig.Initialize(builder.Configuration);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+builder
+    .Services.AddAuthentication(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = AuthController._jwtIssuer,
-        ValidAudience = AuthController._jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey)),
-        ClockSkew = TimeSpan.Zero
-    };
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = AuthController._jwtIssuer,
+            ValidAudience = AuthController._jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    builder.Configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey
+                )
+            ),
+            ClockSkew = TimeSpan.Zero,
+        };
 
-    options.Events = new JwtBearerEvents
-    {
-        OnChallenge = context =>
+        options.Events = new JwtBearerEvents
         {
-            context.HandleResponse();
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync("{\"message\":\"Authentication failed\"}");
-        },
-        OnForbidden = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync("{\"message\":\"Access denied\"}");
-        }
-    };
-});
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync("{\"message\":\"Authentication failed\"}");
+            },
+            OnForbidden = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync("{\"message\":\"Access denied\"}");
+            },
+        };
+    });
 
 builder
     .Services.AddControllers()
@@ -133,30 +136,33 @@ string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? "http
 Console.WriteLine("Frontend url is: " + FRONTEND_URL);
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
-    {
-        if (FRONTEND_URL == "*")
+    options.AddPolicy(
+        "AllowSpecificOrigin",
+        policy =>
         {
-            policy.AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        }
-        else
-        {
-            var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
-
-            if (allowedOrigins != null && allowedOrigins.Length > 0)
+            if (FRONTEND_URL == "*")
             {
-                policy.WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
+                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            }
+            else
+            {
+                var allowedOrigins = FRONTEND_URL?.Split(
+                    ';',
+                    StringSplitOptions.RemoveEmptyEntries
+                );
+
+                if (allowedOrigins != null && allowedOrigins.Length > 0)
+                {
+                    policy
+                        .WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                }
             }
         }
-    });
+    );
 });
-
-
 
 var app = builder.Build();
 
@@ -181,7 +187,9 @@ else
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
-    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+    )
     .CreateLogger();
 
 app.UseMiddleware<RequestCountingMiddleware>();
@@ -236,15 +244,18 @@ app.Lifetime.ApplicationStarted.Register(async () =>
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogWarning(ex, "EF Core operation failed, possibly due to missing table. Skipping Redis sync");
+            logger.LogWarning(
+                ex,
+                "EF Core operation failed, possibly due to missing table. Skipping Redis sync"
+            );
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Unexpected error during Redis sync");
         }
 
-
-        var dedupService = scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
+        var dedupService =
+            scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
         await dedupService.DeduplicateAsync(CancellationToken.None);
 
         var userService = scope.ServiceProvider.GetRequiredService<RegisterController>();
@@ -252,7 +263,4 @@ app.Lifetime.ApplicationStarted.Register(async () =>
     }
 });
 
-
-
 app.Run();
-

@@ -12,7 +12,6 @@ namespace LiventCord.Helpers
         public static string MediaProxyApiUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
-        public static string RtcWsUrl { get; private set; }
 
         public static float MaxAvatarSize { get; private set; }
         public static float MaxAttachmentSize { get; private set; }
@@ -25,8 +24,7 @@ namespace LiventCord.Helpers
             MediaProxyApiUrl = "http://localhost:5000";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
-            WsUrl = "ws://localhost:8080/ws";
-            RtcWsUrl = "ws://localhost:5010/ws";
+            WsUrl = "ws://localhost:8080";
             AdminKey = "";
         }
 
@@ -38,15 +36,22 @@ namespace LiventCord.Helpers
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
             RtcWsUrl = configuration["AppSettings:RtcWsUrl"] ?? RtcWsUrl;
 
-            MaxAvatarSize = float.TryParse(configuration["AppSettings:MaxAvatarSize"], out var avatarSize)
+            MaxAvatarSize = float.TryParse(
+                configuration["AppSettings:MaxAvatarSize"],
+                out var avatarSize
+            )
                 ? avatarSize
                 : MaxAvatarSize;
 
-            MaxAttachmentSize = float.TryParse(configuration["AppSettings:MaxAttachmentSize"], out var attachmentSize)
+            MaxAttachmentSize = float.TryParse(
+                configuration["AppSettings:MaxAttachmentSize"],
+                out var attachmentSize
+            )
                 ? attachmentSize
                 : MaxAttachmentSize;
             AdminKey = configuration["AppSettings:AdminKey"];
         }
+
         public static long GetMaxAttachmentSize()
         {
             return (long)(MaxAttachmentSize * 1024 * 1024);
@@ -56,7 +61,6 @@ namespace LiventCord.Helpers
         {
             return (long)(MaxAttachmentSize * 1024 * 1024);
         }
-
     }
 
     public class AppLogicService
@@ -83,13 +87,14 @@ namespace LiventCord.Helpers
             _membersController = membersController;
             _cacheService = cacheService;
             _logger = logger;
-
         }
+
         private async Task<string> GetProfileImgVersion(string userId)
         {
             var result = await _dbContext.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
             return result?.Version ?? "0";
         }
+
         public async Task HandleInitRequest(HttpContext context)
         {
             async Task RejectStaleSession()
@@ -98,7 +103,6 @@ namespace LiventCord.Helpers
                     new { message = "User session is no longer valid. Please log in again." }
                 );
             }
-
 
             try
             {
@@ -136,7 +140,11 @@ namespace LiventCord.Helpers
                     nickName = user.Nickname ?? "",
                     userDiscriminator = user.Discriminator ?? "",
                     profileVersion = await GetProfileImgVersion(userId),
-                    sharedGuildsMap = await _membersController.GetSharedGuilds(userId, friendsStatus, guilds),
+                    sharedGuildsMap = await _membersController.GetSharedGuilds(
+                        userId,
+                        friendsStatus,
+                        guilds
+                    ),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
                     friendsStatus,
                     dmFriends = await GetDmUsers(userId),
@@ -147,7 +155,6 @@ namespace LiventCord.Helpers
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,
-                    rtcWsUrl = SharedAppConfig.RtcWsUrl
                 };
 
                 _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(100));

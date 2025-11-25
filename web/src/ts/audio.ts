@@ -1,16 +1,13 @@
 import { selfProfileImage } from "./avatar.ts";
-import {
-  currentVoiceChannelId,
-  setCurrentVoiceChannelGuild,
-  getChannelsUl
-} from "./channels.ts";
+import { getChannelsUl } from "./channels.ts";
 import { getId, createEl } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
 import { currentUserId } from "./user.ts";
-import { isOnGuild } from "./router.ts";
 import { translations } from "./translations.ts";
 import { currentProfileImg } from "./popups.ts";
+import { apiClient } from "./api.ts";
+import { setAudioMuteState } from "./chatroom.ts";
 import { rtcWsClient } from "./socketEvents.ts";
 
 declare global {
@@ -49,10 +46,12 @@ containers.forEach((container) => {
   container.addEventListener("click", function (event) {
     earphoneButton = getId("earphone-button");
     microphoneButton = getId("microphone-button");
-    const target = event.target as HTMLElement;
-    if (target.id === "microphone-button") {
+    const svg = (event.target as HTMLElement).closest("svg");
+    if (!svg) return;
+
+    if (svg.id === "microphone-button") {
       setMicrophone();
-    } else if (target.id === "earphone-button") {
+    } else if (svg.id === "earphone-button") {
       setEarphones();
     }
   });
@@ -158,6 +157,15 @@ export async function playAudio(audioUrl: string) {
   } catch (error) {
     console.error("Error playing audio:", error);
   }
+}
+export enum AudioType {
+  EnterVC = "/joinvoice",
+  ExitVC = "/leavevoice"
+}
+
+export async function playAudioType(type: AudioType) {
+  const BASE_AUDIO_URL = apiClient.getGitUrl();
+  playAudio(BASE_AUDIO_URL + "/web/src/sounds" + type + ".mp3");
 }
 
 function formatTime(seconds: number) {
@@ -285,7 +293,7 @@ function getSelfFromUserList(): HTMLImageElement | null {
 
 function analyzeAudio(
   bufferSize: number,
-  dataArray: Uint8Array,
+  dataArray: any, //Uint8Array,
   recentVolumes: number[]
 ) {
   if (!isAnalyzing || !analyser) {
@@ -482,8 +490,11 @@ function setMicrophone() {
   isMicrophoneOpen = !isMicrophoneOpen;
   microphoneButton.classList.toggle("on", isMicrophoneOpen);
   microphoneButton.classList.toggle("off", !isMicrophoneOpen);
+  setAudioMuteState(isMicrophoneOpen);
   console.log("Microphone is now", isMicrophoneOpen ? "ON" : "OFF");
+  rtcWsClient.toggleMute();
 }
+1;
 
 let isEarphonesOpen = true;
 function setEarphones() {
@@ -492,6 +503,7 @@ function setEarphones() {
   earphoneButton.classList.toggle("on", isEarphonesOpen);
   earphoneButton.classList.toggle("off", !isEarphonesOpen);
   console.log("Earphones are now", isEarphonesOpen ? "ON" : "OFF");
+  rtcWsClient.toggleDeafen();
 }
 
 async function activateMicAndSoundOutput() {
@@ -593,24 +605,6 @@ function activateMicAndCamera() {
   }
 }
 
-function closeCurrentCall() {
-  currentAudioPlayer = getId("audio-player") as HTMLAudioElement;
-  playAudio("/sounds/leavevoice.mp3");
-
-  const sp = getId("sound-panel") as HTMLElement;
-  const oldVoiceId = currentVoiceChannelId;
-  sp.style.display = "none";
-  clearVoiceChannel(oldVoiceId);
-  setCurrentVoiceChannelGuild("");
-  if (isOnGuild) {
-    setCurrentVoiceChannelGuild("");
-  }
-  const buttonContainer = getChannelsUl().querySelector(
-    `li[id="${oldVoiceId}"]`
-  ) as HTMLElement;
-
-  rtcWsClient.exitRoom();
-}
 export function clearVoiceChannel(channelId: string) {
   const channelButton = getChannelsUl().querySelector(`li[id="${channelId}"]`);
   if (!channelButton) {

@@ -117,7 +117,7 @@ table {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 5;
+  z-index: 10;
   background-color: #000000b4;
 }
 #settings-menu button:hover,
@@ -129,6 +129,9 @@ table {
 body.black-theme #settings-menu button:hover,
 body.black-theme #settings-menu button:active,
 body.black-theme #settings-menu button.touch-hover {
+  background-color: #2c2c30;
+}
+body.black-theme .base-overview-name-input {
   background-color: #2c2c30;
 }
 
@@ -730,7 +733,7 @@ body.black-theme #settings-menu button.touch-hover {
   box-sizing: border-box;
   border: none;
   color: white;
-  background-color: rgb(30, 31, 34);
+  background-color: #121214 !important;
 }
 .base-overview-name-input:disabled {
   color: #888;

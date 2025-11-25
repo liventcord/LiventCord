@@ -117,31 +117,38 @@ func printEventDetails(event EventMessage, userIDs []string) {
 }
 
 func broadcastToUsers(eventMessage EventMessage, userIDs []string) {
-	hub.lock.RLock()
-	defer hub.lock.RUnlock()
+	payload, err := json.Marshal(eventMessage)
+	if err != nil {
+		fmt.Printf("Error marshalling message: %v\n", err)
+		return
+	}
 
 	for _, targetUserID := range userIDs {
-		conn, ok := hub.clients[targetUserID]
+		hub.lock.RLock()
+		conns, ok := hub.clients[targetUserID]
+		hub.lock.RUnlock()
 		if !ok {
 			continue
 		}
 
-		payload, err := json.Marshal(eventMessage)
-		if err != nil {
-			fmt.Printf("Error marshalling message for userId %s: %v\n", targetUserID, err)
-			continue
-		}
+		for ws := range conns {
+			ws.Mutex.Lock()
+			err := ws.Conn.WriteMessage(websocket.TextMessage, payload)
+			ws.Mutex.Unlock()
 
-		err = conn.WriteMessage(websocket.TextMessage, payload)
-		if err != nil {
-			conn.Close()
-			hub.lock.RUnlock()
-			hub.lock.Lock()
-			delete(hub.clients, targetUserID)
-			hub.lock.Unlock()
-			hub.lock.RLock()
-		} else {
-			fmt.Printf("Successfully sent message to WebSocket client for userId %s\n", targetUserID)
+			if err != nil {
+				fmt.Printf("Error sending message to user %s: %v. Closing connection.\n", targetUserID, err)
+				ws.Conn.Close()
+
+				hub.lock.Lock()
+				delete(conns, ws)
+				if len(conns) == 0 {
+					delete(hub.clients, targetUserID)
+				}
+				hub.lock.Unlock()
+			} else {
+				fmt.Printf("Successfully sent message to WebSocket client for userId %s\n", targetUserID)
+			}
 		}
 	}
 }

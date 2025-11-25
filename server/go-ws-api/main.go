@@ -27,6 +27,10 @@ func main() {
 			"status": "Service is running",
 		})
 	})
+	r.GET("/video-ws", func(c *gin.Context) {
+		HandleWS(c.Writer, c.Request)
+	})
+
 	telemetry.Init()
 
 	adminPassword := getEnv("AdminPassword", "")

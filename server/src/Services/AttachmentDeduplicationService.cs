@@ -7,7 +7,10 @@ public class AttachmentDeduplicationService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<AttachmentDeduplicationService> _logger;
 
-    public AttachmentDeduplicationService(IServiceScopeFactory scopeFactory, ILogger<AttachmentDeduplicationService> logger)
+    public AttachmentDeduplicationService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<AttachmentDeduplicationService> logger
+    )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -20,12 +23,16 @@ public class AttachmentDeduplicationService
 
         try
         {
-            var attachments = await context.Attachments
-                .AsNoTracking()
-                .ToListAsync(stoppingToken);
+            var attachments = await context.Attachments.AsNoTracking().ToListAsync(stoppingToken);
 
             var duplicateGroups = attachments
-                .GroupBy(a => new { a.MessageId, a.FileName, a.FileSize, a.ProxyUrl })
+                .GroupBy(a => new
+                {
+                    a.MessageId,
+                    a.FileName,
+                    a.FileSize,
+                    a.ProxyUrl,
+                })
                 .Where(g => g.Count() > 1);
 
             var attachmentsToRemove = new List<Attachment>();
@@ -37,7 +44,10 @@ public class AttachmentDeduplicationService
 
             if (attachmentsToRemove.Count > 0)
             {
-                _logger.LogInformation("Found {Count} duplicate attachments. Removing...", attachmentsToRemove.Count);
+                _logger.LogInformation(
+                    "Found {Count} duplicate attachments. Removing...",
+                    attachmentsToRemove.Count
+                );
 
                 context.AttachRange(attachmentsToRemove);
                 context.Attachments.RemoveRange(attachmentsToRemove);

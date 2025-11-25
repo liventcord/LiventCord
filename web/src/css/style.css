@@ -1138,7 +1138,8 @@ body.black-theme .base-user-input {
   left: 80px;
   position: absolute;
   border-radius: 10px;
-  background-color: rgb(17, 18, 20);
+
+  background-color: #27282c;
   flex-direction: column;
   opacity: 0;
   display: none;
@@ -1264,7 +1265,7 @@ body.black-theme .base-user-input {
   padding: 5px;
   border-radius: 20px;
   position: absolute;
-  margin-left: 14px;
+  margin-left: 20px;
   margin-top: 22px;
   transition: opacity 0.5s ease-in-out;
   border: 3px solid #313338;
@@ -1276,7 +1277,7 @@ body.black-theme .base-user-input {
   border-radius: 50px;
   position: absolute;
   transition: opacity 0.5s ease-in-out;
-  top: 19vh;
+  top: 21vh;
   left: 3.8em;
   border: 4px solid rgb(17, 18, 20);
   filter: brightness(1);

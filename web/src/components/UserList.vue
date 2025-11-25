@@ -197,7 +197,15 @@ import {
   openMediaPanel
 } from "../ts/chat.ts";
 import { createTooltip } from "../ts/tooltip.ts";
+import {
+  handlePanelButtonClickExternal,
+  hasTeleportedOnce,
+  isMediaPanelTeleported,
+  selectedPanelType
+} from "../ts/panelHandler.ts";
+import { UserInfo } from "../ts/user.ts";
 import MediaGrid from "./MediaGrid.vue";
+
 const shouldTeleportMediaPanel = computed(
   () => isMediaPanelTeleported && selectedPanelType.value === "media"
 );
@@ -267,13 +275,6 @@ const filteredPanelButtons = computed(() => {
   });
 });
 
-import {
-  handlePanelButtonClickExternal,
-  hasTeleportedOnce,
-  isMediaPanelTeleported,
-  selectedPanelType
-} from "../ts/panelHandler.ts";
-
 function handlePanelButtonClick(type: string) {
   handlePanelButtonClickExternal(
     type,
@@ -300,7 +301,7 @@ const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
 
 const failedVideos = {};
 
-function onVideoError(fileId) {
+function onVideoError(fileId: string) {
   failedVideos[fileId] = true;
 }
 function getVideoFallbackImg() {
@@ -347,7 +348,7 @@ function shouldRenderMedia(attachment: AttachmentWithMetaData) {
   return isImage || isVideo;
 }
 
-const handleImageClick = (attachment) => {
+const handleImageClick = (attachment: AttachmentWithMetaData) => {
   if (!shouldRenderMedia(attachment)) return;
   const mediaGrid = getId("media-grid");
 
@@ -377,14 +378,14 @@ const attachments = computed(() => store.state.attachments);
 const onlineUsers = computed(() => store.state.user.onlineUsers);
 const offlineUsers = computed(() => store.state.user.offlineUsers);
 
-const processMembers = async (newMembers) => {
+const processMembers = async (newMembers: UserInfo[]) => {
   if (isOnMePage && !props.ignoreisOnMePage) return;
 
   loading.value = true;
   await store.dispatch("categorizeUsers", newMembers);
   loading.value = false;
 };
-const processAttachments = async (newAttachments) => {
+const processAttachments = async (newAttachments: AttachmentWithMetaData[]) => {
   const combinedAttachments = [...store.state.attachments, ...newAttachments];
   await store.dispatch("setAttachments", combinedAttachments);
 };
@@ -403,7 +404,7 @@ watch(
   },
   { immediate: true, deep: true }
 );
-watch(currentAttachments, (newAttachments) => {
+watch(currentAttachments, (newAttachments: AttachmentWithMetaData[]) => {
   if (newAttachments.length) {
     processAttachments(newAttachments);
   }
@@ -412,7 +413,7 @@ watch(
   () => store.state.attachments,
   (attachments) => {
     setTimeout(() => {
-      attachments.forEach((attachment) => {
+      attachments.forEach((attachment: AttachmentWithMetaData) => {
         const element = getId("media-grid")?.querySelector(
           "#" + CSS.escape(attachment.attachment.fileId)
         );
@@ -420,10 +421,7 @@ watch(
           element.setAttribute("data-date", attachment.date);
           element.setAttribute("data-userid", attachment.userId);
           element.setAttribute("data-content", attachment.content);
-          element.setAttribute(
-            "data-messageid",
-            attachment.attachment.messageId
-          );
+          element.setAttribute("data-messageid", attachment.attachment.fileId);
         }
       });
     }, 0);

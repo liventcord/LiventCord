@@ -1,16 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Google.Apis.Auth;
+using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using LiventCord.Helpers;
-using Google.Apis.Auth;
-
-
 
 namespace LiventCord.Controllers
 {
@@ -43,12 +41,20 @@ namespace LiventCord.Controllers
         private readonly FileController _fileController;
         private readonly RegisterController _registerController;
 
-        public AuthController(AppDbContext context, IConfiguration configuration, RegisterController registerController, FileController fileController)
+        public AuthController(
+            AppDbContext context,
+            IConfiguration configuration,
+            RegisterController registerController,
+            FileController fileController
+        )
         {
             _context = context;
             _passwordHasher = new PasswordHasher<User>();
             _jwtKey = configuration["AppSettings:JwtKey"] ?? Utils.DefaultJwtKey;
-            _accessTokenExpiryDays = configuration.GetValue<int>("AppSettings:JwtAccessTokenExpiryDays", 7);
+            _accessTokenExpiryDays = configuration.GetValue<int>(
+                "AppSettings:JwtAccessTokenExpiryDays",
+                7
+            );
             _registerController = registerController;
             _fileController = fileController;
             if (_accessTokenExpiryDays == 0)
@@ -57,21 +63,28 @@ namespace LiventCord.Controllers
             }
         }
 
-
         [HttpPost("change-password")]
         [Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest changePasswordRequest)
+        public async Task<IActionResult> ChangePassword(
+            [FromBody] ChangePasswordRequest changePasswordRequest
+        )
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var userId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.UserId.ToString() == userId);
+            var user = await _context.Users.SingleOrDefaultAsync(u =>
+                u.UserId.ToString() == userId
+            );
 
             if (user == null)
                 return NotFound(new { message = "User not found" });
 
-            var currentPasswordVerification = _passwordHasher.VerifyHashedPassword(user, user.Password, changePasswordRequest.CurrentPassword);
+            var currentPasswordVerification = _passwordHasher.VerifyHashedPassword(
+                user,
+                user.Password,
+                changePasswordRequest.CurrentPassword
+            );
             if (currentPasswordVerification != PasswordVerificationResult.Success)
             {
                 return BadRequest(new { message = "Current password is incorrect" });
@@ -79,10 +92,15 @@ namespace LiventCord.Controllers
 
             if (changePasswordRequest.NewPassword == changePasswordRequest.CurrentPassword)
             {
-                return BadRequest(new { message = "New password cannot be the same as the current password" });
+                return BadRequest(
+                    new { message = "New password cannot be the same as the current password" }
+                );
             }
 
-            var hashedNewPassword = _passwordHasher.HashPassword(user, changePasswordRequest.NewPassword);
+            var hashedNewPassword = _passwordHasher.HashPassword(
+                user,
+                changePasswordRequest.NewPassword
+            );
 
             user.Password = hashedNewPassword;
 
@@ -106,6 +124,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { token });
         }
+
         [HttpPost("google-login")]
         public async Task<IActionResult> GoogleLoginAuth([FromBody] GoogleLoginRequest request)
         {
@@ -116,7 +135,9 @@ namespace LiventCord.Controllers
 
             try
             {
-                var user = await _registerController.LoginOrRegisterGoogleUserAsync(request.IdToken);
+                var user = await _registerController.LoginOrRegisterGoogleUserAsync(
+                    request.IdToken
+                );
                 var token = GenerateJwtToken(user);
                 return Ok(new { token });
             }
@@ -129,6 +150,7 @@ namespace LiventCord.Controllers
                 return Unauthorized(new { errorCode = "GOOGLE_AUTH_FAILED" });
             }
         }
+
         [HttpPost("google-link")]
         public async Task<IActionResult> GoogleLink([FromBody] GoogleLinkRequest request)
         {
@@ -144,10 +166,13 @@ namespace LiventCord.Controllers
             if (user == null)
                 return Unauthorized();
 
-            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = [_registerController._googleClientId]
-            });
+            var payload = await GoogleJsonWebSignature.ValidateAsync(
+                request.IdToken,
+                new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = [_registerController._googleClientId],
+                }
+            );
 
             if (payload == null || !payload.EmailVerified)
                 return BadRequest(new { errorCode = "INVALID_GOOGLE_TOKEN" });
@@ -155,7 +180,9 @@ namespace LiventCord.Controllers
             if (!string.Equals(user.Email, payload.Email, StringComparison.OrdinalIgnoreCase))
                 return BadRequest(new { errorCode = "EMAIL_MISMATCH" });
 
-            var passwordValid = _passwordHasher.VerifyHashedPassword(user, user.Password, request.Password) == PasswordVerificationResult.Success;
+            var passwordValid =
+                _passwordHasher.VerifyHashedPassword(user, user.Password, request.Password)
+                == PasswordVerificationResult.Success;
             if (!passwordValid)
                 return BadRequest(new { errorCode = "INVALID_PASSWORD" });
 
@@ -168,12 +195,13 @@ namespace LiventCord.Controllers
             return Ok();
         }
 
-
-
         private async Task<User?> AuthenticateUser(string email, string password)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
-            if (user == null) return null;
+            var user = await _context.Users.SingleOrDefaultAsync(u =>
+                u.Email.ToLower() == email.ToLower()
+            );
+            if (user == null)
+                return null;
 
             if (string.IsNullOrEmpty(user.Password))
                 return null;
@@ -181,7 +209,6 @@ namespace LiventCord.Controllers
             var result = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
             return result == PasswordVerificationResult.Success ? user : null;
         }
-
 
         private string GenerateJwtToken(User user)
         {
@@ -192,7 +219,7 @@ namespace LiventCord.Controllers
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim("purpose", _jwtAudience)
+                new Claim("purpose", _jwtAudience),
             };
 
             var expiryTime = DateTime.UtcNow.AddDays(_accessTokenExpiryDays);
@@ -203,7 +230,7 @@ namespace LiventCord.Controllers
                 Expires = expiryTime,
                 Issuer = _jwtIssuer,
                 Audience = _jwtAudience,
-                SigningCredentials = credentials
+                SigningCredentials = credentials,
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -233,7 +260,6 @@ namespace LiventCord.Controllers
                 return Unauthorized(new { message = "User not authenticated" });
             }
 
-
             var user = _context.Users.FirstOrDefault(u => u.UserId == userId);
             if (user == null)
             {
@@ -243,14 +269,15 @@ namespace LiventCord.Controllers
             var wsToken = GenerateJwtToken(user);
             return Ok(new { token = wsToken });
         }
-
     }
 }
+
 public class AuthConflictException : Exception
 {
     public string Code { get; }
 
-    public AuthConflictException(string code) : base(code)
+    public AuthConflictException(string code)
+        : base(code)
     {
         Code = code;
     }

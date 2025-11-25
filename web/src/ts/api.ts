@@ -406,6 +406,9 @@ class ApiClient {
     }
     return method;
   }
+  getGitUrl() {
+    return "https://media.githubusercontent.com/media/liventcord/LiventCord/refs/heads/main";
+  }
   getBackendHostname(): string | null {
     const url = this.getBackendUrl();
     if (!url) {

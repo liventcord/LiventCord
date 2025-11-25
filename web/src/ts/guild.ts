@@ -33,10 +33,16 @@ import {
   setCurrentVoiceChannelGuild,
   setCurrentVoiceChannelId
 } from "./channels.ts";
-import { currentUserId, UserInfo, userManager } from "./user.ts";
+import {
+  currentUserId,
+  DEFAULT_DISCRIMINATOR,
+  UserInfo,
+  userManager
+} from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
 import { GuildMemberAddedMessage, rtcWsClient } from "./socketEvents.ts";
+import { showCallContainer } from "./chatroom.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
@@ -171,6 +177,11 @@ export function joinVoiceChannel(channelId: string, guildId: string) {
   if (currentVoiceChannelId === channelId) {
     return;
   }
+  if (rtcWsClient.isOnRoom(guildId)) {
+    showCallContainer();
+    return;
+  }
+
   rtcWsClient.joinRoom(currentGuildId, channelId);
   setCurrentVoiceChannelGuild(guildId);
   setCurrentVoiceChannelId(channelId);
@@ -201,7 +212,7 @@ export function fetchMembers() {
     const userInfoList: UserInfo[] = members.map((member) => ({
       userId: member.userId,
       nickName: member.nickName,
-      discriminator: "0000"
+      discriminator: DEFAULT_DISCRIMINATOR
     }));
 
     updateMemberList(userInfoList);

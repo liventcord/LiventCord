@@ -1,213 +1,359 @@
-import { initialState } from "./app";
+import store from "../store";
+import { getProfileUrl } from "./avatar";
+import {
+  currentVoiceChannelId,
+  setCurrentVoiceChannelGuild,
+  setCurrentVoiceChannelId
+} from "./channels";
 import { joinVoiceChannel } from "./guild";
 import { setRtcStatus } from "./rtc";
-import { setRTCWsClient, RTCWebSocketClient } from "./socketEvents";
+import {
+  useAutoGain,
+  useEchoCancellation,
+  useNoiseSuppression
+} from "./settings";
+import { RTCWebSocketClient, rtcWsClient } from "./socketEvents";
 import { alertUser } from "./ui";
-import { disableElement, enableElement, getId } from "./utils";
+import { currentUserId, userManager } from "./user";
+import { createEl, disableElement, enableElement, getId } from "./utils";
 import { checkVideoLayout, initialiseSelfVideo } from "./videoManager";
 
-export let currentVoiceUserId: string | null = null;
 export const peerList: Record<string, RTCPeerConnection | undefined> = {};
-export let rtcWS: RTCWebSocketClient | null = null;
-export let myRoomID = "1";
+export const rtcWS: RTCWebSocketClient | null = null;
+export const myRoomID = "1";
+
 let localStream: MediaStream | null = null;
-
-const mediaConstraints: MediaStreamConstraints = {
-  audio: true,
-  video: true
-};
-
 let audioMuted = false;
-let videoMuted = false;
-
+let videoMuted = true;
 let myVideo = getId("local_vid") as HTMLVideoElement | null;
+const callContainer = getId("call-container");
+
+let isClicked = false;
+
+myVideo?.addEventListener("click", () => {
+  if (isClicked) {
+    showCallContainer();
+    isClicked = false;
+    return;
+  }
+  isClicked = true;
+});
+
+export function currentVoiceUserId() {
+  return currentUserId;
+}
 
 export async function initializeVideoComponent() {
   initialiseSelfVideo();
 }
-export async function enterVoiceChannel(
-  newVoiceChannelGuildId: string,
-  newVoiceChannelId: string
-) {
-  const muteButton = getId("microphone-button");
-  const toggleCamera = getId("camera-sound-panel");
-  const closeCallButton = getId("close-call-button");
-  joinVoiceChannel(newVoiceChannelId, newVoiceChannelGuildId);
 
+export async function enterVoiceChannel(guildId: string, channelId: string) {
+  if (currentVoiceChannelId === channelId) {
+    console.warn("Already in this voice channel");
+    showCallContainer();
+    return;
+  }
+
+  joinVoiceChannel(channelId, guildId);
+  showLocalVid();
   toggleSoundPanel(true);
-  setAudioMuteState(audioMuted);
+  attachButtonHandlers();
+
+  setRtcStatus(false, true);
+
+  await startCamera();
+}
+
+function attachButtonHandlers() {
+  const muteButton = getId("microphone-button");
+  const cameraButton = getId("camera-sound-panel");
+  const closeCallButton = getId("close-call-button");
 
   if (muteButton) {
-    toggleIconClass(muteButton, audioMuted);
     muteButton.addEventListener("click", () => {
       audioMuted = !audioMuted;
       setAudioMuteState(audioMuted);
       toggleIconClass(muteButton, audioMuted);
     });
+    toggleIconClass(muteButton, audioMuted);
   }
 
-  if (toggleCamera) {
-    toggleCamera.addEventListener("click", async () => {
+  if (cameraButton) {
+    cameraButton.addEventListener("click", async () => {
       videoMuted = !videoMuted;
-      toggleCameraUI(videoMuted);
-      if (videoMuted) {
-        stopCamera();
-      } else {
-        await startCamera();
-      }
+      setVideoMuteState(videoMuted);
+      if (videoMuted) stopCamera();
+      else await startCamera();
       toggleCameraUI(videoMuted);
     });
   }
 
-  if (closeCallButton) {
-    closeCallButton.addEventListener("click", closeCall);
-  }
-
-  setRTCWsClient(initialState.rtcWsUrl);
-  setRtcStatus(false, true);
-
-  await startCamera();
-}
-function toggleSoundPanel(val: boolean) {
-  if (val) {
-    enableElement("sound-panel");
-  } else {
-    disableElement("sound-panel");
-  }
-}
-function closeCall() {
-  stopCamera();
-  toggleSoundPanel(false);
+  if (closeCallButton) closeCallButton.addEventListener("click", closeCall);
 }
 
+function applyAudioConstraint(
+  constraint: keyof MediaTrackSettings,
+  value: boolean
+) {
+  if (!localStream) return;
+
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (!audioTrack) return;
+
+  const capabilities = audioTrack.getCapabilities() as Record<string, boolean>;
+  if (capabilities[constraint] === undefined) return;
+
+  const settings: Record<string, boolean> = { [constraint]: value };
+  audioTrack.applyConstraints(settings).catch((err) => {
+    console.error(`Failed to update ${constraint}:`, err);
+  });
+}
+
+export function updateNoiseSuppression(value: boolean) {
+  applyAudioConstraint("noiseSuppression", value);
+}
+
+export function updateEchoCancellation(value: boolean) {
+  applyAudioConstraint("echoCancellation", value);
+}
+
+export function updateAutoGain(value: boolean) {
+  applyAudioConstraint("autoGainControl", value);
+}
+
+export function getUserMedia() {
+  const constraints: MediaStreamConstraints = {
+    audio: {
+      echoCancellation: useEchoCancellation(),
+      noiseSuppression: useNoiseSuppression(),
+      autoGainControl: useAutoGain(),
+      deviceId: undefined,
+      channelCount: 1
+    },
+    video: !videoMuted ? true : false
+  };
+
+  return navigator.mediaDevices.getUserMedia(constraints);
+}
+let isFirstTime = true;
 export async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    localStream = stream;
+    console.log("Start camera");
 
-    if (myVideo) {
-      myVideo.srcObject = stream;
-      myVideo.onloadedmetadata = () => myVideo?.play().catch(console.error);
+    const newStream = await getUserMedia();
+    const oldStream = localStream;
+    localStream = newStream;
+
+    updateLocalVideoElement(localStream);
+    showLocalVid();
+    oldStream
+      ? replaceTracksOnPeers(oldStream, newStream)
+      : addTracksToPeers(newStream);
+    if (oldStream) stopStream(oldStream);
+
+    if (isFirstTime) {
+      hideLocalVid();
     }
+    isFirstTime = false;
 
     setAudioMuteState(audioMuted);
     setVideoMuteState(videoMuted);
   } catch (err: any) {
-    if (err.name === "NotAllowedError") {
-      alertUser("Permission denied by the user.");
-    } else if (err.name === "NotFoundError") {
-      alertUser("No media devices found.");
-    } else {
-      alertUser("Error accessing camera: " + err);
-    }
-    console.error("Error accessing camera:", err);
+    handleMediaError(err);
   }
 }
 
 export function stopCamera() {
-  if (localStream) {
-    localStream.getTracks().forEach((track) => track.stop());
-    localStream = null;
-  }
+  if (localStream) stopStream(localStream);
+  localStream = null;
   if (myVideo) myVideo.srcObject = null;
+  hideLocalVid();
+}
+
+export function setAudioMuteState(flag: boolean) {
+  localStream?.getAudioTracks().forEach((t) => (t.enabled = !flag));
+}
+
+export function setVideoMuteState(flag: boolean) {
+  localStream?.getVideoTracks().forEach((t) => (t.enabled = !flag));
 }
 
 export function isCameraActive(): boolean {
-  return (
-    localStream !== null &&
-    localStream.getTracks().some((track) => track.readyState === "live")
-  );
+  return localStream?.getTracks().some((t) => t.readyState === "live") ?? false;
 }
 
-export function closeConnection(peer_id: string) {
-  const pc = peerList[peer_id];
-  if (pc) {
-    pc.close();
-    pc.onicecandidate = null;
-    pc.ontrack = null;
-    pc.onnegotiationneeded = null;
-    delete peerList[peer_id];
-  } else {
-    console.warn(`Peer connection for peer_id ${peer_id} does not exist.`);
-  }
+export function closeCall() {
+  stopCamera();
+  toggleSoundPanel(false);
+  hideCallContainer();
+  hideLocalVid();
+  rtcWsClient.exitRoom();
+  setCurrentVoiceChannelId("");
+  setCurrentVoiceChannelGuild("");
+  store.dispatch("clearSelectedVoiceChannel");
 }
-function toggleCameraUI(bool: boolean) {
-  const closedVideoSvg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" width="24" height="24" style="width: 100%; height: 100%; transform: translate3d(0px, 0px, 0px); content-visibility: visible;" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="__lottie_element_330"><rect width="24" height="24" x="0" y="0"></rect></clipPath><clipPath id="__lottie_element_332"><path d="M0,0 L600,0 L600,600 L0,600z"></path></clipPath><clipPath id="__lottie_element_336"><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath id="__lottie_element_343"><path d="M0,0 L1000,0 L1000,1000 L0,1000z"></path></clipPath><clipPath id="__lottie_element_353"><path d="M0,0 L600,0 L600,600 L0,600z"></path></clipPath><mask id="__lottie_element_354"><rect fill="#ffffff" width="600" height="600" transform="matrix(1,0,0,1,0,0)"></rect><path fill="#000000" clip-rule="nonzero" d=" M481.2200012207031,12.795999526977539 C481.2200012207031,12.795999526977539 15.696999549865723,481.75 15.696999549865723,481.75 C15.696999549865723,481.75 -48.2400016784668,549.2319946289062 1.1369999647140503,598.8619995117188 C55,653 119.68000030517578,585.0560302734375 119.68000030517578,585.0560302734375 C119.68000030517578,585.0560302734375 585.2030029296875,116.10199737548828 585.2030029296875,116.10199737548828 C585.2030029296875,116.10199737548828 668,34 616.2150268554688,-15.553999900817871 C564.781005859375,-64.77200317382812 481.2200012207031,12.795999526977539 481.2200012207031,12.795999526977539" fill-opacity="1"></path></mask><clipPath id="__lottie_element_361"><path d="M0,0 L600,0 L600,600 L0,600z"></path></clipPath><mask id="__lottie_element_362"><rect fill="#ffffff" width="600" height="600" transform="matrix(1,0,0,1,0,0)"></rect><path fill="#000000" clip-rule="nonzero" d=" M-132.55599975585938,623.5819702148438 C-132.55599975585938,623.5819702148438 -326.1109924316406,817.5659790039062 -326.1109924316406,817.5659790039062 C-326.1109924316406,817.5659790039062 -276.4460144042969,866.9080200195312 -276.4460144042969,866.9080200195312 C-276.4460144042969,866.9080200195312 -222.1280059814453,920.8720092773438 -222.1280059814453,920.8720092773438 C-222.1280059814453,920.8720092773438 -28.572999954223633,726.8880004882812 -28.572999954223633,726.8880004882812 C-28.572999954223633,726.8880004882812 39.9010009765625,660.1279907226562 -12.895000457763672,609.9000244140625 C-69.7760009765625,555.7860107421875 -132.55599975585938,623.5819702148438 -132.55599975585938,623.5819702148438" fill-opacity="1"></path></mask></defs><g clip-path="url(#__lottie_element_330)"><g clip-path="url(#__lottie_element_332)" style="display: block;" transform="matrix(0.03999999910593033,0,0,0.03999999910593033,0,0)" opacity="1"><g clip-path="url(#__lottie_element_361)" style="display: none;" transform="matrix(1,0,0,1,0,0)" opacity="1"><g mask="url(#__lottie_element_362)"><g style="display: block;" transform="matrix(25,0,0,25,0,0)" opacity="1"><g opacity="1" transform="matrix(1,0,0,1,9.5,12)"><path fill="rgb(88,101,242)" fill-opacity="1" d=" M-5.5,-8 C-5.5,-8 -1.253999948501587,-8 -1.253999948501587,-8 C-1.253999948501587,-8 5.5,-8 5.5,-8 C7.1570000648498535,-8 8.5,-6.6570000648498535 8.5,-5 C8.5,-5 8.5,5 8.5,5 C8.5,6.6570000648498535 7.1570000648498535,8 5.5,8 C5.5,8 0.13199999928474426,8 0.13199999928474426,8 C0.13199999928474426,8 -5.5,8 -5.5,8 C-7.1570000648498535,8 -8.5,6.6570000648498535 -8.5,5 C-8.5,5 -8.5,-5 -8.5,-5 C-8.5,-6.6570000648498535 -7.1570000648498535,-8 -5.5,-8z"></path></g><g opacity="1" transform="matrix(1,0,0,1,20.5,12)"><path fill="rgb(88,101,242)" fill-opacity="1" d=" M-2.5,-2.881999969482422 C-2.5,-3.260999917984009 -2.2860000133514404,-3.6070001125335693 -1.9470000267028809,-3.7760000228881836 C-1.9470000267028809,-3.7760000228881836 1.0529999732971191,-5.276000022888184 1.0529999732971191,-5.276000022888184 C1.718000054359436,-5.609000205993652 2.5,-5.125 2.5,-4.381999969482422 C2.5,-4.381999969482422 2.5,4.381999969482422 2.5,4.381999969482422 C2.5,5.125 1.718000054359436,5.609000205993652 1.0529999732971191,5.276000022888184 C1.0529999732971191,5.276000022888184 -1.9470000267028809,3.7760000228881836 -1.9470000267028809,3.7760000228881836 C-2.2860000133514404,3.6070001125335693 -2.5,3.260999917984009 -2.5,2.881999969482422 C-2.5,2.881999969482422 -4.019999980926514,0 -4.019999980926514,0 C-4.019999980926514,0 -2.5,-2.881999969482422 -2.5,-2.881999969482422z"></path></g></g></g></g><g clip-path="url(#__lottie_element_353)" style="display: block;" transform="matrix(1,0,0,1,0,0)" opacity="1"><g mask="url(#__lottie_element_354)"><g style="display: block;" transform="matrix(25,0,0,25,0,0)" opacity="1"><g opacity="1" transform="matrix(1,0,0,1,9.5,12)"><path fill="rgb(88,101,242)" fill-opacity="1" d=" M-5.5,-8 C-5.5,-8 -1.253999948501587,-8 -1.253999948501587,-8 C-1.253999948501587,-8 5.5,-8 5.5,-8 C7.1570000648498535,-8 8.5,-6.6570000648498535 8.5,-5 C8.5,-5 8.5,5 8.5,5 C8.5,6.6570000648498535 7.1570000648498535,8 5.5,8 C5.5,8 0.13199999928474426,8 0.13199999928474426,8 C0.13199999928474426,8 -5.5,8 -5.5,8 C-7.1570000648498535,8 -8.5,6.6570000648498535 -8.5,5 C-8.5,5 -8.5,-5 -8.5,-5 C-8.5,-6.6570000648498535 -7.1570000648498535,-8 -5.5,-8z"></path></g><g opacity="1" transform="matrix(1,0,0,1,20.5,12)"><path fill="rgb(88,101,242)" fill-opacity="1" d=" M-2.5,-2.881999969482422 C-2.5,-3.260999917984009 -2.2860000133514404,-3.6070001125335693 -1.9470000267028809,-3.7760000228881836 C-1.9470000267028809,-3.7760000228881836 1.0529999732971191,-5.276000022888184 1.0529999732971191,-5.276000022888184 C1.718000054359436,-5.609000205993652 2.5,-5.125 2.5,-4.381999969482422 C2.5,-4.381999969482422 2.5,4.381999969482422 2.5,4.381999969482422 C2.5,5.125 1.718000054359436,5.609000205993652 1.0529999732971191,5.276000022888184 C1.0529999732971191,5.276000022888184 -1.9470000267028809,3.7760000228881836 -1.9470000267028809,3.7760000228881836 C-2.2860000133514404,3.6070001125335693 -2.5,3.260999917984009 -2.5,2.881999969482422 C-2.5,2.881999969482422 -3.1675777435302734,-0.012422150000929832 -3.1675777435302734,-0.012422150000929832 C-3.1675777435302734,-0.012422150000929832 -2.5,-2.881999969482422 -2.5,-2.881999969482422z"></path></g></g></g></g><g clip-path="url(#__lottie_element_343)" style="display: none;" transform="matrix(1,0,0,1,-200,-200)" opacity="1"><g style="display: none;" transform="matrix(25,0,0,25,200,200)" opacity="1"><g opacity="1" transform="matrix(1,0,0,1,12,12)"><path stroke-linecap="round" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4" stroke="rgb(88,101,242)" stroke-opacity="1" stroke-width="2" d=" M-10,10 C-10,10 10,-10 10,-10"></path></g></g><g style="display: none;"><g><path stroke-linecap="round" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4"></path></g></g></g><g clip-path="url(#__lottie_element_336)" style="display: block;" transform="matrix(1,0,0,1,-200,-200)" opacity="1"><g style="display: block;" transform="matrix(25,0,0,25,200,200)" opacity="1"><g opacity="1" transform="matrix(1,0,0,1,12,12)"><path stroke-linecap="round" stroke-linejoin="miter" fill-opacity="0" stroke-miterlimit="4" stroke="rgb(88,101,242)" stroke-opacity="1" stroke-width="2" d=" M-10,10 C-10,10 10,-10 10,-10"></path></g></g></g></g></g></svg>`;
-  if (bool) {
-    const panelbtn = getId("sound-panel-button");
-    if (panelbtn) panelbtn.innerHTML = closedVideoSvg;
-  }
+
+function updateLocalVideoElement(stream: MediaStream) {
+  if (!myVideo) myVideo = getId("local_vid") as HTMLVideoElement | null;
+  if (!myVideo) return;
+  myVideo.srcObject = stream;
+  myVideo.muted = true;
+  myVideo.autoplay = true;
+  myVideo.playsInline = true;
+  myVideo.onloadedmetadata = () => myVideo!.play().catch(() => {});
 }
+
+function replaceTracksOnPeers(oldStream: MediaStream, newStream: MediaStream) {
+  const newVideo = newStream.getVideoTracks()[0] || null;
+  const newAudio = newStream.getAudioTracks()[0] || null;
+  Object.values(peerList).forEach((pc) => {
+    if (!pc) return;
+    pc.getSenders().forEach((sender) => {
+      if (sender.track?.kind === "video" && newVideo)
+        sender.replaceTrack(newVideo).catch(console.error);
+      if (sender.track?.kind === "audio" && newAudio)
+        sender.replaceTrack(newAudio).catch(console.error);
+    });
+  });
+}
+
+function addTracksToPeers(stream: MediaStream) {
+  Object.values(peerList).forEach((pc) => {
+    if (!pc) return;
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+  });
+}
+
+function stopStream(stream: MediaStream) {
+  stream.getTracks().forEach((t) => t.stop());
+}
+
+function handleMediaError(err: any) {
+  const msg =
+    err.name === "NotAllowedError"
+      ? "Permission denied by the user."
+      : err.name === "NotFoundError"
+        ? "No media devices found."
+        : "Error accessing camera: " + err;
+  alertUser(msg);
+  console.error("Error accessing camera:", err);
+}
+
+function toggleSoundPanel(show: boolean) {
+  const action = show ? enableElement : disableElement;
+  action("sound-panel");
+}
+
+function toggleCameraUI(active: boolean) {
+  const panelBtn = getId("sound-panel-button");
+  if (panelBtn && active) panelBtn.innerHTML = "";
+}
+
 function toggleIconClass(button: HTMLElement, isMuted: boolean) {
   const icon = button.querySelector(".icon") as HTMLElement | null;
   if (!icon) return;
-  if (isMuted) {
-    icon.classList.remove("fa-microphone");
-    icon.classList.add("fa-microphone-slash", "icon-off");
-  } else {
-    icon.classList.remove("fa-microphone-slash", "icon-off");
-    icon.classList.add("fa-microphone");
-  }
+  icon.classList.toggle("fa-microphone", !isMuted);
+  icon.classList.toggle("fa-microphone-slash", isMuted);
+  icon.classList.toggle("icon-off", isMuted);
 }
 
-function makeVideoElementCustom(
-  element_id: string,
-  display_name: string
-): HTMLVideoElement {
-  const vid = document.createElement("video");
-  vid.id = "vid_" + element_id;
-  vid.style.zIndex = "10";
-  vid.autoplay = true;
-  return vid;
+export function makeVideoElementCustom(elementId: string, userId: string) {
+  const wrapper = createEl("div", { className: "video-wrapper" });
+  const vid = createEl("video", {
+    id: "vid_" + elementId,
+    autoplay: true,
+    playsInline: true,
+    width: "100%",
+    height: "100%",
+    style: "object-fit: cover; border-radius: 8px; background-color: #111;"
+  });
+  const placeholder = createEl("img", {
+    src: getProfileUrl(userId),
+    className: "video-placeholder"
+  });
+  const overlay = createEl("div", { className: "bottom-overlay" });
+  const micBtn = createEl("i", {
+    className: "fa-solid fa-microphone mic-button"
+  });
+  const nameOverlay = createEl("span", {
+    className: "name-overlay",
+    textContent: userManager.getUserNick(userId)
+  });
+
+  overlay.append(micBtn, nameOverlay);
+  wrapper.append(vid, placeholder, overlay);
+  return wrapper;
 }
 
-export function addVideoElement(element_id: string, display_name: string) {
-  console.log("Displaying video for: ", element_id, display_name);
-  if (element_id === currentVoiceUserId) {
-    console.warn(element_id, currentVoiceUserId);
-    return;
-  }
+export function addVideoElement(elementId: string, userId: string) {
+  if (elementId === currentVoiceUserId()) return;
   const grid = getId("video_grid");
-  if (grid) {
-    grid.appendChild(makeVideoElementCustom(element_id, display_name));
-  }
+  if (!grid) return;
+  grid.appendChild(makeVideoElementCustom(elementId, userId));
   checkVideoLayout();
+  return getVideoObj(elementId);
 }
 
-export function removeVideoElement(element_id: string) {
-  const v = getVideoObj(element_id) as HTMLVideoElement | null;
-  if (!v) return;
-
-  if (v.srcObject) {
-    (v.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
-  }
-  v.removeAttribute("srcObject");
-  v.removeAttribute("src");
-
-  const el = getId("vid_" + element_id);
-  if (el) el.remove();
+export function removeVideoElement(elementId: string) {
+  const videoEl = getVideoObj(elementId);
+  if (!videoEl) return;
+  if (videoEl.srcObject) stopStream(videoEl.srcObject as MediaStream);
+  videoEl.removeAttribute("srcObject");
+  videoEl.removeAttribute("src");
+  getId("vid_" + elementId)?.remove();
 }
 
-export function getVideoObj(element_id: string): HTMLVideoElement | null {
-  const el = getId("vid_" + element_id);
+export function getVideoObj(elementId: string) {
+  const el = getId("vid_" + elementId);
   return el instanceof HTMLVideoElement ? el : null;
 }
-
-function setAudioMuteState(flag: boolean) {
+export function resetMyVideoPos() {
   if (!myVideo) return;
-  const local_stream = myVideo.srcObject as MediaStream | null;
-  if (local_stream) {
-    local_stream.getAudioTracks().forEach((track) => {
-      track.enabled = !flag;
-    });
-  }
+  myVideo.style.top = "0";
+  myVideo.style.left = "0";
+}
+function moveLocalVidInsideContainer() {
+  if (!callContainer || !myVideo) return;
+  callContainer.appendChild(myVideo);
+  myVideo.classList.add("fullscreen-video");
+  resetMyVideoPos();
+  setTimeout(() => {
+    resetMyVideoPos();
+  }, 50);
 }
 
-function setVideoMuteState(flag: boolean) {
-  const local_stream = myVideo?.srcObject as MediaStream | null;
-  if (local_stream) {
-    local_stream.getVideoTracks().forEach((track) => {
-      track.enabled = !flag;
-    });
-  }
+function moveLocalVidOutsideContainer() {
+  if (!myVideo) return;
+  myVideo.classList.remove("fullscreen-video");
+  document.body.appendChild(myVideo);
+  myVideo.style.top = "";
+  myVideo.style.left = "";
+}
+
+export function showCallContainer() {
+  callContainer?.style.setProperty("display", "grid");
+  moveLocalVidInsideContainer();
+}
+
+export function hideCallContainer() {
+  callContainer?.style.setProperty("display", "none");
+  moveLocalVidOutsideContainer();
+}
+
+export function showLocalVid() {
+  if (myVideo) enableElement(myVideo);
+}
+
+export function hideLocalVid() {
+  if (myVideo) disableElement(myVideo);
+}
+
+export function closeConnection(peerId: string) {
+  const pc = peerList[peerId];
+  if (!pc) return console.warn(`Peer connection for ${peerId} does not exist.`);
+  pc.close();
+  pc.onicecandidate = null;
+  pc.ontrack = null;
+  pc.onnegotiationneeded = null;
+  delete peerList[peerId];
 }

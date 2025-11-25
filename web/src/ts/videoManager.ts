@@ -1,43 +1,21 @@
-import { getId } from "./utils";
+import { getId, isMobile } from "./utils";
 
-let myVideo: HTMLVideoElement | null = getId(
+const myVideo: HTMLVideoElement | null = getId(
   "local_vid"
 ) as HTMLVideoElement | null;
+
+export function isDraggable(): boolean {
+  const parent = myVideo?.parentElement as HTMLElement;
+  return parent === document.body;
+}
 
 interface SnapPoint {
   x: number;
   y: number;
 }
 
-function snapToNearestPoint() {
-  if (!myVideo) return;
-
-  const rect = myVideo.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-  const points = getSnapPoints();
-  let nearest: SnapPoint = points[0];
-  let minDist = Infinity;
-
-  points.forEach((p) => {
-    const dx = cx - (p.x + myVideo!.offsetWidth / 2);
-    const dy = cy - (p.y + myVideo!.offsetHeight / 2);
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < minDist) {
-      minDist = dist;
-      nearest = p;
-    }
-  });
-
-  myVideo.style.transition = "left 0.3s ease, top 0.3s ease";
-  myVideo.style.left = nearest.x + "px";
-  myVideo.style.top = nearest.y + "px";
-  setTimeout(() => (myVideo!.style.transition = ""), 300);
-}
-
 function getSnapPoints(): SnapPoint[] {
   if (!myVideo) return [];
-
   const sw = window.innerWidth;
   const sh = window.innerHeight;
   const offsetX = 80;
@@ -54,11 +32,34 @@ function getSnapPoints(): SnapPoint[] {
   ];
 }
 
+function snapToNearestPoint() {
+  if (!myVideo) return;
+  const rect = myVideo.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  let nearest: SnapPoint = getSnapPoints()[0];
+  let minDist = Infinity;
+
+  getSnapPoints().forEach((p) => {
+    const dx = cx - (p.x + myVideo!.offsetWidth / 2);
+    const dy = cy - (p.y + myVideo!.offsetHeight / 2);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < minDist) {
+      minDist = dist;
+      nearest = p;
+    }
+  });
+
+  myVideo.style.transition = "left 0.3s ease, top 0.3s ease";
+  myVideo.style.left = nearest.x + "px";
+  myVideo.style.top = nearest.y + "px";
+  setTimeout(() => (myVideo!.style.transition = ""), 300);
+}
+
 export function initialiseSelfVideo() {
   if (!myVideo) return;
-
   myVideo.style.position = "absolute";
-
   const sw = window.innerWidth;
   const sh = window.innerHeight;
 
@@ -67,180 +68,128 @@ export function initialiseSelfVideo() {
   if (!myVideo.style.top)
     myVideo.style.top = sh - myVideo.offsetHeight - 100 + "px";
 
-  if (getMobile()) {
-    handleMobileDragging();
-  } else {
-    handleDesktopDragging();
+  if (isMobile) setupMobileDragging();
+  else setupDesktopDragging();
+}
+
+function setupDesktopDragging() {
+  if (!myVideo) return;
+  let dragging = false;
+  let startX = 0,
+    startY = 0,
+    startLeft = 0,
+    startTop = 0;
+
+  myVideo.addEventListener("mousedown", (e: MouseEvent) => {
+    if (!isDraggable()) return;
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseInt(myVideo!.style.left, 10);
+    startTop = parseInt(myVideo!.style.top, 10);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  function onMove(e: MouseEvent) {
+    if (!dragging || !isDraggable()) return;
+    let x = startLeft + (e.clientX - startX);
+    let y = startTop + (e.clientY - startY);
+    x = Math.max(0, Math.min(x, window.innerWidth - myVideo!.offsetWidth));
+    y = Math.max(0, Math.min(y, window.innerHeight - myVideo!.offsetHeight));
+    myVideo!.style.left = x + "px";
+    myVideo!.style.top = y + "px";
   }
 
-  function handleDesktopDragging() {
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let startLeft = 0;
-    let startTop = 0;
-
-    myVideo!.addEventListener("mousedown", (e: MouseEvent) => {
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      startLeft = parseInt(myVideo!.style.left, 10);
-      startTop = parseInt(myVideo!.style.top, 10);
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
-
-    function onMove(e: MouseEvent) {
-      if (!dragging) return;
-      let x = startLeft + (e.clientX - startX);
-      let y = startTop + (e.clientY - startY);
-      const sw = window.innerWidth;
-      const sh = window.innerHeight;
-      const w = myVideo!.offsetWidth;
-      const h = myVideo!.offsetHeight;
-      x = Math.max(0, Math.min(x, sw - w));
-      y = Math.max(0, Math.min(y, sh - h));
-      myVideo!.style.left = x + "px";
-      myVideo!.style.top = y + "px";
-    }
-
-    function onUp() {
-      dragging = false;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      snapToNearestPoint();
-    }
-  }
-
-  function handleMobileDragging() {
-    let startX = 0;
-    let startY = 0;
-    let offsetX = 0;
-    let offsetY = 0;
-    let dragging = false;
-    let stabilizer: number = 0;
-
-    myVideo!.addEventListener("touchstart", (e: TouchEvent) => {
-      clearTimeout(stabilizer);
-      dragging = true;
-      offsetX = 0;
-      offsetY = 0;
-      startX = e.touches[0].clientX - offsetX;
-      startY = e.touches[0].clientY - offsetY;
-    });
-
-    myVideo!.addEventListener("touchmove", (e: TouchEvent) => {
-      if (!dragging) return;
-      e.preventDefault();
-      offsetX = e.touches[0].clientX - startX;
-      offsetY = e.touches[0].clientY - startY;
-      myVideo!.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
-    });
-
-    myVideo!.addEventListener("touchend", () => {
-      dragging = false;
-      clearTimeout(stabilizer);
-      snapToNearestPoint();
-    });
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    snapToNearestPoint();
   }
 }
 
-function getMobile(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
+function setupMobileDragging() {
+  if (!myVideo) return;
+  let startX = 0,
+    startY = 0,
+    offsetX = 0,
+    offsetY = 0;
+  let dragging = false;
+  const stabilizer: number = 0;
+
+  myVideo.addEventListener("touchstart", (e: TouchEvent) => {
+    if (!isDraggable()) return;
+    clearTimeout(stabilizer);
+    dragging = true;
+    offsetX = 0;
+    offsetY = 0;
+    startX = e.touches[0].clientX - offsetX;
+    startY = e.touches[0].clientY - offsetY;
+  });
+
+  myVideo.addEventListener("touchmove", (e: TouchEvent) => {
+    if (!dragging || !isDraggable()) return;
+    e.preventDefault();
+    offsetX = e.touches[0].clientX - startX;
+    offsetY = e.touches[0].clientY - startY;
+    myVideo!.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+  });
+
+  myVideo.addEventListener("touchend", () => {
+    if (!dragging) return;
+    dragging = false;
+    clearTimeout(stabilizer);
+    snapToNearestPoint();
+  });
+}
+
+function applyStyles(
+  video: HTMLVideoElement,
+  maxWidth: string,
+  maxHeight: string,
+  width: string = "100%",
+  height: string = "auto",
+  zIndex: string = "1"
+) {
+  Object.assign(video.style, { maxWidth, maxHeight, width, height, zIndex });
 }
 
 export function checkVideoLayout() {
   snapToNearestPoint();
-
   const grid = getId("video_grid");
   if (!grid) return;
-
   const videos = Array.from(
     grid.querySelectorAll("video")
   ) as HTMLVideoElement[];
   const count = videos.length;
 
-  Object.assign(grid.style, {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignItems: "center"
-  });
-
-  const setStyles = (
-    video: HTMLVideoElement,
-    {
-      flex,
-      maxWidth,
-      maxHeight,
-      width = "100%",
-      height = "auto",
-      zIndex = "1"
-    }: {
-      flex: string;
-      maxWidth: string;
-      maxHeight: string;
-      width?: string;
-      height?: string;
-      zIndex?: string;
-    }
-  ) => {
-    Object.assign(video.style, {
-      flex,
-      maxWidth,
-      maxHeight,
-      width,
-      height,
-      zIndex
-    });
-  };
-
-  if (count === 1) {
-    setStyles(videos[0], {
-      flex: "1 1 100%",
-      maxWidth: "100%",
-      maxHeight: "100%"
-    });
-  } else if (count === 2) {
-    videos.forEach((v) =>
-      setStyles(v, { flex: "1 1 50%", maxWidth: "50%", maxHeight: "100%" })
-    );
-  } else if (count === 3) {
-    setStyles(videos[0], {
-      flex: "1 1 100%",
-      maxWidth: "100%",
-      maxHeight: "50%"
-    });
-    videos
-      .slice(1)
-      .forEach((v) =>
-        setStyles(v, { flex: "1 1 50%", maxWidth: "50%", maxHeight: "50%" })
-      );
-  } else if (count === 4) {
-    videos.forEach((v) =>
-      setStyles(v, { flex: "1 1 50%", maxWidth: "50%", maxHeight: "50%" })
-    );
-  } else if (count > 4) {
+  if (count === 1) applyStyles(videos[0], "100%", "100%");
+  else if (count === 2) videos.forEach((v) => applyStyles(v, "50%", "100%"));
+  else if (count === 3) {
+    applyStyles(videos[0], "100%", "50%");
+    videos.slice(1).forEach((v) => applyStyles(v, "50%", "50%"));
+  } else if (count === 4) videos.forEach((v) => applyStyles(v, "50%", "50%"));
+  else if (count > 4) {
     const rows = Math.ceil(Math.sqrt(count));
     const cols = Math.ceil(count / rows);
     const videoHeight = 100 / rows;
     const videoWidth = 100 / cols;
     videos.forEach((v) =>
-      setStyles(v, {
-        flex: `1 1 ${videoWidth}%`,
-        maxWidth: `${videoWidth}%`,
-        maxHeight: `${videoHeight}vh`
-      })
+      applyStyles(
+        v,
+        `${videoWidth}%`,
+        `${videoHeight}vh`,
+        `${videoWidth}%`,
+        "auto"
+      )
     );
   }
 
   if (window.matchMedia("(max-width: 768px)").matches) {
     videos.forEach((v) => {
-      if (v.id !== "local_vid") {
-        setStyles(v, { flex: "1 1 100%", maxWidth: "100%", maxHeight: "auto" });
-      }
+      if (v.id !== "local_vid") applyStyles(v, "100%", "auto");
     });
   }
 }

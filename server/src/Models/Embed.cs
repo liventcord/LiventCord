@@ -17,8 +17,6 @@ public class Embed
     public EmbedFooter? Footer { get; set; }
 }
 
-
-
 public class EmbedThumbnail
 {
     public required string Url { get; set; }
@@ -43,27 +41,30 @@ public enum EmbedType
     Link,
     PollResult,
     Rich,
-    Video
+    Video,
 }
+
 public class EmbedFooter
 {
     public required string Text { get; set; }
     public string? IconUrl { get; set; }
 }
+
 public class EmbedAuthor
 {
     public required string Name { get; set; }
     public string? Url { get; set; }
     public string? IconUrl { get; set; }
 }
+
 public class EmbedVideo
 {
     public required string Url { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }
     public string? ProxyUrl { get; set; }
-
 }
+
 public class EmbedField
 {
     public required string Name { get; set; }

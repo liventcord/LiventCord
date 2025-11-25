@@ -37,7 +37,8 @@ public class AppStatsService : IAppStatsService
 
     private void Load()
     {
-        if (!File.Exists(_filePath)) return;
+        if (!File.Exists(_filePath))
+            return;
 
         try
         {
@@ -49,9 +50,7 @@ public class AppStatsService : IAppStatsService
                 _respondedRequestsSinceStartup = data.RespondedRequests;
             }
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     public void Save()
@@ -59,7 +58,7 @@ public class AppStatsService : IAppStatsService
         var data = new AppStatsData
         {
             ServedFiles = _servedFilesSinceStartup,
-            RespondedRequests = _respondedRequestsSinceStartup
+            RespondedRequests = _respondedRequestsSinceStartup,
         };
 
         var json = JsonSerializer.Serialize(data);

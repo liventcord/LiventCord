@@ -87,6 +87,12 @@
     "LogOut": "Log Out",
     "WinterMode": "Winter Mode",
     "EnableSnowEffect": "Enable snow effect.",
+    "NoiseToggle": "Noise Suppression",
+    "NoiseToggleDescription": "Toggle microphone noise suppression on or off",
+    "EchoToggle": "Echo Cancellation",
+    "EchoDescription": "Toggle microphone echo cancellation on or off",
+    "AutoGainToggle": "Auto Gain Control",
+    "AutoGainDescription": "Toggle automatic microphone gain adjustment",
     "PartyMode": "Party Mode",
     "EnablePartyMode": "Enable party mode.",
     "SlideMode": "Slide Mode",
@@ -310,6 +316,7 @@
     "more": "More",
     "create-guild-button": "Add a server",
     "main-logo": "Direct Messages",
-    "profile-add-friend-button-pending": "Pending Friend request"
+    "profile-add-friend-button-pending": "Pending Friend request",
+    "crown-symbol": "Owner"
   }
 }

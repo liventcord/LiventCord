@@ -101,6 +101,12 @@
     "WinterMode": "Kış Modu",
     "EnableSnowEffect": "Kar yağışını aktifleştir.",
     "PartyMode": "Parti Modu",
+    "NoiseToggle": "Gürültü Engelleme",
+    "NoiseToggleDescription": "Mikrofon gürültü engellemesini açıp kapatın",
+    "EchoToggle": "Echo İptali",
+    "EchoDescription": "Mikrofon eko iptalini açıp kapatın",
+    "AutoGainToggle": "Otomatik Ses Kazancı",
+    "AutoGainDescription": "Mikrofon kazancını otomatik olarak ayarlamayı açıp kapatın",
     "EnablePartyMode": "Parti modunu aktifleştir.",
     "SlideMode": "Kayma Modu",
     "VideoMode": "Video arkaplanı",
@@ -323,6 +329,7 @@
     "more": "Daha fazla",
     "create-guild-button": "Bir sunucu ekle",
     "main-logo": "Direkt Mesajlar",
-    "profile-add-friend-button-pending": "Giden Arkadaş İsteği"
+    "profile-add-friend-button-pending": "Giden Arkadaş İsteği",
+    "crown-symbol": "Sahip"
   }
 }

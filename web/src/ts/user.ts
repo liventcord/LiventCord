@@ -7,6 +7,8 @@ import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
 import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
 
+export const DEFAULT_DISCRIMINATOR = "0000";
+
 export interface PublicUser {
   userId?: string;
   nickName?: string;
@@ -20,6 +22,7 @@ export interface Member {
   userId: string;
   nickName: string;
   status: string;
+  discriminator: string;
 }
 
 export let currentUserId: string;
@@ -137,7 +140,7 @@ class UserManager {
     this.userNames[CLYDE_ID] = {
       userId: CLYDE_ID,
       nickName: "Clyde",
-      discriminator: "0000",
+      discriminator: DEFAULT_DISCRIMINATOR,
       isBlocked: false,
       status: "offline",
       description: ""
@@ -145,7 +148,7 @@ class UserManager {
     this.userNames[SYSTEM_ID] = {
       userId: SYSTEM_ID,
       nickName: "System",
-      discriminator: "0000",
+      discriminator: DEFAULT_DISCRIMINATOR,
       isBlocked: false,
       status: "offline",
       description: ""
@@ -167,6 +170,15 @@ class UserManager {
   getUserNick(userId: string): string {
     return this.userNames[userId]?.nickName ?? deletedUser;
   }
+  async fetchUserNickOnce(userId: string): Promise<string> {
+    let nick = this.userNames[userId]?.nickName ?? deletedUser;
+    if (nick === deletedUser) {
+      await new Promise((r) => setTimeout(r, 100));
+      nick = this.userNames[userId]?.nickName ?? deletedUser;
+    }
+    return nick;
+  }
+
   getUserProfileVersion(userId: string): string {
     return userId === currentUserId
       ? initialState.user.profileVersion
@@ -298,16 +310,18 @@ class UserManager {
 
   async getStatusString(userId: string): Promise<string> {
     const currentStatus = this.userNames[userId]?.status;
-    if (currentStatus !== undefined) {
+    if (currentStatus !== undefined && currentStatus !== "") {
       return currentStatus;
     }
 
-    return Promise.race([
+    const status = await Promise.race([
       this.fetchImmediateStatus(userId).then((status) =>
-        status !== null ? status : null
+        status && status.trim() !== "" ? status : null
       ),
       this.pollStatusString(userId, 3000)
-    ]).then((status) => status ?? "offline");
+    ]);
+
+    return status && status.trim() !== "" ? status : "offline";
   }
 
   private pollStatusBoolean(userId: string, timeout: number): Promise<boolean> {

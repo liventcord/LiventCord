@@ -73,36 +73,47 @@ public static class ConfigHandler
 
         if (databaseType != "sqlite" && string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new ArgumentNullException("RemoteConnection", "The connection string is missing or empty.");
+            throw new ArgumentNullException(
+                "RemoteConnection",
+                "The connection string is missing or empty."
+            );
         }
 
-        Console.WriteLine($"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}");
+        Console.WriteLine(
+            $"Configured Database Type: {databaseType ?? "None (defaulting to SQLite)"}"
+        );
 
         if (databaseType != "sqlite" && connectionString != null && databaseType != null)
         {
             connectionString = EnsureConnectionPoolSettings(connectionString, databaseType);
         }
 
-
         switch (databaseType)
         {
             case "postgres":
             case "postgresql":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseNpgsql(connectionString, npgsqlOptions =>
-                    {
-                        npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-                    })
+                    options.UseNpgsql(
+                        connectionString,
+                        npgsqlOptions =>
+                        {
+                            npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                        }
+                    )
                 );
                 break;
 
             case "mysql":
             case "mariadb":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mySqlOptions =>
-                    {
-                        mySqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-                    })
+                    options.UseMySql(
+                        connectionString,
+                        ServerVersion.AutoDetect(connectionString),
+                        mySqlOptions =>
+                        {
+                            mySqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                        }
+                    )
                 );
                 break;
 
@@ -120,10 +131,13 @@ public static class ConfigHandler
 
             case "sqlserver":
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseSqlServer(connectionString, sqlOptions =>
-                    {
-                        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
-                    })
+                    options.UseSqlServer(
+                        connectionString,
+                        sqlOptions =>
+                        {
+                            sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                        }
+                    )
                 );
                 break;
 
@@ -201,5 +215,4 @@ public static class ConfigHandler
                 return connectionString;
         }
     }
-
 }

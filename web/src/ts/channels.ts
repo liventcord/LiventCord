@@ -27,8 +27,10 @@ import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
+import { hideCallContainer } from "./chatroom.ts";
+import { VoiceUser } from "./socketEvents.ts";
 
-export const currentChannels: Channel[] = [];
+const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
 const channelList = getId("channel-list") as HTMLElement;
 export let currentChannelName: string;
@@ -139,6 +141,7 @@ export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel.isTextChannel) {
     return;
   }
+  hideCallContainer();
   console.log("Changed channel: ", newChannel);
   if (isOnMePage || isOnDm) {
     return;
@@ -187,14 +190,8 @@ export async function changeChannel(newChannel?: ChannelData) {
     getHistoryFromOneChannel(guildCache.currentChannelId);
     closeReplyMenu();
   } else {
-    joinVoiceChannel(channelId);
+    joinVoiceChannel(channelId, guildCache.currentGuildId);
   }
-  console.log(currentChannels);
-  if (!currentChannels) {
-    return;
-  }
-
-  setCurrentChannel(channelId);
 }
 export function getChannelsUl() {
   const container = getId("channel-container");
@@ -202,39 +199,6 @@ export function getChannelsUl() {
   return container?.querySelector("#channelul") as HTMLElement;
 }
 //channels
-function setCurrentChannel(channelId: string) {
-  currentChannels.forEach((channel) => {
-    const channelButton = getChannelsUl().querySelector(
-      `li[id="${channel.channelId}"]`
-    ) as HTMLElement;
-
-    if (!channel.isTextChannel) {
-      //voice channel
-      const voiceUsersInChannel =
-        cacheInterface.getVoiceChannelMembers(channelId);
-      if (voiceUsersInChannel) {
-        let allUsersContainer = channelButton.querySelector(
-          ".channel-users-container"
-        ) as HTMLElement;
-        if (!allUsersContainer) {
-          allUsersContainer = createEl("div", {
-            className: "channel-users-container"
-          });
-        }
-        channelButton.style.width = "100%";
-        voiceUsersInChannel.forEach((userId: string, index: number) => {
-          drawVoiceChannelUser(
-            index,
-            userId,
-            channelId,
-            channelButton,
-            allUsersContainer
-          );
-        });
-      }
-    }
-  });
-}
 
 function handleKeydown(event: KeyboardEvent) {
   const ALPHA_KEYS_MAX = 9;
@@ -328,6 +292,7 @@ export class Channel implements ChannelData {
   channelId!: string;
   channelName!: string;
   isTextChannel!: boolean;
+  voiceUsers?: VoiceUser[];
   guildId!: string;
   lastReadDateTime!: Date | null;
   voiceMembers!: Member[];
@@ -440,69 +405,16 @@ function isValidChannelData(channel: ChannelData) {
   );
 }
 
-// voice
-function drawVoiceChannelUser(
-  index: number,
-  userId: string,
-  channelId: string,
-  channelButton: HTMLElement,
-  allUsersContainer: HTMLElement
-) {
-  const userName = userManager.getUserNick(userId);
-  const userContainer = createEl("li", {
-    className: "channel-button",
-    id: userId
-  });
-  userContainer.addEventListener("mouseover", function (event: Event) {
-    //mouseHoverChannelButton(userContainer, isTextChannel,channelId);
-  });
-  userContainer.addEventListener("mouseleave", function (event: Event) {
-    //mouseLeaveChannelButton(userContainer, isTextChannel,channelId);
-  });
-
-  createUserContext(userId);
-
-  userContainer.id = `user-${userId}`;
-  const userElement = createEl("img", {
-    style:
-      "width: 25px; height: 25px; border-radius: 50px; position:fixed; margin-right: 170px;"
-  });
-  setProfilePic(userElement, userId);
-  userContainer.appendChild(userElement);
-  userContainer.style.marginTop = index === 0 ? "30px" : "10px";
-  userContainer.style.marginLeft = "-220px";
-  userContainer.style.width = "90%";
-  userContainer.style.justifyContent = "center";
-  userContainer.style.alignItems = "center";
-
-  const contentWrapper = createEl("div", { className: "content-wrapper" });
-  const userSpan = createEl("span", {
-    className: "channelSpan",
-    textContent: userName,
-    style: "position: fixed;"
-  });
-  userSpan.style.color = "rgb(128, 132, 142)";
-  userSpan.style.border = "none";
-  userSpan.style.width = "auto";
-
-  const muteSpan = createEl("span", { innerHTML: muteHtml });
-  const inviteVoiceSpan = createEl("span", { innerHTML: inviteVoiceHtml });
-  contentWrapper.appendChild(muteSpan);
-  contentWrapper.appendChild(inviteVoiceSpan);
-  contentWrapper.style.marginRight = "-115px";
-  userContainer.appendChild(userSpan);
-  userContainer.appendChild(contentWrapper);
-  allUsersContainer.appendChild(userContainer);
-  channelButton.appendChild(allUsersContainer);
-}
+let lastChannelRight = 0;
+let lastUserListLeft = 0;
 
 export function setWidths(newWidth: number) {
+  if (document.hidden) return;
   const userInput = getId("user-input");
   const guildContainer = getId("guild-container");
+  const callContainer = getId("call-container");
 
-  if (channelList) {
-    channelList.style.width = `${newWidth}px`;
-  }
+  if (channelList) channelList.style.width = `${newWidth}px`;
 
   const callContainer = getId("call-container");
 
@@ -511,30 +423,41 @@ export function setWidths(newWidth: number) {
     const rightPadding = 20;
 
     const channelRect = channelList.getBoundingClientRect();
+    const userListRect = userList.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+
+    let channelRight = channelRect.right;
+    let userListLeft = userListRect.left;
+
+    if (channelRect.width === 0 || userListRect.width === 0) {
+      channelRight = lastChannelRight;
+      userListLeft = lastUserListLeft;
+    } else {
+      lastChannelRight = channelRight;
+      lastUserListLeft = userListLeft;
+    }
+
     const availableWidth = isUsersOpenGlobal
-      ? userList.getBoundingClientRect().left - channelRect.right
-      : window.innerWidth - channelRect.right;
+      ? userListLeft - channelRight
+      : windowWidth - channelRight;
 
     userInput.style.width = `${availableWidth - leftPadding - rightPadding}px`;
-    if (!isMobile)
-      userInput.style.left = `${channelRect.right + leftPadding}px`;
+    if (!isMobile) userInput.style.left = `${channelRight + leftPadding}px`;
 
     if (callContainer) {
       callContainer.style.right = "0px";
       callContainer.style.width = `${availableWidth + 240}px`;
     }
   }
+
   const infoContainer = getId("channel-info-container-for-friend");
-  if (infoContainer) {
+  if (infoContainer)
     infoContainer.style.paddingLeft = isMobile ? "40px" : `${newWidth + 15}px`;
-  }
-  if (guildContainer) {
-    guildContainer.style.width = `${newWidth + 167}px`;
-  }
+
+  if (guildContainer) guildContainer.style.width = `${newWidth + 167}px`;
+
   const soundPanel = getId("sound-panel");
-  if (soundPanel) {
-    soundPanel.style.width = `${newWidth + 165}px`;
-  }
+  if (soundPanel) soundPanel.style.width = `${newWidth + 165}px`;
 }
 
 export function updateChannelsWidth(e: MouseEvent) {

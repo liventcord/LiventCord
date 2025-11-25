@@ -10,9 +10,8 @@
     "lib": ["dom", "es2022"],
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "types": ["vite/client", "cypress"]
+    "resolveJsonModule": true
   },
-  "include": ["src/ts/**/*", "cypress/e2e/*.cy.ts"],
+  "include": ["src", "cypress/e2e/*.cy.ts", "vuex"],
   "exclude": ["node_modules"]
 }

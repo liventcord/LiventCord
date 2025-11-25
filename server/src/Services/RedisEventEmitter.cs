@@ -6,14 +6,23 @@ public class RedisEventEmitter
     private readonly IServiceProvider _serviceProvider;
     private readonly BaseRedisEmitter _redisEmitter;
 
-    public RedisEventEmitter(IBackgroundTaskService backgroundTaskService, IServiceProvider serviceProvider, BaseRedisEmitter redisEmitter)
+    public RedisEventEmitter(
+        IBackgroundTaskService backgroundTaskService,
+        IServiceProvider serviceProvider,
+        BaseRedisEmitter redisEmitter
+    )
     {
         _backgroundTaskService = backgroundTaskService;
         _serviceProvider = serviceProvider;
         _redisEmitter = redisEmitter;
     }
 
-    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string userIdToExclude = "")
+    public async Task EmitToGuild(
+        EventType eventType,
+        object payload,
+        string guildId,
+        string userIdToExclude = ""
+    )
     {
         using (var scope = _serviceProvider.CreateScope())
         {
@@ -26,6 +35,7 @@ public class RedisEventEmitter
             });
         }
     }
+
     public async Task EmitGuildMembersToRedis(string guildId)
     {
         using (var scope = _serviceProvider.CreateScope())
@@ -40,7 +50,12 @@ public class RedisEventEmitter
         }
     }
 
-    public async Task EmitToFriend(EventType eventType, object payload, string userId, string friendId)
+    public async Task EmitToFriend(
+        EventType eventType,
+        object payload,
+        string userId,
+        string friendId
+    )
     {
         using (var scope = _serviceProvider.CreateScope())
         {
@@ -54,6 +69,7 @@ public class RedisEventEmitter
             });
         }
     }
+
     public Task EmitToUser(EventType eventType, object payload, string friendId)
     {
         string[] userIds = { friendId };
@@ -65,7 +81,6 @@ public class RedisEventEmitter
 
         return Task.CompletedTask;
     }
-
 }
 
 public enum EventType
@@ -97,5 +112,5 @@ public enum EventType
     CHANGE_GUILD_NAME,
     UPDATE_CHANNEL_NAME,
     EDIT_MESSAGE_GUILD,
-    EDIT_MESSAGE_DM
+    EDIT_MESSAGE_DM,
 }

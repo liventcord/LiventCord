@@ -48,7 +48,6 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
 
 const DISCRIMINATOR_PARTS_LENGHT = 2;
 
-export const DEFAULT_DISCRIMINATOR = "0000";
 export const isMobile = getMobile();
 export const STATUS_200 = 200;
 export const blackImage =
@@ -196,7 +195,7 @@ export function getFormattedDate(input: string) {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (messageDate.toDateString() === today.toDateString()) {
-    return `ㅤ${translations.getTranslation(
+    return `${translations.getTranslation(
       "today"
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
@@ -205,7 +204,7 @@ export function getFormattedDate(input: string) {
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else if (messageDate.toDateString() === yesterday.toDateString()) {
-    return `ㅤ${translations.getTranslation(
+    return `${translations.getTranslation(
       "yesterday"
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
@@ -214,7 +213,7 @@ export function getFormattedDate(input: string) {
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     })}`;
   } else {
-    return `ㅤ${messageDate.toLocaleDateString(
+    return `${messageDate.toLocaleDateString(
       translations.getLocale()
     )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
       hour: "2-digit",
@@ -1238,7 +1237,7 @@ export function getAttachmentUrl(file: Attachment) {
 export function createBlackStream(fps = 1): MediaStream {
   const width = 640;
   const height = 480;
-  const canvas = createEl("canvas", { width: width, height: height });
+  const canvas = createEl("canvas", { width, height });
   const context = canvas.getContext("2d");
 
   function drawBlackFrame() {

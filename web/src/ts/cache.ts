@@ -299,33 +299,6 @@ class InviteIdsCache extends BaseCache {
   }
 }
 
-class VoiceChannelCache extends BaseCache {
-  channelId: string;
-
-  constructor(channelId: string) {
-    super();
-    this.channelId = channelId;
-  }
-
-  addUserToVoiceChannel(userId: string) {
-    const users = this.get(this.channelId) || [];
-    if (!users.includes(userId)) {
-      users.push(userId);
-      this.set(this.channelId, users);
-    }
-  }
-
-  removeUserFromVoiceChannel(userId: string) {
-    const users = this.get(this.channelId) || [];
-    const updatedUsers = users.filter((user: string) => user !== userId);
-    this.set(this.channelId, updatedUsers);
-  }
-
-  getUsersInVoiceChannel() {
-    return this.get(this.channelId) || [];
-  }
-}
-
 class SharedGuildsCache extends BaseCache {
   private readonly guildFriendIdsMap: Map<string, string[]> = new Map();
 
@@ -410,7 +383,6 @@ class CacheGuild {
   messages: MessagesCache;
   invites: InviteIdsCache;
   emojis: EmojisCache;
-  voiceChannels?: VoiceChannelCache;
   ownerId: string | null;
   guildVersion: string | null;
   rootChannel: string | null = null;
@@ -546,7 +518,7 @@ class GuildCache {
 
 class GuildCacheInterface {
   guildCache: GuildCache;
-  defaultGuild = "Default Guiild";
+  defaultGuild = "Default Guild";
 
   constructor() {
     this.guildCache = GuildCache.getInstance();
@@ -621,42 +593,6 @@ class GuildCacheInterface {
       this.guildCache.getGuild(guildId)?.invites.isInvitesEmpty(guildId) ||
       false
     );
-  }
-
-  // Voice
-  getVoiceChannelMembers(channelId: string): string[] | null {
-    if (!channelId) {
-      return null;
-    }
-    const guilds = Object.values(this.guildCache.guilds);
-
-    for (const guild of guilds) {
-      if (
-        guild.voiceChannels &&
-        guild.voiceChannels.channelId === channelId &&
-        guild.voiceChannels
-      ) {
-        return guild.voiceChannels.getUsersInVoiceChannel();
-      }
-    }
-    return null;
-  }
-
-  setVoiceChannelMembers(channelId: string, usersArray: string[]): void {
-    if (!channelId) {
-      return;
-    }
-    const guilds = Object.values(this.guildCache.guilds);
-
-    guilds.forEach((guild) => {
-      if (guild.voiceChannels && guild.voiceChannels.channelId === channelId) {
-        usersArray.forEach((userId) => {
-          if (guild.voiceChannels) {
-            guild.voiceChannels.addUserToVoiceChannel(userId);
-          }
-        });
-      }
-    });
   }
 
   // Member

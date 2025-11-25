@@ -10,7 +10,8 @@ import {
   ChannelData,
   editChannelName,
   handleNewChannel,
-  getChannelsUl
+  getChannelsUl,
+  currentVoiceChannelGuild
 } from "./channels.ts";
 import {
   getId,
@@ -42,23 +43,30 @@ import {
 } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { friendsCache, handleFriendEventResponse } from "./friends.ts";
-import { playAudio, clearVoiceChannel } from "./audio.ts";
+import {
+  playAudio,
+  clearVoiceChannel,
+  playAudioType,
+  AudioType
+} from "./audio.ts";
 import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
 import {
   peerList,
   addVideoElement,
   closeConnection,
-  removeVideoElement
+  removeVideoElement,
+  currentVoiceUserId
 } from "./chatroom.ts";
 import {
+  createPeerConnection,
   handleAnswerMsg,
   handleNewICECandidateMsg,
   handleOfferMsg,
-  setRtcStatus,
-  startWebRTC
+  setRtcStatus
 } from "./rtc.ts";
 import { alertUser } from "./ui.ts";
+import store from "../store.ts";
 
 const typingText = getId("typing-text") as HTMLElement;
 export const typingStatusMap = new Map<string, Set<string>>();
@@ -107,10 +115,18 @@ export abstract class WebSocketClientBase {
   protected pendingRequests: Array<() => void> = [];
   protected inProgressRequests: Set<string> = new Set();
 
-  constructor(url: string = "") {
-    this.socketUrl = url;
-    if (this.socketUrl) {
-      this.connectSocket();
+  constructor(baseUrl: string = "") {
+    if (baseUrl) {
+      this.setSocketUrl(baseUrl);
+    }
+  }
+
+  protected abstract getSocketPath(): string;
+
+  public async setSocketUrl(baseUrl: string) {
+    if (!this.socketUrl) {
+      this.socketUrl = baseUrl + this.getSocketPath();
+      await this.connectSocket();
     }
   }
 
@@ -125,13 +141,6 @@ export abstract class WebSocketClientBase {
       } catch (err) {
         console.error("WebSocket connection failed", err);
       }
-    }
-  }
-
-  public async setSocketUrl(url: string) {
-    if (!this.socketUrl) {
-      this.socketUrl = url;
-      await this.connectSocket();
     }
   }
 
@@ -179,7 +188,7 @@ export abstract class WebSocketClientBase {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = window.setInterval(() => {
       if (this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "ping" }));
+        this.socket.send(JSON.stringify({ event: "ping", data: {} }));
       }
     }, this.heartbeatInterval);
   }
@@ -211,18 +220,23 @@ export abstract class WebSocketClientBase {
     await this.connectSocket();
   }
 }
+export interface VoiceUser {
+  id: string;
+  isNoisy: boolean;
+  isMuted: boolean;
+  isDeafened: boolean;
+}
 interface UserListEvent {
-  list: string[];
+  list: VoiceUser[];
   rtcUserId: string;
 }
 
 interface UserConnectEvent {
   sid: string;
-  name: string;
 }
 
 interface UserDisconnectEvent {
-  sid: string;
+  userId: string;
 }
 
 export interface DataMessage {
@@ -234,12 +248,24 @@ interface Envelope<T = any> {
   data: T;
 }
 
+type ExistingUserList = {
+  Guilds: {
+    [guildId: string]: {
+      [channelId: string]: string[];
+    };
+  };
+  RtcUserId: string;
+};
+
 export class WebSocketClient extends WebSocketClientBase {
   private eventHandlers: Record<string, EventHandler[]> = {};
   private static instance: WebSocketClient | null = null;
 
   private constructor(url: string = "") {
     super(url);
+  }
+  protected getSocketPath() {
+    return "/ws";
   }
 
   protected handleEvent(message: any) {
@@ -332,6 +358,9 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   private constructor() {
     super();
   }
+  protected getSocketPath() {
+    return "/video-ws";
+  }
 
   public static getInstance(): RTCWebSocketClient {
     if (!RTCWebSocketClient.instance) {
@@ -340,9 +369,10 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     return RTCWebSocketClient.instance;
   }
 
-  public async setTokenAndUrl(serverUrl: string) {
+  public async setSocketVC(serverUrl: string) {
     if (!this.socketUrl) {
-      await this.setSocketUrl(`${serverUrl}/ws`);
+      console.log(serverUrl, this.socketUrl);
+      await this.setSocketUrl(`${serverUrl}/video-ws`);
     }
   }
 
@@ -353,12 +383,15 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   protected onClose(): void {
     setRtcStatus(false);
   }
+  public isOnRoom(channelId: string): boolean {
+    return this.currentRoomID === channelId;
+  }
 
   public joinRoom(guildId: string, channelId: string) {
     this.currentRoomID = channelId;
     this.sendRaw({
       event: "joinRoom",
-      data: { guildId: guildId, roomId: channelId }
+      data: { guildId, roomId: channelId }
     });
   }
   public exitRoom() {
@@ -368,13 +401,18 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       this.socket.readyState !== WebSocket.OPEN
     )
       return;
-
+    playAudioType(AudioType.ExitVC);
     this.sendRaw({
       event: "leaveRoom",
       data: { roomId: this.currentRoomID }
     });
 
     this.currentRoomID = "";
+    store.dispatch("removeVoiceUser", {
+      guildId: currentVoiceChannelGuild,
+      channelId: currentVoiceChannelId,
+      userId: currentUserId
+    });
   }
 
   public switchRoom(newRoomID: string) {
@@ -395,37 +433,90 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     this.currentRoomID = newRoomID;
     this.sendRaw({ event: "joinRoom", data: { roomId: newRoomID } });
   }
+  public toggleMute() {
+    this.sendRaw({ event: "toggleMute" });
+  }
+  public toggleDeafen() {
+    this.sendRaw({ event: "toggleDeafen" });
+  }
 
-  protected handleEvent(message: Envelope) {
+  protected async handleEvent(message: Envelope) {
     const { event, data } = message;
     console.log("Rtc ws event received: ", event);
+
+    const processUserList = (channelId: string, users: VoiceUser[]) => {
+      store.dispatch("updateVoiceUsers", { channelId, users });
+
+      for (const user of users) {
+        const peer_id = user.id;
+        if (peer_id === currentVoiceUserId()) continue;
+
+        if (!peerList[peer_id]) {
+          const isOnSameChannel = currentVoiceChannelId === channelId;
+          if (isOnSameChannel) {
+            addVideoElement(peer_id, peer_id);
+            createPeerConnection(peer_id);
+          }
+          store.dispatch("addVoiceUser", {
+            channelId,
+            userId: peer_id,
+            isNoisy: user.isNoisy,
+            isMuted: user.isMuted,
+            isDeafened: user.isDeafened
+          });
+        } else {
+          store.dispatch("updateVoiceUserStatus", {
+            userId: peer_id,
+            isNoisy: user.isNoisy,
+            isMuted: user.isMuted,
+            isDeafened: user.isDeafened
+          });
+        }
+      }
+    };
+
     switch (event) {
       case "userList": {
         const payload = data as UserListEvent;
+        processUserList(currentVoiceChannelId, payload.list);
+        break;
+      }
 
-        for (const peer_id of payload.list) {
-          peerList[peer_id] = undefined;
-          addVideoElement(peer_id, peer_id);
+      case "existingUserList": {
+        const payload = data as ExistingUserList;
+        if (!payload?.Guilds) return;
+
+        for (const guildId in payload.Guilds) {
+          const userIds = payload.Guilds[guildId];
+          if (!Array.isArray(userIds)) continue;
+          processUserList(guildId, userIds);
         }
-        startWebRTC();
         break;
       }
 
       case "userConnect": {
         const payload = data as UserConnectEvent;
         const peer_id: string = payload.sid;
-        const display_name: string = payload.name;
         peerList[peer_id] = undefined;
-        addVideoElement(peer_id, display_name);
+        addVideoElement(peer_id, userManager.getUserNick(peer_id));
+        store.dispatch("addVoiceUser", {
+          channelId: currentVoiceChannelId,
+          userId: peer_id
+        });
         break;
       }
 
       case "userDisconnect": {
         const payload = data as UserDisconnectEvent;
-        const left_peer_id: string = payload.sid;
+        const left_peer_id = payload.userId;
         closeConnection(left_peer_id);
         removeVideoElement(left_peer_id);
         delete peerList[left_peer_id];
+        store.dispatch("removeVoiceUser", {
+          guildId: currentVoiceChannelGuild,
+          channelId: currentVoiceChannelId,
+          userId: left_peer_id
+        });
         break;
       }
 
@@ -448,14 +539,29 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         break;
       }
       case "joined": {
-        const payload = data as { sid: string };
-        this.myId = payload.sid;
-        console.log("My ID is", this.myId);
+        playAudioType(AudioType.EnterVC);
+        setRtcStatus(true, false);
         break;
       }
 
       case "disconnect":
         console.log("Disconnected from server.", data);
+        playAudioType(AudioType.ExitVC);
+        break;
+      case "userStatusUpdate":
+        const status = data as {
+          id: string;
+          isNoisy: boolean;
+          isMuted: boolean;
+          isDeafened: boolean;
+        };
+        console.log("userStatusUpdate received:", status);
+        store.commit("updateVoiceUserStatusMutation", {
+          userId: status.id,
+          isNoisy: status.isNoisy,
+          isMuted: status.isMuted,
+          isDeafened: status.isDeafened
+        });
         break;
 
       default:
@@ -485,6 +591,7 @@ export const rtcWsClient = RTCWebSocketClient.getInstance();
 
 export async function setSocketClient(wsUrl: string) {
   await socketClient.setSocketUrl(wsUrl);
+  await rtcWsClient.setSocketUrl(wsUrl);
 }
 
 export async function setRTCWsClient(wsUrl: string) {
@@ -801,6 +908,7 @@ socketClient.on(
     const channelId = data.channelId;
     const guildId = data.guildId;
     const voiceUsers = data.usersList;
+    console.log(voiceUsers);
     if (!channelId) {
       console.error("Channel id is null on voice users response");
       return;
@@ -817,7 +925,6 @@ socketClient.on(
     if (isOnGuild) {
       setCurrentVoiceChannelGuild(guildId);
     }
-    cacheInterface.setVoiceChannelMembers(channelId, voiceUsers);
     const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
     soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
 

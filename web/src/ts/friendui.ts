@@ -5,13 +5,13 @@ import {
   getId,
   disableElementHTML,
   disableElement,
-  IMAGE_SRCS,
-  DEFAULT_DISCRIMINATOR
+  IMAGE_SRCS
 } from "./utils.ts";
 import {
   currentDiscriminator,
   currentUserId,
   currentUserNick,
+  DEFAULT_DISCRIMINATOR,
   deletedUser,
   UserInfo,
   userManager
@@ -193,7 +193,7 @@ class DmUser {
     profileImg.style.transition = "border-radius 0.5s ease-out";
     bubble.style.transition = "opacity 0.5s ease-in-out";
 
-    let hoverTimeout: number;
+    let hoverTimeout: ReturnType<typeof setTimeout>;
     profileImg.addEventListener("mouseover", () => {
       profileImg.style.borderRadius = "0px";
       clearTimeout(hoverTimeout);
@@ -381,7 +381,7 @@ export function getCurrentDmFriends(): UserInfo[] {
   ];
 }
 
-let notifyTimeout: number;
+let notifyTimeout: ReturnType<typeof setTimeout> | null;
 const NOTIFY_LENGTH = 10000;
 export function printFriendMessage(content: string) {
   const messagetext = createEl("div");
@@ -398,7 +398,7 @@ export function printFriendMessage(content: string) {
 
   notifyTimeout = setTimeout(() => {
     messagetext.remove();
-    notifyTimeout = 0;
+    notifyTimeout = null;
   }, NOTIFY_LENGTH);
 }
 

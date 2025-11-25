@@ -16,7 +16,11 @@ namespace LiventCord.Controllers
         private readonly AppLogicService _appLogicService;
         private readonly FriendDmService _friendDmService;
 
-        public DmController(AppDbContext dbContext, AppLogicService appLogicService, FriendDmService friendDmService)
+        public DmController(
+            AppDbContext dbContext,
+            AppLogicService appLogicService,
+            FriendDmService friendDmService
+        )
         {
             _dbContext = dbContext;
             _appLogicService = appLogicService;
@@ -35,15 +39,17 @@ namespace LiventCord.Controllers
         }
 
         [HttpPost("{friendId}")]
-        public async Task<IActionResult> AddDmEndpoint([FromRoute][UserIdLengthValidation] string friendId)
+        public async Task<IActionResult> AddDmEndpoint(
+            [FromRoute][UserIdLengthValidation] string friendId
+        )
         {
             var result = await _friendDmService.AddDmBetweenUsers(UserId!, friendId);
             var result2 = await _friendDmService.AddDmBetweenUsers(friendId!, UserId!);
             var friend = await _friendDmService.GetUserDetails(friendId);
-            return result || result2 ? Ok(friend) : Conflict("Direct message relationship already exists.");
+            return result || result2
+                ? Ok(friend)
+                : Conflict("Direct message relationship already exists.");
         }
-
-
 
         [HttpDelete("{friendId}")]
         public async Task<IActionResult> RemoveDmEndpoint(
@@ -53,8 +59,9 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(UserId))
                 return Unauthorized("User ID is missing.");
 
-            var dmToRemove = await _dbContext.UserDms
-                .FirstOrDefaultAsync(d => d.UserId == UserId && d.FriendId == friendId);
+            var dmToRemove = await _dbContext.UserDms.FirstOrDefaultAsync(d =>
+                d.UserId == UserId && d.FriendId == friendId
+            );
 
             if (dmToRemove == null)
                 return NotFound("Direct message relationship not found.");

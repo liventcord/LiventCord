@@ -13,7 +13,8 @@ public class FriendDmService
 
     public async Task<bool> AddDmBetweenUsers(string userId, string friendId)
     {
-        if (userId == friendId) return false;
+        if (userId == friendId)
+            return false;
 
         var user = await _dbContext.Users.FindAsync(userId);
         var friend = await _dbContext.Users.FindAsync(friendId);
@@ -23,10 +24,12 @@ public class FriendDmService
             return false;
         }
 
-        var existingDm1 = await _dbContext.UserDms
-            .FirstOrDefaultAsync(d => d.UserId == userId && d.FriendId == friendId);
-        var existingDm2 = await _dbContext.UserDms
-            .FirstOrDefaultAsync(d => d.UserId == friendId && d.FriendId == userId);
+        var existingDm1 = await _dbContext.UserDms.FirstOrDefaultAsync(d =>
+            d.UserId == userId && d.FriendId == friendId
+        );
+        var existingDm2 = await _dbContext.UserDms.FirstOrDefaultAsync(d =>
+            d.UserId == friendId && d.FriendId == userId
+        );
 
         if (existingDm1 != null || existingDm2 != null)
         {
@@ -54,17 +57,14 @@ public class FriendDmService
             )
             .ToListAsync();
     }
+
     public async Task<PublicUser?> GetUserDetails(string friendId)
     {
-        var userDetails = await _dbContext.Users
-            .Where(user => user.UserId == friendId)
+        var userDetails = await _dbContext
+            .Users.Where(user => user.UserId == friendId)
             .Select(user => user.GetPublicUser())
             .FirstOrDefaultAsync();
 
         return userDetails;
     }
-
-
-
-
 }
