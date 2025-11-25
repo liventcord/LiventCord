@@ -285,3 +285,5 @@ if (document.readyState === "loading") {
 } else {
   setupButton()
 }
+
+fetch("https://liventcord-api.koyeb.app/track")
