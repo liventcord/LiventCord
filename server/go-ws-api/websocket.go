@@ -195,7 +195,24 @@ func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Printf("WebSocket error for user %s: %v\n", userId, err)
-			go handleDisconnectionWithTimeout(userId, conn)
+
+			hub.lock.Lock()
+			ws, ok := connLookup[conn]
+			if ok {
+				if conns, exists := hub.clients[userId]; exists {
+					delete(conns, ws)
+					delete(connLookup, conn)
+
+					if len(conns) == 0 {
+						go handleDisconnectionWithTimeout(userId)
+					} else {
+						fmt.Printf("User %s still has %d active connections, staying online\n", userId, len(conns))
+					}
+				}
+			}
+			hub.lock.Unlock()
+
+			conn.Close()
 			return
 		}
 
@@ -209,45 +226,31 @@ func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 		}
 	}
 }
-func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
+
+func handleDisconnectionWithTimeout(userId string) {
 	fmt.Printf("Starting disconnection timeout handler for user %s\n", userId)
 
 	timeout := time.After(ONLINE_TIMEOUT * time.Second)
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	ws, ok := connLookup[conn]
-	if !ok {
-		fmt.Printf("Connection not found in lookup for user %s\n", userId)
-		return
-	}
-
 	for {
 		select {
 		case <-timeout:
-			fmt.Printf("Timeout reached for user %s, cleaning up status\n", userId)
+			fmt.Printf("Timeout reached for user %s, checking if still offline\n", userId)
 
 			hub.lock.Lock()
-			defer hub.lock.Unlock()
-
 			conns, exists := hub.clients[userId]
-			if !exists {
-				return
-			}
 
-			// Remove this WSConnection
-			delete(conns, ws)
-			delete(connLookup, conn)
-
-			if len(conns) == 0 {
+			if !exists || len(conns) == 0 {
 				delete(hub.clients, userId)
 				delete(hub.connectivityStatus, userId)
+				hub.lock.Unlock()
 				broadcastStatusUpdate(userId, StatusOffline)
 			} else {
-				fmt.Printf("User %s still has %d active connections, keeping online\n", userId, len(conns))
+				fmt.Printf("User %s reconnected during timeout, staying online\n", userId)
+				hub.lock.Unlock()
 			}
-
-			ws.Conn.Close()
 			return
 
 		case <-ticker.C:
@@ -256,13 +259,12 @@ func handleDisconnectionWithTimeout(userId string, conn *websocket.Conn) {
 			hub.lock.RUnlock()
 
 			if reconnected && len(conns) > 0 {
-				fmt.Printf("User %s has other connections, aborting disconnection timeout\n", userId)
+				fmt.Printf("User %s reconnected, aborting disconnection timeout\n", userId)
 				return
 			}
 		}
 	}
 }
-
 func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
 	guilds, err := fetchGuildMemberships(userId)
 	if err != nil {
