@@ -2,20 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 )
 
-type UserStatus struct {
+type VideoUserStatus struct {
 	ID         string `json:"id"`
 	IsNoisy    bool   `json:"isNoisy"`
 	IsMuted    bool   `json:"isMuted"`
 	IsDeafened bool   `json:"isDeafened"`
 }
 
-func handleWS(w http.ResponseWriter, r *http.Request) {
+func HandleWS(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w, r)
 
 	token := extractToken(r)
@@ -36,33 +37,45 @@ func handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := registerClient(userID, conn)
+	client := registerClientVC(userID, conn)
 	defer cleanupConnection(client)
 
-	existing := buildExistingUserList()
-	sendEnvelope(client, "existingUserList", map[string]interface{}{
-		"Guilds": existing,
-	})
+	existing := buildExistingUserList(userID)
+	if existing != nil {
+		sendEnvelope(client, "existingUserList", map[string]interface{}{
+			"Guilds": existing,
+		})
+	}
 
 	go clientWriter(client)
 	handleClientMessages(client)
 }
 
-// TODO: Make this only return users guilds
-func buildExistingUserList() map[string][]UserStatus {
-	hub.mu.RLock()
-	defer hub.mu.RUnlock()
+func buildExistingUserList(userId string) map[string][]VideoUserStatus {
+	userGuilds, err := fetchGuildMemberships(userId)
+	if err != nil {
+		fmt.Println("Error fetching guild memberships:", err)
+		return nil
+	}
 
-	result := make(map[string][]UserStatus)
-	for roomID, clients := range hub.rooms {
-		users := make([]UserStatus, 0, len(clients))
+	vcHub.mu.RLock()
+	defer vcHub.mu.RUnlock()
 
-		for userID, client := range clients {
+	result := make(map[string][]VideoUserStatus)
+
+	// Only include rooms that exist in user's guilds
+	for roomID, clients := range vcHub.rooms {
+		if _, ok := userGuilds[roomID]; !ok {
+			continue
+		}
+
+		users := make([]VideoUserStatus, 0, len(clients))
+		for uid, client := range clients {
 			if client == nil {
 				continue
 			}
-			users = append(users, UserStatus{
-				ID:         userID,
+			users = append(users, VideoUserStatus{
+				ID:         uid,
 				IsNoisy:    client.IsNoisy,
 				IsMuted:    client.IsMuted,
 				IsDeafened: client.IsDeafened,
@@ -75,7 +88,7 @@ func buildExistingUserList() map[string][]UserStatus {
 	return result
 }
 
-func handleJoinRoom(client *Client, data json.RawMessage) {
+func handleJoinRoom(client *VcClient, data json.RawMessage) {
 	var p JoinRoomPayload
 	if err := json.Unmarshal(data, &p); err != nil {
 		log.Println("[WS] joinRoom payload parse failed:", err)
@@ -95,11 +108,11 @@ func handleJoinRoom(client *Client, data json.RawMessage) {
 
 	sendEnvelope(client, "joined", map[string]string{})
 }
-func emitUserList(c *Client) {
-	hub.mu.RLock()
-	defer hub.mu.RUnlock()
+func emitUserList(c *VcClient) {
+	vcHub.mu.RLock()
+	defer vcHub.mu.RUnlock()
 
-	roomClients, exists := hub.rooms[c.RoomID]
+	roomClients, exists := vcHub.rooms[c.RoomID]
 	if !exists {
 		return
 	}
@@ -122,22 +135,22 @@ func emitUserList(c *Client) {
 	sendJSON(c.Conn, Envelope{Event: "userList", Data: mustJSON(payload)})
 }
 
-func registerClient(userID string, conn *websocket.Conn) *Client {
-	client := &Client{
+func registerClientVC(userID string, conn *websocket.Conn) *VcClient {
+	client := &VcClient{
 		ID:   userID,
 		Conn: conn,
 		Send: make(chan []byte, 256),
 	}
 	log.Println("[WS] Client connected:", userID)
 
-	hub.mu.Lock()
-	hub.clients[userID] = client
-	hub.mu.Unlock()
+	vcHub.mu.Lock()
+	vcHub.clients[userID] = client
+	vcHub.mu.Unlock()
 
 	return client
 }
 
-func handleClientMessages(client *Client) {
+func handleClientMessages(client *VcClient) {
 	for {
 		_, msg, err := client.Conn.ReadMessage()
 		if err != nil {
@@ -169,16 +182,16 @@ func handleClientMessages(client *Client) {
 	}
 }
 
-func handleToggleMute(client *Client) {
-	hub.mu.Lock()
+func handleToggleMute(client *VcClient) {
+	vcHub.mu.Lock()
 	if client.RoomID == "" {
-		hub.mu.Unlock()
+		vcHub.mu.Unlock()
 		log.Printf("[WS] User room id is empty")
 		return
 	}
-	roomClients := hub.rooms[client.RoomID]
+	roomClients := vcHub.rooms[client.RoomID]
 	if roomClients == nil {
-		hub.mu.Unlock()
+		vcHub.mu.Unlock()
 		return
 	}
 
@@ -191,29 +204,29 @@ func handleToggleMute(client *Client) {
 		"isDeafened": client.IsDeafened,
 	}
 
-	clientsToNotify := make([]*Client, 0, len(roomClients))
+	clientsToNotify := make([]*VcClient, 0, len(roomClients))
 	for otherID := range roomClients {
-		if otherClient, exists := hub.clients[otherID]; exists {
+		if otherClient, exists := vcHub.clients[otherID]; exists {
 			clientsToNotify = append(clientsToNotify, otherClient)
 		}
 	}
-	hub.mu.Unlock()
+	vcHub.mu.Unlock()
 
 	for _, c := range clientsToNotify {
-		sendEnvelope(c, "userStatusUpdate", status)
+		sendEnvelope(c, "VideoUserStatusUpdate", status)
 	}
 }
 
-func handleToggleDeafen(client *Client) {
-	hub.mu.Lock()
+func handleToggleDeafen(client *VcClient) {
+	vcHub.mu.Lock()
 	if client.RoomID == "" {
-		hub.mu.Unlock()
+		vcHub.mu.Unlock()
 		log.Printf("[WS] User room id is empty")
 		return
 	}
-	roomClients := hub.rooms[client.RoomID]
+	roomClients := vcHub.rooms[client.RoomID]
 	if roomClients == nil {
-		hub.mu.Unlock()
+		vcHub.mu.Unlock()
 		return
 	}
 
@@ -226,20 +239,20 @@ func handleToggleDeafen(client *Client) {
 		"isDeafened": client.IsDeafened,
 	}
 
-	clientsToNotify := make([]*Client, 0, len(roomClients))
+	clientsToNotify := make([]*VcClient, 0, len(roomClients))
 	for otherID := range roomClients {
-		if otherClient, exists := hub.clients[otherID]; exists {
+		if otherClient, exists := vcHub.clients[otherID]; exists {
 			clientsToNotify = append(clientsToNotify, otherClient)
 		}
 	}
-	hub.mu.Unlock()
+	vcHub.mu.Unlock()
 
 	for _, c := range clientsToNotify {
-		sendEnvelope(c, "userStatusUpdate", status)
+		sendEnvelope(c, "VideoUserStatusUpdate", status)
 	}
 }
 
-func handleLeaveRoom(client *Client) {
+func handleLeaveRoom(client *VcClient) {
 	if client.RoomID == "" {
 		return
 	}
@@ -250,7 +263,7 @@ func handleLeaveRoom(client *Client) {
 	log.Println("[WS] User", client.ID, "left room", roomID)
 }
 
-func handleDataEvent(client *Client, data json.RawMessage) {
+func handleDataEvent(client *VcClient, data json.RawMessage) {
 	var payload DataPayload
 	if err := json.Unmarshal(data, &payload); err != nil {
 		log.Println("[WS] data payload parse failed:", err)

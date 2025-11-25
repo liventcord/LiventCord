@@ -114,7 +114,6 @@ import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
 import { initializeVideoComponent } from "./chatroom.ts";
-import { setRTCWsClient } from "./socketEvents";
 
 interface InitialStateData {
   email: string;
@@ -136,7 +135,6 @@ interface InitialStateData {
   maxAvatarSize: number;
   maxAttachmentSize: number;
   wsUrl: string;
-  rtcWsUrl: string;
 }
 
 interface User {
@@ -162,7 +160,6 @@ interface InitialState {
   maxAttachmentSize: number;
   sharedGuildsMap: Map<string, any>;
   wsUrl: string;
-  rtcWsUrl: string;
 }
 
 const ELEMENT_IDS = {
@@ -213,7 +210,6 @@ export function initialiseState(data: InitialStateData): void {
     mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
-    rtcWsUrl,
     wsUrl
   } = data;
 
@@ -239,12 +235,10 @@ export function initialiseState(data: InitialStateData): void {
     mediaProxyApiUrl,
     maxAvatarSize,
     maxAttachmentSize,
-    wsUrl,
-    rtcWsUrl
+    wsUrl
   };
 
   setSocketClient(wsUrl);
-  setRTCWsClient(rtcWsUrl);
   guildCache.currentGuildName = guildName;
   updateDmsList(dmFriends);
   initialiseChannelDrag();

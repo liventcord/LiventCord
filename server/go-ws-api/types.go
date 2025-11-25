@@ -14,7 +14,7 @@ type SessionData struct {
 	MuteVideo string `json:"muteVideo"`
 }
 
-type Client struct {
+type VcClient struct {
 	ID         string
 	Conn       *websocket.Conn
 	RoomID     string
@@ -25,10 +25,10 @@ type Client struct {
 	IsDeafened bool
 }
 
-type Hub struct {
+type VcHub struct {
 	mu             sync.RWMutex
-	rooms          map[string]map[string]*Client
-	clients        map[string]*Client
+	rooms          map[string]map[string]*VcClient
+	clients        map[string]*VcClient
 	roomMembers    map[string][]string
 	sessions       map[string]map[string]SessionData
 	allowedOrigins map[string]struct{}
@@ -57,10 +57,10 @@ type UserDisconnect struct {
 	SID string `json:"sid"`
 }
 
-func newHub() *Hub {
-	return &Hub{
-		rooms:       make(map[string]map[string]*Client),
-		clients:     make(map[string]*Client),
+func newHub() *VcHub {
+	return &VcHub{
+		rooms:       make(map[string]map[string]*VcClient),
+		clients:     make(map[string]*VcClient),
 		roomMembers: make(map[string][]string),
 		sessions:    make(map[string]map[string]SessionData),
 		allowedOrigins: map[string]struct{}{
@@ -70,7 +70,7 @@ func newHub() *Hub {
 	}
 }
 
-var upgrader = websocket.Upgrader{
+var vcUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
@@ -81,7 +81,7 @@ var upgrader = websocket.Upgrader{
 		if idx := strings.Index(origin, "#"); idx >= 0 {
 			origin = origin[:idx]
 		}
-		_, ok := hub.allowedOrigins[origin]
+		_, ok := vcHub.allowedOrigins[origin]
 		return ok
 	},
 }

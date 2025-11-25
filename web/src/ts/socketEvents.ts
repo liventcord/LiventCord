@@ -115,10 +115,18 @@ export abstract class WebSocketClientBase {
   protected pendingRequests: Array<() => void> = [];
   protected inProgressRequests: Set<string> = new Set();
 
-  constructor(url: string = "") {
-    this.socketUrl = url;
-    if (this.socketUrl) {
-      this.connectSocket();
+  constructor(baseUrl: string = "") {
+    if (baseUrl) {
+      this.setSocketUrl(baseUrl);
+    }
+  }
+
+  protected abstract getSocketPath(): string;
+
+  public async setSocketUrl(baseUrl: string) {
+    if (!this.socketUrl) {
+      this.socketUrl = baseUrl + this.getSocketPath();
+      await this.connectSocket();
     }
   }
 
@@ -133,13 +141,6 @@ export abstract class WebSocketClientBase {
       } catch (err) {
         console.error("WebSocket connection failed", err);
       }
-    }
-  }
-
-  public async setSocketUrl(url: string) {
-    if (!this.socketUrl) {
-      this.socketUrl = url;
-      await this.connectSocket();
     }
   }
 
@@ -263,6 +264,9 @@ export class WebSocketClient extends WebSocketClientBase {
   private constructor(url: string = "") {
     super(url);
   }
+  protected getSocketPath() {
+    return "/ws";
+  }
 
   protected handleEvent(message: any) {
     const { event_type, payload } = message;
@@ -354,6 +358,9 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   private constructor() {
     super();
   }
+  protected getSocketPath() {
+    return "/video-ws";
+  }
 
   public static getInstance(): RTCWebSocketClient {
     if (!RTCWebSocketClient.instance) {
@@ -362,9 +369,10 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     return RTCWebSocketClient.instance;
   }
 
-  public async setTokenAndUrl(serverUrl: string) {
+  public async setSocketVC(serverUrl: string) {
     if (!this.socketUrl) {
-      await this.setSocketUrl(`${serverUrl}/ws`);
+      console.log(serverUrl, this.socketUrl);
+      await this.setSocketUrl(`${serverUrl}/video-ws`);
     }
   }
 
@@ -583,9 +591,6 @@ export const rtcWsClient = RTCWebSocketClient.getInstance();
 
 export async function setSocketClient(wsUrl: string) {
   await socketClient.setSocketUrl(wsUrl);
-}
-
-export async function setRTCWsClient(wsUrl: string) {
   await rtcWsClient.setSocketUrl(wsUrl);
 }
 

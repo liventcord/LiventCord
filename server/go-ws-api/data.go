@@ -31,7 +31,7 @@ func addOptionalJSON(raw json.RawMessage, key string, target map[string]interfac
 	}
 }
 
-func sendEnvelope(client *Client, event string, data interface{}) {
+func sendEnvelope(client *VcClient, event string, data interface{}) {
 	envelope := Envelope{
 		Event: event,
 		Data:  mustJSON(data),
@@ -58,9 +58,9 @@ func forwardData(fromID, targetID string, signalDataJSON []byte) {
 	}
 	envelopeJSON, _ := json.Marshal(envelope)
 
-	hub.mu.RLock()
-	targetClient, exists := hub.clients[targetID]
-	hub.mu.RUnlock()
+	vcHub.mu.RLock()
+	targetClient, exists := vcHub.clients[targetID]
+	vcHub.mu.RUnlock()
 	if !exists {
 		log.Println("[WS] Target client not found:", targetID)
 		return
@@ -74,14 +74,14 @@ func forwardData(fromID, targetID string, signalDataJSON []byte) {
 	}
 }
 
-func cleanupConnection(client *Client) {
+func cleanupConnection(client *VcClient) {
 	cleanupClient(client)
 	close(client.Send)
 	client.Conn.Close()
 	log.Println("[WS] Client disconnected:", client.ID)
 }
 
-func clientWriter(client *Client) {
+func clientWriter(client *VcClient) {
 	for msg := range client.Send {
 		if err := client.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 			log.Println("[WS] Write error for", client.ID, ":", err)

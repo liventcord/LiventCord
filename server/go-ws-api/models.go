@@ -25,10 +25,17 @@ type UserStatusResponse struct {
 	UserId             string `json:"userId"`
 	ConnectivityStatus string `json:"status"`
 }
+type WSConnection struct {
+	Conn  *websocket.Conn
+	Mutex sync.Mutex
+}
+
+var connLookup = make(map[*websocket.Conn]*WSConnection)
 
 var hub struct {
-	clients            map[string]*websocket.Conn
+	clients            map[string]map[*WSConnection]bool
 	connectivityStatus map[string]UserStatus
 	userStatus         map[string]UserStatus
 	lock               sync.RWMutex
 }
+var vcHub = newHub()

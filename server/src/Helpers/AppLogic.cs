@@ -12,7 +12,6 @@ namespace LiventCord.Helpers
         public static string MediaProxyApiUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
-        public static string RtcWsUrl { get; private set; }
 
         public static float MaxAvatarSize { get; private set; }
         public static float MaxAttachmentSize { get; private set; }
@@ -25,8 +24,7 @@ namespace LiventCord.Helpers
             MediaProxyApiUrl = "http://localhost:5000";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
-            WsUrl = "ws://localhost:8080/ws";
-            RtcWsUrl = "ws://localhost:5010/ws";
+            WsUrl = "ws://localhost:8080";
             AdminKey = "";
         }
 
@@ -36,7 +34,6 @@ namespace LiventCord.Helpers
             ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
             MediaProxyApiUrl = configuration["AppSettings:MediaProxyApiUrl"] ?? MediaProxyApiUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
-            RtcWsUrl = configuration["AppSettings:RtcWsUrl"] ?? RtcWsUrl;
 
             MaxAvatarSize = float.TryParse(
                 configuration["AppSettings:MaxAvatarSize"],
@@ -157,7 +154,6 @@ namespace LiventCord.Helpers
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,
-                    rtcWsUrl = SharedAppConfig.RtcWsUrl,
                 };
 
                 _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(100));

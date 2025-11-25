@@ -3,14 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
+func loadConfig() {
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Error loading .env file")
+	}
+}
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -32,53 +37,13 @@ func mustJSON(v interface{}) json.RawMessage {
 	return b
 }
 
-func authenticateSession(cookie string) (string, error) {
-	DOTNET_API_URL := getEnv("DotnetApiUrl", "http://localhost:5005")
-	req, err := http.NewRequest("POST", DOTNET_API_URL+"/auth/validate-token", nil)
-	if err != nil {
-		return "", fmt.Errorf("error creating request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+cookie)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error sending request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("invalid session. Status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
-	}
-
-	var parsed struct {
-		UserID string `json:"userId"`
-	}
-	err = json.Unmarshal(body, &parsed)
-	if err != nil {
-		return "", fmt.Errorf("error parsing response JSON: %v", err)
-	}
-
-	userId := strings.TrimSpace(parsed.UserID)
-	if userId == "" {
-		return "", fmt.Errorf("empty user ID returned from API")
-	}
-
-	return userId, nil
-}
-
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 	var hdr http.Header
 	if len(r.Header["Sec-Websocket-Protocol"]) > 0 {
 		hdr = http.Header{}
 		hdr.Set("Sec-WebSocket-Protocol", r.Header.Get("Sec-WebSocket-Protocol"))
 	}
-	return upgrader.Upgrade(w, r, hdr)
+	return vcUpgrader.Upgrade(w, r, hdr)
 }
 
 func enableCORS(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +51,7 @@ func enableCORS(w http.ResponseWriter, r *http.Request) {
 	if origin == "" {
 		return
 	}
-	if _, ok := hub.allowedOrigins[origin]; ok {
+	if _, ok := vcHub.allowedOrigins[origin]; ok {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
