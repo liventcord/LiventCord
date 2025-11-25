@@ -58,16 +58,21 @@ jobs:
           done
           echo "✅ Backend is up!"
 
-      - name: Start frontend dev server
+      - name: Build frontend
         working-directory: web
         run: |
           cp .env.example .env
-          nohup pnpm run dev &
+          pnpm build
+
+      - name: Start frontend server
+        working-directory: web
+        run: |
+          nohup pnpm preview &
           until curl --silent --fail http://localhost:3000; do
             echo "Waiting for frontend…"
             sleep 1
           done
-          echo "✅ Frontend is up!"
+          echo "Frontend is ready!"
 
 
       - name: Run Cypress tests
