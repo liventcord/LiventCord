@@ -56,7 +56,7 @@ jobs:
           
           rm -rf docs/static/app
           mkdir -p docs/static/app
-          cp -r web/src/output/* docs/static/app/
+          cp -r web/output/* docs/static/app/
           
           cd docs && node patch404.js && yarn build
           
