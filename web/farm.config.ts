@@ -1,6 +1,6 @@
 import { defineConfig } from "@farmfe/core";
 import farmJsPluginVue from "@farmfe/js-plugin-vue";
-import vue from "@vitejs/plugin-vue";
+import vue from "@farmfe/js-plugin-vue";
 import eslint from "vite-plugin-eslint";
 import { VitePWA } from "vite-plugin-pwa";
 
