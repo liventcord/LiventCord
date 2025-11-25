@@ -61,7 +61,7 @@ jobs:
       - name: Start frontend dev server
         working-directory: web
         run: |
-          cp src/.env.example src/.env
+          cp .env.example .env
           nohup pnpm run dev &
           until curl --silent --fail http://localhost:3000; do
             echo "Waiting for frontend…"
