@@ -50,15 +50,9 @@ jobs:
           cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
-      - name: Start backend
-        working-directory: server/src
-        run: |
-          export ASPNETCORE_URLS="http://0.0.0.0:5005"
-          nohup dotnet run --project . > backend.log 2>&1 &
-
       - name: Wait for backend to be ready
         run: |
-          until curl --silent --fail http://localhost:5005/health > /dev/null; do
+          until curl --silent --fail http://localhost:5005 > /dev/null; do
             echo "Waiting for backend…"
             sleep 1
           done
