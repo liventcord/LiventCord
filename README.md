@@ -37,14 +37,14 @@ dotnet run
 ```
 .NET server runs at `http://localhost:5005`
 
-### Run Vite for Development (SPA)
+### Run Farm for Development (SPA)
 ```bash
 cd web
 pnpm install
 mv .env.example .env
 pnpm run dev
 ```
-Vite runs at `http://localhost:5173`.
+Dev server runs at `http://localhost:3000`.
 
 ### Run Redis
 ```bash

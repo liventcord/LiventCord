@@ -131,7 +131,7 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? "http://127.0.0.1:5173";
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? "http://127.0.0.1:3000";
 
 Console.WriteLine("Frontend url is: " + FRONTEND_URL);
 builder.Services.AddCors(options =>

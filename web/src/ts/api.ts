@@ -418,9 +418,10 @@ class ApiClient {
     return urlObj.hostname;
   }
   getBackendUrl(): string {
+    console.log(import.meta.env)
     if (import.meta.env.DEV) {
       return (
-        import.meta.env.VITE_FRONTEND_URL ?? import.meta.env.VITE_BACKEND_URL
+        import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_BACKEND_URL
       );
     }
     return import.meta.env.VITE_BACKEND_URL;
