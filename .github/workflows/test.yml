@@ -41,22 +41,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Build & start backend
+      - name: Build & prepare backend
         working-directory: server/src
         run: |
           dotnet tool install --global dotnet-ef
           dotnet tool restore
-          dotnet ef database update
+          dotnet ef migrations add InitialCreate
           cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
+      - name: Start backend
+        working-directory: server/src
+        run: |
+          export ASPNETCORE_URLS="http://0.0.0.0:5005"
+          nohup dotnet run --project . > backend.log 2>&1 &
+
       - name: Wait for backend to be ready
         run: |
-          until curl --silent --fail http://localhost:5005; do
+          until curl --silent --fail http://localhost:5005/health > /dev/null; do
             echo "Waiting for backend…"
             sleep 1
           done
           echo "✅ Backend is up!"
+
+      - name: Show backend logs 
+        if: failure()
+        run: cat server/src/backend.log
 
       - name: Build frontend
         working-directory: web
@@ -67,13 +77,12 @@ jobs:
       - name: Start frontend server
         working-directory: web
         run: |
-          nohup pnpm farm --port 3000 &
-          until curl --silent --fail http://localhost:3000; do
+          nohup pnpm farm --port 3000 > frontend.log 2>&1 &
+          until curl --silent --fail http://localhost:3000 > /dev/null; do
             echo "Waiting for frontend…"
             sleep 1
           done
           echo "Frontend is ready!"
-
 
       - name: Run Cypress tests
         working-directory: web
