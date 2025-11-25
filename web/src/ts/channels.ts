@@ -412,7 +412,6 @@ export function setWidths(newWidth: number) {
   if (document.hidden) return;
   const userInput = getId("user-input");
   const guildContainer = getId("guild-container");
-  const callContainer = getId("call-container");
 
   if (channelList) channelList.style.width = `${newWidth}px`;
 
