@@ -34,7 +34,6 @@ namespace LiventCord.Helpers
             ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
             MediaProxyApiUrl = configuration["AppSettings:MediaProxyApiUrl"] ?? MediaProxyApiUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
-            RtcWsUrl = configuration["AppSettings:RtcWsUrl"] ?? RtcWsUrl;
 
             MaxAvatarSize = float.TryParse(
                 configuration["AppSettings:MaxAvatarSize"],
