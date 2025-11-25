@@ -69,8 +69,12 @@ func registerClient(userId string, conn *websocket.Conn) {
 
 	effectiveStatus := hub.userStatus[userId]
 
-	shouldBroadcast := previousConnectivity != Connected
+	sendResponse(conn, "UPDATE_USER_STATUS", UserStatusResponse{
+		UserId:             userId,
+		ConnectivityStatus: string(effectiveStatus),
+	})
 
+	shouldBroadcast := previousConnectivity != Connected
 	if shouldBroadcast {
 		go broadcastStatusUpdate(userId, effectiveStatus)
 	}
