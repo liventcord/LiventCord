@@ -8,7 +8,7 @@
 
 ## 🚀 Quick Start
 
-**Jump in now:** **[liventcord.koyeb.app](https://liventcord.koyeb.app)**.
+**Jump in now:** **[liventcord.github.io](https://liventcord.github.io)**.
 ### Or:
 # **Run Locally**
 
@@ -16,13 +16,13 @@
 ### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
 ### 2. Install Node (For frontend) https://nodejs.org/en/download
 ### 3 Install Pnpm (For frontend) npm install -g pnpm
-### 4. Install Go (Optional, for realtime updates) https://go.dev/dl/
+### 4. Install Go https://go.dev/dl/
 ### 5. Install Redis (Optional, for realtime updates) https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/
 
 
 ### Clone the repository:
 ```bash
-git clone https://github.com/liventcord/Liventcord && cd Liventcord
+git clone https://github.com/liventcord/liventcord && cd liventcord
 ```
 ### Run the Server (API)
 ```bash
