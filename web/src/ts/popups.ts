@@ -10,7 +10,7 @@ import {
 } from "./guild.ts";
 import { getId, getAverageRGB, createEl, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import { createChannel } from "./channels.ts";
+import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -931,12 +931,7 @@ export function createPopUp({
   return parentContainer;
 }
 
-export function createInviteUsersPop(e: MouseEvent) {
-  const target = e.target as HTMLElement;
-  const channelElement = target.closest<HTMLLIElement>(".channel-button");
-  if (!channelElement) return;
-  const channelId = channelElement.id;
-  const channelName = cacheInterface.getChannelName(currentGuildId, channelId);
+export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
   const invitelink = `${window.location.protocol}//${window.location.hostname}${
@@ -954,7 +949,7 @@ export function createInviteUsersPop(e: MouseEvent) {
 
   const channelNameText = createEl("p", {
     id: "invite-users-channel-name-text",
-    textContent: channelName
+    textContent: currentChannelName
   });
   const sendInvText = createEl("p", {
     id: "invite-users-send-text",
