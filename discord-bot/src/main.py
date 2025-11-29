@@ -125,8 +125,15 @@ def is_text_channel(channel: discord.abc.Messageable) -> bool:
     return isinstance(channel, discord.TextChannel)
 
 
+async def update_status():
+    guild_count = len(client.guilds)
+    activity = discord.Game(name=f"Serving {guild_count} guilds with ♥︎")
+    await client.change_presence(status=discord.Status.online, activity=activity)
+
+
 @client.event
 async def on_ready() -> None:
+    await update_status()
     if isSaving:
         await MessageHandler.get_all_messages(client)
         await client.add_cog(SelfCog(client))

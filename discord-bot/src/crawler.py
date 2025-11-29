@@ -225,17 +225,10 @@ class ImagePaginator(discord.ui.View):
             await self.update_embed(interaction)
 
 
-if platform.system() not in ("Linux", "Windows"):
+try:
+    selenium_available = platform.system() in ("Linux", "Windows", "Darwin")
+except ImportError:
     selenium_available = False
-else:
-    try:
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-        from selenium.webdriver.common.by import By
-
-        selenium_available = True
-    except ImportError:
-        selenium_available = False
 
 if not selenium_available:
     raise RuntimeError(
@@ -248,11 +241,16 @@ DOMAIN = "rule34.xxx"
 
 def crawl_images_r(query: str, number: int) -> list:
     try:
+        if not selenium_available:
+            return []
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+
         print(f"Rule Crawler Process started with query: {query} and number: {number}")
         chrome_options = Options()
         chrome_options.add_argument("--window-size=1280,800")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--proxy-server=socks5://127.0.0.1:9050")  # Use Tor
+        chrome_options.add_argument("--headless")
 
         with webdriver.Chrome(options=chrome_options) as driver:
             search_url = f"https://{DOMAIN}/index.php?page=post&s=list&tags={query}"
@@ -278,7 +276,8 @@ def crawl_images_r(query: str, number: int) -> list:
 
                         img_url = img_url.split("?")[0]
 
-                        if "webm-thumb" in img.get_attribute("class"):  # video
+                        img_class = img.get_attribute("class")
+                        if img_class and "webm-thumb" in img_class:  # video
                             processed_url = (
                                 img_url.replace(
                                     f"https://wimg.{DOMAIN}/thumbnails/",

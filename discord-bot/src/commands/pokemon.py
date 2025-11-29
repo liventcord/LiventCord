@@ -73,7 +73,10 @@ def strip_ansi(line):
 def get_max_line_width(text):
     """Extract max line width from text."""
     lines = text.splitlines()
-    widths = [wcswidth(strip_ansi(line)) for line in lines]
+    if wcswidth is not None:
+        widths = [wcswidth(strip_ansi(line)) for line in lines]
+    else:
+        widths = [len(strip_ansi(line)) for line in lines]
     return max(widths) if widths else 40
 
 
@@ -120,6 +123,10 @@ def generate_pokemon_image(i, shiny, big, random_flag, f_flag, specific):
     cropped_path = f"pokemon_output_cropped_{i}.png"
 
     save_svg_without_rich(console, svg_path)
+    if svg2png is None:
+        raise RuntimeError(
+            "svg2png is only available on Linux. Cannot convert SVG to PNG."
+        )
     svg2png(url=svg_path, write_to=png_path)
 
     img = Image.open(png_path).convert("RGBA")

@@ -1,3 +1,4 @@
+import random
 from io import BytesIO
 
 import discord
@@ -31,6 +32,7 @@ YT_CMD = "#yt"
 URL_COMMAND = "#url"
 ONGOING_COMMAND = "#ongoing"
 R34_COMMAND = "#rule34"
+RATE_COMMAND = "#rate"
 
 
 async def find_message_in_channels(
@@ -149,6 +151,20 @@ async def handle_url(message: discord.Message) -> None:
                 await message.channel.send("Message not found.")
         except ValueError:
             await message.channel.send("Invalid message ID provided.")
+
+
+async def handle_rate(message: discord.Message) -> None:
+    mention = message.mentions[0] if message.mentions else message.author
+
+    rate = random.randint(0, 100)
+
+    embed = discord.Embed(
+        title=f"Gayness check for {mention.name}",
+        description=f"Gay ratio: {rate}%",
+        color=discord.Color.random(),
+    )
+
+    await message.reply(embed=embed)
 
 
 async def handle_avatar(message: discord.Message) -> None:
@@ -283,6 +299,8 @@ async def handle_commands(client: discord.Client, message: discord.Message) -> N
         (await chat_with_llm_api(message),)  # type: ignore
     elif message_lower.startswith(ONGOING_COMMAND):
         await handle_ongoing_requests(message)
+    elif message_lower.startswith(RATE_COMMAND):
+        await handle_rate(message)
     if message.author.id == OwnerId:
         if message_lower.startswith(CHANGEAVATARCOMMAND) and message.attachments:
             await change_avatar(client, message)
@@ -294,7 +312,7 @@ async def check_reply(client: discord.Client, message: discord.Message) -> bool:
     if client.user in message.mentions:
         return True
     author = (
-        message.reference.resolved.author
+        message.reference.resolved.author  # type: ignore
         if message.reference and message.reference.resolved
         else None
     )

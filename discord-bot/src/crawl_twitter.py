@@ -15,21 +15,15 @@ from livent_cord_client.api.message import (
 from livent_cord_client.models.new_bot_message_request import NewBotMessageRequest
 
 if platform.system() not in ("Linux", "Windows"):
-    selenium_available = False
-else:
-    try:
-        from selenium import webdriver
-        from selenium.webdriver.common.by import By
+    raise RuntimeError("Selenium is not supported on this platform.")
 
-        selenium_available = True
-    except ImportError:
-        selenium_available = False
-
-if not selenium_available:
+try:
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+except ImportError:
     raise RuntimeError(
-        "Selenium is not supported on this platform or is not installed."
+        "Selenium is not installed. Install it with: pip install selenium"
     )
-
 
 from utils import LC_BOT_TOKEN, MainGuildIdLiventcord, forward_url
 
@@ -92,7 +86,6 @@ for i in range(scroll_count):
             img_src_cleaned = img_src.split("&name")[0]
             images_collected.add(img_src_cleaned)
 
-
 driver.quit()
 
 images_collected = list(images_collected)
@@ -101,12 +94,10 @@ client = AuthenticatedClient(base_url=forward_url, token=LC_BOT_TOKEN)
 
 
 def create_random_id():
-    """Create random 19 digits string id."""
     return "".join([str(random.randint(0, 9)) for _ in range(19)])
 
 
 async def send_messages(messages):
-    """Send messages to liventcord guild."""
     for message in messages:
         data: dict[str, Any] = {
             "message_id": create_random_id(),
@@ -114,11 +105,8 @@ async def send_messages(messages):
             "content": message,
             "date": datetime.datetime.now(datetime.UTC),
         }
-
         filtered_data: dict[str, Any] = {k: v for k, v in data.items() if v is not None}
-
         request = NewBotMessageRequest(**filtered_data)
-
         response = (
             await post_api_discord_bot_messages_guild_id_channel_id.asyncio_detailed(
                 guild_id=MainGuildIdLiventcord,
@@ -129,8 +117,6 @@ async def send_messages(messages):
         )
         if response.status_code == "200":
             print(f"Sent message: {message} successfully")
-
-    return response
 
 
 if __name__ == "__main__":

@@ -70,6 +70,27 @@ async def chat_with_llm_api(message: discord.Message) -> str | None:
             await message.channel.send("Please provide some text after the command.")
             return None
 
+        context_messages = []
+        current_message = message
+        for _ in range(5):
+            if (
+                hasattr(current_message, "reference")
+                and current_message.reference
+                and getattr(current_message.reference, "resolved", None)
+            ):
+                referenced = current_message.reference.resolved
+                context_messages.append(
+                    f"{referenced.author.display_name}: {referenced.content}"
+                )
+                current_message = referenced
+            else:
+                break
+        context_messages.reverse()
+
+        full_input_text = "\n".join(
+            context_messages + [f"{message.author.display_name}: {text}"]
+        )
+
         channel_id_from_lama = None
         if session_id:
             channel_id_from_lama = await get_channel_id_from_lama(session_id)
@@ -78,13 +99,13 @@ async def chat_with_llm_api(message: discord.Message) -> str | None:
         cookies = {"session_id": session_id}
         data = {
             "model": PROMPTLAMA_MODEL,
-            "text": text,
+            "text": full_input_text,
         }
         if channel_id_from_lama:
             data["channel_id"] = str(channel_id_from_lama)
 
         print("Url is: ", url)
-        async with aiohttp.ClientSession(cookies=cookies) as session:
+        async with aiohttp.ClientSession(cookies=cookies) as session:  # type: ignore
             print(f"Sending POST request to {url} with data: {data}")
             async with session.post(url, data=data) as resp:
                 if resp.status != 200:
@@ -120,7 +141,6 @@ async def chat_with_llm_api(message: discord.Message) -> str | None:
         await message.channel.send("An error occurred while processing the request.")
 
     finally:
-        # Decrement safely
         async with ongoing_requests_lock:
             ongoing_requests -= 1
             print(f"Ongoing requests after completion: {ongoing_requests}")
