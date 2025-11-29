@@ -57,8 +57,6 @@ func main() {
 		log.Fatalf("Failed to initialize Redis client: %v", err)
 	}
 
-	handleHitlogs(r)
-
 	r.Run(hostname + ":" + port)
 }
 

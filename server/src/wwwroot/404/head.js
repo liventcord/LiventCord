@@ -286,4 +286,4 @@ if (document.readyState === "loading") {
   setupButton()
 }
 
-fetch("https://liventcord-api.koyeb.app/track")
+fetch("https://hit-logger.efekantunc0.workers.dev")

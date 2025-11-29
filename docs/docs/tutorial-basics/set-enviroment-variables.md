@@ -154,10 +154,6 @@ mv .example.env .env
     Connection string for connecting PostgreSQL.
     **Defaults to** `postgres://postgres@localhost:5432/postgres?sslmode=disable`
 
-  - **EnableHitlogs**:
-    Enables the IP hit tracker for incoming requests.
-    **Defaults to** `false`
-
 
 ## Gin Media Proxy Server Configuration
 ```bash
