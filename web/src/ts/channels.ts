@@ -1,11 +1,5 @@
 import store from "../store.ts";
-import {
-  disableElement,
-  getId,
-  createEl,
-  MINUS_INDEX,
-  isMobile
-} from "./utils.ts";
+import { disableElement, getId, MINUS_INDEX, isMobile } from "./utils.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   getHistoryFromOneChannel,
@@ -17,12 +11,10 @@ import {
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
-import { muteHtml, inviteVoiceHtml, selectedChanColor, clamp } from "./ui.ts";
-import { createUserContext } from "./contextMenuActions.ts";
-import { setProfilePic } from "./avatar.ts";
+import { selectedChanColor, clamp } from "./ui.ts";
 import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
 import { isOnMePage, isOnDm, router } from "./router.ts";
-import { Member, userManager } from "./user.ts";
+import { Member } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
@@ -50,6 +42,7 @@ export function setChannelTitle(channelTitleText: string) {
     console.error("Channel title called with null title");
   }
   channelTitle.textContent = channelTitleText;
+  currentChannelName = channelTitleText;
   updatePlaceholderVisibility(
     translations.getMessagePlaceholder(channelTitleText)
   );

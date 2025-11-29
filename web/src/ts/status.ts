@@ -1,10 +1,10 @@
 import { drawProfilePopId } from "./popups.ts";
 import { openSettings, SettingType } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
-import { createEl, disableElement, getId } from "./utils.ts";
+import { createEl, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
-import { copyId, copySelfName } from "./contextMenuActions.ts";
+import { copyId } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 
 export class UserStatus {

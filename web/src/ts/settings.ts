@@ -31,7 +31,6 @@ import {
   hideConfirmationPanel,
   isChannelSettings,
   isProfileSettings,
-  currentSettingsChannelId,
   selectTheme,
   Themes
 } from "./settingsui.ts";
@@ -483,7 +482,7 @@ function changeChannelName() {
     apiClient.send(EventType.UPDATE_CHANNEL_NAME, {
       channelName: newChannelName,
       guildId: currentGuildId,
-      channelId: currentSettingsChannelId
+      channelId: guildCache.currentChannelId
     });
     channelNameInput.value = newChannelName;
     changeChannelNameTimeout = setTimeout(

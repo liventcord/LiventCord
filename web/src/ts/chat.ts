@@ -707,10 +707,9 @@ export function closeMediaPanel() {
 }
 export function openMediaPanel(type: string) {
   const wrapper = getId("media-table-wrapper");
-  const channelInfo = getId("channel-info");
 
   chatContainer.scrollTop = 0;
-  if (!chatContainer || !channelInfo) return;
+  if (!chatContainer) return;
   if (type === "media") {
     if (wrapper) wrapper.classList.remove("media-table-wrapper-on-right");
     disableElement(chatContent);

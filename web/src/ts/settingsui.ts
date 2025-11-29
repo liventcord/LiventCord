@@ -60,7 +60,13 @@ import {
 } from "./extras.ts";
 import { initializeGoogleOauth } from "./loginutils.ts";
 import { closePopUp } from "./popups.ts";
+import { currentChannelName } from "./channels.ts";
 
+declare global {
+  interface ImportMeta {
+    env: ImportMetaEnv;
+  }
+}
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
   GUILD: "GUILD",
@@ -94,9 +100,6 @@ interface Settings {
   guildSettings: Setting[];
   channelSettings: Setting[];
 }
-
-let currentSettingsChannelName: string;
-export let currentSettingsChannelId: string;
 
 export let currentSettingsCategory: string;
 let currentSettingsType: SettingType = SettingType.PROFILE;
@@ -437,8 +440,8 @@ function selectSettingCategory(
   if (settingCategory === ChannelCategoryTypes.DeleteChannel) {
     createDeleteChannelPrompt(
       currentGuildId,
-      currentSettingsChannelId,
-      currentSettingsChannelName
+      guildCache.currentChannelId,
+      currentChannelName
     );
     return;
   }
@@ -940,7 +943,7 @@ function initialiseSettingComponents(
 
   const canManageGuild = permissionManager.canManageGuild();
   if (channelNameInput) {
-    channelNameInput.value = currentSettingsChannelName;
+    channelNameInput.value = currentChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
     if (!channelNameInput.disabled) {
       channelNameInput.addEventListener("input", onEditChannelName);
@@ -1025,8 +1028,6 @@ export function createToggle(id: string, label: string, description: string) {
 }
 
 export function openChannelSettings(channelId: string, channelName: string) {
-  currentSettingsChannelName = channelName;
-  currentSettingsChannelId = channelId;
   openSettings(SettingType.CHANNEL);
 }
 export function openSettings(
@@ -1170,7 +1171,7 @@ export function generateConfirmationPanel() {
       "channel-overview-name-input"
     ) as HTMLInputElement;
     if (channelNameInput) {
-      channelNameInput.value = currentSettingsChannelName;
+      channelNameInput.value = currentChannelName;
     }
 
     setUnsaved(false);

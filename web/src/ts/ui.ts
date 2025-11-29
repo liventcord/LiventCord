@@ -1271,7 +1271,7 @@ export async function createInvitePop(e: MouseEvent) {
     guildId: currentGuildId,
     channelId: guildCache.currentChannelId
   });
-  createInviteUsersPop(e);
+  createInviteUsersPop();
 }
 
 export function openGuildSettingsDropdown(event: MouseEvent) {

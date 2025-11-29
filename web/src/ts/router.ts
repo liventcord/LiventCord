@@ -10,6 +10,7 @@ import {
 } from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
 import { apiClient } from "./api.ts";
+import { isSettingsOpen } from "./settings.ts";
 export let isOnMePage = true;
 export let isOnDm = false;
 export let isOnGuild = false;
@@ -23,10 +24,9 @@ export function setIsOnGuild(val: boolean) {
   isOnGuild = val;
 }
 
-const hasNotifications = false;
-
 class Router {
   shouldClearQuery = false;
+  lastKnownUrl = "";
   constructor() {
     this.init();
   }
@@ -44,31 +44,68 @@ class Router {
       this.handleVisibilityChange.bind(this)
     );
     window.addEventListener("popstate", this.handlePopState.bind(this));
+    window.addEventListener("beforeunload", (e) => {
+      if (isSettingsOpen) {
+        e.preventDefault();
+        return "";
+      }
+    });
 
     this.processQueryParameters();
   }
 
   handleVisibilityChange() {
-    if (hasNotifications) {
+    if (isSettingsOpen) {
       document.hidden ? setActiveIcon() : setInactiveIcon();
     }
   }
 
   handlePopState() {
     try {
-      const { pathStr, parts } = this.parsePath();
+      const targetUrl = window.location.href;
 
-      if (pathStr === "/channels/@me") {
-        loadDmHome(false);
-      } else if (pathStr === "/join-guild") {
-        loadDmHome(false);
-      } else if (pathStr.startsWith("/channels/@me/")) {
-        openDm(parts[3]);
-      } else if (pathStr.startsWith("/channels/") && parts.length === 3) {
-        handleChannelLoading(parts[1], parts[2]);
+      if (this.guardUnsavedChanges(targetUrl)) {
+        return;
       }
+
+      this.lastKnownUrl = window.location.pathname;
+
+      const { pathStr, parts } = this.parsePath();
+      this.processNavigation(pathStr, parts);
     } catch (error) {
       console.error(error);
+    }
+  }
+  guardUnsavedChanges(targetUrl: string) {
+    if (!isSettingsOpen) return false;
+
+    history.pushState(null, "", this.lastKnownUrl);
+
+    setTimeout(() => {
+      window.location.href = targetUrl;
+    }, 0);
+
+    return true;
+  }
+  processNavigation(pathStr: string, parts: string[]) {
+    if (pathStr === "/channels/@me") {
+      loadDmHome(false);
+      return;
+    }
+
+    if (pathStr === "/join-guild") {
+      loadDmHome(false);
+      return;
+    }
+
+    if (pathStr.startsWith("/channels/@me/")) {
+      openDm(parts[3]);
+      return;
+    }
+
+    if (pathStr.startsWith("/channels/") && parts.length === 3) {
+      handleChannelLoading(parts[1], parts[2]);
+      return;
     }
   }
 
