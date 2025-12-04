@@ -65,15 +65,17 @@ def save_svg_without_rich(console: Console, path: str):
         f.write(svg_content)
 
 
-def strip_ansi(line):
-    """Strip ansi from text."""
-    return re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", line)
+def strip_ansi(text):
+    import re
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 def get_max_line_width(text):
     """Extract max line width from text."""
     lines = text.splitlines()
-    if wcswidth is not None:
+    if wcswidth:
         widths = [wcswidth(strip_ansi(line)) for line in lines]
     else:
         widths = [len(strip_ansi(line)) for line in lines]
@@ -81,7 +83,7 @@ def get_max_line_width(text):
 
 
 def generate_pokemon_image(i, shiny, big, random_flag, f_flag, specific):
-    """Generate pokemon image from message args."""
+    """Generate Pokémon image from message args."""
     cmd = ["pokemon-colorscripts"]
 
     if specific:
@@ -94,8 +96,6 @@ def generate_pokemon_image(i, shiny, big, random_flag, f_flag, specific):
             cmd.extend(["-n", name_parts[0], "-f", name_parts[1]])
         else:
             cmd.extend(["-n", specific])
-    elif random_flag:
-        cmd.append("-r")
     else:
         cmd.append("-r")
 
@@ -104,9 +104,25 @@ def generate_pokemon_image(i, shiny, big, random_flag, f_flag, specific):
     if big:
         cmd.append("-b")
 
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
-    output = result.stdout.decode()
+    try:
+        result = subprocess.run(cmd, capture_output=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print("Failed command:", " ".join(cmd))
+        print("Error:", e.stderr.decode().strip())
+        if random_flag or not specific:
+            cmd = ["pokemon-colorscripts", "-r"]
+            if shiny:
+                cmd.append("-s")
+            if big:
+                cmd.append("-b")
+            try:
+                result = subprocess.run(cmd, capture_output=True, check=True)
+            except subprocess.CalledProcessError:
+                return None, [], "Unknown"
+        else:
+            return None, [], "Unknown"
 
+    output = result.stdout.decode()
     output_lines = output.strip().splitlines()
     name_line = next((line.strip() for line in output_lines if line.strip()), "Unknown")
     name = strip_ansi(name_line).strip()
@@ -124,20 +140,14 @@ def generate_pokemon_image(i, shiny, big, random_flag, f_flag, specific):
 
     save_svg_without_rich(console, svg_path)
     if svg2png is None:
-        raise RuntimeError(
-            "svg2png is only available on Linux. Cannot convert SVG to PNG."
-        )
+        raise RuntimeError("svg2png is only available on Linux.")
     svg2png(url=svg_path, write_to=png_path)
 
     img = Image.open(png_path).convert("RGBA")
     bg = Image.new("RGBA", img.size, (0, 0, 0, 0))
     diff = ImageChops.difference(img, bg)
     bbox = diff.getbbox()
-    if bbox:
-        img_cropped = img.crop(bbox)
-    else:
-        img_cropped = img
-
+    img_cropped = img.crop(bbox) if bbox else img
     img_cropped.save(cropped_path, optimize=True, quality=85)
     console.clear()
 
@@ -152,26 +162,32 @@ def cleanup_files(paths):
 
 
 async def generate_pokemon(message: discord.Message) -> None:
-    """Generate pokemon image and reply to message."""
+    """Generate Pokémon image(s) and reply to message."""
     if svg2png is None:
         raise RuntimeError("svg2png is only supported on Linux.")
 
     count, shiny, big, random_flag, f_flag, specific = parse_args(message.content)
-    embeds = []
-    files = []
-    temp_files = []
+    embeds, files, temp_files = [], [], []
 
     for i in range(count):
         cropped_path, generated_files, name = generate_pokemon_image(
             i, shiny, big, random_flag, f_flag, specific
         )
-        filename = f"pokemon_{i}.png"
-        file = discord.File(cropped_path, filename=filename)
-        embed = discord.Embed(title=name.title())
-        embed.set_image(url=f"attachment://{filename}")
-        embeds.append(embed)
-        files.append(file)
-        temp_files.extend(generated_files)
+
+        if cropped_path is None:
+            cropped_path, generated_files, name = generate_pokemon_image(
+                i, shiny, big, True, f_flag, None
+            )
+
+        if cropped_path is not None:
+            filename = f"pokemon_{i}.png"
+            files.append(discord.File(cropped_path, filename=filename))
+            embed = discord.Embed(title=name.title())
+            embed.set_image(url=f"attachment://{filename}")
+            embeds.append(embed)
+            temp_files.extend(generated_files)
+        else:
+            print(f"Failed to generate Pokémon image for index {i}.")
 
     await message.reply(embeds=embeds, files=files)
     cleanup_files(temp_files)

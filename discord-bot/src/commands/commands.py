@@ -1,3 +1,4 @@
+import os
 import random
 from io import BytesIO
 
@@ -14,25 +15,147 @@ from commands.ui import handle_ui
 from crawler import process_image_search_command, process_image_search_command_r34
 from utils import OwnerId, isDm
 
-SEARCH_COMMAND1 = "#google"
-SEARCH_COMMAND2 = "#search"
-HELP_COMMAND = "#help"
-AVATAR_COMMAND = "#avatar"
-UI_COMMAND = "#ui"
-PING_COMMAND = "#ping"
-REGIONAL_COMMAND = "#reg"
-SAY_COMMAND = "#say"
-POKEMON_COMMAND = "#pokemon"
-CHANGEAVATARCOMMAND = "#changeavatar"
-DELETE_COMMAND = "#delete"
-YOUTUBE_COMMAND = "#youtube"
-STATUS_COMMAND = "#status"
-ME_COMMAND = "#me"
-YT_CMD = "#yt"
-URL_COMMAND = "#url"
-ONGOING_COMMAND = "#ongoing"
-R34_COMMAND = "#rule34"
-RATE_COMMAND = "#rate"
+
+def SEARCH_COMMAND1():
+    return get_current_prefix() + "google"
+
+
+def SEARCH_COMMAND2():
+    return get_current_prefix() + "search"
+
+
+def HELP_COMMAND():
+    return get_current_prefix() + "help"
+
+
+def AVATAR_COMMAND():
+    return get_current_prefix() + "avatar"
+
+
+def UI_COMMAND():
+    return get_current_prefix() + "ui"
+
+
+def PING_COMMAND():
+    return get_current_prefix() + "ping"
+
+
+def REGIONAL_COMMAND():
+    return get_current_prefix() + "reg"
+
+
+def SAY_COMMAND():
+    return get_current_prefix() + "say"
+
+
+def POKEMON_COMMAND():
+    return get_current_prefix() + "pokemon"
+
+
+def CHANGEAVATARCOMMAND():
+    return get_current_prefix() + "changeavatar"
+
+
+def DELETE_COMMAND():
+    return get_current_prefix() + "delete"
+
+
+def YOUTUBE_COMMAND():
+    return get_current_prefix() + "youtube"
+
+
+def STATUS_COMMAND():
+    return get_current_prefix() + "status"
+
+
+def ME_COMMAND():
+    return get_current_prefix() + "me"
+
+
+def YT_CMD():
+    return get_current_prefix() + "yt"
+
+
+def URL_COMMAND():
+    return get_current_prefix() + "url"
+
+
+def ONGOING_COMMAND():
+    return get_current_prefix() + "ongoing"
+
+
+def R34_COMMAND():
+    return get_current_prefix() + "rule34"
+
+
+def RATE_COMMAND():
+    return get_current_prefix() + "rate"
+
+
+def SET_PREFIX_COMMAND():
+    return "#setprefix"
+
+
+def GET_PREFIX_COMMAND():
+    return "#prefix"
+
+
+def SET_ERROR_COMMAND():
+    return get_current_prefix() + "seterror"
+
+
+prefix_file = ".prefix"
+error_file = ".error_message"
+
+
+def get_current_prefix():
+    if not os.path.exists(prefix_file):
+        return "#"
+    with open(prefix_file) as f:
+        return f.read().strip() or "#"
+
+
+def set_current_prefix(new):
+    with open(prefix_file, "w") as f:
+        f.write(new)
+
+
+def get_current_error():
+    if not os.path.exists(error_file):
+        return "#"
+    with open(error_file) as f:
+        return f.read().strip() or "#"
+
+
+def set_current_error(new):
+    with open(error_file, "w") as f:
+        f.write(new)
+
+
+async def handle_set_prefix(message):
+    parts = message.content[len(get_current_prefix()) :].split(maxsplit=1)
+    if len(parts) < 2:
+        await message.reply("Usage: " + get_current_prefix() + "prefix <new_prefix>")
+        return
+    new_prefix = parts[1].strip()
+    set_current_prefix(new_prefix)
+    await message.reply("Successfully changed prefix to: " + new_prefix)
+
+
+async def handle_get_prefix(message):
+    await message.reply("My current prefix is: " + get_current_prefix())
+
+
+async def handle_set_error(message):
+    parts = message.content[len(get_current_prefix()) :].split(maxsplit=1)
+    if len(parts) < 2:
+        await message.reply(
+            "Usage: " + get_current_prefix() + "error <new_error_message>"
+        )
+        return
+    new_error = parts[1].strip()
+    set_current_error(new_error)
+    await message.reply("Successfully changed error to: " + new_error)
 
 
 async def find_message_in_channels(
@@ -48,7 +171,7 @@ async def find_message_in_channels(
 
 
 async def echo_message(message: discord.Message) -> None:
-    text = message.content[len(SAY_COMMAND) :].strip()
+    text = message.content[len(SAY_COMMAND()) :].strip()
 
     if message.reference and isinstance(message.reference.resolved, discord.Message):
         await message.reference.resolved.reply(text)
@@ -192,17 +315,19 @@ async def handle_avatar(message: discord.Message) -> None:
 
 
 def generate_help_embed() -> discord.Embed:
+    current_prefix = get_current_prefix()
     commands = {
-        "#google or #search": "Google search for the specified query. Usage: #google <search> #count",
-        "#reg": "Converts text to a regional variant of emojis. Usage: #reg <input>",
-        "#say": "Echoes the provided text in the chat. Usage: #say <input>",
-        "#delete": "Deletes specific messages. Usage: #delete #count",
-        "#youtube or #yt": "Searches YouTube for the specified query. Usage: #youtube <input>",
-        "#me": "Spoofs a message by user. Usage: #me @MentionHere <TextToSendByWebhook>",
-        "#avatar": "Displays the avatar and status of a user. Usage: #avatar @mention(optional)",
-        "#ui": "Shows detailed user information in the server. Usage: #ui <Mention>",
-        "#ping": "Shows the bot's latency.",
-        "#pokemon": "Display pokemon. Usage: #pokemon POKEMON_NAME OPTIONS. Available options:\n"
+        f"My current prefix is: {current_prefix}"
+        f"{current_prefix}google or #search": f"Google search for the specified query. Usage: {current_prefix}google <search> #count",
+        f"{current_prefix}reg": f"Converts text to a regional variant of emojis. Usage: {current_prefix}reg <input>",
+        f"{current_prefix}say": f"Echoes the provided text in the chat. Usage: {current_prefix}say <input>",
+        f"{current_prefix}delete": f"Deletes specific messages. Usage: {current_prefix}delete #count",
+        f"{current_prefix}youtube or #yt": f"Searches YouTube for the specified query. Usage: {current_prefix}youtube <input>",
+        f"{current_prefix}me": "Spoofs a message by user. Usage: #me @MentionHere <TextToSendByWebhook>",
+        f"{current_prefix}avatar": f"Displays the avatar and status of a user. Usage: {current_prefix}avatar @mention(optional)",
+        f"{current_prefix}ui": f"Shows detailed user information in the server. Usage: {current_prefix}ui <Mention>",
+        f"{current_prefix}ping": "Shows the bot's latency.",
+        f"{current_prefix}pokemon": f"Display pokemon. Usage: {current_prefix}pokemon POKEMON_NAME OPTIONS. Available options:\n"
         "-s, --shiny : Show shiny variant\n"
         "-b, --big : Show bigger image\n"
         "-f, --form : Show an alternate form of a pokemon\n"
@@ -214,8 +339,8 @@ def generate_help_embed() -> discord.Embed:
         "  #pokemon charizard -b 2\n"
         "  #pokemon -r 3 -s\n",
         "--Admin Commands--": "Admin-specific commands below.",
-        "#changeavatar": "Changes the bot's avatar (with cooldown). Usage: #changeavatar (with attachment image or link)",
-        "#status": "Updates the bot's status message. Usage: #status <status_text>",
+        f"{current_prefix}changeavatar": f"Changes the bot's avatar (with cooldown). Usage: {current_prefix}changeavatar (with attachment image or link)",
+        f"{current_prefix}status": f"Updates the bot's status message. Usage: {current_prefix}status <status_text>",
     }
 
     help_embed = discord.Embed(
@@ -254,57 +379,76 @@ async def regionalconvert(message: discord.Message, REGIONAL_COMMAND: str) -> No
 
 async def handle_commands(client: discord.Client, message: discord.Message) -> None:
     message_lower = message.content.lower()
-    if message_lower.startswith(HELP_COMMAND):
+
+    if message_lower.startswith(HELP_COMMAND()):
         help_embed = generate_help_embed()
         await message.author.send(embed=help_embed)
 
-    if message_lower.startswith(AVATAR_COMMAND):
+    elif message_lower.startswith(AVATAR_COMMAND()):
         await handle_avatar(message)
 
-    elif message_lower.startswith(UI_COMMAND):
+    elif message_lower.startswith(UI_COMMAND()):
         await handle_ui(message)
-    elif message_lower.startswith(PING_COMMAND):
+
+    elif message_lower.startswith(PING_COMMAND()):
         latency = f"{round(client.latency * 1000)}ms"
         await message.reply(f"Pong! Latency: {latency}")
-    elif message_lower.startswith(ME_COMMAND):
+
+    elif message_lower.startswith(ME_COMMAND()):
         await me_mimic(message)
 
-    elif message_lower.startswith(DELETE_COMMAND):
+    elif message_lower.startswith(DELETE_COMMAND()):
         await delete_messages(message)
-    elif message_lower.startswith(YOUTUBE_COMMAND):
-        await youtube_search(message, YOUTUBE_COMMAND)
-    elif message_lower.startswith(YT_CMD):
-        await youtube_search(message, YT_CMD)
 
-    elif message_lower.startswith(SAY_COMMAND):
+    elif message_lower.startswith(YOUTUBE_COMMAND()):
+        await youtube_search(message, YOUTUBE_COMMAND())
+
+    elif message_lower.startswith(YT_CMD()):
+        await youtube_search(message, YT_CMD())
+
+    elif message_lower.startswith(SAY_COMMAND()):
         await echo_message(message)
-    elif message_lower.startswith(REGIONAL_COMMAND):
-        await regionalconvert(message, REGIONAL_COMMAND)
-    elif message_lower.startswith(SEARCH_COMMAND1) or message.content.startswith(
-        SEARCH_COMMAND2
+
+    elif message_lower.startswith(REGIONAL_COMMAND()):
+        await regionalconvert(message, REGIONAL_COMMAND())
+
+    elif message_lower.startswith(SEARCH_COMMAND1()) or message_lower.startswith(
+        SEARCH_COMMAND2()
     ):
         command = (
-            SEARCH_COMMAND1
-            if message.content.startswith(SEARCH_COMMAND1)
-            else SEARCH_COMMAND2
+            SEARCH_COMMAND1()
+            if message_lower.startswith(SEARCH_COMMAND1())
+            else SEARCH_COMMAND2()
         )
         await process_image_search_command(message, command)
-    elif message_lower.startswith(R34_COMMAND):
-        await process_image_search_command_r34(message, R34_COMMAND)
-    elif message_lower.startswith(URL_COMMAND):
+
+    elif message_lower.startswith(R34_COMMAND()):
+        await process_image_search_command_r34(message, R34_COMMAND())
+
+    elif message_lower.startswith(URL_COMMAND()):
         await handle_url(message)
-    elif message_lower.startswith(POKEMON_COMMAND):
+
+    elif message_lower.startswith(POKEMON_COMMAND()):
         await generate_pokemon(message)
+
     elif await check_reply(client, message) is True:
-        (await chat_with_llm_api(message),)  # type: ignore
-    elif message_lower.startswith(ONGOING_COMMAND):
+        await chat_with_llm_api(message)
+
+    elif message_lower.startswith(ONGOING_COMMAND()):
         await handle_ongoing_requests(message)
-    elif message_lower.startswith(RATE_COMMAND):
+
+    elif message_lower.startswith(SET_PREFIX_COMMAND()):
+        await handle_set_prefix(message)
+    elif message_lower.startswith(GET_PREFIX_COMMAND()):
+        await handle_get_prefix(message)
+    elif message_lower.startswith(SET_ERROR_COMMAND()):
+        await handle_set_error(message)
+    elif message_lower.startswith(RATE_COMMAND()):
         await handle_rate(message)
     if message.author.id == OwnerId:
-        if message_lower.startswith(CHANGEAVATARCOMMAND) and message.attachments:
+        if message_lower.startswith(CHANGEAVATARCOMMAND()) and message.attachments:
             await change_avatar(client, message)
-        elif message_lower.startswith(STATUS_COMMAND):
+        elif message_lower.startswith(STATUS_COMMAND()):
             await handle_status(client, message)
 
 
