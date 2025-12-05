@@ -3,21 +3,27 @@
 
   const platforms = {
     IOS: {
-      text: "Download on the App Store",
-      href: "/api/download?platform=ios",
+      text: "iOS app not available",
+      href: "javascript:void(0)",
       hideLogin: true,
     },
     ANDROID: {
-      text: "Download on Google Play",
-      href: "/api/download?platform=android",
+      text: "Download for Android",
+      href: "https://github.com/liventcord/Mobile/releases",
       hideLogin: true,
     },
     WINDOWS: {
-      text: "Download for Windows",
-      href: "/api/download?platform=win",
+      text: "Download for Desktop",
+      href: "https://github.com/liventcord/Desktop/releases/",
     },
-    MAC: { text: "Download for Mac", href: "/api/download?platform=osx" },
-    LINUX: { text: "Download for Linux", href: "/api/download?platform=linux" },
+    MAC: {
+      text: "Download for Desktop",
+      href: "https://github.com/liventcord/Desktop/releases/",
+    },
+    LINUX: {
+      text: "Download for Desktop",
+      href: "https://github.com/liventcord/Desktop/releases/",
+    },
   };
 
   const userAgent = navigator.userAgent.toLowerCase();
@@ -30,7 +36,7 @@
     : ["win32", "win64", "windows", "wince"].includes(platform.toLowerCase())
     ? "WINDOWS"
     : ["macintosh", "macintel", "macppc", "mac68k"].includes(
-        platform.toLowerCase(),
+        platform.toLowerCase()
       )
     ? "MAC"
     : /linux/.test(platform.toLowerCase())
@@ -70,7 +76,7 @@
   ];
 
   const download = platforms[devicePlatform] || {
-    text: platforms,
+    text: "Download",
     href: "/download",
   };
 
