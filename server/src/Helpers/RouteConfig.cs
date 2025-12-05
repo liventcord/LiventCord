@@ -1,47 +1,43 @@
 using LiventCord.Helpers;
 using Microsoft.AspNetCore.StaticFiles;
+using System.Net.Http;
 
 public static class RouteConfig
 {
+    private static string? _cachedIndexHtml = null;
+    private static readonly object _cacheLock = new object();
+    private static readonly HttpClient _httpClient = new HttpClient();
+
     public static void ConfigureRoutes(WebApplication app)
     {
-        void MapRoute(string path, string fileName)
+        async Task<string> GetIndexHtmlAsync()
         {
-            var provider = new FileExtensionContentTypeProvider();
-            provider.TryGetContentType(fileName, out var contentType);
-            contentType ??= "application/octet-stream";
+            if (_cachedIndexHtml != null)
+                return _cachedIndexHtml;
 
-            app.MapGet(
-                path,
-                async context =>
-                {
-                    var env = context.RequestServices.GetService<IWebHostEnvironment>();
-                    if (env == null)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                        await context.Response.WriteAsync(
-                            "Internal Server Error: Environment not found."
-                        );
-                        return;
-                    }
+            lock (_cacheLock)
+            {
+                if (_cachedIndexHtml != null)
+                    return _cachedIndexHtml;
+            }
 
-                    var filePath = Path.Combine(env.WebRootPath, fileName);
-                    if (File.Exists(filePath))
-                    {
-                        context.Response.ContentType = contentType;
-                        await context.Response.SendFileAsync(filePath);
-                    }
-                    else
-                    {
-                        context.Response.Redirect("/404");
-                    }
-                }
-            );
+            var url = "https://raw.githubusercontent.com/liventcord/liventcord.github.io/refs/heads/main/index.html";
+            var html = await _httpClient.GetStringAsync(url);
+
+            lock (_cacheLock)
+            {
+                _cachedIndexHtml = html;
+            }
+
+            return _cachedIndexHtml;
         }
 
-        MapRoute("/", "templates/index.html");
-        MapRoute("/download", "templates/download.html");
-        MapRoute("/register", "register/register.html");
+        app.MapGet("/", async context =>
+        {
+            var html = await GetIndexHtmlAsync();
+            context.Response.ContentType = "text/html";
+            await context.Response.WriteAsync(html);
+        });
 
         app.MapFallback(async context =>
         {
@@ -51,7 +47,7 @@ public static class RouteConfig
                 : null;
 
             context.Response.StatusCode = StatusCodes.Status404NotFound;
-            if (filePath != null)
+            if (filePath != null && File.Exists(filePath))
             {
                 context.Response.ContentType = "text/html";
                 await context.Response.SendFileAsync(filePath);
@@ -65,76 +61,59 @@ public static class RouteConfig
 
         void MapRedirectRoute(string path, string baseUrl)
         {
-            app.MapGet(
-                path,
-                async context =>
-                {
-                    var originalRoute = context.Request.Query["route"].ToString();
-                    var redirectUrl =
-                        baseUrl
-                        + (
-                            string.IsNullOrEmpty(originalRoute)
-                                ? ""
-                                : "?route=" + Uri.EscapeDataString(originalRoute)
-                        );
-
-                    context.Response.Redirect(redirectUrl);
-                    await Task.CompletedTask;
-                }
-            );
+            app.MapGet(path, async context =>
+            {
+                var originalRoute = context.Request.Query["route"].ToString();
+                var redirectUrl = baseUrl + (string.IsNullOrEmpty(originalRoute) ? "" : "?route=" + Uri.EscapeDataString(originalRoute));
+                context.Response.Redirect(redirectUrl);
+                await Task.CompletedTask;
+            });
         }
 
         MapRedirectRoute("/login", "https://liventcord.github.io/LiventCord/app");
+        MapRedirectRoute("/register", "https://liventcord.github.io/LiventCord/app");
         MapRedirectRoute("/app", "https://liventcord.github.io/LiventCord/app");
-        app.MapGet(
-            "/channels/{*subPath}",
-            async context =>
-            {
-                var subPath = context.Request.RouteValues["subPath"]?.ToString() ?? "";
-                var redirectUrl =
-                    $"https://liventcord.github.io/LiventCord/app/?route=channels/{Uri.EscapeDataString(subPath)}";
-                context.Response.Redirect(redirectUrl);
-                await Task.CompletedTask;
-            }
-        );
 
-        MapRedirectRoute(
-            "/join-guild/{-subPath}",
-            "https://liventcord.github.io/LiventCord/app?route=/join-guild/{subPath}"
-        );
+        app.MapGet("/channels/{*subPath}", async context =>
+        {
+            var subPath = context.Request.RouteValues["subPath"]?.ToString() ?? "";
+            var redirectUrl = $"https://liventcord.github.io/LiventCord/app/?route=channels/{Uri.EscapeDataString(subPath)}";
+            context.Response.Redirect(redirectUrl);
+            await Task.CompletedTask;
+        });
 
-        app.Map(
-            "/api/init",
-            appBuilder =>
-            {
-                appBuilder.Run(async context =>
-                {
-                    var appLogicService =
-                        context.RequestServices.GetRequiredService<AppLogicService>();
-                    await appLogicService.HandleInitRequest(context);
-                });
-            }
-        );
+        MapRedirectRoute("/join-guild/{-subPath}", "https://liventcord.github.io/LiventCord/app?route=/join-guild/{subPath}");
 
-        app.MapGet(
-            "/api/download",
-            async context =>
+        app.Map("/api/init", appBuilder =>
+        {
+            appBuilder.Run(async context =>
             {
-                var platform = context.Request.Query["platform"].ToString().ToLower();
-                var url = platform switch
-                {
-                    "android" =>
-                        "https://github.com/liventcord/Mobile/releases/download/v1.0.0/app-release.apk",
-                    "windows" =>
-                        "https://github.com/liventcord/Desktop/releases/download/v1.0.0/liventcord-win_x64.exe.zip",
-                    "mac" =>
-                        "https://github.com/liventcord/Desktop/releases/download/v1.0.0/liventcord-mac_universal.zip",
-                    "linux" => "https://github.com/liventcord/Desktop/releases",
-                    _ => "https://github.com/liventcord/Desktop/releases/tag/v1.0.0",
-                };
-                context.Response.Redirect(url);
-                await Task.CompletedTask;
-            }
-        );
+                var appLogicService = context.RequestServices.GetRequiredService<AppLogicService>();
+                await appLogicService.HandleInitRequest(context);
+            });
+        });
+
+        app.MapGet("/api/download", async context =>
+        {
+            var platform = context.Request.Query["platform"].ToString().ToLower();
+            string url = platform switch
+            {
+                "android" => "https://github.com/liventcord/Mobile/releases/download/v3.0.0/app-release.apk",
+                "windows" => "https://github.com/liventcord/Desktop/releases/download/v1.0.1/liventcord-win_x64.exe.zip",
+                "mac" => "https://github.com/liventcord/Desktop/releases/download/v1.0.1/liventcord-mac_universal.zip",
+                "linux" =>
+                    context.Request.Query["arch"].ToString().ToLower() switch
+                    {
+                        "arm64" => "https://github.com/liventcord/Desktop/releases/download/v1.0.1/liventcord-linux_arm64.zip",
+                        "armhf" => "https://github.com/liventcord/Desktop/releases/download/v1.0.1/liventcord-linux_armhf.zip",
+                        "x64" => "https://github.com/liventcord/Desktop/releases/download/v1.0.1/liventcord-linux_x64.zip",
+                        _ => "https://github.com/liventcord/Desktop/releases"
+                    },
+                _ => "https://github.com/liventcord/Desktop/releases/tag/v1.0.0",
+            };
+
+            context.Response.Redirect(url);
+            await Task.CompletedTask;
+        });
     }
 }

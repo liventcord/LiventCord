@@ -48,12 +48,20 @@ describe("Change Name Tests", () => {
 });
 
 describe("Check docs uptime", () => {
-  it("Requests swagger json", { defaultCommandTimeout: 60000, responseTimeout: 60000, execTimeout: 60000 }, () => {
-    cy.request({
-      url: Cypress.env("backendUrl") + "/swagger/v1/swagger.json",
-      method: "GET"
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-    });
-  });
+  it(
+    "Requests swagger json",
+    {
+      defaultCommandTimeout: 60000,
+      responseTimeout: 60000,
+      execTimeout: 60000
+    },
+    () => {
+      cy.request({
+        url: Cypress.env("backendUrl") + "/swagger/v1/swagger.json",
+        method: "GET"
+      }).then((response) => {
+        expect(response.status).to.eq(200);
+      });
+    }
+  );
 });

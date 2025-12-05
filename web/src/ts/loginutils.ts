@@ -44,6 +44,63 @@ const loginTranslations = {
       "Bu takma ad, mevcut tanımlayıcı sayısının maksimum sınırını aşmış durumda",
     emailExists: "Bu e posta adresi zaten kayıtlı",
     successRegister: "Başarıyla kayıt olundu!"
+  },
+  es: {
+    emailInvalid: "Por favor, introduce una dirección de correo válida.",
+    passwordInvalid: "La contraseña debe tener al menos 5 caracteres.",
+    nickInvalid: "El apodo debe tener entre 1 y 32 caracteres.",
+    unauthorized: "¡Correo o contraseña inválidos!",
+    errorOccurred: "¡Ocurrió un error! ",
+    login: "Iniciar sesión",
+    register: "Registrarse",
+    emailLabel: "Introduce tu correo electrónico",
+    passwordLabel: "Introduce tu contraseña",
+    nickLabel: "Introduce tu apodo",
+    forgotPassword: "¿Olvidaste tu contraseña?",
+    registerPrompt: "¿Necesitas una cuenta?",
+    loginPrompt: "¿Ya tienes una cuenta?",
+    emailExists: "El correo ya está registrado",
+    maxNickReached:
+      "Este apodo ha superado el máximo número de discriminadores disponibles.",
+    successRegister: "¡Registro exitoso!"
+  },
+  de: {
+    emailInvalid: "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    passwordInvalid: "Das Passwort muss mindestens 5 Zeichen lang sein.",
+    nickInvalid: "Der Spitzname muss zwischen 1 und 32 Zeichen lang sein.",
+    unauthorized: "Ungültige E-Mail oder ungültiges Passwort!",
+    errorOccurred: "Ein Fehler ist aufgetreten! ",
+    login: "Anmelden",
+    register: "Registrieren",
+    emailLabel: "Geben Sie Ihre E-Mail ein",
+    passwordLabel: "Geben Sie Ihr Passwort ein",
+    nickLabel: "Geben Sie Ihren Spitznamen ein",
+    forgotPassword: "Passwort vergessen?",
+    registerPrompt: "Brauchst du ein Konto?",
+    loginPrompt: "Hast du bereits ein Konto?",
+    emailExists: "E-Mail ist bereits registriert",
+    maxNickReached:
+      "Dieser Spitzname hat die maximale Anzahl verfügbarer Diskriminatoren überschritten.",
+    successRegister: "Erfolgreich registriert!"
+  },
+  fr: {
+    emailInvalid: "Veuillez entrer une adresse e-mail valide.",
+    passwordInvalid: "Le mot de passe doit contenir au moins 5 caractères.",
+    nickInvalid: "Le pseudo doit contenir entre 1 et 32 caractères.",
+    unauthorized: "E-mail ou mot de passe invalide !",
+    errorOccurred: "Une erreur s'est produite ! ",
+    login: "Connexion",
+    register: "S'inscrire",
+    emailLabel: "Entrez votre e-mail",
+    passwordLabel: "Entrez votre mot de passe",
+    nickLabel: "Entrez votre pseudo",
+    forgotPassword: "Mot de passe oublié ?",
+    registerPrompt: "Besoin d'un compte ?",
+    loginPrompt: "Vous avez déjà un compte ?",
+    emailExists: "L'adresse e-mail est déjà enregistrée",
+    maxNickReached:
+      "Ce pseudo a dépassé le nombre maximum de discriminateurs disponibles.",
+    successRegister: "Inscription réussie !"
   }
 } as any;
 
@@ -78,7 +135,13 @@ function setLanguage(language: string) {
 }
 
 export function initialiseLoginPage() {
-  const languageToSet = navigator.language.startsWith("tr") ? "tr" : "en";
+  const lang = navigator.language.toLowerCase();
+  let languageToSet = "en";
+
+  if (lang.startsWith("tr")) languageToSet = "tr";
+  else if (lang.startsWith("es")) languageToSet = "es";
+  else if (lang.startsWith("de")) languageToSet = "de";
+  else if (lang.startsWith("fr")) languageToSet = "fr";
   setLanguage(languageToSet);
   updateDOM();
 
@@ -173,6 +236,9 @@ export function initialiseLoginPage() {
 
   addClickListener("en-button", () => setLanguage("en"));
   addClickListener("tr-button", () => setLanguage("tr"));
+  addClickListener("es-button", () => setLanguage("es"));
+  addClickListener("de-button", () => setLanguage("de"));
+  addClickListener("fr-button", () => setLanguage("fr"));
 }
 
 function getTranslation(key: string) {

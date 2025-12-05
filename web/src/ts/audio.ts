@@ -251,8 +251,9 @@ export function stopAudioAnalysis() {
 }
 
 function startAudioAnalysis() {
-  audioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)();
+  audioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )();
 
   if (!(currentAudioPlayer instanceof HTMLMediaElement)) {
     console.error("currentAudioPlayer is not a valid HTMLMediaElement.");
