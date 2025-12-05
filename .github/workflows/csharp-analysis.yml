@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - "server/src/**"
+      - "!server/src/wwwroot/**"
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
