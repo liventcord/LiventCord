@@ -180,14 +180,14 @@ public static class RouteConfig
 
     private static string RewriteAssetUrls(string html)
     {
-        html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?(?!https?:|/)([^""'\s>]+)[""']?", m =>
+        html = Regex.Replace(html, @"\b(src|href)\s*=\s*[""'](?!https?:|/)([^""']+)[""']", m =>
         {
             var attr = m.Groups[1].Value;
             var path = m.Groups[2].Value.Replace("\\", "/");
             return $"{attr}=\"/LiventCord/app/{path}\"";
         }, RegexOptions.IgnoreCase);
 
-        html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?/LiventCord/app/([^""'\s>]+)[""']?", m =>
+        html = Regex.Replace(html, @"\b(src|href)\s*=\s*[""']/LiventCord/app/([^""']+)[""']", m =>
         {
             var attr = m.Groups[1].Value;
             var path = m.Groups[2].Value.Replace("\\", "/");
@@ -196,4 +196,5 @@ public static class RouteConfig
 
         return html;
     }
+
 }
