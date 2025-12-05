@@ -91,6 +91,7 @@ public static class RouteConfig
             if (_assetCache.TryGetValue(path, out var cachedBytes))
             {
                 context.Response.ContentType = _assetContentTypes[path];
+                context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
                 await context.Response.Body.WriteAsync(cachedBytes);
                 return;
             }
@@ -106,6 +107,7 @@ public static class RouteConfig
                 _assetContentTypes[path] = contentType;
 
                 context.Response.ContentType = contentType;
+                context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
                 await context.Response.Body.WriteAsync(bytes);
             }
             catch
@@ -114,6 +116,7 @@ public static class RouteConfig
                 await context.Response.WriteAsync("Asset not found");
             }
         });
+
 
         // SPA redirects
         void MapRedirectRoute(string path, string baseUrl)
