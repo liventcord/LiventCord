@@ -2,6 +2,7 @@ using LiventCord.Helpers;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using System.Collections.Concurrent;
 
 public static class RouteConfig
 {
@@ -11,6 +12,9 @@ public static class RouteConfig
     private static readonly HttpClient _httpClient = new HttpClient();
 
     private const string GitHubPagesBase = "https://liventcord.github.io/LiventCord/app";
+
+    private static readonly ConcurrentDictionary<string, byte[]> _assetCache = new ConcurrentDictionary<string, byte[]>();
+    private static readonly ConcurrentDictionary<string, string> _assetContentTypes = new ConcurrentDictionary<string, string>();
 
     public static void ConfigureRoutes(WebApplication app)
     {
@@ -42,7 +46,7 @@ public static class RouteConfig
             await context.Response.WriteAsync(html);
         });
 
-        // SPA app from GitHub Pages
+        // SPA HTML
         async Task<string> GetAppIndexHtmlAsync()
         {
             if (_cachedAppIndexHtml != null) return _cachedAppIndexHtml;
@@ -55,7 +59,7 @@ public static class RouteConfig
             var url = $"{GitHubPagesBase}/index.html";
             var html = await _httpClient.GetStringAsync(url);
 
-            html = ReplaceUrlsWithGitHubPages(html);
+            html = RewriteAssetUrls(html);
 
             lock (_cacheLock)
             {
@@ -72,22 +76,44 @@ public static class RouteConfig
             await context.Response.WriteAsync(html);
         });
 
-        app.MapGet("/LiventCord/app/{*any}", async context =>
+        // SPA assets proxy
+        app.MapGet("/LiventCord/app/{*assetPath}", async context =>
         {
-            var path = context.Request.Path.Value ?? "";
-
-            if (Path.HasExtension(path))
+            var path = context.Request.Path.Value?.Replace("/LiventCord/app/", "") ?? "";
+            if (string.IsNullOrEmpty(path))
             {
-                var redirectUrl = $"https://liventcord.github.io{path}";
-                context.Response.Redirect(redirectUrl);
+                var html = await GetAppIndexHtmlAsync();
+                context.Response.ContentType = "text/html";
+                await context.Response.WriteAsync(html);
                 return;
             }
 
-            var html = await GetAppIndexHtmlAsync();
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(html);
-        });
+            if (_assetCache.TryGetValue(path, out var cachedBytes))
+            {
+                context.Response.ContentType = _assetContentTypes[path];
+                await context.Response.Body.WriteAsync(cachedBytes);
+                return;
+            }
 
+            try
+            {
+                var assetUrl = $"{GitHubPagesBase}/{path}";
+                var bytes = await _httpClient.GetByteArrayAsync(assetUrl);
+                var provider = new FileExtensionContentTypeProvider();
+                if (!provider.TryGetContentType(path, out var contentType)) contentType = "application/octet-stream";
+
+                _assetCache[path] = bytes;
+                _assetContentTypes[path] = contentType;
+
+                context.Response.ContentType = contentType;
+                await context.Response.Body.WriteAsync(bytes);
+            }
+            catch
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsync("Asset not found");
+            }
+        });
 
         // SPA redirects
         void MapRedirectRoute(string path, string baseUrl)
@@ -108,12 +134,12 @@ public static class RouteConfig
         app.MapGet("/channels/{*subPath}", async context =>
         {
             var subPath = context.Request.RouteValues["subPath"]?.ToString() ?? "";
-            var redirectUrl = $"{GitHubPagesBase}/?route=channels/{Uri.EscapeDataString(subPath)}";
+            var redirectUrl = $"/LiventCord/app/?route=channels/{Uri.EscapeDataString(subPath)}";
             context.Response.Redirect(redirectUrl);
             await Task.CompletedTask;
         });
 
-        MapRedirectRoute("/join-guild/{*subPath}", $"{GitHubPagesBase}?route=/join-guild/{{subPath}}");
+        MapRedirectRoute("/join-guild/{*subPath}", "/LiventCord/app?route=/join-guild/{subPath}");
 
         // API endpoints
         app.Map("/api/init", appBuilder =>
@@ -149,24 +175,22 @@ public static class RouteConfig
         });
     }
 
-    private static string ReplaceUrlsWithGitHubPages(string html)
+    private static string RewriteAssetUrls(string html)
     {
         html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?(?!https?:|/)([^""'\s>]+)[""']?", m =>
         {
             var attr = m.Groups[1].Value;
             var path = m.Groups[2].Value.Replace("\\", "/");
-            return $"{attr}=\"{GitHubPagesBase}/{path}\"";
+            return $"{attr}=\"/LiventCord/app/{path}\"";
         }, RegexOptions.IgnoreCase);
 
         html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?/LiventCord/app/([^""'\s>]+)[""']?", m =>
         {
             var attr = m.Groups[1].Value;
             var path = m.Groups[2].Value.Replace("\\", "/");
-            return $"{attr}=\"{GitHubPagesBase}/{path}\"";
+            return $"{attr}=\"/LiventCord/app/{path}\"";
         }, RegexOptions.IgnoreCase);
 
         return html;
     }
-
-
 }

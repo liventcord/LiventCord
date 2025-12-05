@@ -82,48 +82,60 @@ export default defineConfig({
     sourcemap: isDev,
     persistentCache: true,
     partialBundling: {
+      targetConcurrentRequests: 2,
+      targetMinSize: 20,
+      targetMaxSize: 2000,
       groups: [
         {
-          name: "vue",
-          test: ["vue", "@vue/"]
+          name: "vendor",
+          test: [
+            "vue",
+            "@vue/",
+            "vuex",
+            "croppie",
+            "canvas-confetti",
+            "browser-image-compression",
+            "file-type",
+            "dompurify",
+            "dotenv",
+            "process",
+            "node_modules"
+          ],
+          groupType: "immutable",
+          resourceType: "all"
         },
         {
-          name: "vuex",
-          test: ["vuex"]
-        },
-        {
-          name: "croppie",
-          test: ["croppie"]
-        },
-        {
-          name: "confetti",
-          test: ["canvas-confetti"]
-        },
-        {
-          name: "image-compression",
-          test: ["browser-image-compression"]
-        },
-        {
-          name: "file-type",
-          test: ["file-type"]
-        },
-        {
-          name: "dompurify",
-          test: ["dompurify"]
-        },
-        {
-          name: "dotenv",
-          test: ["dotenv"]
-        },
-        {
-          name: "process",
-          test: ["process"]
-        },
+          name: "app",
+          test: ["./src/"],
+          groupType: "mutable",
+          resourceType: "all"
+        }
+      ],
+      enforceResources: [
         {
           name: "vendor",
-          test: ["node_modules"]
+          test: [
+            "vue",
+            "@vue/",
+            "vuex",
+            "croppie",
+            "canvas-confetti",
+            "browser-image-compression",
+            "file-type",
+            "dompurify",
+            "dotenv",
+            "process",
+            "node_modules"
+          ]
+        },
+        {
+          name: "app",
+          test: ["./src/"]
         }
-      ]
+      ],
+      enforceTargetConcurrentRequests: true,
+      enforceTargetMinSize: true,
+      immutableModules: ["node_modules"]
     }
   },
 
