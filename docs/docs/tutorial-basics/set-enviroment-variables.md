@@ -153,6 +153,10 @@ mv .example.env .env
   - **PostgresURI**:
     Connection string for connecting PostgreSQL.
     **Defaults to** `postgres://postgres@localhost:5432/postgres?sslmode=disable`
+  
+  - **AllowedOrigins**:  
+    Comma-separated list of origins that are allowed to connect to the WebSocket server via CORS.  
+    **Defaults to** `http://localhost:3000,https://liventcord.github.io`
 
 
 ## Gin Media Proxy Server Configuration

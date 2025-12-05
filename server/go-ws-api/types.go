@@ -58,15 +58,21 @@ type UserDisconnect struct {
 }
 
 func newHub() *VcHub {
+	originsEnv := getEnv("AllowedOrigins", "http://localhost:3000")
+	allowedOrigins := make(map[string]struct{})
+	for _, o := range strings.Split(originsEnv, ",") {
+		o = strings.TrimSpace(o)
+		if o != "" {
+			allowedOrigins[o] = struct{}{}
+		}
+	}
+
 	return &VcHub{
-		rooms:       make(map[string]map[string]*VcClient),
-		clients:     make(map[string]*VcClient),
-		roomMembers: make(map[string][]string),
-		sessions:    make(map[string]map[string]SessionData),
-		allowedOrigins: map[string]struct{}{
-			"http://localhost:3000":        {},
-			"https://liventcord.github.io": {},
-		},
+		rooms:          make(map[string]map[string]*VcClient),
+		clients:        make(map[string]*VcClient),
+		roomMembers:    make(map[string][]string),
+		sessions:       make(map[string]map[string]SessionData),
+		allowedOrigins: allowedOrigins,
 	}
 }
 
