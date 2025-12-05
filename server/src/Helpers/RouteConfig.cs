@@ -151,7 +151,14 @@ public static class RouteConfig
 
     private static string ReplaceUrlsWithGitHubPages(string html)
     {
-        html = Regex.Replace(html, @"(src|href)\s*=\s*[""'](?!https?:|/)([^""']+)[""']", m =>
+        html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?(?!https?:|/)([^""'\s>]+)[""']?", m =>
+        {
+            var attr = m.Groups[1].Value;
+            var path = m.Groups[2].Value.Replace("\\", "/");
+            return $"{attr}=\"{GitHubPagesBase}/{path}\"";
+        }, RegexOptions.IgnoreCase);
+
+        html = Regex.Replace(html, @"(src|href)\s*=\s*[""']?/LiventCord/app/([^""'\s>]+)[""']?", m =>
         {
             var attr = m.Groups[1].Value;
             var path = m.Groups[2].Value.Replace("\\", "/");
@@ -160,4 +167,6 @@ public static class RouteConfig
 
         return html;
     }
+
+
 }
