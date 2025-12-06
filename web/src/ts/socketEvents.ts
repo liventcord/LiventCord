@@ -147,7 +147,6 @@ export abstract class WebSocketClientBase {
   private attachHandlers() {
     this.socket.onopen = () => {
       this.retryCount = 0;
-      this.startHeartbeat();
       this.processPendingRequests();
       this.onOpen();
     };
@@ -162,7 +161,6 @@ export abstract class WebSocketClientBase {
     };
 
     this.socket.onclose = (event: CloseEvent) => {
-      this.stopHeartbeat();
       if (!event.wasClean) {
         const retryDelay = Math.min(
           Math.pow(2, this.retryCount) * 1000,
@@ -184,18 +182,6 @@ export abstract class WebSocketClientBase {
   protected onClose(): void {}
   protected onError(err: any): void {}
 
-  private startHeartbeat() {
-    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-    this.heartbeatTimer = window.setInterval(() => {
-      if (this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ event: "ping", data: {} }));
-      }
-    }, this.heartbeatInterval);
-  }
-
-  private stopHeartbeat() {
-    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
-  }
 
   private processPendingRequests() {
     while (this.pendingRequests.length > 0) {

@@ -31,6 +31,8 @@ func main() {
 		HandleWS(c.Writer, c.Request)
 	})
 
+	startPingRoutine()
+
 	telemetry.Init()
 
 	adminPassword := getEnv("AdminPassword", "")
