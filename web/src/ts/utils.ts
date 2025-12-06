@@ -1226,9 +1226,9 @@ export function getAttachmentUrl(file: Attachment) {
   } else if (file.isProxyFile) {
     return apiClient.getProxyUrl(file.proxyUrl);
   } else if (file.isImageFile) {
-    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
+    return `https://media-api.efekantunc0.workers.dev/attachments/${file.fileId}`;
   } else if (file.isVideoFile) {
-    return `${apiClient.getBackendUrl()}/attachments/${file.fileId}`;
+    return `https://media-api.efekantunc0.workers.dev/attachments/${file.fileId}`;
   } else {
     return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
   }

@@ -101,7 +101,7 @@ const maxTenorHeight = "85vh";
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 const getAttachmentUrl = (attachmentId: string) =>
-  `${apiClient.getBackendUrl()}/attachments/${attachmentId}`;
+  `https://media-api.efekantunc0.workers.dev/attachments/${attachmentId}`;
 
 function createTenorElement(
   msgContentElement: HTMLElement,
