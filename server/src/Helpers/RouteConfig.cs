@@ -59,8 +59,6 @@ public static class RouteConfig
             var url = $"{GitHubPagesBase}/index.html";
             var html = await _httpClient.GetStringAsync(url);
 
-            html = RewriteAssetUrls(html);
-
             lock (_cacheLock)
             {
                 _cachedAppIndexHtml = html;
@@ -176,25 +174,6 @@ public static class RouteConfig
             context.Response.Redirect(url);
             await Task.CompletedTask;
         });
-    }
-
-    private static string RewriteAssetUrls(string html)
-    {
-        html = Regex.Replace(html, @"\b(src|href)\s*=\s*[""'](?!https?:|/)([^""']+)[""']", m =>
-        {
-            var attr = m.Groups[1].Value;
-            var path = m.Groups[2].Value.Replace("\\", "/");
-            return $"{attr}=\"/LiventCord/app/{path}\"";
-        }, RegexOptions.IgnoreCase);
-
-        html = Regex.Replace(html, @"\b(src|href)\s*=\s*[""']/LiventCord/app/([^""']+)[""']", m =>
-        {
-            var attr = m.Groups[1].Value;
-            var path = m.Groups[2].Value.Replace("\\", "/");
-            return $"{attr}=\"/LiventCord/app/{path}\"";
-        }, RegexOptions.IgnoreCase);
-
-        return html;
     }
 
 }
