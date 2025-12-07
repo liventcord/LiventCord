@@ -102,7 +102,9 @@ export default {
     }
 
     async function getFromCache(key: string, fetcher?: () => Promise<any>) {
-      const cached = await cache.match(key);
+      const cacheUrl = new URL("https://cache.liventcord/" + key);
+
+      const cached = await cache.match(cacheUrl);
       if (cached) {
         const headers = new Headers(cached.headers);
         headers.set("Access-Control-Allow-Origin", "*");
@@ -110,6 +112,7 @@ export default {
         headers.set("Access-Control-Allow-Headers", "*");
         return new Response(cached.body, { status: cached.status, headers });
       }
+
       if (!fetcher) return makeResponse({ error: "Not Found" }, 404);
 
       const file = await fetcher();
@@ -130,13 +133,15 @@ export default {
         "Access-Control-Allow-Methods": "*",
         "Access-Control-Allow-Headers": "*",
       });
+
       if (VIDEO_MIME_TYPES.has(file.content_type))
         headers.set("Accept-Ranges", "bytes");
 
       const resp = new Response(body, { status: 200, headers });
       try {
-        await cache.put(key, resp.clone());
+        await cache.put(cacheUrl, resp.clone());
       } catch {}
+
       return resp;
     }
 
