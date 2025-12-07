@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +21,7 @@ import (
 
 var CacheDirectory = "./cache"
 var CloudflareWorkerURL string
+var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
@@ -30,12 +34,13 @@ func init() {
 func GetVideoAttachmentPreview(c *gin.Context) {
 	attachmentId := c.Param("attachmentId")
 
-	if !isValidIdLength(attachmentId) || containsIllegalPathSegments(attachmentId) {
+	if !isValidAttachmentId(attachmentId) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid attachmentId."})
 		return
 	}
 
-	previewCacheFilePath := filepath.Join(CacheDirectory, attachmentId+"_preview.webp")
+	hash := sha256.Sum256([]byte(attachmentId))
+	previewCacheFilePath := filepath.Join(CacheDirectory, fmt.Sprintf("%x_preview.webp", hash))
 
 	data, err := getFileFromCacheOrDatabase(previewCacheFilePath, func() ([]byte, error) {
 		videoBytes, contentType, fileName, err := fetchAttachmentFromWorker(attachmentId)
@@ -60,8 +65,8 @@ func GetVideoAttachmentPreview(c *gin.Context) {
 	})
 
 	if err != nil {
-		if err.Error() == "file not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if errors.Is(err, fs.ErrNotExist) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "file not found"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -112,22 +117,12 @@ func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, err
 	return videoBytes, contentType, fileName, nil
 }
 
-func isValidIdLength(id string) bool {
-	return len(id) == 19
-}
-
-func containsIllegalPathSegments(id string) bool {
-	illegalSegments := []string{"..", "/", "\\"}
-	for _, seg := range illegalSegments {
-		if strings.Contains(id, seg) {
-			return true
-		}
-	}
-	return false
+func isValidAttachmentId(id string) bool {
+	return validID.MatchString(id)
 }
 
 func getFileFromCacheOrDatabase(cachePath string, fetchFunc func() ([]byte, error)) ([]byte, error) {
-	if data, err := ioutil.ReadFile(cachePath); err == nil {
+	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
 	}
 
@@ -136,8 +131,12 @@ func getFileFromCacheOrDatabase(cachePath string, fetchFunc func() ([]byte, erro
 		return nil, err
 	}
 
-	if err := os.MkdirAll(CacheDirectory, os.ModePerm); err == nil {
-		_ = ioutil.WriteFile(cachePath, data, 0644)
+	if err := os.MkdirAll(CacheDirectory, os.ModePerm); err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+		return nil, err
 	}
 
 	return data, nil
