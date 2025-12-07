@@ -36,7 +36,6 @@ namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("api/images")]
-    [DisableControllerIfPostgres]
     [Authorize]
     public class FileController : BaseController
     {
@@ -44,20 +43,17 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly ILogger<FileController> _logger;
         private readonly ICacheService _cacheService;
-        private readonly MembersController _memberController;
 
         public FileController(
             AppDbContext context,
             ILogger<FileController> logger,
             PermissionsController permissionsController,
-            MembersController membersController,
             ICacheService cacheService
         )
         {
             _context = context;
             _logger = logger;
             _permissionsController = permissionsController;
-            _memberController = membersController;
             _cacheService = cacheService;
         }
 
@@ -657,7 +653,7 @@ public static class FileSignatureValidator
             return false;
         }
 
-        var extension = System.IO.Path.GetExtension(file.FileName);
+        var extension = Path.GetExtension(file.FileName);
         if (string.IsNullOrEmpty(extension))
         {
             return false;
@@ -726,7 +722,7 @@ public static class FileSignatureValidator
             return false;
         }
 
-        var extension = System.IO.Path.GetExtension(file.FileName);
+        var extension = Path.GetExtension(file.FileName);
         if (string.IsNullOrEmpty(extension))
         {
             return false;
