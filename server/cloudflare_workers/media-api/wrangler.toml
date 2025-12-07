@@ -1,0 +1,8 @@
+name = "media-api" 
+main = "src/index.ts"
+compatibility_date = "2025-02-04"
+compatibility_flags = ["nodejs_compat"]
+
+[[hyperdrive]] 
+binding = "HYPERDRIVE"
+id = "YOUR_HYPERDRIVE_ID"

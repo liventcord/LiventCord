@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ESNext",
+    "lib": ["ESNext", "WebWorker"],
+    "types": ["@cloudflare/workers-types", "node"],
+    "moduleSuffixes": [".ts", ""]
+  }
+}

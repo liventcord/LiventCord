@@ -1,0 +1,22 @@
+{
+  "name": "media-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "deploy": "npm run format && npx wrangler deploy src/index.ts",
+    "dev": "npx wrangler dev src/index.ts",
+    "build": "tsc",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251205.0",
+    "@types/node": "^24.10.1",
+    "prettier": "^3.7.4",
+    "wrangler": "^4.53.0"
+  },
+  "dependencies": {
+    "postgres": "^3.4.7"
+  }
+}
