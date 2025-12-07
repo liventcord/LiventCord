@@ -27,4 +27,4 @@ Authorization token used to authenticate `/health` endpoint checks on the backen
 ## **BACKEND_URLS**:
 
 A comma-separated list of backend service URLs to monitor. Example:
-`BACKEND_URLS=http://localhost:5005,http://localhost:5000,http://localhost:8080`
+`BACKEND_URLS=http://localhost:5005,http://localhost:8080`

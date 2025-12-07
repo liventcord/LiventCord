@@ -1,11 +1,11 @@
-name: Publish Docker Api Image Go Proxy
+name: Publish Docker Api Image Go Ws
 
 on:
   push:
     branches:
       - main
     paths:
-      - "server/proxy-api/**"
+      - "server/media-api/**"
   workflow_dispatch:
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: server/
-          file: server/proxy-api/Dockerfile
+          file: server/media-api/Dockerfile
           push: true
-          tags: thelp281/liventcord-proxy-api:latest
-          cache-from: type=registry,ref=thelp281/liventcord-proxy-api:cache
-          cache-to: type=registry,ref=thelp281/liventcord-proxy-api:cache,mode=max
+          tags: thelp281/liventcord-media-api:latest
+          cache-from: type=registry,ref=thelp281/liventcord-media-api:cache
+          cache-to: type=registry,ref=thelp281/liventcord-media-api:cache,mode=max

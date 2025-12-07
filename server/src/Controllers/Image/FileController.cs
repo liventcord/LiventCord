@@ -36,6 +36,7 @@ namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("api/images")]
+    [DisableControllerIfPostgres]
     [Authorize]
     public class FileController : BaseController
     {

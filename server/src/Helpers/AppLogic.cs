@@ -9,7 +9,7 @@ namespace LiventCord.Helpers
     {
         public static string GifWorkerUrl { get; private set; }
         public static string ProxyWorkerUrl { get; private set; }
-        public static string MediaProxyApiUrl { get; private set; }
+        public static string MediaWorkerUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
 
@@ -21,7 +21,7 @@ namespace LiventCord.Helpers
         {
             GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
             ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
-            MediaProxyApiUrl = "http://localhost:5000";
+            MediaWorkerUrl = "https://media-api.liventcord-a60.workers.dev";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080";
@@ -32,7 +32,7 @@ namespace LiventCord.Helpers
         {
             GifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] ?? GifWorkerUrl;
             ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
-            MediaProxyApiUrl = configuration["AppSettings:MediaProxyApiUrl"] ?? MediaProxyApiUrl;
+            MediaWorkerUrl = configuration["AppSettings:MediaWorkerUrl"] ?? ProxyWorkerUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
 
             MaxAvatarSize = float.TryParse(
@@ -150,7 +150,7 @@ namespace LiventCord.Helpers
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
                     proxyWorkerUrl = SharedAppConfig.ProxyWorkerUrl,
-                    mediaProxyApiUrl = SharedAppConfig.MediaProxyApiUrl,
+                    MediaWorkerUrl = SharedAppConfig.MediaWorkerUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,

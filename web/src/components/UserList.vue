@@ -299,7 +299,7 @@ const pageSize = 50;
 
 const hasMoreAttachments = computed(() => store.getters.hasMoreAttachments);
 
-const failedVideos = {};
+const failedVideos: Record<string, boolean> = {};
 
 function onVideoError(fileId: string) {
   failedVideos[fileId] = true;

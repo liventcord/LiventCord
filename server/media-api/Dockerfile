@@ -17,7 +17,6 @@ RUN apk add --no-cache wget ffmpeg python3 py3-pip && \
     chmod +x /usr/local/bin/yt-dlp
 
 WORKDIR /usr/local/bin
-
 COPY --from=builder /usr/local/bin/app .
 
 CMD ["app"]

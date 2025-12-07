@@ -182,7 +182,6 @@ export abstract class WebSocketClientBase {
   protected onClose(): void {}
   protected onError(err: any): void {}
 
-
   private processPendingRequests() {
     while (this.pendingRequests.length > 0) {
       const req = this.pendingRequests.shift();

@@ -30,6 +30,7 @@ import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { cacheInterface } from "./cache.ts";
+import { initialState } from "./app.ts";
 
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
@@ -242,13 +243,13 @@ export function getProfileUrl(userId: string): string {
   const v = userManager.getUserProfileVersion(userId);
   if (v === null) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
 
-  return `${apiClient.getBackendUrl()}/profiles/${userId}?version=${v}`;
+  return `${initialState.mediaWorkerUrl}/profiles/${userId}?version=${v}`;
 }
 
 export function getGuildUrl(guildId: string): string {
   const v = cacheInterface.getGuildImageVersion(guildId);
   if (v === null) return blackImage;
-  return `${apiClient.getBackendUrl()}/guilds/${guildId}.webp?version=${v}`;
+  return `${initialState.mediaWorkerUrl}/guilds/${guildId}.webp?version=${v}`;
 }
 
 export function updateSelfProfile(

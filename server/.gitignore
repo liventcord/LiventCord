@@ -24,7 +24,6 @@ LiventCord.sln
 *.pdb
 
 *.env
-proxy-api/MediaCache
 src/wwwroot/assets
 src/wwwroot/ts/
 src/wwwroot/vendor/
