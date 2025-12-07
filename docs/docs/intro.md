@@ -60,9 +60,3 @@ mv .env.example .env
 go run .
 ```
 Gin server runs at `http://localhost:8080`
-
-### Run Go Proxy server for external media display
-```bash
-cd server/proxy-api
-mv .env.example .env
-go run .

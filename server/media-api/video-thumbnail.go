@@ -1,0 +1,194 @@
+package main
+
+import (
+	"bytes"
+	"errors"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
+)
+
+var CacheDirectory = "./cache"
+var CloudflareWorkerURL string
+
+func init() {
+	godotenv.Load()
+	CloudflareWorkerURL = os.Getenv("CLOUDFLARE_WORKER_URL")
+	if CloudflareWorkerURL == "" {
+		panic("CLOUDFLARE_WORKER_URL environment variable not set")
+	}
+}
+
+func GetVideoAttachmentPreview(c *gin.Context) {
+	attachmentId := c.Param("attachmentId")
+
+	if !isValidIdLength(attachmentId) || containsIllegalPathSegments(attachmentId) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid attachmentId."})
+		return
+	}
+
+	previewCacheFilePath := filepath.Join(CacheDirectory, attachmentId+"_preview.webp")
+
+	data, err := getFileFromCacheOrDatabase(previewCacheFilePath, func() ([]byte, error) {
+		videoBytes, contentType, fileName, err := fetchAttachmentFromWorker(attachmentId)
+		if err != nil {
+			return nil, err
+		}
+
+		if fileName == "" {
+			return nil, errors.New("file name is missing")
+		}
+
+		if !isVideoContent(contentType) && !isVideoContent(fileName) {
+			return nil, errors.New("file is not a video")
+		}
+
+		thumbnailBytes, err := generateVideoThumbnail(videoBytes)
+		if err != nil {
+			return nil, errors.New("failed to generate thumbnail: " + err.Error())
+		}
+
+		return thumbnailBytes, nil
+	})
+
+	if err != nil {
+		if err.Error() == "file not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "image/webp", data)
+}
+
+func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, error) {
+	url := CloudflareWorkerURL + "/attachments/" + attachmentId
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, "", "", errors.New("failed to fetch attachment: " + err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, "", "", errors.New("file not found")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", "", errors.New("failed to fetch attachment: status " + resp.Status)
+	}
+
+	videoBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", "", errors.New("failed to read attachment: " + err.Error())
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	fileName := resp.Header.Get("Content-Disposition")
+
+	if fileName != "" {
+		if strings.Contains(fileName, "filename=") {
+			parts := strings.Split(fileName, "filename=")
+			if len(parts) > 1 {
+				fileName = strings.Trim(parts[1], "\"")
+			}
+		}
+	}
+
+	return videoBytes, contentType, fileName, nil
+}
+
+func isValidIdLength(id string) bool {
+	return len(id) == 19
+}
+
+func containsIllegalPathSegments(id string) bool {
+	illegalSegments := []string{"..", "/", "\\"}
+	for _, seg := range illegalSegments {
+		if strings.Contains(id, seg) {
+			return true
+		}
+	}
+	return false
+}
+
+func getFileFromCacheOrDatabase(cachePath string, fetchFunc func() ([]byte, error)) ([]byte, error) {
+	if data, err := ioutil.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
+
+	data, err := fetchFunc()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(CacheDirectory, os.ModePerm); err == nil {
+		_ = ioutil.WriteFile(cachePath, data, 0644)
+	}
+
+	return data, nil
+}
+
+func isVideoContent(contentTypeOrFileName string) bool {
+	videoExtensions := []string{".mp4", ".webm", ".ogg", ".avi", ".mov", ".wmv", ".flv", ".mkv", ".3gp", ".quicktime"}
+	videoMimeTypes := []string{"video/mp4", "video/webm", "video/ogg", "video/avi", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv", "video/x-flv", "video/x-matroska", "video/3gpp"}
+
+	lower := strings.ToLower(contentTypeOrFileName)
+
+	for _, mimeType := range videoMimeTypes {
+		if strings.Contains(lower, mimeType) {
+			return true
+		}
+	}
+
+	for _, ext := range videoExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func generateVideoThumbnail(videoBytes []byte) ([]byte, error) {
+	tmpFile, err := os.CreateTemp("", "video-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write(videoBytes); err != nil {
+		return nil, err
+	}
+	tmpFile.Close()
+
+	outBuf := &bytes.Buffer{}
+	// Generate 1-frame thumbnail and convert to WebP with compression
+	err = ffmpeg.Input(tmpFile.Name()).
+		Output("pipe:1", ffmpeg.KwArgs{
+			"vframes":           "1",
+			"format":            "webp",
+			"lossless":          "0", // 0 = lossy, 1 = lossless
+			"compression_level": "6", // 0-6, higher = more compression
+		}).
+		WithOutput(outBuf).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	return outBuf.Bytes(), nil
+}

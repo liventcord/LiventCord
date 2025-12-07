@@ -430,22 +430,20 @@ class ApiClient {
   }
 
   getProxyHostname(): string | null {
-    if (initialState.mediaProxyApiUrl) {
-      return new URL(initialState.mediaProxyApiUrl).hostname;
+    if (initialState.proxyWorkerUrl) {
+      return new URL(initialState.proxyWorkerUrl).hostname;
     }
     return null;
   }
 
   getProxyUrl(url: string): string {
+    console.error("Got proxy url!!" + url);
     const isLocalhost = url.includes("localhost") || url.includes("127.0.0.1");
     const isIp = /^[\d.]+$/.test(new URL(url).hostname);
     if (isLocalhost || isIp) {
       return url;
     }
-    return (
-      initialState.mediaProxyApiUrl +
-      `/api/proxy/media?url=${encodeURIComponent(url)}`
-    );
+    return initialState.proxyWorkerUrl + `?url=${encodeURIComponent(url)}`;
   }
 
   getUrlForEvent(

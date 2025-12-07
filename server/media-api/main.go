@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
@@ -11,8 +10,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 const cacheHeader = "public, max-age=31536000, immutable"
@@ -201,24 +201,6 @@ func cleanCache(maxSize int64) {
 	}
 }
 
-var urlCache = sync.Map{}
-
-func getCachedAudioStream(videoID string) (string, error) {
-	if url, ok := urlCache.Load(videoID); ok {
-		return url.(string), nil
-	}
-
-	url, err := getAudioStream(videoID)
-	if err == nil {
-		urlCache.Store(videoID, url)
-		go func() {
-			time.Sleep(5 * time.Minute)
-			urlCache.Delete(videoID)
-		}()
-	}
-	return url, err
-}
-
 func startCacheCleaner(interval time.Duration, maxSize int64) {
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -309,9 +291,13 @@ func main() {
 		}
 		c.Status(http.StatusOK)
 	})
+	router.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
+	router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "LiventCord YT stream api is working.")
+	})
 
-	log.Println("Server running on :8080")
-	router.Run(":8080")
+	log.Println("Server running on :8001")
+	router.Run(":8001")
 }
 
 func cors(allowedOrigins []string) gin.HandlerFunc {

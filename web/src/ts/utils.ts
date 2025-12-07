@@ -8,6 +8,7 @@ import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
 import { apiClient } from "./api.ts";
 import { Attachment } from "./message.ts";
+import { initialState } from "./app.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
@@ -1224,11 +1225,12 @@ export function getAttachmentUrl(file: Attachment) {
   if (isTenor) {
     return file.proxyUrl;
   } else if (file.isProxyFile) {
+    console.log(file.isProxyFile);
     return apiClient.getProxyUrl(file.proxyUrl);
   } else if (file.isImageFile) {
-    return `https://media-api.efekantunc0.workers.dev/attachments/${file.fileId}`;
+    return `${initialState.mediaWorkerUrl}/attachments/${file.fileId}`;
   } else if (file.isVideoFile) {
-    return `https://media-api.efekantunc0.workers.dev/attachments/${file.fileId}`;
+    return `${initialState.mediaWorkerUrl}/attachments/${file.fileId}`;
   } else {
     return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
   }

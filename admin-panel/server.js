@@ -13,13 +13,11 @@ const BACKEND_URLS = process.env.BACKEND_URLS
   ? process.env.BACKEND_URLS.split(",")
   : [
       "http://localhost:5005", // Main server
-      "http://localhost:5000", // Proxy Server
       "http://localhost:8080", // WS Server
     ];
 
 const SERVICES = {
   "http://localhost:5005": "Main Server",
-  "http://localhost:5000": "Proxy Server",
   "http://localhost:8080": "WS Server",
 };
 

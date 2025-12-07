@@ -6,7 +6,6 @@ on:
     paths:
       - "server/go-ws-api/**"
       - "server/go-yt-stream-api/**"
-      - "server/proxy-api/**"
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -28,7 +27,6 @@ jobs:
             go:
               - 'server/go-ws-api/**'
               - 'server/go-yt-stream-api/**'
-              - 'server/proxy-api/**'
 
   analyze:
     name: Analyze Go Code

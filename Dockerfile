@@ -30,7 +30,6 @@ ARG SqlitePath
 ARG FrontendUrl
 ARG GifWorkerUrl
 ARG ProxyWorkerUrl
-ARG MediaProxyApiUrl
 ARG MaxAvatarSize
 ARG MaxAttachmentsSize
 ARG BotToken

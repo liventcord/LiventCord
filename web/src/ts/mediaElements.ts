@@ -100,8 +100,10 @@ const maxTenorHeight = "85vh";
 
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
-const getAttachmentUrl = (attachmentId: string) =>
-  `https://media-api.efekantunc0.workers.dev/attachments/${attachmentId}`;
+function getAttachmentUrl(attachmentId: string) {
+  console.warn(attachmentId);
+  return `https://media-api.liventcord-a60.workers.dev/attachments/${attachmentId}`;
+}
 
 function createTenorElement(
   msgContentElement: HTMLElement,
@@ -317,8 +319,17 @@ async function createVideoElement(url: string, isVideoAttachment = false) {
   if (!isVideoAttachment && !isVideoUrl(url)) {
     throw new Error("Invalid video URL");
   }
+
   const videoElement = createEl("video");
-  const proxiedUrl = await corsDomainManager.getProxy(url);
+
+  let proxiedUrl = url;
+
+  const isAttachmentRoute = /^https?:\/\/[^/]+\/attachments\/[0-9]+/.test(url);
+
+  if (!isAttachmentRoute) {
+    proxiedUrl = await corsDomainManager.getProxy(url);
+  }
+
   videoElement.src = proxiedUrl;
 
   videoElement.controls = true;

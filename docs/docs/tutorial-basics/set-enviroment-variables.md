@@ -76,10 +76,6 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Url of the Cloudflare Worker for proxying external resources.
     **Defaults to** `"proxy.liventcord-a60.workers.dev"`
 
-  - **MediaProxyApiUrl**:
-    Url of the gin media proxy server for proxying external resources on media previews.
-    **Defaults to** `http://localhost:5000`
-    
   - **WsUrl**:
     Url of the websocket golang server for emitting events.
     **Defaults to** `http://localhost:8080`
@@ -157,30 +153,3 @@ mv .example.env .env
   - **AllowedOrigins**:  
     Comma-separated list of origins that are allowed to connect to the WebSocket server via CORS.  
     **Defaults to** `http://localhost:3000,https://liventcord.github.io`
-
-
-## Gin Media Proxy Server Configuration
-```bash
-cd Liventcord/server/proxy-api
-```
-1. Move `.env.example` to `.env`.
-```bash
-mv .env.example .env
-```
-
-#### Configuration Options
-
-  - **ExternalMediaLimit**:
-    Size limit(in GB) for total media storage on proxying external resources. If limit is reached, oldest records will be replaced with new files.
-    **Defaults to** `10`
-
-  - **MainServerUrl**:
-    Url of main .net core server for sending attachments at.
-    **Defaults to** `http://localhost:5005`
-
-  - **AddToBlacklist**:
-    Specifies a list of domains or URLs to be added to the blacklist. This should be provided as a JSON array string.
-
-  - **AdminPassword**:
-    Password that will be used for authenticating proxy server
-    **Defaults to** `none`

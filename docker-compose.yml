@@ -27,17 +27,6 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
 
-  go-proxy-api:
-    build:
-      context: ./server/proxy-api
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    networks:
-      - shared_network
-    extra_hosts:
-      - "localhost:host-gateway"
-
   redis:
     image: redis:latest
     ports:

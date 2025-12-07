@@ -10,6 +10,7 @@ namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("")]
+    [DisableControllerIfPostgres]
     public class FileServeController : BaseController
     {
         private readonly AppDbContext _context;
@@ -292,47 +293,6 @@ namespace LiventCord.Controllers
             );
         }
 
-        [HttpGet("attachments/{attachmentId}/preview")]
-        public async Task<IActionResult> GetVideoAttachmentPreview(
-            [FromRoute][IdLengthValidation] string attachmentId
-        )
-        {
-            if (ContainsIllegalPathSegments(attachmentId))
-                return BadRequest("Invalid attachmentId.");
-
-            var previewCacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}_preview.jpg");
-
-            return await GetFileFromCacheOrDatabase(
-                previewCacheFilePath,
-                async () =>
-                {
-                    var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f =>
-                        f.FileId == attachmentId
-                    );
-                    if (file == null)
-                        return NotFound();
-
-                    var fileName = file.FileName;
-                    if (string.IsNullOrEmpty(fileName))
-                        return BadRequest("File name is missing.");
-
-                    var isVideo = IsVideoContent(GetContentType(file));
-
-                    if (!isVideo)
-                        return BadRequest(
-                            $"File is not a video. Content type: {GetContentType(file)}"
-                        );
-
-                    var thumbnailBytes = await GenerateVideoThumbnail(file.Content, fileName);
-                    if (thumbnailBytes == null)
-                        return StatusCode(500, "Failed to generate thumbnail.");
-
-                    return File(thumbnailBytes, "image/jpeg");
-                },
-                $"{attachmentId}_preview.jpg"
-            );
-        }
-
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile(
             [FromRoute][IdLengthValidation] string guildId,
@@ -360,67 +320,7 @@ namespace LiventCord.Controllers
             );
         }
 
-        private async Task<byte[]?> GenerateVideoThumbnail(byte[] videoContent, string fileName)
-        {
-            try
-            {
-                var tempDir = Path.Combine(Path.GetTempPath(), "video_thumbnails");
-                if (!Directory.Exists(tempDir))
-                    Directory.CreateDirectory(tempDir);
 
-                var tempVideoPath = Path.Combine(
-                    tempDir,
-                    $"{Guid.NewGuid()}{Path.GetExtension(fileName)}"
-                );
-                var tempThumbnailPath = Path.Combine(tempDir, $"{Guid.NewGuid()}.jpg");
-
-                try
-                {
-                    await System.IO.File.WriteAllBytesAsync(tempVideoPath, videoContent);
-
-                    var processInfo = new ProcessStartInfo
-                    {
-                        FileName = "ffmpeg",
-                        Arguments =
-                            $"-i \"{tempVideoPath}\" -ss 00:00:01 -vframes 1 -q:v 2 -y \"{tempThumbnailPath}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardError = true,
-                        RedirectStandardOutput = true,
-                    };
-
-                    using var process = Process.Start(processInfo);
-                    if (process == null)
-                        return null;
-
-                    await process.WaitForExitAsync();
-
-                    if (process.ExitCode != 0)
-                    {
-                        var error = await process.StandardError.ReadToEndAsync();
-                        _logger.LogError($"FFmpeg error: {error}");
-                        return null;
-                    }
-
-                    if (System.IO.File.Exists(tempThumbnailPath))
-                        return await System.IO.File.ReadAllBytesAsync(tempThumbnailPath);
-
-                    return null;
-                }
-                finally
-                {
-                    if (System.IO.File.Exists(tempVideoPath))
-                        System.IO.File.Delete(tempVideoPath);
-                    if (System.IO.File.Exists(tempThumbnailPath))
-                        System.IO.File.Delete(tempThumbnailPath);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error generating thumbnail: {ex.Message}");
-                return null;
-            }
-        }
 
         private bool ContainsIllegalPathSegments(string input)
         {
