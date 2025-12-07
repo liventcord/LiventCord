@@ -13,6 +13,8 @@ import { initialState } from "./app.ts";
 export const IMAGE_SRCS = {
   ICON_SRC:
     "https://liventcord.github.io/LiventCord/app/images/icons/icon.webp",
+  ICON_ACTIVE_SRC:
+    "https://liventcord.github.io/LiventCord/app/images/icons/iconactive.webp",
   WUMPUS_SRC:
     "https://liventcord.github.io/LiventCord/app/images/wumpusalone.webp",
   DEFAULT_MEDIA_IMG_SRC:

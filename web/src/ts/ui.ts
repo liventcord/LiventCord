@@ -40,7 +40,8 @@ import {
   isURL,
   isImageLoaded,
   getAttachmentUrl,
-  estimateVideoSizeBytes
+  estimateVideoSizeBytes,
+  IMAGE_SRCS
 } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -83,8 +84,8 @@ export const inviteVoiceHtml =
 export const hoveredChanColor = () => (isBlackTheme() ? "#1C1C1F" : "#34353B");
 export const selectedChanColor = () => (isBlackTheme() ? "#414248" : "#404249");
 
-const activeIconHref = "/icons/iconactive.webp";
-const inactiveIconHref = "/icons/icon.webp";
+const activeIconHref = IMAGE_SRCS.ICON_SRC;
+const inactiveIconHref = IMAGE_SRCS.ICON_ACTIVE_SRC;
 const favicon = getId("favicon") as HTMLAnchorElement;
 const horizontalLineGuild = getId("horizontal-line-guild") as HTMLElement;
 let currentFileName = "";
