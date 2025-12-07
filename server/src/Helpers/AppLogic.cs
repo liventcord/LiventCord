@@ -8,7 +8,6 @@ namespace LiventCord.Helpers
     public static class SharedAppConfig
     {
         public static string GifWorkerUrl { get; private set; }
-        public static string ProxyWorkerUrl { get; private set; }
         public static string MediaWorkerUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
@@ -20,7 +19,6 @@ namespace LiventCord.Helpers
         static SharedAppConfig()
         {
             GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
-            ProxyWorkerUrl = "https://proxy.liventcord-a60.workers.dev";
             MediaWorkerUrl = "https://media-api.liventcord-a60.workers.dev";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
@@ -31,8 +29,7 @@ namespace LiventCord.Helpers
         public static void Initialize(IConfiguration configuration)
         {
             GifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] ?? GifWorkerUrl;
-            ProxyWorkerUrl = configuration["AppSettings:ProxyWorkerUrl"] ?? ProxyWorkerUrl;
-            MediaWorkerUrl = configuration["AppSettings:MediaWorkerUrl"] ?? ProxyWorkerUrl;
+            MediaWorkerUrl = configuration["AppSettings:MediaWorkerUrl"] ?? MediaWorkerUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
 
             MaxAvatarSize = float.TryParse(
@@ -149,7 +146,6 @@ namespace LiventCord.Helpers
                     dmFriends = await GetDmUsers(userId),
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
-                    proxyWorkerUrl = SharedAppConfig.ProxyWorkerUrl,
                     MediaWorkerUrl = SharedAppConfig.MediaWorkerUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,

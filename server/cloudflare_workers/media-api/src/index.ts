@@ -2,23 +2,23 @@ import postgres from "postgres";
 import { handleMetadata, handleProxyRequest } from "./metadata.js";
 import { handlePreview } from "./preview.js";
 
-
-
 export default {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
     if (request.method === "OPTIONS") return makeResponse(null, 204);
 
     const url = new URL(request.url);
-  const pathname = url.pathname
-    const previewMatch = pathname.match(/^\/attachments\/([a-zA-Z0-9_-]+)\/preview$/)
+    const pathname = url.pathname;
+    const previewMatch = pathname.match(
+      /^\/attachments\/([a-zA-Z0-9_-]+)\/preview$/,
+    );
     if (previewMatch) {
-      return handlePreview(request)
+      return handlePreview(request);
     }
 
     if (url.pathname === "/api/proxy/metadata" && request.method === "POST") {
       return handleMetadata(request);
     }
-    if(url.pathname.startsWith("/api/proxy/media")) {
+    if (url.pathname.startsWith("/api/proxy/media")) {
       return handleProxyRequest(request);
     }
 
@@ -101,16 +101,16 @@ export default {
       }
     }
 
-async function getFromCache(key: string, fetcher?: () => Promise<any>) {
-  const cached = await cache.match(key);
-        if (cached) {
-          const headers = new Headers(cached.headers);
-          headers.set("Access-Control-Allow-Origin", "*");
-          headers.set("Access-Control-Allow-Methods", "*");
-          headers.set("Access-Control-Allow-Headers", "*");
-          return new Response(cached.body, { status: cached.status, headers });
-        }
-  if (!fetcher) return makeResponse({ error: "Not Found" }, 404);
+    async function getFromCache(key: string, fetcher?: () => Promise<any>) {
+      const cached = await cache.match(key);
+      if (cached) {
+        const headers = new Headers(cached.headers);
+        headers.set("Access-Control-Allow-Origin", "*");
+        headers.set("Access-Control-Allow-Methods", "*");
+        headers.set("Access-Control-Allow-Headers", "*");
+        return new Response(cached.body, { status: cached.status, headers });
+      }
+      if (!fetcher) return makeResponse({ error: "Not Found" }, 404);
 
       const file = await fetcher();
       if (!file || file.error)

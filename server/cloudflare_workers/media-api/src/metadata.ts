@@ -24,89 +24,93 @@ export interface ResultItem {
   metadata: Metadata | null;
 }
 export async function handleProxyRequest(req: Request) {
-  const u = new URL(req.url)
-  const target = u.searchParams.get("url")
+  const u = new URL(req.url);
+  const target = u.searchParams.get("url");
   if (!target || !/^https?:\/\/.+/.test(target)) {
-    return new Response("Invalid or missing url", { status: 400 })
+    return new Response("Invalid or missing url", { status: 400 });
   }
-  return handleProxy(target, req)
+  return handleProxy(target, req);
 }
 
 export async function handleProxy(url: string, req?: Request) {
-  const anycache = caches as any
-  const cache = anycache.default
-  const trimmed = url.trim()
+  const anycache = caches as any;
+  const cache = anycache.default;
+  const trimmed = url.trim();
 
-  let cached = await cache.match(trimmed)
-  if (cached) return cached
+  let cached = await cache.match(trimmed);
+  if (cached) return cached;
 
   const headers: Record<string, string> = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Referer": trimmed,
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    Referer: trimmed,
+    Accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1"
-  }
+    Connection: "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+  };
 
   if (req && req.headers.has("Range")) {
-    headers["Range"] = req.headers.get("Range")!
+    headers["Range"] = req.headers.get("Range")!;
   }
 
   const res = await fetch(trimmed, {
     redirect: "follow",
     cf: { cacheEverything: false },
-    headers
-  })
+    headers,
+  });
 
-  await cache.put(trimmed, res.clone())
-  return res
+  await cache.put(trimmed, res.clone());
+  return res;
 }
 
 export async function handleMetadata(request: Request): Promise<Response> {
   if (request.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 })
+    return new Response("Method not allowed", { status: 405 });
   }
 
-  let urls: string[]
+  let urls: string[];
   try {
-    urls = await request.json()
+    urls = await request.json();
   } catch {
-    return new Response("Invalid JSON", { status: 400 })
+    return new Response("Invalid JSON", { status: 400 });
   }
 
-  const results: ResultItem[] = []
+  const results: ResultItem[] = [];
 
   for (const raw of urls) {
-    const url = raw.trim()
-    if (!isAllowedHTTPS(url)) continue
+    const url = raw.trim();
+    if (!isAllowedHTTPS(url)) continue;
 
     try {
-      const response = await handleProxy(url, request)
-      const type = response.headers.get("Content-Type") || ""
+      const response = await handleProxy(url, request);
+      const type = response.headers.get("Content-Type") || "";
 
-      let metadata: Metadata | null = null
-      let mediaUrl: MediaUrl | null = null
+      let metadata: Metadata | null = null;
+      let mediaUrl: MediaUrl | null = null;
 
       if (type.includes("text/html")) {
-        const html = await response.text()
-        metadata = extractMetadataFromHtml(url, html)
+        const html = await response.text();
+        metadata = extractMetadataFromHtml(url, html);
       }
 
       if (isValidMediaContentType(type)) {
-        const buf = new Uint8Array((await response.arrayBuffer()).slice(0, 128 * 1024))
-        let width = 0
-        let height = 0
+        const buf = new Uint8Array(
+          (await response.arrayBuffer()).slice(0, 128 * 1024),
+        );
+        let width = 0;
+        let height = 0;
 
         if (type.startsWith("image/")) {
-          const d = getImageDimensions(buf, type)
-          width = d.width
-          height = d.height
+          const d = getImageDimensions(buf, type);
+          width = d.width;
+          height = d.height;
         } else if (type.startsWith("video/")) {
-          const d = getVideoDimensions(buf)
-          width = d.width
-          height = d.height
+          const d = getVideoDimensions(buf);
+          width = d.width;
+          height = d.height;
         }
 
         mediaUrl = {
@@ -116,23 +120,21 @@ export async function handleMetadata(request: Request): Promise<Response> {
           fileName: getFileNameFromResponse(response, url),
           fileSize: parseInt(response.headers.get("Content-Length") || "0"),
           width,
-          height
-        }
+          height,
+        };
       }
 
-      results.push({ metadata, mediaUrl })
-    } catch {
-    }
+      results.push({ metadata, mediaUrl });
+    } catch {}
   }
 
   return new Response(JSON.stringify(results), {
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*"
-    }
-  })
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
 }
-
 
 function getImageDimensions(buffer: Uint8Array, contentType: string) {
   try {

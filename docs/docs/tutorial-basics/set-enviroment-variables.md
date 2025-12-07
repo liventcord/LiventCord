@@ -70,11 +70,7 @@ mv Properties/exampleSettings.json Properties/appsettings.json
 
   - **GifWorkerUrl**: 
     URL of the Cloudflare Worker for querying Tenor GIFs.
-    **Defaults to** `"gif-worker.liventcord-a60.workers.dev"`
-
-  - **ProxyWorkerUrl**:
-    Url of the Cloudflare Worker for proxying external resources.
-    **Defaults to** `"proxy.liventcord-a60.workers.dev"`
+    **Defaults to** `"media-api.liventcord-a60.workers.dev"`
 
   - **WsUrl**:
     Url of the websocket golang server for emitting events.

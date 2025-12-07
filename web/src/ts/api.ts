@@ -430,8 +430,8 @@ class ApiClient {
   }
 
   getProxyHostname(): string | null {
-    if (initialState.proxyWorkerUrl) {
-      return new URL(initialState.proxyWorkerUrl).hostname;
+    if (initialState.mediaWorkerUrl) {
+      return new URL(initialState.mediaWorkerUrl).hostname;
     }
     return null;
   }
@@ -443,7 +443,10 @@ class ApiClient {
     if (isLocalhost || isIp) {
       return url;
     }
-    return initialState.proxyWorkerUrl + `?url=${encodeURIComponent(url)}`;
+    return (
+      initialState.mediaWorkerUrl +
+      `/api/proxy/media?url=${encodeURIComponent(url)}`
+    );
   }
 
   getUrlForEvent(
