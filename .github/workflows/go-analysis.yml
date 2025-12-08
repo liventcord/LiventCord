@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - "server/go-ws-api/**"
-      - "server/go-yt-stream-api/**"
+      - "server/media-api/**"
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
           filters: |
             go:
               - 'server/go-ws-api/**'
-              - 'server/go-yt-stream-api/**'
+              - 'server/media-api/**'
 
   analyze:
     name: Analyze Go Code
