@@ -27,6 +27,17 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
 
+  media-api:
+    build:
+      context: ./server/media-api
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - shared_network
+    extra_hosts:
+      - "localhost:host-gateway"
+
   redis:
     image: redis:latest
     ports:

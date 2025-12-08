@@ -44,7 +44,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lib/pq v1.10.9
-	github.com/liventcord/liventcord/server/telemetry v0.0.0-20251205150339-65a3638dddd8
+	github.com/liventcord/liventcord/server/telemetry v0.0.0-20251207030629-15dc33970d02
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

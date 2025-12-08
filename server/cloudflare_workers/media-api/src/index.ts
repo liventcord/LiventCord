@@ -16,10 +16,10 @@ export default {
     }
 
     if (url.pathname === "/api/proxy/metadata" && request.method === "POST") {
-      return handleMetadata(request);
+      return handleMetadata(request, env);
     }
     if (url.pathname.startsWith("/api/proxy/media")) {
-      return handleProxyRequest(request);
+      return handleProxyRequest(request, env);
     }
 
     const sql = postgres(env.HYPERDRIVE.connectionString, { prepare: false });

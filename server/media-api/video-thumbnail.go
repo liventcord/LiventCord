@@ -32,6 +32,7 @@ func init() {
 }
 
 func GetVideoAttachmentPreview(c *gin.Context) {
+	servedFilesSinceStartup++
 	attachmentId := c.Param("attachmentId")
 
 	if !isValidAttachmentId(attachmentId) {
@@ -175,13 +176,12 @@ func generateVideoThumbnail(videoBytes []byte) ([]byte, error) {
 	tmpFile.Close()
 
 	outBuf := &bytes.Buffer{}
-	// Generate 1-frame thumbnail and convert to WebP with compression
 	err = ffmpeg.Input(tmpFile.Name()).
 		Output("pipe:1", ffmpeg.KwArgs{
 			"vframes":           "1",
 			"format":            "webp",
-			"lossless":          "0", // 0 = lossy, 1 = lossless
-			"compression_level": "6", // 0-6, higher = more compression
+			"lossless":          "0",
+			"compression_level": "4",
 		}).
 		WithOutput(outBuf).
 		Run()

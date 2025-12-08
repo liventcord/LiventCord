@@ -23,16 +23,23 @@ export interface ResultItem {
   mediaUrl: MediaUrl | null;
   metadata: Metadata | null;
 }
-export async function handleProxyRequest(req: Request) {
+export interface Env {
+  PROXY_SERVERS: string;
+}
+export async function handleProxyRequest(req: Request, env: Env) {
   const u = new URL(req.url);
   const target = u.searchParams.get("url");
   if (!target || !/^https?:\/\/.+/.test(target)) {
     return new Response("Invalid or missing url", { status: 400 });
   }
-  return handleProxy(target, req);
+  return handleProxy(target, req, env);
 }
 
-export async function handleProxy(url: string, req?: Request) {
+export async function handleProxy(
+  url: string,
+  req: Request | undefined,
+  env: Env,
+) {
   const anycache = caches as any;
   const cache = anycache.default;
   const trimmed = url.trim();
@@ -56,17 +63,48 @@ export async function handleProxy(url: string, req?: Request) {
     headers["Range"] = req.headers.get("Range")!;
   }
 
-  const res = await fetch(trimmed, {
-    redirect: "follow",
-    cf: { cacheEverything: false },
-    headers,
-  });
+  try {
+    const res = await fetch(trimmed, {
+      method: req?.method || "GET",
+      headers,
+      redirect: "follow",
+    });
 
-  await cache.put(trimmed, res.clone());
-  return res;
+    if (res.ok) {
+      await cache.put(trimmed, res.clone());
+      return res;
+    }
+  } catch (err) {}
+
+  const servers = env.PROXY_SERVERS.split(",");
+
+  // Fallback to proxy servers
+  for (const base of servers) {
+    try {
+      const serverUrl = `${base}?url=${encodeURIComponent(trimmed)}`;
+      const res = await fetch(serverUrl, {
+        method: req?.method || "GET",
+        headers,
+        redirect: "follow",
+      });
+
+      if (res.ok) {
+        await cache.put(trimmed, res.clone());
+        return res;
+      }
+    } catch (_) {
+      continue;
+    }
+  }
+
+  return new Response("All fetch attempts failed", { status: 502 });
 }
 
-export async function handleMetadata(request: Request): Promise<Response> {
+export async function handleMetadata(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  return new Response("Not implemented", { status: 500 });
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -85,7 +123,7 @@ export async function handleMetadata(request: Request): Promise<Response> {
     if (!isAllowedHTTPS(url)) continue;
 
     try {
-      const response = await handleProxy(url, request);
+      const response = await handleProxy(url, request, env);
       const type = response.headers.get("Content-Type") || "";
 
       let metadata: Metadata | null = null;
