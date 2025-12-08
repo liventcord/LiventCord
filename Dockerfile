@@ -2,10 +2,10 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 ARG TARGETARCH
 WORKDIR /source
-COPY --link server/src/*.csproj ./server/src/
-RUN dotnet restore /source/server/src/*.csproj --runtime linux-musl-x64
-COPY --link server/src/ ./server/src/
-WORKDIR /source/server/src
+COPY --link server/LiventCord/*.csproj ./server/LiventCord/
+RUN dotnet restore /source/server/LiventCord/*.csproj --runtime linux-musl-x64
+COPY --link server/LiventCord/ ./server/LiventCord/
+WORKDIR /source/server/LiventCord
 RUN dotnet publish -c Release --runtime linux-musl-x64 -o /source/published /p:PublishSingleFile=false
 
 # --- Runtime Stage ---

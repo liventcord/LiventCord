@@ -26,20 +26,12 @@ export interface ResultItem {
 export interface Env {
   PROXY_SERVERS: string;
 }
-export async function handleProxyRequest(req: Request, env: Env) {
-  const u = new URL(req.url);
-  const target = u.searchParams.get("url");
-  if (!target || !/^https?:\/\/.+/.test(target)) {
-    return new Response("Invalid or missing url", { status: 400 });
-  }
-  return handleProxy(target, req, env);
-}
-
-export async function handleProxy(
+async function fetchWithCacheAndFallback(
   url: string,
   req: Request | undefined,
   env: Env,
-) {
+  proxyPath: string, // e.g., "/api/proxy/media" or "/api/proxy/metadata"
+): Promise<Response> {
   const anycache = caches as any;
   const cache = anycache.default;
   const trimmed = url.trim();
@@ -47,7 +39,7 @@ export async function handleProxy(
   let cached = await cache.match(trimmed);
   if (cached) return cached;
 
-  const headers: Record<string, string> = {
+  const baseHeaders: Record<string, string> = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     Referer: trimmed,
@@ -60,31 +52,23 @@ export async function handleProxy(
   };
 
   if (req && req.headers.has("Range")) {
-    headers["Range"] = req.headers.get("Range")!;
+    baseHeaders["Range"] = req.headers.get("Range")!;
   }
-
-  try {
-    const res = await fetch(trimmed, {
-      method: req?.method || "GET",
-      headers,
-      redirect: "follow",
-    });
-
-    if (res.ok) {
-      await cache.put(trimmed, res.clone());
-      return res;
-    }
-  } catch (err) {}
 
   const servers = env.PROXY_SERVERS.split(",");
 
-  // Fallback to proxy servers
-  for (const base of servers) {
+  const attempts = [
+    trimmed,
+    ...servers.map(
+      (base) => `${base}${proxyPath}?url=${encodeURIComponent(trimmed)}`,
+    ),
+  ];
+
+  for (const target of attempts) {
     try {
-      const serverUrl = `${base}?url=${encodeURIComponent(trimmed)}`;
-      const res = await fetch(serverUrl, {
+      const res = await fetch(target, {
         method: req?.method || "GET",
-        headers,
+        headers: baseHeaders,
         redirect: "follow",
       });
 
@@ -99,12 +83,19 @@ export async function handleProxy(
 
   return new Response("All fetch attempts failed", { status: 502 });
 }
+export async function handleProxyRequest(req: Request, env: Env) {
+  const u = new URL(req.url);
+  const target = u.searchParams.get("url");
+  if (!target || !/^https?:\/\/.+/.test(target)) {
+    return new Response("Invalid or missing url", { status: 400 });
+  }
+  return fetchWithCacheAndFallback(target, req, env, "/api/proxy/media");
+}
 
 export async function handleMetadata(
   request: Request,
   env: Env,
 ): Promise<Response> {
-  return new Response("Not implemented", { status: 500 });
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -123,7 +114,12 @@ export async function handleMetadata(
     if (!isAllowedHTTPS(url)) continue;
 
     try {
-      const response = await handleProxy(url, request, env);
+      const response = await fetchWithCacheAndFallback(
+        url,
+        request,
+        env,
+        "/api/proxy/metadata",
+      );
       const type = response.headers.get("Content-Type") || "";
 
       let metadata: Metadata | null = null;
@@ -138,8 +134,8 @@ export async function handleMetadata(
         const buf = new Uint8Array(
           (await response.arrayBuffer()).slice(0, 128 * 1024),
         );
-        let width = 0;
-        let height = 0;
+        let width = 0,
+          height = 0;
 
         if (type.startsWith("image/")) {
           const d = getImageDimensions(buf, type);

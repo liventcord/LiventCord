@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
+	"sync/atomic"
 
 	"github.com/liventcord/server/telemetry"
 
@@ -12,7 +14,7 @@ import (
 )
 
 var (
-	servedFilesSinceStartup int
+	servedFilesSinceStartup int64
 )
 
 func main() {
@@ -20,13 +22,23 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	r.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Warning: Could not load .env file:", err)
+	}
+
+	adminPassword := getEnv("AdminPassword", "")
+	if adminPassword == "" {
+		log.Panic("AdminPassword not set. Cannot start server.")
+	}
+
+	r.Use(cors([]string{"*"}))
+
 	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "LiventCord YT stream api is working.")
+		c.String(http.StatusOK, "LiventCord media api is working.")
 	})
 
-	initializeProxy(r)
-
+	initializeProxy(r, adminPassword)
 	initializeYtStream(r)
 
 	host := getEnv("HOST", "0.0.0.0")
@@ -37,47 +49,33 @@ func main() {
 	r.Run(address)
 }
 
-func initializeProxy(r *gin.Engine) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Warning: Could not load .env file:", err)
-	}
-
+func initializeProxy(r *gin.Engine, adminPassword string) {
 	cfg := LoadConfig()
 	settings := NewMediaCacheSettings(cfg)
 	initializer := NewMediaStorageInitializer(settings, nil)
 	initializer.Initialize()
 	controller := NewMediaProxyController(settings)
 
-	r.Use(cors([]string{"*"}))
-
 	storageStatus := initializer.GetStorageStatus()
 	telemetry.Init()
 
-	adminPassword := getEnv("AdminPassword", "")
+	admin := r.Group("/", AdminAuthMiddleware(adminPassword))
 
-	if adminPassword != "" {
-		r.GET("/health",
-			AdminAuthMiddleware(adminPassword),
-			telemetry.HealthHandler("Media Proxy Api", storageStatus, nil, func() int {
-				return servedFilesSinceStartup
-			}),
-		)
-	}
-
-	r.GET("/api/proxy/media",
-		AdminAuthMiddleware(adminPassword),
-		func(c *gin.Context) {
-			controller.GetMedia(c)
-			servedFilesSinceStartup++
-			fmt.Println("New servedFilesSinceStartup: ", servedFilesSinceStartup)
-		},
+	admin.GET("/health",
+		telemetry.HealthHandler("Media Proxy Api", storageStatus, nil, func() int {
+			return int(atomic.LoadInt64(&servedFilesSinceStartup))
+		}),
 	)
 
-	r.POST("/api/proxy/metadata",
-		AdminAuthMiddleware(adminPassword),
-		controller.FetchMetadata,
-	)
+	admin.GET("/api/proxy/media", func(c *gin.Context) {
+		controller.GetMedia(c)
+		newCount := atomic.AddInt64(&servedFilesSinceStartup, 1)
+		fmt.Println("New servedFilesSinceStartup:", newCount)
+	})
+
+	admin.POST("/api/proxy/metadata", controller.FetchMetadata)
+
+	admin.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
 }
 
 func cors(allowedOrigins []string) gin.HandlerFunc {
@@ -99,13 +97,21 @@ func cors(allowedOrigins []string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
 func AdminAuthMiddleware(adminPassword string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader != adminPassword {
-			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" || parts[1] != adminPassword {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
 		c.Next()
 	}
 }

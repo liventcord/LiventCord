@@ -42,7 +42,7 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Build & prepare backend
-        working-directory: server/src
+        working-directory: server/LiventCord
         run: |
           dotnet tool install --global dotnet-ef
           dotnet tool restore
@@ -60,7 +60,7 @@ jobs:
 
       - name: Show backend logs 
         if: failure()
-        run: cat server/src/backend.log
+        run: cat server/LiventCord/backend.log
 
       - name: Build frontend
         working-directory: web

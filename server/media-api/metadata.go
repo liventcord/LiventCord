@@ -61,55 +61,42 @@ func extractMetadataFromHtml(url, htmlStr string) *Metadata {
 		Author:      meta["author"],
 	}
 }
-
 func (c *MediaProxyController) FetchMetadata(ctx *gin.Context) {
 	var urls []string
-	_ = ctx.BindJSON(&urls)
-	var resp []MetadataWithMedia
-	for _, url := range urls {
-		url = strings.TrimSpace(url)
-		if !isAllowedHTTPS(url) {
+	if err := ctx.BindJSON(&urls); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	results := make([]MetadataWithMedia, 0, len(urls))
+
+	for _, urlStr := range urls {
+		if err := validateURL(urlStr); err != nil {
 			continue
 		}
 
-		request, err := http.NewRequest("GET", url, nil)
+		resp, finalURL, err := c.fetchWithRedirects(urlStr, MaxRedirects)
 		if err != nil {
 			continue
 		}
 
-		resp2, err := c.httpClient.Do(request)
-		if err != nil {
-			continue
-		}
+		filePath := c.getCacheFilePath(finalURL)
+		contentType := resp.Header.Get("Content-Type")
 
-		contentType := resp2.Header.Get("Content-Type")
-
-		var meta *Metadata
 		var mediaUrl *MediaUrl
+		var meta *Metadata
 
 		if strings.Contains(contentType, "text/html") {
-			body, _ := io.ReadAll(resp2.Body)
-			resp2.Body.Close()
-			meta = extractMetadataFromHtml(url, string(body))
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 1000*1024))
+			meta = extractMetadataFromHtml(finalURL, string(body))
+			resp.Body.Close()
 		} else {
-			resp2.Body.Close()
+			mediaUrl, _ = c.handleMediaResponse(resp, finalURL, filePath)
+			resp.Body.Close()
 		}
 
-		if c.isValidMediaContentType(contentType) {
-			filePath := c.getCacheFilePath(url)
-			_ = c.saveResponseToFile(resp2, filePath)
-			mediaUrl = &MediaUrl{
-				Url:      url,
-				IsImage:  strings.HasPrefix(contentType, "image/"),
-				IsVideo:  strings.HasPrefix(contentType, "video/"),
-				FileSize: resp2.ContentLength,
-				Width:    getImageDimension(filePath, true),
-				Height:   getImageDimension(filePath, false),
-				FileName: getFileName(resp2, url),
-			}
-		}
-
-		resp = append(resp, MetadataWithMedia{mediaUrl, meta})
+		results = append(results, MetadataWithMedia{mediaUrl, meta})
 	}
-	ctx.JSON(http.StatusOK, resp)
+
+	ctx.JSON(http.StatusOK, results)
 }

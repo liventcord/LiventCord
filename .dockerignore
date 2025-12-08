@@ -5,6 +5,5 @@ obj/
 .gitignore
 *.log
 Dockerfile
-server/src/Properties/*
-server/src/wwwroot/ts
+server/LiventCord/Properties/*
 web/node_modules/*

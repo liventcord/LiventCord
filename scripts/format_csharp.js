@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const rootDir = resolve(__dirname, '..')
-const srcDir = join(rootDir, 'server', 'src')
+const srcDir = join(rootDir, 'server', 'LiventCord')
 
 function getChangedFiles() {
     try {
@@ -62,7 +62,7 @@ async function main() {
 
     const changedFiles = getChangedFiles();
     if (changedFiles.length === 0) {
-        console.log('No .cs changes detected under server/src');
+        console.log('No .cs changes detected under server/LiventCord');
         return;
     }
 

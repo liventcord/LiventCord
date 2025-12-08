@@ -1,9 +1,9 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/base64"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net"
@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,225 +22,176 @@ import (
 const (
 	MaxFileSizeBytes       = 50 * 1024 * 1024
 	MaxConcurrentDownloads = 5
+	MaxRedirects           = 10
 )
 
 var downloadSemaphore = make(chan struct{}, MaxConcurrentDownloads)
 
 func NewMediaProxyController(settings *MediaCacheSettings) *MediaProxyController {
-	blacklistPath := filepath.Join(settings.CacheDirectory, "blacklisted_urls.json")
-	blacklistedUrlsEnv := os.Getenv("AddToBlacklist")
 	c := &MediaProxyController{
 		httpClient: &http.Client{
 			Timeout: time.Minute,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 		cacheDirectory:     settings.CacheDirectory,
 		storageLimit:       settings.StorageLimitBytes,
-		blacklistPath:      blacklistPath,
-		blacklistedUrlsEnv: blacklistedUrlsEnv,
+		blacklistPath:      filepath.Join(settings.CacheDirectory, "blacklisted_urls.json"),
+		blacklistedUrlsEnv: os.Getenv("AddToBlacklist"),
 		mainServerUrl:      settings.MainServerUrl,
 		blacklistedUrls:    make(map[string]time.Time),
 	}
-	c.enforceStorageLimit()
+
 	c.initHttpClient()
 	c.loadBlacklistedUrls()
+	c.enforceStorageLimit()
+
 	return c
 }
 
 func (c *MediaProxyController) initHttpClient() {
 	c.httpClient.Transport = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:                 http.ProxyFromEnvironment,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
+
+			if ip := net.ParseIP(host); ip != nil && !isSafeIP(ip) {
+				return nil, fmt.Errorf("blocked unsafe IP: %s", ip.String())
+			}
+
+			return (&net.Dialer{}).DialContext(ctx, network, net.JoinHostPort(host, port))
+		},
 	}
 }
 
 func isAllowedHTTPS(rawurl string) bool {
 	parsed, err := url.Parse(rawurl)
-	if err != nil {
-		return false
-	}
-
-	if strings.ToLower(parsed.Scheme) != "https" {
+	if err != nil || strings.ToLower(parsed.Scheme) != "https" {
 		return false
 	}
 
 	host := parsed.Hostname()
-
-	ip := net.ParseIP(host)
-	if ip != nil {
-		if ip.IsLoopback() || ip.IsPrivate() {
-			return false
-		}
-		return true
-	}
-
-	ips, err := net.LookupIP(host)
-	if err != nil {
+	if host == "" || strings.HasPrefix(host, "xn--") {
 		return false
 	}
 
-	for _, resolvedIP := range ips {
-		if resolvedIP.IsLoopback() || resolvedIP.IsPrivate() {
-			return false
-		}
+	if ip := net.ParseIP(host); ip != nil {
+		return isSafeIP(ip)
 	}
 
 	return true
 }
 
-func (c *MediaProxyController) handleFileResponse(ctx *gin.Context, filePath string) {
-	ctx.Header("Access-Control-Allow-Origin", "*")
-	ctx.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-	ctx.Header("Access-Control-Allow-Headers", "Range, If-None-Match, Content-Type")
+func isSafeIP(ip net.IP) bool {
+	return !ip.IsLoopback() &&
+		!ip.IsPrivate() &&
+		!ip.IsLinkLocalUnicast() &&
+		!ip.IsLinkLocalMulticast() &&
+		!ip.IsMulticast() &&
+		!(ip.To16() != nil && ip.To4() == nil && ip[0]&0xfe == 0xfc)
+}
 
-	if ctx.Request.Method == "OPTIONS" {
-		ctx.Status(204)
+func (c *MediaProxyController) handleFileResponse(ctx *gin.Context, filePath string) {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		ctx.String(http.StatusNotFound, "File not found")
 		return
 	}
 
-	fileInfo, _ := os.Stat(filePath)
-	lastModified := fileInfo.ModTime().UTC().Format(http.TimeFormat)
-	etag := generateETag(filePath)
+	ctx.Header("Access-Control-Allow-Origin", "*")
 	ctx.Header("Cache-Control", "public, max-age=31536000")
-	ctx.Header("Last-Modified", lastModified)
+	ctx.Header("Last-Modified", fileInfo.ModTime().UTC().Format(http.TimeFormat))
+
+	etag := generateETag(filePath)
 	ctx.Header("ETag", etag)
+
 	if ctx.GetHeader("If-None-Match") == etag {
 		ctx.Status(304)
 		return
 	}
-	rangeHeader := ctx.GetHeader("Range")
-	if rangeHeader != "" {
-		c.handleRangeRequest(ctx, filePath)
+
+	if rangeHeader := ctx.GetHeader("Range"); rangeHeader != "" {
+		c.handleRangeRequest(ctx, filePath, fileInfo)
 		return
 	}
+
 	mType := mime.TypeByExtension(filepath.Ext(filePath))
 	if mType == "" {
 		mType = "application/octet-stream"
 	}
-	ctx.FileAttachment(filePath, filepath.Base(filePath))
+
+	ctx.Header("Content-Type", mType)
+	ctx.File(filePath)
 }
 
-func (c *MediaProxyController) handleRangeRequest(ctx *gin.Context, filePath string) {
-	ctx.Header("Access-Control-Allow-Origin", "*")
-	ctx.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-	ctx.Header("Access-Control-Allow-Headers", "Range, If-None-Match, Content-Type")
-
-	if ctx.Request.Method == "OPTIONS" {
-		ctx.Status(204)
-		return
-	}
-
-	fileInfo, _ := os.Stat(filePath)
+func (c *MediaProxyController) handleRangeRequest(ctx *gin.Context, filePath string, fileInfo os.FileInfo) {
 	fileLength := fileInfo.Size()
 	rangeHeader := ctx.GetHeader("Range")
+
 	re := regexp.MustCompile(`bytes=(\d+)-(\d*)`)
 	matches := re.FindStringSubmatch(rangeHeader)
 	if len(matches) < 2 {
-		ctx.String(416, "Invalid Range")
-		return
-	}
-	start, _ := strconv.ParseInt(matches[1], 10, 64)
-	end := fileLength - 1
-	if matches[2] != "" {
-		end, _ = strconv.ParseInt(matches[2], 10, 64)
-	}
-	if start >= fileLength || end >= fileLength {
 		ctx.Status(416)
 		return
 	}
-	contentLength := end - start + 1
-	contentRange := "bytes " + strconv.FormatInt(start, 10) + "-" + strconv.FormatInt(end, 10) + "/" + strconv.FormatInt(fileLength, 10)
 
+	start, _ := strconv.ParseInt(matches[1], 10, 64)
+	end := fileLength - 1
+
+	if matches[2] != "" {
+		if parsedEnd, err := strconv.ParseInt(matches[2], 10, 64); err == nil {
+			end = parsedEnd
+		}
+	}
+
+	if start >= fileLength || end >= fileLength || start > end {
+		ctx.Status(416)
+		return
+	}
+
+	contentLength := end - start + 1
 	mType := mime.TypeByExtension(filepath.Ext(filePath))
 	if mType == "" {
 		mType = "application/octet-stream"
 	}
 
 	ctx.Status(206)
-	ctx.Header("Content-Range", contentRange)
+	ctx.Header("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileLength))
 	ctx.Header("Content-Length", strconv.FormatInt(contentLength, 10))
 	ctx.Header("Content-Type", mType)
 
-	f, _ := os.Open(filePath)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return
+	}
 	defer f.Close()
+
 	f.Seek(start, 0)
 	io.CopyN(ctx.Writer, f, contentLength)
 }
-func (c *MediaProxyController) saveResponseToFile(r *http.Response, filePath string) error {
-	tmpPath := filePath + ".tmp"
-	f, err := os.Create(tmpPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(f, r.Body)
-	if err != nil {
-		return err
-	}
-	f.Close()
-	return os.Rename(tmpPath, filePath)
-}
-
-func (c *MediaProxyController) enforceStorageLimit() {
-	files, err := os.ReadDir(c.cacheDirectory)
-	if err != nil {
-		return
-	}
-
-	type fileInfo struct {
-		entry os.DirEntry
-		info  os.FileInfo
-	}
-
-	var regularFiles []fileInfo
-
-	for _, file := range files {
-		if file.Name() == "blacklisted_urls.json" || file.IsDir() {
-			continue
-		}
-		info, err := file.Info()
-		if err != nil {
-			continue
-		}
-		regularFiles = append(regularFiles, fileInfo{file, info})
-	}
-
-	sort.Slice(regularFiles, func(i, j int) bool {
-		return regularFiles[i].info.ModTime().Before(regularFiles[j].info.ModTime())
-	})
-
-	var total int64
-	for _, f := range regularFiles {
-		total += f.info.Size()
-	}
-
-	for total > c.storageLimit && len(regularFiles) > 0 {
-		oldest := regularFiles[0]
-		total -= oldest.info.Size()
-		os.Remove(filepath.Join(c.cacheDirectory, oldest.entry.Name()))
-		regularFiles = regularFiles[1:]
-	}
-}
-
-func (c *MediaProxyController) getCacheFilePath(url string) string {
-	h := md5.Sum([]byte(url))
-	encoded := base64.RawURLEncoding.EncodeToString(h[:])
-	return filepath.Join(c.cacheDirectory, strings.ToLower(encoded))
-}
 
 func (c *MediaProxyController) GetMedia(ctx *gin.Context) {
-	url := strings.TrimSpace(ctx.Query("url"))
-	url = strings.Trim(url, `"`)
+	urlStr := strings.TrimSpace(strings.Trim(ctx.Query("url"), `"`))
 
-	if !isAllowedHTTPS(url) {
-		ctx.String(http.StatusBadRequest, "URL rejected")
+	if err := validateURL(urlStr); err != nil {
+		ctx.String(http.StatusBadRequest, "Invalid URL: "+err.Error())
 		return
 	}
 
-	if c.isUrlBlacklisted(url) {
-		ctx.String(http.StatusBadRequest, "URL is blacklisted.")
+	if c.isUrlBlacklisted(urlStr) {
+		ctx.String(http.StatusBadRequest, "URL blacklisted")
 		return
 	}
 
-	filePath := c.getCacheFilePath(url)
+	filePath := c.getCacheFilePath(urlStr)
 
 	if _, err := os.Stat(filePath); err == nil {
 		c.handleFileResponse(ctx, filePath)
@@ -250,99 +200,74 @@ func (c *MediaProxyController) GetMedia(ctx *gin.Context) {
 
 	ch := make(chan error, 1)
 	_, loaded := c.downloadTasks.LoadOrStore(filePath, ch)
+
 	if !loaded {
 		go func() {
 			defer c.downloadTasks.Delete(filePath)
+
 			downloadSemaphore <- struct{}{}
 			defer func() { <-downloadSemaphore }()
 
-			err := c.downloadFile(url, filePath)
+			resp, finalURL, err := c.fetchWithRedirects(urlStr, MaxRedirects)
+			if err != nil {
+				ch <- err
+				close(ch)
+				return
+			}
+			defer resp.Body.Close()
+
+			_, err = c.handleMediaResponse(resp, finalURL, filePath)
 			ch <- err
 			close(ch)
 		}()
 	}
 
-	err := <-ch
-	if err != nil {
-		println(err.Error())
-		ctx.String(http.StatusBadGateway, "Download failed.")
+	if err := <-ch; err != nil {
+		ctx.String(http.StatusBadGateway, "Download failed: "+err.Error())
 		return
 	}
-	if _, err := os.Stat(filePath); err == nil {
-		c.handleFileResponse(ctx, filePath)
-	} else {
-		ctx.String(http.StatusBadGateway, "File missing after download.")
-	}
+
+	c.handleFileResponse(ctx, filePath)
 }
 
-func (c *MediaProxyController) downloadFile(url, filePath string) error {
-	if !isAllowedHTTPS(url) {
-		return errors.New("URL is not allowed")
+func (c *MediaProxyController) handleMediaResponse(resp *http.Response, urlStr, filePath string) (*MediaUrl, error) {
+	contentType := resp.Header.Get("Content-Type")
+
+	if strings.Contains(contentType, "text/html") {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1000*1024))
+		sendHtmlToMainServer(c.mainServerUrl, urlStr, string(body))
+		return nil, nil
 	}
 
-	const maxRedirects = 5
-	redirects := 0
-	for redirects < maxRedirects {
-		req, _ := http.NewRequest("GET", url, nil)
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			c.addToBlacklist(url)
-			return err
-		}
-		defer resp.Body.Close()
-
-		if isRedirect(resp.StatusCode) {
-			newUrl := resp.Header.Get("Location")
-			if newUrl == "" || c.isUrlBlacklisted(newUrl) {
-				c.addToBlacklist(url)
-				return errors.New("invalid or blacklisted redirect")
-			}
-			url = newUrl
-			redirects++
-			continue
-		}
-
-		contentType := resp.Header.Get("Content-Type")
-		if strings.Contains(contentType, "text/html") {
-			body, _ := io.ReadAll(io.LimitReader(resp.Body, 1000*1024))
-			_ = sendHtmlToMainServer(c.mainServerUrl, url, string(body))
-			return nil
-		}
-
-		if !c.isValidMediaContentType(contentType, resp.Header) {
-			println("Rejecting content type: ", contentType)
-			c.addToBlacklist(url)
-			return errors.New("invalid media type: " + contentType)
-		}
-
-		if resp.ContentLength > MaxFileSizeBytes {
-			c.addToBlacklist(url)
-			return errors.New("file too large")
-		}
-
-		err = c.saveLimitedResponseToFile(io.LimitReader(resp.Body, MaxFileSizeBytes+1), filePath)
-		if err != nil {
-			c.addToBlacklist(url)
-			return err
-		}
-
-		mediaUrl := MediaUrl{
-			Url:      url,
-			IsImage:  strings.HasPrefix(contentType, "image/"),
-			IsVideo:  strings.HasPrefix(contentType, "video/"),
-			FileSize: resp.ContentLength,
-			Width:    getImageDimension(filePath, true),
-			Height:   getImageDimension(filePath, false),
-			FileName: getFileName(resp, url),
-		}
-		_ = sendMediaUrlsToMainServer(c.mainServerUrl, mediaUrl)
-		return nil
+	if !c.isValidMediaContentType(contentType, resp.Header) {
+		return nil, fmt.Errorf("invalid media type: %s", contentType)
 	}
-	c.addToBlacklist(url)
-	return errors.New("too many redirects")
+
+	if resp.ContentLength > MaxFileSizeBytes {
+		return nil, errors.New("file too large")
+	}
+
+	if err := c.saveLimitedResponseToFile(io.LimitReader(resp.Body, MaxFileSizeBytes+1), filePath); err != nil {
+		return nil, err
+	}
+
+	mediaUrl := &MediaUrl{
+		Url:      urlStr,
+		IsImage:  strings.HasPrefix(contentType, "image/"),
+		IsVideo:  strings.HasPrefix(contentType, "video/"),
+		FileSize: resp.ContentLength,
+		Width:    getImageDimension(filePath, true),
+		Height:   getImageDimension(filePath, false),
+		FileName: getFileName(resp, urlStr),
+	}
+
+	sendMediaUrlsToMainServer(c.mainServerUrl, *mediaUrl)
+	return mediaUrl, nil
 }
+
 func (c *MediaProxyController) saveLimitedResponseToFile(reader io.Reader, filePath string) error {
-	out, err := os.Create(filePath)
+	tmpPath := filePath + ".tmp"
+	out, err := os.Create(tmpPath)
 	if err != nil {
 		return err
 	}
@@ -350,20 +275,28 @@ func (c *MediaProxyController) saveLimitedResponseToFile(reader io.Reader, fileP
 
 	written, err := io.Copy(out, reader)
 	if err != nil {
+		os.Remove(tmpPath)
 		return err
 	}
+
 	if written > MaxFileSizeBytes {
-		return errors.New("file exceeds allowed size")
-	}
-	return nil
-}
-func (c *MediaProxyController) isValidMediaContentType(contentType string, headers ...http.Header) bool {
-	ct := strings.ToLower(contentType)
-	if ct == "" {
-		return false
+		os.Remove(tmpPath)
+		return errors.New("file exceeds size limit")
 	}
 
-	if strings.HasPrefix(ct, "text/") ||
+	if err := out.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+
+	return os.Rename(tmpPath, filePath)
+}
+
+func (c *MediaProxyController) isValidMediaContentType(contentType string, header http.Header) bool {
+	ct := strings.ToLower(contentType)
+
+	if ct == "" ||
+		strings.HasPrefix(ct, "text/") ||
 		ct == "application/json" ||
 		ct == "application/xml" ||
 		ct == "application/javascript" {
@@ -376,12 +309,61 @@ func (c *MediaProxyController) isValidMediaContentType(contentType string, heade
 		return true
 	}
 
-	if len(headers) > 0 {
-		cd := headers[0].Get("Content-Disposition")
-		if cd != "" && strings.Contains(cd, "filename=") {
-			return true
+	cd := header.Get("Content-Disposition")
+	return cd != "" && strings.Contains(cd, "filename=")
+}
+
+func (c *MediaProxyController) fetchWithRedirects(urlStr string, maxRedirects int) (*http.Response, string, error) {
+	visited := make(map[string]bool)
+
+	for i := 0; i < maxRedirects; i++ {
+		if visited[urlStr] {
+			return nil, urlStr, errors.New("redirect loop detected")
 		}
+		visited[urlStr] = true
+
+		if !isAllowedHTTPS(urlStr) || c.isUrlBlacklisted(urlStr) {
+			return nil, urlStr, errors.New("URL not allowed")
+		}
+
+		req, err := http.NewRequest("GET", urlStr, nil)
+		if err != nil {
+			return nil, urlStr, err
+		}
+
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+		req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+		req.Header.Set("Connection", "keep-alive")
+		req.Header.Set("Upgrade-Insecure-Requests", "1")
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, urlStr, err
+		}
+
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			return resp, urlStr, nil
+		}
+
+		if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+			location := resp.Header.Get("Location")
+			resp.Body.Close()
+
+			if location == "" {
+				return nil, urlStr, errors.New("redirect without Location")
+			}
+
+			base, _ := url.Parse(urlStr)
+			redirect, _ := url.Parse(location)
+			urlStr = base.ResolveReference(redirect).String()
+			continue
+		}
+
+		resp.Body.Close()
+		return nil, urlStr, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
-	return false
+	return nil, urlStr, errors.New("too many redirects")
 }

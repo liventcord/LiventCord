@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"image"
 	"net/http"
 	"os"
@@ -18,14 +19,6 @@ func generateETag(filePath string) string {
 	b, _ := os.ReadFile(filePath)
 	h := md5.Sum(b)
 	return base64.StdEncoding.EncodeToString(h[:])
-}
-
-func isRedirect(status int) bool {
-	return status == http.StatusFound ||
-		status == http.StatusMovedPermanently ||
-		status == http.StatusSeeOther ||
-		status == http.StatusTemporaryRedirect ||
-		status == http.StatusPermanentRedirect
 }
 
 func getFileName(resp *http.Response, url string) string {
@@ -167,4 +160,15 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func validateURL(urlStr string) error {
+	urlStr = strings.TrimSpace(urlStr)
+	if urlStr == "" {
+		return errors.New("empty URL")
+	}
+	if !isAllowedHTTPS(urlStr) {
+		return errors.New("URL is not allowed")
+	}
+	return nil
 }

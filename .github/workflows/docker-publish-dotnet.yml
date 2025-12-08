@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "server/src/**"
+      - "server/LiventCord/**"
   workflow_dispatch:
     inputs:
       IMAGE_NAME:
