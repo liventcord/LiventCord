@@ -20,14 +20,14 @@ import (
 )
 
 var CacheDirectory = "./cache"
-var CloudflareWorkerURL string
+var VercelBalancerURL string
 var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
-	CloudflareWorkerURL = os.Getenv("CloudflareWorkerUrl")
-	if CloudflareWorkerURL == "" {
-		panic("CloudflareWorkerUrl environment variable not set")
+	VercelBalancerURL = os.Getenv("VercelBalancerURL")
+	if VercelBalancerURL == "" {
+		panic("VercelBalancerURL environment variable not set")
 	}
 }
 
@@ -78,7 +78,7 @@ func GetVideoAttachmentPreview(c *gin.Context) {
 }
 
 func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, error) {
-	url := CloudflareWorkerURL + "/attachments/" + attachmentId
+	url := VercelBalancerURL + "/attachments/" + attachmentId
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,

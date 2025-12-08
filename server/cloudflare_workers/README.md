@@ -13,7 +13,8 @@ Logs hits made to landing page.
 ### **gif-api**
 Handles searching and retrieving GIFs from Tenor.
 
-
+### **media-loadbalancer**
+Load balancer, Redirects requests to multiple Cloudflare Workers, tracking daily quotas using Redis. Assumes each cloudflare worker would have 100K request limits per day.
 
 ## How to run
 
