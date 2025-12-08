@@ -82,25 +82,6 @@ export default {
       }
     }
 
-    async function fetchAttachmentSize(fileId: string) {
-      try {
-        const columns = await getTableColumns(sql, "AttachmentFile");
-        const contentCol = columns.find((c) => c.toLowerCase() === "content");
-        if (!contentCol) return { error: "Attachment not available" };
-
-        const rows = await sql`
-          SELECT octet_length(${sql(contentCol)}) AS size
-          FROM ${sql("AttachmentFile")}
-          WHERE "FileId" = ${fileId} LIMIT 1
-        `;
-        if (!rows || rows.length === 0)
-          return { error: "Attachment not found" };
-        return { fileId, size: rows[0].size };
-      } catch {
-        return { error: "Internal server error" };
-      }
-    }
-
     async function getFromCache(key: string, fetcher?: () => Promise<any>) {
       const cacheUrl = new URL("https://cache.liventcord/" + key);
 
@@ -175,8 +156,6 @@ export default {
       const fileId = sanitizeId(pathParts[1] || "");
       if (!fileId) return makeResponse({ error: "Bad Request" }, 400);
 
-      if (url.searchParams.get("size") === "true")
-        return makeResponse(await fetchAttachmentSize(fileId));
       return getFromCache(`attachment_${fileId}`, () =>
         fetchFile("AttachmentFile", "FileId", fileId),
       );

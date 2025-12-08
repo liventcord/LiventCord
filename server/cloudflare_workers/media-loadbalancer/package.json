@@ -1,0 +1,12 @@
+{
+	"type": "module",
+	"scripts": {
+		"dev": "vercel dev",
+		"deploy": "vercel --prod"
+	},
+	"dependencies": {
+		"@vercel/node": "^5.5.15",
+		"redis": "^5.10.0",
+		"vercel": "^49.1.2"
+	}
+}
