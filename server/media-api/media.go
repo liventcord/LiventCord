@@ -318,16 +318,19 @@ func (c *MediaProxyController) fetchWithRedirects(urlStr string, maxRedirects in
 
 	for i := 0; i < maxRedirects; i++ {
 		if visited[urlStr] {
+			c.addToBlacklist(urlStr)
 			return nil, urlStr, errors.New("redirect loop detected")
 		}
 		visited[urlStr] = true
 
 		if !isAllowedHTTPS(urlStr) || c.isUrlBlacklisted(urlStr) {
+			c.addToBlacklist(urlStr)
 			return nil, urlStr, errors.New("URL not allowed")
 		}
 
 		req, err := http.NewRequest("GET", urlStr, nil)
 		if err != nil {
+			c.addToBlacklist(urlStr)
 			return nil, urlStr, err
 		}
 
@@ -340,6 +343,7 @@ func (c *MediaProxyController) fetchWithRedirects(urlStr string, maxRedirects in
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
+			c.addToBlacklist(urlStr)
 			return nil, urlStr, err
 		}
 
@@ -352,6 +356,7 @@ func (c *MediaProxyController) fetchWithRedirects(urlStr string, maxRedirects in
 			resp.Body.Close()
 
 			if location == "" {
+				c.addToBlacklist(urlStr)
 				return nil, urlStr, errors.New("redirect without Location")
 			}
 
@@ -362,8 +367,10 @@ func (c *MediaProxyController) fetchWithRedirects(urlStr string, maxRedirects in
 		}
 
 		resp.Body.Close()
+		c.addToBlacklist(urlStr)
 		return nil, urlStr, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
+	c.addToBlacklist(urlStr)
 	return nil, urlStr, errors.New("too many redirects")
 }

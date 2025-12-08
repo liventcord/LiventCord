@@ -25,6 +25,7 @@ export interface ResultItem {
 }
 export interface Env {
   PROXY_SERVERS: string;
+  ADMIN_PASSWORD: string;
 }
 async function fetchWithCacheAndFallback(
   url: string,
@@ -57,18 +58,31 @@ async function fetchWithCacheAndFallback(
 
   const servers = env.PROXY_SERVERS.split(",");
 
-  const attempts = [
-    trimmed,
-    ...servers.map(
-      (base) => `${base}${proxyPath}?url=${encodeURIComponent(trimmed)}`,
-    ),
-  ];
+  try {
+    const res = await fetch(trimmed, {
+      method: req?.method || "GET",
+      headers: baseHeaders,
+      redirect: "follow",
+    });
 
-  for (const target of attempts) {
+    if (res.ok) {
+      await cache.put(trimmed, res.clone());
+      return res;
+    }
+  } catch (_) {}
+
+  for (const base of servers) {
     try {
-      const res = await fetch(target, {
+      const proxyHeaders = { ...baseHeaders };
+
+      if (env.ADMIN_PASSWORD) {
+        proxyHeaders["Authorization"] = `Bearer ${env.ADMIN_PASSWORD}`;
+      }
+
+      const serverUrl = `${base}${proxyPath}?url=${encodeURIComponent(trimmed)}`;
+      const res = await fetch(serverUrl, {
         method: req?.method || "GET",
-        headers: baseHeaders,
+        headers: proxyHeaders,
         redirect: "follow",
       });
 
@@ -83,6 +97,7 @@ async function fetchWithCacheAndFallback(
 
   return new Response("All fetch attempts failed", { status: 502 });
 }
+
 export async function handleProxyRequest(req: Request, env: Env) {
   const u = new URL(req.url);
   const target = u.searchParams.get("url");

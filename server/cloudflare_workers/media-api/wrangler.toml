@@ -6,3 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 [[hyperdrive]] 
 binding = "HYPERDRIVE"
 id = "YOUR_HYPERDRIVE_ID"
+[vars]
+ADMIN_PASSWORD = "YOUR_ADMIN_PASSWORD"
+PROXY_SERVERS = "YOUR_PROXY_SERVERS_SEPERATED_BY_COMMA"
