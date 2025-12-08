@@ -3,6 +3,9 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY media-api/go.mod media-api/go.sum ./
+
+COPY telemetry telemetry
+
 RUN go mod download
 
 COPY media-api ./
