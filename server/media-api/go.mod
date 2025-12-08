@@ -55,4 +55,4 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 )
 
-replace github.com/liventcord/server/telemetry => ./telemetry
+replace github.com/liventcord/server/telemetry => ../telemetry

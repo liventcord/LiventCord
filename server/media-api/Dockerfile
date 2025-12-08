@@ -1,12 +1,10 @@
-# ---- Builder stage ----
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /usr/src/app
 
-COPY media-api/go.mod media-api/go.sum ./
+COPY media-api/go.mod media-api/go.sum ./media-api/
 
-COPY telemetry ./media-api/telemetry
-
+COPY telemetry ./telemetry
 COPY media-api ./media-api
 
 WORKDIR /usr/src/app/media-api
@@ -22,6 +20,7 @@ RUN apk add --no-cache wget ffmpeg python3 py3-pip && \
     chmod +x /usr/local/bin/yt-dlp
 
 WORKDIR /usr/local/bin
+
 COPY --from=builder /usr/local/bin/app .
 
 CMD ["app"]
