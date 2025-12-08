@@ -35,7 +35,6 @@ import { initialState } from "./app.ts";
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
-selfProfileImage.crossOrigin = "anonymous";
 export let lastConfirmedProfileImg: Blob;
 let lastConfirmedGuildImg: Blob;
 
@@ -90,15 +89,13 @@ async function setPicture(
       : blackImage;
     return;
   }
-  if (!imgToUpdate) {
-    return;
-  }
+  if (!imgToUpdate) return;
 
   if (srcId === CLYDE_ID) {
     imgToUpdate.src = IMAGE_SRCS.CLYDE_SRC;
     return;
   }
-  imgToUpdate.crossOrigin = "anonymous";
+
   srcId = String(srcId);
 
   if (failedImages.has(srcId)) {
@@ -109,26 +106,9 @@ async function setPicture(
   }
 
   const imageUrl = isProfile ? getProfileUrl(srcId) : getGuildUrl(srcId);
+  imgToUpdate.src = imageUrl;
 
-  try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      imgToUpdate.src = isProfile
-        ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
-        : blackImage;
-      failedImages.add(srcId);
-      return;
-    }
-    imgToUpdate.src = imageUrl;
-  } catch (e) {
-    imgToUpdate.src = isProfile
-      ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
-      : blackImage;
-    failedImages.add(srcId);
-    console.error(e);
-  }
-
-  imgToUpdate.addEventListener("error", function () {
+  imgToUpdate.addEventListener("error", () => {
     imgToUpdate.src = isProfile
       ? IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC
       : blackImage;
@@ -217,7 +197,8 @@ export function resetImageInput(inputId: string, imgId: string) {
 }
 
 function updateImageSource(imageElement: HTMLImageElement, imagePath: string) {
-  imageElement.onerror = () => {
+  imageElement.onerror = (e: any) => {
+    alertUser(e);
     if (imageElement.src !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
       imageElement.src = IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
     }

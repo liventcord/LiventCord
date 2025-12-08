@@ -2211,14 +2211,18 @@ h2 {
 .language-selector {
   position: fixed;
   bottom: 20px;
-  display: flex;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   background-color: #333;
   padding: 10px 20px;
   border-radius: 25px;
   box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
   z-index: 1000;
+  transition: all 0.3s ease;
 }
 
 .language-selector button {
@@ -2226,18 +2230,33 @@ h2 {
   color: black;
   border: none;
   padding: 8px 15px;
-  margin: 0 10px;
   font-size: 16px;
   cursor: pointer;
   border-radius: 5px;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .language-selector button:hover {
   background-color: #ddd;
+  transform: scale(1.05);
 }
 
 .language-selector button:focus {
   outline: 3px solid #0057b7;
+}
+
+/* Single responsive breakpoint for small screens */
+@media (max-width: 500px) {
+  .language-selector {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .language-selector button {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
 }
 
 .info-container,

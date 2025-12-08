@@ -12,7 +12,7 @@ export default {
       /^\/attachments\/([a-zA-Z0-9_-]+)\/preview$/,
     );
     if (previewMatch) {
-      return handlePreview(request);
+      return handlePreview(request, env);
     }
 
     if (url.pathname === "/api/proxy/metadata" && request.method === "POST") {
