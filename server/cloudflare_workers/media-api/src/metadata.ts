@@ -30,7 +30,7 @@ async function fetchWithCacheAndFallback(
   url: string,
   req: Request | undefined,
   env: Env,
-  proxyPath: string, // e.g., "/api/proxy/media" or "/api/proxy/metadata"
+  proxyPath: string,
 ): Promise<Response> {
   const anycache = caches as any;
   const cache = anycache.default;
