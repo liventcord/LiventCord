@@ -1,9 +1,8 @@
 html * {
-  font-family: "gg sans", sans-serif !important;
-  font-family: "gg sans Normal", sans-serif !important;
-  font-family: "gg sans Medium", sans-serif !important;
-  font-family: "gg sans SemiBold", sans-serif !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 600 !important;
 }
+
 body {
   margin: 0;
   display: flex;

@@ -198,7 +198,6 @@ export function resetImageInput(inputId: string, imgId: string) {
 
 function updateImageSource(imageElement: HTMLImageElement, imagePath: string) {
   imageElement.onerror = (e: any) => {
-    alertUser(e);
     if (imageElement.src !== IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC) {
       imageElement.src = IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
     }
