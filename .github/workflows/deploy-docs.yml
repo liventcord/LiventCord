@@ -57,7 +57,7 @@ jobs:
           rm -rf docs/static/app
           mkdir -p docs/static/app
           cp -r web/output/* docs/static/app/
-          
+          cp web/public/google0baace54b7b32171.html docs/static/
           cd docs && node patch404.js && yarn build
           
       - name: Upload GitHub Pages Artifact
