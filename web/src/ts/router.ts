@@ -15,14 +15,22 @@ import { isSettingsOpen } from "./settings.ts";
 export let isOnMePage = true;
 export let isOnDm = false;
 export let isOnGuild = false;
-export function setisOnMePage(val: boolean) { isOnMePage = val; }
-export function setIsOnDm(val: boolean) { isOnDm = val; }
-export function setIsOnGuild(val: boolean) { isOnGuild = val; }
+export function setisOnMePage(val: boolean) {
+  isOnMePage = val;
+}
+export function setIsOnDm(val: boolean) {
+  isOnDm = val;
+}
+export function setIsOnGuild(val: boolean) {
+  isOnGuild = val;
+}
 
 class Router {
   lastKnownUrl = "";
   constructor() {
-    this.init();
+    setTimeout(() => {
+      this.init();
+    }, 0);
   }
   public ID_LENGTH = 19;
 
@@ -33,7 +41,10 @@ class Router {
   }
 
   init() {
-    document.addEventListener("visibilitychange", this.handleVisibilityChange.bind(this));
+    document.addEventListener(
+      "visibilitychange",
+      this.handleVisibilityChange.bind(this)
+    );
     window.addEventListener("popstate", this.handlePopState.bind(this));
     window.addEventListener("hashchange", this.handlePopState.bind(this));
     window.addEventListener("beforeunload", (e) => {
@@ -43,7 +54,6 @@ class Router {
       }
     });
 
-    // Ensure default route if no hash
     if (!window.location.hash) {
       window.location.hash = "/channels/@me";
     } else {
@@ -121,7 +131,9 @@ class Router {
     initialiseLoginPage();
     this.switchToLogin();
   }
-  closeLogin() { disableElement("login-panel"); }
+  closeLogin() {
+    disableElement("login-panel");
+  }
   switchToRegister() {
     disableElement("login-form");
     enableElement("register-form");
@@ -135,9 +147,15 @@ class Router {
     window.location.reload();
   }
 
-  isIdDefined(id: string) { return id; }
-  constructAppPage(guildId: string, channelId: string) { return `/channels/${guildId}/${channelId}`; }
-  constructDmPage(channelId: string) { return `/channels/@me/${channelId}`; }
+  isIdDefined(id: string) {
+    return id;
+  }
+  constructAppPage(guildId: string, channelId: string) {
+    return `/channels/${guildId}/${channelId}`;
+  }
+  constructDmPage(channelId: string) {
+    return `/channels/@me/${channelId}`;
+  }
   constructAbsoluteAppPage(guildId: string, channelId: string) {
     const port = window.location.port ? `:${window.location.port}` : "";
     return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
@@ -145,13 +163,19 @@ class Router {
 
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
-    const [guildId, channelId, friendId, inviteId] = this.getRouteIds(pathStr, parts)
+    const [guildId, channelId, friendId, inviteId] = this.getRouteIds(
+      pathStr,
+      parts
+    )
       .concat([undefined, undefined, undefined, undefined])
       .slice(0, 4);
 
     if (inviteId) showGuildPop(inviteId);
 
-    if ((guildId && !this.isIdDefined(guildId)) || (channelId && !this.isIdDefined(channelId))) {
+    if (
+      (guildId && !this.isIdDefined(guildId)) ||
+      (channelId && !this.isIdDefined(channelId))
+    ) {
       this.resetRoute();
       return { isValid: false };
     }
@@ -162,7 +186,12 @@ class Router {
       return { isValid: false };
     }
 
-    return { isValid: true, initialGuildId: guildId, initialChannelId: channelId, initialFriendId: friendId };
+    return {
+      isValid: true,
+      initialGuildId: guildId,
+      initialChannelId: channelId,
+      initialFriendId: friendId
+    };
   }
 
   getRouteIds(pathStr: string, parts: string[]) {
@@ -173,7 +202,11 @@ class Router {
     if (channelIndex !== -1) {
       if (parts[channelIndex + 1] === "@me" && parts[channelIndex + 2]) {
         friendId = parts[channelIndex + 2];
-      } else if (parts.length > channelIndex + 2 && parts[channelIndex + 1] && parts[channelIndex + 2]) {
+      } else if (
+        parts.length > channelIndex + 2 &&
+        parts[channelIndex + 1] &&
+        parts[channelIndex + 2]
+      ) {
         guildId = parts[channelIndex + 1];
         channelId = parts[channelIndex + 2];
       }
@@ -184,8 +217,14 @@ class Router {
     return [guildId, channelId, friendId, inviteId];
   }
 
-  shouldResetRoute(isPathnameCorrectValue: boolean, guildId: string | undefined) {
-    return (isOnMePage && !isPathnameCorrectValue) || (isOnGuild && guildId && !cacheInterface.doesGuildExist(guildId));
+  shouldResetRoute(
+    isPathnameCorrectValue: boolean,
+    guildId: string | undefined
+  ) {
+    return (
+      (isOnMePage && !isPathnameCorrectValue) ||
+      (isOnGuild && guildId && !cacheInterface.doesGuildExist(guildId))
+    );
   }
 
   switchToDm(friendId: string) {
