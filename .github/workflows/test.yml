@@ -60,7 +60,7 @@ jobs:
 
       - name: Show backend logs 
         if: failure()
-        run: cat server/LiventCord/backend.log
+        run: cat server/LiventCord/Logs/*
 
       - name: Build frontend
         working-directory: web
