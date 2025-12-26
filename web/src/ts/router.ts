@@ -36,7 +36,6 @@ class Router {
 
   isPathnameCorrect(url: string) {
     const regex = /\/channels\/(?:@me\/\d{18,19}|\d{18,19}\/\d{18,19})/;
-    console.log(url, regex.test(url));
     return regex.test(url);
   }
 
@@ -100,7 +99,6 @@ class Router {
     const pathStr = raw.startsWith("/") ? raw : `/${raw}`;
     const parts = pathStr.split("/").filter(Boolean);
 
-    console.log(window.location.href, window.location.pathname, pathStr, parts);
     return { pathStr, parts };
   }
 
