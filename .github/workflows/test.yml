@@ -50,15 +50,10 @@ jobs:
           cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
-      - name: Wait for backend to be ready
-        run: |
-          until curl --silent --fail http://localhost:5005 > /dev/null; do
-            echo "Waiting for backend…"
-            sleep 1
-          done
-          echo "✅ Backend is up!"
+      - name: Sleep for backend startup
+        run: sleep 30
 
-      - name: Show backend logs 
+      - name: Show backend logs
         if: failure()
         run: cat server/LiventCord/Logs/*
 
@@ -81,7 +76,7 @@ jobs:
       - name: Run Cypress tests
         working-directory: web
         run: pnpm run test
-        continue-on-error: true 
+        continue-on-error: true
 
       - name: Upload Cypress screenshots as artifacts
         uses: actions/upload-artifact@v4
