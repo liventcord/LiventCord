@@ -46,7 +46,7 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef
           dotnet tool restore
-          dotnet ef migrations add InitialCreate
+          dotnet ef migrations add InitialCreate --context AppDbContext
           cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
