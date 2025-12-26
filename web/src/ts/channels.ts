@@ -446,7 +446,7 @@ export function setWidths(newWidth: number) {
   if (infoContainer)
     infoContainer.style.paddingLeft = isMobile ? "40px" : `${newWidth + 15}px`;
 
-  if (guildContainer) guildContainer.style.width = `${newWidth + 167}px`;
+  if (guildContainer) guildContainer.style.width = `${newWidth + 172}px`;
 
   const soundPanel = getId("sound-panel");
   if (soundPanel) soundPanel.style.width = `${newWidth + 165}px`;

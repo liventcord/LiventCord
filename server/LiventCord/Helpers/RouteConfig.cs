@@ -1,7 +1,5 @@
 using LiventCord.Helpers;
 using Microsoft.AspNetCore.StaticFiles;
-using System.Net.Http.Headers;
-using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
 
 public static class RouteConfig
@@ -13,136 +11,139 @@ public static class RouteConfig
 
     private const string GitHubPagesBase = "https://liventcord.github.io/LiventCord/app";
 
-    private static readonly ConcurrentDictionary<string, byte[]> _assetCache = new ConcurrentDictionary<string, byte[]>();
-    private static readonly ConcurrentDictionary<string, string> _assetContentTypes = new ConcurrentDictionary<string, string>();
+    private static readonly ConcurrentDictionary<string, byte[]> _assetCache = new();
+    private static readonly ConcurrentDictionary<string, string> _assetContentTypes = new();
 
-    public static void ConfigureRoutes(WebApplication app)
+    public static void ConfigureRoutes(WebApplication app, WebApplicationBuilder builder)
     {
-        // Landing page
-        async Task<string> GetLandingHtmlAsync()
-        {
-            if (_cachedLandingHtml != null) return _cachedLandingHtml;
+        var serveLanding = builder.Configuration.GetValue<bool>("AppSettings:ServeLanding");
+        var serveFrontend = builder.Configuration.GetValue<bool>("AppSettings:ServeFrontend");
 
-            lock (_cacheLock)
+        if (serveLanding)
+        {
+            async Task<string> GetLandingHtmlAsync()
             {
                 if (_cachedLandingHtml != null) return _cachedLandingHtml;
+
+                lock (_cacheLock)
+                {
+                    if (_cachedLandingHtml != null) return _cachedLandingHtml;
+                }
+
+                var url = "https://raw.githubusercontent.com/liventcord/liventcord.github.io/refs/heads/main/index.html";
+                var html = await _httpClient.GetStringAsync(url);
+
+                lock (_cacheLock)
+                {
+                    _cachedLandingHtml = html;
+                }
+
+                return _cachedLandingHtml;
             }
 
-            var url = "https://raw.githubusercontent.com/liventcord/liventcord.github.io/refs/heads/main/index.html";
-            var html = await _httpClient.GetStringAsync(url);
-
-            lock (_cacheLock)
+            app.MapGet("/", async context =>
             {
-                _cachedLandingHtml = html;
-            }
-
-            return _cachedLandingHtml;
+                var html = await GetLandingHtmlAsync();
+                context.Response.ContentType = "text/html";
+                await context.Response.WriteAsync(html);
+            });
         }
-
-        app.MapGet("/", async context =>
+        if (serveFrontend)
         {
-            var html = await GetLandingHtmlAsync();
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(html);
-        });
-
-        // SPA HTML
-        async Task<string> GetAppIndexHtmlAsync()
-        {
-            if (_cachedAppIndexHtml != null) return _cachedAppIndexHtml;
-
-            lock (_cacheLock)
+            async Task<string> GetAppIndexHtmlAsync()
             {
                 if (_cachedAppIndexHtml != null) return _cachedAppIndexHtml;
+
+                lock (_cacheLock)
+                {
+                    if (_cachedAppIndexHtml != null) return _cachedAppIndexHtml;
+                }
+
+                var url = $"{GitHubPagesBase}/index.html";
+                var html = await _httpClient.GetStringAsync(url);
+
+                lock (_cacheLock)
+                {
+                    _cachedAppIndexHtml = html;
+                }
+
+                return _cachedAppIndexHtml;
             }
 
-            var url = $"{GitHubPagesBase}/index.html";
-            var html = await _httpClient.GetStringAsync(url);
-
-            lock (_cacheLock)
-            {
-                _cachedAppIndexHtml = html;
-            }
-
-            return _cachedAppIndexHtml;
-        }
-
-        app.MapGet("/LiventCord/app", async context =>
-        {
-            var html = await GetAppIndexHtmlAsync();
-            context.Response.ContentType = "text/html";
-            await context.Response.WriteAsync(html);
-        });
-
-        // SPA assets proxy
-        app.MapGet("/LiventCord/app/{*assetPath}", async context =>
-        {
-            var path = context.Request.Path.Value?.Replace("/LiventCord/app/", "") ?? "";
-            if (string.IsNullOrEmpty(path))
+            app.MapGet("/LiventCord/app", async context =>
             {
                 var html = await GetAppIndexHtmlAsync();
                 context.Response.ContentType = "text/html";
                 await context.Response.WriteAsync(html);
-                return;
+            });
+
+            app.MapGet("/LiventCord/app/{*assetPath}", async context =>
+            {
+                var path = context.Request.Path.Value?.Replace("/LiventCord/app/", "") ?? "";
+                if (string.IsNullOrEmpty(path))
+                {
+                    var html = await GetAppIndexHtmlAsync();
+                    context.Response.ContentType = "text/html";
+                    await context.Response.WriteAsync(html);
+                    return;
+                }
+
+                if (_assetCache.TryGetValue(path, out var cachedBytes))
+                {
+                    context.Response.ContentType = _assetContentTypes[path];
+                    context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
+                    await context.Response.Body.WriteAsync(cachedBytes);
+                    return;
+                }
+
+                try
+                {
+                    var assetUrl = $"{GitHubPagesBase}/{path}";
+                    var bytes = await _httpClient.GetByteArrayAsync(assetUrl);
+                    var provider = new FileExtensionContentTypeProvider();
+                    if (!provider.TryGetContentType(path, out var contentType))
+                        contentType = "application/octet-stream";
+
+                    _assetCache[path] = bytes;
+                    _assetContentTypes[path] = contentType;
+
+                    context.Response.ContentType = contentType;
+                    context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
+                    await context.Response.Body.WriteAsync(bytes);
+                }
+                catch
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync("Asset not found");
+                }
+            });
+
+            void MapRedirectRoute(string path, string baseUrl)
+            {
+                app.MapGet(path, async context =>
+                {
+                    var originalRoute = context.Request.Query["route"].ToString();
+                    var redirectUrl = baseUrl + (string.IsNullOrEmpty(originalRoute) ? "" : "?route=" + Uri.EscapeDataString(originalRoute));
+                    context.Response.Redirect(redirectUrl);
+                    await Task.CompletedTask;
+                });
             }
 
-            if (_assetCache.TryGetValue(path, out var cachedBytes))
+            MapRedirectRoute("/login", "/LiventCord/app");
+            MapRedirectRoute("/register", "/LiventCord/app");
+            MapRedirectRoute("/app", "/LiventCord/app");
+
+            app.MapGet("/channels/{*subPath}", async context =>
             {
-                context.Response.ContentType = _assetContentTypes[path];
-                context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
-                await context.Response.Body.WriteAsync(cachedBytes);
-                return;
-            }
-
-            try
-            {
-                var assetUrl = $"{GitHubPagesBase}/{path}";
-                var bytes = await _httpClient.GetByteArrayAsync(assetUrl);
-                var provider = new FileExtensionContentTypeProvider();
-                if (!provider.TryGetContentType(path, out var contentType)) contentType = "application/octet-stream";
-
-                _assetCache[path] = bytes;
-                _assetContentTypes[path] = contentType;
-
-                context.Response.ContentType = contentType;
-                context.Response.Headers["Cache-Control"] = "public,max-age=31536000";
-                await context.Response.Body.WriteAsync(bytes);
-            }
-            catch
-            {
-                context.Response.StatusCode = 404;
-                await context.Response.WriteAsync("Asset not found");
-            }
-        });
-
-
-        // SPA redirects
-        void MapRedirectRoute(string path, string baseUrl)
-        {
-            app.MapGet(path, async context =>
-            {
-                var originalRoute = context.Request.Query["route"].ToString();
-                var redirectUrl = baseUrl + (string.IsNullOrEmpty(originalRoute) ? "" : "?route=" + Uri.EscapeDataString(originalRoute));
+                var subPath = context.Request.RouteValues["subPath"]?.ToString() ?? "";
+                var redirectUrl = $"/LiventCord/app/?route=channels/{Uri.EscapeDataString(subPath)}";
                 context.Response.Redirect(redirectUrl);
                 await Task.CompletedTask;
             });
+
+            MapRedirectRoute("/join-guild/{*subPath}", "/LiventCord/app?route=/join-guild/{subPath}");
         }
 
-        MapRedirectRoute("/login", "/LiventCord/app");
-        MapRedirectRoute("/register", "/LiventCord/app");
-        MapRedirectRoute("/app", "/LiventCord/app");
-
-        app.MapGet("/channels/{*subPath}", async context =>
-        {
-            var subPath = context.Request.RouteValues["subPath"]?.ToString() ?? "";
-            var redirectUrl = $"/LiventCord/app/?route=channels/{Uri.EscapeDataString(subPath)}";
-            context.Response.Redirect(redirectUrl);
-            await Task.CompletedTask;
-        });
-
-        MapRedirectRoute("/join-guild/{*subPath}", "/LiventCord/app?route=/join-guild/{subPath}");
-
-        // API endpoints
         app.Map("/api/init", appBuilder =>
         {
             appBuilder.Run(async context =>
@@ -175,5 +176,4 @@ public static class RouteConfig
             await Task.CompletedTask;
         });
     }
-
 }

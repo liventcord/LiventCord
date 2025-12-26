@@ -19,7 +19,7 @@ namespace LiventCord.Helpers
         static SharedAppConfig()
         {
             GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
-            MediaWorkerUrl = "https://media-api.liventcord-a60.workers.dev";
+            MediaWorkerUrl = "https://YOUR_MEDIA_WORKER_URL";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080";
@@ -138,7 +138,7 @@ namespace LiventCord.Helpers
                     profileVersion = await GetProfileImgVersion(userId),
                     sharedGuildsMap = await _membersController.GetSharedGuilds(
                         userId,
-                        friendsStatus,
+                        friendsStatus.Cast<PublicUserWithFriendData?>().ToList(),
                         guilds
                     ),
                     permissionsMap = await _permissionsController.GetPermissionsMapForUser(userId),
@@ -146,7 +146,7 @@ namespace LiventCord.Helpers
                     dmFriends = await GetDmUsers(userId),
                     guilds,
                     gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
-                    MediaWorkerUrl = SharedAppConfig.MediaWorkerUrl,
+                    SharedAppConfig.MediaWorkerUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,
@@ -202,15 +202,35 @@ namespace LiventCord.Helpers
 
         public async Task<List<PublicUser>> GetDmUsers(string userId)
         {
-            return await _dbContext
-                .UserDms.Where(d => d.UserId == userId)
+            var dmUsers = await _dbContext
+                .UserDms
+                .Where(d => d.UserId == userId)
                 .Join(
                     _dbContext.Users,
-                    friend => friend.FriendId,
-                    user => user.UserId,
-                    (friend, user) => user.GetPublicUser()
+                    d => d.FriendId,
+                    u => u.UserId,
+                    (d, u) => new
+                    {
+                        User = u,
+                        ProfileVersion = _dbContext.ProfileFiles
+                                            .Where(pf => pf.UserId == u.UserId)
+                                            .Select(pf => pf.Version)
+                                            .FirstOrDefault()
+                    }
                 )
                 .ToListAsync();
+
+            return dmUsers
+                .Select(x =>
+                {
+                    var publicUser = x.User.GetPublicUser();
+                    publicUser.ProfileVersion = x.ProfileVersion;
+                    return publicUser;
+                })
+                .GroupBy(u => u.UserId)
+                .Select(g => g.First())
+                .ToList();
         }
+
     }
 }

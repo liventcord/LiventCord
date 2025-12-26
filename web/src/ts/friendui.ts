@@ -135,6 +135,7 @@ interface DmUserInfo {
   nickName: string;
   activity: string;
   discriminator: string;
+  profileVersion: string;
   isPending: boolean;
   isFriendsRequestToUser: boolean;
 }
@@ -258,6 +259,7 @@ export async function appendToDmList(
     status: "",
     nickName: user.nickName,
     activity: "",
+    profileVersion: "",
     discriminator: user.discriminator,
     isPending: false,
     isFriendsRequestToUser: false
@@ -299,6 +301,13 @@ export function updateDmsList(friends: DmUserInfo[]) {
   const friendsRecord: { [key: string]: Friend } = friends.reduce(
     (record, friend) => {
       async function setupDmUser(_friend: DmUserInfo) {
+        console.log(friend);
+        userManager.addUser(
+          _friend.userId,
+          friend.nickName,
+          friend.discriminator,
+          friend.profileVersion
+        );
         const dmUser = await DmUser.create(_friend);
         const existingContainer = dmContainerParent.querySelector(
           `#${CSS.escape(_friend.userId)}`
@@ -671,7 +680,9 @@ function createAddFriendForm() {
     id: "addfrienddetailtext",
     textContent: translations.getTranslation("addfrienddetailtext")
   });
-  const addfriendinputcontainer = createEl("div");
+  const addfriendinputcontainer = createEl("div", {
+    id: "addfriendinputcontainer"
+  });
   const addfriendinput = createEl("input", {
     id: "addfriendinputfield",
     placeholder: translations.getTranslation("addfrienddetailtext"),
@@ -815,7 +826,6 @@ export async function populateFriendsContainer(
 async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
     const status = await userManager.getStatusString(friend.userId);
-    console.warn(status, friend);
     const isOnline = await userManager.isOnline(friend.userId);
     createFriendCard(
       friend,

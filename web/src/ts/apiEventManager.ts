@@ -42,7 +42,12 @@ import {
   addToGuildsList
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
-import { initialiseState, initializeApp, loadDmHome } from "./app.ts";
+import {
+  initialiseState,
+  initializeApp,
+  initialState,
+  loadDmHome
+} from "./app.ts";
 import {
   currentUserId,
   currentUserNick,
@@ -116,9 +121,10 @@ apiClient.on(EventType.UPLOAD_GUILD_IMAGE, (data: any) => {
   setLastConfirmedGuildImage();
 });
 apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
-  userManager.setProfileVersion(currentUserId, data.profileVersion);
-  refreshUserProfile(currentUserId, currentUserNick);
   setLastConfirmedProfileImage();
+  userManager.setProfileVersion(currentUserId, data.profileVersion);
+  initialState.user.profileVersion = data.profileVersion;
+  refreshUserProfile(currentUserId, currentUserNick);
 });
 function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
   updatePermissions(guild.guildId, permissions);

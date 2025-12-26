@@ -578,14 +578,22 @@
   color: rgb(144 155 164);
 }
 #global-search-input {
-  display: block;
-  color: rgb(144 155 164);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: rgb(144, 155, 164);
   font-size: 14px;
-  margin-top: -5px;
   width: 286px;
   height: 28px;
-  text-indent: -65px;
   margin-left: 78px;
+  padding: 0;
+  box-sizing: border-box;
+  text-align: center;
+  cursor: pointer;
+}
+#addfriendinputcontainer {
+  margin-top: 10px;
+  margin-left: 10px;
 }
 .iconWrapper {
   display: flex;
@@ -742,7 +750,7 @@ body.black-theme .base-user-input {
   background-color: #313338;
   position: absolute;
   display: block;
-  width: 377px;
+  width: 379px;
   height: 50px;
   left: 0px;
   top: -2px;
@@ -2249,7 +2257,6 @@ h2 {
   outline: 3px solid #0057b7;
 }
 
-/* Single responsive breakpoint for small screens */
 @media (max-width: 500px) {
   .language-selector {
     padding: 8px 12px;

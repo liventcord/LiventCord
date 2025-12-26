@@ -82,4 +82,14 @@ namespace LiventCord.Models
         public Channel Channel { get; set; } = null!;
         public Message Message { get; set; } = null!;
     }
+    public class CachedMessage
+    {
+        [Key]
+        public string CacheKey { get; set; } = default!;  // guildId + channelId + query
+        public string ChannelId { get; set; } = default!;
+        public string GuildId { get; set; } = default!;
+        public DateTime CachedAt { get; set; } = DateTime.UtcNow;
+        public string JsonData { get; set; } = default!;
+    }
+
 }

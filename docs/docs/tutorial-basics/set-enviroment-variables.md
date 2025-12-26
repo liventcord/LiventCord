@@ -18,7 +18,7 @@ sidebar_position: 1
 ## .NET Server Configuration
 1. Move `Properties/exampleSettings.json` to `Properties/appsettings.json`.
 ```bash
-mv Properties/exampleSettings.json Properties/appsettings.json
+cp Properties/exampleSettings.json Properties/appsettings.json
 ```
 
 #### Configuration Options
@@ -68,9 +68,16 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     Url to add cors headers at.
     **Defaults to** `none`
 
-  - **GifWorkerUrl**: 
-    URL of the Cloudflare Worker for querying Tenor GIFs.
-    **Defaults to** `"media-api.liventcord-a60.workers.dev"`
+  - **GifWorkerUrl**:  
+    URL of the Cloudflare Gif Worker for querying Tenor GIFs.  
+    **Defaults to** `"https://gif-worker.liventcord-a60.workers.dev"`  
+    See [how to set up the worker](run_cloudflare_workers.md).
+
+  - **MediaWorkerUrl**:  
+    URL of the Cloudflare Media Worker for storing app files.  
+    **Defaults to** `none`  
+    See [how to set up the worker](run_cloudflare_workers.md).
+
 
   - **WsUrl**:
     Url of the websocket golang server for emitting events.
@@ -96,8 +103,12 @@ mv Properties/exampleSettings.json Properties/appsettings.json
     The maximum number of metadata records that can be indexed per domain within a day.
     **Defaults to** `100`
   
-  - **BuildFrontend**:
-    Whether to build frontend assets on .net server start or not.
+  - **ServeFrontend**:
+    Controls whether the .NET server serves the frontend (SPA, assets, and redirects).
+    **Defaults to** `true`
+
+  - **ServeLanding**:
+    Controls whether the .NET server serves the landing page.
     **Defaults to** `true`
 
   - **RedisConnectionString**:
@@ -148,9 +159,10 @@ mv .example.env .env
   
   - **AllowedOrigins**:  
     Comma-separated list of origins that are allowed to connect to the WebSocket server via CORS.  
-    **Defaults to** `http://localhost:3000,https://liventcord.github.io`
+    **Defaults to** `http://localhost:3000`
 
 ## Gin Media Proxy Server Configuration
+Note: This server is not indended to get directly accessed by clients.
 ```bash
 cd Liventcord/server/media-api
 ```

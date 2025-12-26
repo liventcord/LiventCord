@@ -58,13 +58,14 @@ public static class ConfigHandler
         builder.Host.UseSerilog();
 
         HandleDatabase(builder);
+        HandleCacheDatabase(builder);
     }
+
 
     static void HandleDatabase(WebApplicationBuilder builder)
     {
         var databaseType = builder.Configuration["AppSettings:DatabaseType"]?.ToLower();
         var connectionString = builder.Configuration["AppSettings:RemoteConnection"];
-        var sqlitePath = builder.Configuration["AppSettings:SqlitePath"];
 
         if (string.IsNullOrWhiteSpace(databaseType))
         {
@@ -144,24 +145,45 @@ public static class ConfigHandler
             case "sqlite":
             default:
                 Console.WriteLine("Defaulting to Sqlite!");
-                Console.WriteLine("Database type is: " + databaseType);
-                Console.WriteLine("Connection string is: " + connectionString);
-                if (string.IsNullOrWhiteSpace(sqlitePath))
-                {
-                    sqlitePath = "Data/liventcord.db";
-                }
-
-                var fullPath = Path.GetFullPath(sqlitePath);
-                var dataDirectory = Path.GetDirectoryName(fullPath);
-                if (!string.IsNullOrEmpty(dataDirectory) && !Directory.Exists(dataDirectory))
-                {
-                    Directory.CreateDirectory(dataDirectory);
-                    Console.WriteLine($"Info: Created missing directory {dataDirectory}");
-                }
+                var sqlitePath = GetSqliteFullPath("SqlitePath", builder);
                 builder.Services.AddDbContext<AppDbContext>(options =>
-                    options.UseSqlite($"Data Source={fullPath}")
+                    options.UseSqlite($"Data Source={sqlitePath}")
                 );
                 break;
+        }
+    }
+
+    static void HandleCacheDatabase(WebApplicationBuilder builder)
+    {
+        var cachePath = GetSqliteFullPath("SqliteCachePath", builder);
+        builder.Services.AddDbContext<CacheDbContext>(options =>
+            options.UseSqlite($"Data Source={cachePath}")
+        );
+    }
+    static string GetSqliteFullPath(string configKey, WebApplicationBuilder builder)
+    {
+        var path = builder.Configuration[$"AppSettings:{configKey}"];
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = ExampleConfig.Get<string>(configKey);
+        }
+
+        var fullPath = Path.GetFullPath(path);
+
+        CreateDataDirectory(fullPath);
+
+        return fullPath;
+    }
+
+
+    static void CreateDataDirectory(string fullPath)
+    {
+        var dataDirectory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(dataDirectory) && !Directory.Exists(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+            Console.WriteLine($"Info: Created missing directory {dataDirectory}");
         }
     }
 

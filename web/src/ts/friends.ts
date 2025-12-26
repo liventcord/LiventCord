@@ -54,6 +54,7 @@ interface FriendData {
   description?: string;
   createdAt?: string;
   lastLogin?: string;
+  profileVersion?: string;
   socialMediaLinks?: string[];
   isPending: boolean;
   isFriendsRequestToUser: boolean;
@@ -63,6 +64,7 @@ export class Friend {
   userId: string;
   nickName: string;
   discriminator: string;
+  profileVersion?: string;
   activity?: string;
   description?: string;
   createdAt?: string;
@@ -78,6 +80,7 @@ export class Friend {
     this.description = friend.description;
     this.createdAt = friend.createdAt;
     this.lastLogin = friend.lastLogin;
+    this.profileVersion = friend.profileVersion;
     this.socialMediaLinks = friend.socialMediaLinks;
     this.isFriendsRequestToUser = friend.isFriendsRequestToUser;
     this.isPending = friend.isPending;
@@ -119,14 +122,19 @@ class FriendsCache {
     Object.values(initData).forEach((friend) => {
       this.friendsCache[friend.userId] = friend;
     });
-
+    const friends = this.cacheFriendToFriendConverter();
+    friends.forEach((f) => {
+      userManager.addUser(
+        f.userId,
+        f.nickName,
+        f.discriminator,
+        f.profileVersion
+      );
+      console.error(userManager.getUserProfileVersion(f.userId));
+    });
     updateFriendsList(Object.values(this.friendsCache));
     requestAnimationFrame(() => {
-      const friends = this.cacheFriendToFriendConverter();
       updateUsersActivities(friends);
-      friends.forEach((f) => {
-        userManager.addUser(f.userId, f.nickName, f.discriminator);
-      });
     });
 
     UpdatePendingCounter();

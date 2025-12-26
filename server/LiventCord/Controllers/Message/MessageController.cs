@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -14,27 +15,26 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
         private readonly MetadataController _metadataService;
-        private readonly ITokenValidationService _tokenValidationService;
 
         private readonly FileController _imageController;
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly ChannelController _channelController;
         private readonly FriendDmService _friendDmService;
         private readonly ILogger<MessageController> _logger;
+        private readonly CacheDbContext _cacheDbContext;
 
         public MessageController(
             AppDbContext context,
             PermissionsController permissionsController,
             MetadataController metadataService,
-            ITokenValidationService tokenValidationService,
             FileController imageController,
             RedisEventEmitter redisEventEmitter,
             ILogger<MessageController> logger,
             ChannelController channelController,
-            FriendDmService friendDmService
+            FriendDmService friendDmService,
+            CacheDbContext cacheDbContext
         )
         {
-            _tokenValidationService = tokenValidationService;
             _permissionsController = permissionsController;
             _context = context;
             _metadataService = metadataService;
@@ -43,6 +43,7 @@ namespace LiventCord.Controllers
             _logger = logger;
             _channelController = channelController;
             _friendDmService = friendDmService;
+            _cacheDbContext = cacheDbContext;
         }
 
         [Authorize]
@@ -697,20 +698,39 @@ namespace LiventCord.Controllers
 
         [NonAction]
         private async Task<List<Message>> GetMessages(
-            string? date = null,
-            string? userId = null,
-            string? friendId = null,
-            string? channelId = null,
-            string? guildId = null,
-            string? messageId = null
-        )
+    string? date = null,
+    string? userId = null,
+    string? friendId = null,
+    string? channelId = null,
+    string? guildId = null,
+    string? messageId = null
+)
         {
             DateTime? parsedDate = null;
-
             if (date != null && DateTime.TryParse(date, out DateTime tempParsedDate))
             {
                 parsedDate = tempParsedDate.ToUniversalTime();
             }
+
+
+            var cacheKey = $"{guildId}:{channelId}?date={date}&messageId={messageId}";
+
+
+            var cached = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
+            if (cached != null)
+            {
+                try
+                {
+                    var cachedMessages = JsonSerializer.Deserialize<List<Message>>(cached.JsonData);
+                    if (cachedMessages != null)
+                        return cachedMessages;
+                }
+                catch
+                {
+
+                }
+            }
+
 
             var query = _context
                 .Messages.Include(m => m.Attachments)
@@ -742,9 +762,7 @@ namespace LiventCord.Controllers
                 .Select(m => new
                 {
                     Message = m,
-                    IsPinned = _context.ChannelPinnedMessages.Any(pm =>
-                        pm.MessageId == m.MessageId
-                    ),
+                    IsPinned = _context.ChannelPinnedMessages.Any(pm => pm.MessageId == m.MessageId)
                 })
                 .AsNoTracking()
                 .ToListAsync();
@@ -759,7 +777,37 @@ namespace LiventCord.Controllers
                 }
             }
 
-            return result.Select(r => r.Message).ToList();
+            var messagesList = result.Select(r => r.Message).ToList();
+
+            try
+            {
+                var serialized = JsonSerializer.Serialize(messagesList);
+
+                var existing = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
+                if (existing != null)
+                {
+                    existing.JsonData = serialized;
+                    existing.CachedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _cacheDbContext.CachedMessages.Add(new CachedMessage
+                    {
+                        CacheKey = cacheKey,
+                        GuildId = guildId!,
+                        ChannelId = channelId!,
+                        JsonData = serialized,
+                        CachedAt = DateTime.UtcNow
+                    });
+                }
+
+                await _cacheDbContext.SaveChangesAsync();
+            }
+            catch
+            {
+            }
+
+            return messagesList;
         }
 
         [NonAction]

@@ -107,6 +107,7 @@ async function setPicture(
 
   const imageUrl = isProfile ? getProfileUrl(srcId) : getGuildUrl(srcId);
   imgToUpdate.src = imageUrl;
+  imgToUpdate.crossOrigin = "anonymous";
 
   imgToUpdate.addEventListener("error", () => {
     imgToUpdate.src = isProfile
@@ -254,7 +255,6 @@ export function updateSelfProfile(
       return;
     }
     updateSelfName(nickName);
-
     updateImageSource(settingsSelfProfile, selfimagepath);
 
     if (isAfterUploading) {
@@ -544,9 +544,7 @@ export function onEditGuildProfile() {
   onEditImage(true);
 }
 export async function setGuildPic(guildImg: HTMLImageElement, guildId: string) {
-  guildImg.src = cacheInterface.getIsUploaded(guildId)
-    ? getGuildUrl(guildId)
-    : blackImage;
+  guildImg.src = getGuildUrl(guildId);
 }
 export function setGuildImage(
   guildId: string,

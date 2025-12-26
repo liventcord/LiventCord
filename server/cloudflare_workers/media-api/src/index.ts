@@ -2,12 +2,17 @@ import postgres from "postgres";
 import { handleMetadata, handleProxyRequest } from "./metadata.js";
 import { handlePreview } from "./preview.js";
 
+/* -------------------- WORKER -------------------- */
+
 export default {
   async fetch(request: Request, env: any, ctx: any): Promise<Response> {
     if (request.method === "OPTIONS") return makeResponse(null, 204);
 
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    /* ---------- PREVIEW ---------- */
+
     const previewMatch = pathname.match(
       /^\/attachments\/([a-zA-Z0-9_-]+)\/preview$/,
     );
@@ -15,72 +20,96 @@ export default {
       return handlePreview(request, env);
     }
 
-    if (url.pathname === "/api/proxy/metadata" && request.method === "POST") {
+    /* ---------- PROXY ---------- */
+
+    if (pathname === "/api/proxy/metadata" && request.method === "POST") {
       return handleMetadata(request, env);
     }
-    if (url.pathname.startsWith("/api/proxy/media")) {
+
+    if (pathname.startsWith("/api/proxy/media")) {
       return handleProxyRequest(request, env);
     }
 
+    /* ---------- SETUP ---------- */
+
     const sql = postgres(env.HYPERDRIVE.connectionString, { prepare: false });
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const cachesany = caches as any;
-    const cache = cachesany.default;
+    const pathParts = pathname.split("/").filter(Boolean);
+    const cache = (caches as any).default;
+
+    /* ---------- DB ---------- */
 
     async function fetchFile(
       tableName: string,
       idField: string,
       idValue: string,
       version?: string,
-    ) {
+    ): Promise<FetchFileResult> {
       try {
-        const columns = await getTableColumns(sql, tableName);
-        const hasVersion = columns.some(
-          (c: string) => c.toLowerCase() === "version",
-        );
+        const versionedTables = new Set(["ProfileFile", "GuildFile"]);
 
-        let query;
+        const baseColumns = new Set(["guildid"]);
+
+        const hasVersion = versionedTables.has(tableName);
+
+        const idColumn = baseColumns.has(idField.toLowerCase())
+          ? `b."${idField}"`
+          : `f."${idField}"`;
+
+        let query = `
+          SELECT f.*, b.*
+          FROM "${tableName}" f
+          INNER JOIN "FileBase" b ON f."FileId" = b."FileId"
+          WHERE ${idColumn} = $1
+        `;
+
+        const params: any[] = [idValue];
+
         if (version && hasVersion) {
-          query = await sql.unsafe(
-            `SELECT f.*, b.* FROM "${tableName}" f
-             INNER JOIN "FileBase" b ON f."FileId" = b."FileId"
-             WHERE f."${idField}" = $1 AND f."Version" = $2 LIMIT 1`,
-            [idValue, version],
-          );
+          query += ` AND f."Version" = $2`;
+          params.push(version);
         } else if (hasVersion) {
-          query = await sql.unsafe(
-            `SELECT f.*, b.* FROM "${tableName}" f
-             INNER JOIN "FileBase" b ON f."FileId" = b."FileId"
-             WHERE f."${idField}" = $1 ORDER BY f."Version" DESC LIMIT 1`,
-            [idValue],
-          );
-        } else {
-          query = await sql.unsafe(
-            `SELECT f.*, b.* FROM "${tableName}" f
-             INNER JOIN "FileBase" b ON f."FileId" = b."FileId"
-             WHERE f."${idField}" = $1 LIMIT 1`,
-            [idValue],
-          );
+          query += ` ORDER BY f."Version" DESC`;
         }
 
-        if (!query || query.length === 0) return { error: "File not found" };
-        const row = query[0];
+        query += ` LIMIT 1`;
 
-        const content = pickRowField(row, "Content", "content", "CONTENT");
-        if (!content || (Buffer.isBuffer(content) && content.length === 0))
-          return { error: "File content unavailable" };
+        const rows = await sql.unsafe(query, params);
+
+        if (!rows?.length) {
+          return { ok: false, status: 404, error: "File not found" };
+        }
+
+        const row = rows[0];
+        const content = pickRowField(row, "Content", "content");
+
+        if (!content) {
+          return {
+            ok: false,
+            status: 410,
+            error: "File content unavailable",
+          };
+        }
 
         return {
+          ok: true,
           content,
           file_name: pickRowField(row, "FileName", "filename") || "file",
           content_type:
             pickRowField(row, "FileType", "filetype") ||
             "application/octet-stream",
         };
-      } catch {
-        return { error: "Internal server error" };
+      } catch (err: any) {
+        console.error("fetchFile error:", err);
+        return {
+          ok: false,
+          status: 500,
+          error: "Internal server error",
+          debug: err?.message || String(err),
+        };
       }
     }
+
+    /* ---------- CACHE ---------- */
 
     async function getFromCache(key: string, fetcher?: () => Promise<any>) {
       const cacheUrl = new URL("https://cache.liventcord/" + key);
@@ -88,9 +117,7 @@ export default {
       const cached = await cache.match(cacheUrl);
       if (cached) {
         const headers = new Headers(cached.headers);
-        headers.set("Access-Control-Allow-Origin", "*");
-        headers.set("Access-Control-Allow-Methods", "*");
-        headers.set("Access-Control-Allow-Headers", "*");
+        cors(headers);
         return new Response(cached.body, { status: cached.status, headers });
       }
 
@@ -100,35 +127,35 @@ export default {
       if (!file || file.error)
         return makeResponse({ error: file?.error || "Not Found" }, 404);
 
-      const body =
-        file.content instanceof Uint8Array ||
-        file.content instanceof ArrayBuffer
-          ? file.content
-          : file.content;
-
       const headers = new Headers({
         "Content-Type": file.content_type,
         "Cache-Control": "public, max-age=31536000, immutable",
         "Content-Disposition": `inline; filename="${file.file_name}"`,
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
+      });
+      cors(headers);
+
+      if (VIDEO_MIME_TYPES.has(file.content_type)) {
+        headers.set("Accept-Ranges", "bytes");
+      }
+
+      const response = new Response(file.content, {
+        status: 200,
+        headers,
       });
 
-      if (VIDEO_MIME_TYPES.has(file.content_type))
-        headers.set("Accept-Ranges", "bytes");
-
-      const resp = new Response(body, { status: 200, headers });
       try {
-        await cache.put(cacheUrl, resp.clone());
+        await cache.put(cacheUrl, response.clone());
       } catch {}
 
-      return resp;
+      return response;
     }
 
+    /* ---------- ROUTES ---------- */
+
     if (pathParts[0] === "profiles") {
-      const userId = sanitizeId(pathParts[1] || "");
+      const userId = sanitizeId(stripExtension(pathParts[1] || ""));
       if (!userId) return makeResponse({ error: "Bad Request" }, 400);
+
       const version = url.searchParams.get("version") || undefined;
       return getFromCache(`profile_${userId}_${version || "latest"}`, () =>
         fetchFile("ProfileFile", "UserId", userId, version),
@@ -136,11 +163,11 @@ export default {
     }
 
     if (pathParts[0] === "guilds") {
-      const guildId = sanitizeId(pathParts[1] || "");
+      const guildId = sanitizeId(stripExtension(pathParts[1] || ""));
       if (!guildId) return makeResponse({ error: "Bad Request" }, 400);
 
       if (pathParts[2] === "emojis" && pathParts[3]) {
-        const emojiId = sanitizeId(pathParts[3]);
+        const emojiId = sanitizeId(stripExtension(pathParts[3]));
         return getFromCache(`emoji_${guildId}_${emojiId}`, () =>
           fetchFile("EmojiFile", "GuildId", `${guildId}|${emojiId}`),
         );
@@ -153,7 +180,7 @@ export default {
     }
 
     if (pathParts[0] === "attachments") {
-      const fileId = sanitizeId(pathParts[1] || "");
+      const fileId = sanitizeId(stripExtension(pathParts[1] || ""));
       if (!fileId) return makeResponse({ error: "Bad Request" }, 400);
 
       return getFromCache(`attachment_${fileId}`, () =>
@@ -165,28 +192,30 @@ export default {
   },
 };
 
+/* -------------------- UTILS -------------------- */
+
+function stripExtension(id: string) {
+  return id.replace(/\.[a-z0-9]+$/i, "");
+}
+
 function sanitizeId(id: string) {
   return id.replace(/\.\./g, "").replace(/[\\/]/g, "");
 }
 
-function pickRowField(row: any | null | undefined, ...candidates: string[]) {
+function pickRowField(row: any, ...candidates: string[]) {
   if (!row) return undefined;
-  const rowKeys = Object.keys(row);
-  const lowerRowKeys = rowKeys.map((k) => k.toLowerCase());
+  const keys = Object.keys(row);
+  const lower = keys.map((k) => k.toLowerCase());
   for (const c of candidates) {
-    const index = lowerRowKeys.indexOf(c.toLowerCase());
-    if (index !== -1) return row[rowKeys[index]];
+    const i = lower.indexOf(c.toLowerCase());
+    if (i !== -1) return row[keys[i]];
   }
-  return undefined;
 }
 
-async function getTableColumns(sql: any, tableName: string) {
-  const rows = await sql`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_name = ${tableName} AND table_schema = 'public'
-  `;
-  return rows.map((r: any) => r.column_name);
+function cors(headers: Headers) {
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "*");
+  headers.set("Access-Control-Allow-Headers", "*");
 }
 
 function makeResponse(
@@ -194,29 +223,19 @@ function makeResponse(
   status = 200,
   contentType = "application/json",
 ): Response {
-  const headers = new Headers();
-  headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Methods", "*");
-  headers.set("Access-Control-Allow-Headers", "*");
-  headers.set("Content-Type", contentType);
+  const headers = new Headers({ "Content-Type": contentType });
+  cors(headers);
 
-  let responseBody: BodyInit | null = null;
+  let payload: BodyInit | null = null;
+  if (body === null) payload = null;
+  else if (body instanceof ArrayBuffer) payload = body;
+  else if (ArrayBuffer.isView(body)) payload = body.buffer as any;
+  else if (typeof body === "string") payload = body;
+  else payload = JSON.stringify(body);
 
-  if (body instanceof ArrayBuffer) {
-    responseBody = body.slice(0);
-  } else if (ArrayBuffer.isView(body)) {
-    const view = body as ArrayBufferView;
-    const copy = new Uint8Array(view.byteLength);
-    copy.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
-    responseBody = copy.buffer;
-  } else if (typeof body === "string" || body === null) {
-    responseBody = body;
-  } else {
-    responseBody = JSON.stringify(body);
-  }
-
-  return new Response(responseBody, { status, headers });
+  return new Response(payload, { status, headers });
 }
+
 const VIDEO_MIME_TYPES = new Set([
   "video/mp4",
   "video/webm",
@@ -229,3 +248,19 @@ const VIDEO_MIME_TYPES = new Set([
   "video/3gp",
   "video/quicktime",
 ]);
+
+/* -------------------- TYPES -------------------- */
+
+type FetchFileResult =
+  | {
+      ok: true;
+      content: Uint8Array | ArrayBuffer;
+      file_name: string;
+      content_type: string;
+    }
+  | {
+      ok: false;
+      status: number;
+      error: string;
+      debug?: string;
+    };

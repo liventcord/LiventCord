@@ -131,7 +131,7 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? "http://127.0.0.1:3000";
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
 
 Console.WriteLine("Frontend url is: " + FRONTEND_URL);
 builder.Services.AddCors(options =>
@@ -173,6 +173,9 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     RelationalDatabaseFacadeExtensions.Migrate(context.Database);
+
+    var cacheContext = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
+    RelationalDatabaseFacadeExtensions.Migrate(cacheContext.Database);
 }
 if (isDevelopment)
 {
@@ -202,7 +205,7 @@ app.UseAuthorization();
 app.UseResponseCompression();
 app.UseStaticFiles();
 
-RouteConfig.ConfigureRoutes(app);
+RouteConfig.ConfigureRoutes(app, builder);
 
 app.UseSwagger(c =>
 {

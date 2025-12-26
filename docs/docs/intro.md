@@ -9,14 +9,14 @@ Get started with LiventCord in just a few steps.
 
 ## 🚀 Quick Start
 
-**Jump in now:** **[liventcord.koyeb.app](https://liventcord.koyeb.app)**.
+**Jump in now:** **[liventcord.github.io](https://liventcord.github.io)**.
 ### Or:
 # **Run Locally**
 
 ## Requirements
 ### 1. Install .NET SDK 8.0 https://dotnet.microsoft.com/en-us/download
-### 2. Install Node (For frontend) https://nodejs.org/en/download
-### 3. Install Pnpm (For frontend) npm install -g pnpm
+### 2. Install Node (For developing frontend) https://nodejs.org/en/download
+### 3. Install Pnpm (For developing frontend) npm install -g pnpm
 ### 4. Install Go (Optional, for realtime updates / External media display) https://go.dev/dl/
 ### 5. Install Redis (Optional, for realtime updates) https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/
 
@@ -60,3 +60,5 @@ mv .env.example .env
 go run .
 ```
 Gin server runs at `http://localhost:8080`
+
+To run the cloudflare worker services,  See [how to set up the worker](tutorial-basics/run_cloudflare_workers.md).

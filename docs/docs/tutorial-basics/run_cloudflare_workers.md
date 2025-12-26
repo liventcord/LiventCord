@@ -1,5 +1,5 @@
 # Cloudflare Workers
-
+ 
 This directory contains all Cloudflare Worker services used by the application.
 
 ## Services
@@ -13,9 +13,11 @@ Logs hits made to landing page.
 ### **gif-api**
 Handles searching and retrieving GIFs from Tenor.
 
+---
+
 ## How to run
 
-## **media-api**
+### **media-api**
 
 Get your HYPERDRIVE_ID by creating a new Hyperdrive configuration in Cloudflare and adding your PostgreSQL or MySQL connection.
 
@@ -34,7 +36,7 @@ $ pnpm run deploy
 ```
 
 
-## **hitlog**
+### **hitlog**
 
 Get your HYPERDRIVE_ID by creating a new Hyperdrive configuration in Cloudflare and adding your PostgreSQL or MySQL connection.
 

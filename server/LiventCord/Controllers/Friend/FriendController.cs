@@ -325,49 +325,60 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<List<PublicUserWithFriendData?>> GetFriends(string userId)
+        public async Task<List<PublicUserWithFriendData>> GetFriends(string userId)
         {
-            var friends = await _dbContext
-                .Friends.Where(f =>
-                    (f.UserId == userId || f.FriendId == userId)
-                    && (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending)
-                )
+            var friendsData = await _dbContext
+                .Friends
+                .Where(f => (f.UserId == userId || f.FriendId == userId) &&
+                            (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending))
                 .Select(f => new
                 {
-                    f.UserId,
-                    f.FriendId,
-                    f.Status,
-                    Friend = f.UserId == userId ? f.FriendId : f.UserId,
+                    FriendData = f,
+                    FriendId = f.UserId == userId ? f.FriendId : f.UserId
                 })
                 .Join(
                     _dbContext.Users,
-                    f => f.Friend,
+                    f => f.FriendId,
                     user => user.UserId,
-                    (f, user) =>
-                        new PublicUserWithFriendData
-                        {
-                            UserId = user.UserId,
-                            NickName = user.Nickname,
-                            Discriminator = user.Discriminator,
-                            CreatedAt = user.CreatedAt,
-                            Description = user.Description,
-                            SocialMediaLinks = user.SocialMediaLinks,
-                            FriendshipStatus = f.Status,
-                            IsPending = f.Status == FriendStatus.Pending,
-                            IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>
-                                fr.UserId == user.UserId
-                                && fr.FriendId == userId
-                                && fr.Status == FriendStatus.Pending
-                            ),
-                        }
+                    (f, user) => new { f.FriendData, User = user }
                 )
-                .GroupBy(u => u.UserId)
-                .Select(g => g.FirstOrDefault())
+                .GroupJoin(
+                    _dbContext.ProfileFiles,
+                    fu => fu.User.UserId,
+                    pf => pf.UserId,
+                    (fu, profileFiles) => new { fu.FriendData, fu.User, ProfileFiles = profileFiles }
+                )
                 .ToListAsync();
+
+            var friends = friendsData
+                .Select(fu => new PublicUserWithFriendData
+                {
+                    UserId = fu.User.UserId,
+                    NickName = fu.User.Nickname,
+                    Discriminator = fu.User.Discriminator,
+                    CreatedAt = fu.User.CreatedAt,
+                    Description = fu.User.Description,
+                    SocialMediaLinks = fu.User.SocialMediaLinks,
+                    ProfileVersion = fu.ProfileFiles.FirstOrDefault()?.Version,
+                    FriendshipStatus = fu.FriendData.Status,
+                    IsPending = fu.FriendData.Status == FriendStatus.Pending,
+                    IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>
+                        fr.UserId == fu.User.UserId &&
+                        fr.FriendId == userId &&
+                        fr.Status == FriendStatus.Pending)
+                })
+                .GroupBy(f => f.UserId)
+                .Select(g => g.First())
+                .ToList();
 
             return friends;
         }
+
+
+
+
     }
+
 }
 
 public class SendFriendRequest

@@ -142,18 +142,47 @@ body.black-theme .dm-selected:hover {
   bottom: -2px;
   font-weight: bold;
 }
-#addfriendinputbutton {
-  position: absolute;
-  top: 160px;
-  right: 463px;
-  transform: translateY(-50%);
+#addfriendinputfield {
+  flex: 1;
+  height: 35px;
   color: white;
-  border-radius: 2px;
+  font-size: 16px;
+  background-color: #1e1f22;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: border-color 0.3s ease;
+  text-indent: 10px;
+  outline: none;
+}
+
+#addfriendinputfield:focus {
+  border-color: #377bd3;
+}
+
+#addfriendinputbutton {
+  margin-left: 15px;
+  color: white;
+  background-color: #007bff;
+  border-radius: 4px;
   font-size: 14px;
   width: 180px;
-  height: 33px;
+  height: 35px;
   border: none;
+  cursor: pointer;
 }
+
+@media (max-width: 500px) {
+  #addfriendinputbutton {
+    width: 140px;
+    font-size: 12px;
+    height: 40px;
+  }
+
+  #addfriendinputfield {
+    height: 40px;
+  }
+}
+
 .messagetext {
   position: absolute;
   margin-top: 12px;
@@ -182,23 +211,6 @@ body.black-theme .dm-selected:hover {
   background-color: #5865f2;
   cursor: pointer;
 }
-#addfriendinputfield {
-  width: 94.6%;
-  height: 45px;
-  margin-left: 25px;
-  margin-top: 16px;
-  color: white;
-  font-size: 16px;
-  background-color: #1e1f22;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  transition: border-color 0.3s ease;
-  text-indent: 10px;
-  outline: none;
-}
-#addfriendinputfield:focus {
-  border-color: #377bd3;
-}
 
 #friend-menu-buttons {
   display: flex;
@@ -210,8 +222,9 @@ body.black-theme .dm-selected:hover {
   white-space: nowrap;
   cursor: pointer;
   font-size: 16px;
-  height: 22px;
-  margin-top: 2px;
+  height: 28px;
+  padding: 2px 2px;
+  margin-top: -2px;
   margin-right: 10px;
   background-color: #43444b;
   background-color: transparent;

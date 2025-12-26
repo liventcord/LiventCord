@@ -7,6 +7,21 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace LiventCord.Controllers
 {
+    public class CacheDbContext : DbContext
+    {
+        public CacheDbContext(DbContextOptions<CacheDbContext> options) : base(options) { }
+
+        public DbSet<CachedMessage> CachedMessages => Set<CachedMessage>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<CachedMessage>()
+                .HasIndex(c => new { c.ChannelId, c.CachedAt });
+        }
+    }
+
+
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)

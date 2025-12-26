@@ -240,10 +240,10 @@ export function initialiseState(data: InitialStateData): void {
 
   setSocketClient(wsUrl);
   guildCache.currentGuildName = guildName;
-  updateDmsList(dmFriends);
   initialiseChannelDrag();
 
   friendsCache.initialiseFriends(friendsStatus);
+  updateDmsList(dmFriends);
   setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
   updateGuilds(guilds);
   addKeybinds();

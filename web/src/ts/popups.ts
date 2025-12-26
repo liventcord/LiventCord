@@ -548,6 +548,7 @@ function createProfileImage(userData: UserInfo): HTMLImageElement {
   const profileImg = createEl("img", {
     className: "profile-display"
   });
+  profileImg.crossOrigin = "anonymous";
   currentProfileImg = profileImg;
   profileImg.addEventListener("mouseover", function () {
     this.style.borderRadius = "0px";
