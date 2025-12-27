@@ -20,14 +20,14 @@ import (
 )
 
 var CacheDirectory = "./cache"
-var VercelBalancerURL string
+var CLOUDFLARE_MEDIA_WORKER_URL string
 var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
-	VercelBalancerURL = os.Getenv("VercelBalancerURL")
-	if VercelBalancerURL == "" {
-		panic("VercelBalancerURL environment variable not set")
+	CLOUDFLARE_MEDIA_WORKER_URL = os.Getenv("CLOUDFLARE_MEDIA_WORKER_URL")
+	if CLOUDFLARE_MEDIA_WORKER_URL == "" {
+		panic("CLOUDFLARE_MEDIA_WORKER_URL environment variable not set")
 	}
 }
 
@@ -78,7 +78,7 @@ func GetVideoAttachmentPreview(c *gin.Context) {
 }
 
 func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, error) {
-	url := VercelBalancerURL + "/attachments/" + attachmentId
+	url := CLOUDFLARE_MEDIA_WORKER_URL + "/attachments/" + attachmentId
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,

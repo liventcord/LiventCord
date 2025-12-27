@@ -17,53 +17,78 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-0t64 \
+            libgbm1 \
+            libnotify-dev \
+            libnss3 \
+            libxss1 \
+            libasound2t64 \
+            libxtst6 \
+            xauth \
+            curl \
+            ca-certificates \
+            fonts-liberation \
+            libatk-bridge2.0-0t64 \
+            libatk1.0-0t64 \
+            libcups2t64 \
+            libdbus-1-3 \
+            libdrm2 \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxext6 \
+            libxfixes3 \
+            libxi6 \
+            libxrandr2 \
+            libxrender1 \
+            xvfb
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
         with:
           version: latest
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: web/pnpm-lock.yaml
-
-      - name: Install frontend deps
-        working-directory: web
+      - name: Install .NET 8 SDK
         run: |
-          pnpm install
-          pnpm cypress install
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+          bash dotnet-install.sh --channel 8.0 --install-dir $HOME/.dotnet
+          echo "$HOME/.dotnet" >> $GITHUB_PATH
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Build & prepare backend
         working-directory: server/LiventCord
         run: |
-          dotnet tool install --global dotnet-ef
+          export PATH=$HOME/.dotnet:$PATH
+          export PATH=$HOME/.dotnet/tools:$PATH
+          rm -rf Migrations
           dotnet tool restore
           dotnet ef migrations add InitialCreate --context AppDbContext
           cp Properties/exampleSettings.json Properties/appsettings.json
           nohup dotnet run --project . &
 
-      - name: Sleep for backend startup
-        run: sleep 30
+      - name: Wait for backend startup
+        run: sleep 15
 
-      - name: Show backend logs
-        if: failure()
-        run: cat server/LiventCord/Logs/*
-
-      - name: Build frontend
+      - name: Install frontend dependencies
         working-directory: web
         run: |
-          cp .env.example .env
-          pnpm build
+          pnpm install
+          pnpm cypress install
 
-      - name: Start frontend server
+      - name: Start frontend and run Cypress tests
         working-directory: web
         run: |
           nohup pnpm farm --port 3000 > frontend.log 2>&1 &
@@ -72,10 +97,7 @@ jobs:
             sleep 1
           done
           echo "Frontend is ready!"
-
-      - name: Run Cypress tests
-        working-directory: web
-        run: pnpm run test
+          pnpm run test --headless
         continue-on-error: true
 
       - name: Upload Cypress screenshots as artifacts
@@ -83,3 +105,7 @@ jobs:
         with:
           name: cypress-screenshots
           path: web/cypress/screenshots/
+
+      - name: Show backend logs on failure
+        if: failure()
+        run: cat server/LiventCord/Logs/* || echo "No logs found"

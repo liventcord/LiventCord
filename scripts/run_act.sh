@@ -1,0 +1,1 @@
+act -W .github/workflows/test.yml -j test --use-gitignore --reuse
