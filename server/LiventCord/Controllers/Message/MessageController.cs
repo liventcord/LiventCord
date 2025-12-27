@@ -809,6 +809,26 @@ namespace LiventCord.Controllers
 
             return messagesList;
         }
+        private async Task InvalidateMessageCache(
+            string? guildId = null,
+            string? channelId = null
+        )
+        {
+            var query = _cacheDbContext.CachedMessages.AsQueryable();
+
+            if (!string.IsNullOrEmpty(guildId))
+                query = query.Where(c => c.GuildId == guildId);
+
+            if (!string.IsNullOrEmpty(channelId))
+                query = query.Where(c => c.ChannelId == channelId);
+
+            var cachedEntries = await query.ToListAsync();
+            if (cachedEntries.Any())
+            {
+                _cacheDbContext.CachedMessages.RemoveRange(cachedEntries);
+                await _cacheDbContext.SaveChangesAsync();
+            }
+        }
 
         [NonAction]
         private async Task<IActionResult?> ValidateNewMessage(
@@ -966,6 +986,8 @@ namespace LiventCord.Controllers
 
             await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
+
+            await InvalidateMessageCache(guildId, channelId);
 
             if (guildId != null)
             {
@@ -1379,6 +1401,7 @@ namespace LiventCord.Controllers
             };
             await _context.Messages.AddAsync(pinNotificationMessage);
             await _context.SaveChangesAsync();
+            await InvalidateMessageCache(guildId, channelId);
 
             var broadcastMessage = new
             {
