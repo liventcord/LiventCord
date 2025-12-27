@@ -1,10 +1,9 @@
 # --- Backend Build Stage ---
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
-ARG TARGETARCH
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /source
-COPY --link server/LiventCord/*.csproj ./server/LiventCord/
-RUN dotnet restore /source/server/LiventCord/*.csproj --runtime linux-musl-x64
-COPY --link server/LiventCord/ ./server/LiventCord/
+COPY server/LiventCord/*.csproj ./server/LiventCord/
+RUN dotnet restore ./server/LiventCord/LiventCord.csproj --runtime linux-musl-x64
+COPY server/LiventCord/ ./server/LiventCord/
 WORKDIR /source/server/LiventCord
 RUN dotnet publish -c Release --runtime linux-musl-x64 -o /source/published /p:PublishSingleFile=false
 
@@ -19,6 +18,7 @@ USER appuser
 EXPOSE 5005
 
 ENTRYPOINT ["./LiventCord"]
+
 
 ARG Host
 ARG Port
