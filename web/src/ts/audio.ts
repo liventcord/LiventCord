@@ -646,10 +646,10 @@ function initializeMusic() {
   document.body.appendChild(modal);
 
   const songs = [
-    "/sounds/musics/2.mp3",
-    "/sounds/musics/1.mp3",
-    "/sounds/musics/3.mp3",
-    "/sounds/musics/4.mp3"
+    "https://liventcord.github.io/LiventCord/app/sounds/musics/2.mp3",
+    "https://liventcord.github.io/LiventCord/app/sounds/musics/1.mp3",
+    "https://liventcord.github.io/LiventCord/app/sounds/musics/3.mp3",
+    "https://liventcord.github.io/LiventCord/app/sounds/musics/4.mp3"
   ];
 
   let currentSongIndex = 0;
