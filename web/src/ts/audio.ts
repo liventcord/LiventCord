@@ -642,6 +642,7 @@ export function playNotification() {
 }
 
 function initializeMusic() {
+  console.log("init music")
   const modal = createEl("div", { className: "modal" });
   document.body.appendChild(modal);
 
@@ -760,3 +761,7 @@ function resetWiggleEffect(...elements: HTMLElement[]) {
 }
 
 const voiceHandler = new VoiceHandler();
+
+setTimeout(() => {
+  initializeMusic()
+}, 5000);
