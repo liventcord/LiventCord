@@ -9,6 +9,13 @@ import { currentProfileImg } from "./popups.ts";
 import { apiClient } from "./api.ts";
 import { setAudioMuteState } from "./chatroom.ts";
 import { rtcWsClient } from "./socketEvents.ts";
+import { initialState } from "./app.ts";
+
+export enum AudioType {
+  EnterVC = "/joinvoice",
+  ExitVC = "/leavevoice",
+  notify = "/notification"
+}
 
 declare global {
   interface Window {
@@ -23,246 +30,128 @@ if (window.AudioContext) {
 } else if (window.webkitAudioContext) {
   audioContext = new window.webkitAudioContext();
 } else {
-  throw new Error(
-    "Your browser does not support AudioContext or webkitAudioContext."
-  );
+  throw new Error("AudioContext not supported");
 }
 
-let currentAudioPlayer: HTMLAudioElement;
-let isAudioPlaying = false;
-let analyser: AnalyserNode | null;
-let source: MediaElementAudioSourceNode | null;
-
+let currentAudioPlayer: HTMLAudioElement | null = null;
+let analyser: AnalyserNode | null = null;
+let source: MediaElementAudioSourceNode | null = null;
 let isAnalyzing = false;
+let isAudioPlaying = false;
+let isInitializedAudio = false;
+
 const youtubeIds = ["hOYzB3Qa9DE", "UgSHUZvs8jg"];
 let youtubeIndex = 0;
 const WIGGLE_DELAY = 500;
-let isInitializedAudio: boolean;
+
 export let earphoneButton = getId("earphone-button");
 export let microphoneButton = getId("microphone-button");
+
 const containers = document.querySelectorAll(".voice-button-container");
 
+export async function playAudioType(type: AudioType) {
+  playAudio(getAudioUrl(type));
+}
+export function getAudioUrl(type: AudioType) {
+  const BASE_AUDIO_URL = apiClient.getGitUrl();
+  return BASE_AUDIO_URL + "/web/public/sounds/" + type + ".mp3";
+}
+
+export async function playAudioYt(audioId: string) {
+  const proxyUrl =
+    initialState.mediaWorkerUrl + "/stream/audio/youtube?id=" + audioId;
+  playAudio(proxyUrl);
+}
+export async function playAudioSpotify(audioId: string) {
+  const proxyUrl =
+    initialState.mediaWorkerUrl + "/stream/audio/spotify?id=" + audioId;
+  playAudio(proxyUrl);
+}
+
 containers.forEach((container) => {
-  container.addEventListener("click", function (event) {
+  container.addEventListener("click", (e) => {
     earphoneButton = getId("earphone-button");
     microphoneButton = getId("microphone-button");
-    const svg = (event.target as HTMLElement).closest("svg");
+    const svg = (e.target as HTMLElement).closest("svg");
     if (!svg) return;
-
-    if (svg.id === "microphone-button") {
-      setMicrophone();
-    } else if (svg.id === "earphone-button") {
-      setEarphones();
-    }
+    if (svg.id === "microphone-button") setMicrophone();
+    else if (svg.id === "earphone-button") setEarphones();
   });
 });
-
-//initializeMp3Yt();
 
 export function initialiseAudio() {
   if (toggleManager.states["party-toggle"] && isAudioPlaying) {
     enableBorderMovement();
   }
 }
-const playIconSvg =
-  '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>';
-const stopIconSvg =
-  '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5h10v20H5V5zm10 0h10v20H15V5z" fill="black"/></svg>';
+
+const audioCache: Record<string, HTMLAudioElement> = {};
+
 export async function playAudio(audioUrl: string) {
-  try {
-    if (currentAudioPlayer) {
-      currentAudioPlayer.pause();
-      currentAudioPlayer.remove();
+  if (currentAudioPlayer) {
+    currentAudioPlayer.pause();
+    stopAudioAnalysis();
+    if (source) {
+      source.disconnect();
+      source = null;
     }
-
-    const audioElement = new Audio(audioUrl);
-    audioElement.crossOrigin = "anonymous";
-    currentAudioPlayer = audioElement;
-
-    const playButton = document.querySelector("#player01 .play") as HTMLElement;
-    playButton.addEventListener("click", () => {
-      if (isAudioPlaying) {
-        audioElement.pause();
-        playButton.innerHTML = playIconSvg;
-      } else {
-        audioElement.play();
-        playButton.innerHTML = stopIconSvg;
-      }
-      isAudioPlaying = !isAudioPlaying;
-    });
-
-    const nextButton = document.querySelector("#player01 .next") as HTMLElement;
-    nextButton.addEventListener("click", async () => {
-      if (youtubeIndex < youtubeIds.length - 1) {
-        youtubeIndex++;
-        const nextYtId = youtubeIds[youtubeIndex];
-        const audioStreamUrl = await fetchAudioStreamUrl(nextYtId);
-        if (audioStreamUrl) {
-          playAudio(audioStreamUrl);
-        } else {
-          console.error("Failed to retrieve audio stream URL for next track.");
-        }
-      }
-    });
-
-    const prevButton = document.querySelector("#player01 .prev") as HTMLElement;
-    prevButton.addEventListener("click", async () => {
-      if (youtubeIndex > 0) {
-        youtubeIndex--;
-        const prevYtId = youtubeIds[youtubeIndex];
-        const audioStreamUrl = await fetchAudioStreamUrl(prevYtId);
-        if (audioStreamUrl) {
-          playAudio(audioStreamUrl);
-        } else {
-          console.error(
-            "Failed to retrieve audio stream URL for previous track."
-          );
-        }
-      }
-    });
-
-    audioElement.addEventListener("timeupdate", () => {
-      const totalTime = document.querySelector(
-        "#player01 .total-time"
-      ) as HTMLElement;
-      const lastTime = document.querySelector(
-        "#player01 .last-time"
-      ) as HTMLElement;
-      totalTime.innerText = formatTime(audioElement.duration);
-      lastTime.innerText = formatTime(audioElement.currentTime);
-
-      const track = document.querySelector("#player01 .track") as HTMLElement;
-      const PERCENTAGE = 100;
-      track.style.width = `${
-        (audioElement.currentTime / audioElement.duration) * PERCENTAGE
-      }%`;
-    });
-
-    const track = document.querySelector("#player01 .track") as HTMLElement;
-    track.addEventListener("click", (e: MouseEvent) => {
-      const rect = track.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const width = rect.width;
-      const clickRatio = x / width;
-      audioElement.currentTime = clickRatio * audioElement.duration;
-    });
-
-    audioElement.addEventListener("ended", function () {
-      isAudioPlaying = false;
-      playButton.innerHTML =
-        '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 5v20l15-10L10 5z" fill="black"/></svg>'; // Play icon
-    });
-
-    await audioElement.play();
-  } catch (error) {
-    console.error("Error playing audio:", error);
+    if (analyser) {
+      analyser.disconnect();
+      analyser = null;
+    }
   }
-}
-export enum AudioType {
-  EnterVC = "/joinvoice",
-  ExitVC = "/leavevoice"
-}
 
-export async function playAudioType(type: AudioType) {
-  const BASE_AUDIO_URL = apiClient.getGitUrl();
-  playAudio(BASE_AUDIO_URL + "/web/src/sounds" + type + ".mp3");
-}
+  let audioElement = audioCache[audioUrl];
+  if (!audioElement) {
+    audioElement = new Audio(audioUrl);
+    audioElement.crossOrigin = "anonymous";
+    audioCache[audioUrl] = audioElement;
+  }
 
-function formatTime(seconds: number) {
-  const SECONDS_IN_MINUTE = 60;
-  const MINIMUM_SECONDS_DISPLAY = 10;
+  currentAudioPlayer = audioElement;
 
-  const minutes = Math.floor(seconds / SECONDS_IN_MINUTE);
-  const secs = Math.floor(seconds % SECONDS_IN_MINUTE);
-  return `${minutes}:${secs < MINIMUM_SECONDS_DISPLAY ? "0" + secs : secs}`;
-}
-
-function initializeMp3Yt() {
-  const modal = createEl("div", { className: "modal" });
-  document.body.appendChild(modal);
-
-  const handleClick = async function () {
-    if (isAudioPlaying || isInitializedAudio) {
-      return;
-    }
-
-    const ytId = youtubeIds[youtubeIndex];
-    document.removeEventListener("click", handleClick);
-    modal.remove();
-
+  audioElement.onplay = () => {
     isAudioPlaying = true;
-    isInitializedAudio = true;
-
-    const audioStreamUrl = await fetchAudioStreamUrl(ytId);
-    if (audioStreamUrl) {
-      playAudio(audioStreamUrl);
-    } else {
-      console.error("Failed to retrieve audio stream URL.");
-    }
+    audioContext.resume();
+    enableBorderMovement();
   };
 
-  document.addEventListener("click", handleClick);
-}
-async function fetchAudioStreamUrl(videoId?: string) {
-  if (!videoId) {
-    return null;
-  }
-  try {
-    const response = await fetch(
-      `/ytstream/?videoId=${encodeURIComponent(videoId)}`
-    );
+  audioElement.onpause = () => {
+    isAudioPlaying = false;
+    stopAudioAnalysis();
+  };
 
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
+  audioElement.onended = () => {
+    isAudioPlaying = false;
+    stopAudioAnalysis();
+  };
 
-    return response.url;
-  } catch (error) {
-    console.error("Error fetching audio stream URL:", error);
-    return null;
-  }
+  await audioElement.play();
 }
 
 export function enableBorderMovement() {
-  if (isAudioPlaying && currentAudioPlayer) {
-    if (!isAnalyzing) {
-      startAudioAnalysis();
-    }
-  }
+  if (!currentAudioPlayer) return;
+  if (!analyser) startAudioAnalysis();
 }
 
 export function stopAudioAnalysis() {
-  if (!isAnalyzing) {
-    return;
-  }
-
+  if (!isAnalyzing) return;
   isAnalyzing = false;
-
-  const selfcurrentProfileImgList = getSelfFromUserList() as HTMLElement;
-  if (selfcurrentProfileImgList) {
-    selfcurrentProfileImgList.style.borderRadius = "50%";
-  }
-
   resetWiggleEffect(
-    currentProfileImg,
-    selfProfileImage,
-    selfcurrentProfileImgList
+    currentProfileImg as HTMLElement,
+    selfProfileImage as HTMLElement,
+    getSelfFromUserList() as HTMLElement
   );
 }
 
 function startAudioAnalysis() {
-  audioContext = new (
-    window.AudioContext || (window as any).webkitAudioContext
-  )();
-
-  if (!(currentAudioPlayer instanceof HTMLMediaElement)) {
-    console.error("currentAudioPlayer is not a valid HTMLMediaElement.");
-    return;
-  }
+  if (!currentAudioPlayer) return;
 
   analyser = audioContext.createAnalyser();
-  const _source = audioContext.createMediaElementSource(currentAudioPlayer);
-  _source.connect(analyser);
+  analyser.fftSize = 512;
+
+  source = audioContext.createMediaElementSource(currentAudioPlayer);
+  source.connect(analyser);
   analyser.connect(audioContext.destination);
 
   isAnalyzing = true;
@@ -273,28 +162,9 @@ function startAudioAnalysis() {
 
   analyzeAudio(bufferSize, dataArray, recentVolumes);
 }
-
-function getSelfFromUserList(): HTMLImageElement | null {
-  if (!userList) {
-    return null;
-  }
-
-  const userProfiles = userList.querySelectorAll(".profile-container");
-  if (!userProfiles.length) {
-    return null;
-  }
-
-  for (const profile of Array.from(userProfiles)) {
-    if (profile.id === currentUserId) {
-      return profile.querySelector(".profile-pic") as HTMLImageElement;
-    }
-  }
-  return null;
-}
-
 function analyzeAudio(
   bufferSize: number,
-  dataArray: any, //Uint8Array,
+  dataArray: any,
   recentVolumes: number[]
 ) {
   if (!isAnalyzing || !analyser) {
@@ -305,10 +175,7 @@ function analyzeAudio(
 
   let sum = 0;
   for (let i = 0; i < dataArray.length; i++) {
-    const dataIndex = dataArray[i];
-    if (dataIndex) {
-      sum += dataIndex;
-    }
+    sum += dataArray[i];
   }
 
   const averageVolume = sum / dataArray.length;
@@ -320,6 +187,7 @@ function analyzeAudio(
 
   const dynamicThreshold =
     recentVolumes.reduce((acc, val) => acc + val, 0) / recentVolumes.length;
+
   const MAX_VOLUME = 128;
   const MAX_COLOR_VALUE = 255;
   const VOLUME_TO_COLOR_MULTIPLIER = 2;
@@ -353,7 +221,7 @@ function analyzeAudio(
         selfUserListProfileList.style.borderColor = borderColor;
       }
     } else {
-      resetStyles(currentProfileImg);
+      resetStyles();
     }
   }
 
@@ -362,66 +230,104 @@ function analyzeAudio(
   );
 }
 
-function resetStyles(currentProfileImg: HTMLElement) {
-  if (currentProfileImg) {
-    currentProfileImg.classList.remove("dancing-border");
-    currentProfileImg.style.transform = "scale(1)";
-    currentProfileImg.style.borderColor = "rgb(17, 18, 20)";
-  }
-  if (selfProfileImage) {
-    selfProfileImage.classList.remove("dancing-border");
-    selfProfileImage.style.transform = "scale(1)";
-    selfProfileImage.style.borderColor = "rgb(17, 18, 20)";
-  }
-  const selfUserListProfileList = getSelfFromUserList();
-  if (selfUserListProfileList) {
-    selfUserListProfileList.classList.remove("dancing-border");
-    selfUserListProfileList.style.transform = "scale(1)";
-    selfUserListProfileList.style.borderColor = "rgb(17, 18, 20)";
-  }
+function resetStyles() {
+  const targets = [currentProfileImg, selfProfileImage, getSelfFromUserList()];
+  targets.forEach((el) => {
+    if (!el) return;
+    el.classList.remove("dancing-border");
+    el.style.transform = "scale(1)";
+    el.style.borderColor = "rgb(17, 18, 20)";
+  });
 }
 
-function stopCurrentMusic() {
-  if (currentAudioPlayer) {
-    currentAudioPlayer.pause();
-    currentAudioPlayer.currentTime = 0;
-    isAudioPlaying = false;
-
-    resetProfileBorders();
-
-    if (source) {
-      source.disconnect();
-      source = null;
-    }
-    if (analyser) {
-      analyser.disconnect();
-      analyser = null;
-    }
-
-    isAnalyzing = false;
+function getSelfFromUserList(): HTMLImageElement | null {
+  if (!userList) {
+    return null;
   }
+
+  const userProfiles = userList.querySelectorAll(".profile-container");
+  if (!userProfiles.length) {
+    return null;
+  }
+
+  for (const profile of Array.from(userProfiles)) {
+    if (profile.id === currentUserId) {
+      return profile.querySelector(".profile-pic") as HTMLImageElement;
+    }
+  }
+  return null;
+}
+function applyWiggleEffect(
+  profileElement: HTMLElement,
+  selfProfileElement: HTMLElement
+) {
+  if (profileElement) profileElement.classList.add("dancing-border");
+  if (selfProfileElement) selfProfileElement.classList.add("dancing-border");
+  setTimeout(() => {
+    if (profileElement) profileElement.classList.remove("dancing-border");
+    if (selfProfileElement)
+      selfProfileElement.classList.remove("dancing-border");
+  }, WIGGLE_DELAY);
 }
 
-function resetProfileBorders() {
-  const currentProfileImg = getId("profile-display");
+function resetWiggleEffect(...elements: HTMLElement[]) {
+  elements.forEach((el) => {
+    if (!el) return;
+    el.style.transition = "none";
+    el.style.borderRadius = "0%";
+    setTimeout(() => {
+      el.style.transition = "border-radius 0.1s";
+    }, 0);
+  });
+}
 
-  const selfcurrentProfileImgList = getSelfFromUserList();
-  if (selfcurrentProfileImgList) {
-    selfcurrentProfileImgList.style.borderRadius = "50%";
-    selfcurrentProfileImgList.style.borderColor = "";
-    selfcurrentProfileImgList.style.transform = "";
-  }
+function initializeMusic() {
+  const modal = document.querySelector(".player");
 
-  if (currentProfileImg) {
-    currentProfileImg.style.borderRadius = "50%";
-    currentProfileImg.style.borderColor = "";
-    currentProfileImg.style.transform = "";
-  }
-  if (selfProfileImage) {
-    selfProfileImage.style.borderRadius = "50%";
-    selfProfileImage.style.borderColor = "";
-    selfProfileImage.style.transform = "";
-  }
+  const playCurrentSong = async () => {
+    await playAudioYt(youtubeIds[youtubeIndex]);
+    if (currentProfileImg && selfProfileImage) {
+      applyWiggleEffect(
+        currentProfileImg as HTMLElement,
+        selfProfileImage as HTMLElement
+      );
+    }
+    if (currentAudioPlayer) {
+      currentAudioPlayer.onended = () => {
+        youtubeIndex = (youtubeIndex + 1) % youtubeIds.length;
+        playCurrentSong();
+      };
+    }
+  };
+
+  modal?.addEventListener("click", () => {
+    if (isInitializedAudio) return;
+    isInitializedAudio = true;
+    playCurrentSong();
+  });
+}
+
+setTimeout(() => {
+  initializeMusic();
+}, 0);
+
+let isMicrophoneOpen = true;
+function setMicrophone() {
+  if (!microphoneButton) return;
+  isMicrophoneOpen = !isMicrophoneOpen;
+  microphoneButton.classList.toggle("on", isMicrophoneOpen);
+  microphoneButton.classList.toggle("off", !isMicrophoneOpen);
+  setAudioMuteState(isMicrophoneOpen);
+  rtcWsClient.toggleMute();
+}
+
+let isEarphonesOpen = true;
+function setEarphones() {
+  if (!earphoneButton) return;
+  isEarphonesOpen = !isEarphonesOpen;
+  earphoneButton.classList.toggle("on", isEarphonesOpen);
+  earphoneButton.classList.toggle("off", !isEarphonesOpen);
+  rtcWsClient.toggleDeafen();
 }
 
 function activateSoundOutput() {
@@ -429,8 +335,7 @@ function activateSoundOutput() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
       return true;
-    } catch (e) {
-      console.error(e);
+    } catch {
       return false;
     }
   }
@@ -438,9 +343,7 @@ function activateSoundOutput() {
   function getSoundOutputList() {
     return navigator.mediaDevices
       .enumerateDevices()
-      .then((devices) =>
-        devices.filter((device) => device.kind === "audiooutput")
-      );
+      .then((devices) => devices.filter((d) => d.kind === "audiooutput"));
   }
 
   async function updateSoundOutputOptions() {
@@ -449,32 +352,32 @@ function activateSoundOutput() {
 
     try {
       const hasPermission = await requestSoundOutputPermissions();
-
       if (hasPermission) {
         const soundOutputs = await getSoundOutputList();
         soundOutputs.forEach((output, index) => {
           const option = createEl("option", {
-            style: { fontSize: "12px", border: "none" },
             value: output.deviceId,
-            textContent: output.label || `Sound Output ${index + 1}`
+            textContent: output.label || `Sound Output ${index + 1}`,
+            style: { fontSize: "12px" }
           });
           dropdown.appendChild(option);
         });
       }
-
-      const defaultOption = createEl("option");
-      defaultOption.style.fontSize = "12px";
-      defaultOption.value = "default";
-      defaultOption.textContent = "Default Sound Output";
-      dropdown.appendChild(defaultOption);
-    } catch (error) {
-      console.error("Error updating sound output options:", error);
-
-      const defaultOption = createEl("option");
-      defaultOption.style.fontSize = "12px";
-      defaultOption.value = "default";
-      defaultOption.textContent = "Default Sound Output";
-      dropdown.appendChild(defaultOption);
+      dropdown.appendChild(
+        createEl("option", {
+          value: "default",
+          textContent: "Default Sound Output",
+          style: { fontSize: "12px" }
+        })
+      );
+    } catch {
+      dropdown.appendChild(
+        createEl("option", {
+          value: "default",
+          textContent: "Default Sound Output",
+          style: { fontSize: "12px" }
+        })
+      );
     }
   }
 
@@ -485,50 +388,12 @@ function activateSoundOutput() {
   );
 }
 
-let isMicrophoneOpen = true;
-function setMicrophone() {
-  if (!microphoneButton) return;
-  isMicrophoneOpen = !isMicrophoneOpen;
-  microphoneButton.classList.toggle("on", isMicrophoneOpen);
-  microphoneButton.classList.toggle("off", !isMicrophoneOpen);
-  setAudioMuteState(isMicrophoneOpen);
-  console.log("Microphone is now", isMicrophoneOpen ? "ON" : "OFF");
-  rtcWsClient.toggleMute();
-}
-1;
-
-let isEarphonesOpen = true;
-function setEarphones() {
-  if (!earphoneButton) return;
-  isEarphonesOpen = !isEarphonesOpen;
-  earphoneButton.classList.toggle("on", isEarphonesOpen);
-  earphoneButton.classList.toggle("off", !isEarphonesOpen);
-  console.log("Earphones are now", isEarphonesOpen ? "ON" : "OFF");
-  rtcWsClient.toggleDeafen();
-}
-
-async function activateMicAndSoundOutput() {
-  activateMicAndCamera();
-  activateSoundOutput();
-}
-export async function sendAudioData() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = async (e) => {};
-    mediaRecorder.start();
-  } catch (err) {
-    console.error("Error accessing microphone:", err);
-  }
-}
-
 function activateMicAndCamera() {
   async function requestMediaPermissions() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       return true;
-    } catch (e) {
-      console.error(e);
+    } catch {
       return false;
     }
   }
@@ -538,8 +403,7 @@ function activateMicAndCamera() {
       .enumerateDevices()
       .then((devices) =>
         devices.filter(
-          (device) =>
-            device.kind === "audioinput" || device.kind === "videoinput"
+          (d) => d.kind === "audioinput" || d.kind === "videoinput"
         )
       );
   }
@@ -560,7 +424,6 @@ function activateMicAndCamera() {
 
     try {
       const hasPermission = await requestMediaPermissions();
-
       if (hasPermission) {
         const mediaDevices = await getMediaDevicesList();
         mediaDevices.forEach((device, index) => {
@@ -571,7 +434,6 @@ function activateMicAndCamera() {
               : `Camera ${index + 1}`);
           const dropdown =
             device.kind === "audioinput" ? micDropdown : cameraDropdown;
-
           dropdown.appendChild(createDropdownOption(label, device.deviceId));
         });
       }
@@ -585,9 +447,7 @@ function activateMicAndCamera() {
       cameraDropdown.appendChild(
         createDropdownOption("Default Camera", "default")
       );
-    } catch (error) {
-      console.error("Error updating media options:", error);
-
+    } catch {
       micDropdown.appendChild(
         createDropdownOption(
           translations.getTranslation("default-microphone"),
@@ -601,167 +461,54 @@ function activateMicAndCamera() {
   }
 
   updateMediaOptions();
-  if (navigator && navigator.mediaDevices) {
-    navigator.mediaDevices.addEventListener("devicechange", updateMediaOptions);
-  }
+  navigator.mediaDevices.addEventListener("devicechange", updateMediaOptions);
 }
 
-export function clearVoiceChannel(channelId: string) {
-  const channelButton = getChannelsUl().querySelector(`li[id="${channelId}"]`);
-  if (!channelButton) {
-    return;
-  }
-  const buttons = channelButton.querySelectorAll(".channel-button");
-  buttons.forEach((btn) => {
-    btn.remove();
-  });
-  const channelUsersContainer = channelButton.querySelector(
-    ".channel-users-container"
-  );
-  if (channelUsersContainer) {
-    channelUsersContainer.remove();
-  }
-  const existingContentWrapper = channelButton.querySelector(
-    ".content-wrapper"
-  ) as HTMLElement;
-  console.log(existingContentWrapper.style.marginRight);
-  existingContentWrapper.style.marginRight = "100px";
+async function activateMicAndSoundOutput() {
+  activateMicAndCamera();
+  activateSoundOutput();
 }
 
-let cachedAudioNotify: HTMLAudioElement;
-
-export function playNotification() {
+export async function sendAudioData() {
   try {
-    if (!cachedAudioNotify) {
-      cachedAudioNotify = new Audio("/sounds/notification.mp3");
-    }
-    cachedAudioNotify.play();
-  } catch (error) {
-    console.log(error);
-  }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.start();
+  } catch {}
 }
 
-function initializeMusic() {
-  console.log("init music")
-  const modal = createEl("div", { className: "modal" });
-  document.body.appendChild(modal);
-
-  const songs = [
-    "https://liventcord.github.io/LiventCord/app/sounds/musics/2.mp3",
-    "https://liventcord.github.io/LiventCord/app/sounds/musics/1.mp3",
-    "https://liventcord.github.io/LiventCord/app/sounds/musics/3.mp3",
-    "https://liventcord.github.io/LiventCord/app/sounds/musics/4.mp3"
-  ];
-
-  let currentSongIndex = 0;
-
-  function playCurrentSong() {
-    const currentSong = songs[currentSongIndex];
-
-    if (currentSong) {
-      playAudio(currentSong);
-    }
-
-    const audio = new Audio(currentSong);
-    audio.onended = function () {
-      currentSongIndex++;
-      if (currentSongIndex >= songs.length) {
-        currentSongIndex = 0;
-      }
-
-      playCurrentSong();
-    };
-  }
-
-  modal.addEventListener("click", function () {
-    playCurrentSong();
-    modal.style.display = "none";
-  });
-}
 class VoiceHandler {
-  async handleAudio(
-    data: ArrayBuffer | { buffer: ArrayBuffer } | null
-  ): Promise<void> {
+  async handleAudio(data: ArrayBuffer | { buffer: ArrayBuffer } | null) {
     if (
       data &&
       ("byteLength" in data ? data.byteLength : data.buffer.byteLength) > 0
     ) {
-      try {
-        const arrayBuffer = this.convertToArrayBuffer(data);
-        const decodedData = await this.decodeAudioDataAsync(arrayBuffer);
-        if (decodedData) {
-          this.playAudioBuffer(decodedData);
-        } else {
-          console.log("Decoded audio data is empty or invalid");
-        }
-      } catch (e) {
-        console.log("Error decoding audio data:", e);
-      }
-    } else {
-      console.log("Received silent or invalid audio data");
+      const buffer = data instanceof ArrayBuffer ? data : data.buffer;
+      const decoded = await audioContext.decodeAudioData(buffer);
+      const src = audioContext.createBufferSource();
+      src.buffer = decoded;
+      src.connect(audioContext.destination);
+      src.start();
     }
   }
-
-  convertToArrayBuffer(
-    data: ArrayBuffer | { buffer: ArrayBuffer }
-  ): ArrayBuffer {
-    if (data instanceof ArrayBuffer) {
-      return data;
-    } else if (data.buffer instanceof ArrayBuffer) {
-      return data.buffer;
-    } else {
-      throw new Error("Unsupported data format");
-    }
-  }
-
-  decodeAudioDataAsync(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
-    return new Promise((resolve, reject) => {
-      audioContext.decodeAudioData(arrayBuffer, resolve, reject);
-    });
-  }
-
-  playAudioBuffer(audioBuffer: AudioBuffer): void {
-    const _source = audioContext.createBufferSource();
-    _source.buffer = audioBuffer;
-    _source.connect(audioContext.destination);
-    _source.start(0);
-  }
-}
-
-function applyWiggleEffect(
-  profileElement: HTMLElement,
-  selfProfileElement: HTMLElement
-) {
-  if (profileElement) {
-    profileElement.classList.add("dancing-border");
-  }
-  if (selfProfileElement) {
-    selfProfileElement.classList.add("dancing-border");
-  }
-  setTimeout(() => {
-    if (profileElement) {
-      profileElement.classList.remove("dancing-border");
-    }
-    if (selfProfileElement) {
-      selfProfileElement.classList.remove("dancing-border");
-    }
-  }, WIGGLE_DELAY);
-}
-
-function resetWiggleEffect(...elements: HTMLElement[]) {
-  elements.forEach((element) => {
-    if (element) {
-      element.style.transition = "none";
-      element.style.borderRadius = "0%";
-      setTimeout(() => {
-        element.style.transition = "border-radius 0.1s";
-      }, 0);
-    }
-  });
 }
 
 const voiceHandler = new VoiceHandler();
 
-setTimeout(() => {
-  initializeMusic()
-}, 5000);
+export function clearVoiceChannel(channelId: string) {
+  const channelButton = getChannelsUl().querySelector(`li[id="${channelId}"]`);
+  if (!channelButton) return;
+
+  const buttons = channelButton.querySelectorAll(".channel-button");
+  buttons.forEach((btn) => btn.remove());
+
+  const channelUsersContainer = channelButton.querySelector(
+    ".channel-users-container"
+  );
+  if (channelUsersContainer) channelUsersContainer.remove();
+
+  const existingContentWrapper = channelButton.querySelector(
+    ".content-wrapper"
+  ) as HTMLElement;
+  existingContentWrapper.style.marginRight = "100px";
+}

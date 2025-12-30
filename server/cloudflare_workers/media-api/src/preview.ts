@@ -1,9 +1,7 @@
 import { Env } from "./metadata.js";
 
 export async function handlePreview(req: Request, env: Env) {
-  const ytApiUrl = "https://liventcord-media-api.onrender.com";
   const u = new URL(req.url);
-
   const parts = u.pathname.split("/");
   const attachmentId = parts[2];
 
@@ -11,20 +9,32 @@ export async function handlePreview(req: Request, env: Env) {
     return new Response("Invalid attachmentId", { status: 400 });
   }
 
-  const targetUrl = new URL(`/attachments/${attachmentId}/preview`, ytApiUrl);
+  const servers = env.PROXY_SERVERS.split(",");
 
-  const headers: Record<string, string> = {};
-  if (env.ADMIN_PASSWORD) {
-    headers["Authorization"] = `Bearer ${env.ADMIN_PASSWORD}`;
+  for (const base of servers) {
+    try {
+      const targetUrl = new URL(`/attachments/${attachmentId}/preview`, base);
+
+      const headers: Record<string, string> = {};
+
+      if (env.ADMIN_PASSWORD) {
+        headers["Authorization"] = `Bearer ${env.ADMIN_PASSWORD}`;
+      }
+
+      const response = await fetch(targetUrl.toString(), { headers });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      return new Response(await response.arrayBuffer(), {
+        status: response.status,
+        headers: response.headers,
+      });
+    } catch {
+      continue;
+    }
   }
 
-  try {
-    const response = await fetch(targetUrl.toString(), { headers });
-    return new Response(await response.arrayBuffer(), {
-      status: response.status,
-      headers: response.headers,
-    });
-  } catch (err) {
-    return new Response("Error fetching preview", { status: 500 });
-  }
+  return new Response("All proxy servers failed", { status: 502 });
 }

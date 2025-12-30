@@ -66,7 +66,7 @@ import {
 } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
-import { playNotification } from "./audio.ts";
+import { AudioType, playAudioType } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
 import {
@@ -639,7 +639,7 @@ export function handleNewMessage(data: NewMessageResponse): void {
         console.log(
           "UserId does not match currentUserId, playing notification sound."
         );
-        playNotification();
+        playAudioType(AudioType.notify);
         setActiveIcon();
       }
       return;

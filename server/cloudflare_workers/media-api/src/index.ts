@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { handleMetadata, handleProxyRequest } from "./metadata.js";
 import { handlePreview } from "./preview.js";
+import { handleSpotify, handleYoutube } from "./audio.js";
 
 /* -------------------- WORKER -------------------- */
 
@@ -20,8 +21,18 @@ export default {
       return handlePreview(request, env);
     }
 
+    /* ---------- STREAM ---------- */
+    if (pathname === "/stream/audio/spotify") {
+      return handleSpotify(request, env);
+    }
+    if (pathname === "/stream/audio/youtube") {
+      return handleYoutube(request, env);
+    }
     /* ---------- PROXY ---------- */
 
+    if (pathname === "/") {
+      return new Response("LiventCord media worker is working!");
+    }
     if (pathname === "/api/proxy/metadata" && request.method === "POST") {
       return handleMetadata(request, env);
     }

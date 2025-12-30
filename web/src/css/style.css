@@ -1622,17 +1622,7 @@ textarea::-webkit-scrollbar-track {
 .failed {
   color: rgba(255, 0, 0, 0.89);
 }
-.modal {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  z-index: 10;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-}
+
 .profile-display,
 #self-profile-image {
   border: 8px solid rgb(17, 18, 20);
@@ -1819,7 +1809,7 @@ body.black-theme {
 .track::after {
   content: "";
   height: 6px;
-  width: 85%;
+  width: 60%;
   display: block;
   background: #d9d9d9;
   border-radius: 10px;
@@ -2091,7 +2081,7 @@ body.black-theme {
   z-index: -1;
 }
 .wrapper {
-  width: 400px;
+  width: 165px;
   border-radius: 8px;
   padding: 30px;
   text-align: center;

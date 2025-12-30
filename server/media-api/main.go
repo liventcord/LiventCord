@@ -32,7 +32,7 @@ func main() {
 		log.Panic("AdminPassword not set. Cannot start server.")
 	}
 
-	r.Use(cors([]string{"*"}))
+	r.Use(cors())
 
 	r.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "LiventCord media api is working.")
@@ -40,6 +40,7 @@ func main() {
 
 	initializeProxy(r, adminPassword)
 	initializeYtStream(r)
+	initializeSpotifyStream(r)
 
 	host := getEnv("HOST", "0.0.0.0")
 	port := getEnv("PORT", "5000")
@@ -78,20 +79,15 @@ func initializeProxy(r *gin.Engine, adminPassword string) {
 	admin.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
 }
 
-func cors(allowedOrigins []string) gin.HandlerFunc {
+func cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		for _, allowedOrigin := range allowedOrigins {
-			if origin == allowedOrigin || allowedOrigin == "*" {
-				c.Header("Access-Control-Allow-Origin", origin)
-				c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-				c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-				c.Header("Access-Control-Allow-Credentials", "true")
-				break
-			}
-		}
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Access-Control-Allow-Credentials", "true")
+
 		if c.Request.Method == http.MethodOptions {
-			c.Status(http.StatusOK)
+			c.AbortWithStatus(http.StatusOK)
 			return
 		}
 		c.Next()
