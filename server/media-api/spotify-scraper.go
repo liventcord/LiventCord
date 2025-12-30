@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,7 +19,7 @@ func getSpotifyAudioURL(spotifyURL, cachePath string) error {
 	}
 
 	tmpDir := filepath.Dir(cachePath)
-	outputPattern := filepath.Join(tmpDir, "%(title)s.%(ext)s")
+	outputPattern := tmpDir
 	args := []string{
 		spotifyURL,
 		"--output", outputPattern,
@@ -45,10 +46,11 @@ func getSpotifyAudioURL(spotifyURL, cachePath string) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".mp3") {
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".mp3") {
 			downloadedFile = path
-			return filepath.SkipDir
+			return errors.New("found")
 		}
+
 		return nil
 	})
 	if err != nil {
