@@ -11,79 +11,75 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ensureSpotifyScraper() error {
-	venvPath := "venv"
-	venvBin := filepath.Join(venvPath, "bin", "spotify-scraper")
-
-	if _, err := os.Stat(venvBin); err == nil {
-		return nil
-	}
-
-	fmt.Println("Setting up Python virtual environment and installing spotify-scraper...")
-
-	pythonExec, err := exec.LookPath("python3")
-	if err != nil {
-		return fmt.Errorf("python3 is not installed")
-	}
-
-	cmd := exec.Command(pythonExec, "-m", "venv", venvPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to create venv: %v", err)
-	}
-
-	pipPath := filepath.Join(venvPath, "bin", "pip")
-	cmd = exec.Command(pipPath, "install", "--upgrade", "pip")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to upgrade pip: %v", err)
-	}
-
-	cmd = exec.Command(pipPath, "install", "spotify-scraper")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install spotify-scraper: %v", err)
-	}
-
-	return nil
-}
-
 func getSpotifyAudioURL(spotifyURL, cachePath string) error {
-	if err := ensureSpotifyScraper(); err != nil {
-		return err
+	debug := true
+	if debug {
+		fmt.Printf("[DEBUG] Preparing to download Spotify track: %s\n", spotifyURL)
 	}
 
 	tmpDir := filepath.Dir(cachePath)
-	venvScraper := filepath.Join("venv", "bin", "spotify-scraper")
-	args := []string{"download", "track", "--force", "-o", tmpDir, spotifyURL}
+	outputPattern := filepath.Join(tmpDir, "%(title)s.%(ext)s")
+	args := []string{
+		spotifyURL,
+		"--output", outputPattern,
+		"--format", "mp3",
+		"--overwrite", "force",
+	}
 
-	cmd := exec.Command(venvScraper, args...)
+	if debug {
+		fmt.Printf("[DEBUG] Running command: spotdl %s\n", strings.Join(args, " "))
+	}
+
+	cmd := exec.Command("spotdl", args...)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("spotify-scraper failed: %v, output: %s", err, string(output))
+	if debug {
+		fmt.Printf("[DEBUG] spotdl full output:\n%s\n", string(output))
 	}
 
-	files, err := os.ReadDir(tmpDir)
 	if err != nil {
-		return fmt.Errorf("failed to list temp dir: %v", err)
+		return fmt.Errorf("spotdl command failed: %v\nOutput:\n%s", err, string(output))
 	}
 
-	var mp3File string
-	for _, f := range files {
-		if !f.IsDir() && strings.HasSuffix(f.Name(), ".mp3") {
-			mp3File = filepath.Join(tmpDir, f.Name())
-			break
+	var downloadedFile string
+	err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".mp3") {
+			downloadedFile = path
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed scanning output dir: %v", err)
 	}
 
-	if mp3File == "" {
-		return fmt.Errorf("no mp3 file found in output dir")
+	if downloadedFile == "" {
+		if debug {
+			fmt.Println("[DEBUG] No downloaded file found. Output directory contents:")
+			_ = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+				if err == nil {
+					fmt.Println(" -", path)
+				}
+				return nil
+			})
+		}
+		return fmt.Errorf("no downloaded file found in output dir")
 	}
 
-	os.Rename(mp3File, cachePath)
+	if debug {
+		fmt.Printf("[DEBUG] Renaming downloaded file: %s -> %s\n", downloadedFile, cachePath)
+	}
+
+	if err := os.Rename(downloadedFile, cachePath); err != nil {
+		return fmt.Errorf("failed to move file to cache: %v", err)
+	}
+
+	if debug {
+		fmt.Println("[DEBUG] Download and caching complete")
+	}
+
 	return nil
 }
 
@@ -99,10 +95,14 @@ func spotifyStreamHandler(c *gin.Context) {
 	isGet := c.Request.Method == "GET"
 
 	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+		fmt.Printf("Cache miss for track %s, downloading...\n", trackID)
 		if err := getSpotifyAudioURL(spotifyURL, cachePath); err != nil {
+			fmt.Printf("Error downloading track: %v\n", err)
 			c.Status(404)
 			return
 		}
+	} else {
+		fmt.Printf("Cache hit for track %s\n", trackID)
 	}
 
 	if isGet {

@@ -3,26 +3,29 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /usr/src/app
 
 COPY media-api/go.mod media-api/go.sum ./media-api/
-
 COPY telemetry ./telemetry
 COPY media-api ./media-api
 
 WORKDIR /usr/src/app/media-api
 
 RUN go mod download
-
 RUN go build -v -o /usr/local/bin/app
 
 FROM alpine:latest
 
-RUN apk add --no-cache python3 py3-pip ffmpeg wget gcc musl-dev libffi-dev openssl-dev make \
-    && wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp \
-    && chmod +x /usr/local/bin/yt-dlp
-
+RUN apk add --no-cache python3 py3-pip ffmpeg wget git gcc musl-dev libffi-dev openssl-dev make
 
 WORKDIR /usr/local/bin
 
+RUN python3 -m venv venv \
+    && ./venv/bin/pip install --upgrade pip \
+    && ./venv/bin/pip install spotdl \
+    && wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp \
+    && chmod +x /usr/local/bin/yt-dlp
+
 COPY --from=builder /usr/local/bin/app .
+
+ENV PATH="/usr/local/bin/venv/bin:$PATH"
 
 CMD ["app"]
 
