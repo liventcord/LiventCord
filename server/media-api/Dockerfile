@@ -19,9 +19,7 @@ WORKDIR /usr/local/bin
 
 RUN python3 -m venv venv \
     && ./venv/bin/pip install --upgrade pip \
-    && ./venv/bin/pip install spotdl \
-    && wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp \
-    && chmod +x /usr/local/bin/yt-dlp
+    && ./venv/bin/pip install spotdl yt-dlp
 
 COPY --from=builder /usr/local/bin/app .
 
