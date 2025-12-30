@@ -15,7 +15,7 @@ RUN go build -v -o /usr/local/bin/app
 
 FROM alpine:latest
 
-RUN apk add --no-cache python3 py3-pip py3-venv ffmpeg wget gcc musl-dev libffi-dev openssl-dev make \
+RUN apk add --no-cache python3 py3-pip ffmpeg wget gcc musl-dev libffi-dev openssl-dev make \
     && wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp \
     && chmod +x /usr/local/bin/yt-dlp
 
