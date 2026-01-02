@@ -23,10 +23,10 @@ export default {
 
     /* ---------- STREAM ---------- */
     if (pathname === "/stream/audio/spotify") {
-      return handleSpotify(request, env);
+      return handleSpotify(request, env, ctx);
     }
     if (pathname === "/stream/audio/youtube") {
-      return handleYoutube(request, env);
+      return handleYoutube(request, env, ctx);
     }
     /* ---------- PROXY ---------- */
 

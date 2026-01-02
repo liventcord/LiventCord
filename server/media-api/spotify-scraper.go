@@ -3,133 +3,227 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func getSpotifyAudioURL(spotifyURL, cachePath string) error {
-	debug := true
-	if debug {
-		fmt.Printf("[DEBUG] Preparing to download Spotify track: %s\n", spotifyURL)
-	}
+const (
+	cacheDirectory = "cache"
+	debugMode      = true
+)
 
-	tmpDir := filepath.Dir(cachePath)
-	outputPattern := tmpDir
-	args := []string{
-		spotifyURL,
-		"--output", outputPattern,
-		"--format", "mp3",
-		"--overwrite", "force",
-	}
-
-	if debug {
-		fmt.Printf("[DEBUG] Running command: spotdl %s\n", strings.Join(args, " "))
-	}
-
-	cmd := exec.Command("spotdl", args...)
-	output, err := cmd.CombinedOutput()
-	if debug {
-		fmt.Printf("[DEBUG] spotdl full output:\n%s\n", string(output))
-	}
-
+func validatePathInBase(targetPath, basePath string) (string, error) {
+	absTarget, err := filepath.Abs(targetPath)
 	if err != nil {
-		return fmt.Errorf("spotdl command failed: %v\nOutput:\n%s", err, string(output))
+		return "", err
 	}
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(absTarget, absBase+string(os.PathSeparator)) {
+		return "", errors.New("path outside base directory")
+	}
+	return absTarget, nil
+}
 
+func logDebug(format string, args ...interface{}) {
+	if debugMode {
+		fmt.Printf("[DEBUG] "+format+"\n", args...)
+	}
+}
+
+func ensureDirectory(path string) error {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(absPath, 0755)
+}
+
+func findDownloadedMP3(directory string) (string, error) {
 	var downloadedFile string
-	err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+
+	err := filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".mp3") {
-			downloadedFile = path
+
+		if d.IsDir() {
+			return nil
+		}
+
+		validPath, err := validatePathInBase(path, directory)
+		if err != nil {
+			return nil
+		}
+
+		if strings.HasSuffix(strings.ToLower(d.Name()), ".mp3") {
+			downloadedFile = validPath
 			return errors.New("found")
 		}
 
 		return nil
 	})
-	if err != nil {
-		return fmt.Errorf("failed scanning output dir: %v", err)
+
+	if err != nil && err.Error() != "found" {
+		return "", fmt.Errorf("failed scanning output dir: %v", err)
 	}
 
 	if downloadedFile == "" {
-		if debug {
-			fmt.Println("[DEBUG] No downloaded file found. Output directory contents:")
-			_ = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
-				if err == nil {
-					fmt.Println(" -", path)
-				}
-				return nil
-			})
-		}
-		return fmt.Errorf("no downloaded file found in output dir")
+		logDebug("No downloaded file found. Output directory contents:")
+		filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
+			if err == nil {
+				logDebug(" - %s", path)
+			}
+			return nil
+		})
+		return "", errors.New("no downloaded file found in output dir")
 	}
 
-	if debug {
-		fmt.Printf("[DEBUG] Renaming downloaded file: %s -> %s\n", downloadedFile, cachePath)
+	return downloadedFile, nil
+}
+
+func executeSpotDL(spotifyURL, outputDir string) error {
+	args := []string{
+		spotifyURL,
+		"--output", outputDir,
+		"--format", "mp3",
+		"--overwrite", "force",
 	}
 
-	if err := os.Rename(downloadedFile, cachePath); err != nil {
-		return fmt.Errorf("failed to move file to cache: %v", err)
-	}
+	logDebug("Running command: spotdl %s", strings.Join(args, " "))
 
-	if debug {
-		fmt.Println("[DEBUG] Download and caching complete")
+	cmd := exec.Command("spotdl", args...)
+	output, err := cmd.CombinedOutput()
+
+	logDebug("spotdl full output:\n%s", string(output))
+
+	if err != nil {
+		return fmt.Errorf("spotdl command failed: %v\nOutput:\n%s", err, string(output))
 	}
 
 	return nil
 }
 
-func spotifyStreamHandler(c *gin.Context) {
-	trackID := c.Query("id")
-	if trackID == "" {
-		c.JSON(400, gin.H{"error": "Missing Spotify track id"})
-		return
+func getSpotifyAudioURL(spotifyURL, cachePath string) error {
+	logDebug("Preparing to download Spotify track: %s", spotifyURL)
+
+	validCachePath, err := validatePathInBase(cachePath, cacheDirectory)
+	if err != nil {
+		return fmt.Errorf("invalid cache path: %v", err)
 	}
 
-	spotifyURL := fmt.Sprintf("https://open.spotify.com/track/%s", trackID)
-	cachePath := filepath.Join("cache", trackID+".mp3")
-	isGet := c.Request.Method == "GET"
+	cacheDir := filepath.Dir(validCachePath)
 
+	if err := ensureDirectory(cacheDir); err != nil {
+		return err
+	}
+
+	if err := executeSpotDL(spotifyURL, cacheDir); err != nil {
+		return err
+	}
+
+	downloadedFile, err := findDownloadedMP3(cacheDir)
+	if err != nil {
+		return err
+	}
+
+	logDebug("Renaming downloaded file: %s -> %s", downloadedFile, validCachePath)
+
+	if err := os.Rename(downloadedFile, validCachePath); err != nil {
+		return fmt.Errorf("failed to move file to cache: %v", err)
+	}
+
+	logDebug("Download and caching complete")
+
+	return nil
+}
+
+func getFileSize(path string) int64 {
+	validPath, err := validatePathInBase(path, cacheDirectory)
+	if err != nil {
+		return 0
+	}
+
+	fi, err := os.Stat(validPath)
+	if err != nil {
+		return 0
+	}
+
+	if fi.IsDir() {
+		return 0
+	}
+
+	return fi.Size()
+}
+
+func downloadIfNeeded(spotifyURL, cachePath string) error {
 	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
-		fmt.Printf("Cache miss for track %s, downloading...\n", trackID)
-		if err := getSpotifyAudioURL(spotifyURL, cachePath); err != nil {
-			fmt.Printf("Error downloading track: %v\n", err)
-			c.Status(404)
-			return
-		}
-	} else {
-		fmt.Printf("Cache hit for track %s\n", trackID)
+		return getSpotifyAudioURL(spotifyURL, cachePath)
 	}
+	return nil
+}
 
-	if isGet {
-		HandleRangeRequest(c, cachePath)
-		return
-	}
-
+func setAudioHeaders(c *gin.Context, cachePath string) {
 	c.Header("Content-Type", "audio/mpeg")
-	c.Header("Content-Length", fmt.Sprintf("%d", getFileSize(cachePath)))
+	c.Header("Content-Length", strconv.FormatInt(getFileSize(cachePath), 10))
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", CacheHeader)
+}
+
+func spotifyStreamHandler(c *gin.Context) {
+	rawID := c.Query("id")
+	if rawID == "" {
+		c.JSON(400, gin.H{"error": "missing spotify track id"})
+		return
+	}
+
+	trackID, err := sanitizeSpotifyID(rawID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid track id"})
+		return
+	}
+
+	cachePath, err := safeCachePath(trackID)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid path"})
+		return
+	}
+
+	spotifyURL := "https://open.spotify.com/track/" + trackID
+
+	if err := downloadIfNeeded(spotifyURL, cachePath); err != nil {
+		c.Status(404)
+		return
+	}
+
+	isGet := c.Request.Method == "GET"
+
+	if isGet {
+		HandleRangeRequest(c, cachePath, Spotify)
+		return
+	}
+
+	setAudioHeaders(c, cachePath)
 	c.Status(200)
 }
 
 func initializeSpotifyStream(r *gin.Engine) {
-	os.MkdirAll("cache", os.ModePerm)
+	if err := ensureDirectory(cacheDirectory); err != nil {
+		fmt.Printf("Failed to create cache directory: %v\n", err)
+		return
+	}
+
 	go StartCacheCleaner(5*time.Minute, int64(0.5*1024*1024*1024))
+
 	r.GET("/stream/audio/spotify", spotifyStreamHandler)
 	r.HEAD("/stream/audio/spotify", spotifyStreamHandler)
-}
-
-func getFileSize(path string) int64 {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return 0
-	}
-	return fi.Size()
 }

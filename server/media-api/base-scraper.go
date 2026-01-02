@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"log"
@@ -10,11 +11,18 @@ import (
 	"sort"
 	"sync"
 	"time"
-	"crypto/sha256"
+
 	"github.com/gin-gonic/gin"
 )
 
 const CacheHeader = "public, max-age=31536000, immutable"
+
+type TrackType int
+
+const (
+	Spotify TrackType = iota
+	YouTube
+)
 
 type DownloadStatus struct {
 	InProgress bool
@@ -24,22 +32,38 @@ type DownloadStatus struct {
 var downloadTracker = make(map[string]*DownloadStatus)
 var downloadMutex sync.Mutex
 
-func GetCachePath(url string) string {
-	hash := sha256Sum(url)
-	return filepath.Join("cache", hash+".cache")
+func GetSpotifyCachePath(trackID string) (string, error) {
+	safeID, err := sanitizeSpotifyID(trackID)
+	if err != nil {
+		return "", err
+	}
+	return safeCachePath(safeID)
 }
 
+func GetYouTubeCachePath(videoID string) (string, error) {
+	safeID, err := sanitizeYouTubeID(videoID)
+	if err != nil {
+		return "", err
+	}
+	return safeCachePath(safeID)
+}
 func sha256Sum(text string) string {
 	h := sha256.Sum256([]byte(text))
 	return fmt.Sprintf("%x", h[:])
 }
 
-func StartBackgroundDownload(url, cachePath string, downloader func(string) (string, error)) {
+func StartBackgroundDownload(trackID string, downloader func(string) (string, error)) {
+	cachePath, err := GetYouTubeCachePath(trackID)
+	if err != nil {
+		log.Printf("Invalid track ID: %v", err)
+		return
+	}
+
 	downloadMutex.Lock()
-	status, exists := downloadTracker[url]
+	status, exists := downloadTracker[trackID]
 	if !exists {
 		status = &DownloadStatus{}
-		downloadTracker[url] = status
+		downloadTracker[trackID] = status
 	}
 	downloadMutex.Unlock()
 
@@ -58,14 +82,14 @@ func StartBackgroundDownload(url, cachePath string, downloader func(string) (str
 			status.Mu.Unlock()
 		}()
 
-		if err := DownloadToCache(url, cachePath, downloader); err != nil {
+		if err := DownloadToCache(trackID, cachePath, downloader); err != nil {
 			log.Printf("Background download failed: %v", err)
 		}
 	}()
 }
 
-func DownloadToCache(url, cachePath string, downloader func(string) (string, error)) error {
-	audioURL, err := downloader(url)
+func DownloadToCache(trackID, cachePath string, downloader func(string) (string, error)) error {
+	audioURL, err := downloader(trackID)
 	if err != nil {
 		return err
 	}
@@ -96,7 +120,21 @@ func DownloadToCache(url, cachePath string, downloader func(string) (string, err
 	return os.Rename(tmpPath, cachePath)
 }
 
-func HandleRangeRequest(c *gin.Context, cachePath string) {
+func HandleRangeRequest(c *gin.Context, trackID string, ttype TrackType) {
+	var cachePath string
+	var err error
+
+	switch ttype {
+	case Spotify:
+		cachePath, err = GetSpotifyCachePath(trackID)
+	case YouTube:
+		cachePath, err = GetYouTubeCachePath(trackID)
+	}
+
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
 	f, err := os.Open(cachePath)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -143,8 +181,8 @@ func HandleRangeRequest(c *gin.Context, cachePath string) {
 	io.CopyN(c.Writer, f, length)
 }
 
-func ProxyWithRangeSupport(c *gin.Context, url string, downloader func(string) (string, error)) {
-	audioURL, err := downloader(url)
+func ProxyWithRangeSupport(c *gin.Context, trackID string, downloader func(string) (string, error)) {
+	audioURL, err := downloader(trackID)
 	if err != nil {
 		c.Status(http.StatusBadGateway)
 		return
@@ -180,8 +218,12 @@ func ProxyWithRangeSupport(c *gin.Context, url string, downloader func(string) (
 }
 
 func CleanCache(maxSize int64) {
-	cacheDir := "cache"
-	files, err := os.ReadDir(cacheDir)
+	baseDir, err := filepath.Abs(cacheDirectory)
+	if err != nil {
+		return
+	}
+
+	files, err := os.ReadDir(baseDir)
 	if err != nil {
 		return
 	}
@@ -202,7 +244,7 @@ func CleanCache(maxSize int64) {
 			return fileList[i].ModTime().Before(fileList[j].ModTime())
 		})
 		for _, file := range fileList {
-			os.Remove(filepath.Join(cacheDir, file.Name()))
+			os.Remove(filepath.Join(baseDir, file.Name()))
 			totalSize -= file.Size()
 			if totalSize < maxSize {
 				break

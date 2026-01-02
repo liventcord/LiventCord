@@ -45,12 +45,16 @@ func ytStreamHandler(c *gin.Context) {
 	}
 
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID)
-	cachePath := GetCachePath(videoURL)
+	cachePath, err := GetYouTubeCachePath(videoID)
+	if err != nil {
+		fmt.Printf("Invalid track ID: %v", err)
+		return
+	}
 	isGet := c.Request.Method == "GET"
 
 	if fi, err := os.Stat(cachePath); err == nil {
 		if isGet {
-			HandleRangeRequest(c, cachePath)
+			HandleRangeRequest(c, cachePath, YouTube)
 			return
 		}
 		c.Header("Content-Type", "audio/mp4")
@@ -86,7 +90,7 @@ func ytStreamHandler(c *gin.Context) {
 	c.Header("Cache-Control", CacheHeader)
 	c.Status(200)
 
-	go StartBackgroundDownload(videoURL, cachePath, getYTAudioURL)
+	go StartBackgroundDownload(videoURL, getYTAudioURL)
 
 	resp, err := http.Get(reqURL)
 	if err != nil {

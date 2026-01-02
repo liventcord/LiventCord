@@ -9,6 +9,8 @@ import (
 	"image"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -171,4 +173,42 @@ func validateURL(urlStr string) error {
 		return errors.New("URL is not allowed")
 	}
 	return nil
+}
+
+var (
+	spotifyIDRe = regexp.MustCompile(`^[A-Za-z0-9]{22}$`)
+	youtubeIDRe = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
+)
+
+func sanitizeSpotifyID(id string) (string, error) {
+	if !spotifyIDRe.MatchString(id) {
+		return "", errors.New("invalid Spotify track ID")
+	}
+	return id, nil
+}
+
+func sanitizeYouTubeID(id string) (string, error) {
+	if !youtubeIDRe.MatchString(id) {
+		return "", errors.New("invalid YouTube video ID")
+	}
+	return id, nil
+}
+
+func safeCachePath(trackID string) (string, error) {
+	baseDir, err := filepath.Abs("cache")
+	if err != nil {
+		return "", err
+	}
+
+	p := filepath.Join(baseDir, trackID+".mp3")
+	p, err = filepath.Abs(p)
+	if err != nil {
+		return "", err
+	}
+
+	if !strings.HasPrefix(p, baseDir+string(os.PathSeparator)) {
+		return "", errors.New("path traversal detected")
+	}
+
+	return p, nil
 }

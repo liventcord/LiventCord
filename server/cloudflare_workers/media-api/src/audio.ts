@@ -4,37 +4,37 @@ async function streamAudio(
   req: Request,
   env: Env,
   type: "spotify" | "youtube",
+  event: FetchEvent,
 ) {
-  console.log("Received audio: ", req.url);
-  const u = new URL(req.url);
-  const id = u.searchParams.get("id");
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
 
-  if (!id) {
-    return new Response("Invalid videoId", { status: 400 });
-  }
+  if (!id) return new Response("Invalid videoId", { status: 400 });
 
   const servers = env.PROXY_SERVERS.split(",");
   const range = req.headers.get("Range");
+  const cacheKey = new Request(`https://audio-cache.liventcord/${type}/${id}`);
+
+  const cache = (caches as any).default;
+
+  if (!range) {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  }
 
   for (const base of servers) {
     try {
       const targetUrl = new URL(`/stream/audio/${type}?id=${id}`, base);
 
       const headers: Record<string, string> = {};
-
-      if (env.ADMIN_PASSWORD) {
+      if (env.ADMIN_PASSWORD)
         headers["Authorization"] = `Bearer ${env.ADMIN_PASSWORD}`;
-      }
 
-      if (range) {
-        headers["Range"] = range;
-      }
+      if (range) headers["Range"] = range;
 
       const upstream = await fetch(targetUrl.toString(), { headers });
 
-      if (!(upstream.status === 200 || upstream.status === 206)) {
-        continue;
-      }
+      if (!(upstream.status === 200 || upstream.status === 206)) continue;
 
       const responseHeaders = new Headers();
 
@@ -48,42 +48,33 @@ async function streamAudio(
         if (v) responseHeaders.set(h, v);
       }
 
-      if (range && upstream.status === 200) {
-        responseHeaders.set("Accept-Ranges", "bytes");
-      }
-
-      // Add CORS header
       responseHeaders.set("Access-Control-Allow-Origin", "*");
+      if (range && upstream.status === 200)
+        responseHeaders.set("Accept-Ranges", "bytes");
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          const reader = upstream.body!.getReader();
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              controller.enqueue(value);
-            }
-          } finally {
-            controller.close();
-          }
-        },
-      });
+      const body = upstream.body;
 
-      return new Response(stream, {
+      const response = new Response(body, {
         status: upstream.status,
         headers: responseHeaders,
       });
+
+      if (!range && upstream.status === 200) {
+        response.headers.set("Cache-Control", "public, max-age=31536000");
+        event.waitUntil(cache.put(cacheKey, response.clone()));
+      }
+
+      return response;
     } catch {
       continue;
     }
   }
 
-  return new Response("All proxy servers failed", { status: 502 });
+  return new Response("Failed streaming resource.", { status: 502 });
 }
 
-export const handleSpotify = (req: Request, env: Env) =>
-  streamAudio(req, env, "spotify");
+export const handleSpotify = (req: Request, env: Env, event: FetchEvent) =>
+  streamAudio(req, env, "spotify", event);
 
-export const handleYoutube = (req: Request, env: Env) =>
-  streamAudio(req, env, "youtube");
+export const handleYoutube = (req: Request, env: Env, event: FetchEvent) =>
+  streamAudio(req, env, "youtube", event);
