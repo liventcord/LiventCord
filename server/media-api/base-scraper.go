@@ -150,7 +150,7 @@ func HandleRangeRequest(c *gin.Context, trackID string, ttype TrackType) {
 
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", CacheHeader)
-	c.Header("Content-Type", "audio/mp4")
+	c.Header("Content-Type", "audio/mpeg")
 
 	rangeHeader := c.GetHeader("Range")
 	if rangeHeader == "" {

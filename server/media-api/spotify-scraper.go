@@ -198,17 +198,18 @@ func spotifyStreamHandler(c *gin.Context) {
 		return
 	}
 
-	spotifyURL := "https://open.spotify.com/track/" + trackID
-
-	if err := downloadIfNeeded(spotifyURL, cachePath); err != nil {
-		c.Status(404)
+	if c.Request.Method == "GET" {
+		spotifyURL := "https://open.spotify.com/track/" + trackID
+		if err := downloadIfNeeded(spotifyURL, cachePath); err != nil {
+			c.Status(404)
+			return
+		}
+		HandleRangeRequest(c, trackID, Spotify)
 		return
 	}
 
-	isGet := c.Request.Method == "GET"
-
-	if isGet {
-		HandleRangeRequest(c, cachePath, Spotify)
+	if _, err := os.Stat(cachePath); err != nil {
+		c.Status(404)
 		return
 	}
 

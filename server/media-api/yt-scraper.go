@@ -25,7 +25,7 @@ func getYTAudioURL(videoID string) (string, error) {
 	}
 
 	args := []string{
-		"-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
+		"-f", "bestaudio[acodec=opus][abr<=160]/bestaudio[acodec=opus]/bestaudio",
 		"--hls-prefer-native",
 		"--get-url",
 		videoURL,
