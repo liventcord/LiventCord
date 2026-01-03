@@ -27,8 +27,11 @@ func getYTAudioURL(videoID string) (string, error) {
 	}
 
 	args := []string{
-		"-f", "bestaudio[acodec=opus][abr<=160]/bestaudio[acodec=opus]/bestaudio",
-		"--hls-prefer-native",
+		"--no-playlist",
+		"--no-warnings",
+		"--skip-download",
+		"--format-sort-force",
+		"-f", "bestaudio[acodec=opus][abr<=160]/bestaudio",
 		"--get-url",
 		videoURL,
 	}
@@ -37,22 +40,38 @@ func getYTAudioURL(videoID string) (string, error) {
 		args = append([]string{"--cookies", tempCookies}, args...)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("yt-dlp failed: %v, output: %s", err, string(output))
+
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+
+	if err := cmd.Start(); err != nil {
+		return "", err
 	}
 
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+	outBytes, _ := io.ReadAll(stdout)
+	errBytes, _ := io.ReadAll(stderr)
+
+	err := cmd.Wait()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", fmt.Errorf("yt-dlp timeout after 20s, stderr: %s", string(errBytes))
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("yt-dlp error: %v, stderr: %s", err, string(errBytes))
+	}
+
+	for _, line := range strings.Split(strings.TrimSpace(string(outBytes)), "\n") {
 		if strings.HasPrefix(line, "http://") || strings.HasPrefix(line, "https://") {
 			return line, nil
 		}
 	}
 
-	return "", errors.New("no valid audio URL found")
+	return "", errors.New("yt-dlp returned no url")
 }
 
 func ytStreamHandler(c *gin.Context) {
