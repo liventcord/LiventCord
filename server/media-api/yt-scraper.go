@@ -31,7 +31,7 @@ func getYTAudioURL(videoID string) (string, error) {
 		"--no-warnings",
 		"--skip-download",
 		"--format-sort-force",
-		"-f", "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio",
+		"-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
 		"--get-url",
 		videoURL,
 	}
