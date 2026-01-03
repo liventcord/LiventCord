@@ -345,7 +345,7 @@ export default createStore<RootState>({
       const offlineUsers: UserMember[] = [];
       for (const member of members) {
         if (!member.userId)
-          throw new Error("User ID cannot be null or undefined");
+          throw new Error("User ID cannot be null or undefined: " + member);
         const isOnline = await userManager.isNotOffline(member.userId);
         const categorizedMember = {
           ...member,

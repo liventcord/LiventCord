@@ -435,6 +435,10 @@ function initialiseMe() {
 export let isChangingPage = false;
 
 export function openDm(friendId: string) {
+  if (!friendId) {
+    console.error("Wrong friendid");
+    return;
+  }
   const wasOnDm = isOnDm;
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
@@ -691,6 +695,10 @@ function changeCurrentDm(friendId: string) {
   setReachedChannelEnd(false);
 
   const friendNick = userManager.getUserNick(friendId);
+  if (!friendNick) {
+    console.error("Friend not found");
+    return;
+  }
   setChannelTitle(friendNick);
   updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
   const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
