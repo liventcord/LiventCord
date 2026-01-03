@@ -189,7 +189,7 @@ func sanitizeSpotifyID(id string) (string, error) {
 
 func sanitizeYouTubeID(id string) (string, error) {
 	if !youtubeIDRe.MatchString(id) {
-		return "", errors.New("invalid YouTube video ID")
+		return "", errors.New("invalid YouTube video ID: " + id)
 	}
 	return id, nil
 }

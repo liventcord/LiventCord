@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,13 +12,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getYTAudioURL(videoURL string) (string, error) {
+func getYTAudioURL(videoID string) (string, error) {
+	if _, err := sanitizeYouTubeID(videoID); err != nil {
+		return "", err
+	}
+
+	videoURL := "https://www.youtube.com/watch?v=" + videoID
 	tempCookies := "/tmp/cookies.txt"
+
 	if _, err := os.Stat("/etc/secrets/cookies.txt"); err == nil {
 		exec.Command("cp", "/etc/secrets/cookies.txt", tempCookies).Run()
 	}
 
-	args := []string{"-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio", "--hls-prefer-native", "--get-url", videoURL}
+	args := []string{
+		"-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
+		"--hls-prefer-native",
+		"--get-url",
+		videoURL,
+	}
+
 	if _, err := os.Stat(tempCookies); err == nil {
 		args = append([]string{"--cookies", tempCookies}, args...)
 	}
@@ -34,65 +47,61 @@ func getYTAudioURL(videoURL string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no valid URL found")
+	return "", errors.New("no valid audio URL found")
 }
 
 func ytStreamHandler(c *gin.Context) {
 	videoID := c.Query("id")
 	if videoID == "" {
-		c.JSON(400, gin.H{"error": "Missing video id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing video id"})
 		return
 	}
 
-	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoID)
-	cachePath, err := GetYouTubeCachePath(videoID)
-	if err != nil {
-		fmt.Printf("Invalid track ID: %v", err)
+	if _, err := sanitizeYouTubeID(videoID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid video id"})
 		return
 	}
-	isGet := c.Request.Method == "GET"
+
+	cachePath, err := GetYouTubeCachePath(videoID)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	isGet := c.Request.Method == http.MethodGet
 
 	if fi, err := os.Stat(cachePath); err == nil {
 		if isGet {
-			HandleRangeRequest(c, cachePath, YouTube)
+			HandleRangeRequest(c, videoID, YouTube)
 			return
 		}
 		c.Header("Content-Type", "audio/mp4")
 		c.Header("Content-Length", fmt.Sprintf("%d", fi.Size()))
 		c.Header("Accept-Ranges", "bytes")
 		c.Header("Cache-Control", CacheHeader)
-		c.Status(200)
+		c.Status(http.StatusOK)
 		return
 	}
 
-	if !isGet {
-		reqURL, err := getYTAudioURL(videoURL)
-		if err != nil {
-			c.Status(404)
-			return
-		}
-		c.Header("Content-Type", "audio/mp4")
-		c.Header("Accept-Ranges", "bytes")
-		c.Header("Cache-Control", CacheHeader)
-		c.Status(200)
-		c.Writer.Write([]byte(reqURL))
-		return
-	}
-
-	reqURL, err := getYTAudioURL(videoURL)
+	audioURL, err := getYTAudioURL(videoID)
 	if err != nil {
-		c.Status(404)
+		c.Status(http.StatusNotFound)
 		return
 	}
 
 	c.Header("Content-Type", "audio/mp4")
 	c.Header("Accept-Ranges", "bytes")
 	c.Header("Cache-Control", CacheHeader)
-	c.Status(200)
+	c.Status(http.StatusOK)
 
-	go StartBackgroundDownload(videoURL, getYTAudioURL)
+	if !isGet {
+		c.Writer.Write([]byte(audioURL))
+		return
+	}
 
-	resp, err := http.Get(reqURL)
+	go StartBackgroundDownload(videoID, getYTAudioURL)
+
+	resp, err := http.Get(audioURL)
 	if err != nil {
 		return
 	}
