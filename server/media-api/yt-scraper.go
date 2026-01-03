@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -35,10 +37,13 @@ func getYTAudioURL(videoID string) (string, error) {
 		args = append([]string{"--cookies", tempCookies}, args...)
 	}
 
-	cmd := exec.Command("yt-dlp", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("yt-dlp failed: %v", err)
+		return "", fmt.Errorf("yt-dlp failed: %v, output: %s", err, string(output))
 	}
 
 	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
@@ -83,9 +88,15 @@ func ytStreamHandler(c *gin.Context) {
 		return
 	}
 
+	if !isGet {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
 	audioURL, err := getYTAudioURL(videoID)
 	if err != nil {
-		c.Status(http.StatusNotFound)
+		c.Error(err)
+		c.Status(http.StatusBadGateway)
 		return
 	}
 
@@ -94,15 +105,11 @@ func ytStreamHandler(c *gin.Context) {
 	c.Header("Cache-Control", CacheHeader)
 	c.Status(http.StatusOK)
 
-	if !isGet {
-		c.Writer.Write([]byte(audioURL))
-		return
-	}
-
 	go StartBackgroundDownload(videoID, getYTAudioURL)
 
 	resp, err := http.Get(audioURL)
 	if err != nil {
+		c.Error(err)
 		return
 	}
 	defer resp.Body.Close()
@@ -115,6 +122,9 @@ func ytStreamHandler(c *gin.Context) {
 			c.Writer.Flush()
 		}
 		if err != nil {
+			if err != io.EOF {
+				c.Error(err)
+			}
 			break
 		}
 	}
@@ -124,5 +134,24 @@ func initializeYtStream(r *gin.Engine) {
 	os.MkdirAll("cache", os.ModePerm)
 	go StartCacheCleaner(5*time.Minute, int64(0.5*1024*1024*1024))
 	r.GET("/stream/audio/youtube", ytStreamHandler)
-	r.HEAD("/stream/audio/youtube", ytStreamHandler)
+	r.HEAD("/stream/audio/youtube", func(c *gin.Context) {
+		videoID := c.Query("id")
+		if videoID == "" {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		cachePath, err := GetYouTubeCachePath(videoID)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		if fi, err := os.Stat(cachePath); err == nil {
+			c.Header("Content-Length", fmt.Sprintf("%d", fi.Size()))
+			c.Header("Accept-Ranges", "bytes")
+			c.Header("Cache-Control", CacheHeader)
+			c.Status(http.StatusOK)
+			return
+		}
+		c.Status(http.StatusNotFound)
+	})
 }
