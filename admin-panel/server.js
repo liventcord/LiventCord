@@ -53,7 +53,7 @@ app.get("/health", async (req, res) => {
       BACKEND_URLS.map(async (url) => {
         const response = await fetch(`${url}/health`, {
           headers: {
-            Authorization: AUTH_PASSWORD,
+            Authorization: `Bearer ${AUTH_PASSWORD}`,
           },
         });
 
