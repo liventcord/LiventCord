@@ -31,7 +31,8 @@ import {
   createRandomId,
   createEl,
   enableElement,
-  isMobile
+  isMobile,
+  getId
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -42,6 +43,8 @@ import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 import { shakeScreen } from "./settingsui.ts";
+import { typingStatusMap } from "./socketEvents.ts";
+import { userStatus } from "./app.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -788,3 +791,53 @@ export function fetchMoreAttachments(page: number, pageSize: number) {
     { page, pageSize }
   );
 }
+export interface TypingData {
+  userId: string;
+  guildId?: string;
+  channelId: string;
+}
+
+const typingText = getId("typing-text") as HTMLElement;
+const typingBubbles = getId("typing-bubbles") as HTMLElement;
+
+export function handleStopTyping(data: TypingData) {
+  const isGuild = !!data.guildId;
+  const isCurrent =
+    (isGuild && data.channelId === guildCache.currentChannelId) ||
+    (!isGuild && data.channelId === friendsCache.currentDmId);
+
+  if (!isCurrent) return;
+
+  const typingSet = typingStatusMap.get(data.channelId);
+  if (typingSet) {
+    typingSet.delete(data.userId);
+    if (typingSet.size === 0) {
+      typingStatusMap.delete(data.channelId);
+    }
+  }
+  userStatus.updateUserOnlineStatus(data.userId, "", false);
+
+  updateTypingText(data.channelId);
+}
+export function updateTypingText(channelId: string) {
+  const typingUsers = typingStatusMap.get(channelId);
+  if (!typingUsers || typingUsers.size === 0) {
+    typingText.textContent = "";
+    disableElement(typingBubbles);
+    return;
+  }
+  enableElement(typingBubbles);
+
+  const names = Array.from(typingUsers).map((userId) =>
+    userManager.getUserNick(userId)
+  );
+  if (names.length > 5) {
+    typingText.textContent = "Several people are typing";
+  } else if (names.length === 1) {
+    typingText.textContent = `${names[0]} is typing`;
+  } else {
+    typingText.textContent = `${names.slice(0, 2).join(", ")}${names.length > 2 ? ", and others" : ""} are typing`;
+  }
+}
+
+updateTypingText("");

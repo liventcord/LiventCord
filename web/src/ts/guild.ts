@@ -132,6 +132,11 @@ export function loadGuild(
   if (isChangingUrl) {
     router.switchToGuild(guildId, channelId);
   }
+  if (currentGuildId != guildId) {
+    apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
+      guildId
+    });
+  }
   if (isChangingPage) {
     console.warn(" Already changing guild! can not change guild");
     return;

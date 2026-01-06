@@ -391,9 +391,8 @@
 }
 #typing-container {
   position: absolute;
-  bottom: -20px;
-  left: 280px;
-
+  bottom: -18px;
+  left: 400px;
   display: flex;
   align-items: center;
   color: white;
@@ -1924,7 +1923,7 @@ body.black-theme {
   display: none;
   background-color: #111214;
   width: 200px;
-  z-index: 3;
+  z-index: 5;
   border-radius: 5px;
 }
 

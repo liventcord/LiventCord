@@ -32,25 +32,30 @@ namespace LiventCord.Controllers
         }
 
         [HttpGet("/api/guilds/{guildId}/members")]
-        public async Task<IActionResult> HandleGetMembers(
-            [FromRoute][IdLengthValidation] string guildId
-        )
+        public async Task<IActionResult> HandleGetMembers([FromRoute][IdLengthValidation] string guildId)
         {
-            if (!await _dbContext.DoesGuildExist(guildId))
-            {
-                return NotFound(new { Type = "error", Message = "Guild does not exist." });
-            }
+            var guildWithMembers = await _dbContext.Guilds
+                .Where(g => g.GuildId == guildId)
+                .Include(g => g.GuildMembers)
+                    .ThenInclude(gm => gm.User)
+                .FirstOrDefaultAsync();
 
-            if (!await DoesMemberExistInGuild(UserId!, guildId))
-            {
+            if (guildWithMembers == null || !guildWithMembers.GuildMembers.Any(gm => gm.MemberId == UserId))
                 return NotFound(new { Type = "error", Message = "Guild does not exist." });
-            }
 
-            var members = await GetGuildMembers(guildId).ConfigureAwait(false);
-            if (members == null)
+            var members = guildWithMembers.GuildMembers.Select(gm => new PublicUser
             {
-                return BadRequest(new { Type = "error", Message = "Unable to retrieve members." });
-            }
+                UserId = gm.User.UserId,
+                NickName = gm.User.Nickname,
+                Discriminator = gm.User.Discriminator,
+                Description = gm.User.Description,
+                CreatedAt = gm.User.CreatedAt,
+                SocialMediaLinks = gm.User.SocialMediaLinks,
+                ProfileVersion = _dbContext.ProfileFiles
+                    .Where(pf => pf.UserId == gm.User.UserId)
+                    .Select(pf => pf.Version)
+                    .FirstOrDefault()
+            }).ToList();
 
             return Ok(new { guildId, members });
         }
@@ -122,72 +127,75 @@ namespace LiventCord.Controllers
 
         private async Task AddMemberToGuild(string userId, string guildId)
         {
-            var guild = await _dbContext
-                .Guilds.Include(g => g.GuildMembers)
+            var guild = await _dbContext.Guilds
+                .Include(g => g.GuildMembers)
+                    .ThenInclude(gm => gm.User)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);
 
             if (guild == null)
                 throw new Exception("Guild not found");
-            var member = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (member == null)
-                throw new Exception("User not found");
 
-            if (!guild.GuildMembers.Any(gu => gu.MemberId == userId))
+            if (!guild.GuildMembers.Any(gm => gm.MemberId == userId))
             {
-                guild.GuildMembers.Add(
-                    new GuildMember
-                    {
-                        MemberId = userId,
-                        GuildId = guildId,
-                        Guild = guild,
-                        User = member,
-                    }
+                var member = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (member == null)
+                    throw new Exception("User not found");
+
+                guild.GuildMembers.Add(new GuildMember
+                {
+                    MemberId = userId,
+                    GuildId = guildId,
+                    Guild = guild,
+                    User = member
+                });
+
+                await _permissionsController.AddPermissions(
+                    guildId,
+                    userId,
+                    PermissionFlags.ReadMessages | PermissionFlags.SendMessages | PermissionFlags.MentionEveryone
                 );
+
+                await _dbContext.SaveChangesAsync();
+
+                var userData = new PublicUser
+                {
+                    UserId = member.UserId,
+                    NickName = member.Nickname,
+                    Discriminator = member.Discriminator,
+                    Description = member.Description,
+                    CreatedAt = member.CreatedAt,
+                    SocialMediaLinks = member.SocialMediaLinks,
+                    ProfileVersion = _dbContext.ProfileFiles
+                        .Where(pf => pf.UserId == member.UserId)
+                        .Select(pf => pf.Version)
+                        .FirstOrDefault()
+                };
+
+                var payload = new { guildId, userId, userData };
+                await _redisEventEmitter.EmitToGuild(EventType.GUILD_MEMBER_ADDED, payload, guildId, userId);
+                await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
             }
-            PermissionFlags combinedPermissions =
-                PermissionFlags.ReadMessages
-                | PermissionFlags.SendMessages
-                | PermissionFlags.MentionEveryone;
-            await _permissionsController.AddPermissions(guildId, userId, combinedPermissions);
-
-            await _dbContext.SaveChangesAsync();
-            var userData = await GetMemberInfo(guildId, userId);
-            var payload = new
-            {
-                guildId,
-                userId,
-                userData,
-            };
-            await _redisEventEmitter.EmitToGuild(
-                EventType.GUILD_MEMBER_ADDED,
-                payload,
-                guildId,
-                userId
-            );
-            await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
         }
-
         private async Task RemoveMemberFromGuild(string userId, string guildId)
         {
-            var guild = await _dbContext
-                .Guilds.Include(g => g.GuildMembers)
+            var guild = await _dbContext.Guilds
+                .Include(g => g.GuildMembers)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);
 
             if (guild == null)
                 throw new Exception("Guild not found");
 
-            var guildMember = guild.GuildMembers.FirstOrDefault(gu => gu.MemberId == userId);
-
+            var guildMember = guild.GuildMembers.FirstOrDefault(gm => gm.MemberId == userId);
             if (guildMember == null)
                 throw new Exception("User is not a member of this guild");
-            var payload = new { guildId, userId };
-            await _redisEventEmitter.EmitToUser(EventType.GUILD_MEMBER_REMOVED, payload, guildId);
 
             guild.GuildMembers.Remove(guildMember);
-
             await _permissionsController.RemoveAllPermissions(guildId, userId);
 
             await _dbContext.SaveChangesAsync();
+
+            var payload = new { guildId, userId };
+            await _redisEventEmitter.EmitToUser(EventType.GUILD_MEMBER_REMOVED, payload, guildId);
             await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
         }
 

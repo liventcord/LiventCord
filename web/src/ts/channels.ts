@@ -277,8 +277,9 @@ export interface ChannelData {
   channelId: string;
   channelName?: string;
   isTextChannel?: boolean;
-  lastReadDateTime?: Date | null;
+  lastReadDatetime?: Date | null;
   voiceMembers?: Member[];
+  unreadCount?: number;
 }
 
 export class Channel implements ChannelData {
@@ -287,15 +288,17 @@ export class Channel implements ChannelData {
   isTextChannel!: boolean;
   voiceUsers?: VoiceUser[];
   guildId!: string;
-  lastReadDateTime!: Date | null;
+  lastReadDatetime!: Date | null;
   voiceMembers!: Member[];
+  unreadCount?: number;
 
   constructor({
     channelId,
     channelName = "",
     isTextChannel = false,
-    lastReadDateTime = null,
-    voiceMembers = []
+    lastReadDatetime = null,
+    voiceMembers = [],
+    unreadCount = 0
   }: ChannelData) {
     if (!channelId) {
       console.error("Invalid channel data in constructor:", {
@@ -308,8 +311,9 @@ export class Channel implements ChannelData {
     this.channelId = channelId;
     this.channelName = channelName;
     this.isTextChannel = isTextChannel;
-    this.lastReadDateTime = lastReadDateTime;
+    this.lastReadDatetime = lastReadDatetime;
     this.voiceMembers = voiceMembers;
+    this.unreadCount = unreadCount;
   }
 }
 

@@ -4,6 +4,7 @@ import {
   AttachmentWithMetaData,
   getMessageDate,
   getOldMessages,
+  handleStopTyping,
   Message,
   MessageReply,
   Metadata
@@ -82,8 +83,8 @@ import {
 import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
 import { isMediaPanelOpen } from "./panelHandler.ts";
-import { handleStopTyping } from "./socketEvents.ts";
 import { NewMessageResponseSelf } from "./apiEventManager.ts";
+import { readStatusManager } from "./readStatus.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -1255,11 +1256,6 @@ const selfSentMessages: SentMessage[] = [];
 function appendtoSelfSentMessages(temporaryId: string) {
   selfSentMessages.push({ id: temporaryId });
 }
-export interface TypingData {
-  userId: string;
-  guildId?: string;
-  channelId: string;
-}
 
 export function handleSelfSentMessage(data: NewMessageResponseSelf) {
   const { message } = data;
@@ -1299,6 +1295,14 @@ export function handleSelfSentMessage(data: NewMessageResponseSelf) {
   syncContextList(message);
 
   selfSentMessages.splice(foundIndex, 1);
+
+  if (message.channelId && message.date)
+    readStatusManager.onNewMessage(
+      data.guildId,
+      message.channelId,
+      true,
+      message.date
+    );
 }
 
 function updateMessageTimestamps(element: HTMLElement, message: Message) {

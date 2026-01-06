@@ -268,15 +268,13 @@ namespace LiventCord.Controllers
             var guild = await _dbContext
                 .Guilds.Include(g => g.Channels)
                 .FirstOrDefaultAsync(g => g.GuildId == guildId);
-            var dbguilds = await _dbContext.Guilds.Select(g => g.GuildId).ToListAsync();
 
             if (guild == null)
                 return NotFound(
                     new
                     {
                         Type = "error",
-                        Message = "Guild does not exist. Available guilds: "
-                            + string.Join(", ", dbguilds),
+                        Message = "Guild does not exist.",
                     }
                 );
 

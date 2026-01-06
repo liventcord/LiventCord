@@ -9,7 +9,7 @@ export interface CachedChannel {
   channelId: string;
   channelName: string;
   isTextChannel: boolean;
-  lastReadDateTime: Date | null;
+  lastReadDatetime: Date | null;
   guildId: string;
   voiceMembers: Member[];
   createElement: () => void;

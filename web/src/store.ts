@@ -301,6 +301,35 @@ export default createStore<RootState>({
       }
 
       console.log(`[Mutation Complete]`, { userId, newStatus: status });
+    },
+
+    setChannelRead(state, { channelId, lastRead }) {
+      const channel = state.channels.find((c) => c.channelId === channelId);
+      if (!channel) return;
+      channel.lastReadDatetime = new Date(lastRead);
+      channel.unreadCount = 0;
+    },
+
+    setGuildRead(state, { guildId }) {
+      state.channels
+        .filter((c) => c.guildId === guildId)
+        .forEach((channel) => {
+          channel.lastReadDatetime = new Date();
+          channel.unreadCount = 0;
+        });
+    },
+
+    setChannelUnreadCount(state, { channelId, count }) {
+      const channel = state.channels.find((c) => c.channelId === channelId);
+      if (!channel) return;
+      channel.unreadCount = count;
+    },
+    resetGuildUnread(state, { guildId }) {
+      state.channels
+        .filter((c) => c.guildId === guildId)
+        .forEach((c) => {
+          c.unreadCount = 0;
+        });
     }
   },
 
@@ -463,6 +492,12 @@ export default createStore<RootState>({
         isNoisy: false,
         isMuted: false,
         isDeafened: false
-      }
+      },
+
+    getChannelUnreadCounts: (state) => (channelId: string) => {
+      const channel = state.channels.find((c) => c.channelId === channelId);
+      if (!channel) return 0;
+      return channel.unreadCount || 0;
+    }
   }
 });

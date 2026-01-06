@@ -1,5 +1,4 @@
 import {
-  alertUser,
   loadMainToolbar,
   handleResize,
   loadGuildToolbar,
@@ -349,6 +348,10 @@ function initializeGuild() {
       openDm(initialFriendId);
     }, 0);
   }
+
+  apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
+    currentGuildId
+  });
 }
 
 function processGuilds(
@@ -407,17 +410,18 @@ export function handleChannelLoading(
   }
 }
 export function readGuildMessages(guildId: string) {
-  alertUser("Reading messages is not implemented!");
+  if (!guildId) return;
+  apiClient.send(EventType.READ_GUILD, {
+    guildId
+  });
 }
-export function readCurrentMessages() {
-  alertUser("Reading messages is not implemented!");
-  return;
-  if (!guildCache.currentChannelId) {
+export function readCurrentMessages(channelId: string) {
+  if (!channelId) {
     return;
   }
-  apiClient.send(EventType.READ_MESSAGE, {
-    channelId: guildCache.currentChannelId,
-    guildId: currentGuildId
+  console.log("reading channel");
+  apiClient.send(EventType.READ_CHANNEL, {
+    channelId
   });
   newMessagesBar.style.display = "none";
 }

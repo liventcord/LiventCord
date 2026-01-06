@@ -64,7 +64,11 @@ export const EventType = Object.freeze({
   GET_BULK_REPLY: "GET_BULK_REPLY",
   UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
   GET_MESSAGE_DATES: "GET_MESSAGE_DATES",
-  READ_MESSAGE: "READ_MESSAGE",
+  READ_CHANNEL: "READ_CHANNEL",
+  READ_GUILD: "READ_GUILD",
+  GET_CHANNEL_UNREAD_COUNT: "GET_CHANNEL_UNREAD_COUNT",
+  GET_CHANNEL_READ_STATE: "GET_CHANNEL_READ_STATE",
+  GET_GUILD_UNREAD_COUNTS: "GET_GUILD_UNREAD_COUNTS",
   PIN_MESSAGE: "PIN_MESSAGE",
   GET_PINNED_MESSAGES: "GET_PINNED_MESSAGES",
   UNPIN_MESSAGE: "UNPIN_MESSAGE",
@@ -128,7 +132,11 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   DELETE_MESSAGE_DM: HttpMethod.DELETE,
   DELETE_MESSAGE_GUILD: HttpMethod.DELETE,
   UPDATE_GUILD_IMAGE: HttpMethod.PUT,
-  READ_MESSAGE: HttpMethod.POST,
+  READ_CHANNEL: HttpMethod.POST,
+  READ_GUILD: HttpMethod.POST,
+  GET_CHANNEL_READ_STATE: HttpMethod.GET,
+  GET_CHANNEL_UNREAD_COUNT: HttpMethod.GET,
+  GET_GUILD_UNREAD_COUNTS: HttpMethod.GET,
   UPDATE_CHANNEL_NAME: HttpMethod.POST,
   CHANGE_EMOJI_NAME: HttpMethod.PUT,
   DELETE_EMOJI: HttpMethod.DELETE,
@@ -201,7 +209,11 @@ const EventUrlMap: Record<EventType, string> = {
   ACCEPT_FRIEND: "/friends/accept/{friendId}",
   DENY_FRIEND: "/friends/deny/{friendId}",
   GET_MESSAGE_DATES: "",
-  READ_MESSAGE: "",
+  READ_CHANNEL: "/channels/{channelId}/read",
+  READ_GUILD: "/guilds/{guildId}/read",
+  GET_CHANNEL_UNREAD_COUNT: "/channels/{channelId}/unread-count",
+  GET_CHANNEL_READ_STATE: "/channels/{channelId}/read-state",
+  GET_GUILD_UNREAD_COUNTS: "/guilds/{guildId}/unread-counts",
   CHANGE_EMOJI_NAME: "/guilds/{guildId}/emojis/{emojiId}",
   DELETE_EMOJI: "/guilds/{guildId}/emojis/{emojiId}",
   UPLOAD_EMOJI_IMAGE: "/guilds/emojis",
@@ -407,7 +419,7 @@ class ApiClient {
     return method;
   }
   getGitUrl() {
-    return "https://media.githubusercontent.com/media/liventcord/LiventCord/refs/heads/main";
+    return "https://raw.githubusercontent.com/liventcord/LiventCord/main";
   }
   getBackendHostname(): string | null {
     const url = this.getBackendUrl();

@@ -13,16 +13,14 @@ import {
   getChannelsUl,
   currentVoiceChannelGuild
 } from "./channels.ts";
-import {
-  getId,
-  enableElement,
-  convertKeysToCamelCase,
-  disableElement
-} from "./utils.ts";
+import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
 import {
   deleteLocalMessage,
   getLastSecondMessageDate,
-  Message
+  handleStopTyping,
+  Message,
+  TypingData,
+  updateTypingText
 } from "./message.ts";
 import {
   bottomestChatDateStr,
@@ -32,8 +30,7 @@ import {
   handleNewMessage,
   NewMessageResponse,
   EditMessageResponse,
-  handleEditMessage,
-  TypingData
+  handleEditMessage
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
 import {
@@ -67,8 +64,8 @@ import {
 } from "./rtc.ts";
 import { alertUser } from "./ui.ts";
 import store from "../store.ts";
+import { readStatusManager } from "./readStatus.ts";
 
-const typingText = getId("typing-text") as HTMLElement;
 export const typingStatusMap = new Map<string, Set<string>>();
 
 export const SocketEvent = Object.freeze({
@@ -632,6 +629,15 @@ const handleNewGuildMessage = (data: GuildMessageData) => {
     messages: data.messages,
     channelId: data.channelId
   };
+
+  if (data.channelId && data.messages[0].date)
+    readStatusManager.onNewMessage(
+      data.guildId,
+      data.channelId,
+      false,
+      data.messages[0].date
+    );
+
   handleNewMessage(messageData);
 
   if (
@@ -750,50 +756,6 @@ socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
 socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
   handleStopTyping(data);
 });
-export function handleStopTyping(data: TypingData) {
-  const isGuild = !!data.guildId;
-  const isCurrent =
-    (isGuild && data.channelId === guildCache.currentChannelId) ||
-    (!isGuild && data.channelId === friendsCache.currentDmId);
-
-  if (!isCurrent) return;
-
-  const typingSet = typingStatusMap.get(data.channelId);
-  if (typingSet) {
-    typingSet.delete(data.userId);
-    if (typingSet.size === 0) {
-      typingStatusMap.delete(data.channelId);
-    }
-  }
-  userStatus.updateUserOnlineStatus(data.userId, "", false);
-
-  updateTypingText(data.channelId);
-}
-
-const typingBubbles = getId("typing-bubbles") as HTMLElement;
-
-function updateTypingText(channelId: string) {
-  const typingUsers = typingStatusMap.get(channelId);
-  if (!typingUsers || typingUsers.size === 0) {
-    typingText.textContent = "";
-    disableElement(typingBubbles);
-    return;
-  }
-  enableElement(typingBubbles);
-
-  const names = Array.from(typingUsers).map((userId) =>
-    userManager.getUserNick(userId)
-  );
-  if (names.length > 5) {
-    typingText.textContent = "Several people are typing";
-  } else if (names.length === 1) {
-    typingText.textContent = `${names[0]} is typing`;
-  } else {
-    typingText.textContent = `${names.slice(0, 2).join(", ")}${names.length > 2 ? ", and others" : ""} are typing`;
-  }
-}
-
-updateTypingText("");
 
 interface DeleteMessageEmit {
   messageId: string;

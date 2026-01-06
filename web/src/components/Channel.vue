@@ -248,29 +248,38 @@ const isSelected = computed(() =>
 );
 
 const channelButtonStyle = computed(() => {
-  let bgColor = "transparent";
+  const unreadCount =
+    store.getters.getChannelUnreadCounts(props.channelId) || 0;
   const hasVoiceUsers =
     !props.isTextChannel && voiceChannelUsers.value.length > 0;
 
+  let backgroundColor = "transparent";
+  let color = "rgb(148, 155, 164)";
+
   if (isSelected.value) {
     if (!props.isTextChannel) {
-      bgColor = isHovered.value
+      backgroundColor = isHovered.value
         ? selectedVoiceChanHoverColor()
         : selectedVoiceChanColor();
     } else {
-      bgColor = isHovered.value
+      backgroundColor = isHovered.value
         ? selectedTextChanHoverColor()
         : selectedTextChanColor();
     }
+    color = "white";
   } else if (isHovered.value) {
-    bgColor = !props.isTextChannel
+    backgroundColor = !props.isTextChannel
       ? hoveredVoiceChanColor()
       : hoveredTextChanColor();
   }
 
+  if (unreadCount > 0 || hasVoiceUsers) {
+    color = "white";
+  }
+
   return {
-    backgroundColor: bgColor,
-    color: isSelected.value || hasVoiceUsers ? "white" : "rgb(148, 155, 164)"
+    backgroundColor,
+    color
   };
 });
 

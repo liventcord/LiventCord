@@ -536,7 +536,7 @@ function createGuildContext(guildId: string) {
 function createChannelsContext(channelId: string) {
   const context: { [key: string]: any } = {};
   context[ChannelsActionType.MARK_AS_READ] = {
-    action: () => readCurrentMessages()
+    action: () => readCurrentMessages(channelId)
   };
   context[ChannelsActionType.COPY_LINK] = {
     action: (event: MouseEvent) =>

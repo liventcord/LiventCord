@@ -27,7 +27,6 @@ import {
 } from "./emoji.ts";
 import { Attachment, AttachmentWithMetaData, Metadata } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
-import { apiClient } from "./api.ts";
 import {
   addEditedIndicator,
   changeChannelWithId,
@@ -506,8 +505,15 @@ function createFileAttachmentPreview(
     const title = createEl("a", {
       className: "attachment-title",
       textContent: attachment.fileName,
-      href: attachmentUrl,
-      download: ""
+      alt: attachment.fileName
+    });
+    title.addEventListener("click", (e) => {
+      e.preventDefault();
+      const link = e.currentTarget as HTMLAnchorElement;
+      const a = document.createElement("a");
+      a.href = link.href;
+      a.download = link.download || "";
+      a.click();
     });
 
     const readableSize = formatFileSize(attachment.fileSize);
@@ -526,6 +532,7 @@ function createFileAttachmentPreview(
 
   return container;
 }
+
 function doesMessageHasProxyiedLink(link: string) {
   const result = currentAttachments.some((a) => a.attachment.proxyUrl === link);
   return result;

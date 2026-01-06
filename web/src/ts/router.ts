@@ -156,7 +156,7 @@ class Router {
   }
   constructAbsoluteAppPage(guildId: string, channelId: string) {
     const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}/channels/${guildId}/${channelId}`;
+    return `${window.location.protocol}//${window.location.hostname}${port}/#/channels/${guildId}/${channelId}`;
   }
 
   validateRoute() {
