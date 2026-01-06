@@ -1374,6 +1374,7 @@ function createMessageElement(
 ) {
   const newMessage = createEl("div", { className: "message" });
   newMessage.id = messageId;
+  newMessage.dataset.m_id = messageId;
   newMessage.dataset.userId = userId;
   newMessage.dataset.date = date;
   newMessage.dataset.content = isContentValid(content) ? content : "";

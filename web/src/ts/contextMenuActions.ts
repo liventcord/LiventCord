@@ -398,23 +398,28 @@ export function triggerContextMenuById(targetElement: HTMLElement) {
 
 export function addContextListeners() {
   document.addEventListener("contextmenu", function (event) {
-    const target = event.target as HTMLSelectElement;
     event.preventDefault();
 
+    const target = event.target as HTMLElement;
     let options = null;
 
-    if (target.id && contextList.hasOwnProperty(target.id)) {
-      options = contextList[target.id];
-    } else if (
-      target.dataset.m_id &&
-      messageContextList.hasOwnProperty(target.dataset.m_id)
-    ) {
-      options = messageContextList[target.dataset.m_id];
-    } else if (
-      target.dataset.cid &&
-      contextList.hasOwnProperty(target.dataset.cid)
-    ) {
-      options = contextList[target.dataset.cid];
+    const idEl = target.closest("[id]") as HTMLElement;
+    if (idEl && contextList.hasOwnProperty(idEl.id)) {
+      options = contextList[idEl.id];
+    }
+
+    if (!options) {
+      const mEl = target.closest("[data-m_id]") as HTMLElement;
+      if (mEl && messageContextList.hasOwnProperty(mEl.dataset.m_id!)) {
+        options = messageContextList[mEl.dataset.m_id!];
+      }
+    }
+
+    if (!options) {
+      const cEl = target.closest("[data-cid]") as HTMLElement;
+      if (cEl && contextList.hasOwnProperty(cEl.dataset.cid!)) {
+        options = contextList[cEl.dataset.cid!];
+      }
     }
 
     if (options) {
@@ -422,6 +427,7 @@ export function addContextListeners() {
     }
   });
 }
+
 document.addEventListener("click", function (event) {
   const target = event.target as HTMLElement;
 
@@ -429,6 +435,8 @@ document.addEventListener("click", function (event) {
     target.dataset.m_id &&
     messageContextList.hasOwnProperty(target.dataset.m_id)
   ) {
+    const isMessageElement = target.classList.contains("message");
+    if (isMessageElement) return;
     const messageId = target.dataset.m_id;
     const message = cacheInterface.getMessage(
       currentGuildId,
