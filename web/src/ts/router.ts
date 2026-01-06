@@ -114,7 +114,7 @@ class Router {
     }
 
     if (pathStr.startsWith("/channels/@me/")) {
-      openDm(parts[3]);
+      openDm(parts[2]);
       return;
     }
 
