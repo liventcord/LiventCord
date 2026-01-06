@@ -34,17 +34,22 @@ public class HealthController : ControllerBase
     private readonly TimeSpan _cpuCacheDuration = TimeSpan.FromSeconds(30);
 
     [HttpGet]
-    public async Task<IActionResult> GetHealth([FromHeader(Name = "Authorization")] string? token)
+    public async Task<IActionResult> GetHealth([FromHeader(Name = "Authorization")] string? authorizationHeader)
     {
         if (string.IsNullOrEmpty(SharedAppConfig.AdminKey))
             return Unauthorized();
 
-        if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
+        if (string.IsNullOrEmpty(authorizationHeader))
             return Unauthorized();
 
-        var actualToken = token["Bearer ".Length..].Trim();
+        var parts = authorizationHeader.Split(' ', 2);
 
-        if (actualToken != SharedAppConfig.AdminKey)
+        if (parts.Length != 2 || !string.Equals(parts[0], "Bearer", StringComparison.OrdinalIgnoreCase))
+            return Unauthorized();
+
+        var token = parts[1].Trim();
+
+        if (token != SharedAppConfig.AdminKey)
             return Unauthorized();
 
         var data = await GetServiceDataAsync();
