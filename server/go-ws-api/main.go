@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -65,10 +67,17 @@ func main() {
 func AdminAuthMiddleware(adminPassword string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader != adminPassword {
-			c.AbortWithStatusJSON(200, gin.H{"error": "Unauthorized"})
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" || parts[1] != adminPassword {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
 		c.Next()
 	}
 }

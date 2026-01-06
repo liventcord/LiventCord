@@ -38,11 +38,19 @@ public class HealthController : ControllerBase
     {
         if (string.IsNullOrEmpty(SharedAppConfig.AdminKey))
             return Unauthorized();
-        if (token != SharedAppConfig.AdminKey)
+
+        if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
             return Unauthorized();
+
+        var actualToken = token["Bearer ".Length..].Trim();
+
+        if (actualToken != SharedAppConfig.AdminKey)
+            return Unauthorized();
+
         var data = await GetServiceDataAsync();
         return Ok(new { data });
     }
+
 
     private async Task<ServiceData> GetServiceDataAsync()
     {

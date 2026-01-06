@@ -50,7 +50,7 @@ namespace LiventCord.Controllers
             return Ok(new { channelId, lastRead });
         }
 
-        
+
         [HttpPost("guilds/{guildId}/read")]
         public async Task<IActionResult> MarkGuildAsRead([IdLengthValidation] string guildId)
         {
