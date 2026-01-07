@@ -2,7 +2,8 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 namespace LiventCord.Controllers
 {
     [Route("api/")]
@@ -59,20 +60,10 @@ namespace LiventCord.Controllers
 
         [HttpPost("guilds/emojis")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadEmojiImages(
-            [FromForm] GuildEmojiUploadRequest request
-        )
+        public async Task<IActionResult> UploadEmojiImages([FromForm] GuildEmojiUploadRequest request)
         {
-            if (
-                request == null
-                || request.GuildId == null
-                || request.Photos == null
-                || !request.Photos.Any()
-                || UserId == null
-            )
-            {
+            if (request == null || request.GuildId == null || request.Photos == null || !request.Photos.Any() || UserId == null)
                 return BadRequest(new { Type = "error", Message = "Invalid request data." });
-            }
 
             if (!await _permissionsController.CanManageGuild(UserId, request.GuildId))
                 return Forbid();
@@ -82,20 +73,25 @@ namespace LiventCord.Controllers
             foreach (var photo in request.Photos)
             {
                 if (!isEmojiSizeValid(photo))
-                {
-                    return BadRequest(
-                        new
-                        {
-                            Type = "error",
-                            Message = "One or more files exceed the maximum size limit.",
-                        }
-                    );
-                }
+                    return BadRequest(new { Type = "error", Message = "One or more files exceed the maximum size limit." });
 
                 try
                 {
+                    using var image = await Image.LoadAsync(photo.OpenReadStream());
+                    image.Mutate(x => x.Resize(128, 128));
+
+                    using var ms = new MemoryStream();
+                    await image.SaveAsWebpAsync(ms);
+                    ms.Position = 0;
+
+                    var resizedFile = new FormFile(ms, 0, ms.Length, photo.Name, Path.ChangeExtension(photo.FileName, ".webp"))
+                    {
+                        Headers = photo.Headers,
+                        ContentType = "image/webp"
+                    };
+
                     var fileId = await _imageController.UploadFileInternal(
-                        photo,
+                        resizedFile,
                         UserId,
                         false,
                         true,

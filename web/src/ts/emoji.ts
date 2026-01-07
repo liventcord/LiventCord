@@ -94,7 +94,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
   const html = `
   <tr class="table-row" id="emoji-row-${emoji.fileId}">
     <td class="table-cell">
-      <img src="${apiClient.getBackendUrl()}/guilds/${emoji.guildId}/emojis/${emoji.fileId}" alt="${escapeHtml(emoji.fileName)}" class="emoji-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC}';">
+      <img src="${getEmojiPath(emoji.fileId, emoji.guildId)}" alt="${escapeHtml(emoji.fileName)}" class="emoji-image" onerror="this.src='${IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC}';">
     </td>
     <td class="table-cell emoji-name-cell">
       <div style="display: flex; align-items: center;">

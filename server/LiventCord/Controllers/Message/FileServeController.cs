@@ -11,7 +11,6 @@ namespace LiventCord.Controllers
 {
     [ApiController]
     [Route("")]
-    [DisableControllerIfPostgres]
     public class FileServeController : BaseController
     {
         private readonly AppDbContext _context;
@@ -170,7 +169,7 @@ namespace LiventCord.Controllers
 
             return Task.FromResult((false, string.Empty));
         }
-
+        [DisableControllerIfPostgres]
         [HttpGet("guilds/{guildId}")]
         public async Task<IActionResult> GetGuildFile(
             [FromRoute] string guildId,
@@ -232,7 +231,7 @@ namespace LiventCord.Controllers
                 guildId
             );
         }
-
+        [DisableControllerIfPostgres]
         [HttpGet("profiles/{userId}")]
         public async Task<IActionResult> GetProfileFile(
             [FromRoute] string userId,
@@ -267,7 +266,7 @@ namespace LiventCord.Controllers
                 userId
             );
         }
-
+        [DisableControllerIfPostgres]
         [HttpGet("attachments/{attachmentId}")]
         public async Task<IActionResult> GetAttachmentFile(
             [FromRoute][IdLengthValidation] string attachmentId
@@ -293,7 +292,6 @@ namespace LiventCord.Controllers
                 attachmentId
             );
         }
-
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile(
             [FromRoute][IdLengthValidation] string guildId,
