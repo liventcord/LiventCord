@@ -175,7 +175,7 @@ using (var scope = app.Services.CreateScope())
     RelationalDatabaseFacadeExtensions.Migrate(context.Database);
 
     var cacheContext = scope.ServiceProvider.GetRequiredService<CacheDbContext>();
-    RelationalDatabaseFacadeExtensions.Migrate(cacheContext.Database);
+    cacheContext.Database.EnsureCreated();
 }
 if (isDevelopment)
 {
