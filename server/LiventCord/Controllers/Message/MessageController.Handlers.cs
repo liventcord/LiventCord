@@ -8,6 +8,7 @@ namespace LiventCord.Controllers
 {
     public partial class MessageController : BaseController
     {
+        [NonAction]
         public async Task<IActionResult> HandleGetGuildMessagesAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -58,7 +59,7 @@ namespace LiventCord.Controllers
                 }
             );
         }
-
+        [NonAction]
         public async Task<IActionResult> HandleGetDMMessagesAsync(
             [UserIdLengthValidation][FromRoute] string friendId,
             [FromQuery] string? date,
@@ -100,7 +101,7 @@ namespace LiventCord.Controllers
             );
         }
 
-
+        [NonAction]
         public async Task<IActionResult> HandleNewDmMessageAsync(
             [UserIdLengthValidation][FromRoute] string friendId,
             [FromForm] NewMessageRequest request
@@ -142,7 +143,7 @@ namespace LiventCord.Controllers
                 request
             );
         }
-
+        [NonAction]
         public async Task<IActionResult> HandleNewBotMessageAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -154,7 +155,7 @@ namespace LiventCord.Controllers
 
             return await ProcessBotMessage(guildId, channelId, request);
         }
-
+        [NonAction]
         public async Task<IActionResult> HandleBulkMessagesAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -187,7 +188,7 @@ namespace LiventCord.Controllers
         }
 
 
-
+        [NonAction]
         public async Task<IActionResult> HandleEditGuildMessageAsync(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId,
@@ -215,6 +216,7 @@ namespace LiventCord.Controllers
             return Ok(editBroadcast);
         }
 
+        [NonAction]
 
         public async Task<IActionResult> HandleEditDMMessageAsync(
             [UserIdLengthValidation][FromRoute] string friendId,
@@ -241,7 +243,7 @@ namespace LiventCord.Controllers
             );
             return Ok(editBroadcast);
         }
-
+        [NonAction]
         public async Task<IActionResult> HandleDeleteGuildMessageAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -281,7 +283,7 @@ namespace LiventCord.Controllers
             );
             return Ok(deleteBroadcast);
         }
-
+        [NonAction]
         public async Task<IActionResult> HandleDeleteDMMessageAsync(
             [UserIdLengthValidation][FromRoute] string channelId,
             [IdLengthValidation][FromRoute] string messageId
@@ -306,7 +308,7 @@ namespace LiventCord.Controllers
             return Ok(deleteBroadcast);
         }
 
-
+        [NonAction]
         public async Task<ActionResult<SearchMessagesResponse>> SearchGuildChannelMessagesAsync(
             [FromRoute][IdLengthValidation] string guildId,
             [FromBody] SearchRequest request
@@ -352,7 +354,7 @@ namespace LiventCord.Controllers
                 return StatusCode(500, $"An error occurred while searching: {ex.Message}");
             }
         }
-
+        [NonAction]
         public async Task<ActionResult<IEnumerable<Message>>> SearchDmMessagesAsync(
             [FromRoute][IdLengthValidation] string dmId,
             [FromQuery] string? fromUserId,
@@ -375,7 +377,7 @@ namespace LiventCord.Controllers
                 return StatusCode(500, $"An error occurred while searching: {ex.Message}");
             }
         }
-
+        [NonAction]
         private async Task<List<Message>> GetMessages(
             string? date = null,
             string? userId = null,
@@ -485,7 +487,7 @@ namespace LiventCord.Controllers
 
             return messagesList;
         }
-
+        [NonAction]
         public async Task<IActionResult> GetAttachmentsAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -535,7 +537,7 @@ namespace LiventCord.Controllers
                 new { attachments = channelAttachments, count = totalAttachmentsCountForChannel }
             );
         }
-
+        [NonAction]
         public async Task<IActionResult> PinMessageAsync(
             string guildId,
             string channelId,
@@ -616,6 +618,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { pinNotificationMessage });
         }
+        [NonAction]
         public async Task<IActionResult> HandleNewGuildMessageAsync(
             [IdLengthValidation][FromRoute] string guildId,
             [IdLengthValidation][FromRoute] string channelId,
@@ -624,6 +627,7 @@ namespace LiventCord.Controllers
         {
             return await HandleMessage(MessageType.Guilds, guildId, channelId, UserId!, request);
         }
+        [NonAction]
         public async Task<IActionResult> UnpinMessageAsync(
             string guildId,
             string channelId,
@@ -663,7 +667,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { messageId });
         }
-
+        [NonAction]
         public async Task<IActionResult> GetPinnedMessagesAsync(string guildId, string channelId)
         {
             var userId = UserId!;
@@ -698,7 +702,7 @@ namespace LiventCord.Controllers
                 }
             );
         }
-
+        [NonAction]
         public async Task<IActionResult> GetGuildMessagesWithLinksAsync(string guildId, string channelId)
         {
             var userId = UserId!;
