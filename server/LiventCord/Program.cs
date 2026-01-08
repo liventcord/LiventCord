@@ -133,38 +133,43 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
 
 string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
 
-Console.WriteLine("Frontend url is: " + FRONTEND_URL);
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(
-        "AllowSpecificOrigin",
-        policy =>
-        {
-            if (FRONTEND_URL == "*")
-            {
-                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-            }
-            else
-            {
-                var allowedOrigins = FRONTEND_URL?.Split(
-                    ';',
-                    StringSplitOptions.RemoveEmptyEntries
-                );
+var app = builder.Build();
 
-                if (allowedOrigins != null && allowedOrigins.Length > 0)
-                {
-                    policy
-                        .WithOrigins(allowedOrigins)
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                }
-            }
-        }
-    );
+app.Use(async (context, next) =>
+{
+    var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 204;
+
+        if (allowedOrigins != null && allowedOrigins.Length > 0)
+            context.Response.Headers["Access-Control-Allow-Origin"] = string.Join(",", allowedOrigins);
+
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
+
+        if (context.Request.Headers.TryGetValue("Access-Control-Request-Headers", out var reqHeaders))
+            context.Response.Headers["Access-Control-Allow-Headers"] = reqHeaders.ToString();
+
+        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+
+        await context.Response.CompleteAsync();
+        return;
+    }
+
+    context.Response.OnStarting(() =>
+    {
+        if (allowedOrigins != null && allowedOrigins.Length > 0)
+            context.Response.Headers["Access-Control-Allow-Origin"] = string.Join(",", allowedOrigins);
+
+        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+
+        return Task.CompletedTask;
+    });
+
+    await next();
 });
 
-var app = builder.Build();
 
 bool isDevelopment = app.Environment.IsDevelopment();
 Console.WriteLine($"Is running in development: {isDevelopment}");
@@ -194,20 +199,6 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
     )
     .CreateLogger();
-app.Use(async (context, next) =>
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.StatusCode = 204;
-        context.Response.Headers.Append("Access-Control-Allow-Origin", "https://liventcord.github.io");
-        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        context.Response.Headers.Append("Access-Control-Allow-Headers", "authorization,content-type,priority,user-agent,accept,accept-language,dnt,sec-fetch-mode,sec-fetch-site,sec-fetch-dest");
-        context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
-        await context.Response.CompleteAsync();
-        return;
-    }
-    await next();
-});
 
 
 app.UseMiddleware<RequestCountingMiddleware>();
@@ -215,7 +206,6 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors("AllowSpecificOrigin");
 app.UseAuthentication();
 app.UseAuthorization();
 
