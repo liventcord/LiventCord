@@ -194,16 +194,35 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
     )
     .CreateLogger();
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 204;
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "https://liventcord.github.io");
+        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        context.Response.Headers.Append("Access-Control-Allow-Headers", "authorization,content-type,priority,user-agent,accept,accept-language,dnt,sec-fetch-mode,sec-fetch-site,sec-fetch-dest");
+        context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
+        await context.Response.CompleteAsync();
+        return;
+    }
+    await next();
+});
+
 
 app.UseMiddleware<RequestCountingMiddleware>();
-app.UseCors("AllowSpecificOrigin");
 app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+
 app.UseRouting();
+app.UseCors("AllowSpecificOrigin");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.UseResponseCompression();
 app.UseStaticFiles();
+
+app.MapControllers();
 
 RouteConfig.ConfigureRoutes(app, builder);
 
@@ -218,7 +237,8 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "docs";
 });
 
-app.MapControllers();
+app.MapControllers().RequireCors("AllowSpecificOrigin");
+
 
 var statsService = app.Services.GetRequiredService<IAppStatsService>();
 app.Lifetime.ApplicationStopping.Register(() =>
