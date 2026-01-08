@@ -94,16 +94,6 @@ builder
         };
     });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigin", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 builder
     .Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -141,11 +131,41 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
+var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AllowSpecificOrigin",
+        policy =>
+        {
+            if (FRONTEND_URL == "*")
+            {
+                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            }
+            else
+            {
+                var allowedOrigins = FRONTEND_URL?.Split(
+                    ';',
+                    StringSplitOptions.RemoveEmptyEntries
+                );
+
+                if (allowedOrigins != null && allowedOrigins.Length > 0)
+                {
+                    policy
+                        .WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                }
+            }
+        }
+    );
+});
 
 var app = builder.Build();
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
-var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
 
 app.Use(async (context, next) =>
 {
