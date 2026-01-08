@@ -131,44 +131,37 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
     options.Level = CompressionLevel.Optimal;
 });
 
-string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
 
 var app = builder.Build();
 
+string? FRONTEND_URL = builder.Configuration["AppSettings:FrontendUrl"] ?? ExampleConfig.Get<string>("FrontendUrl");
+var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
 app.Use(async (context, next) =>
 {
-    var allowedOrigins = FRONTEND_URL?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+    string? requestOrigin = context.Request.Headers["Origin"];
+
+    if (!string.IsNullOrEmpty(requestOrigin) && allowedOrigins?.Contains(requestOrigin) == true)
+    {
+        context.Response.Headers["Access-Control-Allow-Origin"] = requestOrigin;
+        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+    }
 
     if (context.Request.Method == "OPTIONS")
     {
         context.Response.StatusCode = 204;
-
-        if (allowedOrigins != null && allowedOrigins.Length > 0)
-            context.Response.Headers["Access-Control-Allow-Origin"] = string.Join(",", allowedOrigins);
-
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
 
         if (context.Request.Headers.TryGetValue("Access-Control-Request-Headers", out var reqHeaders))
             context.Response.Headers["Access-Control-Allow-Headers"] = reqHeaders.ToString();
 
-        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-
         await context.Response.CompleteAsync();
         return;
     }
 
-    context.Response.OnStarting(() =>
-    {
-        if (allowedOrigins != null && allowedOrigins.Length > 0)
-            context.Response.Headers["Access-Control-Allow-Origin"] = string.Join(",", allowedOrigins);
-
-        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-
-        return Task.CompletedTask;
-    });
-
     await next();
 });
+
 
 
 bool isDevelopment = app.Environment.IsDevelopment();
