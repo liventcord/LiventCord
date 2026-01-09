@@ -523,6 +523,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       case "joined": {
         playAudioType(AudioType.EnterVC);
         setRtcStatus(true, false);
+        handleWsJoined(data);
         break;
       }
 
@@ -580,6 +581,45 @@ export async function setRTCWsClient(wsUrl: string) {
   await rtcWsClient.setSocketUrl(wsUrl);
 }
 
+interface JoinVoiceResponse {
+  channelId: string;
+  guildId: string;
+  usersList: string[];
+}
+
+function handleWsJoined(data: JoinVoiceResponse) {
+  const channelId = data.channelId;
+  const guildId = data.guildId;
+  const voiceUsers = data.usersList;
+  console.log(voiceUsers);
+  if (!channelId) {
+    console.error("Channel id is null on voice users response");
+    return;
+  }
+  if (!guildId) {
+    console.error("Guild id is null on voice users response");
+    return;
+  }
+  playAudio("/sounds/joinvoice.mp3");
+  clearVoiceChannel(currentVoiceChannelId);
+  enableElement("sound-panel");
+
+  setCurrentVoiceChannelId(channelId);
+  if (isOnGuild) {
+    setCurrentVoiceChannelGuild(guildId);
+  }
+  const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
+  console.log(soundInfoIcon, soundInfoIcon.textContent);
+  soundInfoIcon.textContent = `${currentChannelName} / ${guildCache.currentGuildName}`;
+
+  const buttonContainer = getChannelsUl().querySelector(
+    `li[id="${currentVoiceChannelId}"]`
+  ) as HTMLElement;
+  const channelSpan = buttonContainer.querySelector(
+    ".channelSpan"
+  ) as HTMLElement;
+  channelSpan.style.marginRight = "30px";
+}
 interface UpdateUserData {
   userId: string;
   username?: string;
@@ -844,46 +884,6 @@ socketClient.on(SocketEvent.DENY_FRIEND, function (message) {
 });
 
 //audio
-interface JoinVoiceResponse {
-  channelId: string;
-  guildId: string;
-  usersList: string[];
-}
-socketClient.on(
-  SocketEvent.JOIN_VOICE_CHANNEL,
-  function (data: JoinVoiceResponse) {
-    const channelId = data.channelId;
-    const guildId = data.guildId;
-    const voiceUsers = data.usersList;
-    console.log(voiceUsers);
-    if (!channelId) {
-      console.error("Channel id is null on voice users response");
-      return;
-    }
-    if (!guildId) {
-      console.error("Guild id is null on voice users response");
-      return;
-    }
-    playAudio("/sounds/joinvoice.mp3");
-    clearVoiceChannel(currentVoiceChannelId);
-    enableElement("sound-panel");
-
-    setCurrentVoiceChannelId(channelId);
-    if (isOnGuild) {
-      setCurrentVoiceChannelGuild(guildId);
-    }
-    const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
-    soundInfoIcon.innerText = `${currentChannelName} / ${guildCache.currentGuildName}`;
-
-    const buttonContainer = getChannelsUl().querySelector(
-      `li[id="${currentVoiceChannelId}"]`
-    ) as HTMLElement;
-    const channelSpan = buttonContainer.querySelector(
-      ".channelSpan"
-    ) as HTMLElement;
-    channelSpan.style.marginRight = "30px";
-  }
-);
 interface IncomingAudioResponse {
   buffer: ArrayBuffer;
 }

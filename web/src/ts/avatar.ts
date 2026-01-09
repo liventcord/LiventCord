@@ -222,14 +222,14 @@ export function updateSelfName(nickName: string) {
 }
 export function getProfileUrl(userId: string): string {
   const v = userManager.getUserProfileVersion(userId);
-  if (v === null) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
+  if (!v) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
 
   return `${initialState.mediaWorkerUrl}/profiles/${userId}?version=${v}`;
 }
 
 export function getGuildUrl(guildId: string): string {
   const v = cacheInterface.getGuildImageVersion(guildId);
-  if (v === null) return blackImage;
+  if (!v) return blackImage;
   return `${initialState.mediaWorkerUrl}/guilds/${guildId}.webp?version=${v}`;
 }
 

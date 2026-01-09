@@ -106,8 +106,12 @@ func handleJoinRoom(client *VcClient, data json.RawMessage) {
 	emitUserList(client)
 	notifyUserConnect(client)
 
-	sendEnvelope(client, "joined", map[string]string{})
+	sendEnvelope(client, "joined", map[string]interface{}{
+		"channelId": p.RoomID,
+		"guildId":   p.GuildID,
+	})
 }
+
 func emitUserList(c *VcClient) {
 	vcHub.mu.RLock()
 	defer vcHub.mu.RUnlock()
