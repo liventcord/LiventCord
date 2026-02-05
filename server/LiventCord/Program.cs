@@ -226,7 +226,11 @@ Log.Logger = new LoggerConfiguration()
 
 app.UseMiddleware<RequestCountingMiddleware>();
 app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRouting();
 app.UseCors("AllowSpecificOrigin");
