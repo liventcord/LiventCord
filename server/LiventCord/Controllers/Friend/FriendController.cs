@@ -292,7 +292,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<PublicUserWithFriendData?> GetFriendWithStatus(
+        public Task<PublicUserWithFriendData?> GetFriendWithStatus(
             string userId,
             string friendId,
             bool isSender
@@ -303,7 +303,7 @@ namespace LiventCord.Controllers
                 || (f.UserId == friendId && f.FriendId == userId)
             );
 
-            var user = await _dbContext
+            return _dbContext
                 .Users.Where(u => u.UserId == friendId)
                 .Select(user => new PublicUserWithFriendData
                 {
@@ -320,14 +320,12 @@ namespace LiventCord.Controllers
                         : friendshipQuery.Any(fr => fr.UserId == friendId && fr.FriendId == userId),
                 })
                 .FirstOrDefaultAsync();
-
-            return user;
         }
 
         [NonAction]
-        public async Task<List<PublicUserWithFriendData>> GetFriends(string userId)
+        public Task<List<PublicUserWithFriendData>> GetFriends(string userId)
         {
-            var friendsData = await _dbContext
+            return _dbContext
                 .Friends
                 .Where(f => (f.UserId == userId || f.FriendId == userId) &&
                             (f.Status == FriendStatus.Accepted || f.Status == FriendStatus.Pending))
@@ -348,9 +346,6 @@ namespace LiventCord.Controllers
                     pf => pf.UserId,
                     (fu, profileFiles) => new { fu.FriendData, fu.User, ProfileFiles = profileFiles }
                 )
-                .ToListAsync();
-
-            var friends = friendsData
                 .Select(fu => new PublicUserWithFriendData
                 {
                     UserId = fu.User.UserId,
@@ -359,7 +354,7 @@ namespace LiventCord.Controllers
                     CreatedAt = fu.User.CreatedAt,
                     Description = fu.User.Description,
                     SocialMediaLinks = fu.User.SocialMediaLinks,
-                    ProfileVersion = fu.ProfileFiles.FirstOrDefault()?.Version,
+                    ProfileVersion = fu.ProfileFiles.Select(pf => pf.Version).FirstOrDefault(),
                     FriendshipStatus = fu.FriendData.Status,
                     IsPending = fu.FriendData.Status == FriendStatus.Pending,
                     IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>
@@ -369,16 +364,9 @@ namespace LiventCord.Controllers
                 })
                 .GroupBy(f => f.UserId)
                 .Select(g => g.First())
-                .ToList();
-
-            return friends;
+                .ToListAsync();
         }
-
-
-
-
     }
-
 }
 
 public class SendFriendRequest

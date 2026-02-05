@@ -32,7 +32,7 @@ cd server/LiventCord
 ```
 Create database
 ```bash
-dotnet ef migrations add InitialCreate
+dotnet ef migrations add InitialCreate --context AppDbContext
 ```
 ```bash
 dotnet run
@@ -43,7 +43,7 @@ dotnet run
 ```bash
 cd web
 pnpm install
-mv .env.example .env
+cp .env.example .env
 pnpm run dev
 ```
 Dev server runs at `http://localhost:3000`.
