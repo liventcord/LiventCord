@@ -34,28 +34,29 @@ namespace LiventCord.Controllers
         [HttpGet("/api/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGetMembers([FromRoute][IdLengthValidation] string guildId)
         {
-            var guildWithMembers = await _dbContext.Guilds
-                .Where(g => g.GuildId == guildId)
-                .Include(g => g.GuildMembers)
-                    .ThenInclude(gm => gm.User)
-                .FirstOrDefaultAsync();
+            var isMember = await _dbContext.GuildMembers
+                .AnyAsync(gm => gm.GuildId == guildId && gm.MemberId == UserId);
 
-            if (guildWithMembers == null || !guildWithMembers.GuildMembers.Any(gm => gm.MemberId == UserId))
+            if (!isMember)
                 return NotFound(new { Type = "error", Message = "Guild does not exist." });
 
-            var members = guildWithMembers.GuildMembers.Select(gm => new PublicUser
-            {
-                UserId = gm.User.UserId,
-                NickName = gm.User.Nickname,
-                Discriminator = gm.User.Discriminator,
-                Description = gm.User.Description,
-                CreatedAt = gm.User.CreatedAt,
-                SocialMediaLinks = gm.User.SocialMediaLinks,
-                ProfileVersion = _dbContext.ProfileFiles
-                    .Where(pf => pf.UserId == gm.User.UserId)
-                    .Select(pf => pf.Version)
-                    .FirstOrDefault()
-            }).ToList();
+            var members = await (
+                from gm in _dbContext.GuildMembers
+                join u in _dbContext.Users on gm.MemberId equals u.UserId
+                join pf in _dbContext.ProfileFiles on u.UserId equals pf.UserId into pfs
+                from pf in pfs.DefaultIfEmpty()
+                where gm.GuildId == guildId
+                select new PublicUser
+                {
+                    UserId = u.UserId,
+                    NickName = u.Nickname,
+                    Discriminator = u.Discriminator,
+                    Description = u.Description,
+                    CreatedAt = u.CreatedAt,
+                    SocialMediaLinks = u.SocialMediaLinks,
+                    ProfileVersion = pf.Version
+                }
+            ).ToListAsync();
 
             return Ok(new { guildId, members });
         }
@@ -221,43 +222,31 @@ namespace LiventCord.Controllers
                 .Select(gu => gu.User.UserId)
                 .ToListAsync();
         }
-
         [NonAction]
         public async Task<List<PublicUser>> GetGuildMembers(string guildId)
         {
             if (string.IsNullOrEmpty(guildId))
                 return new List<PublicUser>();
 
-            var usersWithProfile = await _dbContext
-                .GuildMembers.Where(gu => gu.GuildId == guildId)
-                .Select(gu => new
+            return await (
+                from gm in _dbContext.GuildMembers
+                join u in _dbContext.Users on gm.MemberId equals u.UserId
+                join pf in _dbContext.ProfileFiles on u.UserId equals pf.UserId into pfs
+                from pf in pfs.DefaultIfEmpty()
+                where gm.GuildId == guildId
+                select new PublicUser
                 {
-                    gu.User.UserId,
-                    gu.User.Nickname,
-                    gu.User.Discriminator,
-                    gu.User.Description,
-                    gu.User.CreatedAt,
-                    gu.User.SocialMediaLinks,
-                    ProfileVersion = _dbContext
-                        .ProfileFiles.Where(pf => pf.UserId == gu.User.UserId)
-                        .Select(pf => pf.Version)
-                        .FirstOrDefault(),
-                })
-                .ToListAsync();
-
-            return usersWithProfile
-                .Select(user => new PublicUser
-                {
-                    UserId = user.UserId,
-                    NickName = user.Nickname,
-                    Discriminator = user.Discriminator,
-                    Description = user.Description,
-                    CreatedAt = user.CreatedAt,
-                    SocialMediaLinks = user.SocialMediaLinks,
-                    ProfileVersion = user.ProfileVersion,
-                })
-                .ToList();
+                    UserId = u.UserId,
+                    NickName = u.Nickname,
+                    Discriminator = u.Discriminator,
+                    Description = u.Description,
+                    CreatedAt = u.CreatedAt,
+                    SocialMediaLinks = u.SocialMediaLinks,
+                    ProfileVersion = pf.Version
+                }
+            ).ToListAsync();
         }
+
 
         [NonAction]
         public async Task<Dictionary<string, List<string>>> GetSharedGuilds(
@@ -329,117 +318,146 @@ namespace LiventCord.Controllers
         [NonAction]
         public async Task<GuildDto?> GetUserGuildAsync(string userId, string guildId)
         {
-            var guild = await _dbContext
-                .GuildMembers.Where(gm => gm.MemberId == userId && gm.GuildId == guildId)
-                .Include(gm => gm.Guild)
-                .ThenInclude(g => g.Channels)
-                .Select(gm => new GuildDto
+            var guild = await _dbContext.Guilds
+                .Where(g => g.GuildId == guildId)
+                .Select(g => new GuildDto
                 {
-                    GuildId = gm.Guild.GuildId,
-                    OwnerId = gm.Guild.OwnerId,
-                    GuildName = gm.Guild.GuildName,
-                    RootChannel = gm.Guild.RootChannel,
-                    Region = gm.Guild.Region,
-                    IsGuildUploadedImg = gm.Guild.IsGuildUploadedImg,
-                    GuildMembers = _dbContext
-                        .GuildMembers.Where(g => g.GuildId == gm.Guild.GuildId)
-                        .Select(g => g.MemberId)
-                        .ToList(),
+                    GuildId = g.GuildId,
+                    OwnerId = g.OwnerId,
+                    GuildName = g.GuildName,
+                    RootChannel = g.RootChannel,
+                    Region = g.Region,
+                    IsGuildUploadedImg = g.IsGuildUploadedImg,
+                    GuildMembers = new List<string>(),
                     GuildChannels = new List<ChannelWithLastRead>(),
-                    GuildVersion = _dbContext
-                        .GuildFiles.Where(g => g.GuildId == gm.Guild.GuildId)
-                        .Select(g => g.Version)
-                        .FirstOrDefault(),
+                    GuildVersion = _dbContext.GuildFiles
+                        .Where(f => f.GuildId == g.GuildId)
+                        .Select(f => f.Version)
+                        .FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
 
             if (guild == null)
                 return null;
 
-            var allChannels = await _dbContext
-                .Channels.Where(c => c.GuildId == guildId)
-                .Select(c => new
-                {
-                    c.ChannelId,
-                    c.ChannelName,
-                    c.IsTextChannel,
-                    LastReadDateTime = _dbContext
-                        .UserChannels.Where(uc =>
-                            uc.UserId == userId && uc.ChannelId == c.ChannelId
-                        )
-                        .Select(uc => uc.LastReadDatetime)
-                        .FirstOrDefault(),
-                })
+            var isMember = await _dbContext.GuildMembers
+                .AnyAsync(gm => gm.GuildId == guildId && gm.MemberId == userId);
+
+            if (!isMember)
+                return null;
+
+            guild.GuildMembers = await _dbContext.GuildMembers
+                .Where(gm => gm.GuildId == guildId)
+                .Select(gm => gm.MemberId)
                 .ToListAsync();
 
-            guild.GuildChannels = allChannels
-                .Select(c => new ChannelWithLastRead
+            var channels = await (
+                from c in _dbContext.Channels
+                join uc in _dbContext.UserChannels
+                    .Where(uc => uc.UserId == userId)
+                    on c.ChannelId equals uc.ChannelId into ucs
+                from uc in ucs.DefaultIfEmpty()
+                where c.GuildId == guildId
+                select new ChannelWithLastRead
                 {
                     ChannelId = c.ChannelId,
                     ChannelName = c.ChannelName,
                     IsTextChannel = c.IsTextChannel,
-                    LastReadDateTime = c.LastReadDateTime,
-                })
-                .ToList();
+                    LastReadDateTime = uc.LastReadDatetime
+                }
+            ).ToListAsync();
+
+            guild.GuildChannels = channels;
 
             return guild;
         }
 
+
         [NonAction]
         public async Task<List<GuildDto>> GetUserGuilds(string userId)
         {
-            var guilds = await _dbContext
-                .GuildMembers.Where(gu => gu.MemberId == userId)
-                .Include(gu => gu.Guild)
-                .ThenInclude(g => g.Channels)
-                .Select(gu => new GuildDto
+            var guilds = await (
+                from gm in _dbContext.GuildMembers
+                join g in _dbContext.Guilds on gm.GuildId equals g.GuildId
+                where gm.MemberId == userId
+                select new GuildDto
                 {
-                    GuildId = gu.Guild.GuildId,
-                    OwnerId = gu.Guild.OwnerId,
-                    GuildVersion = _dbContext
-                        .GuildFiles.Where(g => g.GuildId == gu.Guild.GuildId)
-                        .Select(g => g.Version)
-                        .FirstOrDefault(),
-                    GuildName = gu.Guild.GuildName,
-                    RootChannel = gu.Guild.RootChannel,
-                    Region = gu.Guild.Region,
-                    IsGuildUploadedImg = gu.Guild.IsGuildUploadedImg,
-                    GuildMembers = _dbContext
-                        .GuildMembers.Where(g => g.GuildId == gu.Guild.GuildId)
-                        .Select(g => g.MemberId)
-                        .ToList(),
+                    GuildId = g.GuildId!,
+                    OwnerId = g.OwnerId,
+                    GuildName = g.GuildName,
+                    RootChannel = g.RootChannel,
+                    Region = g.Region,
+                    IsGuildUploadedImg = g.IsGuildUploadedImg,
+                    GuildMembers = new List<string>(),
                     GuildChannels = new List<ChannelWithLastRead>(),
-                })
+                    GuildVersion = _dbContext.GuildFiles
+                        .Where(f => f.GuildId == g.GuildId)
+                        .Select(f => f.Version)
+                        .FirstOrDefault()
+                }
+            ).ToListAsync();
+
+            if (!guilds.Any())
+                return guilds;
+
+            var guildIds = guilds.Select(g => g.GuildId!).Where(id => id != null).ToList();
+
+            var members = await _dbContext.GuildMembers
+                .Where(gm => gm.GuildId != null && guildIds.Contains(gm.GuildId))
                 .ToListAsync();
 
-            var allChannels = await _dbContext
-                .Channels.Where(c => guilds.Select(g => g.GuildId).Contains(c.GuildId))
-                .Select(c => new
+            var channels = await (
+                from c in _dbContext.Channels
+                join uc in _dbContext.UserChannels
+                    .Where(uc => uc.UserId == userId)
+                    on c.ChannelId equals uc.ChannelId into ucs
+                from uc in ucs.DefaultIfEmpty()
+                where c.GuildId != null && guildIds.Contains(c.GuildId)
+                select new
                 {
-                    c.ChannelId,
-                    c.ChannelName,
-                    c.IsTextChannel,
-                    LastReadDateTime = _dbContext
-                        .UserChannels.Where(uc =>
-                            uc.UserId == userId && uc.ChannelId == c.ChannelId
-                        )
-                        .Select(uc => uc.LastReadDatetime)
-                        .FirstOrDefault(),
-                    c.GuildId,
-                })
-                .ToListAsync();
-
-            foreach (var guild in guilds)
-                guild.GuildChannels = allChannels
-                    .Where(c => c.GuildId == guild.GuildId)
-                    .Select(c => new ChannelWithLastRead
+                    GuildIdNonNull = c.GuildId!,
+                    Channel = new ChannelWithLastRead
                     {
                         ChannelId = c.ChannelId,
                         ChannelName = c.ChannelName,
                         IsTextChannel = c.IsTextChannel,
-                        LastReadDateTime = c.LastReadDateTime,
-                    })
+                        LastReadDateTime = uc.LastReadDatetime
+                    }
+                }
+            ).ToListAsync();
+
+            foreach (var guild in guilds)
+            {
+                if (guild.GuildId == null)
+                    continue;
+
+                guild.GuildMembers = members
+                    .Where(m => m.GuildId == guild.GuildId)
+                    .Select(m => m.MemberId)
                     .ToList();
+
+                guild.GuildChannels = channels
+                    .Where(c => c.GuildIdNonNull == guild.GuildId)
+                    .Select(c => c.Channel)
+                    .ToList();
+            }
+
+            foreach (var guild in guilds)
+            {
+                if (guild.GuildId == null)
+                    continue;
+
+                guild.GuildMembers = members
+                    .Where(m => m.GuildId == guild.GuildId)
+                    .Select(m => m.MemberId)
+                    .ToList();
+
+                guild.GuildChannels = channels
+                    .Where(c => c.GuildIdNonNull == guild.GuildId)
+                    .Select(c => c.Channel)
+                    .ToList();
+            }
+
 
             return guilds;
         }
