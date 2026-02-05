@@ -17,10 +17,7 @@ import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
 import {
   deleteLocalMessage,
   getLastSecondMessageDate,
-  handleStopTyping,
-  Message,
-  TypingData,
-  updateTypingText
+  Message
 } from "./message.ts";
 import {
   bottomestChatDateStr,
@@ -65,6 +62,7 @@ import {
 import { alertUser } from "./ui.ts";
 import store from "../store.ts";
 import { readStatusManager } from "./readStatus.ts";
+import { handleStopTyping, TypingData, updateTypingText } from "./typing.ts";
 
 export const typingStatusMap = new Map<string, Set<string>>();
 
@@ -242,7 +240,8 @@ type ExistingUserList = {
 export class WebSocketClient extends WebSocketClientBase {
   private eventHandlers: Record<string, EventHandler[]> = {};
   private static instance: WebSocketClient | null = null;
-
+  private statusRequestQueue: Set<string> = new Set();
+  private statusRequestTimer: any = null;
   private constructor(url: string = "") {
     super(url);
   }
@@ -294,15 +293,37 @@ export class WebSocketClient extends WebSocketClientBase {
     }
 
     userIds.forEach((userId) => {
-      if (this.inProgressRequests.has(userId)) return;
-      this.inProgressRequests.add(userId);
-
-      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-        this.pendingRequests.push(() => this.getUserStatus([userId]));
-        return;
+      if (!this.inProgressRequests.has(userId)) {
+        this.statusRequestQueue.add(userId);
       }
-      this.send(SocketEvent.GET_USER_STATUS, { user_ids: [userId] });
     });
+
+    if (this.statusRequestTimer) {
+      clearTimeout(this.statusRequestTimer);
+    }
+
+    this.statusRequestTimer = setTimeout(() => {
+      this.flushStatusRequests();
+    }, 50);
+  }
+
+  private flushStatusRequests() {
+    if (this.statusRequestQueue.size === 0) return;
+
+    const userIdsToFetch = Array.from(this.statusRequestQueue);
+    this.statusRequestQueue.clear();
+
+    userIdsToFetch.forEach((id) => this.inProgressRequests.add(id));
+
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      this.pendingRequests.push(() => this.getUserStatus(userIdsToFetch));
+      return;
+    }
+
+    console.log(
+      `Fetching status for ${userIdsToFetch.length} users in one request`
+    );
+    this.send(SocketEvent.GET_USER_STATUS, { user_ids: userIdsToFetch });
   }
 
   onUserIdAvailable() {
@@ -850,10 +871,6 @@ export function handleDeleteMessageEmit(
 ) {
   processDeleteMessage(data.msgDate, data.channelId, data.messageId, isDm);
 }
-
-socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
-  handleChannelDelete(data);
-});
 
 socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
   handleChannelDelete(data);

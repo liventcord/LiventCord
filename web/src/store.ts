@@ -2,7 +2,7 @@ import { createStore } from "vuex";
 import { userManager } from "./ts/user";
 import { Channel } from "./ts/channels";
 import { AttachmentWithMetaData } from "./ts/message";
-import { VoiceUser } from "./ts/socketEvents";
+import { socketClient, VoiceUser } from "./ts/socketEvents";
 
 interface UserMember {
   userId: string;
@@ -47,7 +47,13 @@ interface RootState {
   currentPage: number;
   voiceUserStatuses: Record<string, VoiceUserStatus>;
 }
-
+const sortUsersByName = (users: UserMember[]): UserMember[] => {
+  return [...users].sort((a, b) => {
+    const nameA = (a.nickName || "").toLowerCase();
+    const nameB = (b.nickName || "").toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+};
 export default createStore<RootState>({
   state: {
     user: {
@@ -134,6 +140,7 @@ export default createStore<RootState>({
         ...state.user.onlineUsers,
         ...state.user.offlineUsers
       ].find((u) => u.userId === userId);
+
       if (existingUser) {
         const updatedUser = {
           ...existingUser,
@@ -141,14 +148,21 @@ export default createStore<RootState>({
           status,
           isTyping
         };
+
         state.user.onlineUsers = state.user.onlineUsers.filter(
           (u) => u.userId !== userId
         );
         state.user.offlineUsers = state.user.offlineUsers.filter(
           (u) => u.userId !== userId
         );
-        if (status === "offline") state.user.offlineUsers.push(updatedUser);
-        else state.user.onlineUsers.push(updatedUser);
+
+        if (status === "offline") {
+          state.user.offlineUsers.push(updatedUser);
+          state.user.offlineUsers = sortUsersByName(state.user.offlineUsers);
+        } else {
+          state.user.onlineUsers.push(updatedUser);
+          state.user.onlineUsers = sortUsersByName(state.user.onlineUsers);
+        }
       }
     },
 
@@ -159,8 +173,8 @@ export default createStore<RootState>({
         offlineUsers
       }: { onlineUsers: UserMember[]; offlineUsers: UserMember[] }
     ) {
-      state.user.onlineUsers = onlineUsers;
-      state.user.offlineUsers = offlineUsers;
+      state.user.onlineUsers = sortUsersByName(onlineUsers);
+      state.user.offlineUsers = sortUsersByName(offlineUsers);
     },
 
     SET_HOVERED_CHANNEL(
@@ -372,19 +386,48 @@ export default createStore<RootState>({
     async categorizeUsers({ commit }, members: UserMember[]) {
       const onlineUsers: UserMember[] = [];
       const offlineUsers: UserMember[] = [];
+      const userIdsNeedingStatus: string[] = [];
+
       for (const member of members) {
         if (!member.userId)
           throw new Error("User ID cannot be null or undefined: " + member);
-        const isOnline = await userManager.isNotOffline(member.userId);
+
+        let status = member.status;
+
+        if (!status || status.trim() === "") {
+          const userInfo = userManager.getUserInfo(member.userId);
+          if (userInfo?.status) {
+            status = userInfo.status;
+          } else {
+            userIdsNeedingStatus.push(member.userId);
+            status = "offline";
+          }
+        }
+
+        const isOnline = status !== "offline";
+
         const categorizedMember = {
           ...member,
           isOnline,
-          status: isOnline ? "online" : "offline"
+          status
         };
+
         if (isOnline) onlineUsers.push(categorizedMember);
         else offlineUsers.push(categorizedMember);
       }
-      commit("setUsers", { onlineUsers, offlineUsers });
+
+      if (userIdsNeedingStatus.length > 0) {
+        console.log(
+          `Requesting status for ${userIdsNeedingStatus.length} users`
+        );
+        socketClient.getUserStatus(userIdsNeedingStatus);
+      }
+
+      commit("setUsers", {
+        onlineUsers: sortUsersByName(onlineUsers),
+        offlineUsers: sortUsersByName(offlineUsers)
+      });
+
       return { onlineUsers, offlineUsers };
     },
 

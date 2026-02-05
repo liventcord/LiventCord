@@ -350,7 +350,7 @@ function initializeGuild() {
   }
 
   apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
-    currentGuildId
+    guildId: currentGuildId
   });
 }
 

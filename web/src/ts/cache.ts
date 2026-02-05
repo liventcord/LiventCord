@@ -398,7 +398,8 @@ class CacheGuild {
     this.emojis = new EmojisCache();
     this.ownerId = null;
     this.guildVersion = null;
-    if (initialState.sharedGuildsMap) {
+
+    if (initialState && initialState.sharedGuildsMap) {
       const sharedGuildsMap = new Map<string, string[]>(
         Object.entries(initialState.sharedGuildsMap)
       );
@@ -406,10 +407,9 @@ class CacheGuild {
       if (Array.isArray(friendIds)) {
         sharedGuildsCache.setFriendIds(guildId, friendIds);
       }
-    } else {
-      console.error("sharedGuildsMap is not a valid object or is missing");
     }
   }
+
   setRootChannel(rootChannel: string): void {
     this.rootChannel = rootChannel;
   }
@@ -451,6 +451,7 @@ class CacheGuild {
     return this.members.getMembers(this.guildId).length > 0;
   }
 }
+
 interface GuildCache {
   guilds: { [key: string]: CacheGuild };
 }

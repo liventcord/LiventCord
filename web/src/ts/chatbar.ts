@@ -167,7 +167,9 @@ export class ReadenMessagesManager {
 
   static initialiseReadUi() {
     if (newMessagesBar) {
-      newMessagesBar.addEventListener("click", readCurrentMessages);
+      newMessagesBar.addEventListener("click", () => {
+        readCurrentMessages(guildCache.currentChannelId);
+      });
     }
     if (newMessagesText) {
       newMessagesText.textContent = this.getReadText();

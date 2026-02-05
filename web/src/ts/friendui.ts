@@ -35,6 +35,7 @@ import { activityList, userList } from "./userList.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { isBlackTheme } from "./settings.ts";
 import { getCurrentWidth } from "./ui.ts";
+import store from "../store.ts";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
@@ -150,12 +151,15 @@ class DmUser {
   friendId: string;
   friendNick: string;
   dmContainer: HTMLElement;
+  private statusBubble: HTMLElement | null = null;
+  private unsubscribe: (() => void) | null = null;
 
   private constructor(friend: DmUserInfo, dmContainer: HTMLElement) {
     this.friend = friend;
     this.friendId = friend.userId;
     this.friendNick = friend.nickName;
     this.dmContainer = dmContainer;
+    this.setupStatusSync();
   }
 
   static async create(friend: DmUserInfo): Promise<DmUser> {
@@ -165,9 +169,39 @@ class DmUser {
     if (existing) {
       return new DmUser(friend, existing);
     }
-
     const dmContainer = await DmUser.createDmContainer(friend);
     return new DmUser(friend, dmContainer);
+  }
+
+  private setupStatusSync() {
+    this.unsubscribe = store.subscribe((mutation, state) => {
+      if (
+        mutation.type === "updateUserStatus" &&
+        mutation.payload.userId === this.friendId
+      ) {
+        this.updateStatusBubble(mutation.payload.status);
+      }
+    });
+  }
+
+  private updateStatusBubble(status: string) {
+    if (!this.statusBubble) {
+      this.statusBubble = this.dmContainer.querySelector(
+        ".dm-bubble"
+      ) as HTMLElement;
+    }
+
+    if (this.statusBubble) {
+      this.statusBubble.className = "dm-bubble";
+      this.statusBubble.classList.add(status);
+    }
+  }
+
+  public destroy() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
   }
 
   private static async createDmContainer(
@@ -181,6 +215,7 @@ class DmUser {
     if (friend.userId === friendsCache.currentDmId) {
       dmContainer.classList.add("dm-selected");
     }
+
     const initialWidth = getCurrentWidth();
     dmContainer.style.width = `${initialWidth + 80}px`;
 
@@ -189,12 +224,14 @@ class DmUser {
     });
     setProfilePic(profileImg, friend.userId);
 
-    const status = await userManager.getStatusString(friend.userId);
+    const status = store.getters.getUserStatus(friend.userId) || "offline";
     const bubble = createDmBubble(status);
+
     profileImg.style.transition = "border-radius 0.5s ease-out";
     bubble.style.transition = "opacity 0.5s ease-in-out";
 
     let hoverTimeout: ReturnType<typeof setTimeout>;
+
     profileImg.addEventListener("mouseover", () => {
       profileImg.style.borderRadius = "0px";
       clearTimeout(hoverTimeout);
@@ -235,6 +272,7 @@ class DmUser {
       event.stopPropagation();
       removeDm(friend.userId);
     });
+
     dmContainer.appendChild(closeBtn);
 
     return dmContainer;
@@ -744,7 +782,7 @@ function createFriendCardBubble(status: string) {
 }
 
 function createDmBubble(status: string) {
-  const bubble = createEl("span", { className: "dm-bubble" });
+  const bubble = createEl("span", { className: "profile-bubble" });
 
   bubble.classList.add("dm_" + status);
 

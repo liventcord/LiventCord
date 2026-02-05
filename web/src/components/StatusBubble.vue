@@ -46,11 +46,11 @@ export default {
         ? "profile-bubble"
         : "status-bubble";
 
-      return [
-        baseClass,
-        props.isUserOnline ? "online" : null,
-        props.status === "typing" ? "typing" : props.status
-      ].filter(Boolean);
+      if (props.status === "typing") {
+        return [baseClass, "typing"];
+      }
+
+      return [baseClass, props.isUserOnline ? "online" : "offline"];
     });
 
     const computedOpacity = computed(() => {

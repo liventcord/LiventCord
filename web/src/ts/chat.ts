@@ -4,7 +4,6 @@ import {
   AttachmentWithMetaData,
   getMessageDate,
   getOldMessages,
-  handleStopTyping,
   Message,
   MessageReply,
   Metadata
@@ -85,6 +84,7 @@ import store from "../store.ts";
 import { isMediaPanelOpen } from "./panelHandler.ts";
 import { NewMessageResponseSelf } from "./apiEventManager.ts";
 import { readStatusManager } from "./readStatus.ts";
+import { handleStopTyping } from "./typing.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -1259,7 +1259,6 @@ function appendtoSelfSentMessages(temporaryId: string) {
 
 export function handleSelfSentMessage(data: NewMessageResponseSelf) {
   const { message } = data;
-  console.log("Handle self-sent message:", message);
 
   const foundIndex = selfSentMessages.findIndex(
     (m) => m.id === message.temporaryId
