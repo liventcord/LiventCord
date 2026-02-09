@@ -348,10 +348,11 @@ function initializeGuild() {
       openDm(initialFriendId);
     }, 0);
   }
-
-  apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
-    guildId: currentGuildId
-  });
+  if (currentGuildId) {
+    apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
+      guildId: currentGuildId
+    });
+  }
 }
 
 function processGuilds(

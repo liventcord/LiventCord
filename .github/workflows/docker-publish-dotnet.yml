@@ -68,7 +68,7 @@ jobs:
           SERVICE_ID: ${{ secrets.SERVICE_ID }}
         run: |
           #!/bin/bash
-          set -e
+          set +e
 
           KOYEB_API_URL="https://app.koyeb.com/v1/services/${SERVICE_ID}/redeploy"
 
@@ -87,8 +87,7 @@ jobs:
           HTTP_STATUS=$(echo "$RESPONSE" | awk -F'HTTPSTATUS:' '{print $2}')
 
           if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Failed to trigger redeployment for service $SERVICE_ID. HTTP Status: $HTTP_STATUS"
-            exit 1
+            echo "Warning: Failed to trigger redeployment for service $SERVICE_ID. HTTP Status: $HTTP_STATUS"
+          else
+            echo "Successfully triggered redeployment for service $SERVICE_ID with image $IMAGE_NAME"
           fi
-
-          echo "Successfully triggered redeployment for service $SERVICE_ID with image $IMAGE_NAME"

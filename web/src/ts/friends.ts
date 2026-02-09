@@ -102,13 +102,7 @@ class FriendsCache {
   setupDmFriends(friends: Record<string, Friend>) {
     this.dmFriends = friends;
     for (const friend of Object.values(friends)) {
-      userManager.addUser(
-        friend.userId,
-        friend.nickName,
-        friend.discriminator,
-        "",
-        false
-      );
+      userManager.addUserFriend(friend);
     }
   }
 
@@ -130,7 +124,6 @@ class FriendsCache {
         f.discriminator,
         f.profileVersion
       );
-      console.error(userManager.getUserProfileVersion(f.userId));
     });
     updateFriendsList(Object.values(this.friendsCache));
     requestAnimationFrame(() => {

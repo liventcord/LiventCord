@@ -1,7 +1,7 @@
 import { reactive } from "vue";
 
 import { getId, createEl, saveBooleanCookie } from "./utils.ts";
-import { isOnMePage } from "./router.ts";
+import { isOnGuild, isOnMePage } from "./router.ts";
 import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
@@ -120,7 +120,11 @@ export function setUsersList(
   updateMediaPanelPosition();
   handleResize();
   handleResizeWidth();
-  fetchCurrentAttachments();
+  if (isOnGuild) {
+    fetchCurrentAttachments();
+  } else {
+    // TODO: Implement dm attachments display support
+  }
 }
 export function updateDmFriendList(friendId: string, friendNick: string) {
   const usersData = [

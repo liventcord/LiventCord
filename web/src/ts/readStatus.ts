@@ -28,12 +28,15 @@ class ReadStatusManager {
     });
 
     apiClient.on(EventType.READ_GUILD, (data: any) => {
+      if (!data.guildId) {
+        console.error("No guild found on read");
+        return;
+      }
       store.commit("setGuildRead", { guildId: data.guildId });
       apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
         guildId: data.guildId
       });
     });
-
     apiClient.on(EventType.GET_CHANNEL_READ_STATE, (data: any) => {
       store.commit("setChannelRead", {
         channelId: data.channelId,

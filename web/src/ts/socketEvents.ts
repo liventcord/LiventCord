@@ -240,11 +240,10 @@ type ExistingUserList = {
 export class WebSocketClient extends WebSocketClientBase {
   private eventHandlers: Record<string, EventHandler[]> = {};
   private static instance: WebSocketClient | null = null;
-  private statusRequestQueue: Set<string> = new Set();
-  private statusRequestTimer: any = null;
   private constructor(url: string = "") {
     super(url);
   }
+
   protected getSocketPath() {
     return "/ws";
   }
@@ -284,6 +283,16 @@ export class WebSocketClient extends WebSocketClientBase {
     this.sendRaw({ event_type: eventType, payload: data });
   }
 
+  private isSocketOpen(): boolean {
+    return !!this.socket && this.socket.readyState === WebSocket.OPEN;
+  }
+
+  private flushPendingRequests() {
+    const requests = [...this.pendingRequests];
+    this.pendingRequests = [];
+    requests.forEach((fn) => fn());
+  }
+
   getUserStatus(userIds: string[]) {
     if (
       userIds.length < 1 ||
@@ -293,44 +302,39 @@ export class WebSocketClient extends WebSocketClientBase {
     }
 
     userIds.forEach((userId) => {
-      if (!this.inProgressRequests.has(userId)) {
-        this.statusRequestQueue.add(userId);
+      if (this.inProgressRequests.has(userId)) return;
+      this.inProgressRequests.add(userId);
+
+      const sendRequest = () => {
+        this.send(SocketEvent.GET_USER_STATUS, { user_ids: [userId] });
+        this.inProgressRequests.delete(userId);
+      };
+
+      if (!this.isSocketOpen()) {
+        if (
+          !this.pendingRequests.some((fn) => fn.toString().includes(userId))
+        ) {
+          this.pendingRequests.push(sendRequest);
+        }
+        return;
       }
+
+      sendRequest();
     });
-
-    if (this.statusRequestTimer) {
-      clearTimeout(this.statusRequestTimer);
-    }
-
-    this.statusRequestTimer = setTimeout(() => {
-      this.flushStatusRequests();
-    }, 50);
   }
 
-  private flushStatusRequests() {
-    if (this.statusRequestQueue.size === 0) return;
-
-    const userIdsToFetch = Array.from(this.statusRequestQueue);
-    this.statusRequestQueue.clear();
-
-    userIdsToFetch.forEach((id) => this.inProgressRequests.add(id));
-
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      this.pendingRequests.push(() => this.getUserStatus(userIdsToFetch));
-      return;
-    }
-
-    console.log(
-      `Fetching status for ${userIdsToFetch.length} users in one request`
-    );
-    this.send(SocketEvent.GET_USER_STATUS, { user_ids: userIdsToFetch });
-  }
-
-  onUserIdAvailable() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.getUserStatus([currentUserId]);
+  onUserIdAvailable(currentUserId: string) {
+    const request = () => this.getUserStatus([currentUserId]);
+    if (this.isSocketOpen()) {
+      request();
     } else {
-      this.pendingRequests.push(() => this.getUserStatus([currentUserId]));
+      if (
+        !this.pendingRequests.some((fn) =>
+          fn.toString().includes(currentUserId)
+        )
+      ) {
+        this.pendingRequests.push(request);
+      }
     }
   }
 
@@ -350,6 +354,10 @@ export class WebSocketClient extends WebSocketClientBase {
       routeType: guildId ? "guild" : "dm"
     });
     userStatus.updateUserOnlineStatus(currentUserId, "", false);
+  }
+
+  protected onOpen() {
+    this.flushPendingRequests();
   }
 }
 
@@ -632,10 +640,12 @@ function handleWsJoined(data: JoinVoiceResponse) {
   const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
   console.log(soundInfoIcon, soundInfoIcon.textContent);
   soundInfoIcon.textContent = `${currentChannelName} / ${guildCache.currentGuildName}`;
-
-  const buttonContainer = getChannelsUl().querySelector(
+  const ul = getChannelsUl();
+  if (!ul) return;
+  const buttonContainer = ul.querySelector(
     `li[id="${currentVoiceChannelId}"]`
   ) as HTMLElement;
+  if (!buttonContainer) return;
   const channelSpan = buttonContainer.querySelector(
     ".channelSpan"
   ) as HTMLElement;
@@ -838,22 +848,39 @@ function processDeleteMessage(
 ) {
   const messageElement = chatContainer.querySelector(
     `[data-message-id="${messageId}"]`
-  ) as HTMLElement;
-  const msgDateElement = messageElement?.dataset.date;
-  deleteLocalMessage(messageId, currentGuildId, channelId, isDm);
-  cacheInterface.removeMessage(messageId, channelId, currentGuildId);
+  ) as HTMLElement | null;
+
+  if (!messageElement) {
+    console.warn(`Message element not found for ID: ${messageId}`);
+  }
+
+  const msgDateElement = messageElement?.dataset.date ?? msgDate;
+
+  if (isDm) {
+    deleteLocalMessage(messageId, "", channelId, true);
+    cacheInterface.removeMessage(messageId, channelId, "");
+  } else {
+    deleteLocalMessage(messageId, currentGuildId, channelId, false);
+    cacheInterface.removeMessage(messageId, channelId, currentGuildId);
+  }
 
   if (msgDateElement && typeof lastMessageDate === "number") {
     const msgDateTimestamp = new Date(msgDateElement).setHours(0, 0, 0, 0);
     if (lastMessageDate === msgDateTimestamp) {
-      setLastMessageDate(
-        new Date(new Date(getLastSecondMessageDate()).setHours(0, 0, 0, 0))
-      );
+      const lastSecondDate = getLastSecondMessageDate();
+      if (lastSecondDate) {
+        setLastMessageDate(
+          new Date(new Date(lastSecondDate).setHours(0, 0, 0, 0))
+        );
+      }
     }
   }
 
-  if (bottomestChatDateStr === msgDateElement) {
-    setBottomestChatDateStr(getLastSecondMessageDate());
+  if (msgDateElement && bottomestChatDateStr === msgDateElement) {
+    const lastSecondDate = getLastSecondMessageDate();
+    if (lastSecondDate) {
+      setBottomestChatDateStr(lastSecondDate);
+    }
   }
 }
 

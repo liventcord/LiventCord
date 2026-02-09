@@ -6,6 +6,7 @@ import { alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
 import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
+import { Friend } from "./friends.ts";
 
 export const DEFAULT_DISCRIMINATOR = "0000";
 
@@ -205,24 +206,46 @@ class UserManager {
   isUserBlocked(userId: string): boolean {
     return this.userNames[userId]?.isBlocked ?? false;
   }
-
+  addUserFriend(friend: Friend) {
+    this.addUser(
+      friend.userId,
+      friend.nickName,
+      friend.discriminator,
+      friend.profileVersion,
+      false
+    );
+  }
   addUser(
     userId: string,
     nick: string = deletedUser,
     discriminator: string = "",
-    profileVersion: string = "",
+    profileVersion?: string,
     isBlocked?: boolean
   ) {
+    const existing = this.userNames[userId] || {};
+
+    if (!profileVersion && existing.profileVersion) {
+      console.error(
+        `Warning: profileVersion for user ${userId} exists but new data did not provide it`
+      );
+    }
+
     this.userNames[userId] = {
-      nickName: nick,
-      discriminator,
-      profileVersion,
-      isBlocked: Boolean(isBlocked),
       userId,
-      status: userId === currentUserId ? "online" : "offline",
-      description: ""
+      nickName:
+        nick !== deletedUser ? nick : (existing.nickName ?? deletedUser),
+      discriminator: discriminator || existing.discriminator || "",
+      profileVersion: profileVersion || existing.profileVersion || "",
+      isBlocked:
+        isBlocked !== undefined
+          ? Boolean(isBlocked)
+          : (existing.isBlocked ?? false),
+      status:
+        existing.status || (userId === currentUserId ? "online" : "offline"),
+      description: existing.description || ""
     };
   }
+
   async isNotOffline(userId: string): Promise<boolean> {
     const currentStatus = this.userNames[userId]?.status;
     if (currentStatus) {
@@ -303,7 +326,7 @@ export function initializeProfile() {
     initialState.user.profileVersion,
     false
   );
-  socketClient.onUserIdAvailable();
+  socketClient.onUserIdAvailable(currentUserId);
 
   currentUserNick = initialState.user.nickname;
   currentDiscriminator = initialState.user.discriminator;

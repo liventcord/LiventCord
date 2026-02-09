@@ -1595,12 +1595,14 @@ function fetchReplies(
     .map((msg) => msg.replyToId);
 
   if (replyIds.length > 0) {
-    const data = {
-      ids: replyIds,
-      guildId: currentGuildId,
-      channelId: guildCache.currentChannelId
-    };
-    apiClient.send(EventType.GET_BULK_REPLY, data);
+    console.error("Unimplemented reply logic");
+    //TODO: Implement reply fetch route on backend
+    // const data = {
+    //   ids: replyIds,
+    //   guildId: currentGuildId,
+    //   channelId: guildCache.currentChannelId
+    // };
+    // apiClient.send(EventType.GET_BULK_REPLY, data);
   }
 }
 
