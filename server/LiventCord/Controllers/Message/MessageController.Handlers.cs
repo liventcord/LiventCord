@@ -377,6 +377,7 @@ namespace LiventCord.Controllers
                 return StatusCode(500, $"An error occurred while searching: {ex.Message}");
             }
         }
+
         [NonAction]
         private async Task<List<Message>> GetMessages(
             string? date = null,
@@ -393,7 +394,19 @@ namespace LiventCord.Controllers
                 parsedDate = tempParsedDate.ToUniversalTime();
             }
 
-            var cacheKey = $"{guildId}:{channelId}?date={date}&messageId={messageId}";
+            string? resolvedChannelId = channelId;
+
+            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
+            {
+                resolvedChannelId = ConstructDmId(userId, friendId);
+            }
+
+            if (string.IsNullOrEmpty(resolvedChannelId))
+            {
+                return new List<Message>();
+            }
+
+            var cacheKey = $"{guildId}:{resolvedChannelId}?date={date}&messageId={messageId}";
 
             var cached = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
             if (cached != null)
@@ -406,7 +419,6 @@ namespace LiventCord.Controllers
                 }
                 catch
                 {
-
                 }
             }
 
@@ -418,15 +430,7 @@ namespace LiventCord.Controllers
             if (parsedDate != null)
                 query = query.Where(m => m.Date < parsedDate);
 
-            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
-            {
-                var constructedFriendUserChannel = ConstructDmId(userId, friendId);
-                query = query.Where(m => m.ChannelId == constructedFriendUserChannel);
-            }
-            else if (!string.IsNullOrEmpty(channelId))
-            {
-                query = query.Where(m => m.ChannelId == channelId);
-            }
+            query = query.Where(m => m.ChannelId == resolvedChannelId);
 
             if (!string.IsNullOrEmpty(guildId))
                 query = query.Where(m => m.Channel.GuildId == guildId);
@@ -472,8 +476,8 @@ namespace LiventCord.Controllers
                     _cacheDbContext.CachedMessages.Add(new CachedMessage
                     {
                         CacheKey = cacheKey,
-                        GuildId = guildId!,
-                        ChannelId = channelId!,
+                        GuildId = guildId ?? string.Empty,
+                        ChannelId = resolvedChannelId,
                         JsonData = serialized,
                         CachedAt = DateTime.UtcNow
                     });
@@ -487,6 +491,7 @@ namespace LiventCord.Controllers
 
             return messagesList;
         }
+
         [NonAction]
         public async Task<IActionResult> GetAttachmentsAsync(
             [IdLengthValidation][FromRoute] string guildId,

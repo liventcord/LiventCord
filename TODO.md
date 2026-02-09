@@ -25,3 +25,4 @@
 - HTTP URL appears duplicated when a message like "http://example.com/" is sent
 - Added dm user list only gets displayed for first dm sender, other percipient throws 409 conflict error
 - Dm container bubbles do not show accurate online status of user
+- Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
