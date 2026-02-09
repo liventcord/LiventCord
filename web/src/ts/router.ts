@@ -32,6 +32,7 @@ class Router {
       this.init();
     }, 0);
   }
+
   public ID_LENGTH = 19;
 
   isPathnameCorrect(url: string) {
@@ -53,10 +54,15 @@ class Router {
       }
     });
 
+    const { pathStr, parts } = this.parsePath();
+    if (pathStr.startsWith("/join-guild/")) {
+      this.processNavigation(pathStr, parts);
+      return;
+    }
+
     if (!window.location.hash) {
-      window.location.hash = "/channels/@me";
+      this.updateHashRoot("/channels/@me", true);
     } else {
-      const { pathStr, parts } = this.parsePath();
       this.processNavigation(pathStr, parts);
     }
   }
@@ -72,7 +78,7 @@ class Router {
       const targetUrl = window.location.href;
       if (this.guardUnsavedChanges(targetUrl)) return;
 
-      this.lastKnownUrl = window.location.pathname;
+      this.lastKnownUrl = window.location.hash;
 
       const { pathStr, parts } = this.parsePath();
       this.processNavigation(pathStr, parts);
@@ -94,7 +100,7 @@ class Router {
   parsePath() {
     const raw = window.location.hash.startsWith("#")
       ? window.location.hash.slice(1)
-      : window.location.pathname;
+      : "/channels/@me";
 
     const pathStr = raw.startsWith("/") ? raw : `/${raw}`;
     const parts = pathStr.split("/").filter(Boolean);
@@ -103,12 +109,14 @@ class Router {
   }
 
   processNavigation(pathStr: string, parts: string[]) {
-    if (pathStr === "/channels/@me") {
-      loadDmHome(false);
+    if (pathStr.startsWith("/join-guild/")) {
+      const inviteId = parts[1];
+      if (inviteId) showGuildPop(inviteId);
+      this.updateHashRoot("/channels/@me");
       return;
     }
 
-    if (pathStr === "/join-guild") {
+    if (pathStr === "/channels/@me") {
       loadDmHome(false);
       return;
     }
@@ -129,17 +137,21 @@ class Router {
     initialiseLoginPage();
     this.switchToLogin();
   }
+
   closeLogin() {
     disableElement("login-panel");
   }
+
   switchToRegister() {
     disableElement("login-form");
     enableElement("register-form");
   }
+
   switchToLogin() {
     enableElement("login-form");
     disableElement("register-form");
   }
+
   async logOutApp() {
     apiClient.clearToken();
     window.location.reload();
@@ -148,15 +160,17 @@ class Router {
   isIdDefined(id: string) {
     return id;
   }
+
   constructAppPage(guildId: string, channelId: string) {
     return `/channels/${guildId}/${channelId}`;
   }
+
   constructDmPage(channelId: string) {
     return `/channels/@me/${channelId}`;
   }
+
   constructAbsoluteAppPage(guildId: string, channelId: string) {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}/#/channels/${guildId}/${channelId}`;
+    return `/#/channels/${guildId}/${channelId}`;
   }
 
   validateRoute() {
@@ -167,8 +181,6 @@ class Router {
     )
       .concat([undefined, undefined, undefined, undefined])
       .slice(0, 4);
-
-    if (inviteId) showGuildPop(inviteId);
 
     if (
       (guildId && !this.isIdDefined(guildId)) ||
@@ -228,20 +240,20 @@ class Router {
   switchToDm(friendId: string) {
     const url = this.constructDmPage(friendId);
     if (url !== window.location.hash.slice(1)) {
-      window.location.hash = url;
+      this.updateHashRoot(url);
     }
   }
 
   switchToGuild(guildId: string, channelId: string) {
     const url = this.constructAppPage(guildId, channelId);
     if (url !== window.location.hash.slice(1)) {
-      window.location.hash = url;
+      this.updateHashRoot(url);
     }
   }
 
   resetRoute() {
     console.error("Resetting route");
-    window.location.hash = "/channels/@me";
+    this.updateHashRoot("/channels/@me", true);
   }
 
   async openLink(link: string, imageElement?: HTMLImageElement) {
@@ -277,6 +289,18 @@ class Router {
     } catch (error) {
       console.error("Failed to download image:", error);
     }
+  }
+
+  updateHashRoot(path: string, replace = false) {
+    const clean = path.startsWith("/") ? path.slice(1) : path;
+    const newUrl = `/#/${clean}`;
+    if (replace) {
+      history.replaceState(null, "", newUrl);
+    } else {
+      history.pushState(null, "", newUrl);
+    }
+    const { pathStr, parts } = this.parsePath();
+    this.processNavigation(pathStr, parts);
   }
 }
 

@@ -15,6 +15,8 @@
 - Implement dm attachments display support
 - Add mention/ping notifications so messages show a red circle
 - Make the server parse and save mentions for messages on submit/edit in the database
+- Add invite friends ui on invite people popup
+- Inviting should be allowed on new guild members
 
 ## Bug fixes
 
@@ -26,3 +28,4 @@
 - Added dm user list only gets displayed for first dm sender, other percipient throws 409 conflict error
 - Dm container bubbles do not show accurate online status of user
 - Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
+- Guild context menu does not work if stayed on me page

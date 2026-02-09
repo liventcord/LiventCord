@@ -936,8 +936,7 @@ export function createInviteUsersPop() {
   const sendText = translations.getTranslation("invites-guild-detail");
   const invitelink = `${window.location.protocol}//${window.location.hostname}${
     window.location.port ? `:${window.location.port}` : ""
-  }/join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
-
+  }/LiventCord/app/#join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
   const inviteTitle = createEl("p", {
     id: "invite-users-title",
     textContent: title
@@ -1409,10 +1408,10 @@ function ChangePopUpToGuildJoining(
     hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
       window.location.port ? `:${window.location.port}` : ""
-    }/join-guild/hTKzmak<br>
+    }/#join-guild/hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
       window.location.port ? `:${window.location.port}` : ""
-    }/join-guild/cool-people
+    }/#join-guild/cool-people
     `;
   const guildNameDescriptionContent = createEl("h1", {
     innerHTML: descriptionText,
