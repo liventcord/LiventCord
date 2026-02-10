@@ -1,11 +1,19 @@
 name: Run Cypress Tests
 
-on: []
+on:
+  push:
+    paths:
+      - 'web/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'web/**'
+  workflow_dispatch:
 
 jobs:
   test:
+    if: false
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
