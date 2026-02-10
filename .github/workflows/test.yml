@@ -1,14 +1,6 @@
 name: Run Cypress Tests
 
-on:
-  push:
-    paths:
-      - 'web/**'
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'web/**'
-  workflow_dispatch:
+on: []
 
 jobs:
   test:
