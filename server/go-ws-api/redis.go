@@ -163,7 +163,9 @@ func parseRedisURL(redisURL string) (*redis.Options, error) {
 
 	options.Addr = parsedURL.Host
 	if parsedURL.Scheme == "rediss" {
-		options.TLSConfig = &tls.Config{}
+		options.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS13,
+		}
 	}
 
 	if parsedURL.User != nil {
@@ -192,8 +194,6 @@ func logErr(context string, err error) {
 		fmt.Printf("%s: %v\n", context, err)
 	}
 }
-
-// Local state persistence
 
 const lastIDFile = "last_redis_id.txt"
 

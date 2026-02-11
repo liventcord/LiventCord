@@ -279,7 +279,8 @@ def crawl_images_r(query: str, number: int) -> list:
                         img_class = img.get_attribute("class")
                         if img_class and "webm-thumb" in img_class:  # video
                             processed_url = (
-                                img_url.replace(
+                                img_url
+                                .replace(
                                     f"https://wimg.{DOMAIN}/thumbnails/",
                                     f"https://ws-cdn-video.{DOMAIN}//images/",
                                 )

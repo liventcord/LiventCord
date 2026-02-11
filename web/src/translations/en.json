@@ -283,7 +283,8 @@
     "link-embed-file": "link, embed or file",
     "sound-connection-established": "Sound Connection Established",
     "sound-connection-failed": "Sound Connection Failed",
-    "connecting": "Connecting..."
+    "connecting": "Connecting...",
+    "no-messages-found": "No messages found."
   },
   "errorTranslations": {
     "LOGIN_ERROR_TITLE": "Login Error",

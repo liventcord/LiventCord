@@ -19,6 +19,9 @@ FROM alpine:latest
 WORKDIR /usr/local/bin
 COPY --from=builder /usr/local/bin/app .
 
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 CMD ["app"]
 
 ARG DotnetApiUrl http://localhost:5005

@@ -186,7 +186,6 @@ export function initializeApp() {
 }
 
 export let isDomLoaded = false;
-let cachedFriMenuContent;
 export let initialState: InitialState;
 
 export function initialiseState(data: InitialStateData): void {
@@ -572,10 +571,6 @@ export function loadDmHome(isChangingUrl = true): void {
     enableElement("guild-container", false, true);
   }
 
-  const chanList = getId("channel-list") as HTMLElement;
-  if (cachedFriMenuContent && chanList) {
-    chanList.innerHTML = cachedFriMenuContent;
-  }
   disableElement("search-messages-root");
 
   handleResize();

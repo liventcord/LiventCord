@@ -331,10 +331,8 @@ function initContainer(containerId: string, title: string): HTMLElement | null {
   return container;
 }
 
-function showNoMessages(
-  container: HTMLElement,
-  msg: string = "No messages found."
-) {
+function showNoMessages(container: HTMLElement) {
+  const msg = translations.getTranslation("no-messages-found");
   container.innerHTML += `<h3>${msg}</h3>`;
 }
 

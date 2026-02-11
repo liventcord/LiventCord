@@ -8,7 +8,7 @@ import (
 )
 
 func buildSignalData(p DataPayload) []byte {
-	data := map[string]interface{}{"type": p.Type}
+	data := map[string]any{"type": p.Type}
 
 	addOptionalJSON(p.SDP, "sdp", data)
 	addOptionalJSON(p.Candidate, "candidate", data)
@@ -21,11 +21,11 @@ func buildSignalData(p DataPayload) []byte {
 	return out
 }
 
-func addOptionalJSON(raw json.RawMessage, key string, target map[string]interface{}) {
+func addOptionalJSON(raw json.RawMessage, key string, target map[string]any) {
 	if raw == nil {
 		return
 	}
-	var decoded interface{}
+	var decoded map[string]any
 	if err := json.Unmarshal(raw, &decoded); err == nil {
 		target[key] = decoded
 	}
@@ -45,7 +45,7 @@ func sendEnvelope(client *VcClient, event string, data interface{}) {
 }
 
 func forwardData(fromID, targetID string, signalDataJSON []byte) {
-	var signalData map[string]interface{}
+	var signalData map[string]any
 	if err := json.Unmarshal(signalDataJSON, &signalData); err != nil {
 		log.Println("[WS] Failed to unmarshal signalData for adding senderId:", err)
 		return

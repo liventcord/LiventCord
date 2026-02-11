@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/base64"
 	"os"
 	"path/filepath"
@@ -61,7 +61,7 @@ func (c *MediaProxyController) enforceStorageLimit() {
 }
 
 func (c *MediaProxyController) getCacheFilePath(urlStr string) string {
-	h := md5.Sum([]byte(urlStr))
+	h := sha256.Sum256([]byte(urlStr))
 	encoded := base64.RawURLEncoding.EncodeToString(h[:])
 	return filepath.Join(c.cacheDirectory, strings.ToLower(encoded))
 }

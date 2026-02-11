@@ -3,6 +3,8 @@ import globals from "globals";
 import typescriptParser from "@typescript-eslint/parser";
 
 import typescriptPlugin from "@typescript-eslint/eslint-plugin";
+import securityPlugin from "eslint-plugin-security";
+import noUnsanitized from "eslint-plugin-no-unsanitized";
 
 export default [
   {
@@ -20,7 +22,9 @@ export default [
     },
     plugins: {
       import: importPlugin,
-      "@typescript-eslint": typescriptPlugin
+      "@typescript-eslint": typescriptPlugin,
+      security: securityPlugin,
+      "no-unsanitized": noUnsanitized
     },
     files: ["**/*.ts"],
     rules: {
@@ -50,7 +54,13 @@ export default [
         "warn",
         { vars: "all", args: "none", ignoreRestSiblings: true }
       ],
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
+      "security/detect-object-injection": "off",
+      "security/detect-non-literal-fs-filename": "warn",
+      "security/detect-non-literal-regexp": "warn",
+      "security/detect-eval-with-expression": "warn",
+      "no-unsanitized/method": "warn",
+      "no-unsanitized/property": "warn"
     }
   }
 ];

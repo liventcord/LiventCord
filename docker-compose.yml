@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build:
@@ -40,8 +38,11 @@ services:
 
   redis:
     image: redis:latest
+    read_only: true
     ports:
       - "6379:6379"
+    security_opt:
+      - no-new-privileges:true
     networks:
       - shared_network
     extra_hosts:
