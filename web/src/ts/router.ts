@@ -171,8 +171,8 @@ class Router {
     return `${this.ROUTES.CHANNELS}${guildId}/${channelId}`;
   }
 
-  constructDmPage(channelId: string) {
-    return `${this.ROUTES.CHANNELS_ME}${channelId}`;
+  constructDmPage(friendId: string) {
+    return `${this.ROUTES.CHANNELS_ME}/${friendId}`;
   }
 
   constructAbsoluteAppPage(guildId: string, channelId: string) {

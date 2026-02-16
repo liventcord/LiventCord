@@ -1222,10 +1222,11 @@ export function insertHTML(html: string) {
 }
 
 export function getMediaBaseURL() {
-  let mediaHostname = initialState.mediaWorkerUrl;
-  if (!mediaHostname) mediaHostname = apiClient.getBackendUrl();
+  const mediaHostname =
+    initialState?.mediaWorkerUrl ?? apiClient.getBackendUrl();
   return mediaHostname;
 }
+
 export function getAttachmentUrl(file: Attachment) {
   const isTenor = isTenorURL(file.proxyUrl);
   const mediaHostname = getMediaBaseURL();
