@@ -50,7 +50,6 @@ import {
 } from "./app.ts";
 import {
   currentUserId,
-  currentUserNick,
   DEFAULT_DISCRIMINATOR,
   deletedUser,
   Member,
@@ -73,10 +72,7 @@ import { PermissionsRecord, updatePermissions } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
-import {
-  handleDeleteMessageEmit,
-  handleDeleteMessageResponse
-} from "./socketEvents.ts";
+import { DeleteMessageResponse, handleDeleteMessage } from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
 import { createFireWorks } from "./extras.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
@@ -124,7 +120,7 @@ apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
   setLastConfirmedProfileImage();
   userManager.setProfileVersion(currentUserId, data.profileVersion);
   initialState.user.profileVersion = data.profileVersion;
-  refreshUserProfile(currentUserId, currentUserNick);
+  refreshUserProfile(currentUserId);
 });
 function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
   updatePermissions(guild.guildId, permissions);
@@ -235,12 +231,11 @@ apiClient.on(EventType.DELETE_CHANNEL, (data) => {
   handleChannelDelete(data);
 });
 
-apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data) => {
-  handleDeleteMessageEmit(data, false);
+apiClient.on(EventType.DELETE_MESSAGE_DM, (data: DeleteMessageResponse) => {
+  handleDeleteMessage(data.messageId, data.channelId, undefined, true);
 });
-
-apiClient.on(EventType.DELETE_MESSAGE_DM, (data) => {
-  handleDeleteMessageResponse(data, true);
+apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data: DeleteMessageResponse) => {
+  handleDeleteMessage(data.messageId, data.channelId, undefined, true);
 });
 
 interface BulkReplies {

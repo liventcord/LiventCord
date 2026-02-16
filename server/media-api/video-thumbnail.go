@@ -25,7 +25,7 @@ var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
-	CLOUDFLARE_MEDIA_WORKER_URL = os.Getenv("CLOUDFLARE_MEDIA_WORKER_URL")
+	CLOUDFLARE_MEDIA_WORKER_URL = os.Getenv("CloudflareMediaWorkerUrl")
 	if CLOUDFLARE_MEDIA_WORKER_URL == "" {
 		panic("CLOUDFLARE_MEDIA_WORKER_URL environment variable not set")
 	}

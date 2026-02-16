@@ -18,6 +18,7 @@ public static class FileDecompressor
     }
 }
 
+
 public static class FileCompressor
 {
     public static byte[] CompressToGzip(byte[] fileContent)
@@ -30,8 +31,19 @@ public static class FileCompressor
 
         return compressedStream.ToArray();
     }
-}
 
+    public static bool ShouldCompress(string extension)
+    {
+        return extension switch
+        {
+            ".txt" or ".html" or ".css" or ".xml" or ".json" or ".csv" or ".log" or ".md" or ".rtf" or
+            ".yml" or ".yaml" or ".toml" or ".conf" or ".ini" or ".php" or ".js" or ".ts" or ".java" or
+            ".py" or ".rb" or ".go" or ".cpp" or ".h" or ".swift" or ".dart" or ".sql" or ".db" or
+            ".bak" or ".tar" or ".psd" or ".ai" => true,
+            _ => false
+        };
+    }
+}
 namespace LiventCord.Controllers
 {
     [ApiController]
@@ -43,18 +55,21 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly ILogger<FileController> _logger;
         private readonly ICacheService _cacheService;
+        private readonly IFileCacheService _fileCacheService;
 
         public FileController(
             AppDbContext context,
             ILogger<FileController> logger,
             PermissionsController permissionsController,
-            ICacheService cacheService
+            ICacheService cacheService,
+            IFileCacheService fileCacheService
         )
         {
             _context = context;
             _logger = logger;
             _permissionsController = permissionsController;
             _cacheService = cacheService;
+            _fileCacheService = fileCacheService;
         }
 
         [HttpPost("profile")]
@@ -64,20 +79,14 @@ namespace LiventCord.Controllers
         )
         {
             if (!IsFileSizeValid(request.Photo))
-            {
-                return BadRequest(
-                    new { Type = "error", Message = "The file exceeds the maximum size limit." }
-                );
-            }
+                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
 
             try
             {
-                var fileId = await UploadFileInternal(request.Photo, UserId!, false, false, null);
+                var profileVersion = await UploadFileInternalAsync(request.Photo, UserId!, false, false, null);
+
+                _fileCacheService.ClearProfileFileCache(UserId!);
                 _cacheService.InvalidateCache(UserId!);
-                var profileVersion = await _context
-                    .ProfileFiles.Where(g => g.UserId == UserId)
-                    .Select(p => p.Version)
-                    .FirstOrDefaultAsync();
 
                 return Ok(new { profileVersion });
             }
@@ -111,7 +120,7 @@ namespace LiventCord.Controllers
             formFile.Headers = new HeaderDictionary();
             formFile.ContentType = "image/jpeg";
 
-            var uploadedImageUrl = await UploadFileInternal(formFile, userId, false, false, null);
+            var uploadedImageUrl = await UploadFileInternalAsync(formFile, userId, false, false, null);
             _logger.LogInformation($"Image uploaded successfully. URL: {uploadedImageUrl}");
             _cacheService.InvalidateCache(UserId!);
 
@@ -120,43 +129,67 @@ namespace LiventCord.Controllers
 
         [HttpPost("guild")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadGuildImage(
-            [FromForm] GuildImageUploadRequest request
-        )
+        public async Task<IActionResult> UploadGuildImage([FromForm] GuildImageUploadRequest request)
         {
             if (!await _permissionsController.CanManageGuild(UserId!, request.GuildId))
                 return Forbid();
 
             if (!IsFileSizeValid(request.Photo))
-            {
-                return BadRequest(
-                    new { Type = "error", Message = "The file exceeds the maximum size limit." }
-                );
-            }
+                return BadRequest(new { Type = "error", Message = "The file exceeds the maximum size limit." });
 
             try
             {
-                var fileId = await UploadFileInternal(
-                    request.Photo,
-                    UserId!,
-                    false,
-                    false,
+                var extension = Path.GetExtension(request.Photo.FileName).ToLowerInvariant();
+                if (string.IsNullOrEmpty(extension) && request.Photo.ContentType.StartsWith("image/"))
+                {
+                    extension = DetermineImageExtension(request.Photo.ContentType);
+                }
+
+                using var memoryStream = new MemoryStream();
+                await request.Photo.CopyToAsync(memoryStream);
+                var content = memoryStream.ToArray();
+
+                string sanitizedFileName = Utils.SanitizeFileName(request.Photo.FileName);
+                if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
+                    sanitizedFileName += extension;
+
+                if (FileCompressor.ShouldCompress(extension))
+                {
+                    content = FileCompressor.CompressToGzip(content);
+                    sanitizedFileName += ".gz";
+                    extension = ".gz";
+                }
+
+                var newGuildFile = new GuildFile(
+                    Utils.CreateRandomId(),
+                    sanitizedFileName,
+                    content,
+                    extension,
                     request.GuildId,
-                    null
-                );
+                    UserId!
+                )
+                {
+                    Version = Guid.NewGuid().ToString(),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _context.GuildFiles.AddAsync(newGuildFile);
+                await _context.SaveChangesAsync();
+
+                await SetIsUploadedGuildImgAsync(request.GuildId);
+
+                _fileCacheService.ClearGuildFileCache(request.GuildId);
                 _cacheService.InvalidateCache(UserId!);
-                var guildVersion = await _context
-                    .GuildFiles.Where(g => g.GuildId == request.GuildId)
-                    .Select(g => g.Version)
-                    .FirstOrDefaultAsync();
-                return Ok(new { request.GuildId, guildVersion });
+
+                return Ok(new { request.GuildId, guildVersion = newGuildFile.Version });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
-                return BadRequest(new { Type = "error" });
+                _logger.LogError(ex, "Failed to upload guild image.");
+                return BadRequest(new { Type = "error", Message = ex.Message });
             }
         }
+
 
         [NonAction]
         public async Task<IActionResult> UploadImageOnGuildCreation(
@@ -174,7 +207,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                string fileId = await UploadFileInternal(
+                string fileId = await UploadFileInternalAsync(
                     photo,
                     userId,
                     false,
@@ -197,220 +230,173 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task<string> UploadFileInternal(
-            IFormFile file,
-            string userId,
-            bool isAttachment = false,
-            bool isEmoji = false,
-            string? guildId = null,
-            string? channelId = null
-        )
+        public async Task<string> UploadFileInternalAsync(
+                   IFormFile file,
+                   string userId,
+                   bool isAttachment = false,
+                   bool isEmoji = false,
+                   string? guildId = null,
+                   string? channelId = null
+               )
         {
             if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogWarning("UserId is null for this request");
                 throw new UnauthorizedAccessException("User not authorized.");
-            }
 
             if (file == null || file.Length == 0)
-            {
-                _logger.LogWarning("No file uploaded.");
                 throw new ArgumentException("No file uploaded.");
-            }
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
             if (string.IsNullOrEmpty(extension) && file.ContentType.StartsWith("image/"))
             {
-                string contentType = file.ContentType.ToLowerInvariant();
-                extension = contentType switch
-                {
-                    "image/jpeg" => ".jpg",
-                    "image/png" => ".png",
-                    "image/gif" => ".gif",
-                    "image/webp" => ".webp",
-                    "image/svg+xml" => ".svg",
-                    "image/bmp" => ".bmp",
-                    "image/tiff" => ".tiff",
-                    _ => "",
-                };
+                extension = DetermineImageExtension(file.ContentType);
             }
 
             bool validExtension = FileExtensions.IsValidImageExtension(extension);
             bool isImageFile = file.ContentType.StartsWith("image/");
 
-            if (!isAttachment && (!validExtension || !isImageFile)) // Disallow non images outside attachment files
-            {
-                _logger.LogWarning(
-                    "Invalid file type uploaded. File name: {FileName}, Content type: {ContentType}, Extension: {Extension}",
-                    file.FileName,
-                    file.ContentType,
-                    extension
-                );
+            if (!isAttachment && (!validExtension || !isImageFile))
                 throw new ArgumentException("Invalid file type. Only images are allowed.");
-            }
-
-            _logger.LogInformation(
-                "Processing file upload. UserId: {UserId}, GuildId: {GuildId}, ChannelId: {ChannelId}",
-                userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""),
-                guildId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", ""),
-                channelId?.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", "")
-            );
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
             var content = memoryStream.ToArray();
-            var fileId = Utils.CreateRandomId();
 
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
-
             if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
-            {
-                sanitizedFileName = $"{sanitizedFileName}{extension}";
-            }
+                sanitizedFileName += extension;
 
-            bool shouldCompress = extension switch
-            {
-                ".txt"
-                or ".html"
-                or ".css"
-                or ".xml"
-                or ".json"
-                or ".csv"
-                or ".log"
-                or ".md"
-                or ".rtf"
-                or ".yml"
-                or ".yaml"
-                or ".toml"
-                or ".conf"
-                or ".ini"
-                or ".php"
-                or ".js"
-                or ".ts"
-                or ".java"
-                or ".py"
-                or ".rb"
-                or ".go"
-                or ".cpp"
-                or ".h"
-                or ".swift"
-                or ".dart" => true,
-
-                ".sql" or ".db" or ".bak" => true,
-
-                ".tar" => true,
-
-                ".psd" or ".ai" => true,
-
-                _ => false,
-            };
-
-            if (shouldCompress)
+            if (FileCompressor.ShouldCompress(extension))
             {
                 content = FileCompressor.CompressToGzip(content);
+                sanitizedFileName += ".gz";
                 extension = ".gz";
             }
 
+            FileBase savedFile = CreateFileEntity(
+                sanitizedFileName,
+                content,
+                extension,
+                userId,
+                guildId,
+                channelId,
+                isEmoji,
+                isAttachment
+            );
+
+            if (savedFile is GuildFile && !string.IsNullOrEmpty(guildId) && string.IsNullOrEmpty(channelId) && !isEmoji)
+            {
+                await SetIsUploadedGuildImgAsync(guildId);
+            }
+
+            return ExtractFileIdentifier(savedFile);
+        }
+
+
+        private string DetermineImageExtension(string contentType)
+        {
+            return contentType.ToLowerInvariant() switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                "image/svg+xml" => ".svg",
+                "image/bmp" => ".bmp",
+                "image/tiff" => ".tiff",
+                _ => ""
+            };
+        }
+
+        private FileBase CreateFileEntity(
+            string fileName,
+            byte[] content,
+            string extension,
+            string userId,
+            string? guildId,
+            string? channelId,
+            bool isEmoji,
+            bool isAttachment
+        )
+        {
             if (!string.IsNullOrEmpty(guildId))
             {
                 if (!string.IsNullOrEmpty(channelId))
                 {
-                    _logger.LogInformation(
-                        "Uploading attachment for ChannelId: {ChannelId} in GuildId: {GuildId}",
-                        channelId
-                            .Replace(Environment.NewLine, "")
-                            .Replace("\n", "")
-                            .Replace("\r", ""),
-                        guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", "")
+                    var attachment = new AttachmentFile(
+                        Utils.CreateRandomId(),
+                        fileName,
+                        content,
+                        extension,
+                        channelId,
+                        guildId,
+                        userId
                     );
-                    await SaveOrUpdateFile(
-                        new AttachmentFile(
-                            fileId,
-                            sanitizedFileName,
-                            content,
-                            extension,
-                            channelId,
-                            guildId,
-                            userId
-                        )
-                    );
+                    return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else if (isEmoji)
                 {
-                    _logger.LogInformation(
-                        "Uploading emoji file for GuildId: {GuildId}",
-                        guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", "")
+                    var emoji = new EmojiFile(
+                        Utils.CreateRandomId(),
+                        "emoji-" + Utils.CreateRandomId(),
+                        content,
+                        extension,
+                        guildId,
+                        userId
                     );
-                    await SaveFile(
-                        new EmojiFile(
-                            fileId,
-                            "emoji-" + fileId,
-                            content,
-                            extension,
-                            guildId,
-                            userId
-                        )
-                    );
+                    SaveFile(emoji).GetAwaiter().GetResult();
+                    return emoji;
                 }
                 else
                 {
-                    _logger.LogInformation(
-                        "Uploading guild file for GuildId: {GuildId}",
-                        guildId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", "")
+                    var guildFile = new GuildFile(
+                        Utils.CreateRandomId(),
+                        fileName,
+                        content,
+                        extension,
+                        guildId,
+                        userId
                     );
-                    await SaveOrUpdateFile(
-                        new GuildFile(
-                            fileId,
-                            sanitizedFileName,
-                            content,
-                            extension,
-                            guildId,
-                            userId
-                        )
-                    );
-                    await SetIsUploadedGuildImg(guildId);
+                    return SaveOrUpdateFile(guildFile).GetAwaiter().GetResult();
                 }
             }
             else
             {
                 if (!string.IsNullOrEmpty(channelId))
                 {
-                    _logger.LogInformation(
-                        "Uploading attachment for Friend ChannelId: {ChannelId}",
-                        channelId
-                            .Replace(Environment.NewLine, "")
-                            .Replace("\n", "")
-                            .Replace("\r", "")
+                    var attachment = new AttachmentFile(
+                        Utils.CreateRandomId(),
+                        fileName,
+                        content,
+                        extension,
+                        channelId,
+                        guildId,
+                        userId
                     );
-                    await SaveOrUpdateFile(
-                        new AttachmentFile(
-                            fileId,
-                            sanitizedFileName,
-                            content,
-                            extension,
-                            channelId,
-                            guildId,
-                            userId
-                        )
-                    );
+                    return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    _logger.LogInformation(
-                        "Uploading profile file for UserId: {UserId}",
-                        userId.Replace(Environment.NewLine, "").Replace("\n", "").Replace("\r", "")
+                    var profileFile = new ProfileFile(
+                        Utils.CreateRandomId(),
+                        fileName,
+                        content,
+                        extension,
+                        userId
                     );
-                    await SaveOrUpdateFile(
-                        new ProfileFile(fileId, sanitizedFileName, content, extension, userId)
-                    );
+                    return SaveOrUpdateFile(profileFile).GetAwaiter().GetResult();
                 }
             }
-
-            _logger.LogInformation("File uploaded successfully. FileId: {FileId}", fileId);
-            return fileId;
         }
 
+        private string ExtractFileIdentifier(FileBase file)
+        {
+            return file switch
+            {
+                ProfileFile pf => pf.Version,
+                GuildFile gf => gf.Version,
+                _ => file.FileId
+            };
+        }
         private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
         {
             var filesToDelete = await _context
@@ -470,7 +456,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task DeleteAttachmentFile(Message message)
+        public async Task DeleteAttachmentFileAsync(Message message)
         {
             if (message.Attachments != null && message.Attachments.Any())
             {
@@ -487,7 +473,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task DeleteAttachmentFiles(List<Message> messages)
+        public async Task DeleteAttachmentFilesAsync(List<Message> messages)
         {
             var attachmentIds = new List<string>();
 
@@ -509,7 +495,7 @@ namespace LiventCord.Controllers
             }
         }
 
-        private async Task SetIsUploadedGuildImg(string guildId)
+        private async Task SetIsUploadedGuildImgAsync(string guildId)
         {
             var guild = await _context
                 .Guilds.Where(g => g.GuildId == guildId)
@@ -537,73 +523,73 @@ namespace LiventCord.Controllers
             await _context.SaveChangesAsync();
         }
 
-        private async Task SaveOrUpdateFile<T>(T newFile)
+        private async Task<T> SaveOrUpdateFile<T>(T newFile)
             where T : FileBase
         {
             var existingFile = await GetExistingFile(newFile);
 
             if (existingFile != null)
             {
-                existingFile.FileName = newFile.FileName;
-                existingFile.Content = newFile.Content;
-                existingFile.Extension = newFile.Extension;
-
-                if (existingFile is ProfileFile profile)
+                if (existingFile is ProfileFile profileExisting && newFile is ProfileFile profileNew)
                 {
-                    profile.Version = Guid.NewGuid().ToString();
-                    _logger.LogInformation(
-                        "Updated version for ProfileFile: {FileId}, Version: {Version}",
-                        profile.FileId,
-                        profile.Version
+                    var newVersionFile = new ProfileFile(
+                        Utils.CreateRandomId(),
+                        profileNew.FileName!,
+                        profileNew.Content,
+                        profileNew.Extension,
+                        profileExisting.UserId
+                    )
+                    {
+                        Version = Guid.NewGuid().ToString()
+                    };
+
+                    await _context.Set<ProfileFile>().AddAsync(newVersionFile);
+                    await _context.SaveChangesAsync();
+
+                    return (T)(FileBase)newVersionFile;
+                }
+                else if (existingFile is GuildFile guildExisting && newFile is GuildFile guildNew)
+                {
+                    var newVersionFile = new GuildFile(
+                        Utils.CreateRandomId(),
+                        guildNew.FileName!,
+                        guildNew.Content,
+                        guildNew.Extension,
+                        guildExisting.GuildId,
+                        guildExisting.UserId
+                    )
+                    {
+                        Version = Guid.NewGuid().ToString()
+                    };
+
+                    await _context.Set<GuildFile>().AddAsync(newVersionFile);
+                    await _context.SaveChangesAsync();
+
+                    return (T)(FileBase)newVersionFile;
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"Unsupported type combination: {existingFile.GetType()} / {newFile.GetType()}"
                     );
                 }
-                else if (existingFile is GuildFile guild)
-                {
-                    guild.Version = Guid.NewGuid().ToString();
-                    _logger.LogInformation(
-                        "Updated version for GuildFile: {FileId}, Version: {Version}",
-                        guild.FileId,
-                        guild.Version
-                    );
-                }
-
-                _logger.LogInformation(
-                    "Updated existing file: {FileId}, Content Length: {ContentLength}",
-                    existingFile.FileId,
-                    existingFile.Content.Length
-                );
             }
             else
             {
-                if (newFile is ProfileFile newProfile)
+                if (newFile is ProfileFile profile)
                 {
-                    newProfile.Version = Guid.NewGuid().ToString();
-                    _logger.LogInformation(
-                        "Set initial version for new ProfileFile: {FileId}, Version: {Version}",
-                        newProfile.FileId,
-                        newProfile.Version
-                    );
+                    profile.Version = Guid.NewGuid().ToString();
                 }
-                else if (newFile is GuildFile newGuild)
+                else if (newFile is GuildFile guild)
                 {
-                    newGuild.Version = Guid.NewGuid().ToString();
-                    _logger.LogInformation(
-                        "Set initial version for new GuildFile: {FileId}, Version: {Version}",
-                        newGuild.FileId,
-                        newGuild.Version
-                    );
+                    guild.Version = Guid.NewGuid().ToString();
                 }
 
                 await _context.Set<T>().AddAsync(newFile);
+                await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "Added new file: {FileId}, Content Length: {ContentLength}",
-                    newFile.FileId,
-                    newFile.Content.Length
-                );
+                return newFile;
             }
-
-            await _context.SaveChangesAsync();
         }
 
         private async Task<T?> GetExistingFile<T>(T newFile)

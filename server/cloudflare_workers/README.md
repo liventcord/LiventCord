@@ -10,9 +10,6 @@ Responsible for serving and uploading media files used by the application.
 ### **hitlog**
 Logs hits made to landing page.
 
-### **gif-api**
-Handles searching and retrieving GIFs from Tenor.
-
 ## How to run
 
 ## **media-api**
@@ -52,5 +49,3 @@ id = "YOUR_HYPERDRIVE_ID"
 $ pnpm run deploy
 ```
 
-### **gif-api**
-Create a new cloudflare worker and paste js source file from gif-api/gifWorker.js

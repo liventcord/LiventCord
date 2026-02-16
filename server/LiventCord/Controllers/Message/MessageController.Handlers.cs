@@ -198,6 +198,8 @@ namespace LiventCord.Controllers
         {
             var userId = UserId!;
             await EditMessage(userId, channelId, messageId, request.Content);
+            await IncrementChannelVersion(channelId);
+
             bool isDm = false;
             var editBroadcast = new
             {
@@ -207,17 +209,19 @@ namespace LiventCord.Controllers
                 messageId,
                 request.Content,
             };
+
             await _redisEventEmitter.EmitToGuild(
                 EventType.EDIT_MESSAGE_GUILD,
                 editBroadcast,
                 guildId,
                 userId
             );
+
             return Ok(editBroadcast);
         }
 
-        [NonAction]
 
+        [NonAction]
         public async Task<IActionResult> HandleEditDMMessageAsync(
             [UserIdLengthValidation][FromRoute] string friendId,
             [IdLengthValidation][FromRoute] string messageId,
@@ -226,7 +230,10 @@ namespace LiventCord.Controllers
         {
             var userId = UserId!;
             var constructedFriendUserChannel = ConstructDmId(userId, friendId);
+
             await EditMessage(userId, constructedFriendUserChannel, messageId, request.Content);
+            await IncrementChannelVersion(constructedFriendUserChannel);
+
             bool isDm = true;
             var editBroadcast = new
             {
@@ -235,14 +242,17 @@ namespace LiventCord.Controllers
                 messageId,
                 request.Content,
             };
+
             await _redisEventEmitter.EmitToFriend(
                 EventType.EDIT_MESSAGE_DM,
                 editBroadcast,
                 userId,
                 constructedFriendUserChannel
             );
+
             return Ok(editBroadcast);
         }
+
         [NonAction]
         public async Task<IActionResult> HandleDeleteGuildMessageAsync(
             [IdLengthValidation][FromRoute] string guildId,
@@ -253,36 +263,36 @@ namespace LiventCord.Controllers
             var foundMessage = await _context.Messages.FirstOrDefaultAsync(m =>
                 m.MessageId == messageId && m.ChannelId == channelId
             );
-            if (foundMessage == null)
-            {
-                return Forbid();
-            }
 
-            if (
-                !await _permissionsController.CanDeleteMessages(
-                    UserId!,
-                    guildId,
-                    foundMessage.UserId
-                )
-            )
-            {
+            if (foundMessage == null)
                 return Forbid();
-            }
+
+            if (!await _permissionsController.CanDeleteMessages(
+                UserId!,
+                guildId,
+                foundMessage.UserId))
+                return Forbid();
+
+            await DeleteMessage(channelId, messageId);
+            await IncrementChannelVersion(channelId);
+
             var deleteBroadcast = new
             {
                 guildId,
                 channelId,
                 messageId,
             };
-            await DeleteMessage(channelId, messageId);
+
             await _redisEventEmitter.EmitToGuild(
                 EventType.DELETE_MESSAGE_GUILD,
                 deleteBroadcast,
                 guildId,
                 UserId!
             );
+
             return Ok(deleteBroadcast);
         }
+
         [NonAction]
         public async Task<IActionResult> HandleDeleteDMMessageAsync(
             [UserIdLengthValidation][FromRoute] string channelId,
@@ -291,22 +301,25 @@ namespace LiventCord.Controllers
         {
             var userId = UserId!;
             var constructedFriendUserChannel = ConstructDmId(userId, channelId);
-            var deleteBroadcast = new { channelId, messageId };
+
             var foundMessage = await _context.Messages.FirstOrDefaultAsync(m =>
                 m.MessageId == messageId
             );
+
             if (foundMessage == null)
-            {
                 return NotFound();
-            }
+
             if (foundMessage.UserId != userId)
-            {
                 return Forbid();
-            }
 
             await DeleteMessage(constructedFriendUserChannel, messageId);
+            await IncrementChannelVersion(constructedFriendUserChannel);
+
+            var deleteBroadcast = new { channelId, messageId };
+
             return Ok(deleteBroadcast);
         }
+
 
         [NonAction]
         public async Task<ActionResult<SearchMessagesResponse>> SearchGuildChannelMessagesAsync(
@@ -406,7 +419,16 @@ namespace LiventCord.Controllers
                 return new List<Message>();
             }
 
-            var cacheKey = $"{guildId}:{resolvedChannelId}?date={date}&messageId={messageId}";
+            var channel = await _context.Channels
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ChannelId == resolvedChannelId);
+
+            if (channel == null)
+            {
+                return new List<Message>();
+            }
+
+            var cacheKey = $"{guildId}:{resolvedChannelId}:v{channel.ChannelVersion}?date={date}&messageId={messageId}";
 
             var cached = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
             if (cached != null)
@@ -491,6 +513,19 @@ namespace LiventCord.Controllers
 
             return messagesList;
         }
+        [NonAction]
+        private async Task IncrementChannelVersion(string channelId)
+        {
+            var channel = await _context.Channels
+                .FirstOrDefaultAsync(c => c.ChannelId == channelId);
+
+            if (channel != null)
+            {
+                channel.ChannelVersion++;
+                await _context.SaveChangesAsync();
+            }
+        }
+
 
         [NonAction]
         public async Task<IActionResult> GetAttachmentsAsync(

@@ -19,7 +19,8 @@ import {
   renderFileIcon,
   loadImageWithRetry,
   corsDomainManager,
-  tenorHosts
+  tenorHosts,
+  getMediaBaseURL
 } from "./utils.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -99,9 +100,9 @@ const maxTenorHeight = "85vh";
 
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
-function getAttachmentUrl(attachmentId: string) {
-  console.warn(attachmentId);
-  return `https://media-api.liventcord-a60.workers.dev/attachments/${attachmentId}`;
+function getAttachmentUrl(attachmentId: string, fileName?: string) {
+  let extension = fileName ? `.${fileName.split(".").pop()}` : "";
+  return `${getMediaBaseURL()}/attachments/${attachmentId}${extension}`;
 }
 
 function createTenorElement(
@@ -224,7 +225,7 @@ async function createImageElement(
 
   if (matchPure && matchPure[1]) {
     const id = matchPure[1];
-    urlSrc = getAttachmentUrl(id);
+    urlSrc = getAttachmentUrl(id, fileName);
   }
 
   if (
@@ -420,7 +421,7 @@ export async function createMediaElement(
       try {
         if (attachment.isImageFile || attachment.isVideoFile) {
           await processMediaLink(
-            getAttachmentUrl(attachment.fileId),
+            getAttachmentUrl(attachment.fileId, attachment.fileName),
             attachment,
             messageContentElement,
             content,
@@ -505,6 +506,8 @@ function createFileAttachmentPreview(
     const title = createEl("a", {
       className: "attachment-title",
       textContent: attachment.fileName,
+      href: attachmentUrl,
+      download: attachment.fileName,
       alt: attachment.fileName
     });
     title.addEventListener("click", (e) => {

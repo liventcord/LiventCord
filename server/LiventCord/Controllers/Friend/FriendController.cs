@@ -354,7 +354,10 @@ namespace LiventCord.Controllers
                     CreatedAt = fu.User.CreatedAt,
                     Description = fu.User.Description,
                     SocialMediaLinks = fu.User.SocialMediaLinks,
-                    ProfileVersion = fu.ProfileFiles.Select(pf => pf.Version).FirstOrDefault(),
+                    ProfileVersion = fu.ProfileFiles
+                        .OrderByDescending(pf => pf.CreatedAt)
+                        .Select(pf => pf.Version)
+                        .FirstOrDefault(),
                     FriendshipStatus = fu.FriendData.Status,
                     IsPending = fu.FriendData.Status == FriendStatus.Pending,
                     IsFriendsRequestToUser = _dbContext.Friends.Any(fr =>

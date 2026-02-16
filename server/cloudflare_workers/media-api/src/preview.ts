@@ -9,7 +9,7 @@ export async function handlePreview(req: Request, env: Env) {
     return new Response("Invalid attachmentId", { status: 400 });
   }
 
-  const servers = env.PROXY_SERVERS.split(",");
+  const servers = env.MEDIA_API_SERVERS.split(",");
 
   for (const base of servers) {
     try {

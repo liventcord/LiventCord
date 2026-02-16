@@ -96,6 +96,9 @@ namespace LiventCord.Models
         [Column("order")]
         public int Order { get; set; }
 
+        [Column("channel_version")]
+        public int ChannelVersion { get; set; }
+
         [JsonIgnore]
         public virtual Guild? Guild { get; set; }
 

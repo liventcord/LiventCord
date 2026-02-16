@@ -9,7 +9,8 @@
 - Add an image context-menu search feature using TinEye etc (reverseImageSearch)
 - Add a friend/guild status notifier on login (like Vencord) to display left guilds/friends (relationshipNotifier)
 - Add a user's opened DM to the DMs list
-- Make YouTube embeds use no cookies
+- On dm, new messages should show as red bubbles
+- Add dm support for read system
 - Add reactions
 - Add a favorite GIFs system
 - Implement dm attachments display support
@@ -17,6 +18,7 @@
 - Make the server parse and save mentions for messages on submit/edit in the database
 - Add invite friends ui on invite people popup
 - Inviting should be allowed on new guild members
+- Add event broadcasting on dm message operations
 
 ## Bug fixes
 
@@ -25,7 +27,13 @@
 - Split API init request (it is too slow to fetch)
 - Clicking on profiles looks broken on mobile
 - HTTP URL appears duplicated when a message like "http://example.com/" is sent
-- Added dm user list only gets displayed for first dm sender, other percipient throws 409 conflict error
 - Dm container bubbles do not show accurate online status of user
 - Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
 - Guild context menu does not work if stayed on me page
+- Edited messages display duplicated to other clients
+
+
+## Refactor
+
+- Move every global variable into appstate object
+- Move every interface into types/interfaces.ts

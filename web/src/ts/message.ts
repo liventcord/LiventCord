@@ -31,8 +31,7 @@ import {
   createRandomId,
   createEl,
   enableElement,
-  isMobile,
-  getId
+  isMobile
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -43,8 +42,7 @@ import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 import { shakeScreen } from "./settingsui.ts";
-import { typingStatusMap } from "./socketEvents.ts";
-import { userStatus } from "./app.ts";
+import { processDeleteMessage } from "./socketEvents.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
@@ -355,8 +353,18 @@ function sendEditMessageRequest(messageId: string, content: string) {
   });
 }
 
+// message.ts
 export function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
+
+  const isDm = !isOnGuild;
+  processDeleteMessage(
+    new Date().toISOString(),
+    guildCache.currentChannelId,
+    messageId,
+    isDm
+  );
+
   const data = constructMessagePayload(messageId);
   if (isOnGuild) {
     data["guildId"] = currentGuildId;
@@ -365,6 +373,7 @@ export function deleteMessage(messageId: string) {
   const _eventType = isOnGuild
     ? EventType.DELETE_MESSAGE_GUILD
     : EventType.DELETE_MESSAGE_DM;
+
   apiClient.send(_eventType, data);
 }
 

@@ -323,12 +323,6 @@ class ApiClient {
     this.listeners = {};
     this.nonResponseEvents = [];
 
-    if (import.meta.env.DEV) {
-      this.validateEventMaps();
-      if (import.meta.env.DEV) {
-        this.checkFullCrud();
-      }
-    }
     if (!this.getBackendUrl()) {
       setTimeout(() => {
         alertUser(
@@ -350,65 +344,6 @@ class ApiClient {
       isOnDm
     );
     this.send(EventType.GET_MEMBERS, { guildId: currentGuildId });
-  }
-
-  private validateEventMaps() {
-    const eventTypes = Object.values(EventType) as EventType[];
-    eventTypes.forEach((eventType) => {
-      if (!EventHttpMethodMap.hasOwnProperty(eventType)) {
-        console.warn(
-          `Missing HTTP method mapping for event type: ${eventType}`
-        );
-      }
-      if (!EventUrlMap.hasOwnProperty(eventType)) {
-        console.warn(`Missing URL mapping for event type: ${eventType}`);
-      }
-    });
-  }
-
-  private checkFullCrud() {
-    const missingCrud: Record<
-      string,
-      { create: boolean; read: boolean; update: boolean; delete: boolean }
-    > = {};
-
-    Object.keys(EventUrlMap).forEach((eventType) => {
-      const url = EventUrlMap[eventType as EventType];
-      const method = EventHttpMethodMap[eventType as EventType];
-
-      const resource = url.split("/")[1];
-      if (!missingCrud[resource]) {
-        missingCrud[resource] = {
-          create: false,
-          read: false,
-          update: false,
-          delete: false
-        };
-      }
-
-      if (method === HttpMethod.POST) {
-        missingCrud[resource].create = true;
-      }
-      if (method === HttpMethod.GET) {
-        missingCrud[resource].read = true;
-      }
-      if (method === HttpMethod.PUT) {
-        missingCrud[resource].update = true;
-      }
-      if (method === HttpMethod.DELETE) {
-        missingCrud[resource].delete = true;
-      }
-    });
-
-    Object.entries(missingCrud).forEach(([resource, ops]) => {
-      const missingOps = Object.entries(ops).filter(([_, present]) => !present);
-      if (missingOps.length > 0) {
-        console.warn(`${resource} is missing the following CRUD operations:`);
-        missingOps.forEach(([op]) => console.warn(`  - ${op}`));
-      } else {
-        console.log(`${resource} has full CRUD`);
-      }
-    });
   }
 
   getHttpMethod(event: EventType): HttpMethod {

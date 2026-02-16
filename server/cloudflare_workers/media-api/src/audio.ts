@@ -11,7 +11,7 @@ async function streamAudio(
 
   if (!id) return new Response("Invalid videoId", { status: 400 });
 
-  const servers = env.PROXY_SERVERS.split(",");
+  const servers = env.MEDIA_API_SERVERS.split(",");
   const range = req.headers.get("Range");
   const cacheKey = new Request(`https://audio-cache.liventcord/${type}/${id}`);
 

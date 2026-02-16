@@ -40,7 +40,7 @@ cd server/LiventCord
 Create database
 
 ```bash
-dotnet ef migrations add InitialCreate
+dotnet ef migrations add InitialCreate --context AppDbContext
 ```
 
 ```bash
@@ -54,7 +54,7 @@ dotnet run
 ```bash
 cd web
 pnpm install
-mv .env.example .env
+cp .env.example .env
 pnpm run dev
 ```
 
@@ -70,7 +70,7 @@ redis-server
 
 ```bash
 cd server/go-ws-api
-mv .env.example .env
+cp .env.example .env
 go run main.go
 ```
 

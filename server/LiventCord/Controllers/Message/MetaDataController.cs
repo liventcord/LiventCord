@@ -79,7 +79,7 @@ public class MetadataController : ControllerBase
     [NonAction]
     public async Task<Metadata> FetchMetadataFromProxyAsync(List<string> urls, string messageId)
     {
-        if (urls.Count == 0)
+        if (urls.Count == 0 || !Uri.IsWellFormedUriString(SharedAppConfig.MediaWorkerUrl, UriKind.Absolute))
             return new Metadata();
 
         var request = new HttpRequestMessage(

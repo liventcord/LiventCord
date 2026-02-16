@@ -87,7 +87,7 @@ namespace LiventCord.Controllers
                     };
 
 
-                    var fileId = await _imageController.UploadFileInternal(
+                    var fileId = await _imageController.UploadFileInternalAsync(
                         resizedFile,
                         UserId,
                         false,

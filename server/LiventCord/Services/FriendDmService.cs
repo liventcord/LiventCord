@@ -16,34 +16,29 @@ public class FriendDmService
         if (userId == friendId)
             return false;
 
-        var user = await _dbContext.Users.FindAsync(userId);
-        var friend = await _dbContext.Users.FindAsync(friendId);
+        var usersExist = await _dbContext.Users
+            .Where(u => u.UserId == userId || u.UserId == friendId)
+            .CountAsync() == 2;
 
-        if (user == null || friend == null)
-        {
+        if (!usersExist)
             return false;
-        }
 
-        var existingDm1 = await _dbContext.UserDms.FirstOrDefaultAsync(d =>
-            d.UserId == userId && d.FriendId == friendId
-        );
-        var existingDm2 = await _dbContext.UserDms.FirstOrDefaultAsync(d =>
-            d.UserId == friendId && d.FriendId == userId
-        );
+        var exists = await _dbContext.UserDms
+            .AnyAsync(d => d.UserId == userId && d.FriendId == friendId);
 
-        if (existingDm1 != null || existingDm2 != null)
-        {
+        if (exists)
             return false;
-        }
 
-        _dbContext.UserDms.AddRange(
-            new UserDm { UserId = userId, FriendId = friendId },
-            new UserDm { UserId = friendId, FriendId = userId }
-        );
+        _dbContext.UserDms.Add(new UserDm
+        {
+            UserId = userId,
+            FriendId = friendId
+        });
 
         await _dbContext.SaveChangesAsync();
         return true;
     }
+
 
     public async Task<List<PublicUser>> GetDmUsers(string userId)
     {

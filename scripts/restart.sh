@@ -1,1 +1,1 @@
-rm -rf Migrations && dotnet ef database drop --force && dotnet ef migrations add InitialCreate && dotnet ef database update && clear && dotnet run
+rm -rf Migrations && dotnet ef database drop --force && dotnet ef migrations add InitialCreate --context AppDbContext && dotnet ef database update && clear && dotnet run

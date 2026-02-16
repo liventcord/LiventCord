@@ -7,7 +7,6 @@ namespace LiventCord.Helpers
 {
     public static class SharedAppConfig
     {
-        public static string GifWorkerUrl { get; private set; }
         public static string MediaWorkerUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
@@ -18,8 +17,7 @@ namespace LiventCord.Helpers
 
         static SharedAppConfig()
         {
-            GifWorkerUrl = "https://gif-worker.liventcord-a60.workers.dev";
-            MediaWorkerUrl = "https://YOUR_MEDIA_WORKER_URL";
+            MediaWorkerUrl = "";
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080";
@@ -28,7 +26,6 @@ namespace LiventCord.Helpers
 
         public static void Initialize(IConfiguration configuration)
         {
-            GifWorkerUrl = configuration["AppSettings:GifWorkerUrl"] ?? GifWorkerUrl;
             MediaWorkerUrl = configuration["AppSettings:MediaWorkerUrl"] ?? MediaWorkerUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
 
@@ -87,9 +84,14 @@ namespace LiventCord.Helpers
 
         private async Task<string> GetProfileImgVersion(string userId)
         {
-            var result = await _dbContext.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            var result = await _dbContext.ProfileFiles
+                .Where(f => f.UserId == userId)
+                .OrderByDescending(f => f.CreatedAt)
+                .FirstOrDefaultAsync();
+
             return result?.Version ?? "0";
         }
+
 
         public async Task HandleInitRequest(HttpContext context)
         {
@@ -145,7 +147,6 @@ namespace LiventCord.Helpers
                     friendsStatus,
                     dmFriends = await GetDmUsers(userId),
                     guilds,
-                    gifWorkerUrl = SharedAppConfig.GifWorkerUrl,
                     SharedAppConfig.MediaWorkerUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
@@ -214,6 +215,7 @@ namespace LiventCord.Helpers
                         User = u,
                         ProfileVersion = _dbContext.ProfileFiles
                                             .Where(pf => pf.UserId == u.UserId)
+                                            .OrderByDescending(pf => pf.CreatedAt)
                                             .Select(pf => pf.Version)
                                             .FirstOrDefault()
                     }
@@ -231,6 +233,7 @@ namespace LiventCord.Helpers
                 .Select(g => g.First())
                 .ToList();
         }
+
 
     }
 }

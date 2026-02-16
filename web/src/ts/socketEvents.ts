@@ -835,12 +835,12 @@ interface DeleteMessageEmit {
   msgDate: string;
 }
 
-interface DeleteMessageResponse {
+export interface DeleteMessageResponse {
   messageId: string;
   channelId: string;
 }
 
-function processDeleteMessage(
+export function processDeleteMessage(
   msgDate: string,
   channelId: string,
   messageId: string,
@@ -892,11 +892,13 @@ export function handleDeleteMessageResponse(
   processDeleteMessage(data.messageId, data.channelId, data.messageId, isDm);
 }
 
-export function handleDeleteMessageEmit(
-  data: DeleteMessageEmit,
-  isDm: boolean
+export function handleDeleteMessage(
+  messageId: string,
+  channelId: string,
+  msgDate?: string,
+  isDm: boolean = false
 ) {
-  processDeleteMessage(data.msgDate, data.channelId, data.messageId, isDm);
+  processDeleteMessage(msgDate ?? messageId, channelId, messageId, isDm);
 }
 
 socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
@@ -904,11 +906,11 @@ socketClient.on(SocketEvent.DELETE_CHANNEL, (data: ChannelData) => {
 });
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
-  handleDeleteMessageEmit(data, true);
+  handleDeleteMessage(data.messageId, data.channelId, data.msgDate, true);
 });
 
 socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data: DeleteMessageEmit) => {
-  handleDeleteMessageEmit(data, false);
+  handleDeleteMessage(data.messageId, data.channelId, data.msgDate, false);
 });
 
 socketClient.on(SocketEvent.ADD_FRIEND, function (message) {

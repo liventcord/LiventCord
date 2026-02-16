@@ -7,6 +7,7 @@ public abstract class FileBase
     public string Extension { get; set; }
     public string FileType { get; set; }
     public int ContentLength { get; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     protected FileBase(
         string fileId,
@@ -40,7 +41,7 @@ public class AttachmentFile : FileBase
         byte[] content,
         string extension,
         string channelId,
-        string? guildId, // guild id doesnt exist for dm attachments
+        string? guildId,
         string userId
     )
         : base(fileId, fileName, content, extension, "attachments", guildId)

@@ -125,7 +125,6 @@ namespace LiventCord.Controllers
 
             return Ok(payload);
         }
-
         private async Task AddMemberToGuild(string userId, string guildId)
         {
             var guild = await _dbContext.Guilds
@@ -158,6 +157,12 @@ namespace LiventCord.Controllers
 
                 await _dbContext.SaveChangesAsync();
 
+                var latestProfile = await _dbContext.ProfileFiles
+                    .Where(f => f.UserId == userId)
+                    .OrderByDescending(f => f.CreatedAt)
+                    .Select(f => f.Version)
+                    .FirstOrDefaultAsync();
+
                 var userData = new PublicUser
                 {
                     UserId = member.UserId,
@@ -166,10 +171,7 @@ namespace LiventCord.Controllers
                     Description = member.Description,
                     CreatedAt = member.CreatedAt,
                     SocialMediaLinks = member.SocialMediaLinks,
-                    ProfileVersion = _dbContext.ProfileFiles
-                        .Where(pf => pf.UserId == member.UserId)
-                        .Select(pf => pf.Version)
-                        .FirstOrDefault()
+                    ProfileVersion = latestProfile
                 };
 
                 var payload = new { guildId, userId, userData };
@@ -177,6 +179,7 @@ namespace LiventCord.Controllers
                 await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
             }
         }
+
         private async Task RemoveMemberFromGuild(string userId, string guildId)
         {
             var guild = await _dbContext.Guilds
@@ -228,12 +231,20 @@ namespace LiventCord.Controllers
             if (string.IsNullOrEmpty(guildId))
                 return new List<PublicUser>();
 
-            return await (
+            var latestProfiles = _dbContext.ProfileFiles
+                .GroupBy(pf => pf.UserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    Version = g.OrderByDescending(pf => pf.CreatedAt).FirstOrDefault()!.Version
+                });
+
+            var members = await (
                 from gm in _dbContext.GuildMembers
-                join u in _dbContext.Users on gm.MemberId equals u.UserId
-                join pf in _dbContext.ProfileFiles on u.UserId equals pf.UserId into pfs
-                from pf in pfs.DefaultIfEmpty()
                 where gm.GuildId == guildId
+                join u in _dbContext.Users on gm.MemberId equals u.UserId
+                join pf in latestProfiles on u.UserId equals pf.UserId into lp
+                from pf in lp.DefaultIfEmpty()
                 select new PublicUser
                 {
                     UserId = u.UserId,
@@ -242,10 +253,13 @@ namespace LiventCord.Controllers
                     Description = u.Description,
                     CreatedAt = u.CreatedAt,
                     SocialMediaLinks = u.SocialMediaLinks,
-                    ProfileVersion = pf.Version
+                    ProfileVersion = pf != null ? pf.Version : null
                 }
             ).ToListAsync();
+
+            return members;
         }
+
 
 
         [NonAction]
@@ -332,6 +346,7 @@ namespace LiventCord.Controllers
                     GuildChannels = new List<ChannelWithLastRead>(),
                     GuildVersion = _dbContext.GuildFiles
                         .Where(f => f.GuildId == g.GuildId)
+                        .OrderByDescending(f => f.CreatedAt)
                         .Select(f => f.Version)
                         .FirstOrDefault()
                 })
@@ -392,6 +407,7 @@ namespace LiventCord.Controllers
                     GuildChannels = new List<ChannelWithLastRead>(),
                     GuildVersion = _dbContext.GuildFiles
                         .Where(f => f.GuildId == g.GuildId)
+                         .OrderByDescending(f => f.CreatedAt)
                         .Select(f => f.Version)
                         .FirstOrDefault()
                 }
@@ -425,22 +441,6 @@ namespace LiventCord.Controllers
                     }
                 }
             ).ToListAsync();
-
-            foreach (var guild in guilds)
-            {
-                if (guild.GuildId == null)
-                    continue;
-
-                guild.GuildMembers = members
-                    .Where(m => m.GuildId == guild.GuildId)
-                    .Select(m => m.MemberId)
-                    .ToList();
-
-                guild.GuildChannels = channels
-                    .Where(c => c.GuildIdNonNull == guild.GuildId)
-                    .Select(c => c.Channel)
-                    .ToList();
-            }
 
             foreach (var guild in guilds)
             {

@@ -6,7 +6,8 @@ import {
   blackImage,
   base64ToBlob,
   IMAGE_SRCS,
-  createRandomId
+  createRandomId,
+  getMediaBaseURL
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -30,7 +31,6 @@ import { alertUser } from "./ui.ts";
 import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { cacheInterface } from "./cache.ts";
-import { initialState } from "./app.ts";
 
 export const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
@@ -52,6 +52,7 @@ export function setLastConfirmedGuildImage() {
 }
 
 export function setLastConfirmedProfileImage() {
+  console.log("Set lastConfirmedProfileImg to : ", lastProfileImage);
   lastConfirmedProfileImg = lastProfileImage;
 }
 
@@ -221,16 +222,16 @@ export function updateSelfName(nickName: string) {
   }
 }
 export function getProfileUrl(userId: string): string {
-  const v = userManager.getUserProfileVersion(userId);
-  if (!v) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
-
-  return `${initialState.mediaWorkerUrl}/profiles/${userId}?version=${v}`;
+  let version = userManager.getUserProfileVersion(userId);
+  if (!version) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
+  const result = `${getMediaBaseURL()}/profiles/${userId}?version=${version}`;
+  return result;
 }
 
 export function getGuildUrl(guildId: string): string {
   const v = cacheInterface.getGuildImageVersion(guildId);
   if (!v) return blackImage;
-  return `${initialState.mediaWorkerUrl}/guilds/${guildId}.webp?version=${v}`;
+  return `${getMediaBaseURL()}/guilds/${guildId}.webp?version=${v}`;
 }
 
 export function updateSelfProfile(

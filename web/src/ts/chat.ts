@@ -611,7 +611,6 @@ export function handleOldMessagesResponse(data: NewMessageResponse) {
     console.error("Invalid oldest message date received.");
   }
 }
-
 export function handleNewMessage(data: NewMessageResponse): void {
   try {
     console.warn("Received message data:", data);
@@ -620,37 +619,41 @@ export function handleNewMessage(data: NewMessageResponse): void {
       handleOldMessagesResponse(data);
       return;
     }
-    if (data.guildId)
-      cacheInterface.addMessage(data.guildId, data.channelId, data.messages[0]);
 
-    const { isDm, channelId } = data;
-    const userId = data.messages[0].userId;
-    console.log(`isDm: ${isDm}, channelId: ${channelId}, userId: ${userId}`);
+    const message = data.messages[0];
+
+    if (data.guildId) {
+      cacheInterface.addMessage(data.guildId, data.channelId, message);
+    }
+
+    const { isDm, channelId, guildId } = data;
+    const userId = message.userId;
 
     const idToCompare = isDm
       ? friendsCache.currentDmId
       : guildCache.currentChannelId;
 
-    if (data.guildId !== currentGuildId || idToCompare !== channelId) {
-      console.log(
-        `guildId ${data.guildId} does not match currentGuildId ${currentGuildId} or channelId ${channelId} does not match idToCompare ${idToCompare}. Returning.`
-      );
+    const isCurrentGuild = guildId === currentGuildId;
+    const isCurrentChannel = idToCompare === channelId;
+    const isOwnMessage = userId === currentUserId;
 
-      if (userId !== currentUserId) {
-        console.log(
-          "UserId does not match currentUserId, playing notification sound."
-        );
-        playAudioType(AudioType.notify);
-        setActiveIcon();
-      }
-      return;
+    const isVisible = document.visibilityState === "visible";
+    const hasFocus = document.hasFocus();
+
+    const isActivelyViewing =
+      isCurrentGuild && isCurrentChannel && isVisible && hasFocus;
+
+    if (isCurrentGuild && isCurrentChannel) {
+      displayChatMessage(message);
+      fetchReplies(data.messages, new Set<string>());
     }
 
-    const message = data.messages[0];
+    const shouldPlaySound = !isOwnMessage && !isActivelyViewing;
 
-    displayChatMessage(message);
-
-    fetchReplies(data.messages, new Set<string>());
+    if (shouldPlaySound) {
+      playAudioType(AudioType.notify);
+      setActiveIcon();
+    }
   } catch (error) {
     console.error("Error processing message:", error);
   }

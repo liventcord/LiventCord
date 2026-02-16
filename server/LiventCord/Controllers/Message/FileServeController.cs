@@ -1,59 +1,47 @@
-using System.Diagnostics;
-using FileTypeChecker;
+using System.Buffers;
+using System.Collections.Concurrent;
 using LiventCord.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using MimeKit;
-
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LiventCord.Controllers
 {
+    public class FileCacheEntry
+    {
+        public string FilePath { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public DateTime LastAccessed { get; set; }
+        public bool IsCompressed { get; set; }
+    }
+
     [ApiController]
     [Route("")]
     public class FileServeController : BaseController
     {
         private readonly AppDbContext _context;
-        private readonly FileExtensionContentTypeProvider _fileTypeProvider;
-        private readonly IWebHostEnvironment _env;
-        private readonly PermissionsController _permissionsController;
+        private readonly FileExtensionContentTypeProvider _contentTypeProvider;
         private readonly string _cacheFilePath = "FileCache";
-        private string CacheDirectory =>
-            Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
+        private string CacheDirectory => Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
         private readonly IAppStatsService _statsService;
-        private readonly ILogger<FileServeController> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private readonly ConcurrentDictionary<string, FileCacheEntry> _fileLookupCache;
 
-        private static readonly HashSet<string> VideoMimeTypes = new HashSet<string>(
-            StringComparer.OrdinalIgnoreCase
-        )
-        {
-            "video/mp4",
-            "video/webm",
-            "video/ogg",
-            "video/avi",
-            "video/mov",
-            "video/wmv",
-            "video/flv",
-            "video/mkv",
-            "video/3gp",
-            "video/quicktime",
-        };
+        private static readonly TimeSpan CacheEntryLifetime = TimeSpan.FromMinutes(30);
 
         public FileServeController(
             AppDbContext context,
             FileExtensionContentTypeProvider fileTypeProvider,
-            IWebHostEnvironment env,
-            PermissionsController permissionsController,
             IAppStatsService statsService,
-            ILogger<FileServeController> logger
+            IMemoryCache memoryCache
         )
         {
             _context = context;
             _statsService = statsService;
-            _fileTypeProvider = fileTypeProvider ?? new FileExtensionContentTypeProvider();
-            _env = env;
-            _permissionsController = permissionsController;
-            _logger = logger;
+            _contentTypeProvider = fileTypeProvider ?? new FileExtensionContentTypeProvider();
+            _memoryCache = memoryCache;
+            _fileLookupCache = new ConcurrentDictionary<string, FileCacheEntry>();
 
             var fullCachePath = Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
             if (!Directory.Exists(fullCachePath))
@@ -68,11 +56,10 @@ namespace LiventCord.Controllers
             return userId;
         }
 
-        private async Task<IActionResult> GetFileFromCacheOrDatabase(
+        private async Task<IActionResult> GetFileFromCacheOrDatabaseAsync<T>(
             string cacheFilePath,
-            Func<Task<IActionResult>>? fetchFile,
-            string fileName
-        )
+            Func<Task<T?>>? fetchFile
+        ) where T : FileBase
         {
             var fullCacheDirPath = Path.GetFullPath(CacheDirectory);
             var fullRequestedPath = Path.GetFullPath(cacheFilePath);
@@ -80,96 +67,165 @@ namespace LiventCord.Controllers
             if (!fullRequestedPath.StartsWith(fullCacheDirPath, StringComparison.OrdinalIgnoreCase))
                 return BadRequest("Invalid file path.");
 
-            var metaPath = fullRequestedPath + ".meta";
-
-            if (System.IO.File.Exists(fullRequestedPath) && System.IO.File.Exists(metaPath))
+            if (System.IO.File.Exists(fullRequestedPath))
             {
-                string contentType = await System.IO.File.ReadAllTextAsync(metaPath);
+                var cacheFileName = Path.GetFileName(fullRequestedPath) ?? "file.bin";
+                var contentType = GetContentTypeFromFileName(cacheFileName);
+                SetCacheHeaders(cacheFileName, contentType);
+                _statsService.IncrementServedFiles();
 
-                if (IsVideoContent(contentType))
+                var isGzipped = cacheFileName.EndsWith(".gz", StringComparison.OrdinalIgnoreCase);
+
+                if (isGzipped)
                 {
-                    SetCacheHeaders(fileName);
-                    _statsService.IncrementServedFiles();
-                    return PhysicalFile(
-                        fullRequestedPath,
-                        contentType,
-                        fileName,
-                        enableRangeProcessing: true
-                    );
+                    return await ServeDecompressedFileAsync(fullRequestedPath, contentType);
                 }
 
-                byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(fullRequestedPath);
-                SetCacheHeaders(fileName);
-                _statsService.IncrementServedFiles();
-                return File(fileBytes, contentType);
+                return PhysicalFile(fullRequestedPath, contentType, enableRangeProcessing: true);
             }
 
             if (fetchFile == null)
                 return NotFound();
 
-            var result = await fetchFile();
+            var file = await fetchFile();
+            if (file == null || string.IsNullOrEmpty(file.FileName))
+                return NotFound();
 
-            if (result is FileContentResult fileResult)
+            var actualCachePath = Path.Combine(
+                Path.GetDirectoryName(fullRequestedPath)!,
+                Path.GetFileNameWithoutExtension(fullRequestedPath) + "_" + Utils.SanitizeFileName(file.FileName ?? "file.bin")
+            );
+
+            Directory.CreateDirectory(Path.GetDirectoryName(actualCachePath)!);
+
+            await System.IO.File.WriteAllBytesAsync(actualCachePath + ".tmp", file.Content ?? Array.Empty<byte>());
+            System.IO.File.Move(actualCachePath + ".tmp", actualCachePath, overwrite: true);
+
+            _fileLookupCache.TryAdd(Path.GetFileName(actualCachePath) ?? "file.bin", new FileCacheEntry
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(fullRequestedPath)!);
+                FilePath = actualCachePath,
+                ContentType = GetContentTypeFromFileName(file.FileName ?? "file.bin"),
+                LastAccessed = DateTime.UtcNow,
+                IsCompressed = file.FileName?.EndsWith(".gz", StringComparison.OrdinalIgnoreCase) ?? false
+            });
 
-                await System.IO.File.WriteAllBytesAsync(
-                    fullRequestedPath + ".tmp",
-                    fileResult.FileContents
-                );
-                await System.IO.File.WriteAllTextAsync(
-                    metaPath + ".tmp",
-                    fileResult.ContentType ?? "application/octet-stream"
-                );
+            return await GetFileResultAsync(file);
+        }
 
-                System.IO.File.Move(fullRequestedPath + ".tmp", fullRequestedPath, overwrite: true);
-                System.IO.File.Move(metaPath + ".tmp", metaPath, overwrite: true);
+        private async Task<IActionResult> ServeDecompressedFileAsync(string filePath, string contentType)
+        {
+            var originalContentType = contentType.Replace(".gz", "");
+            if (!_contentTypeProvider.TryGetContentType(Path.GetFileNameWithoutExtension(filePath), out var decompressedContentType))
+            {
+                decompressedContentType = originalContentType;
             }
 
-            return result;
+            var compressedData = await System.IO.File.ReadAllBytesAsync(filePath);
+            var decompressedData = FileDecompressor.DecompressGzip(compressedData);
+
+            SetCacheHeaders(Path.GetFileNameWithoutExtension(filePath), decompressedContentType);
+
+            return File(decompressedData, decompressedContentType, enableRangeProcessing: true);
         }
 
-        private bool IsVideoContent(string contentType)
-        {
-            return VideoMimeTypes.Contains(contentType);
-        }
-
-        private Task<(bool found, string cacheFilePath)> FindCachedProfileFile(
+        private Task<(bool found, string cacheFilePath)> FindCachedProfileFileAsync(
             string userId,
             string? requestedVersion = null
         )
         {
-            var cachePattern = Path.Combine(CacheDirectory, $"profile_{userId}_*.file");
-            var cacheDir = Path.GetDirectoryName(cachePattern);
-            var searchPattern = Path.GetFileName(cachePattern);
+            var cacheKey = $"profile_{userId}_{requestedVersion ?? "latest"}";
 
-            if (!Directory.Exists(cacheDir))
+            if (_fileLookupCache.TryGetValue(cacheKey, out var cachedEntry))
+            {
+                if (System.IO.File.Exists(cachedEntry.FilePath))
+                {
+                    cachedEntry.LastAccessed = DateTime.UtcNow;
+                    return Task.FromResult((true, cachedEntry.FilePath));
+                }
+                else
+                {
+                    _fileLookupCache.TryRemove(cacheKey, out _);
+                }
+            }
+
+            if (!Directory.Exists(CacheDirectory))
                 return Task.FromResult((false, string.Empty));
 
-            var matchingFiles = Directory.GetFiles(cacheDir, searchPattern);
+            var files = Directory.GetFiles(CacheDirectory)
+                .Where(f =>
+                    Path.GetFileName(f).StartsWith($"profile_{userId}_") &&
+                    !f.EndsWith(".meta", StringComparison.OrdinalIgnoreCase) &&
+                    !f.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)
+                );
 
             if (!string.IsNullOrEmpty(requestedVersion))
             {
-                var specificVersionPath = Path.Combine(
-                    CacheDirectory,
-                    $"profile_{userId}_{requestedVersion}.file"
+                files = files.Where(f =>
+                    Path.GetFileName(f).StartsWith($"profile_{userId}_{requestedVersion}_")
                 );
-                if (matchingFiles.Contains(specificVersionPath))
-                    return Task.FromResult((true, specificVersionPath));
             }
 
-            if (matchingFiles.Length > 0)
+            var selected = files
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+
+            if (selected == null)
+                return Task.FromResult((false, string.Empty));
+
+            _fileLookupCache.TryAdd(cacheKey, new FileCacheEntry
             {
-                var mostRecentFile = matchingFiles
-                    .Select(f => new FileInfo(f))
-                    .OrderByDescending(f => f.LastWriteTime)
-                    .First();
-                return Task.FromResult((true, mostRecentFile.FullName));
+                FilePath = selected.FullName,
+                ContentType = GetContentTypeFromFileName(selected.Name),
+                LastAccessed = DateTime.UtcNow,
+                IsCompressed = selected.Name.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+            });
+
+            return Task.FromResult((true, selected.FullName));
+        }
+
+        private string? FindCachedFileById(string idPrefix)
+        {
+            if (_fileLookupCache.TryGetValue(idPrefix, out var cachedEntry))
+            {
+                if (System.IO.File.Exists(cachedEntry.FilePath))
+                {
+                    cachedEntry.LastAccessed = DateTime.UtcNow;
+                    return cachedEntry.FilePath;
+                }
+                else
+                {
+                    _fileLookupCache.TryRemove(idPrefix, out _);
+                }
             }
 
-            return Task.FromResult((false, string.Empty));
+            if (!Directory.Exists(CacheDirectory))
+                return null;
+
+            var matchingFiles = Directory.GetFiles(CacheDirectory)
+                .Where(f =>
+                    Path.GetFileName(f).StartsWith(idPrefix + "_") &&
+                    !f.EndsWith(".meta", StringComparison.OrdinalIgnoreCase) &&
+                    !f.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)
+                )
+                .ToList();
+
+            var found = matchingFiles.FirstOrDefault();
+
+            if (found != null)
+            {
+                _fileLookupCache.TryAdd(idPrefix, new FileCacheEntry
+                {
+                    FilePath = found,
+                    ContentType = GetContentTypeFromFileName(Path.GetFileName(found)),
+                    LastAccessed = DateTime.UtcNow,
+                    IsCompressed = found.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+                });
+            }
+
+            return found;
         }
-        [DisableControllerIfPostgres]
+
         [HttpGet("guilds/{guildId}")]
         public async Task<IActionResult> GetGuildFile(
             [FromRoute] string guildId,
@@ -178,60 +234,40 @@ namespace LiventCord.Controllers
         {
             guildId = RemoveFileExtension(guildId);
 
-            if (
-                string.IsNullOrEmpty(guildId)
-                || guildId.Length != 19
-                || ContainsIllegalPathSegments(guildId)
-            )
+            if (string.IsNullOrEmpty(guildId) || guildId.Length != Utils.ID_LENGTH || ContainsIllegalPathSegments(guildId))
                 return BadRequest("Invalid guildId.");
 
-            var cachePattern = Path.Combine(CacheDirectory, $"guild_{guildId}_*.file");
-            var cacheDir = Path.GetDirectoryName(cachePattern);
-            var searchPattern = Path.GetFileName(cachePattern);
-
-            string? cachedPath = null;
-            if (Directory.Exists(cacheDir))
-            {
-                var matchingFiles = Directory.GetFiles(cacheDir, searchPattern);
-                if (!string.IsNullOrEmpty(version))
-                {
-                    var specificVersionPath = Path.Combine(
-                        CacheDirectory,
-                        $"guild_{guildId}_{version}.file"
-                    );
-                    if (matchingFiles.Contains(specificVersionPath))
-                        cachedPath = specificVersionPath;
-                }
-
-                if (cachedPath == null && matchingFiles.Length > 0)
-                    cachedPath = matchingFiles
-                        .Select(f => new FileInfo(f))
-                        .OrderByDescending(f => f.LastWriteTime)
-                        .First()
-                        .FullName;
-            }
+            string? cachedPath = version != null
+                ? FindCachedFileById($"guild_{guildId}_{version}")
+                : FindCachedFileById($"guild_{guildId}");
 
             if (cachedPath != null)
-                return await GetFileFromCacheOrDatabase(cachedPath, null, guildId);
+                return await GetFileFromCacheOrDatabaseAsync<GuildFile>(cachedPath, null);
 
-            var file = await _context.GuildFiles.FirstOrDefaultAsync(f => f.GuildId == guildId);
+            var cacheKey = $"guild_db_{guildId}_{version ?? "latest"}";
+            var file = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = CacheEntryLifetime;
+
+                return await _context.GuildFiles
+                    .AsNoTracking()
+                    .Where(f => f.GuildId == guildId)
+                    .OrderByDescending(f => f.CreatedAt)
+                    .FirstOrDefaultAsync();
+            });
+
             if (file == null)
                 return NotFound();
 
-            var versionPart =
-                !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
-            var finalCacheFilePath = Path.Combine(
-                CacheDirectory,
-                $"guild_{guildId}_{versionPart}.file"
-            );
+            var actualVersion = version != null && version == file.Version ? version : file.Version;
+            var finalCacheFilePath = Path.Combine(CacheDirectory, $"guild_{guildId}_{actualVersion}");
 
-            return await GetFileFromCacheOrDatabase(
+            return await GetFileFromCacheOrDatabaseAsync<GuildFile>(
                 finalCacheFilePath,
-                () => Task.FromResult(GetFileResult(file)),
-                guildId
+                () => Task.FromResult<GuildFile?>(file)
             );
         }
-        [DisableControllerIfPostgres]
+
         [HttpGet("profiles/{userId}")]
         public async Task<IActionResult> GetProfileFile(
             [FromRoute] string userId,
@@ -241,57 +277,75 @@ namespace LiventCord.Controllers
             userId = userId.Split('?')[0];
             userId = RemoveFileExtension(userId);
 
-            if (userId.Length != 18 || ContainsIllegalPathSegments(userId))
+            if (userId.Length != Utils.USER_ID_LENGTH || ContainsIllegalPathSegments(userId))
                 return BadRequest("Invalid userId.");
 
-            var (cacheFound, cacheFilePath) = await FindCachedProfileFile(userId, version);
+            var (cacheFound, cacheFilePath) = await FindCachedProfileFileAsync(userId, version);
 
             if (cacheFound)
-                return await GetFileFromCacheOrDatabase(cacheFilePath, null, userId);
+                return await GetFileFromCacheOrDatabaseAsync<ProfileFile>(cacheFilePath, null);
 
-            var file = await _context.ProfileFiles.FirstOrDefaultAsync(f => f.UserId == userId);
+            var cacheKey = $"profile_db_{userId}_{version ?? "latest"}";
+            var file = await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = CacheEntryLifetime;
+
+                if (!string.IsNullOrEmpty(version))
+                {
+                    return await _context.ProfileFiles
+                        .AsNoTracking()
+                        .Where(f => f.UserId == userId && f.Version == version)
+                        .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    return await _context.ProfileFiles
+                        .AsNoTracking()
+                        .Where(f => f.UserId == userId)
+                        .OrderByDescending(f => f.CreatedAt)
+                        .FirstOrDefaultAsync();
+                }
+            });
+
             if (file == null)
                 return NotFound();
 
-            var versionPart =
-                !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
-            var finalCacheFilePath = Path.Combine(
-                CacheDirectory,
-                $"profile_{userId}_{versionPart}.file"
-            );
+            var versionPart = !string.IsNullOrEmpty(version) && version == file.Version ? version : file.Version;
+            var finalCacheFilePath = Path.Combine(CacheDirectory, $"profile_{userId}_{versionPart}");
 
-            return await GetFileFromCacheOrDatabase(
+            return await GetFileFromCacheOrDatabaseAsync<ProfileFile>(
                 finalCacheFilePath,
-                () => Task.FromResult(GetFileResult(file)),
-                userId
+                () => Task.FromResult<ProfileFile?>(file)
             );
         }
-        [DisableControllerIfPostgres]
+
         [HttpGet("attachments/{attachmentId}")]
-        public async Task<IActionResult> GetAttachmentFile(
-            [FromRoute][IdLengthValidation] string attachmentId
-        )
+        public async Task<IActionResult> GetAttachmentFile([FromRoute] string attachmentId)
         {
+            attachmentId = RemoveFileExtension(attachmentId);
+
             if (ContainsIllegalPathSegments(attachmentId))
                 return BadRequest("Invalid attachmentId.");
 
-            var cacheFilePath = Path.Combine(CacheDirectory, $"{attachmentId}.file");
+            var cachedPath = FindCachedFileById(attachmentId);
+            if (cachedPath != null)
+                return await GetFileFromCacheOrDatabaseAsync<AttachmentFile>(cachedPath, null);
 
-            return await GetFileFromCacheOrDatabase(
+            var cacheFilePath = Path.Combine(CacheDirectory, attachmentId);
+
+            var cacheKey = $"attachment_db_{attachmentId}";
+            return await GetFileFromCacheOrDatabaseAsync<AttachmentFile>(
                 cacheFilePath,
-                async () =>
+                async () => await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
                 {
-                    var file = await _context.AttachmentFiles.FirstOrDefaultAsync(f =>
-                        f.FileId == attachmentId
-                    );
-                    if (file == null)
-                        return NotFound();
-
-                    return GetFileResult(file);
-                },
-                attachmentId
+                    entry.AbsoluteExpirationRelativeToNow = CacheEntryLifetime;
+                    return await _context.AttachmentFiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.FileId == attachmentId);
+                })
             );
         }
+
         [HttpGet("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> GetEmojiFile(
             [FromRoute][IdLengthValidation] string guildId,
@@ -301,100 +355,87 @@ namespace LiventCord.Controllers
             if (ContainsIllegalPathSegments(guildId) || ContainsIllegalPathSegments(emojiId))
                 return BadRequest("Invalid input.");
 
-            var cacheFilePath = Path.Combine(CacheDirectory, $"{guildId}_{emojiId}.file");
+            var cacheIdPrefix = $"{guildId}_{emojiId}";
+            var cachedPath = FindCachedFileById(cacheIdPrefix);
+            if (cachedPath != null)
+                return await GetFileFromCacheOrDatabaseAsync<EmojiFile>(cachedPath, null);
 
-            return await GetFileFromCacheOrDatabase(
+            var cacheFilePath = Path.Combine(CacheDirectory, cacheIdPrefix);
+
+            var cacheKey = $"emoji_db_{guildId}_{emojiId}";
+            return await GetFileFromCacheOrDatabaseAsync<EmojiFile>(
                 cacheFilePath,
-                async () =>
+                async () => await _memoryCache.GetOrCreateAsync(cacheKey, async entry =>
                 {
-                    var file = await _context.EmojiFiles.FirstOrDefaultAsync(f =>
-                        f.FileId == emojiId && f.GuildId == guildId
-                    );
-                    if (file == null)
-                        return NotFound();
-
-                    return GetFileResult(file, true);
-                },
-                emojiId
+                    entry.AbsoluteExpirationRelativeToNow = CacheEntryLifetime;
+                    return await _context.EmojiFiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(f => f.FileId == emojiId && f.GuildId == guildId);
+                })
             );
         }
 
-
-
         private bool ContainsIllegalPathSegments(string input)
         {
+            if (string.IsNullOrEmpty(input))
+                return true;
+
+            if (input.Contains("..") || input.Contains("/") || input.Contains("\\"))
+                return true;
+
             if (!input.All(char.IsDigit))
-                return false;
-            return input.Contains("..") || input.Contains("/") || input.Contains("\\");
+                return true;
+
+            return false;
         }
 
-        private IActionResult GetFileResult(dynamic file, bool isExtensionManual = false)
+        private Task<IActionResult> GetFileResultAsync(FileBase file)
         {
-            if (file == null)
-                return NotFound(new { Error = "File not found." });
+            if (file == null || string.IsNullOrEmpty(file.FileName))
+                return Task.FromResult<IActionResult>(NotFound(new { Error = "File not found." }));
 
-            string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
-            string contentType = GetContentType(file);
+            string sanitizedFileName = Utils.SanitizeFileName(file.FileName ?? "file.bin");
+            bool isCompressed = sanitizedFileName.EndsWith(".gz", StringComparison.OrdinalIgnoreCase);
 
-            if (IsVideoContent(contentType))
+            if (isCompressed)
             {
-                var stream = new MemoryStream(file.Content);
-                SetCacheHeaders(sanitizedFileName);
+                var decompressedData = FileDecompressor.DecompressGzip(file.Content ?? Array.Empty<byte>());
+                var originalFileName = sanitizedFileName.Substring(0, sanitizedFileName.Length - 3);
+                string contentType = GetContentTypeFromFileName(originalFileName);
+
+                SetCacheHeaders(originalFileName, contentType);
                 _statsService.IncrementServedFiles();
-                return File(stream, contentType, sanitizedFileName, enableRangeProcessing: true);
+
+                return Task.FromResult<IActionResult>(File(decompressedData, contentType, enableRangeProcessing: true));
             }
-
-            SetCacheHeaders(sanitizedFileName);
-            _statsService.IncrementServedFiles();
-            return File(file.Content, contentType);
-        }
-
-        private string GetContentType(dynamic file)
-        {
-            if (FileTypeValidator.IsArchive(file.Content))
-                return GetGzipContentType(file);
-
-            return GetRegularContentType(file);
-        }
-
-        private string GetGzipContentType(dynamic file)
-        {
-            try
+            else
             {
-                file.Content = FileDecompressor.DecompressGzip(file.Content);
-                string originalExt = Path.GetExtension(
-                        Path.GetFileNameWithoutExtension(file.FileName)
-                    )
-                    .ToLowerInvariant();
+                string contentType = GetContentTypeFromFileName(sanitizedFileName);
+                SetCacheHeaders(sanitizedFileName, contentType);
+                _statsService.IncrementServedFiles();
 
-                return originalExt switch
-                {
-                    ".json" => "application/json",
-                    ".txt" => "text/plain",
-                    ".xml" => "application/xml",
-                    ".csv" => "text/csv",
-                    ".html" => "text/html",
-                    _ => "application/octet-stream",
-                };
+                var stream = new MemoryStream(file.Content ?? Array.Empty<byte>());
+                return Task.FromResult<IActionResult>(File(stream, contentType, enableRangeProcessing: true));
             }
-            catch
+        }
+
+        private string GetContentTypeFromFileName(string fileName)
+        {
+            if (!_contentTypeProvider.TryGetContentType(fileName, out var contentType))
             {
-                return "application/gzip";
+                contentType = "application/octet-stream";
             }
+
+            return contentType;
         }
 
-        private string GetRegularContentType(dynamic file)
+        private void SetCacheHeaders(string fileName, string contentType)
         {
-            var ext = Path.GetExtension(file.FileName).TrimStart('.').ToLowerInvariant();
-            var mimeType = MimeTypes.GetMimeType(ext);
-            return string.IsNullOrEmpty(mimeType) ? "application/octet-stream" : mimeType;
-        }
-
-        private void SetCacheHeaders(string fileName)
-        {
-            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileName}\"");
+            Response.ContentType = contentType;
+            Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
             Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
             Response.Headers["Expires"] = DateTime.UtcNow.AddYears(1).ToString("R");
+            Response.Headers["ETag"] = $"\"{fileName.GetHashCode():X}\"";
         }
     }
 }

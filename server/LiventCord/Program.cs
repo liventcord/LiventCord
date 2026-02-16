@@ -36,6 +36,7 @@ builder.Services.AddScoped<NickDiscriminatorController>();
 builder.Services.AddScoped<MembersController>();
 builder.Services.AddScoped<ChannelController>();
 builder.Services.AddScoped<AppLogicService>();
+builder.Services.AddScoped<IFileCacheService, FileCacheService>();
 builder.Services.AddSingleton<FileExtensionContentTypeProvider>();
 builder.Services.AddScoped<GuildController>();
 builder.Services.AddScoped<PermissionsController>();

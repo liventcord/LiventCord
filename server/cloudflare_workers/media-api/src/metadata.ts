@@ -24,7 +24,7 @@ export interface ResultItem {
   metadata: Metadata | null;
 }
 export interface Env {
-  PROXY_SERVERS: string;
+  MEDIA_API_SERVERS: string;
   ADMIN_PASSWORD: string;
 }
 async function fetchWithCacheAndFallback(
@@ -56,7 +56,7 @@ async function fetchWithCacheAndFallback(
     baseHeaders["Range"] = req.headers.get("Range")!;
   }
 
-  const servers = env.PROXY_SERVERS.split(",");
+  const servers = env.MEDIA_API_SERVERS.split(",");
 
   try {
     const res = await fetch(trimmed, {

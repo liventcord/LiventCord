@@ -529,7 +529,7 @@ namespace LiventCord.Controllers
                         );
                     }
 
-                    string fileId = await _imageController.UploadFileInternal(
+                    string fileId = await _imageController.UploadFileInternalAsync(
                         file,
                         userId,
                         true,
@@ -637,7 +637,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                await _imageController.DeleteAttachmentFile(message);
+                await _imageController.DeleteAttachmentFileAsync(message);
 
                 var pinnedEntries = await _context
                     .ChannelPinnedMessages.Where(p => p.MessageId == messageId)

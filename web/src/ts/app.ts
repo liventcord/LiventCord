@@ -128,7 +128,6 @@ interface InitialStateData {
   friendsStatus: any;
   dmFriends?: any[];
   guilds: any[];
-  gifWorkerUrl: string;
   mediaWorkerUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
@@ -152,7 +151,6 @@ interface InitialState {
   ownerId: string;
   permissionsMap: Map<string, any>;
   guilds: any[];
-  gifWorkerUrl: string;
   mediaWorkerUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
@@ -203,7 +201,6 @@ export function initialiseState(data: InitialStateData): void {
     friendsStatus,
     dmFriends = [],
     guilds,
-    gifWorkerUrl,
     mediaWorkerUrl,
     maxAvatarSize,
     maxAttachmentSize,
@@ -228,7 +225,6 @@ export function initialiseState(data: InitialStateData): void {
     permissionsMap,
     guilds,
     sharedGuildsMap,
-    gifWorkerUrl,
     mediaWorkerUrl,
     maxAvatarSize,
     maxAttachmentSize,

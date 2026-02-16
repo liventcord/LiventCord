@@ -1,11 +1,11 @@
-import { initialState } from "./app.ts";
 import {
   createEl,
   getId,
   debounce,
   IMAGE_SRCS,
   enableElement,
-  disableElement
+  disableElement,
+  getMediaBaseURL
 } from "./utils.ts";
 import { trySendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
@@ -50,6 +50,27 @@ interface Category {
 interface MediaData {
   preview: string;
   [key: string]: any;
+}
+
+interface GifResult {
+  media_formats: {
+    gif: { url: string };
+    tinygif: { url: string };
+  };
+}
+
+interface GifResponse {
+  error?: string;
+  results: GifResult[];
+}
+
+interface GifMedia {
+  gif: { url: string };
+  tinygif: { url: string };
+}
+
+interface GifData {
+  media: GifMedia[];
 }
 
 enum MediaTypes {
@@ -239,11 +260,13 @@ function displayContent(
     });
     return;
   }
+
   enableElement(gifsBackBtn, false, true);
   mediaMenuSearchbar.classList.add("search-bar-gif");
+
   if (contentData.length === 0) {
     const baseGif = createEl("img", {
-      className: "gif-contentt",
+      className: "gif-content",
       textContent: "No gifs found"
     });
     mediaMenuContainer.appendChild(baseGif);
@@ -338,23 +361,50 @@ async function loadGifContent(query: string): Promise<void> {
     return;
   }
 
-  const gifUrl = `${initialState.gifWorkerUrl}?q=${encodeURIComponent(query)}`;
+  const gifUrl = `${getMediaBaseURL()}/api/gifs?q=${encodeURIComponent(query)}`;
   const response = await fetch(gifUrl);
-
   if (!response.ok) {
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
 
-  const data: GifResponse = await response.json();
-
-  if (data.error) {
-    throw new Error(`API error: ${data.error}`);
+  const data: { results?: any[] } = await response.json();
+  if (!data.results || !data.results.length) {
+    throw new Error("API error: No data returned");
   }
 
-  const gifElements = data.results.map((result) => ({
-    gif: result.media_formats.gif.url,
-    preview: result.media_formats.tinygif.url
-  }));
+  const gifElements = data.results
+    .filter((result) => {
+      return (
+        result.media_formats?.gif?.url ||
+        result.media?.[0]?.gif?.url ||
+        result.url
+      );
+    })
+    .map((result) => {
+      let gifUrl, previewUrl;
+
+      if (result.media_formats?.gif?.url) {
+        gifUrl = result.media_formats.gif.url;
+        previewUrl =
+          result.media_formats.tinygif?.url || result.media_formats.gif.url;
+      } else if (result.media?.[0]?.gif?.url) {
+        gifUrl = result.media[0].gif.url;
+        previewUrl = result.media[0].tinygif?.url || result.media[0].gif.url;
+      } else if (result.url) {
+        gifUrl = result.url;
+        previewUrl = result.url;
+      }
+
+      return {
+        gif: gifUrl,
+        preview: previewUrl
+      };
+    });
+
+  if (!gifElements.length) {
+    console.error("no valid gifs found:", data);
+    throw new Error("API error: No valid GIFs found");
+  }
 
   displayContent(gifElements, MediaTypes.Gif);
 }
@@ -390,18 +440,6 @@ export function handleMediaPanelResize() {
     ) + "px";
 }
 
-interface GifResult {
-  media_formats: {
-    gif: { url: string };
-    tinygif: { url: string };
-  };
-}
-
-interface GifResponse {
-  error?: string;
-  results: GifResult[];
-}
-
 function toggleMediaMenu(isClickingTop?: boolean) {
   if (isMediaMenuOpen && !isClickingTop) {
     console.error("Closing media menu");
@@ -428,15 +466,6 @@ function httpGetAsync(url: string, callback: CallableFunction) {
 
   xmlHttp.open("GET", url, true);
   xmlHttp.send(null);
-}
-
-interface GifMedia {
-  gif: { url: string };
-  tinygif: { url: string };
-}
-
-interface GifData {
-  media: GifMedia[];
 }
 
 class Gif {

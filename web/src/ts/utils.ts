@@ -49,7 +49,7 @@ export const createEl = <K extends keyof HTMLElementTagNameMap>(
   return element;
 };
 
-const DISCRIMINATOR_PARTS_LENGHT = 2;
+const DISCRIMINATOR_PARTS_LENGTH = 2;
 
 export const isMobile = getMobile();
 export const STATUS_200 = 200;
@@ -145,7 +145,7 @@ export function parseUsernameDiscriminator(
   input: string
 ): ParsedUsername | null {
   const parts = input.split("#");
-  if (parts.length !== DISCRIMINATOR_PARTS_LENGHT) {
+  if (parts.length !== DISCRIMINATOR_PARTS_LENGTH) {
     return null;
   }
   return {
@@ -298,7 +298,7 @@ export function getYouTubeEmbedURL(url: string) {
 
   if (match) {
     const videoId = match[1];
-    return `https://www.youtube.com/embed/${videoId}`;
+    return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`;
   } else {
     return null;
   }
@@ -1221,20 +1221,24 @@ export function insertHTML(html: string) {
   range.collapse(false);
 }
 
+export function getMediaBaseURL() {
+  let mediaHostname = initialState.mediaWorkerUrl;
+  if (!mediaHostname) mediaHostname = apiClient.getBackendUrl();
+  return mediaHostname;
+}
 export function getAttachmentUrl(file: Attachment) {
   const isTenor = isTenorURL(file.proxyUrl);
-
+  const mediaHostname = getMediaBaseURL();
   if (isTenor) {
     return file.proxyUrl;
   } else if (file.isProxyFile) {
-    console.log(file.isProxyFile);
     return apiClient.getProxyUrl(file.proxyUrl);
   } else if (file.isImageFile) {
-    return `${initialState.mediaWorkerUrl}/attachments/${file.fileId}`;
+    return `${mediaHostname}/attachments/${file.fileId}`;
   } else if (file.isVideoFile) {
-    return `${initialState.mediaWorkerUrl}/attachments/${file.fileId}`;
+    return `${mediaHostname}/attachments/${file.fileId}`;
   } else {
-    return "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp";
+    return IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   }
 }
 

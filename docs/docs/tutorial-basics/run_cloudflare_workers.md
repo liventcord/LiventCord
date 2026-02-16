@@ -1,47 +1,59 @@
 # Cloudflare Workers
- 
+
 This directory contains all Cloudflare Worker services used by the application.
 
 ## Services
 
-### **media-api**
-Responsible for serving and uploading media files used by the application.
+### media-api
 
-### **hitlog**
-Logs hits made to landing page.
+Responsible for serving media files used by the application.
 
-### **gif-api**
-Handles searching and retrieving GIFs from Tenor.
+### hitlog
+
+Logs hits made to the landing page.
 
 ---
 
 ## How to run
 
-### **media-api**
+### media-api
 
-Get your HYPERDRIVE_ID by creating a new Hyperdrive configuration in Cloudflare and adding your PostgreSQL or MySQL connection.
+1. Edit the configuration inside `wrangler.toml`.
+   - `LIVENTCORD_SERVER_URL` — URL of liventcord netcore server.
+   - `ADMIN_PASSWORD` — token used for authenticating with media API servers.
+   - `MEDIA_API_SERVERS` — comma-separated list of media API server URLs.
+     - See [How to set up media api server](run_media_api_server.md) for full setup.
+   - `TENOR_API_KEY` — api key to use for fetching gifs from tenor.
+   - `GIPHY_API_KEY` — api key to use for fetching gifs from giphy.
 
-Write your HYPERDRIVE_ID inside wrangler.toml
-```bash
+Example `wrangler.toml`:
+
+```toml
 name = "media-api"
+main = "src/index.ts"
 compatibility_date = "2025-02-04"
 compatibility_flags = ["nodejs_compat"]
 
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "YOUR_HYPERDRIVE_ID"
-
-```bash
-$ pnpm run deploy
+[vars]
+ADMIN_PASSWORD = "YOUR_ADMIN_PASSWORD"
+MEDIA_API_SERVERS = "https://proxyserver1.com,https://proxyserver2.com"
+LIVENTCORD_SERVER_URL = "https://your-liventcord-url.com"
 ```
 
+To deploy:
 
-### **hitlog**
-
-Get your HYPERDRIVE_ID by creating a new Hyperdrive configuration in Cloudflare and adding your PostgreSQL or MySQL connection.
-
-Write your HYPERDRIVE_ID inside wrangler.toml
 ```bash
+pnpm run deploy
+```
+
+### hitlog
+
+1. Create a new Hyperdrive configuration in Cloudflare and add your PostgreSQL or MySQL connection.
+2. Copy the returned `HYPERDRIVE_ID` into `wrangler.toml` under the Hyperdrive section.
+
+Example `wrangler.toml` for hitlog:
+
+```toml
 name = "hitlog"
 compatibility_date = "2025-02-04"
 compatibility_flags = ["nodejs_compat"]
@@ -49,10 +61,10 @@ compatibility_flags = ["nodejs_compat"]
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "YOUR_HYPERDRIVE_ID"
-
-```bash
-$ pnpm run deploy
 ```
 
-### **gif-api**
-Create a new cloudflare worker and paste js source file from gif-api/gifWorker.js
+To deploy:
+
+```bash
+pnpm run deploy
+```

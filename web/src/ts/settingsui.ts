@@ -62,11 +62,6 @@ import { initializeGoogleOauth } from "./loginutils.ts";
 import { closePopUp } from "./popups.ts";
 import { currentChannelName } from "./channels.ts";
 
-declare global {
-  interface ImportMeta {
-    env: ImportMetaEnv;
-  }
-}
 type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
 export const SettingType = Object.freeze({
   GUILD: "GUILD",
@@ -835,7 +830,6 @@ function createPopupWrapper(wrapperElement: HTMLElement) {
 }
 
 function linkGoogleAccount() {
-  console.log("Link Google account");
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const wrapper = getId("google-link-wrapper");
   console.log(wrapper, clientId);

@@ -198,7 +198,7 @@ namespace LiventCord.Controllers
                     )
                     .ToListAsync();
 
-                await _imageController.DeleteAttachmentFiles(messages);
+                await _imageController.DeleteAttachmentFilesAsync(messages);
 
                 _dbContext.Guilds.Remove(guild);
 

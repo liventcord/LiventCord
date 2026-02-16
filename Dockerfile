@@ -28,7 +28,6 @@ ARG MaxPoolSize
 ARG MinPoolSize
 ARG SqlitePath
 ARG FrontendUrl
-ARG GifWorkerUrl
 ARG MaxAvatarSize
 ARG MaxAttachmentsSize
 ARG BotToken

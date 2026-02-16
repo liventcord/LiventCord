@@ -102,7 +102,7 @@ namespace LiventCord.Controllers
                 var messages = await _dbContext
                     .Messages.Where(m => m.ChannelId == channelId)
                     .ToListAsync();
-                await _imageController.DeleteAttachmentFiles(messages);
+                await _imageController.DeleteAttachmentFilesAsync(messages);
 
                 _dbContext.Channels.Remove(channel);
                 await _dbContext.SaveChangesAsync();

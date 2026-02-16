@@ -44,9 +44,9 @@ namespace LiventCord.Controllers
         )
         {
             var result = await _friendDmService.AddDmBetweenUsers(UserId!, friendId);
-            var result2 = await _friendDmService.AddDmBetweenUsers(friendId!, UserId!);
             var friend = await _friendDmService.GetUserDetails(friendId);
-            return result || result2
+
+            return result
                 ? Ok(friend)
                 : Conflict("Direct message relationship already exists.");
         }
