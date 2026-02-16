@@ -26,7 +26,6 @@ export function setIsOnGuild(val: boolean) {
 }
 
 class Router {
-  lastKnownUrl = "";
   constructor() {
     setTimeout(() => {
       this.init();
@@ -34,6 +33,14 @@ class Router {
   }
 
   public ID_LENGTH = 19;
+
+  private readonly ROUTES = {
+    DM_HOME: "/channels/@me",
+    JOIN_GUILD: "/join-guild/",
+    CHANNELS: "/channels/",
+    CHANNELS_ME: "/channels/@me"
+  } as const;
+  lastKnownUrl = window.location.hash || this.ROUTES.CHANNELS_ME;
 
   isPathnameCorrect(url: string) {
     const regex = /\/channels\/(?:@me\/\d{18,19}|\d{18,19}\/\d{18,19})/;
@@ -45,7 +52,6 @@ class Router {
       "visibilitychange",
       this.handleVisibilityChange.bind(this)
     );
-    window.addEventListener("popstate", this.handlePopState.bind(this));
     window.addEventListener("hashchange", this.handlePopState.bind(this));
     window.addEventListener("beforeunload", (e) => {
       if (isSettingsOpen) {
@@ -55,13 +61,13 @@ class Router {
     });
 
     const { pathStr, parts } = this.parsePath();
-    if (pathStr.startsWith("/join-guild/")) {
+    if (pathStr.startsWith(this.ROUTES.JOIN_GUILD)) {
       this.processNavigation(pathStr, parts);
       return;
     }
 
     if (!window.location.hash) {
-      this.updateHashRoot("/channels/@me", true);
+      this.updateHashRoot(this.ROUTES.DM_HOME, true);
     } else {
       this.processNavigation(pathStr, parts);
     }
@@ -83,10 +89,10 @@ class Router {
       const { pathStr, parts } = this.parsePath();
       this.processNavigation(pathStr, parts);
     } catch (error) {
-      console.error(error);
+      console.error("Navigation error:", error);
+      this.resetRoute();
     }
   }
-
   guardUnsavedChanges(targetUrl: string) {
     if (!isSettingsOpen) return false;
 
@@ -100,7 +106,7 @@ class Router {
   parsePath() {
     const raw = window.location.hash.startsWith("#")
       ? window.location.hash.slice(1)
-      : "/channels/@me";
+      : this.ROUTES.DM_HOME;
 
     const pathStr = raw.startsWith("/") ? raw : `/${raw}`;
     const parts = pathStr.split("/").filter(Boolean);
@@ -109,24 +115,24 @@ class Router {
   }
 
   processNavigation(pathStr: string, parts: string[]) {
-    if (pathStr.startsWith("/join-guild/")) {
+    if (pathStr.startsWith(this.ROUTES.JOIN_GUILD)) {
       const inviteId = parts[1];
       if (inviteId) showGuildPop(inviteId);
-      this.updateHashRoot("/channels/@me");
+      this.updateHashRoot(this.ROUTES.DM_HOME);
       return;
     }
 
-    if (pathStr === "/channels/@me") {
+    if (pathStr === this.ROUTES.DM_HOME) {
       loadDmHome(false);
       return;
     }
 
-    if (pathStr.startsWith("/channels/@me/")) {
+    if (pathStr.startsWith(this.ROUTES.CHANNELS_ME)) {
       openDm(parts[2]);
       return;
     }
 
-    if (pathStr.startsWith("/channels/") && parts.length === 3) {
+    if (pathStr.startsWith(this.ROUTES.CHANNELS) && parts.length === 3) {
       handleChannelLoading(parts[1], parts[2]);
       return;
     }
@@ -162,15 +168,15 @@ class Router {
   }
 
   constructAppPage(guildId: string, channelId: string) {
-    return `/channels/${guildId}/${channelId}`;
+    return `${this.ROUTES.CHANNELS}${guildId}/${channelId}`;
   }
 
   constructDmPage(channelId: string) {
-    return `/channels/@me/${channelId}`;
+    return `${this.ROUTES.CHANNELS_ME}${channelId}`;
   }
 
   constructAbsoluteAppPage(guildId: string, channelId: string) {
-    return `/#/channels/${guildId}/${channelId}`;
+    return `/#${this.ROUTES.CHANNELS}${guildId}/${channelId}`;
   }
 
   validateRoute() {
@@ -253,7 +259,7 @@ class Router {
 
   resetRoute() {
     console.error("Resetting route");
-    this.updateHashRoot("/channels/@me", true);
+    this.updateHashRoot(this.ROUTES.DM_HOME, true);
   }
 
   async openLink(link: string, imageElement?: HTMLImageElement) {
@@ -293,14 +299,13 @@ class Router {
 
   updateHashRoot(path: string, replace = false) {
     const clean = path.startsWith("/") ? path.slice(1) : path;
-    const newUrl = `/#/${clean}`;
+    const newHash = `#/${clean}`;
+
     if (replace) {
-      history.replaceState(null, "", newUrl);
+      window.location.replace(newHash);
     } else {
-      history.pushState(null, "", newUrl);
+      window.location.hash = newHash;
     }
-    const { pathStr, parts } = this.parsePath();
-    this.processNavigation(pathStr, parts);
   }
 }
 
