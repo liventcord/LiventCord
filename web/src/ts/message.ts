@@ -1,5 +1,3 @@
-import imageCompression from "browser-image-compression";
-
 import {
   scrollToBottom,
   setHasJustFetchedMessagesFalse,
@@ -353,7 +351,6 @@ function sendEditMessageRequest(messageId: string, content: string) {
   });
 }
 
-// message.ts
 export function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
 
@@ -385,20 +382,24 @@ function getChannelId(): string {
   return isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId;
 }
 
-function tryCompressAndConvert(
+async function tryCompressAndConvert(
   file: File,
   targetFormat: string = DEFAULT_IMAGE_FORMAT,
   quality: number = 0.8
 ): Promise<File> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
+      const { default: imageCompression } =
+        await import("browser-image-compression");
+
       const maxDimension = Math.max(img.width, img.height);
       const options = {
         maxSizeMB: maxAttachmentSize,
         maxWidthOrHeight: maxDimension,
         useWebWorker: true
       };
+
       imageCompression(file, options)
         .then((compressedFile) =>
           tryConvertToFormat(compressedFile, targetFormat, quality)

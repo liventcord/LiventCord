@@ -1,6 +1,3 @@
-import Croppie from "croppie";
-import "croppie/croppie.css";
-
 import { cacheInterface, guildCache, sharedGuildsCache } from "./cache.ts";
 import {
   currentGuildId,
@@ -936,7 +933,8 @@ export function createInviteUsersPop() {
   const sendText = translations.getTranslation("invites-guild-detail");
   const invitelink = `${window.location.protocol}//${window.location.hostname}${
     window.location.port ? `:${window.location.port}` : ""
-  }/LiventCord/app/#join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
+  }/join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
+
   const inviteTitle = createEl("p", {
     id: "invite-users-title",
     textContent: title
@@ -1408,10 +1406,10 @@ function ChangePopUpToGuildJoining(
     hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
       window.location.port ? `:${window.location.port}` : ""
-    }/#join-guild/hTKzmak<br>
+    }/join-guild/hTKzmak<br>
     ${window.location.protocol}//${window.location.hostname}${
       window.location.port ? `:${window.location.port}` : ""
-    }/#join-guild/cool-people
+    }/join-guild/cool-people
     `;
   const guildNameDescriptionContent = createEl("h1", {
     innerHTML: descriptionText,
@@ -1453,10 +1451,14 @@ export function closePopUp(outerParent: HTMLElement, popParent: HTMLElement) {
   }, 200);
 }
 
-export function createCropPop(
+export async function createCropPop(
   inputSrc: string,
   callbackAfterAccept: CallableFunction
 ) {
+  const [{ default: Croppie }] = await Promise.all([
+    import("croppie"),
+    import("croppie/croppie.css")
+  ]);
   const cropTitle = translations.getTranslation("crop-title");
   const inviteTitle = createEl("p", {
     id: "invite-users-title",
