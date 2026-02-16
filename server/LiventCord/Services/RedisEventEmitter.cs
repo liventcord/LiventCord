@@ -2,84 +2,110 @@ using LiventCord.Controllers;
 
 public class RedisEventEmitter
 {
-    private readonly IBackgroundTaskService _backgroundTaskService;
     private readonly IServiceProvider _serviceProvider;
     private readonly BaseRedisEmitter _redisEmitter;
+    private readonly int _maxDegreeOfParallelism;
+    private readonly SemaphoreSlim _semaphore;
 
-    public RedisEventEmitter(
-        IBackgroundTaskService backgroundTaskService,
-        IServiceProvider serviceProvider,
-        BaseRedisEmitter redisEmitter
-    )
+    public RedisEventEmitter(IServiceProvider serviceProvider, BaseRedisEmitter redisEmitter, int maxDegreeOfParallelism = 8)
     {
-        _backgroundTaskService = backgroundTaskService;
         _serviceProvider = serviceProvider;
         _redisEmitter = redisEmitter;
+        _maxDegreeOfParallelism = maxDegreeOfParallelism;
+        _semaphore = new SemaphoreSlim(_maxDegreeOfParallelism, _maxDegreeOfParallelism);
     }
 
-    public async Task EmitToGuild(
-        EventType eventType,
-        object payload,
-        string guildId,
-        string userIdToExclude = ""
-    )
+    public async Task EmitToGuild(EventType eventType, object payload, string guildId, string userIdToExclude = "")
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var userIds = await dbContext.GetGuildUserIds(guildId, userIdToExclude);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userIds = await dbContext.GetGuildUserIds(guildId, userIdToExclude);
 
-            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
-            {
-                await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
-            });
-        }
+        if (userIds.Any())
+            await EmitBatchAsync(userIds, eventType, payload);
     }
 
     public async Task EmitGuildMembersToRedis(string guildId)
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var userIds = await dbContext.GetGuildUserIds(guildId, null);
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userIds = await dbContext.GetGuildUserIds(guildId, null);
 
-            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
-            {
-                await _redisEmitter.EmitGuildMembersToRedisStream(guildId, userIds);
-            });
-        }
+        if (userIds.Any())
+            await EmitGuildBatchAsync(guildId, userIds);
     }
 
-    public async Task EmitToFriend(
-        EventType eventType,
-        object payload,
-        string userId,
-        string friendId
-    )
+    public async Task EmitToFriend(EventType eventType, object payload, string userId, string friendId)
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            bool isFriend = await dbContext.CheckFriendship(userId, friendId);
-            string[] userIds = { friendId };
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        bool isFriend = await dbContext.CheckFriendship(userId, friendId);
+        if (!isFriend) return;
 
-            _backgroundTaskService.QueueBackgroundWorkItem(async token =>
-            {
-                await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
-            });
-        }
+        await EmitBatchAsync(new[] { friendId }, eventType, payload);
     }
 
     public Task EmitToUser(EventType eventType, object payload, string friendId)
     {
-        string[] userIds = { friendId };
+        return EmitBatchAsync(new[] { friendId }, eventType, payload);
+    }
 
-        _backgroundTaskService.QueueBackgroundWorkItem(async token =>
+    private async Task EmitBatchAsync(IEnumerable<string> userIds, EventType eventType, object payload)
+    {
+        await _semaphore.WaitAsync();
+        try
         {
-            await _redisEmitter.EmitToRedisStream(userIds, eventType, payload);
-        });
+            await _redisEmitter.EmitToRedisStream(userIds.ToArray(), eventType, payload);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
 
-        return Task.CompletedTask;
+    private async Task EmitGuildBatchAsync(string guildId, IEnumerable<string> userIds)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            await _redisEmitter.EmitGuildMembersToRedisStream(guildId, userIds.ToArray());
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task EmitGuildsParallel(IEnumerable<string> guildIds, Func<string, Task> emitFunc)
+    {
+        var tasks = new List<Task>();
+        using var enumerator = guildIds.GetEnumerator();
+        var locker = new object();
+
+        for (int i = 0; i < _maxDegreeOfParallelism; i++)
+        {
+            tasks.Add(Task.Run(async () =>
+            {
+                while (true)
+                {
+                    string guildId;
+                    lock (locker)
+                    {
+                        if (!enumerator.MoveNext()) break;
+                        guildId = enumerator.Current;
+                    }
+
+                    try
+                    {
+                        await emitFunc(guildId);
+                    }
+                    catch
+                    { }
+                }
+            }));
+        }
+
+        await Task.WhenAll(tasks);
     }
 }
 
@@ -114,3 +140,4 @@ public enum EventType
     EDIT_MESSAGE_GUILD,
     EDIT_MESSAGE_DM,
 }
+
