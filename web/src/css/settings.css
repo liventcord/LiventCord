@@ -533,6 +533,9 @@ body.black-theme .base-overview-name-input {
   border: none;
   border-radius: 10px;
 }
+.settings-buttons-selected {
+  background-color: #2e2e33;
+}
 #change-password-button {
   margin-top: 250px;
 }

@@ -421,6 +421,16 @@ function selectSettingCategory(
     | keyof typeof ChannelCategoryTypes
 ) {
   console.log("Selecting settings category: ", settingCategory);
+  const allButtons =
+    document.querySelectorAll<HTMLButtonElement>(".settings-buttons");
+  allButtons.forEach((btn) =>
+    btn.classList.remove("settings-buttons-selected")
+  );
+
+  const selectedButton = document.getElementById(settingCategory);
+  if (selectedButton) {
+    selectedButton.classList.add("settings-buttons-selected");
+  }
 
   if (settingCategory === GuildCategoryTypes.DeleteGuild) {
     createDeleteGuildPrompt(currentGuildId, guildCache.currentGuildName);
