@@ -144,6 +144,7 @@ body.black-theme .base-overview-name-input {
   width: 100%;
   background-color: #2f3136;
   overflow: hidden;
+  border-radius: 15px;
 }
 @keyframes settings-menu-scale-appear {
   0% {

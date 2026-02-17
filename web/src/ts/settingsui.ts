@@ -669,6 +669,27 @@ function getAppearanceHtml() {
 
   return `
         <h3>${translations.getSettingsTranslation("Appearance")}</h3>
+        <section id="chat-font-scaling">
+          <div class="header">
+            <h3>Chat Font Scaling</h3>
+            <h3>Adjust the font size in the chat area.</h3>
+          </div>
+          <div class="slider">
+            <div class="slider-track"></div>
+            <div class="slider-fill" style="width: 33.3333%;"></div>
+            <div class="slider-marks">
+              <div class="slider-mark" style="left: 0%;">12px</div>
+              <div class="slider-mark" style="left: 16.6667%;">14px</div>
+              <div class="slider-mark" style="left: 25%;">15px</div>
+              <div class="slider-mark" style="left: 33.3333%;">16px</div>
+              <div class="slider-mark" style="left: 50%;">18px</div>
+              <div class="slider-mark" style="left: 66.6667%;">20px</div>
+              <div class="slider-mark" style="left: 100%;">24px</div>
+            </div>
+            <div class="slider-handle" style="left: 33.3333%;"></div>
+          </div>
+        </section>
+
         ${toggles
           .map((toggle) =>
             createToggle(toggle.id, toggle.label, toggle.description)
@@ -987,6 +1008,72 @@ function initialiseSettingComponents(
   if (permissionManager.canManageGuild() && uploadEmojiButton) {
     uploadEmojiButton.addEventListener("click", triggerUploadEmoji);
   }
+
+  registerSlider();
+}
+function registerSlider() {
+  const slider = document.querySelector<HTMLDivElement>(
+    "#chat-font-scaling .slider"
+  )!;
+  if (!slider) return;
+
+  const handle = slider.querySelector<HTMLDivElement>(".slider-handle")!;
+  const fill = slider.querySelector<HTMLDivElement>(".slider-fill")!;
+  const marks: number[] = [12, 14, 15, 16, 18, 20, 24];
+
+  let sliderRect: DOMRect = slider.getBoundingClientRect();
+  let isDragging = false;
+
+  function updateSlider(clientX: number) {
+    const x = Math.min(
+      Math.max(clientX - sliderRect.left, 0),
+      sliderRect.width
+    );
+    const percent = x / sliderRect.width;
+
+    let nearestIndex = 0;
+    let minDiff = Infinity;
+
+    marks.forEach((_, i) => {
+      const markPercent = i / (marks.length - 1);
+      const diff = Math.abs(percent - markPercent);
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearestIndex = i;
+      }
+    });
+
+    const snappedPercent = nearestIndex / (marks.length - 1);
+    handle.style.left = `${snappedPercent * 100}%`;
+    fill.style.width = `${snappedPercent * 100}%`;
+
+    const selectedFont = marks[nearestIndex];
+    document.body.style.fontSize = `${selectedFont}px`;
+  }
+  handle.addEventListener("mousedown", () => {
+    isDragging = true;
+    sliderRect = slider.getBoundingClientRect();
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  window.addEventListener("mousemove", (e: MouseEvent) => {
+    if (!isDragging) return;
+    updateSlider(e.clientX);
+  });
+
+  slider.addEventListener("click", (e: MouseEvent) => {
+    sliderRect = slider.getBoundingClientRect();
+    updateSlider(e.clientX);
+  });
+
+  // Initialize to default value (e.g., 16px)
+  updateSlider(
+    sliderRect.left +
+      (marks.indexOf(16) / (marks.length - 1)) * sliderRect.width
+  );
 }
 
 export function createToggle(id: string, label: string, description: string) {
