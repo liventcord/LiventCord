@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import {
   createEl,
   getId,
@@ -31,16 +32,6 @@ interface MediaCategory {
   image: string;
 }
 
-interface GifResponse {
-  error?: string;
-  results: Array<{
-    media_formats: {
-      gif: { url: string };
-      tinygif: { url: string };
-    };
-  }>;
-}
-
 interface Category {
   name: string;
   path: string;
@@ -50,18 +41,6 @@ interface Category {
 interface MediaData {
   preview: string;
   [key: string]: any;
-}
-
-interface GifResult {
-  media_formats: {
-    gif: { url: string };
-    tinygif: { url: string };
-  };
-}
-
-interface GifResponse {
-  error?: string;
-  results: GifResult[];
 }
 
 interface GifMedia {
@@ -236,6 +215,7 @@ function displayContent(
   mediaMenuContainer.innerHTML = "";
 
   if (type === MediaTypes.Emoji) {
+    // eslint-disable-next-line no-unsanitized/property
     mediaMenuContainer.innerHTML = getEmojiPanel();
     return;
   }
@@ -361,8 +341,8 @@ async function loadGifContent(query: string): Promise<void> {
     return;
   }
 
-  const gifUrl = `${getMediaBaseURL()}/api/gifs?q=${encodeURIComponent(query)}`;
-  const response = await fetch(gifUrl);
+  const absoluteGifUrl = `${getMediaBaseURL()}/api/gifs?q=${encodeURIComponent(query)}`;
+  const response = await fetch(absoluteGifUrl);
   if (!response.ok) {
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
@@ -591,6 +571,7 @@ function toggleEmojis(isClickingTop?: boolean) {
       translations.getTranslation("search-tenor");
   } else {
     currentMenuType = MediaTypes.Emoji;
+    // eslint-disable-next-line no-unsanitized/property
     mediaMenuContainer.innerHTML = getEmojiPanel();
     mediaMenuSearchbar.placeholder =
       translations.getTranslation("find-perfect-emoji");

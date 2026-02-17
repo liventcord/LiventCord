@@ -1,10 +1,10 @@
+import { appState } from "./appState.ts";
 import { cacheInterface } from "./cache";
 import { currentVoiceChannelGuild, currentVoiceChannelId } from "./channels";
 import { getVideoObj, getUserMedia } from "./chatroom";
 import { rtcWsClient } from "./socketEvents";
 import { translations } from "./translations";
 import { DataMessage } from "./types/interfaces";
-import { currentUserId } from "./user";
 import { createBlackStream, getId } from "./utils";
 
 const PC_CONFIG: RTCConfiguration = {
@@ -78,7 +78,7 @@ class PeerConnectionWrapper {
       this.sentCandidates.add(key);
 
       sendViaServer({
-        senderId: currentUserId!,
+        senderId: appState.currentUserId!,
         targetId: this.peerId,
         type: "candidate",
         candidate: event.candidate.toJSON()
@@ -116,7 +116,7 @@ class PeerConnectionWrapper {
     await this.pc.setLocalDescription(offer);
 
     sendViaServer({
-      senderId: currentUserId!,
+      senderId: appState.currentUserId!,
       targetId: this.peerId,
       type: "offer",
       sdp: this.pc.localDescription!
@@ -129,7 +129,7 @@ class PeerConnectionWrapper {
     await this.pc.setLocalDescription(answer);
 
     sendViaServer({
-      senderId: currentUserId!,
+      senderId: appState.currentUserId!,
       targetId: this.peerId,
       type: "answer",
       sdp: this.pc.localDescription!
@@ -174,7 +174,7 @@ class PeerConnectionWrapper {
 const peers = new Map<string, PeerConnectionWrapper>();
 
 export async function invite(peerId: string) {
-  if (peerId === currentUserId) return;
+  if (peerId === appState.currentUserId) return;
   if (peers.has(peerId)) return;
 
   const wrapper = new PeerConnectionWrapper(peerId);

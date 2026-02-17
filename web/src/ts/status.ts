@@ -2,11 +2,12 @@ import { drawProfilePopId } from "./popups.ts";
 import { openSettings } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
 import { createEl, getId } from "./utils.ts";
-import { currentUserId, userManager } from "./user.ts";
+import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copyId } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { SettingType } from "./types/interfaces.ts";
+import { appState } from "./appState.ts";
 
 export class UserStatus {
   private createdPanel: HTMLElement | undefined;
@@ -75,7 +76,9 @@ export class UserStatus {
   }
 
   private createStatusPanel = async () => {
-    const createdPanel = await drawProfilePopId(currentUserId, true);
+    if (!appState.currentUserId) return;
+
+    const createdPanel = await drawProfilePopId(appState.currentUserId, true);
     if (!createdPanel) return;
 
     createdPanel.classList.add("statusPanelContainer");
@@ -164,9 +167,9 @@ export class UserStatus {
     copyIdButton.appendChild(this.createCopyIdSvg());
     copyIdButton.textContent +=
       translations.getContextTranslation("COPY_USER_ID");
-    copyIdButton.addEventListener("click", (event: MouseEvent) =>
-      copyId(currentUserId, event)
-    );
+    copyIdButton.addEventListener("click", (event: MouseEvent) => {
+      if (appState.currentUserId) copyId(appState.currentUserId, event);
+    });
     return copyIdButton;
   }
 
@@ -198,8 +201,8 @@ export class UserStatus {
     this.currentStatus = status;
     this.selfStatus.textContent = this.formatStatusText(status);
 
-    if (currentUserId) {
-      userManager.updateMemberStatus(currentUserId, status);
+    if (appState.currentUserId) {
+      userManager.updateMemberStatus(appState.currentUserId, status);
     }
 
     const avatarPanelSelfBubble = getId("self-bubble");
@@ -232,7 +235,7 @@ export class UserStatus {
       userManager.getUserNick(userId),
       status
     );
-    if (userId === currentUserId) {
+    if (userId === appState.currentUserId) {
       this.updateSelfStatus(status);
     }
     userManager.updateMemberStatus(userId, status, isTyping);
@@ -330,4 +333,8 @@ export class UserStatus {
       this.isTimeoutPending = false;
     }
   }
+}
+export let userStatus: UserStatus;
+export function initializeUserStatus() {
+  userStatus = new UserStatus();
 }

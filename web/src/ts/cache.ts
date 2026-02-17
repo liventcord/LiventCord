@@ -1,6 +1,6 @@
 import { initialState } from "./app.ts";
+import { appState } from "./appState.ts";
 import { appendToMessageContextList } from "./contextMenuActions.ts";
-import { Emoji } from "./emoji.ts";
 import {
   CachedChannel,
   DMHistoryResponse,
@@ -8,7 +8,7 @@ import {
   Message,
   MessageReply
 } from "./types/interfaces.ts";
-import { currentUserId } from "./user.ts";
+import { Emoji } from "./types/interfaces";
 import { MINUS_INDEX } from "./utils.ts";
 
 class BaseCache {
@@ -247,10 +247,12 @@ class EmojisCache extends BaseCache {
     const emojis = this.getEmojis(guildId);
 
     emojiIds.forEach((fileId) => {
+      if (!appState.currentUserId) return;
+
       const fileName = `emoji-${fileId}`;
       const emoji: Emoji = {
         guildId,
-        userId: currentUserId,
+        userId: appState.currentUserId,
         fileId,
         fileName
       };
@@ -895,8 +897,5 @@ export function clearMessagesCache() {
 }
 
 export const replyCache: Record<string, MessageReply> = {};
-
-const guildChatMessages: { [channelId: string]: Message[] } = {};
-
 export const guildCache = new GuildCache();
 export const cacheInterface = new GuildCacheInterface();

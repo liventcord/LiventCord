@@ -1,6 +1,6 @@
 import { cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId, userManager } from "./user.ts";
+import { userManager } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
@@ -36,7 +36,6 @@ import {
   playAudioType,
   AudioType
 } from "./audio.ts";
-import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
 import {
   addVideoElement,
@@ -60,6 +59,8 @@ import {
   TypingData,
   VoiceUser
 } from "./types/interfaces.ts";
+import { appState } from "./appState.ts";
+import { userStatus } from "./status.ts";
 
 export const typingStatusMap = new Map<string, Set<string>>();
 
@@ -367,21 +368,25 @@ export class WebSocketClient extends WebSocketClientBase {
   }
 
   startTyping(channelId: string, guildId: string | null = null) {
+    if (!appState.currentUserId) return;
+
     this.send(SocketEvent.START_TYPING, {
       channelId,
       guildId,
       routeType: guildId ? "guild" : "dm"
     });
-    userStatus.updateUserOnlineStatus(currentUserId, "", true);
+    userStatus.updateUserOnlineStatus(appState.currentUserId, "", true);
   }
 
   stopTyping(channelId: string, guildId: string | null = null) {
+    if (!appState.currentUserId) return;
+
     this.send(SocketEvent.STOP_TYPING, {
       channelId,
       guildId,
       routeType: guildId ? "guild" : "dm"
     });
-    userStatus.updateUserOnlineStatus(currentUserId, "", false);
+    userStatus.updateUserOnlineStatus(appState.currentUserId, "", false);
   }
 
   protected onOpen() {

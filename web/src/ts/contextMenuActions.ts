@@ -1,16 +1,12 @@
 import { openDm, readCurrentMessages, readGuildMessages } from "./app.ts";
+import { appState } from "./appState.ts";
 import {
   createChannelsPop,
   drawProfilePop,
   drawProfilePopId
 } from "./popups.ts";
 import { showReplyMenu, appendMemberMentionToInput } from "./chatbar.ts";
-import {
-  currentDiscriminator,
-  currentUserId,
-  currentUserNick,
-  userManager
-} from "./user.ts";
+import { userManager } from "./user.ts";
 import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
 import { createEl, getId } from "./utils.ts";
 import { isOnMePage, isOnDm, isOnGuild, router } from "./router.ts";
@@ -232,14 +228,14 @@ function copyChannelLink(
   copyText(event, content);
 }
 export function copySelfName(event: MouseEvent) {
-  if (!currentUserNick || !currentDiscriminator) {
+  if (!appState.currentUserId || !appState.currentDiscriminator) {
     return;
   }
-  const text = `${currentUserNick}#${currentDiscriminator}`;
+  const text = `${appState.currentUserId}#${appState.currentDiscriminator}`;
   copyText(event, text);
 }
 export function copyId(id: string, event: MouseEvent) {
-  if (!currentUserNick || !currentDiscriminator) {
+  if (!appState.currentUserId || !appState.currentDiscriminator) {
     return;
   }
 
@@ -308,7 +304,7 @@ export function createUserContext(userId: string) {
     (context[VoiceActionType.MUTE_USER] = () => muteUser(userId)),
     (context[VoiceActionType.DEAFEN_USER] = () => deafenUser(userId)));
 
-  if (userId === currentUserId) {
+  if (userId === appState.currentUserId) {
     context[ActionType.EDIT_GUILD_PROFILE] = () => editGuildProfile();
   }
 
@@ -333,7 +329,7 @@ function createProfileContext(userData: UserInfo) {
     };
   }
 
-  if (userId === currentUserId) {
+  if (userId === appState.currentUserId) {
     context[ActionType.EDIT_GUILD_PROFILE] = {
       action: () => editGuildProfile()
     };
@@ -588,7 +584,7 @@ function createMessageContext(
     action: () => openReactionMenu(messageId)
   };
   if (!isSystemMessage) {
-    if (userId === currentUserId) {
+    if (userId === appState.currentUserId) {
       context[MessagesActionType.EDIT_MESSAGE] = {
         label: MessagesActionType.EDIT_MESSAGE,
         action: () => openEditMessage(messageId)
@@ -596,7 +592,7 @@ function createMessageContext(
     }
     if (
       permissionManager.canManageMessages() ||
-      (isOnDm && userId === currentUserId)
+      (isOnDm && userId === appState.currentUserId)
     ) {
       const exist = pinnedMessagesCache.doesMessageExist(
         currentGuildId,

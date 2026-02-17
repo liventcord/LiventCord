@@ -3,13 +3,13 @@ import { getChannelsUl } from "./channels.ts";
 import { getId, createEl } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
-import { currentUserId } from "./user.ts";
 import { translations } from "./translations.ts";
 import { currentProfileImg } from "./popups.ts";
 import { apiClient } from "./api.ts";
 import { setAudioMuteState } from "./chatroom.ts";
 import { rtcWsClient } from "./socketEvents.ts";
 import { initialState } from "./app.ts";
+import { appState } from "./appState.ts";
 
 export enum AudioType {
   EnterVC = "/joinvoice",
@@ -251,7 +251,7 @@ function getSelfFromUserList(): HTMLImageElement | null {
   }
 
   for (const profile of Array.from(userProfiles)) {
-    if (profile.id === currentUserId) {
+    if (profile.id === appState.currentUserId) {
       return profile.querySelector(".profile-pic") as HTMLImageElement;
     }
   }

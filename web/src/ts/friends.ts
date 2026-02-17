@@ -1,3 +1,5 @@
+import { appState } from "./appState.ts";
+
 import {
   disableElement,
   reCalculateFriTitle,
@@ -7,7 +9,7 @@ import {
   getId,
   isValidFriendName
 } from "./utils.ts";
-import { getSelfFullDisplay, currentUserId, userManager } from "./user.ts";
+import { getSelfFullDisplay, userManager } from "./user.ts";
 import { handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
@@ -131,7 +133,7 @@ class FriendsCache {
     }
 
     const userId = friend.userId;
-    if (userId === currentUserId) {
+    if (userId === appState.currentUserId) {
       console.error("User id is same as friend!");
       return;
     }
@@ -167,7 +169,7 @@ class FriendsCache {
 
   isFriend(userId: string): boolean {
     return (
-      userId !== currentUserId &&
+      userId !== appState.currentUserId &&
       userId in this.friendsCache &&
       !this.friendsCache[userId].isPending
     );
@@ -175,7 +177,7 @@ class FriendsCache {
 
   hasRequestToFriend(userId: string) {
     return (
-      userId !== currentUserId &&
+      userId !== appState.currentUserId &&
       userId in this.friendsCache &&
       this.friendsCache[userId].isPending
     );

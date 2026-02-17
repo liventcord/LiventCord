@@ -1,3 +1,5 @@
+import { appState } from "./appState.ts";
+
 import { getOldMessages } from "./message.ts";
 import {
   currentLastDate,
@@ -41,12 +43,7 @@ import {
   initialState,
   loadDmHome
 } from "./app.ts";
-import {
-  currentUserId,
-  DEFAULT_DISCRIMINATOR,
-  deletedUser,
-  userManager
-} from "./user.ts";
+import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user.ts";
 import {
   updateFriendsList,
   handleFriendEventResponse,
@@ -166,10 +163,11 @@ apiClient.on(EventType.UPLOAD_GUILD_IMAGE, (data: any) => {
   setLastConfirmedGuildImage();
 });
 apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
+  if (!appState.currentUserId) return;
   setLastConfirmedProfileImage();
-  userManager.setProfileVersion(currentUserId, data.profileVersion);
+  userManager.setProfileVersion(appState.currentUserId, data.profileVersion);
   initialState.user.profileVersion = data.profileVersion;
-  refreshUserProfile(currentUserId);
+  refreshUserProfile(appState.currentUserId);
 });
 function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
   updatePermissions(guild.guildId, permissions);
@@ -186,7 +184,7 @@ function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
     isGuildUploadedImg: guild.isGuildUploadedImg,
     rootChannel: guild.rootChannel,
     guildMembers: guild.guildMembers,
-    ownerId: currentUserId,
+    ownerId: appState.currentUserId || "",
     guildVersion: ""
   });
 
@@ -411,7 +409,7 @@ apiClient.on(EventType.GET_MESSAGE_DATES, (data: MessageDatesResponse) => {
 apiClient.on(EventType.CHANGE_NICK, (data) => {
   const userId = data.userId;
   const newNickname = data.userName;
-  if (userId === currentUserId) {
+  if (userId === appState.currentUserId) {
     const setInfoNick = getId("set-info-nick");
 
     selfName.innerText = newNickname;

@@ -1,3 +1,5 @@
+import { appState } from "./appState.ts";
+
 import {
   alertUser,
   askUser,
@@ -45,7 +47,6 @@ import {
   escapeHtml,
   isMobile
 } from "./utils.ts";
-import { currentUserNick, currentUserId } from "./user.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId } from "./guild.ts";
@@ -436,7 +437,8 @@ function selectSettingCategory(
   }
 
   if (settingCategory === ProfileCategoryTypes.MyAccount) {
-    updateSelfProfile(currentUserId, currentUserNick, true);
+    if (appState.currentUserId)
+      updateSelfProfile(appState.currentUserId, appState.currentUserId, true);
   }
 
   const settingsContainer = getId("settings-rightcontainer");
@@ -594,7 +596,7 @@ function getAccountSettingsHtml() {
                 <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password"> </i>
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
                 </div>
-                <input type="text" id="new-nickname-input" autocomplete="off" value="${currentUserNick}" maxlength="32">
+                <input type="text" id="new-nickname-input" autocomplete="off" value="${appState.currentUserId}" maxlength="32">
                 <img id="settings-self-profile" crossorigin="anonymous" style="user-select: none;">
                 <form id="profileImageForm" enctype="multipart/form-data">
                 <input type="file" name="profileImage" id="profileImage" accept="image/*" style="display: none;">
@@ -861,7 +863,8 @@ function initialiseSettingComponents(
 ) {
   setTimeout(() => {
     if (settingCategory === ProfileCategoryTypes.MyAccount) {
-      updateSelfProfile(currentUserId, currentUserNick, true);
+      if (appState.currentUserId)
+        updateSelfProfile(appState.currentUserId, appState.currentUserId, true);
     }
   }, 100);
 
@@ -915,9 +918,9 @@ function initialiseSettingComponents(
   }
   getId("new-nickname-input")?.addEventListener("input", onEditNick);
   const selfName = getId("settings-self-name");
-  if (selfName) selfName.textContent = currentUserNick;
+  if (selfName) selfName.textContent = appState.currentUserId;
   const setInfoNick = getId("set-info-nick");
-  if (setInfoNick) setInfoNick.textContent = currentUserNick;
+  if (setInfoNick) setInfoNick.textContent = appState.currentUserId;
 
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getId("guild-image") as HTMLImageElement;
@@ -1136,8 +1139,8 @@ export function generateConfirmationPanel() {
   resetButton.addEventListener("click", function () {
     hideConfirmationPanel(popupDiv);
     const nickinput = getId("new-nickname-input") as HTMLInputElement;
-    if (nickinput) {
-      nickinput.value = currentUserNick;
+    if (nickinput && appState.currentUserId) {
+      nickinput.value = appState.currentUserId;
     }
     const profileimg = getId("profileImage") as HTMLInputElement;
     if (profileimg) {

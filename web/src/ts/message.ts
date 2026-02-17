@@ -17,9 +17,7 @@ import {
   attachmentsTray,
   fileInput,
   currentReplyingTo,
-  resetChatInputState,
-  FileHandler,
-  fileSpoilerMap
+  resetChatInputState
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -41,6 +39,7 @@ import { translations } from "./translations.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 import { shakeScreen } from "./settingsui.ts";
 import { processDeleteMessage } from "./socketEvents.ts";
+import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 

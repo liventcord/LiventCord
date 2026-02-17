@@ -5,16 +5,11 @@ import { isOnGuild, isOnMePage } from "./router.ts";
 import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
 import { friendsCache } from "./friends.ts";
-import {
-  currentUserNick,
-  currentUserId,
-  currentDiscriminator,
-  userManager,
-  DEFAULT_DISCRIMINATOR
-} from "./user.ts";
+import { userManager, DEFAULT_DISCRIMINATOR } from "./user.ts";
 import { handleResize, handleResizeWidth } from "./ui.ts";
 import { socketClient } from "./socketEvents.ts";
 import { PublicUser, UserInfo } from "./types/interfaces.ts";
+import { appState } from "./appState.ts";
 
 export let userList: HTMLElement | null;
 export let userLine: HTMLElement | null;
@@ -142,12 +137,13 @@ export function setUsersList(
   }
 }
 export function updateDmFriendList(friendId: string, friendNick: string) {
+  if (!appState.currentUserId) return;
   const usersData = [
     {
-      userId: currentUserId,
-      nickName: currentUserNick,
-      isOnline: userManager.isOnline(currentUserId),
-      discriminator: currentDiscriminator || DEFAULT_DISCRIMINATOR
+      userId: appState.currentUserId,
+      nickName: appState.currentUserId,
+      isOnline: userManager.isOnline(appState.currentUserId),
+      discriminator: appState.currentDiscriminator || DEFAULT_DISCRIMINATOR
     },
     {
       userId: friendId,

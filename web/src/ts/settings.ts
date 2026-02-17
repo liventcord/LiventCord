@@ -1,4 +1,5 @@
 import confettiImport from "canvas-confetti";
+import { appState } from "./appState.ts";
 
 import {
   blackImage,
@@ -39,7 +40,7 @@ import { isDomLoaded } from "./app.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import { currentGuildId } from "./guild.ts";
-import { currentUserId, currentUserNick, userManager } from "./user.ts";
+import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { guildCache } from "./cache.ts";
 import { disableBgVideo, createBGVideo } from "./extras.ts";
@@ -417,16 +418,16 @@ function removeguildImage() {
 }
 
 function changeNickname() {
-  if (changeNicknameTimeout) {
+  if (changeNicknameTimeout || !appState.currentUserId) {
     return;
   }
 
   const newNicknameInput = getId("new-nickname-input") as HTMLInputElement;
   const newNickname = newNicknameInput.value.trim();
 
-  if (newNickname && newNickname !== currentUserNick) {
+  if (newNickname && newNickname !== appState.currentUserId) {
     console.log("Changed your nickname to: " + newNickname);
-    refreshUserProfile(currentUserId, newNickname);
+    refreshUserProfile(appState.currentUserId, newNickname);
     userManager.setUserNick(newNickname);
     const setInfoNick = getId("set-info-nick");
     if (setInfoNick) {

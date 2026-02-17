@@ -23,7 +23,6 @@ import {
   newMessagesBar,
   chatContainer,
   updatePlaceholderVisibility,
-  FileHandler,
   ReadenMessagesManager,
   setChatBarState,
   getChatBarState,
@@ -58,12 +57,7 @@ import {
   openSearchPop,
   toggleDropdown
 } from "./popups.ts";
-import {
-  initializeProfile,
-  currentUserId,
-  currentUserNick,
-  userManager
-} from "./user.ts";
+import { initializeProfile, userManager } from "./user.ts";
 import {
   addContextListeners,
   audioCall,
@@ -109,9 +103,11 @@ import {
 import { initialiseAudio } from "./audio.ts";
 import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
-import { UserStatus } from "./status.ts";
+import { initializeUserStatus, userStatus } from "./status.ts";
 import { initializeVideoComponent } from "./chatroom.ts";
 import { Channel, ChatBarState } from "./types/interfaces.ts";
+import { appState, InitialState } from "./appState.ts";
+import { FileHandler } from "./fileHandler.ts";
 
 interface InitialStateData {
   email: string;
@@ -134,38 +130,13 @@ interface InitialStateData {
   rtcWsUrl: string;
 }
 
-interface User {
-  userId: string;
-  nickname: string;
-  status: string;
-  discriminator: string;
-  maskedEmail: string;
-  email: string;
-  maxAvatarSize: number;
-  profileVersion: string;
-}
-
-interface InitialState {
-  user: User;
-  ownerId: string;
-  permissionsMap: Map<string, any>;
-  guilds: any[];
-  mediaWorkerUrl: string;
-  maxAvatarSize: number;
-  maxAttachmentSize: number;
-  sharedGuildsMap: Map<string, any>;
-  wsUrl: string;
-  rtcWsUrl: string;
-}
-
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
   channelInfoFriend: "channel-info-container-for-friend"
 };
 
-export let userStatus: UserStatus;
 export function initializeApp() {
-  userStatus = new UserStatus();
+  initializeUserStatus();
   window.scrollTo(0, 0);
   initializeElements();
   initializeSettings();
@@ -190,7 +161,7 @@ export function initialiseState(data: InitialStateData): void {
     email,
     userId,
     nickName,
-    userStatus,
+    userStatus: status,
     userDiscriminator,
     profileVersion,
     guildName,
@@ -213,7 +184,7 @@ export function initialiseState(data: InitialStateData): void {
     user: {
       userId,
       nickname: nickName,
-      status: userStatus,
+      status,
       discriminator: userDiscriminator,
       profileVersion,
       maskedEmail: getMaskedEmail(email),
@@ -270,7 +241,8 @@ function initializeElements() {
 }
 
 function initializeSettings() {
-  updateSelfProfile(currentUserId, currentUserNick);
+  if (appState.currentUserId)
+    updateSelfProfile(appState.currentUserId, appState.currentUserId);
   const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
   setTimeout(() => {
     setUsersList(isCookieUsersOpen, true);

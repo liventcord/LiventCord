@@ -1,3 +1,5 @@
+import { appState } from "./appState.ts";
+
 import {
   removeElement,
   enableElement,
@@ -7,14 +9,7 @@ import {
   disableElement,
   IMAGE_SRCS
 } from "./utils.ts";
-import {
-  currentDiscriminator,
-  currentUserId,
-  currentUserNick,
-  DEFAULT_DISCRIMINATOR,
-  deletedUser,
-  userManager
-} from "./user.ts";
+import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user.ts";
 import {
   submitAddFriend,
   filterFriendsOnSearch,
@@ -411,9 +406,9 @@ export async function removeFromDmList(userId: string): Promise<void> {
 export function getCurrentDmFriends(): UserInfo[] {
   return [
     {
-      userId: currentUserId,
-      nickName: currentUserNick,
-      discriminator: currentDiscriminator
+      userId: appState.currentUserId || "",
+      nickName: appState.currentUserNick || deletedUser,
+      discriminator: appState.currentDiscriminator || "0000"
     },
     {
       userId: friendsCache.currentDmId,

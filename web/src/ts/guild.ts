@@ -1,3 +1,5 @@
+import { appState } from "./appState.ts";
+
 import { getId, createEl, blackImage, IMAGE_SRCS } from "./utils.ts";
 import { clickMainLogo } from "./ui.ts";
 import {
@@ -29,7 +31,7 @@ import {
   setCurrentVoiceChannelGuild,
   setCurrentVoiceChannelId
 } from "./channels.ts";
-import { currentUserId, DEFAULT_DISCRIMINATOR, userManager } from "./user.ts";
+import { DEFAULT_DISCRIMINATOR, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
 import { rtcWsClient } from "./socketEvents.ts";
@@ -263,7 +265,7 @@ export function onLeaveGuild(guildId: string) {
 }
 export function handleKickMemberResponse(data: any) {
   const userId = data.userId;
-  if (userId === currentUserId) {
+  if (userId === appState.currentUserId) {
     onLeaveGuild(data.guildId);
   } else {
     removeUserFromMemberList(userId);

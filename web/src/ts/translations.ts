@@ -116,10 +116,10 @@ class Translations {
     );
   }
 
-  generateGuildName(currentUserNick: string): string {
+  generateGuildName(currentUserId: string): string {
     return this.replacePlaceholder(
       "guid_name_placeholder",
-      { userNick: currentUserNick },
+      { userNick: currentUserId },
       { userNick: 15 }
     );
   }

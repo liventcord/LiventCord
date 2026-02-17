@@ -60,7 +60,6 @@ import {
   chatContainer,
   chatContent,
   chatInput,
-  FileHandler,
   showReplyMenu
 } from "./chatbar.ts";
 import {
@@ -74,6 +73,7 @@ import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
 import { setWidths } from "./channels.ts";
 import { Attachment, SettingType } from "./types/interfaces.ts";
+import { FileHandler } from "./fileHandler.ts";
 
 export const textChanHtml =
   '<svg class="icon_d8bfb3" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
@@ -110,25 +110,6 @@ let previewSlideEndX = 0;
 const channelList = getId("channel-list") as HTMLElement;
 
 export let loadingScreen: HTMLElement;
-
-function enableLoadingScreen() {
-  loadingScreen = createEl("div", { id: "loading-screen" });
-  document.body.appendChild(loadingScreen);
-  const loadingElement = createEl("img", {
-    id: "loading-element"
-  });
-  loadingScreen.appendChild(loadingElement);
-  loadingElement.src = "/icons/icon.webp";
-}
-function isLoadingScreen() {
-  if (!loadingScreen) {
-    return false;
-  }
-  return loadingScreen.style.display === "flex";
-}
-function hideLoadingScreen() {
-  loadingScreen.style.display = "none";
-}
 
 let isEmailToggled = false;
 export function toggleEmail() {
@@ -946,11 +927,11 @@ function getSourceImage(imageElement: any): string {
 function handleImageSpoiler(
   previewImage: HTMLImageElement,
   isSpoiler: boolean
-): void {
+) {
   if (isSpoiler) {
-    FileHandler.blurImage(previewImage);
+    previewImage.classList.add("spoilered");
   } else {
-    FileHandler.unBlurImage(previewImage);
+    previewImage.classList.remove("spoilered");
   }
 }
 
@@ -1260,6 +1241,7 @@ export function hideImagePreview() {
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
 
+// Todo: Implement json preview
 function hideJsonPreview(event: Event) {
   const target = event.target as HTMLElement;
 

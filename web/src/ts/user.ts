@@ -1,22 +1,19 @@
 import store from "../store.ts";
 import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
-import { initialState, userStatus } from "./app.ts";
+import { initialState } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
 import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
 import { Friend, UserInfo } from "./types/interfaces.ts";
+import { appState } from "./appState.ts";
+import { userStatus } from "./status.ts";
 
 export const DEFAULT_DISCRIMINATOR = "0000";
 
-export let currentUserId: string;
-
-export let currentDiscriminator: string;
-export let currentUserNick: string;
-
 export const deletedUser = "Deleted User";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
 let lastTopSenderId = null;
 
 export function setLastTopSenderId(id: string) {
@@ -125,11 +122,11 @@ class UserManager {
   }
 
   setUserNick(newNickname: string) {
-    currentUserNick = newNickname;
+    appState.set({ currentUserNick: newNickname });
   }
 
   setCurrentUserId(id: string) {
-    currentUserId = id;
+    appState.set({ currentUserId: id });
   }
 
   getUserInfo(userId: string) {
@@ -150,7 +147,7 @@ class UserManager {
   }
 
   getUserProfileVersion(userId: string): string {
-    return userId === currentUserId
+    return userId === appState.currentUserId
       ? initialState.user.profileVersion
       : (this.userNames[userId]?.profileVersion ?? "");
   }
@@ -210,7 +207,8 @@ class UserManager {
           ? Boolean(isBlocked)
           : (existing.isBlocked ?? false),
       status:
-        existing.status || (userId === currentUserId ? "online" : "offline"),
+        existing.status ||
+        (userId === appState.currentUserId ? "online" : "offline"),
       description: existing.description || ""
     };
   }
@@ -295,18 +293,18 @@ export function initializeProfile() {
     initialState.user.profileVersion,
     false
   );
-  socketClient.onUserIdAvailable(currentUserId);
-
-  currentUserNick = initialState.user.nickname;
-  currentDiscriminator = initialState.user.discriminator;
-  selfName.textContent = currentUserNick;
+  if (!appState.currentUserId) return;
+  socketClient.onUserIdAvailable(appState.currentUserId);
+  appState.set({ currentUserNick: initialState.user.nickname });
+  appState.set({ currentDiscriminator: initialState.user.discriminator });
+  selfName.textContent = appState.currentUserId;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
   const profileDiscriminator = getId("profile-discriminator");
   if (profileDiscriminator) {
     profileDiscriminator.textContent = "#" + initialState.user.discriminator;
   }
   userStatus.setSelfStatus(initialState.user.status);
-  updateSelfProfile(currentUserId, currentUserNick);
+  updateSelfProfile(appState.currentUserId, appState.currentUserId);
 }
 
 export function getSelfFullDisplay() {

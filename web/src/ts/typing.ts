@@ -1,6 +1,6 @@
-import { userStatus } from "./app";
 import { guildCache } from "./cache";
 import { friendsCache } from "./friends";
+import { userStatus } from "./status";
 import { TypingData } from "./types/interfaces";
 import { userManager } from "./user";
 import { disableElement, enableElement, getId } from "./utils";

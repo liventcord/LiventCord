@@ -14,7 +14,9 @@ import {
 } from "./settings";
 import { RTCWebSocketClient, rtcWsClient } from "./socketEvents";
 import { alertUser } from "./ui";
-import { currentUserId, userManager } from "./user";
+import { userManager } from "./user";
+import { appState } from "./appState.ts";
+
 import { createEl, disableElement, enableElement, getId } from "./utils";
 import { checkVideoLayout, initialiseSelfVideo } from "./videoManager";
 
@@ -40,7 +42,7 @@ myVideo?.addEventListener("click", () => {
 });
 
 export function currentVoiceUserId() {
-  return currentUserId;
+  return appState.currentUserId;
 }
 
 export async function initializeVideoComponent() {

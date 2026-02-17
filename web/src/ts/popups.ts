@@ -9,12 +9,7 @@ import {
 import { getId, getAverageRGB, createEl, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
-import {
-  currentUserId,
-  currentUserNick,
-  userManager,
-  currentDiscriminator
-} from "./user.ts";
+import { userManager } from "./user.ts";
 import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
 import { isOnGuild } from "./router.ts";
@@ -31,6 +26,7 @@ import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
 import { toggleManager } from "./settings.ts";
 import { copyText } from "./tooltip.ts";
 import { UserInfo } from "./types/interfaces.ts";
+import { appState } from "./appState.ts";
 
 let isDropdownOpen = false;
 export let closeCurrentJoinPop: CallableFunction | null = null;
@@ -528,8 +524,11 @@ function createProfileContainer(userData: UserInfo): HTMLElement {
     id: "profile-title",
     textContent: userManager.getUserNick(userData.userId)
   });
-  if (userData.userId === currentUserId) {
-    userData.discriminator = currentDiscriminator;
+  if (
+    userData.userId === appState.currentUserId &&
+    appState.currentDiscriminator
+  ) {
+    userData.discriminator = appState.currentDiscriminator;
   }
   const profileDiscriminator = createEl("p", {
     id: "profile-discriminator",
@@ -677,7 +676,7 @@ function createPopBottomContainer(
     }
   ];
 
-  if (userId !== currentUserId) {
+  if (userId !== appState.currentUserId) {
     const sharedGuildsSection = createEl("div", {
       className: "shared-guilds-content",
       style: "display: none; overflow-y: auto; max-height: 200px;"
@@ -787,7 +786,7 @@ function createPopBottomContainer(
 function createProfileOptionsContainer(userData: UserInfo): HTMLElement {
   const container = createEl("div", { className: "profile-options-container" });
 
-  if (userData.userId !== currentUserId) {
+  if (userData.userId !== appState.currentUserId) {
     container.appendChild(createSendMsgButton(container, userData));
     if (!friendsCache.isFriend(userData.userId)) {
       container.appendChild(createAddFriendButton(userData));
@@ -1220,6 +1219,7 @@ function changePopUpToGuildCreation(
   newPopSubject: HTMLElement,
   closeCallback: CallableFunction
 ) {
+  if (!appState.currentUserId) return;
   if (popButtonContainer?.parentNode) {
     popButtonContainer.parentNode.removeChild(popButtonContainer);
   }
@@ -1229,7 +1229,7 @@ function changePopUpToGuildCreation(
     "customize-guild-detail"
   );
 
-  const text = translations.generateGuildName(currentUserNick);
+  const text = translations.generateGuildName(appState.currentUserId);
   const newInput = createEl("input", { value: text, id: "guild-name-input" });
   const createButton = createEl("button", {
     textContent: translations.getTranslation("create"),

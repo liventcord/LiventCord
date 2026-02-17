@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { reactive } from "vue";
+import { appState } from "./appState.ts";
 
 import { getMessageDate, getOldMessages } from "./message.ts";
 import {
@@ -35,7 +36,7 @@ import {
   isMobile,
   isContentValid
 } from "./utils.ts";
-import { currentUserId, setLastTopSenderId, userManager } from "./user.ts";
+import { setLastTopSenderId, userManager } from "./user.ts";
 import { createMediaElement, handleLink } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
 import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
@@ -618,7 +619,7 @@ export function handleNewMessage(data: NewMessageResponse): void {
 
     const isCurrentGuild = guildId === currentGuildId;
     const isCurrentChannel = idToCompare === channelId;
-    const isOwnMessage = userId === currentUserId;
+    const isOwnMessage = userId === appState.currentUserId;
 
     const isVisible = document.visibilityState === "visible";
     const hasFocus = document.hasFocus();
@@ -1265,8 +1266,10 @@ export function handleSelfSentMessage(data: NewMessageResponseSelf) {
   }
 
   if (message.channelId === guildCache.currentChannelId) {
+    if (!appState.currentUserId) return;
+
     handleStopTyping({
-      userId: currentUserId,
+      userId: appState.currentUserId,
       guildId: currentGuildId,
       channelId: message.channelId
     });
@@ -1495,7 +1498,7 @@ function updateSenderAndButtons(
   } else {
     setLastTopSenderId(userId);
   }
-  if (userId !== currentUserId) {
+  if (userId !== appState.currentUserId) {
     createMsgOptionButton(newMessage, true);
   }
   createOptions3Button(newMessage, newMessage.id, userId, isSystemMessage);
@@ -1847,10 +1850,11 @@ export function displayLocalMessage(
   content: string
 ) {
   appendtoSelfSentMessages(messageId);
+  if (!appState.currentUserId) return;
 
   const preMessage = new Message({
     messageId,
-    userId: currentUserId,
+    userId: appState.currentUserId,
     content,
     channelId,
     date: createNowDate(),

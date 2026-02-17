@@ -26,7 +26,6 @@ import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
-import { FileHandler } from "./chatbar.ts";
 import {
   addEditedIndicator,
   changeChannelWithId,
@@ -45,6 +44,7 @@ import {
   MetaData,
   Metadata
 } from "./types/interfaces.ts";
+import { FileHandler } from "./fileHandler.ts";
 
 interface EmbedType {
   Article: number;
