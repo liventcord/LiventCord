@@ -671,8 +671,8 @@ function getAppearanceHtml() {
         <h3>${translations.getSettingsTranslation("Appearance")}</h3>
         <section id="chat-font-scaling">
           <div class="header">
-            <h3>Chat Font Scaling</h3>
-            <h3>Adjust the font size in the chat area.</h3>
+            <h3>Font Scaling</h3>
+            <h3>Adjust the font size.</h3>
           </div>
           <div class="slider">
             <div class="slider-track"></div>

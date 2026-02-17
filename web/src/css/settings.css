@@ -145,44 +145,46 @@ body.black-theme .base-overview-name-input {
   background-color: #2f3136;
   overflow: hidden;
   border-radius: 15px;
+  border: rgb(46, 51, 60) solid 2px;
 }
 @keyframes settings-menu-scale-appear {
   0% {
-    transform: scale(0.85);
+    transform: scale(0.7);
     opacity: 0;
   }
   100% {
-    transform: scale(1);
+    transform: scale(0.9);
     opacity: 1;
   }
 }
 @keyframes settings-menu-scale-disappear {
   0% {
-    transform: scale(1);
+    transform: scale(0.9);
+
     opacity: 1;
   }
   100% {
-    transform: scale(0.85);
+    transform: scale(0.7);
     opacity: 0;
   }
 }
 @keyframes settings-menu-slide-in {
   0% {
-    transform: translateY(100%) scale(0.85);
+    transform: translateY(100%) scale(0.7);
     opacity: 0;
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(0.9);
     opacity: 1;
   }
 }
 @keyframes settings-menu-slide-out {
   0% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(0.9);
     opacity: 1;
   }
   100% {
-    transform: translateY(100%) scale(0.85);
+    transform: translateY(100%) scale(0.7);
     opacity: 0;
   }
 }
@@ -1136,9 +1138,10 @@ body.black-theme .base-overview-name-input {
   white-space: unset;
   width: unset;
   padding: 10px;
+  min-height: 60px;
+  max-height: 300px;
 }
 #video-url-reset-btn {
-  width: 120px;
   padding: 10px 15px;
   display: flex;
   align-items: center;
