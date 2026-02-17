@@ -61,6 +61,15 @@ class Router {
     });
 
     const { pathStr, parts } = this.parsePath();
+
+    const pathname = window.location.pathname || "/";
+    if (pathname.startsWith(this.ROUTES.JOIN_GUILD)) {
+      const inviteId = pathname.split("/")[2];
+      if (inviteId) showGuildPop(inviteId);
+      history.replaceState(null, "", `/#${this.ROUTES.DM_HOME}`);
+      return;
+    }
+
     if (pathStr.startsWith(this.ROUTES.JOIN_GUILD)) {
       this.processNavigation(pathStr, parts);
       return;
@@ -181,10 +190,7 @@ class Router {
 
   validateRoute() {
     const { pathStr, parts } = this.parsePath();
-    const [guildId, channelId, friendId, inviteId] = this.getRouteIds(
-      pathStr,
-      parts
-    )
+    const [guildId, channelId, friendId] = this.getRouteIds(pathStr, parts)
       .concat([undefined, undefined, undefined, undefined])
       .slice(0, 4);
 

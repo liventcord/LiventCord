@@ -222,7 +222,7 @@ export function updateSelfName(nickName: string) {
   }
 }
 export function getProfileUrl(userId: string): string {
-  let version = userManager.getUserProfileVersion(userId);
+  const version = userManager.getUserProfileVersion(userId);
   if (!version) return IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC;
   const result = `${getMediaBaseURL()}/profiles/${userId}?version=${version}`;
   return result;

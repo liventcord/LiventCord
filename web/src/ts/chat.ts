@@ -1,13 +1,8 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { reactive } from "vue";
 
-import {
-  AttachmentWithMetaData,
-  getMessageDate,
-  getOldMessages,
-  Message,
-  MessageReply,
-  Metadata
-} from "./message.ts";
+import { getMessageDate, getOldMessages } from "./message.ts";
 import {
   chatInput,
   newMessagesBar,
@@ -40,12 +35,7 @@ import {
   isMobile,
   isContentValid
 } from "./utils.ts";
-import {
-  currentUserId,
-  setLastTopSenderId,
-  UserInfo,
-  userManager
-} from "./user.ts";
+import { currentUserId, setLastTopSenderId, userManager } from "./user.ts";
 import { createMediaElement, handleLink } from "./mediaElements.ts";
 import { apiClient, EventType } from "./api.ts";
 import { isOnDm, isOnGuild, isOnMePage } from "./router.ts";
@@ -82,9 +72,18 @@ import {
 import { changeChannel, currentChannelName } from "./channels.ts";
 import store from "../store.ts";
 import { isMediaPanelOpen } from "./panelHandler.ts";
-import { NewMessageResponseSelf } from "./apiEventManager.ts";
 import { readStatusManager } from "./readStatus.ts";
 import { handleStopTyping } from "./typing.ts";
+import {
+  Message,
+  MessageReply,
+  NewMessageResponse,
+  EditMessageResponse,
+  Metadata,
+  AttachmentWithMetaData,
+  UserInfo,
+  NewMessageResponseSelf
+} from "./types/interfaces.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -156,7 +155,7 @@ export async function handleMentionClick(
     return;
   }
 
-  const _userId = userId != "" ? userId : (target.dataset.userId ?? target.id);
+  const _userId = userId !== "" ? userId : (target.dataset.userId ?? target.id);
   const channelId = target.dataset.channelId;
 
   if (channelId) {
@@ -515,7 +514,7 @@ function loadObservedContent(targetElement: HTMLElement) {
       targetElement,
       jsonData,
       isSystemMessage,
-      message?.metaData,
+      message?.metadata,
       message?.lastEdited
     );
 
@@ -523,22 +522,6 @@ function loadObservedContent(targetElement: HTMLElement) {
       chatContent.scrollTop = chatContent.scrollHeight;
     }
   }
-}
-
-export interface NewMessageResponse {
-  guildId?: string;
-  isOldMessages: boolean;
-  isDm: boolean;
-  messages: Message[];
-  channelId: string;
-  oldestMessageDate?: string | null;
-}
-export interface EditMessageResponse {
-  guildId?: string;
-  isDm: boolean;
-  messageId: string;
-  content: string;
-  channelId: string;
 }
 
 function clearDateBarAndStartMessageFromChat() {
@@ -760,7 +743,6 @@ export function openMediaPanel(type: string) {
     toggleHamburger(true, false);
   }
 }
-
 export function handleHistoryResponse(
   data: NewMessageResponse,
   _chatContainer?: HTMLElement
@@ -790,7 +772,7 @@ export function handleHistoryResponse(
 }
 
 function processMessages(
-  chatContainer: HTMLElement,
+  container: HTMLElement,
   messages: any[],
   oldestMessageDate?: string | null
 ) {
@@ -805,7 +787,7 @@ function processMessages(
 
   for (const msgData of messages) {
     const msg = new Message(msgData);
-    const foundReply = displayChatMessage(msg, chatContainer);
+    const foundReply = displayChatMessage(msg, container);
 
     if (foundReply) {
       repliesList.add(msg.messageId);
@@ -1094,35 +1076,50 @@ function updateMessageContent(element: HTMLElement, content: string): void {
   requestAnimationFrame(() => observe(element));
   setupEmojiListeners();
 }
-function editChatMessage(data: EditMessageResponse): void {
-  const { messageId, content } = data;
-  const messageElement = getId(messageId);
+
+function editChatMessage(data: EditMessageResponse) {
+  const { messageId, content, lastEdited } = data;
+  const messageElement = document.getElementById(messageId) as HTMLElement;
 
   if (!messageElement) {
-    console.error("Message element not found for edit:", messageId);
+    console.warn(`Message ${messageId} not found, skipping edit.`);
     return;
   }
 
-  const messageContentElement = messageElement.querySelector(
+  const contentElement = messageElement.querySelector(
     "#message-content-element"
   ) as HTMLElement;
 
-  if (!messageContentElement) {
-    console.error("Message content element not found for edit:", messageId);
+  if (!contentElement) {
+    console.warn(`Message content element for ${messageId} not found.`);
     return;
   }
 
-  updateMessageContent(messageContentElement, content);
-  addEditedIndicator(messageContentElement);
+  const existingObserved =
+    contentElement.dataset.content_observe ?? contentElement.textContent ?? "";
+  const newFormatted = processMessageContent(content);
+
+  if (
+    existingObserved === newFormatted ||
+    contentElement.textContent === newFormatted
+  ) {
+    console.log(`Message ${messageId} already has the updated content.`);
+    if (lastEdited) addEditedIndicator(contentElement, lastEdited);
+    return;
+  }
+
+  updateMessageContent(contentElement, content);
+  addEditedIndicator(contentElement, lastEdited);
 }
+
 export function displayChatMessage(
   data: Message,
-  chatContainer?: HTMLElement
+  container?: HTMLElement
 ): HTMLElement | null {
   if (!data || !isValidMessage(data)) {
     return null;
   }
-  if (!chatContainer) chatContainer = chatContent;
+  if (!container) container = chatContent;
 
   const {
     messageId,
@@ -1144,15 +1141,16 @@ export function displayChatMessage(
     replyOf,
     isSystemMessage
   } = data;
-  if (chatContainer === chatContent && currentMessagesCache[messageId]) {
+  if (container === chatContent && currentMessagesCache[messageId]) {
     return null;
   }
   if (!channelId || !date) {
     return null;
   }
-  if (!attachments && content === "" && embeds.length === 0) {
+  if (!attachments && content === "" && (embeds?.length ?? 0) === 0) {
     return null;
   }
+
   const nick = userManager.getUserNick(userId);
   const newMessage = createMessageElement(
     messageId,
@@ -1181,7 +1179,7 @@ export function displayChatMessage(
     );
   } else {
     isCreatedProfile = handleRegularMessage(
-      chatContainer,
+      container,
       newMessage,
       messageContentElement,
       nick,
@@ -1220,14 +1218,8 @@ export function displayChatMessage(
     currentLastDate = new Date(date);
   }
 
-  updateSenderAndButtons(
-    newMessage,
-    userId,
-    addToTop,
-    isSystemMessage,
-    metaData
-  );
-  appendMessageToChat(newMessage, chatContainer, addToTop, isCreatedProfile);
+  updateSenderAndButtons(newMessage, userId, addToTop, isSystemMessage);
+  appendMessageToChat(newMessage, container, addToTop, isCreatedProfile);
 
   if (userId === CLYDE_ID) {
     handleClyde(newMessage, messageContentElement);
@@ -1468,9 +1460,12 @@ function handleRegularMessage(
     MILLISECONDS_IN_A_SECOND;
   const isTimeGap = difference > MINIMUM_TIME_GAP_IN_SECONDS;
 
-  const lastSenderID = container.dataset.lastSenderID;
+  const lastSenderIdOfMessage = container.dataset.lastSenderID;
   const isNewProfileNeeded: boolean =
-    !lastSenderID || isTimeGap || !!replyToId || lastSenderID !== userId;
+    !lastSenderIdOfMessage ||
+    isTimeGap ||
+    !!replyToId ||
+    lastSenderIdOfMessage !== userId;
 
   const shouldRenderProfile = userId === SYSTEM_ID || isNewProfileNeeded;
   if (shouldRenderProfile) {
@@ -1493,8 +1488,7 @@ function updateSenderAndButtons(
   newMessage: HTMLElement,
   userId: string,
   addToTop: boolean,
-  isSystemMessage: boolean,
-  metadata: Metadata
+  isSystemMessage: boolean
 ) {
   if (!addToTop) {
     lastSenderID = userId;
@@ -1509,15 +1503,15 @@ function updateSenderAndButtons(
 
 function appendMessageToChat(
   newMessage: HTMLElement,
-  chatContainer: HTMLElement,
+  container: HTMLElement,
   addToTop: boolean,
   isCreatedProfile: boolean
 ) {
   if (addToTop) {
-    chatContainer.insertBefore(newMessage, chatContainer.firstChild);
-    chatContainer.scrollTop = chatContainer.scrollTop + newMessage.clientHeight;
+    container.insertBefore(newMessage, container.firstChild);
+    container.scrollTop = container.scrollTop + newMessage.clientHeight;
   } else {
-    chatContainer.appendChild(newMessage);
+    container.appendChild(newMessage);
     const previousSibling = newMessage.previousElementSibling;
     if (previousSibling) {
       const previousMsgContent = previousSibling.querySelector(
@@ -1817,12 +1811,7 @@ function createMsgOptionButton(message: HTMLElement, isReply: boolean) {
   newButton.addEventListener("mouseup", function () {
     newButton.style.border = "none";
   });
-  newButton.addEventListener("mouseover", function () {
-    newButton.style.backgroundColor = "#393a3b";
-  });
-  newButton.addEventListener("mouseout", function () {
-    newButton.style.backgroundColor = "#313338";
-  });
+
   newButton.addEventListener("focus", () => {
     newButton.classList.add("is-focused");
   });
@@ -1872,6 +1861,7 @@ export function displayLocalMessage(
     reactionEmojisIds: [],
     metadata: {},
     embeds: [],
+    isPinned: false,
     willDisplayProfile: false,
     isNotSent: true,
     replyOf: undefined,
@@ -1911,6 +1901,7 @@ export function displayCannotSendMessage(channelId: string, content: string) {
     reactionEmojisIds: [],
     metadata: {},
     embeds: [],
+    isPinned: false,
     willDisplayProfile: true,
     isNotSent: true,
     replyOf: "",
@@ -1953,6 +1944,7 @@ export function displayStartMessage(
     const textToWrite = isGuildBorn ? startGuildText : startChannelText;
     const channelicon = createEl("div", { className: "channelIcon" });
 
+    // eslint-disable-next-line no-unsanitized/property
     channelicon.innerHTML = channelHashSvg;
     const msgdescription = createEl("div", {
       id: isGuildBorn ? "guildBornDescription" : "msgDescription",

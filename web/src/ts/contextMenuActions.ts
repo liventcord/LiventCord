@@ -9,7 +9,6 @@ import {
   currentDiscriminator,
   currentUserId,
   currentUserNick,
-  UserInfo,
   userManager
 } from "./user.ts";
 import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
@@ -35,14 +34,11 @@ import {
   handlePanelButtonClickExternal
 } from "./panelHandler.ts";
 
-import {
-  createDeleteChannelPrompt,
-  openSettings,
-  SettingType
-} from "./settingsui.ts";
+import { createDeleteChannelPrompt, openSettings } from "./settingsui.ts";
 import { changeChannel } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import { isDeveloperMode } from "./settings.ts";
+import { SettingType, UserInfo } from "./types/interfaces.ts";
 
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};

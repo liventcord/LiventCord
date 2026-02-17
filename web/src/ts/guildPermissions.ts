@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { createGuildContextLists, currentGuildId } from "./guild.ts";
+import { PermissionsRecord } from "./types/interfaces.ts";
 
 export enum Permission {
   READ_MESSAGES,
@@ -15,10 +16,6 @@ export enum Permission {
   MANAGE_MESSAGES,
   MANAGE_GUILD,
   ALL
-}
-
-export interface PermissionsRecord {
-  [guildId: string]: Record<string, number>;
 }
 
 class PermissionManager {

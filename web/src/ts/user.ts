@@ -1,4 +1,4 @@
-import store from "../store";
+import store from "../store.ts";
 import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
 import { initialState, userStatus } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
@@ -6,45 +6,14 @@ import { alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { getId } from "./utils.ts";
 import { CLYDE_ID, SYSTEM_ID } from "./chat.ts";
-import { Friend } from "./friends.ts";
+import { Friend, UserInfo } from "./types/interfaces.ts";
 
 export const DEFAULT_DISCRIMINATOR = "0000";
-
-export interface PublicUser {
-  userId?: string;
-  nickName?: string;
-  discriminator?: string;
-  createdAt?: Date;
-  description?: string;
-  socialMediaLinks?: string;
-}
-
-export interface Member {
-  userId: string;
-  nickName: string;
-  status: string;
-  discriminator: string;
-}
 
 export let currentUserId: string;
 
 export let currentDiscriminator: string;
 export let currentUserNick: string;
-export interface UserInfo {
-  userId: string;
-  nickName: string;
-  discriminator: string;
-  status?: string;
-  activity?: string;
-  description?: string;
-  profileVersion?: string;
-  isFriendsRequestToUser?: boolean;
-  createdAt?: string;
-  lastLogin?: string;
-  socialMediaLinks?: string[];
-  isPending?: boolean;
-  isBlocked?: boolean;
-}
 
 export const deletedUser = "Deleted User";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

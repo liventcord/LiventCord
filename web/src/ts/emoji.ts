@@ -15,6 +15,7 @@ import { getTextUpToCursorFromNode } from "./navigation";
 import { isOnGuild, router } from "./router";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
+import { Emoji } from "./types/interfaces";
 import { userManager } from "./user";
 import {
   createEl,
@@ -191,9 +192,11 @@ function renderEmojis(emojis: Array<Emoji>): void {
 
   if (emojiTableBody && emojiTableHeader) {
     const headerHTML = generateHeaderHTML();
+    // eslint-disable-next-line no-unsanitized/property
     emojiTableHeader.innerHTML = headerHTML;
 
     const bodyHTML = emojis.map(generateEmojiRowHTML).join("");
+    // eslint-disable-next-line no-unsanitized/property
     emojiTableBody.innerHTML = bodyHTML;
   }
 }
@@ -237,13 +240,6 @@ export function populateEmojis(): void {
       }
     });
 }
-
-export type Emoji = {
-  guildId: string;
-  userId: string;
-  fileId: string;
-  fileName: string;
-};
 
 function generateHeaderHTML(): string {
   return `
@@ -375,34 +371,34 @@ export function replaceCustomEmojisForChatContainer(content: string): string {
 
   allMatches.sort((a, b) => a.match.index! - b.match.index!);
 
-  for (const { match, type } of allMatches) {
-    const start = match.index!;
-    const end = start + match[0].length;
+  for (const { match: _match, type } of allMatches) {
+    const start = _match.index!;
+    const end = start + _match[0].length;
 
     if (start > lastIndex) {
       parts.push({ type: "text", content: content.slice(lastIndex, start) });
     }
 
     if (type === "emoji") {
-      const emojiId = match[1];
+      const emojiId = _match[1];
       const emoji = emojiMap.get(emojiId);
       if (emoji) {
         parts.push({ type: "emoji", content: "", data: { id: emojiId } });
       } else {
-        parts.push({ type: "text", content: match[0] });
+        parts.push({ type: "text", content: _match[0] });
       }
     } else if (type === "user") {
-      const userId = match[1];
+      const userId = _match[1];
       const user = userManager.getUserInfo(userId);
       const nick = user?.nickName ?? "Unknown";
       parts.push({ type: "user", content: "", data: { userId, nick } });
     } else if (type === "channel") {
-      const channelId = match[1];
+      const channelId = _match[1];
       const name = cacheInterface.getChannelNameWithoutGuild(channelId);
       if (name) {
         parts.push({ type: "channel", content: "", data: { channelId, name } });
       } else {
-        parts.push({ type: "text", content: match[0] });
+        parts.push({ type: "text", content: _match[0] });
       }
     }
 
@@ -651,6 +647,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
     const suggestion = createEl("div", { className: "suggestion-option" });
 
     const emojiTag = generateEmojiTag(emojiId);
+    // eslint-disable-next-line no-unsanitized/property
     suggestion.innerHTML = emojiTag;
 
     const labelSpan = createEl("span", {

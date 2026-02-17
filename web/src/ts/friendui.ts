@@ -13,7 +13,6 @@ import {
   currentUserNick,
   DEFAULT_DISCRIMINATOR,
   deletedUser,
-  UserInfo,
   userManager
 } from "./user.ts";
 import {
@@ -21,7 +20,6 @@ import {
   filterFriendsOnSearch,
   addPendingButtons,
   friendsCache,
-  Friend,
   UpdatePendingCounter,
   removeDm
 } from "./friends.ts";
@@ -36,6 +34,7 @@ import { loadDmHome, openDm } from "./app.ts";
 import { isBlackTheme } from "./settings.ts";
 import { getCurrentWidth } from "./ui.ts";
 import store from "../store.ts";
+import { Friend, UserInfo } from "./types/interfaces.ts";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
@@ -849,6 +848,7 @@ export async function populateFriendsContainer(
     }
 
     const friendsTitleContainer = createFriendsTitle(friends.length);
+    // eslint-disable-next-line no-unsanitized/property
     friendsContainer.innerHTML = initialFriendsContainerHtml;
     const friendsSearchInput = getId("friendsSearchInput");
     friendsSearchInput?.addEventListener("onkeyup", filterFriendsOnSearch);

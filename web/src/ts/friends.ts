@@ -7,12 +7,7 @@ import {
   getId,
   isValidFriendName
 } from "./utils.ts";
-import {
-  getSelfFullDisplay,
-  currentUserId,
-  UserInfo,
-  userManager
-} from "./user.ts";
+import { getSelfFullDisplay, currentUserId, userManager } from "./user.ts";
 import { handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
@@ -30,6 +25,12 @@ import { translations } from "./translations.ts";
 import { apiClient, EventType } from "./api.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
 import { appendToProfileContextList } from "./contextMenuActions.ts";
+import {
+  Friend,
+  FriendData,
+  FriendMessage,
+  UserInfo
+} from "./types/interfaces.ts";
 
 const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
 const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
@@ -46,47 +47,6 @@ const FriendErrorType = {
   ERR_REQUEST_NOT_SENT: "ERR_REQUEST_NOT_SENT",
   ERR_SUCCESS: "ERR_SUCCESS"
 };
-interface FriendData {
-  userId: string;
-  nickName: string;
-  discriminator: string;
-  activity?: string;
-  description?: string;
-  createdAt?: string;
-  lastLogin?: string;
-  profileVersion?: string;
-  socialMediaLinks?: string[];
-  isPending: boolean;
-  isFriendsRequestToUser: boolean;
-}
-
-export class Friend {
-  userId: string;
-  nickName: string;
-  discriminator: string;
-  profileVersion?: string;
-  activity?: string;
-  description?: string;
-  createdAt?: string;
-  lastLogin?: string;
-  socialMediaLinks?: string[];
-  isFriendsRequestToUser: boolean;
-  isPending: boolean;
-
-  constructor(friend: FriendData) {
-    this.userId = friend.userId;
-    this.nickName = friend.nickName;
-    this.discriminator = friend.discriminator;
-    this.description = friend.description;
-    this.createdAt = friend.createdAt;
-    this.lastLogin = friend.lastLogin;
-    this.profileVersion = friend.profileVersion;
-    this.socialMediaLinks = friend.socialMediaLinks;
-    this.isFriendsRequestToUser = friend.isFriendsRequestToUser;
-    this.isPending = friend.isPending;
-    this.activity = friend.activity;
-  }
-}
 
 class FriendsCache {
   friendsCache: Record<string, Friend>;
@@ -266,13 +226,7 @@ function displayFriendActionMessage(
     printFriendMessage(text);
   }
 }
-interface FriendMessage {
-  friendId: string;
-  friendNick: string;
-  friendData?: UserInfo;
-  isSuccess: boolean;
-  type: string;
-}
+
 function handleAddFriendResponse(message: FriendMessage): void {
   const { friendNick, isSuccess, friendData } = message;
   console.log("add friend response:", message);

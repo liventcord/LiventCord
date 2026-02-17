@@ -45,6 +45,7 @@ import {
 } from "./navigation.ts";
 import { gifBtn } from "./mediaPanel.ts";
 import { socketClient } from "./socketEvents.ts";
+import { ChatBarState } from "./types/interfaces.ts";
 
 export let currentReplyingTo = "";
 
@@ -71,15 +72,7 @@ function setMessageLimitText(text: string) {
     ? bigText.toString()
     : "";
 }
-export interface ChatBarState {
-  rawContent: string;
-  renderedContent: string;
-  cursorPosition: number;
-  isProcessing: boolean;
-  emojiSuggestionsVisible: boolean;
-  selectionStart: number;
-  selectionEnd: number;
-}
+
 const state = {
   rawContent: "",
   renderedContent: "",
@@ -1197,6 +1190,7 @@ export function manuallyRenderEmojis(rawContent: string): void {
   state.rawContent = rawContent;
   const formattedContent = renderEmojisFromContent(rawContent);
 
+  // eslint-disable-next-line no-unsanitized/property
   chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== "" ? formattedContent : " "
   );
@@ -1481,6 +1475,7 @@ function handleChatInput(event: Event) {
           end: state.cursorPosition
         };
 
+        // eslint-disable-next-line no-unsanitized/property
         chatInput.innerHTML = DOMPurify.sanitize(
           formattedContent && formattedContent.trim() !== ""
             ? formattedContent

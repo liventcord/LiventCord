@@ -44,148 +44,6 @@ import { processDeleteMessage } from "./socketEvents.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
-interface MessageData {
-  messageId: string;
-  userId: string;
-  content: string;
-  channelId?: string | null;
-  date: string | null;
-  lastEdited?: string | null;
-  attachments?: Attachment[];
-  replyToId?: string | null;
-  isBot: boolean;
-  addToTop?: boolean;
-  reactionEmojisIds?: string[];
-  metadata?: any;
-  metaData?: any;
-  embeds?: any;
-  willDisplayProfile?: boolean;
-  isNotSent: boolean;
-  replyOf?: string | null;
-  replies?: Message[];
-  isSystemMessage: boolean;
-  temporaryId?: string;
-  isPinned?: boolean;
-}
-
-export interface MessageReply {
-  messageId: string;
-  replies: Message[];
-}
-export interface Attachment {
-  proxyUrl: string;
-  fileId: string;
-  fileName: string;
-  fileSize: number;
-  isImageFile: boolean;
-  isVideoFile: boolean;
-  isSpoiler: boolean;
-  isProxyFile: boolean;
-}
-export interface AttachmentWithMetaData {
-  attachment: Attachment;
-  userId: string;
-  content: string;
-  date: string;
-}
-export interface MessageResponse {
-  isOldMessages: boolean;
-  isDm: boolean;
-  history: Message[];
-}
-export interface GuildHistoryResponse extends MessageResponse {
-  messages: Message[];
-  channelId: string;
-  guildId: string;
-  oldestMessageDate: string | null;
-  isOldMessages: boolean;
-  isDm: false;
-  history: Message[];
-}
-export interface DMHistoryResponse extends MessageResponse {
-  messages: Message[];
-  channelId: string;
-  guildId: string;
-  oldestMessageDate: string | null;
-  isOldMessages: boolean;
-  isDm: true;
-  history: Message[];
-}
-
-export class Message {
-  messageId: string;
-  userId: string;
-  content: string;
-  channelId: string | null;
-  date: string | null;
-  lastEdited: string | null;
-  attachments: Attachment[] | undefined;
-  replyToId: string | null | undefined;
-  isBot: boolean;
-  reactionEmojisIds: string[] | undefined;
-  addToTop: boolean;
-  metaData: any;
-  metadata: any;
-  embeds: any;
-  willDisplayProfile: boolean;
-  isNotSent: boolean;
-  replyOf: string | undefined;
-  replies: Message[];
-  isPinned: boolean;
-  isSystemMessage: boolean;
-  temporaryId: string | undefined;
-
-  constructor({
-    messageId,
-    userId,
-    content,
-    channelId = null,
-    date,
-    lastEdited,
-    attachments,
-    replyToId,
-    isBot,
-    reactionEmojisIds,
-    metadata,
-    metaData,
-    embeds,
-    willDisplayProfile,
-    isNotSent: isSent,
-    replyOf,
-    replies = [],
-    isSystemMessage,
-    isPinned,
-    addToTop = false
-  }: MessageData) {
-    this.messageId = messageId;
-    this.userId = userId;
-    this.content = content;
-    this.channelId = channelId;
-    this.date = date;
-    this.lastEdited = lastEdited || null;
-    this.attachments = attachments;
-    this.replyToId = replyToId;
-    this.isBot = isBot;
-    this.reactionEmojisIds = reactionEmojisIds;
-    this.addToTop = addToTop;
-    this.metaData = metadata;
-    this.metadata = metadata;
-    this.embeds = embeds;
-    this.willDisplayProfile = willDisplayProfile || false;
-    this.isNotSent = isSent || false;
-    this.replyOf = replyOf || undefined;
-    this.isSystemMessage = isSystemMessage;
-    this.replies = replies;
-    this.isPinned = isPinned || false;
-  }
-}
-
-export type Metadata = {
-  type?: string;
-  pinnerUserId?: string;
-  pinnedAt?: string;
-};
-
 function createNewMessageFormData(
   temporaryId: string,
   content: string,
@@ -199,12 +57,6 @@ function createNewMessageFormData(
     formData.append("replyToId", currentReplyingTo);
   }
 
-  return formData;
-}
-function createEditMessageformData(messageId: string, content: string) {
-  const formData = new FormData();
-  formData.append("content", content);
-  formData.append("messageId", messageId);
   return formData;
 }
 
@@ -688,7 +540,7 @@ export function convertToEditUi(message: HTMLElement) {
     container = createMobileWrapper(editMessageDiv);
     container.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      if (target && target.className == "outer-parent") {
+      if (target && target.className === "outer-parent") {
         target.remove();
       }
     });
@@ -787,6 +639,7 @@ function saveEdit(
 }
 
 function cancelEdit(message: HTMLElement) {
+  // eslint-disable-next-line no-unsanitized/property
   message.outerHTML = editMessageCurrentContent;
 }
 

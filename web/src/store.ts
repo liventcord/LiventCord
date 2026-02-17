@@ -1,33 +1,15 @@
 import { createStore } from "vuex";
 import { userManager } from "./ts/user";
-import { Channel } from "./ts/channels";
-import { AttachmentWithMetaData } from "./ts/message";
-import { socketClient, VoiceUser } from "./ts/socketEvents";
-
-interface UserMember {
-  userId: string;
-  status: string;
-  nickName?: string;
-  discriminator?: string;
-  isOnline?: boolean;
-  isTyping?: boolean;
-}
-
-interface UserState {
-  members: UserMember[];
-  onlineUsers: UserMember[];
-  offlineUsers: UserMember[];
-}
-
-interface ChannelHoverInfo {
-  isTextChannel: boolean;
-}
-
-interface VoiceUserStatus {
-  isNoisy: boolean;
-  isMuted: boolean;
-  isDeafened: boolean;
-}
+import { socketClient } from "./ts/socketEvents";
+import {
+  AttachmentWithMetaData,
+  Channel,
+  ChannelHoverInfo,
+  UserMember,
+  UserState,
+  VoiceUser,
+  VoiceUserStatus
+} from "./ts/types/interfaces";
 
 interface StoredVoiceUser {
   id: string;
@@ -54,6 +36,7 @@ const sortUsersByName = (users: UserMember[]): UserMember[] => {
     return nameA.localeCompare(nameB);
   });
 };
+
 export default createStore<RootState>({
   state: {
     user: {
@@ -117,7 +100,6 @@ export default createStore<RootState>({
       const index = state.channels.findIndex((c) => c.channelId === channelId);
       if (index !== -1) state.channels.splice(index, 1);
     },
-
     updateUserStatus(
       state,
       {
@@ -156,16 +138,17 @@ export default createStore<RootState>({
           (u) => u.userId !== userId
         );
 
-        if (status === "offline") {
-          state.user.offlineUsers.push(updatedUser);
-          state.user.offlineUsers = sortUsersByName(state.user.offlineUsers);
-        } else {
-          state.user.onlineUsers.push(updatedUser);
-          state.user.onlineUsers = sortUsersByName(state.user.onlineUsers);
-        }
+        if (status === "offline") state.user.offlineUsers.push(updatedUser);
+        else state.user.onlineUsers.push(updatedUser);
+
+        state.user.onlineUsers = sortUsersByName([
+          ...new Map(state.user.onlineUsers.map((u) => [u.userId, u])).values()
+        ]);
+        state.user.offlineUsers = sortUsersByName([
+          ...new Map(state.user.offlineUsers.map((u) => [u.userId, u])).values()
+        ]);
       }
     },
-
     setUsers(
       state,
       {
@@ -412,14 +395,14 @@ export default createStore<RootState>({
           status
         };
 
-        if (isOnline) onlineUsers.push(categorizedMember);
-        else offlineUsers.push(categorizedMember);
+        if (isOnline) {
+          onlineUsers.push(categorizedMember);
+        } else {
+          offlineUsers.push(categorizedMember);
+        }
       }
 
       if (userIdsNeedingStatus.length > 0) {
-        console.log(
-          `Requesting status for ${userIdsNeedingStatus.length} users`
-        );
         socketClient.getUserStatus(userIdsNeedingStatus);
       }
 

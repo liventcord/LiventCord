@@ -26,7 +26,6 @@ import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
 } from "./emoji.ts";
-import { Attachment, AttachmentWithMetaData, Metadata } from "./message.ts";
 import { FileHandler } from "./chatbar.ts";
 import {
   addEditedIndicator,
@@ -39,26 +38,13 @@ import { togglePin } from "./contextMenuActions.ts";
 import { createMentionProfilePop } from "./popups.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
-
-interface Embed {
-  id: string;
-  title: string;
-  type: number;
-  description: string | null;
-  url: string | null;
-  color: number;
-  fields: any[];
-  thumbnail: { url?: string } | null;
-  video: { url?: string } | null;
-  author: { name?: string } | null;
-  image: {
-    url: string;
-    proxyUrl?: string;
-    width?: number;
-    height?: number;
-  } | null;
-  footer: { text?: string } | null;
-}
+import {
+  Attachment,
+  AttachmentWithMetaData,
+  Embed,
+  MetaData,
+  Metadata
+} from "./types/interfaces.ts";
 
 interface EmbedType {
   Article: number;
@@ -80,18 +66,6 @@ const embedTypes: EmbedType = {
   Video: 6
 };
 
-class MetaData {
-  siteName: string;
-  title: string;
-  description: string;
-
-  constructor(siteName: string, title: string, description: string) {
-    this.siteName = siteName;
-    this.title = title;
-    this.description = description;
-  }
-}
-
 const maxWidth = 512;
 const maxHeight = 384;
 export const maxAttachmentsCount = 10;
@@ -101,7 +75,7 @@ const maxTenorHeight = "85vh";
 export const attachmentPattern = /https?:\/\/[^\/]+\/attachments\/(\d+)/;
 
 function getAttachmentUrl(attachmentId: string, fileName?: string) {
-  let extension = fileName ? `.${fileName.split(".").pop()}` : "";
+  const extension = fileName ? `.${fileName.split(".").pop()}` : "";
   return `${getMediaBaseURL()}/attachments/${attachmentId}${extension}`;
 }
 
@@ -380,9 +354,9 @@ export async function createMediaElement(
   content: string,
   messageContentElement: HTMLElement,
   newMessage: HTMLElement,
-  metaData: MetaData,
-  metadata: Metadata,
-  embeds: Embed[],
+  metaData: MetaData | undefined,
+  metadata: Metadata | undefined,
+  embeds: Embed[] | undefined,
   senderId: string,
   date: Date,
   isSystemMessage: boolean,
@@ -399,7 +373,7 @@ export async function createMediaElement(
   let mediaCount = 0;
   let linksProcessed = 0;
 
-  if (embeds.length) {
+  if (embeds && metaData && embeds.length) {
     try {
       embeds.forEach((embed) => {
         appendEmbedToMessage(
@@ -425,7 +399,6 @@ export async function createMediaElement(
             attachment,
             messageContentElement,
             content,
-            metaData,
             metadata,
             embeds,
             senderId,
@@ -461,7 +434,6 @@ export async function createMediaElement(
           null,
           messageContentElement,
           content,
-          metaData,
           metadata,
           embeds,
           senderId,
@@ -546,9 +518,8 @@ function processMediaLink(
   attachment: Attachment | null,
   messageContentElement: HTMLElement,
   content: string,
-  metaData: MetaData,
-  metadata: Metadata,
-  embeds: Embed[],
+  metadata: Metadata | undefined,
+  embeds: Embed[] | undefined,
   senderId: string,
   date: Date,
   isSystemMessage: boolean,
@@ -623,7 +594,7 @@ function processMediaLink(
         messageContentElement,
         content,
         isSystemMessage,
-        metaData as any,
+        metadata,
         lastEdited
       );
       if (doesMessageHasProxyiedLink(link)) {
@@ -919,7 +890,7 @@ export function shouldRenderMedia(
   attachment: AttachmentWithMetaData,
   isFilesList: boolean
 ) {
-  const { isImageFile, isVideoFile, proxyUrl, fileId } = attachment.attachment;
+  const { isImageFile, isVideoFile, proxyUrl } = attachment.attachment;
 
   if (isFilesList) {
     if (!isImageFile && !isVideoFile) {

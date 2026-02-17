@@ -1,11 +1,12 @@
 import { drawProfilePopId } from "./popups.ts";
-import { openSettings, SettingType } from "./settingsui.ts";
+import { openSettings } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
 import { createEl, getId } from "./utils.ts";
 import { currentUserId, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copyId } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
+import { SettingType } from "./types/interfaces.ts";
 
 export class UserStatus {
   private createdPanel: HTMLElement | undefined;
@@ -147,7 +148,8 @@ export class UserStatus {
       className: "status-button"
     });
     editButton.appendChild(this.createEditStatusSvg());
-    editButton.innerHTML += translations.getTranslation("edit-profile");
+    editButton.textContent += translations.getTranslation("edit-profile");
+
     editButton.addEventListener("click", () =>
       openSettings(SettingType.PROFILE, true)
     );
@@ -160,7 +162,7 @@ export class UserStatus {
       className: "status-button"
     });
     copyIdButton.appendChild(this.createCopyIdSvg());
-    copyIdButton.innerHTML +=
+    copyIdButton.textContent +=
       translations.getContextTranslation("COPY_USER_ID");
     copyIdButton.addEventListener("click", (event: MouseEvent) =>
       copyId(currentUserId, event)

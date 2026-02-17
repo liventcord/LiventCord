@@ -19,6 +19,12 @@
 - Add invite friends ui on invite people popup
 - Inviting should be allowed on new guild members
 - Add event broadcasting on dm message operations
+- Add Role system
+- Add invite settings panel managing invites
+- Add shared friends server logic & populate shared friends ui
+- Add guild image delete button 
+
+
 
 ## Bug fixes
 
@@ -31,9 +37,10 @@
 - Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
 - Guild context menu does not work if stayed on me page
 - Edited messages display duplicated to other clients
+- Cancelling image upload to profile and guild image should refresh settings ui
+- Idle and do not disturb status only gets shown locally
 
 
 ## Refactor
 
 - Move every global variable into appstate object
-- Move every interface into types/interfaces.ts

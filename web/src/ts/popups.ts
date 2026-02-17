@@ -1,3 +1,4 @@
+/* eslint-disable no-unsanitized/property */
 import { cacheInterface, guildCache, sharedGuildsCache } from "./cache.ts";
 import {
   currentGuildId,
@@ -11,7 +12,6 @@ import { createChannel, currentChannelName } from "./channels.ts";
 import {
   currentUserId,
   currentUserNick,
-  UserInfo,
   userManager,
   currentDiscriminator
 } from "./user.ts";
@@ -30,6 +30,7 @@ import { translations } from "./translations.ts";
 import { createToggle, updateSettingsProfileColor } from "./settingsui.ts";
 import { toggleManager } from "./settings.ts";
 import { copyText } from "./tooltip.ts";
+import { UserInfo } from "./types/interfaces.ts";
 
 let isDropdownOpen = false;
 export let closeCurrentJoinPop: CallableFunction | null = null;
@@ -131,15 +132,18 @@ function createChannelType(isVoice: boolean) {
     }
   };
 
-  const { id, icon, title, description, brightness } = isVoice
+  const { id, title, brightness } = isVoice
     ? channelData.voice
     : channelData.text;
   const container = createEl("div", { id });
-  container.innerHTML = `
-    <p id="channel-type-icon">${icon}</p>
-    <p id="channel-type-title">${title}</p>
-    <p id="channel-type-description">${description}</p>
-  `;
+  function safeHTML(tag: string, content: string) {
+    const el = document.createElement(tag);
+    el.textContent = content;
+    return el;
+  }
+
+  container.appendChild(safeHTML("p", title));
+
   container.appendChild(createRadioBar());
   container.style.filter = `brightness(${brightness})`;
   return container;

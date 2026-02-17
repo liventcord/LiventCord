@@ -12,6 +12,13 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "cypress/e2e/*.cy.ts", "vuex"],
+  "include": [
+    "src",
+    "cypress/e2e/*.cy.ts",
+    "vuex",
+    "store.ts",
+    "*.vue",
+    "src/shims-vue.d.ts"
+  ],
   "exclude": ["node_modules"]
 }

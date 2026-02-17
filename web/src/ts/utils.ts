@@ -7,8 +7,8 @@ import { translations } from "./translations.ts";
 import { chatContent } from "./chatbar.ts";
 import { router } from "./router.ts";
 import { apiClient } from "./api.ts";
-import { Attachment } from "./message.ts";
 import { initialState } from "./app.ts";
+import { Attachment } from "./types/interfaces.ts";
 
 export const IMAGE_SRCS = {
   ICON_SRC:
@@ -490,60 +490,12 @@ export function openExternalUrl(url: string) {
   window.open(url, "_blank");
 }
 
-function sanitizeHTML(html: string) {
-  if (typeof html !== "string") {
-    return "";
-  }
-  function isValidForColoring(content: string) {
-    return /^[a-zA-Z0-9\s\-_.,!?]+$/.test(content.trim());
-  }
-
-  html = html.replace(/-red\s(.*?)\sred-/gi, (match, content: string) => {
-    if (isValidForColoring(content)) {
-      return `<red>${content}</red>`;
-    } else {
-      return `&lt;-red ${content} red-&gt;`;
-    }
-  });
-
-  html = html.replace(/-blu\s(.*?)\sblu-/gi, (match, content: string) => {
-    if (isValidForColoring(content)) {
-      return `<blu>${content}</blu>`;
-    } else {
-      return `&lt;-blu ${content} blu-&gt;`;
-    }
-  });
-
-  html = html.replace(/-yellow\s(.*?)\syellow-/gi, (match, content: string) => {
-    if (isValidForColoring(content)) {
-      return `<yellow>${content}</yellow>`;
-    } else {
-      return `&lt;-yellow ${content} yellow-&gt;`;
-    }
-  });
-
-  html = html.replace(/<br>/gi, "&lt;br&gt;");
-  html = html.replace(/\n/g, "<br>");
-  const sanitizedString = html.replace(
-    /<\/?([a-z][a-z0-9]*)\b[^>]*>?/gi,
-    (tag) => {
-      const allowedTags = ["br", "red", "blu", "yellow"];
-      const tagMatch = tag.match(/<\/?([a-z][a-z0-9]*)\b[^>]*>?/i);
-      const tagName = tagMatch ? tagMatch[1].toLowerCase() : "";
-
-      if (allowedTags.includes(tagName)) {
-        return tag;
-      } else {
-        return tag.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      }
-    }
-  );
-  const validHtml = sanitizedString.replace(/<[^>]*$/g, (match) => {
-    return match.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  });
-
-  return applyCustomStyles(validHtml);
+export function safeHTML(tag: string, content: string) {
+  const el = document.createElement(tag);
+  el.textContent = content;
+  return el;
 }
+
 export function disableElementHTML(element: HTMLElement): void {
   if (element instanceof HTMLElement) {
     element.style.display = "none";
@@ -1216,6 +1168,7 @@ export function insertHTML(html: string) {
   if (!selection || !selection.rangeCount) return;
   const range = selection.getRangeAt(0);
   range.deleteContents();
+  // eslint-disable-next-line no-unsanitized/method
   const fragment = range.createContextualFragment(html);
   range.insertNode(fragment);
   range.collapse(false);

@@ -61,13 +61,7 @@ import {
 import { initializeGoogleOauth } from "./loginutils.ts";
 import { closePopUp } from "./popups.ts";
 import { currentChannelName } from "./channels.ts";
-
-type SettingType = "GUILD" | "PROFILE" | "CHANNEL";
-export const SettingType = Object.freeze({
-  GUILD: "GUILD",
-  PROFILE: "PROFILE",
-  CHANNEL: "CHANNEL"
-});
+import { SettingType } from "./types/interfaces.ts";
 
 type SettingCategory =
   | "MyAccount"
@@ -473,6 +467,7 @@ function selectSettingCategory(
     settingsConfig[settingCategory] ||
     getUnknownSettings(settingType, settingCategory);
 
+  // eslint-disable-next-line no-unsanitized/property
   settingsContainer.innerHTML = settingConfig.html;
 
   initialiseSettingComponents(
@@ -841,6 +836,7 @@ function linkGoogleAccount() {
   const popOuterParent = createPopupWrapper(wrapper);
   document.body.appendChild(popOuterParent);
 
+  // eslint-disable-next-line no-unsanitized/property
   wrapper.innerHTML = `
     <div id="g_id_onload"
          data-client_id="${clientId}"

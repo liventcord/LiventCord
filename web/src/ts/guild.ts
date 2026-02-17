@@ -21,11 +21,7 @@ import {
   setGuildPic
 } from "./avatar.ts";
 import { guildCache, cacheInterface } from "./cache.ts";
-import {
-  Permission,
-  permissionManager,
-  PermissionsRecord
-} from "./guildPermissions.ts";
+import { Permission, permissionManager } from "./guildPermissions.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   currentVoiceChannelId,
@@ -33,16 +29,17 @@ import {
   setCurrentVoiceChannelGuild,
   setCurrentVoiceChannelId
 } from "./channels.ts";
-import {
-  currentUserId,
-  DEFAULT_DISCRIMINATOR,
-  UserInfo,
-  userManager
-} from "./user.ts";
+import { currentUserId, DEFAULT_DISCRIMINATOR, userManager } from "./user.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { populateEmojis } from "./emoji.ts";
-import { GuildMemberAddedMessage, rtcWsClient } from "./socketEvents.ts";
+import { rtcWsClient } from "./socketEvents.ts";
 import { showCallContainer } from "./chatroom.ts";
+import {
+  GuildMember,
+  GuildMemberAddedMessage,
+  PermissionsRecord,
+  UserInfo
+} from "./types/interfaces.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
@@ -52,19 +49,6 @@ const guildsList = getId("guilds-list") as HTMLElement;
 const createGuildCross =
   '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z"></path></svg>';
 
-export interface Guild {
-  guildId: string;
-  rootChannel: string;
-  guildName: string;
-  isGuildUploadedImg: boolean;
-  guildMembers: string[];
-}
-export interface GuildMember {
-  name: string;
-  image: string;
-  userId: string;
-  discriminator: string;
-}
 export function setGuildNameText(guildName: string) {
   guildNameText.innerText = guildName;
 }
@@ -132,7 +116,7 @@ export function loadGuild(
   if (isChangingUrl) {
     router.switchToGuild(guildId, channelId);
   }
-  if (currentGuildId != guildId) {
+  if (currentGuildId !== guildId) {
     apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
       guildId
     });

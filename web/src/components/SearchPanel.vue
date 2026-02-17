@@ -865,11 +865,6 @@ function clearSearch() {
   resetDropdownStates();
 }
 
-interface SearchMessagesResponse {
-  messages?: Message[];
-  totalCount?: string;
-}
-
 apiClient.on(
   EventType.SEARCH_MESSAGE_GUILD,
   async (data: SearchMessagesResponse) => {

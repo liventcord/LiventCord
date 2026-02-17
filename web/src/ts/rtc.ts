@@ -1,8 +1,9 @@
 import { cacheInterface } from "./cache";
 import { currentVoiceChannelGuild, currentVoiceChannelId } from "./channels";
-import { peerList, getVideoObj, getUserMedia } from "./chatroom";
-import { DataMessage, rtcWsClient } from "./socketEvents";
+import { getVideoObj, getUserMedia } from "./chatroom";
+import { rtcWsClient } from "./socketEvents";
 import { translations } from "./translations";
+import { DataMessage } from "./types/interfaces";
 import { currentUserId } from "./user";
 import { createBlackStream, getId } from "./utils";
 
@@ -21,8 +22,6 @@ const PC_CONFIG: RTCConfiguration = {
 
 let localStream: MediaStream | null = null;
 const isRenderingBlackScreen = false;
-const pendingCandidates: Record<string, RTCIceCandidateInit[]> = {};
-const sentCandidates = new Set<string>();
 
 function logError(e: any) {
   console.error("[RTC ERROR]", e);
@@ -44,8 +43,7 @@ async function getOrCreateLocalStream(): Promise<MediaStream> {
   if (localStream) return localStream;
   try {
     localStream = await getUserMedia();
-  } catch (err) {
-    console.error("Failed to get local media, using black stream", err);
+  } catch {
     localStream = createBlackStream();
   }
 
@@ -55,168 +53,163 @@ async function getOrCreateLocalStream(): Promise<MediaStream> {
 }
 
 function sendViaServer(data: DataMessage) {
-  console.log("Sending via server:", data);
   rtcWsClient.sendToPeer(data.targetId, data);
 }
 
-export async function invite(peerId: string) {
-  if (peerList[peerId] || peerId === currentUserId) return;
-  createPeerConnection(peerId);
-  await waitForConnection(peerId);
-}
+class PeerConnectionWrapper {
+  private pc: RTCPeerConnection;
+  private peerId: string;
+  private pendingCandidates: RTCIceCandidateInit[] = [];
+  private sentCandidates = new Set<string>();
 
-export function startWebRTC() {
-  for (const peerId in peerList) {
-    if (peerId !== currentUserId) invite(peerId);
+  constructor(peerId: string) {
+    this.peerId = peerId;
+    this.pc = new RTCPeerConnection(PC_CONFIG);
+    this.registerEvents();
+    this.attachLocalStream();
+  }
+
+  private registerEvents() {
+    this.pc.onicecandidate = (event) => {
+      if (!event.candidate) return;
+
+      const key = `${event.candidate.sdpMid}:${event.candidate.sdpMLineIndex}:${event.candidate.candidate}`;
+      if (this.sentCandidates.has(key)) return;
+      this.sentCandidates.add(key);
+
+      sendViaServer({
+        senderId: currentUserId!,
+        targetId: this.peerId,
+        type: "candidate",
+        candidate: event.candidate.toJSON()
+      });
+    };
+
+    this.pc.ontrack = (event) => {
+      if (!event.streams || !event.streams[0]) return;
+      const videoEl = getVideoObj(this.peerId);
+      if (!videoEl) return;
+      setupVideoElement(videoEl, event.streams[0]);
+      const placeholder = videoEl.parentElement?.querySelector(
+        ".video-placeholder"
+      ) as HTMLElement | null;
+      if (placeholder) placeholder.style.display = "none";
+    };
+  }
+
+  private async attachLocalStream() {
+    const stream = await getOrCreateLocalStream();
+    const existingTracks = this.pc
+      .getSenders()
+      .map((s) => s.track)
+      .filter(Boolean);
+
+    stream.getTracks().forEach((track) => {
+      if (!existingTracks.includes(track)) {
+        this.pc.addTrack(track, stream);
+      }
+    });
+  }
+
+  async createOffer() {
+    const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
+
+    sendViaServer({
+      senderId: currentUserId!,
+      targetId: this.peerId,
+      type: "offer",
+      sdp: this.pc.localDescription!
+    });
+  }
+
+  async handleOffer(sdp: RTCSessionDescriptionInit) {
+    await this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await this.pc.createAnswer();
+    await this.pc.setLocalDescription(answer);
+
+    sendViaServer({
+      senderId: currentUserId!,
+      targetId: this.peerId,
+      type: "answer",
+      sdp: this.pc.localDescription!
+    });
+
+    this.flushPending();
+  }
+
+  async handleAnswer(sdp: RTCSessionDescriptionInit) {
+    await this.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    this.flushPending();
+  }
+
+  async handleCandidate(candidate: RTCIceCandidateInit) {
+    if (this.pc.remoteDescription) {
+      try {
+        await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch {
+        this.pendingCandidates.push(candidate);
+      }
+    } else {
+      this.pendingCandidates.push(candidate);
+    }
+  }
+
+  private flushPending() {
+    this.pendingCandidates.forEach((c) =>
+      this.pc.addIceCandidate(new RTCIceCandidate(c)).catch(logError)
+    );
+    this.pendingCandidates = [];
+  }
+
+  getConnectionState() {
+    return this.pc.iceConnectionState;
+  }
+
+  close() {
+    this.pc.close();
   }
 }
 
-function waitForConnection(peerId: string) {
-  return new Promise<void>((resolve) => {
-    const pc = peerList[peerId];
-    if (!pc) return resolve();
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-      if (state === "connected" || state === "completed") resolve();
-    };
-  });
+const peers = new Map<string, PeerConnectionWrapper>();
+
+export async function invite(peerId: string) {
+  if (peerId === currentUserId) return;
+  if (peers.has(peerId)) return;
+
+  const wrapper = new PeerConnectionWrapper(peerId);
+  peers.set(peerId, wrapper);
+  await wrapper.createOffer();
 }
 
-export function createPeerConnection(peerId: string) {
-  if (peerList[peerId]) return;
-  const pc = new RTCPeerConnection(PC_CONFIG);
-  peerList[peerId] = pc;
-
-  pc.onicecandidate = (event) => handleICECandidateEvent(event, peerId);
-  pc.ontrack = (event) => handleTrackEvent(event, peerId);
-
-  getOrCreateLocalStream()
-    .then((stream) => {
-      if (!stream) return handleNegotiationNeededEvent(peerId);
-      const existingTracks = pc
-        .getSenders()
-        .map((s) => s.track)
-        .filter(Boolean);
-      stream.getTracks().forEach((track) => {
-        if (!existingTracks.includes(track)) pc.addTrack(track, stream);
-      });
-      handleNegotiationNeededEvent(peerId);
-    })
-    .catch(logError);
-}
-
-function handleNegotiationNeededEvent(peerId: string) {
-  const pc = peerList[peerId];
-  if (!pc) return;
-
-  pc.createOffer()
-    .then((offer) =>
-      pc.setLocalDescription(offer).then(() =>
-        sendViaServer({
-          senderId: currentUserId!,
-          targetId: peerId,
-          type: "offer",
-          sdp: pc.localDescription!
-        })
-      )
-    )
-    .catch(logError);
-}
-
-export async function handleOfferMsg(msg: DataMessage) {
+export function handleSignalingMessage(msg: DataMessage) {
   const peerId = msg.senderId;
   if (!peerId) return;
-  if (!peerList[peerId]) createPeerConnection(peerId);
-  const pc = peerList[peerId];
-  if (!pc || !msg.sdp) return;
 
-  await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
+  if (!peers.has(peerId)) {
+    peers.set(peerId, new PeerConnectionWrapper(peerId));
+  }
 
-  sendViaServer({
-    senderId: currentUserId!,
-    targetId: peerId,
-    type: "answer",
-    sdp: pc.localDescription!
-  });
-  flushPendingCandidates(peerId);
-}
+  const wrapper = peers.get(peerId)!;
 
-export function handleAnswerMsg(msg: DataMessage) {
-  const pc = peerList[msg.senderId];
-  if (!pc || !msg.sdp) return;
-  pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
-    .then(() => flushPendingCandidates(msg.senderId))
-    .catch(logError);
-}
-
-function handleICECandidateEvent(
-  event: RTCPeerConnectionIceEvent,
-  peerId: string
-) {
-  if (!event.candidate) return;
-  const key = `${event.candidate.sdpMid}:${event.candidate.sdpMLineIndex}:${event.candidate.candidate}`;
-  if (sentCandidates.has(key)) return;
-  sentCandidates.add(key);
-
-  sendOrQueueIceCandidate(peerId, event.candidate);
-}
-
-export function handleNewICECandidateMsg(msg: DataMessage) {
-  const peerId = msg.senderId;
-  if (!peerId || !msg.candidate) return;
-  sendOrQueueIceCandidate(peerId, msg.candidate);
-}
-
-async function sendOrQueueIceCandidate(
-  peerId: string,
-  candidate: RTCIceCandidateInit
-) {
-  const pc = peerList[peerId];
-  if (!pc) return;
-
-  if (pc.remoteDescription && pc.remoteDescription.type) {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(candidate));
-    } catch (err: any) {
-      if (
-        err.name === "OperationError" ||
-        err.message.includes("Unknown ufrag")
-      ) {
-        if (!pendingCandidates[peerId]) pendingCandidates[peerId] = [];
-        pendingCandidates[peerId].push(candidate);
-      } else {
-        logError(err);
-      }
-    }
-  } else {
-    if (!pendingCandidates[peerId]) pendingCandidates[peerId] = [];
-    pendingCandidates[peerId].push(candidate);
+  switch (msg.type) {
+    case "offer":
+      wrapper.handleOffer(msg.sdp);
+      break;
+    case "answer":
+      wrapper.handleAnswer(msg.sdp);
+      break;
+    case "candidate":
+      wrapper.handleCandidate(msg.candidate);
+      break;
   }
 }
 
-function flushPendingCandidates(peerId: string) {
-  const pc = peerList[peerId];
-  if (!pc || !pc.remoteDescription) return;
-  if (!pendingCandidates[peerId]) return;
-
-  pendingCandidates[peerId].forEach((c) =>
-    pc.addIceCandidate(new RTCIceCandidate(c)).catch(logError)
-  );
-  delete pendingCandidates[peerId];
-}
-
-export function handleTrackEvent(event: RTCTrackEvent, peerId: string) {
-  if (!event.streams || !event.streams[0]) return;
-  const videoEl = getVideoObj(peerId);
-  if (!videoEl) return;
-
-  setupVideoElement(videoEl, event.streams[0]);
-  const placeholder = videoEl.parentElement?.querySelector(
-    ".video-placeholder"
-  ) as HTMLElement | null;
-  if (placeholder) placeholder.style.display = "none";
+export function closeConnection(peerId: string) {
+  const wrapper = peers.get(peerId);
+  if (!wrapper) return;
+  wrapper.close();
+  peers.delete(peerId);
 }
 
 const soundStatus = getId("sound-panel-status");
@@ -225,6 +218,7 @@ const soundConnIcon = getId("sound-connection-icon");
 
 export function setRtcStatus(status: boolean, isWaiting?: boolean) {
   if (!soundStatus || !soundConnIcon || !soundChannel) return;
+
   soundStatus.textContent = isWaiting
     ? translations.getTranslation("connecting")
     : translations.getTranslation(

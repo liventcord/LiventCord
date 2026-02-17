@@ -141,6 +141,7 @@ body.black-theme .dm-selected:hover {
   right: 20px;
   bottom: -2px;
   font-weight: bold;
+  padding: 5px;
 }
 #addfriendinputfield {
   flex: 1;

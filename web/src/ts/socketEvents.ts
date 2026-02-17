@@ -1,32 +1,25 @@
-import { CachedChannel, cacheInterface, guildCache } from "./cache.ts";
+import { cacheInterface, guildCache } from "./cache.ts";
 import { refreshUserProfile } from "./avatar.ts";
-import { currentUserId, UserInfo, userManager } from "./user.ts";
+import { currentUserId, userManager } from "./user.ts";
 import {
   currentVoiceChannelId,
   setCurrentVoiceChannelId,
   setCurrentVoiceChannelGuild,
   currentChannelName,
   handleChannelDelete,
-  ChannelData,
   editChannelName,
   handleNewChannel,
   getChannelsUl,
   currentVoiceChannelGuild
 } from "./channels.ts";
 import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
-import {
-  deleteLocalMessage,
-  getLastSecondMessageDate,
-  Message
-} from "./message.ts";
+import { deleteLocalMessage, getLastSecondMessageDate } from "./message.ts";
 import {
   bottomestChatDateStr,
   setBottomestChatDateStr,
   setLastMessageDate,
   lastMessageDate,
   handleNewMessage,
-  NewMessageResponse,
-  EditMessageResponse,
   handleEditMessage
 } from "./chat.ts";
 import { isOnGuild } from "./router.ts";
@@ -46,23 +39,27 @@ import {
 import { userStatus } from "./app.ts";
 import { apiClient } from "./api.ts";
 import {
-  peerList,
   addVideoElement,
   closeConnection,
   removeVideoElement,
   currentVoiceUserId
 } from "./chatroom.ts";
-import {
-  createPeerConnection,
-  handleAnswerMsg,
-  handleNewICECandidateMsg,
-  handleOfferMsg,
-  setRtcStatus
-} from "./rtc.ts";
-import { alertUser } from "./ui.ts";
+import { handleSignalingMessage, invite, setRtcStatus } from "./rtc.ts";
 import store from "../store.ts";
 import { readStatusManager } from "./readStatus.ts";
-import { handleStopTyping, TypingData, updateTypingText } from "./typing.ts";
+import { handleStopTyping, updateTypingText } from "./typing.ts";
+import {
+  CachedChannel,
+  ChannelData,
+  DataMessage,
+  DeleteMessageResponse,
+  EditMessageResponse,
+  GuildMemberAddedMessage,
+  Message,
+  NewMessageResponse,
+  TypingData,
+  VoiceUser
+} from "./types/interfaces.ts";
 
 export const typingStatusMap = new Map<string, Set<string>>();
 
@@ -200,12 +197,7 @@ export abstract class WebSocketClientBase {
     await this.connectSocket();
   }
 }
-export interface VoiceUser {
-  id: string;
-  isNoisy: boolean;
-  isMuted: boolean;
-  isDeafened: boolean;
-}
+
 interface UserListEvent {
   list: VoiceUser[];
   rtcUserId: string;
@@ -219,13 +211,16 @@ interface UserDisconnectEvent {
   userId: string;
 }
 
-export interface DataMessage {
-  type: "offer" | "answer" | "newIceCandidate";
-  [key: string]: any;
-}
 interface Envelope<T = any> {
   event: string;
   data: T;
+}
+
+interface DeleteMessageEmit {
+  messageId: string;
+  guildId: string;
+  channelId: string;
+  msgDate: string;
 }
 
 type ExistingUserList = {
@@ -236,10 +231,16 @@ type ExistingUserList = {
   };
   RtcUserId: string;
 };
-
 export class WebSocketClient extends WebSocketClientBase {
   private eventHandlers: Record<string, EventHandler[]> = {};
   private static instance: WebSocketClient | null = null;
+  private userStatusCache: Map<string, { status: any; timestamp: number }> =
+    new Map();
+  private cacheTTLMs = 60 * 1000;
+  private batchedUserIds: Set<string> = new Set();
+  private batchTimer: any = null;
+  private batchDelayMs = 50;
+  inProgressRequests: Set<string> = new Set();
   private constructor(url: string = "") {
     super(url);
   }
@@ -250,6 +251,25 @@ export class WebSocketClient extends WebSocketClientBase {
 
   protected handleEvent(message: any) {
     const { event_type, payload } = message;
+    if (payload && typeof payload === "object") {
+      if (payload.user_id) {
+        this.userStatusCache.set(payload.user_id, {
+          status: payload,
+          timestamp: Date.now()
+        });
+        this.inProgressRequests.delete(payload.user_id);
+      } else if (Array.isArray(payload.user_ids)) {
+        payload.user_ids.forEach((u: any) => {
+          if (u && u.user_id) {
+            this.userStatusCache.set(u.user_id, {
+              status: u,
+              timestamp: Date.now()
+            });
+            this.inProgressRequests.delete(u.user_id);
+          }
+        });
+      }
+    }
     if (this.eventHandlers[event_type]) {
       const camelCasedPayload = convertKeysToCamelCase(payload);
       this.eventHandlers[event_type].forEach((handler) =>
@@ -293,49 +313,57 @@ export class WebSocketClient extends WebSocketClientBase {
     requests.forEach((fn) => fn());
   }
 
+  private scheduleBatchFlush() {
+    if (this.batchTimer !== null) return;
+    this.batchTimer = setTimeout(() => {
+      this.batchTimer = null;
+      this.flushBatch();
+    }, this.batchDelayMs);
+  }
+
+  private flushBatch() {
+    if (this.batchedUserIds.size === 0) return;
+    const ids = Array.from(this.batchedUserIds);
+    this.batchedUserIds.clear();
+    ids.forEach((id) => this.inProgressRequests.add(id));
+    const sendRequest = () => {
+      if (!this.isSocketOpen()) {
+        ids.forEach((id) => this.batchedUserIds.add(id));
+        return;
+      }
+      this.send(SocketEvent.GET_USER_STATUS, { user_ids: ids });
+    };
+    if (this.isSocketOpen()) {
+      sendRequest();
+    } else {
+      this.pendingRequests.push(sendRequest);
+    }
+  }
+
   getUserStatus(userIds: string[]) {
     if (
+      !Array.isArray(userIds) ||
       userIds.length < 1 ||
       userIds.some((id) => typeof id !== "string" || id.trim() === "")
     ) {
       return;
     }
-
-    userIds.forEach((userId) => {
+    const now = Date.now();
+    userIds.forEach((rawId) => {
+      const userId = rawId.trim();
+      const cached = this.userStatusCache.get(userId);
+      if (cached && now - cached.timestamp < this.cacheTTLMs) return;
       if (this.inProgressRequests.has(userId)) return;
-      this.inProgressRequests.add(userId);
-
-      const sendRequest = () => {
-        this.send(SocketEvent.GET_USER_STATUS, { user_ids: [userId] });
-        this.inProgressRequests.delete(userId);
-      };
-
-      if (!this.isSocketOpen()) {
-        if (
-          !this.pendingRequests.some((fn) => fn.toString().includes(userId))
-        ) {
-          this.pendingRequests.push(sendRequest);
-        }
-        return;
-      }
-
-      sendRequest();
+      if (this.batchedUserIds.has(userId)) return;
+      this.batchedUserIds.add(userId);
     });
+    if (this.batchedUserIds.size > 0) this.scheduleBatchFlush();
   }
 
-  onUserIdAvailable(currentUserId: string) {
-    const request = () => this.getUserStatus([currentUserId]);
-    if (this.isSocketOpen()) {
-      request();
-    } else {
-      if (
-        !this.pendingRequests.some((fn) =>
-          fn.toString().includes(currentUserId)
-        )
-      ) {
-        this.pendingRequests.push(request);
-      }
-    }
+  onUserIdAvailable(userId: string) {
+    const id = (userId || "").trim();
+    if (!id) return;
+    this.getUserStatus([id]);
   }
 
   startTyping(channelId: string, guildId: string | null = null) {
@@ -358,9 +386,9 @@ export class WebSocketClient extends WebSocketClientBase {
 
   protected onOpen() {
     this.flushPendingRequests();
+    if (this.batchedUserIds.size > 0) this.flushBatch();
   }
 }
-
 export class RTCWebSocketClient extends WebSocketClientBase {
   private static instance: RTCWebSocketClient | null = null;
   private currentRoomID = "";
@@ -369,6 +397,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   private constructor() {
     super();
   }
+
   protected getSocketPath() {
     return "/video-ws";
   }
@@ -382,7 +411,6 @@ export class RTCWebSocketClient extends WebSocketClientBase {
 
   public async setSocketVC(serverUrl: string) {
     if (!this.socketUrl) {
-      console.log(serverUrl, this.socketUrl);
       await this.setSocketUrl(`${serverUrl}/video-ws`);
     }
   }
@@ -394,6 +422,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
   protected onClose(): void {
     setRtcStatus(false);
   }
+
   public isOnRoom(channelId: string): boolean {
     return this.currentRoomID === channelId;
   }
@@ -405,6 +434,7 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       data: { guildId, roomId: channelId }
     });
   }
+
   public exitRoom() {
     if (
       !this.currentRoomID ||
@@ -412,18 +442,15 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       this.socket.readyState !== WebSocket.OPEN
     )
       return;
+
     playAudioType(AudioType.ExitVC);
+
     this.sendRaw({
       event: "leaveRoom",
       data: { roomId: this.currentRoomID }
     });
 
     this.currentRoomID = "";
-    store.dispatch("removeVoiceUser", {
-      guildId: currentVoiceChannelGuild,
-      channelId: currentVoiceChannelId,
-      userId: currentUserId
-    });
   }
 
   public switchRoom(newRoomID: string) {
@@ -442,47 +469,45 @@ export class RTCWebSocketClient extends WebSocketClientBase {
     }
 
     this.currentRoomID = newRoomID;
-    this.sendRaw({ event: "joinRoom", data: { roomId: newRoomID } });
+
+    this.sendRaw({
+      event: "joinRoom",
+      data: { roomId: newRoomID }
+    });
   }
+
   public toggleMute() {
     this.sendRaw({ event: "toggleMute" });
   }
+
   public toggleDeafen() {
     this.sendRaw({ event: "toggleDeafen" });
   }
 
   protected async handleEvent(message: Envelope) {
     const { event, data } = message;
-    console.log("Rtc ws event received: ", event);
 
     const processUserList = (channelId: string, users: VoiceUser[]) => {
       store.dispatch("updateVoiceUsers", { channelId, users });
 
       for (const user of users) {
-        const peer_id = user.id;
-        if (peer_id === currentVoiceUserId()) continue;
+        const peerId = user.id;
+        if (peerId === currentVoiceUserId()) continue;
 
-        if (!peerList[peer_id]) {
-          const isOnSameChannel = currentVoiceChannelId === channelId;
-          if (isOnSameChannel) {
-            addVideoElement(peer_id, peer_id);
-            createPeerConnection(peer_id);
-          }
-          store.dispatch("addVoiceUser", {
-            channelId,
-            userId: peer_id,
-            isNoisy: user.isNoisy,
-            isMuted: user.isMuted,
-            isDeafened: user.isDeafened
-          });
-        } else {
-          store.dispatch("updateVoiceUserStatus", {
-            userId: peer_id,
-            isNoisy: user.isNoisy,
-            isMuted: user.isMuted,
-            isDeafened: user.isDeafened
-          });
+        const isOnSameChannel = currentVoiceChannelId === channelId;
+
+        if (isOnSameChannel) {
+          addVideoElement(peerId, userManager.getUserNick(peerId));
+          invite(peerId);
         }
+
+        store.dispatch("addVoiceUser", {
+          channelId,
+          userId: peerId,
+          isNoisy: user.isNoisy,
+          isMuted: user.isMuted,
+          isDeafened: user.isDeafened
+        });
       }
     };
 
@@ -498,57 +523,50 @@ export class RTCWebSocketClient extends WebSocketClientBase {
         if (!payload?.Guilds) return;
 
         for (const guildId in payload.Guilds) {
-          const userIds = payload.Guilds[guildId];
-          if (!Array.isArray(userIds)) continue;
-          processUserList(guildId, userIds);
+          const users = payload.Guilds[guildId];
+          if (!Array.isArray(users)) continue;
+          processUserList(guildId, users);
         }
         break;
       }
 
       case "userConnect": {
         const payload = data as UserConnectEvent;
-        const peer_id: string = payload.sid;
-        peerList[peer_id] = undefined;
-        addVideoElement(peer_id, userManager.getUserNick(peer_id));
+        const peerId: string = payload.sid;
+
+        addVideoElement(peerId, userManager.getUserNick(peerId));
+
         store.dispatch("addVoiceUser", {
           channelId: currentVoiceChannelId,
-          userId: peer_id
+          userId: peerId
         });
+
+        invite(peerId);
         break;
       }
 
       case "userDisconnect": {
         const payload = data as UserDisconnectEvent;
-        const left_peer_id = payload.userId;
-        closeConnection(left_peer_id);
-        removeVideoElement(left_peer_id);
-        delete peerList[left_peer_id];
+        const peerId = payload.userId;
+
+        closeConnection(peerId);
+        removeVideoElement(peerId);
+
         store.dispatch("removeVoiceUser", {
           guildId: currentVoiceChannelGuild,
           channelId: currentVoiceChannelId,
-          userId: left_peer_id
+          userId: peerId
         });
+
         break;
       }
 
       case "data": {
-        console.log("Received data : ", data);
         const msg = data as DataMessage;
-        switch (msg.type) {
-          case "offer":
-            handleOfferMsg(msg);
-            break;
-          case "answer":
-            handleAnswerMsg(msg);
-            break;
-          case "newIceCandidate":
-            handleNewICECandidateMsg(msg);
-            break;
-          default:
-            console.warn("Unknown signaling message:", msg);
-        }
+        handleSignalingMessage(msg);
         break;
       }
+
       case "joined": {
         playAudioType(AudioType.EnterVC);
         setRtcStatus(true, false);
@@ -557,17 +575,17 @@ export class RTCWebSocketClient extends WebSocketClientBase {
       }
 
       case "disconnect":
-        console.log("Disconnected from server.", data);
         playAudioType(AudioType.ExitVC);
         break;
-      case "userStatusUpdate":
+
+      case "userStatusUpdate": {
         const status = data as {
           id: string;
           isNoisy: boolean;
           isMuted: boolean;
           isDeafened: boolean;
         };
-        console.log("userStatusUpdate received:", status);
+
         store.commit("updateVoiceUserStatusMutation", {
           userId: status.id,
           isNoisy: status.isNoisy,
@@ -575,29 +593,32 @@ export class RTCWebSocketClient extends WebSocketClientBase {
           isDeafened: status.isDeafened
         });
         break;
+      }
 
       default:
         console.error(message);
-        alertUser("Unknown event received:", String(message));
     }
   }
 
   public sendToPeer(targetId: string, payload: DataMessage) {
-    if (!targetId || targetId === this.myId) {
-      console.warn("Attempted to send signaling to self, skipping:", targetId);
-      return;
-    }
+    if (!targetId || targetId === this.myId) return;
+
     this.sendRaw({
       event: "data",
       data: {
         targetId,
+        senderId: payload.senderId,
         type: payload.type,
-        sdp: payload.sdp,
-        candidate: payload.candidate
+        sdp:
+          payload.type === "offer" || payload.type === "answer"
+            ? payload.sdp
+            : undefined,
+        candidate: payload.type === "candidate" ? payload.candidate : undefined
       }
     });
   }
 }
+
 export const socketClient = WebSocketClient.getInstance();
 export const rtcWsClient = RTCWebSocketClient.getInstance();
 
@@ -740,7 +761,8 @@ const handleEditGuildMessage = (data: GuildEditMessageData) => {
     isDm: false,
     messageId: data.messageId,
     channelId: data.channelId,
-    content: data.content
+    content: data.content,
+    lastEdited: Date.now().toString()
   };
   handleEditMessage(messageData);
 };
@@ -750,7 +772,8 @@ const handleEditDmMessage = (data: DMEditMessageData) => {
     isDm: true,
     channelId: data.channelId,
     messageId: data.messageId,
-    content: data.content
+    content: data.content,
+    lastEdited: Date.now().toString()
   };
   handleEditMessage(messageData);
 };
@@ -790,11 +813,6 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
   }
 });
 
-export interface GuildMemberAddedMessage {
-  guildId: string;
-  userId: string;
-  userData: UserInfo;
-}
 socketClient.on(
   SocketEvent.GUILD_MEMBER_ADDED,
   (data: GuildMemberAddedMessage) => {
@@ -827,18 +845,6 @@ socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
 socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
   handleStopTyping(data);
 });
-
-interface DeleteMessageEmit {
-  messageId: string;
-  guildId: string;
-  channelId: string;
-  msgDate: string;
-}
-
-export interface DeleteMessageResponse {
-  messageId: string;
-  channelId: string;
-}
 
 export function processDeleteMessage(
   msgDate: string,
@@ -929,14 +935,12 @@ socketClient.on(SocketEvent.DENY_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
 
-//audio
-interface IncomingAudioResponse {
-  buffer: ArrayBuffer;
-}
-
 //socketClient.on(
 //  SocketEvent.INCOMING_AUDIO,
 //  async (data: IncomingAudioResponse) => {
 //    await voiceHandler.handleAudio(data);
 //  }
 //);
+setTimeout(() => {
+  (window as any).store = store;
+}, 1000);

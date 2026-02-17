@@ -1,19 +1,15 @@
 import { initialState } from "./app.ts";
 import { appendToMessageContextList } from "./contextMenuActions.ts";
 import { Emoji } from "./emoji.ts";
-import { DMHistoryResponse, Message, MessageReply } from "./message.ts";
-import { currentUserId, Member } from "./user.ts";
+import {
+  CachedChannel,
+  DMHistoryResponse,
+  Member,
+  Message,
+  MessageReply
+} from "./types/interfaces.ts";
+import { currentUserId } from "./user.ts";
 import { MINUS_INDEX } from "./utils.ts";
-
-export interface CachedChannel {
-  channelId: string;
-  channelName: string;
-  isTextChannel: boolean;
-  lastReadDatetime: Date | null;
-  guildId: string;
-  voiceMembers: Member[];
-  createElement: () => void;
-}
 
 class BaseCache {
   private data: { [key: string]: any };

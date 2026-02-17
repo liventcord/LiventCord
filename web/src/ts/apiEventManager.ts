@@ -1,10 +1,4 @@
-import {
-  AttachmentWithMetaData,
-  DMHistoryResponse,
-  getOldMessages,
-  GuildHistoryResponse,
-  Message
-} from "./message.ts";
+import { getOldMessages } from "./message.ts";
 import {
   currentLastDate,
   handleReplies,
@@ -37,7 +31,6 @@ import {
   updateGuildImage,
   currentGuildId,
   setGuildNameText,
-  Guild,
   onLeaveGuild,
   addToGuildsList
 } from "./guild.ts";
@@ -52,8 +45,6 @@ import {
   currentUserId,
   DEFAULT_DISCRIMINATOR,
   deletedUser,
-  Member,
-  UserInfo,
   userManager
 } from "./user.ts";
 import {
@@ -68,19 +59,34 @@ import {
   setLastConfirmedProfileImage
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
-import { PermissionsRecord, updatePermissions } from "./guildPermissions.ts";
+import { updatePermissions } from "./guildPermissions.ts";
 import { translations } from "./translations.ts";
 import { closeCurrentJoinPop } from "./popups.ts";
 import { router } from "./router.ts";
-import { DeleteMessageResponse, handleDeleteMessage } from "./socketEvents.ts";
+import { handleDeleteMessage } from "./socketEvents.ts";
 import { appendToDmList, removeFromDmList } from "./friendui.ts";
 import { createFireWorks } from "./extras.ts";
 import { appendToGuildContextList } from "./contextMenuActions.ts";
 import { alertUser } from "./ui.ts";
 import { populateEmojis } from "./emoji.ts";
 import { chatContent } from "./chatbar.ts";
-
-// Events triggered upon successful requests to endpoints
+import {
+  AttachmentWithMetaDataAndCount,
+  BulkReplies,
+  ChangeChannelResponse,
+  DeleteMessageResponse,
+  DMHistoryResponse,
+  Guild,
+  GuildHistoryResponse,
+  GuildMembersResponse,
+  GuildResponse,
+  Member,
+  Message,
+  MessageDatesResponse,
+  NewMessageResponseSelf,
+  PermissionsRecord,
+  UserInfo
+} from "./types/interfaces.ts";
 
 interface JoinGuildData {
   success: boolean;
@@ -88,9 +94,52 @@ interface JoinGuildData {
   guild: Guild;
   permissions: PermissionsRecord;
 }
-interface GuildResponse {
-  guild: Guild;
-  permissions: PermissionsRecord;
+
+// Events triggered upon successful requests to endpoints
+
+function handleGuildCreationResponse(data: GuildResponse) {
+  const popup = getId("guild-pop-up");
+  if (popup) {
+    const parentNode = popup.parentNode as HTMLElement;
+    if (parentNode) {
+      parentNode.remove();
+    }
+  }
+  addNewGuild(data.guild, data.permissions);
+  createFireWorks();
+}
+function userInfosToMembers(userInfos: UserInfo[]): Member[] {
+  return userInfos.map((userInfo) => {
+    return {
+      userId: String(userInfo.userId),
+      nickName: userInfo.nickName || deletedUser,
+      status: userInfo.status ?? "offline",
+      discriminator: userInfo.status ?? DEFAULT_DISCRIMINATOR
+    } as Member;
+  });
+}
+
+function initContainer(containerId: string, title: string): HTMLElement | null {
+  const container = getId(containerId);
+  if (!container) return null;
+
+  if (container.children.length === 0) {
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    heading.style.display = "flex";
+    heading.style.flexDirection = "column";
+    heading.style.alignItems = "center";
+    container.appendChild(heading);
+  }
+
+  return container;
+}
+
+function showNoMessages(container: HTMLElement) {
+  const msg = translations.getTranslation("no-messages-found");
+  const h3 = document.createElement("h3");
+  h3.textContent = msg;
+  container.appendChild(h3);
 }
 
 apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
@@ -207,17 +256,6 @@ apiClient.on(EventType.CREATE_CHANNEL, (data) => {
   handleNewChannel(data);
 });
 
-function handleGuildCreationResponse(data: GuildResponse) {
-  const popup = getId("guild-pop-up");
-  if (popup) {
-    const parentNode = popup.parentNode as HTMLElement;
-    if (parentNode) {
-      parentNode.remove();
-    }
-  }
-  addNewGuild(data.guild, data.permissions);
-  createFireWorks();
-}
 apiClient.on(EventType.GET_CHANNELS, (data: any) => {
   cacheInterface.setChannels(data.guildId, data.channels);
   getChannels();
@@ -238,10 +276,6 @@ apiClient.on(EventType.DELETE_MESSAGE_GUILD, (data: DeleteMessageResponse) => {
   handleDeleteMessage(data.messageId, data.channelId, undefined, true);
 });
 
-interface BulkReplies {
-  replies: Message[];
-}
-
 apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
   const replies: Message[] = data.replies;
 
@@ -261,21 +295,6 @@ apiClient.on(EventType.GET_BULK_REPLY, (data: BulkReplies) => {
     handleReplies();
   }, 100);
 });
-
-interface GuildMembersResponse {
-  members: UserInfo[];
-  guildId: string;
-}
-function userInfosToMembers(userInfos: UserInfo[]): Member[] {
-  return userInfos.map((userInfo) => {
-    return {
-      userId: String(userInfo.userId),
-      nickName: userInfo.nickName || deletedUser,
-      status: userInfo.status ?? "offline",
-      discriminator: userInfo.status ?? DEFAULT_DISCRIMINATOR
-    } as Member;
-  });
-}
 
 apiClient.on(EventType.GET_MEMBERS, (data: GuildMembersResponse) => {
   if (!data || !data.members || !data.guildId) {
@@ -316,20 +335,6 @@ apiClient.on(EventType.GET_HISTORY_GUILD, (data: GuildHistoryResponse) => {
 apiClient.on(EventType.GET_HISTORY_DM, (data: DMHistoryResponse) => {
   handleHistoryResponse(data);
 });
-
-function initContainer(containerId: string, title: string): HTMLElement | null {
-  const container = getId(containerId);
-  if (!container) return null;
-  if (container.children.length === 0) {
-    container.innerHTML = `<h3 style="flex-direction:column; align-items: center; display:flex;">${title}</h3>`;
-  }
-  return container;
-}
-
-function showNoMessages(container: HTMLElement) {
-  const msg = translations.getTranslation("no-messages-found");
-  container.innerHTML += `<h3>${msg}</h3>`;
-}
 
 apiClient.on(EventType.GET_PINNED_MESSAGES, (data: DMHistoryResponse) => {
   pinnedMessagesCache.cachePinnedMessages(data);
@@ -378,15 +383,6 @@ apiClient.on(EventType.GET_GUILD_MESSAGE_LINKS, (data: DMHistoryResponse) => {
   handleHistoryResponse(data, linksContainer);
 });
 
-interface MessageDatesResponse {
-  messageId: string;
-  messageDate: Date;
-}
-
-interface AttachmentWithMetaDataAndCount {
-  attachments: AttachmentWithMetaData[];
-  count: number;
-}
 apiClient.on(
   EventType.GET_ATTACHMENTS_GUILD,
   (data: AttachmentWithMetaDataAndCount) => {
@@ -428,11 +424,7 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
 
   refreshUserProfile(userId, newNickname);
 });
-type ChangeChannelResponse = {
-  channelId: string;
-  guildId: string;
-  channelName: string;
-};
+
 apiClient.on(EventType.UPDATE_CHANNEL_NAME, (data: ChangeChannelResponse) => {
   if (data.guildId === currentGuildId) {
     editChannelName(data.channelId, data.channelName);
@@ -443,11 +435,6 @@ apiClient.on(EventType.GET_FRIENDS, (data) => {
   friendsCache.initialiseFriends(data);
   updateFriendsList(data);
 });
-
-export interface NewMessageResponseSelf {
-  message: Message;
-  guildId: string;
-}
 
 apiClient.on(EventType.SEND_MESSAGE_GUILD, (data: NewMessageResponseSelf) => {
   handleSelfSentMessage(data);

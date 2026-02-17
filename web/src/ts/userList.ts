@@ -9,12 +9,12 @@ import {
   currentUserNick,
   currentUserId,
   currentDiscriminator,
-  UserInfo,
   userManager,
   DEFAULT_DISCRIMINATOR
 } from "./user.ts";
 import { handleResize, handleResizeWidth } from "./ui.ts";
 import { socketClient } from "./socketEvents.ts";
+import { PublicUser, UserInfo } from "./types/interfaces.ts";
 
 export let userList: HTMLElement | null;
 export let userLine: HTMLElement | null;
@@ -38,28 +38,43 @@ export async function updateMemberList(
     console.log("Got users while on me page.");
     return;
   }
-  currentUsers.length = 0;
-  members.forEach((member) => currentUsers.push(member));
 
-  const userIds = members.map((member) => member.userId);
-  setTimeout(() => {
-    socketClient.getUserStatus(userIds);
-  }, 100);
+  const seen = new Set<string>();
+  currentUsers.length = 0;
+  members.forEach((member) => {
+    if (!seen.has(member.userId)) {
+      currentUsers.push(member);
+      seen.add(member.userId);
+    }
+  });
+
+  const uniqueUserIds = Array.from(seen);
+  socketClient.getUserStatus(uniqueUserIds);
 }
-export async function removeUserFromMemberList(userId: string) {
-  const index = currentUsers.findIndex((user) => user.userId === userId);
-  if (index !== -1) {
-    currentUsers.splice(index, 1);
-  }
-}
-export async function addUserToMemberList(user: UserInfo) {
+
+export async function addUserToMemberList(user: PublicUser) {
+  if (!user.userId || !user.nickName || !user.discriminator) return;
+
   const exists = currentUsers.some((u) => u.userId === user.userId);
   if (!exists) {
-    currentUsers.push(user);
-    setTimeout(() => {
-      socketClient.getUserStatus([user.userId]);
-    }, 100);
+    const newUser: UserInfo = {
+      userId: user.userId,
+      nickName: user.nickName,
+      discriminator: user.discriminator,
+      description: user.description,
+      createdAt: user.createdAt?.toISOString(),
+      socialMediaLinks: Array.isArray(user.socialMediaLinks)
+        ? user.socialMediaLinks
+        : undefined
+    };
+    currentUsers.push(newUser);
+    socketClient.getUserStatus([user.userId]);
   }
+}
+
+export async function removeUserFromMemberList(userId: string) {
+  const index = currentUsers.findIndex((user) => user.userId === userId);
+  if (index !== -1) currentUsers.splice(index, 1);
 }
 
 export function toggleUsersList() {

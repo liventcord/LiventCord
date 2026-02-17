@@ -12,15 +12,14 @@ import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { closeReplyMenu, updatePlaceholderVisibility } from "./chatbar.ts";
 import { joinVoiceChannel, currentGuildId, loadGuild } from "./guild.ts";
 import { selectedChanColor, clamp } from "./ui.ts";
-import { guildCache, cacheInterface, CachedChannel } from "./cache.ts";
+import { guildCache, cacheInterface } from "./cache.ts";
 import { isOnMePage, isOnDm, router } from "./router.ts";
-import { Member } from "./user.ts";
 import { closeSettings } from "./settingsui.ts";
 import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
-import { VoiceUser } from "./socketEvents.ts";
+import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
@@ -272,51 +271,6 @@ function addChannelEventListeners() {
   document.addEventListener("keyup", resetKeydown);
 }
 
-export interface ChannelData {
-  guildId: string;
-  channelId: string;
-  channelName?: string;
-  isTextChannel?: boolean;
-  lastReadDatetime?: Date | null;
-  voiceMembers?: Member[];
-  unreadCount?: number;
-}
-
-export class Channel implements ChannelData {
-  channelId!: string;
-  channelName!: string;
-  isTextChannel!: boolean;
-  voiceUsers?: VoiceUser[];
-  guildId!: string;
-  lastReadDatetime!: Date | null;
-  voiceMembers!: Member[];
-  unreadCount?: number;
-
-  constructor({
-    channelId,
-    channelName = "",
-    isTextChannel = false,
-    lastReadDatetime = null,
-    voiceMembers = [],
-    unreadCount = 0
-  }: ChannelData) {
-    if (!channelId) {
-      console.error("Invalid channel data in constructor:", {
-        channelId,
-        channelName,
-        isTextChannel
-      });
-      return;
-    }
-    this.channelId = channelId;
-    this.channelName = channelName;
-    this.isTextChannel = isTextChannel;
-    this.lastReadDatetime = lastReadDatetime;
-    this.voiceMembers = voiceMembers;
-    this.unreadCount = unreadCount;
-  }
-}
-
 function addChannel(channelData: Channel) {
   const channel = new Channel(channelData);
   store.dispatch("setChannel", channel);
@@ -466,12 +420,12 @@ export function updateChannelsWidth(e: MouseEvent) {
 
   document.body.style.userSelect = "none";
 
-  const onMouseMove = (e: MouseEvent) => {
+  const onMouseMove = (ev: MouseEvent) => {
     if (!isDragging) {
       return;
     }
 
-    let newWidth = startWidth + (e.clientX - startX);
+    let newWidth = startWidth + (ev.clientX - startX);
     newWidth = clamp(newWidth);
     setWidths(newWidth);
   };

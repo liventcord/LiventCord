@@ -1,16 +1,11 @@
 import { userStatus } from "./app";
 import { guildCache } from "./cache";
 import { friendsCache } from "./friends";
+import { TypingData } from "./types/interfaces";
 import { userManager } from "./user";
 import { disableElement, enableElement, getId } from "./utils";
 
 export const typingStatusMap = new Map<string, Set<string>>();
-
-export interface TypingData {
-  userId: string;
-  guildId?: string;
-  channelId: string;
-}
 
 const typingText = getId("typing-text") as HTMLElement;
 const typingBubbles = getId("typing-bubbles") as HTMLElement;

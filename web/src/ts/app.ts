@@ -26,7 +26,6 @@ import {
   FileHandler,
   ReadenMessagesManager,
   setChatBarState,
-  ChatBarState,
   getChatBarState,
   manuallyRenderEmojis
 } from "./chatbar.ts";
@@ -75,7 +74,6 @@ import {
   updateChannels,
   getChannels,
   currentChannelName,
-  Channel,
   changeChannel,
   setChannelTitle
 } from "./channels.ts";
@@ -113,6 +111,7 @@ import { translations } from "./translations.ts";
 import { setSocketClient } from "./socketEvents.ts";
 import { UserStatus } from "./status.ts";
 import { initializeVideoComponent } from "./chatroom.ts";
+import { Channel, ChatBarState } from "./types/interfaces.ts";
 
 interface InitialStateData {
   email: string;
@@ -628,6 +627,7 @@ export function loadApp(friendId?: string, isInitial?: boolean) {
 
     const oldState = getChatBarState();
     setChatBarState(oldState);
+    // eslint-disable-next-line no-unsanitized/property
     chatInput.innerHTML = escapeHtml(oldState.rawContent) ?? "";
     channelInputStates[guildCache.currentChannelId] = getChatBarState();
     manuallyRenderEmojis(oldState.rawContent);

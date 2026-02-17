@@ -1582,12 +1582,20 @@ textarea::-webkit-scrollbar-track {
 }
 .message-button {
   display: none;
-  background-color: #2e3035;
+  background-color: #0b0c0e;
   transition: background-color 0.3s ease;
   border-radius: 5px;
+  width: 35px;
+  height: 25px;
+  z-index: 1;
+  border: none;
+  outline: 1px solid #232428;
+  color: #b5bac1;
+  margin-left: 5px;
 }
+
 .message-button:hover {
-  background-color: #313338;
+  background-color: #0b0c0e;
 }
 .message-button-container {
   display: flex;
@@ -1596,16 +1604,7 @@ textarea::-webkit-scrollbar-track {
   top: 0;
   right: 20px;
 }
-.message-button {
-  width: 35px;
-  height: 25px;
-  z-index: 1;
-  border: none;
-  outline: 1px solid #232428;
-  background-color: #313338;
-  color: #b5bac1;
-  margin-left: 5px;
-}
+
 .message-button-text {
   font-size: 22px;
   pointer-events: none;
