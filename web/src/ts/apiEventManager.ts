@@ -51,9 +51,9 @@ import {
 } from "./friends.ts";
 import {
   refreshUserProfile,
-  selfName,
   setLastConfirmedGuildImage,
-  setLastConfirmedProfileImage
+  setLastConfirmedProfileImage,
+  updateSelfName
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { updatePermissions } from "./guildPermissions.ts";
@@ -412,11 +412,11 @@ apiClient.on(EventType.CHANGE_NICK, (data) => {
   if (userId === appState.currentUserId) {
     const setInfoNick = getId("set-info-nick");
 
-    selfName.innerText = newNickname;
     if (setInfoNick) {
       setInfoNick.innerText = newNickname;
     }
     userManager.setUserNick(newNickname);
+    updateSelfName(newNickname);
     return;
   }
 

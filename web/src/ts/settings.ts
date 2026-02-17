@@ -425,7 +425,7 @@ function changeNickname() {
   const newNicknameInput = getId("new-nickname-input") as HTMLInputElement;
   const newNickname = newNicknameInput.value.trim();
 
-  if (newNickname && newNickname !== appState.currentUserId) {
+  if (newNickname && newNickname !== appState.currentUserNick) {
     console.log("Changed your nickname to: " + newNickname);
     refreshUserProfile(appState.currentUserId, newNickname);
     userManager.setUserNick(newNickname);
@@ -435,7 +435,6 @@ function changeNickname() {
     }
     updateSelfName(newNickname);
     apiClient.send(EventType.CHANGE_NICK, { newNickname });
-    newNicknameInput.value = newNickname;
 
     changeNicknameTimeout = setTimeout(() => {
       changeNicknameTimeout = null;

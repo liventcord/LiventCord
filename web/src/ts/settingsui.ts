@@ -437,8 +437,8 @@ function selectSettingCategory(
   }
 
   if (settingCategory === ProfileCategoryTypes.MyAccount) {
-    if (appState.currentUserId)
-      updateSelfProfile(appState.currentUserId, appState.currentUserId, true);
+    if (appState.currentUserId && appState.currentUserNick)
+      updateSelfProfile(appState.currentUserId, appState.currentUserNick, true);
   }
 
   const settingsContainer = getId("settings-rightcontainer");
@@ -473,7 +473,6 @@ function selectSettingCategory(
   settingsContainer.innerHTML = settingConfig.html;
 
   initialiseSettingComponents(
-    settingsContainer,
     settingCategory as keyof typeof ProfileCategoryTypes
   );
 
@@ -877,140 +876,156 @@ function linkGoogleAccount() {
     </div>
   `;
 }
-
 function initialiseSettingComponents(
-  settingsContainer: HTMLElement,
   settingCategory: keyof typeof ProfileCategoryTypes
 ) {
+  initializeProfileSection(settingCategory);
+  initializeLanguageDropdown();
+  setupCloseButton();
+  setupToggles();
+  setupProfileImageClick();
+  setupThemeSelectors();
+  setupVideoTransparencyInput();
+  setupVideoUrlInput();
+  setupNicknameInput();
+  setupGuildAndChannelInputs();
+  setupEmailToggle();
+  setupAccountButtons();
+  setupEmojiUpload();
+  registerSlider();
+}
+
+function initializeProfileSection(
+  settingCategory: keyof typeof ProfileCategoryTypes
+) {
+  if (settingCategory !== ProfileCategoryTypes.MyAccount) return;
   setTimeout(() => {
-    if (settingCategory === ProfileCategoryTypes.MyAccount) {
-      if (appState.currentUserId)
-        updateSelfProfile(appState.currentUserId, appState.currentUserId, true);
+    if (appState.currentUserId && appState.currentUserNick) {
+      updateSelfProfile(appState.currentUserId, appState.currentUserNick, true);
     }
   }, 100);
+}
 
-  initializeLanguageDropdown();
-
+function setupCloseButton() {
   const closeButton = getId("close-settings-button");
-  if (closeButton) {
-    closeButton.addEventListener("click", closeSettings);
-  }
+  if (closeButton) closeButton.addEventListener("click", closeSettings);
+}
 
+function setupToggles() {
   toggleManager.setupToggles();
+}
 
+function setupProfileImageClick() {
   getProfileImage()?.addEventListener("click", triggerFileInput);
+}
 
+function setupThemeSelectors() {
   const ash = getId("ash-theme-selector");
   const dark = getId("dark-theme-selector");
   ash?.addEventListener("click", () => selectTheme(Themes.Ash));
   dark?.addEventListener("click", () => selectTheme(Themes.Dark));
   selectThemeButton(isBlackTheme());
+}
 
-  const transparencyInput = getId(
-    "video-transparency-input"
-  ) as HTMLInputElement;
+function setupVideoTransparencyInput() {
+  const input = getId("video-transparency-input") as HTMLInputElement;
+  if (!input) return;
 
-  transparencyInput?.addEventListener("input", function (event: Event) {
-    if (!event.target) {
-      return;
-    }
+  input.addEventListener("input", (event) => {
     const target = event.target as HTMLInputElement;
-    const value = target.value;
-    saveTransparencyValue(value);
-    updateVideoTransparency(value);
+    saveTransparencyValue(target.value);
+    updateVideoTransparency(target.value);
   });
-  if (transparencyInput) {
-    transparencyInput.value = currentBGTransparency;
-  }
+  input.value = currentBGTransparency;
+}
 
-  const videoUrlInput = getId("video-url-input");
-
-  videoUrlInput?.addEventListener("input", (e) => {
+function setupVideoUrlInput() {
+  const input = getId("video-url-input");
+  input?.addEventListener("input", (e) => {
     const target = e.target as HTMLElement;
-    if (target.textContent) {
-      onEditVideoUrl(target.textContent);
-    }
+    if (target.textContent) onEditVideoUrl(target.textContent);
   });
-  const resetBtn = getId("video-url-reset-btn");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      resetVideoUrl();
-    });
-  }
-  getId("new-nickname-input")?.addEventListener("input", onEditNick);
-  const selfName = getId("settings-self-name");
-  if (selfName) selfName.textContent = appState.currentUserId;
-  const setInfoNick = getId("set-info-nick");
-  if (setInfoNick) setInfoNick.textContent = appState.currentUserId;
 
+  const resetBtn = getId("video-url-reset-btn");
+  resetBtn?.addEventListener("click", resetVideoUrl);
+}
+
+function setupNicknameInput() {
+  const nickInput = getId("new-nickname-input") as HTMLInputElement;
+  if (nickInput && appState.currentUserNick)
+    nickInput.value = appState.currentUserNick;
+  nickInput?.addEventListener("input", onEditNick);
+
+  const selfName = getId("settings-self-name");
+  if (selfName) selfName.textContent = appState.currentUserNick;
+
+  const setInfoNick = getId("set-info-nick");
+  if (setInfoNick) setInfoNick.textContent = appState.currentUserNick;
+}
+
+function setupGuildAndChannelInputs() {
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getId("guild-image") as HTMLImageElement;
+  const channelNameInput = getId(
+    "channel-overview-name-input"
+  ) as HTMLInputElement;
+  const canManageGuild = permissionManager.canManageGuild();
+
   if (guildImage) {
     guildImage.onerror = () => {
       guildImage.src = blackImage;
     };
     setGuildImage(currentGuildId, guildImage, true);
   }
-  const channelNameInput = getId(
-    "channel-overview-name-input"
-  ) as HTMLInputElement;
 
-  const canManageGuild = permissionManager.canManageGuild();
   if (channelNameInput) {
     channelNameInput.value = currentChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
-    if (!channelNameInput.disabled) {
+    if (!channelNameInput.disabled)
       channelNameInput.addEventListener("input", onEditChannelName);
-    }
-  }
-  if (canManageGuild) {
-    enableElement("guild-image-remove");
   }
 
+  if (canManageGuild) enableElement("guild-image-remove");
+
   if (isOnGuild && guildNameInput) {
-    if (permissionManager.canManageGuild()) {
+    if (canManageGuild) {
       guildNameInput.addEventListener("input", onEditGuildName);
       guildImage?.addEventListener("click", triggerGuildImageUpdate);
-      if (guildImage) {
-        setGuildImage(currentGuildId, guildImage, true);
-      }
+      if (guildImage) setGuildImage(currentGuildId, guildImage, true);
     } else {
       guildNameInput.disabled = true;
     }
   }
+}
 
-  document.body.addEventListener("click", function (event) {
+function setupEmailToggle() {
+  document.body.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
-    if (target && target.id === "set-info-email-eye") {
-      toggleEmail();
-    }
+    if (target?.id === "set-info-email-eye") toggleEmail();
   });
+}
 
+function setupAccountButtons() {
   getId("change-password-button")?.addEventListener(
     "click",
     openChangePasswordPop
   );
   getId("link-google-btn")?.addEventListener("click", linkGoogleAccount);
-
-  const uploadEmojiButton = getId(
-    "upload-emoji-button"
-  ) as HTMLButtonElement | null;
-  const emojiImageInput = getId("emoijImage") as HTMLInputElement | null;
-
-  function triggerUploadEmoji(): void {
-    if (!emojiImageInput) {
-      return;
-    }
-    emojiImageInput.click();
-    emojiImageInput.addEventListener("change", onEditEmoji);
-  }
-
-  if (permissionManager.canManageGuild() && uploadEmojiButton) {
-    uploadEmojiButton.addEventListener("click", triggerUploadEmoji);
-  }
-
-  registerSlider();
 }
+
+function setupEmojiUpload() {
+  const uploadButton = getId("upload-emoji-button") as HTMLButtonElement | null;
+  const emojiInput = getId("emoijImage") as HTMLInputElement | null;
+
+  if (!permissionManager.canManageGuild() || !uploadButton || !emojiInput)
+    return;
+
+  uploadButton.addEventListener("click", () => {
+    emojiInput.click();
+    emojiInput.addEventListener("change", onEditEmoji);
+  });
+}
+
 function registerSlider() {
   const slider = document.querySelector<HTMLDivElement>(
     "#chat-font-scaling .slider"
@@ -1226,8 +1241,8 @@ export function generateConfirmationPanel() {
   resetButton.addEventListener("click", function () {
     hideConfirmationPanel(popupDiv);
     const nickinput = getId("new-nickname-input") as HTMLInputElement;
-    if (nickinput && appState.currentUserId) {
-      nickinput.value = appState.currentUserId;
+    if (nickinput && appState.currentUserNick) {
+      nickinput.value = appState.currentUserNick;
     }
     const profileimg = getId("profileImage") as HTMLInputElement;
     if (profileimg) {

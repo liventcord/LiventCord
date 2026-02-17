@@ -7,7 +7,8 @@ import {
   base64ToBlob,
   IMAGE_SRCS,
   createRandomId,
-  getMediaBaseURL
+  getMediaBaseURL,
+  disableElement
 } from "./utils.ts";
 import {
   isSettingsOpen,
@@ -33,9 +34,14 @@ import { apiClient, EventType } from "./api.ts";
 import { cacheInterface } from "./cache.ts";
 import { appState } from "./appState.ts";
 
-export const selfName = getId("self-name") as HTMLElement;
+const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;
 export const selfProfileImage = getId("self-profile-image") as HTMLImageElement;
+
+export function disableSelfName() {
+  disableElement(selfName);
+}
+
 export let lastConfirmedProfileImg: Blob;
 let lastConfirmedGuildImg: Blob;
 
@@ -217,9 +223,8 @@ export function updateSelfName(nickName: string) {
     settingsNameText.innerText = nickName;
   }
 
-  const selfNameText = getId("self-name");
-  if (selfNameText) {
-    selfNameText.innerText = nickName;
+  if (selfName) {
+    selfName.innerText = nickName;
   }
 }
 export function getProfileUrl(userId: string): string {
@@ -246,6 +251,7 @@ export function updateSelfProfile(
   const selfimagepath = getProfileUrl(userId);
 
   updateImageSource(selfProfileImage, selfimagepath);
+  updateSelfName(nickName);
 
   if (
     isSettingsOpen &&
@@ -256,7 +262,6 @@ export function updateSelfProfile(
     if (!settingsSelfProfile) {
       return;
     }
-    updateSelfName(nickName);
     updateImageSource(settingsSelfProfile, selfimagepath);
 
     if (isAfterUploading) {

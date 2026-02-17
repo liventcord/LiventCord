@@ -10,7 +10,26 @@ export interface User {
   maxAvatarSize: number;
   profileVersion: string;
 }
-
+export interface InitialStateData {
+  email: string;
+  userId: string;
+  nickName: string;
+  userStatus: string;
+  userDiscriminator: string;
+  profileVersion: string;
+  guildName: string;
+  ownerId: string;
+  sharedGuildsMap: Map<string, any>;
+  permissionsMap: Map<string, any>;
+  friendsStatus: any;
+  dmFriends?: any[];
+  guilds: any[];
+  mediaWorkerUrl: string;
+  maxAvatarSize: number;
+  maxAttachmentSize: number;
+  wsUrl: string;
+  rtcWsUrl: string;
+}
 export interface InitialState {
   user: User;
   ownerId: string;
@@ -40,7 +59,7 @@ let state: AppState = {
   userStatus: null
 };
 
-let initialState: InitialState | null = null;
+const initialState: InitialState | null = null;
 
 export const appState = {
   get currentUserId(): string | null {
@@ -81,9 +100,7 @@ export const appState = {
   getInitialState(): InitialState | null {
     return initialState;
   },
-  initialiseState(data: Omit<InitialState, "user"> & { user: User }): void {
-    initialState = { ...data };
-
+  initialiseState(data: InitialState): void {
     state.currentUserId = data.user.userId;
     state.currentUserNick = data.user.nickname;
     state.currentDiscriminator = data.user.discriminator;

@@ -1,5 +1,9 @@
 import store from "../store.ts";
-import { selfDiscriminator, selfName, updateSelfProfile } from "./avatar.ts";
+import {
+  selfDiscriminator,
+  updateSelfName,
+  updateSelfProfile
+} from "./avatar.ts";
 import { initialState } from "./app.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { alertUser } from "./ui.ts";
@@ -297,14 +301,14 @@ export function initializeProfile() {
   socketClient.onUserIdAvailable(appState.currentUserId);
   appState.set({ currentUserNick: initialState.user.nickname });
   appState.set({ currentDiscriminator: initialState.user.discriminator });
-  selfName.textContent = appState.currentUserId;
   selfDiscriminator.textContent = "#" + initialState.user.discriminator;
   const profileDiscriminator = getId("profile-discriminator");
   if (profileDiscriminator) {
     profileDiscriminator.textContent = "#" + initialState.user.discriminator;
   }
   userStatus.setSelfStatus(initialState.user.status);
-  updateSelfProfile(appState.currentUserId, appState.currentUserId);
+  updateSelfProfile(initialState.user.userId, initialState.user.nickname);
+  updateSelfName(initialState.user.nickname);
 }
 
 export function getSelfFullDisplay() {

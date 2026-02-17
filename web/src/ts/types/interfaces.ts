@@ -474,3 +474,24 @@ export type Emoji = {
   fileId: string;
   fileName: string;
 };
+
+export interface InitialStateData {
+  email: string;
+  userId: string;
+  nickName: string;
+  userStatus: string;
+  userDiscriminator: string;
+  profileVersion: string;
+  guildName: string;
+  ownerId: string;
+  sharedGuildsMap: Map<string, any>;
+  permissionsMap: Map<string, any>;
+  friendsStatus: any;
+  dmFriends?: any[];
+  guilds: any[];
+  mediaWorkerUrl: string;
+  maxAvatarSize: number;
+  maxAttachmentSize: number;
+  wsUrl: string;
+  rtcWsUrl: string;
+}

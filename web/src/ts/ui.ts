@@ -67,7 +67,7 @@ import {
   isImageSpoilered,
   setImageUnspoilered
 } from "./mediaElements.ts";
-import { selfName, setProfilePic } from "./avatar.ts";
+import { disableSelfName, setProfilePic } from "./avatar.ts";
 import { createTooltip } from "./tooltip.ts";
 import { earphoneButton, microphoneButton } from "./audio.ts";
 import { isBlackTheme } from "./settings.ts";
@@ -1523,7 +1523,7 @@ export function initialiseMobile() {
       microphoneParent.remove();
     }
   }
-  disableElement(selfName);
+  disableSelfName();
   disableElement("self-status");
 
   const friendIconSign = getId("friend-icon-sign");

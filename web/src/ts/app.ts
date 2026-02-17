@@ -106,29 +106,8 @@ import { setSocketClient } from "./socketEvents.ts";
 import { initializeUserStatus, userStatus } from "./status.ts";
 import { initializeVideoComponent } from "./chatroom.ts";
 import { Channel, ChatBarState } from "./types/interfaces.ts";
-import { appState, InitialState } from "./appState.ts";
+import { appState, InitialState, InitialStateData } from "./appState.ts";
 import { FileHandler } from "./fileHandler.ts";
-
-interface InitialStateData {
-  email: string;
-  userId: string;
-  nickName: string;
-  userStatus: string;
-  userDiscriminator: string;
-  profileVersion: string;
-  guildName: string;
-  ownerId: string;
-  sharedGuildsMap: Map<string, any>;
-  permissionsMap: Map<string, any>;
-  friendsStatus: any;
-  dmFriends?: any[];
-  guilds: any[];
-  mediaWorkerUrl: string;
-  maxAvatarSize: number;
-  maxAttachmentSize: number;
-  wsUrl: string;
-  rtcWsUrl: string;
-}
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
@@ -205,7 +184,7 @@ export function initialiseState(data: InitialStateData): void {
   setSocketClient(wsUrl);
   guildCache.currentGuildName = guildName;
   initialiseChannelDrag();
-
+  appState.initialiseState(initialState);
   friendsCache.initialiseFriends(friendsStatus);
   updateDmsList(dmFriends);
   setUploadSize(initialState.maxAvatarSize, initialState.maxAttachmentSize);
