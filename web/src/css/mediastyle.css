@@ -626,8 +626,10 @@ body.black-theme #media-menu-search-bar {
   height: 100%;
   display: none;
   justify-content: center;
-  align-items: center;
   background-color: #050505cc;
+}
+.image-preview-container-img {
+  align-items: center;
 }
 
 #json-preview-container {
@@ -772,6 +774,16 @@ body.black-theme #media-menu-search-bar {
   font-weight: bold;
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   pointer-events: none;
+}
+#preview-video {
+  max-width: 80%;
+  max-height: 80%;
+  margin-top: 8vh;
+  border-radius: 0.875rem;
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+  background-color: black;
+  display: block;
 }
 
 .spoiler-text {

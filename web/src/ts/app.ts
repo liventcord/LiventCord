@@ -111,10 +111,44 @@ import { FileHandler } from "./fileHandler.ts";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
-  channelInfoFriend: "channel-info-container-for-friend"
-};
+  channelInfoFriend: "channel-info-container-for-friend",
+  channelInfoIndex: "channel-info-container-for-index",
+  channelContainer: "channel-container",
+  dmContainerParent: "dm-container-parent",
+  friendContainerItem: "friend-container-item",
+  friendsContainerItem: "friends-container-item",
+  dmsTitle: "dms-title",
+  guildContainer: "guild-container",
+  guildSettingsButton: "guild-settings-button",
+  channelInfo: "channel-info",
+  globalSearchInput: "global-search-input",
+  hashSign: "hash-sign",
+  dmProfileSignBubble: "dm-profile-sign-bubble",
+  dmProfileSign: "dm-profile-sign",
+  messageInputContainer: "message-input-container",
+  chatContainer: "chat-container",
+  scrollToBottom: "scroll-to-bottom",
+  searchMessagesRoot: "search-messages-root",
+  userLine: "user-line",
+  guildName: "guild-name",
+  tbShowMembers: "tb-show-members",
+  tbCall: "tb-call",
+  tbVideoCall: "tb-video-call",
+  tbPin: "tb-pin",
+  avatarWrapper: "avatar-wrapper",
+  nowOnline: "nowonline",
+  loadingScreen: "loading-screen",
+  mainLogo: "main-logo"
+} as const;
 
-export function initializeApp() {
+export let isDomLoaded = false;
+export let initialState: InitialState;
+export let isChangingPage = false;
+
+const channelInputStates: { [id: string]: ChatBarState } = {};
+let lastDmId: string = "";
+
+export function initializeApp(): void {
   initializeUserStatus();
   window.scrollTo(0, 0);
   initializeElements();
@@ -131,9 +165,6 @@ export function initializeApp() {
   handleResize();
   isDomLoaded = true;
 }
-
-export let isDomLoaded = false;
-export let initialState: InitialState;
 
 export function initialiseState(data: InitialStateData): void {
   const {
@@ -156,8 +187,6 @@ export function initialiseState(data: InitialStateData): void {
     rtcWsUrl,
     wsUrl
   } = data;
-
-  console.log("Data loaded:", data);
 
   initialState = {
     user: {
@@ -192,7 +221,7 @@ export function initialiseState(data: InitialStateData): void {
   addKeybinds();
 }
 
-function initializeElements() {
+function initializeElements(): void {
   createChatScrollButton();
   chatContainer.addEventListener("scroll", handleScroll);
   initialiseChatInput();
@@ -200,6 +229,7 @@ function initializeElements() {
   closeReplyMenu();
   adjustHeight();
   FileHandler.setDropHandler();
+
   guildContainer.addEventListener(
     "mouseover",
     () => (guildContainer.style.backgroundColor = "#333538")
@@ -212,44 +242,38 @@ function initializeElements() {
 
   friendContainerItem.addEventListener("click", () => loadDmHome());
 
-  const tbShowProfile = getId("tb-show-members");
-  tbShowProfile?.addEventListener("click", handleMembersClick);
-  getId("tb-call")?.addEventListener("click", audioCall);
-  getId("tb-video-call")?.addEventListener("click", videoCall);
-  getId("tb-pin")?.addEventListener("click", togglePin);
+  getId(ELEMENT_IDS.tbShowMembers)?.addEventListener(
+    "click",
+    handleMembersClick
+  );
+  getId(ELEMENT_IDS.tbCall)?.addEventListener("click", audioCall);
+  getId(ELEMENT_IDS.tbVideoCall)?.addEventListener("click", videoCall);
+  getId(ELEMENT_IDS.tbPin)?.addEventListener("click", togglePin);
 }
 
-function initializeSettings() {
-  if (appState.currentUserId)
+function initializeSettings(): void {
+  if (appState.currentUserId) {
     updateSelfProfile(appState.currentUserId, appState.currentUserId);
+  }
   const isCookieUsersOpen = loadBooleanCookie("isUsersOpen");
-  setTimeout(() => {
-    setUsersList(isCookieUsersOpen, true);
-  }, 0);
-
-  disableElement("loading-screen");
+  setTimeout(() => setUsersList(isCookieUsersOpen, true), 0);
+  disableElement(ELEMENT_IDS.loadingScreen);
 }
 
-function initializeListeners() {
-  getId("global-search-input")?.addEventListener("click", () =>
+function initializeListeners(): void {
+  getId(ELEMENT_IDS.globalSearchInput)?.addEventListener("click", () =>
     openSearchPop()
   );
-
   guildContainer.addEventListener("click", handleGuildClick);
 
-  const avatarWrapper = getId("avatar-wrapper") as HTMLElement;
-  avatarWrapper.addEventListener("click", () => {
-    if (userStatus) {
-      userStatus.showStatusPanel();
-    }
-  });
+  const avatarWrapper = getId(ELEMENT_IDS.avatarWrapper) as HTMLElement;
+  avatarWrapper.addEventListener("click", () => userStatus?.showStatusPanel());
 
   addContextListeners();
-
   addChatMentionListeners();
 }
 
-function handleGuildClick(event: MouseEvent) {
+function handleGuildClick(event: MouseEvent): void {
   const target = event.target as HTMLElement | null;
   if (
     target &&
@@ -259,24 +283,22 @@ function handleGuildClick(event: MouseEvent) {
   }
 }
 
-function initializeGuild() {
+function initializeGuild(): void {
   initialiseMe();
+
   if (userList) {
     disableElement(userList);
   }
-  const {
-    isValid,
-    initialGuildId,
-    initialChannelId,
-    initialFriendId
-  }: {
-    isValid: boolean;
-    initialGuildId?: string;
-    initialChannelId?: string;
-    initialFriendId?: string;
-  } = router.validateRoute();
 
-  if (initialState.guilds && initialState.guilds.length > 0) {
+  const { isValid, initialGuildId, initialChannelId, initialFriendId } =
+    router.validateRoute() as {
+      isValid: boolean;
+      initialGuildId?: string;
+      initialChannelId?: string;
+      initialFriendId?: string;
+    };
+
+  if (initialState.guilds?.length > 0) {
     processGuilds(initialGuildId, initialState.guilds);
   }
 
@@ -288,11 +310,11 @@ function initializeGuild() {
     handleChannelLoading(initialGuildId, initialChannelId);
     fetchMembers();
   }
+
   if (isValid && initialFriendId) {
-    setTimeout(() => {
-      openDm(initialFriendId);
-    }, 0);
+    setTimeout(() => openDm(initialFriendId), 0);
   }
+
   if (currentGuildId) {
     apiClient.send(EventType.GET_GUILD_UNREAD_COUNTS, {
       guildId: currentGuildId
@@ -323,17 +345,12 @@ export function handleChannelLoading(
   guildId: string,
   channelId?: string
 ): void {
-  if (!channelId) {
-    return;
-  }
-
-  console.log("Channel check");
+  if (!channelId) return;
 
   const channelExists = cacheInterface.doesChannelExists(guildId, channelId);
   const isVoiceChannel = cacheInterface.isVoiceChannel(guildId, channelId);
 
   if (!channelExists || isVoiceChannel) {
-    console.warn("Voice channel", isVoiceChannel, channelExists);
     const rootChannel = cacheInterface.getRootChannelData(guildId);
     if (rootChannel) {
       changeChannel(rootChannel);
@@ -355,79 +372,67 @@ export function handleChannelLoading(
     loadGuild(guildId, rootChannel.channelId, "", true);
   }
 }
-export function readGuildMessages(guildId: string) {
+
+export function readGuildMessages(guildId: string): void {
   if (!guildId) return;
-  apiClient.send(EventType.READ_GUILD, {
-    guildId
-  });
+  apiClient.send(EventType.READ_GUILD, { guildId });
 }
-export function readCurrentMessages(channelId: string) {
-  if (!channelId) {
-    return;
-  }
-  console.log("reading channel");
-  apiClient.send(EventType.READ_CHANNEL, {
-    channelId
-  });
+
+export function readCurrentMessages(channelId: string): void {
+  if (!channelId) return;
+  apiClient.send(EventType.READ_CHANNEL, { channelId });
   newMessagesBar.style.display = "none";
 }
 
-function initialiseMe() {
-  if (!isOnMePage) {
-    console.log("Cant initialise me while isOnMePage is false");
-    return;
-  }
-  enableElement("dms-title");
+function initialiseMe(): void {
+  if (!isOnMePage) return;
+  enableElement(ELEMENT_IDS.dmsTitle);
   updateUsersActivities();
   loadMainToolbar();
 }
 
-export let isChangingPage = false;
-
-export function openDm(friendId: string) {
+export function openDm(friendId: string): void {
   if (!friendId) {
-    console.error("Wrong friendid");
+    console.error("Invalid friendId provided to openDm");
     return;
   }
+
   const wasOnDm = isOnDm;
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
   setLastSenderID("");
-  setTimeout(() => {
-    activateDmContainer(friendId);
-  }, 100);
+
+  setTimeout(() => activateDmContainer(friendId), 100);
+
   unselectFriendContainer();
   router.switchToDm(friendId);
+
   if (!friendsCache.userExistsDm(friendId)) {
     try {
       addDm(friendId);
     } catch (e) {
-      if (e instanceof Error) {
-        printFriendMessage(e.message);
-      }
+      if (e instanceof Error) printFriendMessage(e.message);
     }
   }
+
   loadApp(friendId);
+
   setTimeout(() => {
-    if (wasOnDm) {
-      changeCurrentDm(friendId);
-    }
+    if (wasOnDm) changeCurrentDm(friendId);
   }, 0);
+
   try {
     getHistoryFromOneChannel(friendId, true);
   } catch (e) {
-    if (e instanceof Error) {
-      printFriendMessage(e.message);
-    } else {
-      printFriendMessage("An unknown error occurred.");
-    }
+    printFriendMessage(
+      e instanceof Error ? e.message : "An unknown error occurred."
+    );
   }
 }
 
-let lastDmId: string;
+function applyMePageState(isChangingUrl: boolean): void {
+  selectGuildList(ELEMENT_IDS.mainLogo);
 
-function handleMenu(isChangingUrl: boolean) {
-  selectGuildList("main-logo");
   if (isChangingUrl) {
     router.resetRoute();
   }
@@ -440,6 +445,7 @@ function handleMenu(isChangingUrl: boolean) {
   friendsCache.currentDmId = "";
 
   enableElement(ELEMENT_IDS.channelInfoFriend);
+
   if (!isMobile) {
     disableElement("channel-info-container-for-index");
   }
@@ -447,82 +453,69 @@ function handleMenu(isChangingUrl: boolean) {
   loadMainToolbar();
 
   [
-    "hash-sign",
-    "dm-profile-sign-bubble",
-    "dm-profile-sign",
-    "message-input-container",
-    "channel-container"
+    ELEMENT_IDS.hashSign,
+    ELEMENT_IDS.dmProfileSignBubble,
+    ELEMENT_IDS.dmProfileSign,
+    ELEMENT_IDS.messageInputContainer,
+    ELEMENT_IDS.channelContainer
   ].forEach(disableElement);
 
   friendContainerItem.style.color = "white";
-
   updateUsersActivities();
-
   setUsersList(false);
+
   if (userList) {
     disableElement(userList);
   }
+
   setUserListLine();
 
-  const nowOnlineTitle = getId("nowonline");
+  const nowOnlineTitle = getId(ELEMENT_IDS.nowOnline);
   if (nowOnlineTitle) {
     nowOnlineTitle.style.fontWeight = "bolder";
   }
 
-  if (isOnMePage) {
-    return;
-  }
+  if (isOnMePage) return;
 
   closeDropdown();
   setisOnMePage(true);
   setIsOnGuild(false);
   updateFriendMenu();
-  disableElement("scroll-to-bottom");
+  disableElement(ELEMENT_IDS.scrollToBottom);
 }
 
 export function loadDmHome(isChangingUrl = true): void {
-  console.log("Loading main menu...");
+  selectGuildList(ELEMENT_IDS.mainLogo);
 
-  selectGuildList("main-logo");
-
-  if (isOnGuild) {
-    if (isOnDm) {
-      handleMenu(isChangingUrl);
-    } else if (lastDmId) {
-      openDm(lastDmId);
-      disableElement(ELEMENT_IDS.friendsContainer);
-    } else {
-      handleMenu(isChangingUrl);
-    }
+  if (isOnGuild && !isOnDm && lastDmId) {
+    openDm(lastDmId);
+    disableElement(ELEMENT_IDS.friendsContainer);
   } else {
-    handleMenu(isChangingUrl);
+    applyMePageState(isChangingUrl);
   }
 
-  disableElement("channel-container");
+  disableElement(ELEMENT_IDS.channelContainer);
   disableElement(chatContainer);
+  setTimeout(() => disableElement(chatContainer), 0);
 
-  setTimeout(() => {
-    disableElement(chatContainer);
-  }, 0);
-  enableElement("friend-container-item");
+  enableElement(ELEMENT_IDS.friendContainerItem);
   setGuildNameText("");
-  disableElement("guild-settings-button");
-  disableElement("channel-info");
-  enableElement("global-search-input", false, true);
-  enableElement("friends-container-item");
-  enableElement("dms-title");
-  enableElement("dm-container-parent", false, true);
+  disableElement(ELEMENT_IDS.guildSettingsButton);
+  disableElement(ELEMENT_IDS.channelInfo);
+  enableElement(ELEMENT_IDS.globalSearchInput, false, true);
+  enableElement(ELEMENT_IDS.friendsContainerItem);
+  enableElement(ELEMENT_IDS.dmsTitle);
+  enableElement(ELEMENT_IDS.dmContainerParent, false, true);
 
   if (!isMobile) {
-    enableElement("guild-container", false, true);
+    enableElement(ELEMENT_IDS.guildContainer, false, true);
   }
 
-  disableElement("search-messages-root");
-
+  disableElement(ELEMENT_IDS.searchMessagesRoot);
   handleResize();
 }
 
-export function changeCurrentGuild() {
+export function changeCurrentGuild(): void {
   isChangingPage = true;
   setisOnMePage(false);
   setIsOnGuild(true);
@@ -533,108 +526,110 @@ export function changeCurrentGuild() {
   setChannelTitle(currentChannelName);
   setGuildNameText(guildCache.currentGuildName);
   hideGuildSettingsDropdown();
-
   isChangingPage = false;
 }
-const channelInputStates: { [guildId: string]: ChatBarState } = {};
-export function loadApp(friendId?: string, isInitial?: boolean) {
-  if (isChangingPage) {
-    return;
+
+function handleGuildView(isInitial?: boolean): void {
+  setIsOnGuild(true);
+  setIsOnDm(false);
+
+  if (friendsCache.currentDmId) {
+    lastDmId = friendsCache.currentDmId;
+    getHistoryFromOneChannel(guildCache.currentChannelId);
   }
+
+  if (!isInitial) {
+    fetchMembers();
+    getChannels();
+  }
+
+  disableElement(ELEMENT_IDS.dmsTitle);
+  enableElement(ELEMENT_IDS.channelContainer, false, true);
+
+  if (activityList) {
+    disableElement(activityList);
+  }
+
+  handleMembersClick();
+  disableElement(ELEMENT_IDS.dmContainerParent);
+  disableElement(ELEMENT_IDS.friendContainerItem);
+  enableElement(ELEMENT_IDS.guildSettingsButton);
+  enableElement(ELEMENT_IDS.hashSign);
+  enableElement(ELEMENT_IDS.channelInfo);
+  setGuildNameText(guildCache.currentGuildName);
+  disableElement(ELEMENT_IDS.globalSearchInput);
+  disableElement(ELEMENT_IDS.dmProfileSignBubble);
+  disableElement(ELEMENT_IDS.dmProfileSign);
+  loadGuildToolbar();
+
+  const oldState = getChatBarState();
+  setChatBarState(oldState);
+  chatInput.textContent = escapeHtml(oldState.rawContent) ?? "";
+  channelInputStates[guildCache.currentChannelId] = getChatBarState();
+  manuallyRenderEmojis(oldState.rawContent);
+}
+
+function handleDmView(friendId: string): void {
+  loadDmToolbar();
+  setIsOnGuild(false);
+  setIsOnDm(true);
+
+  enableElement(ELEMENT_IDS.dmProfileSignBubble);
+  enableElement(ELEMENT_IDS.dmProfileSign);
+  enableElement(ELEMENT_IDS.guildContainer, false, true);
+  disableElement(ELEMENT_IDS.guildSettingsButton);
+  activateDmContainer(friendId);
+
+  const friendNick = userManager.getUserNick(friendId);
+  updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
+  setChannelTitle(friendNick);
+  disableElement(ELEMENT_IDS.hashSign);
+  enableElement(ELEMENT_IDS.channelInfo);
+
+  const dmProfSign = getId(ELEMENT_IDS.dmProfileSign) as HTMLImageElement;
+  if (dmProfSign) {
+    setProfilePic(dmProfSign, friendId);
+    dmProfSign.dataset.cid = friendId;
+  }
+
+  const oldState = getChatBarState();
+  setChatBarState(oldState);
+  chatInput.textContent = oldState.rawContent ?? "";
+  channelInputStates[friendId] = getChatBarState();
+
+  updateDmFriendList(friendId, friendNick);
+}
+
+export function loadApp(friendId?: string, isInitial?: boolean): void {
+  if (isChangingPage) return;
+
   isChangingPage = true;
-
   setisOnMePage(false);
-  enableElement("guild-name");
-  console.log("Loading app with friend id:", friendId);
-
-  function handleGuild() {
-    setIsOnGuild(true);
-    setIsOnDm(false);
-    if (friendsCache.currentDmId) {
-      lastDmId = friendsCache.currentDmId;
-      getHistoryFromOneChannel(guildCache.currentChannelId);
-    }
-    if (!isInitial) {
-      fetchMembers();
-      getChannels();
-    }
-    disableElement("dms-title");
-    enableElement("channel-container", false, true);
-    if (activityList) {
-      disableElement(activityList);
-    }
-    handleMembersClick();
-
-    disableElement("dm-container-parent");
-    disableElement("friend-container-item");
-    enableElement("guild-settings-button");
-    enableElement("hash-sign");
-    enableElement("channel-info");
-    setGuildNameText(guildCache.currentGuildName);
-    disableElement("global-search-input");
-    disableElement("dm-profile-sign-bubble");
-    disableElement("dm-profile-sign");
-    loadGuildToolbar();
-
-    const oldState = getChatBarState();
-    setChatBarState(oldState);
-    // eslint-disable-next-line no-unsanitized/property
-    chatInput.innerHTML = escapeHtml(oldState.rawContent) ?? "";
-    channelInputStates[guildCache.currentChannelId] = getChatBarState();
-    manuallyRenderEmojis(oldState.rawContent);
-  }
-  enableElement("search-messages-root");
-
-  function handleDm(id: string) {
-    loadDmToolbar();
-    setIsOnGuild(false);
-    setIsOnDm(true);
-    enableElement("dm-profile-sign-bubble");
-    enableElement("dm-profile-sign");
-    enableElement("guild-container", false, true);
-    disableElement("guild-settings-button");
-    activateDmContainer(id);
-    const friendNick = userManager.getUserNick(id);
-
-    updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
-    setChannelTitle(friendNick);
-    disableElement("hash-sign");
-    enableElement("channel-info");
-
-    const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
-    if (dmProfSign) {
-      setProfilePic(dmProfSign, id);
-      dmProfSign.dataset.cid = id;
-    }
-    const oldState = getChatBarState();
-    setChatBarState(oldState);
-    chatInput.innerText = oldState.rawContent ?? "";
-    channelInputStates[id] = getChatBarState();
-
-    updateDmFriendList(id, friendNick);
-  }
+  enableElement(ELEMENT_IDS.guildName);
+  enableElement(ELEMENT_IDS.searchMessagesRoot);
 
   if (friendId) {
-    handleDm(friendId);
+    handleDmView(friendId);
   } else {
-    handleGuild();
+    handleGuildView(isInitial);
   }
 
-  disableElement("channel-info-container-for-friend");
-  disableElement("friends-container");
-  disableElement("user-line");
+  disableElement(ELEMENT_IDS.channelInfoFriend);
+  disableElement(ELEMENT_IDS.friendsContainer);
+  disableElement(ELEMENT_IDS.userLine);
 
-  enableElement("channel-info-container-for-index");
-  enableElement("chat-container", true);
-  enableElement("message-input-container", false, true);
+  enableElement(ELEMENT_IDS.channelInfoIndex);
+  enableElement(ELEMENT_IDS.chatContainer, true);
+  enableElement(ELEMENT_IDS.messageInputContainer, false, true);
+
   adjustHeight();
-
   handleResize();
   initializeVideoComponent();
+
   isChangingPage = false;
 }
 
-function changeCurrentDm(friendId: string) {
+function changeCurrentDm(friendId: string): void {
   isChangingPage = true;
   setisOnMePage(false);
   setIsOnGuild(false);
@@ -643,31 +638,30 @@ function changeCurrentDm(friendId: string) {
 
   const friendNick = userManager.getUserNick(friendId);
   if (!friendNick) {
-    console.error("Friend not found");
+    console.error(`User not found for friendId: ${friendId}`);
+    isChangingPage = false;
     return;
   }
+
   setChannelTitle(friendNick);
   updatePlaceholderVisibility(translations.getDmPlaceHolder(friendNick));
-  const dmProfSign = getId("dm-profile-sign") as HTMLImageElement;
+
+  const dmProfSign = getId(ELEMENT_IDS.dmProfileSign) as HTMLImageElement;
   if (dmProfSign) {
     setProfilePic(dmProfSign, friendId);
     dmProfSign.dataset.cid = friendId;
   }
-  updateDmFriendList(friendId, friendNick);
 
+  updateDmFriendList(friendId, friendNick);
   isChangingPage = false;
 }
 
-export function initialiseApp() {
-  setTimeout(() => {
-    apiClient.send(EventType.GET_INIT_DATA);
-  }, 0);
+export function initialiseApp(): void {
+  setTimeout(() => apiClient.send(EventType.GET_INIT_DATA), 0);
 }
 
-window.onerror = (message, source, lineno, colno, error) => {
-  const msg = `Error: ${message} at ${source}:${lineno}:${colno}`;
-  console.error(msg);
-  //alertUser("Error", msg);
+window.onerror = (_message, source, lineno, colno, error) => {
+  console.error(`Unhandled error at ${source}:${lineno}:${colno}`, error);
 };
 
 setTimeout(() => window.scrollTo(0, 0), 20);

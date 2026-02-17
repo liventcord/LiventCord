@@ -853,6 +853,7 @@ export async function displayImagePreviewBlob(imageElement: HTMLImageElement) {
 export async function displayVideoPreview(a: Attachment, senderId: string) {
   const previewVideo = getId("preview-video") as HTMLVideoElement;
   const previewImage = getId("preview-image") as HTMLImageElement;
+  imagePreviewContainer.classList.remove("image-preview-container-img");
   enableElement("image-preview-container");
   enableElement(previewVideo);
 
@@ -881,6 +882,7 @@ export async function displayImagePreview(
 ): Promise<void> {
   const previewImage = getId("preview-image") as HTMLImageElement;
   const previewVideo = getId("preview-video") as HTMLVideoElement;
+  imagePreviewContainer.classList.add("image-preview-container-img");
 
   enableElement("image-preview-container");
   disableElement(previewVideo);

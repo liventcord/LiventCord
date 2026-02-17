@@ -23,7 +23,7 @@
 - Add invite settings panel managing invites
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button 
-
+- Implement /preview handler on attachments route
 
 
 ## Bug fixes
@@ -39,7 +39,7 @@
 - Edited messages display duplicated to other clients
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Idle and do not disturb status only gets shown locally
-
+- Changing guild does not refresh attachments
 
 ## Refactor
 
