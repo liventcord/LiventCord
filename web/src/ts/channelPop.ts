@@ -11,7 +11,6 @@ import {
   toggleButtonState
 } from "./popups.ts";
 import { copyText } from "./tooltip.ts";
-import { textChanHtml } from "./ui.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 
@@ -33,34 +32,44 @@ function createRadioBar(): HTMLElement {
 
 // --- Channel type selector
 
-type ChannelTypeConfig = {
-  id: string;
-  icon: string;
-  titleKey: string;
-  brightness: string;
-};
+function createChannelTypeEl(isVoice: boolean) {
+  const channelData = {
+    text: {
+      id: "create-channel-text-type",
+      icon: SVG.textChannel,
+      title: translations.getTranslation("text-channel"),
+      description: translations.getTranslation("channel-type-description"),
+      brightness: "1.5"
+    },
+    voice: {
+      id: "create-channel-voice-type",
+      icon: SVG.voice,
+      title: translations.getTranslation("voice-channel"),
+      description: translations.getTranslation(
+        "channel-type-voice-description"
+      ),
+      brightness: "1"
+    }
+  };
 
-const CHANNEL_TYPES: Record<"text" | "voice", ChannelTypeConfig> = {
-  text: {
-    id: "create-channel-text-type",
-    icon: SVG.hash,
-    titleKey: "text-channel",
-    brightness: "1.5"
-  },
-  voice: {
-    id: "create-channel-voice-type",
-    icon: SVG.voice,
-    titleKey: "voice-channel",
-    brightness: "1"
-  }
-};
+  const { id, icon, title, description, brightness } = isVoice
+    ? channelData.voice
+    : channelData.text;
 
-function createChannelTypeEl(type: "text" | "voice"): HTMLElement {
-  const { id, titleKey, brightness } = CHANNEL_TYPES[type];
   const container = createEl("div", { id });
-  const title = document.createElement("p");
-  title.textContent = translations.getTranslation(titleKey);
-  container.appendChild(title);
+  const iconEl = createEl("p", { id: "channel-type-icon", innerHTML: icon });
+  const titleEl = createEl("p", {
+    id: "channel-type-title",
+    textContent: title
+  });
+  const descEl = createEl("p", {
+    id: "channel-type-description",
+    textContent: description
+  });
+
+  container.appendChild(iconEl);
+  container.appendChild(titleEl);
+  container.appendChild(descEl);
   container.appendChild(createRadioBar());
   container.style.filter = `brightness(${brightness})`;
   return container;
@@ -81,7 +90,7 @@ function createPrivateChannelToggle(): HTMLElement {
 
   const labels = wrapper.querySelectorAll<HTMLElement>("label");
   if (labels[0])
-    Object.assign(labels[0].style, { marginTop: "-10px", marginLeft: "30px" });
+    Object.assign(labels[0].style, { marginTop: "-20px", marginLeft: "30px" });
   if (labels[1])
     Object.assign(labels[1].style, { fontSize: "14px", marginTop: "10px" });
 
@@ -89,51 +98,39 @@ function createPrivateChannelToggle(): HTMLElement {
     ".toggle-card .toggle-box"
   );
   if (toggleBox) {
-    toggleBox.style.bottom = isMobile ? "50px" : "40px";
+    toggleBox.style.bottom = isMobile ? "50px" : "54px";
     toggleBox.style.right = "20px";
   }
   return wrapper;
 }
-
 export function createChannelsPop(guildId: string) {
   let isTextChannel = true;
 
-  const outerParent = createEl("div", { className: "outer-parent" });
-  const popDiv = createEl("div", {
+  const newPopOuterParent = createEl("div", { className: "outer-parent" });
+  const newPopParent = createEl("div", {
     className: "pop-up",
     id: "createChannelPopContainer"
   });
 
-  const titleEl = document.createElement("p");
-  titleEl.id = "create-channel-title";
-  titleEl.textContent = translations.getTranslation("channel-dropdown-button");
+  newPopParent.innerHTML = `
+    <p id="create-channel-title">${translations.getTranslation(
+      "channel-dropdown-button"
+    )}</p>
+    <p id="create-channel-type">${translations.getTranslation(
+      "create-channel-type"
+    )}</p>
+    <p id="create-channel-name">${translations.getTranslation(
+      "channel-name"
+    )}</p>
+    <p id="channel-icon">#</p>
+  `;
 
-  const typeEl = document.createElement("p");
-  typeEl.id = "create-channel-type";
-  typeEl.textContent = translations.getTranslation("create-channel-type");
-
-  const nameEl = document.createElement("p");
-  nameEl.id = "create-channel-name";
-  nameEl.textContent = translations.getTranslation("channel-name");
-
-  const iconEl = document.createElement("p");
-  iconEl.id = "channel-icon";
-  iconEl.textContent = "#";
-
-  popDiv.append(titleEl, typeEl, nameEl, iconEl);
-
-  const privateIcon = createEl("div", {
+  const privateChannelIcon = createEl("div", {
     innerHTML: SVG.privateChannel,
     id: "private-channel-icon"
   });
   const privateChanToggle = createPrivateChannelToggle();
-
-  const input = createEl("input", {
-    id: "create-channel-send-input",
-    placeholder: translations.getTranslation("new-channel-placeholder")
-  }) as HTMLInputElement;
-
-  const acceptBtn = createEl("button", {
+  const popAcceptButton = createEl("button", {
     className: "pop-up-accept",
     textContent: translations.getTranslation("channel-dropdown-button"),
     style: {
@@ -145,71 +142,104 @@ export function createChannelsPop(guildId: string) {
       whiteSpace: "nowrap"
     }
   });
-  const refuseBtn = createEl("button", {
+
+  const inviteUsersSendInput = createEl("input", {
+    id: "create-channel-send-input",
+    placeholder: translations.getTranslation("new-channel-placeholder")
+  });
+  inviteUsersSendInput.addEventListener("input", () =>
+    toggleButtonState(inviteUsersSendInput.value.trim() !== "", popAcceptButton)
+  );
+
+  popAcceptButton.addEventListener("click", () => {
+    const channelName =
+      inviteUsersSendInput.value.trim() ||
+      translations.getTranslation("new-channel-placeholder");
+    createChannel(
+      guildId,
+      channelName,
+      isTextChannel,
+      toggleManager.states["private-channel-toggle"]
+    );
+    closePopUp(newPopOuterParent, newPopParent);
+  });
+
+  const popRefuseButton = createEl("button", {
     className: "pop-up-refuse",
     textContent: translations.getTranslation("cancel"),
     style: "top: 93%; left:61%; font-size:14px;"
   });
-
-  input.addEventListener("input", () =>
-    toggleButtonState(input.value.trim() !== "", acceptBtn)
+  popRefuseButton.addEventListener("click", () =>
+    closePopUp(newPopOuterParent, newPopParent)
   );
-  acceptBtn.addEventListener("click", () => {
-    const name =
-      input.value.trim() ||
-      translations.getTranslation("new-channel-placeholder");
-    createChannel(
-      guildId,
-      name,
-      isTextChannel,
-      toggleManager.states["private-channel-toggle"]
-    );
-    closePopUp(outerParent, popDiv);
-  });
-  refuseBtn.addEventListener("click", () => closePopUp(outerParent, popDiv));
 
-  const textType = createChannelTypeEl("text");
-  const voiceType = createChannelTypeEl("voice");
+  const textChannelContainer = createChannelTypeEl(false);
+  const voiceChannelContainer = createChannelTypeEl(true);
 
-  function selectType(selected: HTMLElement, isText: boolean) {
-    const other = selected === textType ? voiceType : textType;
-    selected.style.filter = "brightness(1.5)";
-    other.style.filter = "brightness(1)";
-    setRadio(selected.querySelector(".radio-bar") as HTMLElement, true);
-    setRadio(other.querySelector(".radio-bar") as HTMLElement, false);
+  function updateChannelState(selectedContainer: HTMLElement, isText: boolean) {
+    const otherContainer =
+      selectedContainer === textChannelContainer
+        ? voiceChannelContainer
+        : textChannelContainer;
+    selectedContainer.style.filter = "brightness(1.5)";
+    otherContainer.style.filter = "brightness(1)";
+    const selectedRadio = selectedContainer.querySelector(
+      ".radio-bar"
+    ) as HTMLElement;
+    const otherRadio = otherContainer.querySelector(
+      ".radio-bar"
+    ) as HTMLElement;
+    if (otherRadio) {
+      setRadio(otherRadio, false);
+    }
+    if (selectedRadio) {
+      setRadio(selectedRadio, true);
+    }
     isTextChannel = isText;
   }
 
-  selectType(textType, true);
-  textType.addEventListener("click", () => selectType(textType, true));
-  voiceType.addEventListener("click", () => selectType(voiceType, false));
+  updateChannelState(textChannelContainer, true);
 
-  const closeBtn = createPopUpCloseButton(outerParent, popDiv, "popup-close");
+  textChannelContainer.addEventListener("click", () =>
+    updateChannelState(textChannelContainer, true)
+  );
+  voiceChannelContainer.addEventListener("click", () =>
+    updateChannelState(voiceChannelContainer, false)
+  );
 
-  const bottomContainer = createEl("div", {
+  const closeButton = createPopUpCloseButton(
+    newPopOuterParent,
+    newPopParent,
+    "popup-close"
+  );
+
+  newPopParent.append(
+    privateChannelIcon,
+    popAcceptButton,
+    privateChanToggle,
+    closeButton,
+    popRefuseButton,
+    textChannelContainer,
+    voiceChannelContainer
+  );
+
+  const popBottomContainer = createEl("div", {
     className: "popup-bottom-container",
     id: "create-channel-popup-bottom-container"
   });
-  bottomContainer.appendChild(input);
 
-  popDiv.append(
-    privateIcon,
-    acceptBtn,
-    privateChanToggle,
-    closeBtn,
-    refuseBtn,
-    textType,
-    voiceType,
-    bottomContainer
-  );
+  popBottomContainer.appendChild(inviteUsersSendInput);
 
-  outerParent.style.display = "flex";
-  outerParent.appendChild(popDiv);
-  document.body.appendChild(outerParent);
+  newPopParent.appendChild(popBottomContainer);
 
+  newPopOuterParent.style.display = "flex";
+  newPopOuterParent.appendChild(newPopParent);
+  document.body.appendChild(newPopOuterParent);
   toggleManager.setupToggle("private-channel-toggle");
-  outerParent.addEventListener("click", (e) => {
-    if (e.target === outerParent) closePopUp(outerParent, popDiv);
+  newPopOuterParent.addEventListener("click", (event) => {
+    if (event.target === newPopOuterParent) {
+      closePopUp(newPopOuterParent, newPopParent);
+    }
   });
 }
 
@@ -226,7 +256,7 @@ export function createInviteUsersPop() {
   });
   const channelnamehash = createEl("p", {
     id: "invite-users-channel-name-hash",
-    innerHTML: textChanHtml
+    innerHTML: SVG.textChannel
   });
 
   const channelNameText = createEl("p", {

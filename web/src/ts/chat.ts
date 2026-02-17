@@ -84,6 +84,7 @@ import {
   drawProfilePopId,
   constructUserData
 } from "./profilePop.ts";
+import { SVG } from "./svgIcons.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {
@@ -317,11 +318,7 @@ function createReplyBar(
       className: "profile-pic reply-avatar",
       id: userId
     });
-    replyAvatar.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
-      </svg>
-    `;
+    replyAvatar.innerHTML = SVG.replyAvatar;
   } else {
     replyAvatar = createEl("img", {
       className: "profile-pic reply-avatar",
@@ -952,11 +949,7 @@ export function createProfileImageChat(
       }
     });
 
-    profileElement.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" style="color:#b3b3b3;" width="20" height="20" fill="none" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z"/>
-      </svg>
-    `;
+    profileElement.innerHTML = SVG.profileElement;
   } else {
     const profileImg = createEl("img", {
       className: "profile-pic",
@@ -1920,9 +1913,6 @@ export function displayCannotSendMessage(channelId: string, content: string) {
 export function displayStartMessage(
   isOldestMessageDateOnChannel: boolean = false
 ) {
-  const channelHashSvg =
-    '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="rgb(255, 255, 255)" viewBox="0 0 24 24"><path fill="var(--white)" fill-rule="evenodd" d="M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z" clip-rule="evenodd" class=""></path></svg>';
-
   if (!isOnDm) {
     const isGuildBorn = cacheInterface.isRootChannel(
       currentGuildId,
@@ -1947,7 +1937,7 @@ export function displayStartMessage(
     const textToWrite = isGuildBorn ? startGuildText : startChannelText;
     const channelicon = createEl("div", { className: "channelIcon" });
 
-    channelicon.innerHTML = channelHashSvg;
+    channelicon.innerHTML = SVG.channelHash;
     const msgdescription = createEl("div", {
       id: isGuildBorn ? "guildBornDescription" : "msgDescription",
       textContent: textToWrite

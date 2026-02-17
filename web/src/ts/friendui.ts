@@ -30,6 +30,7 @@ import { isBlackTheme } from "./settings.ts";
 import { getCurrentWidth } from "./ui.ts";
 import store from "../store.ts";
 import { Friend, UserInfo } from "./types/interfaces.ts";
+import { SVG } from "./svgIcons.ts";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
@@ -53,16 +54,6 @@ export function unselectFriendContainer() {
 export const friendsContainer = getId("friends-container") as HTMLElement;
 export let isAddFriendsOpen = false;
 
-export const ButtonTypes = {
-  SendMsgBtn:
-    '<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a10 10 0 1 0-8.45-4.64c.13.19.11.44-.04.61l-2.06 2.37A1 1 0 0 0 2.2 22H12Z" class=""></path></svg>',
-  TickBtn:
-    '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 5.3a1 1 0 0 1 0 1.4l-12 12a1 1 0 0 1-1.4 0l-6-6a1 1 0 1 1 1.4-1.4L9 16.58l11.3-11.3a1 1 0 0 1 1.4 0Z" class=""></path></svg>',
-  CloseBtn:
-    '<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>',
-  OptionsBtn:
-    '<svg role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M10 4a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm2 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z" clip-rule="evenodd" class=""></path></svg>'
-};
 const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
   "friendsSearchInput"
 )} ></input>`;
@@ -973,14 +964,14 @@ function handleImageHover(
 function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
   const sendMsgBtn = createButtonWithBubblesImg(
     friendButton,
-    ButtonTypes.SendMsgBtn,
+    SVG.sendMsgBtn,
     translations.getTranslation("send-message")
   );
   sendMsgBtn.addEventListener("click", () => openDm(friend.userId));
 
   const optionsButton = createButtonWithBubblesImg(
     friendButton,
-    ButtonTypes.OptionsBtn,
+    SVG.optionsBtn,
     translations.getTranslation("more")
   );
   optionsButton.id = friend.userId;

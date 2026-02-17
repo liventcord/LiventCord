@@ -16,7 +16,6 @@ import {
   isAddFriendsOpen,
   openAddFriend,
   printFriendMessage,
-  ButtonTypes,
   createButtonWithBubblesImg,
   updateUsersActivities,
   updateFriendMenu,
@@ -33,6 +32,7 @@ import {
   FriendMessage,
   UserInfo
 } from "./types/interfaces.ts";
+import { SVG } from "./svgIcons.ts";
 
 const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
 const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
@@ -397,7 +397,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
   if (friend.isFriendsRequestToUser) {
     const acceptButton = createButtonWithBubblesImg(
       friendButton,
-      ButtonTypes.TickBtn,
+      SVG.tickBtn,
       translations.getTranslation("accept")
     );
     acceptButton.addEventListener("click", (event) =>
@@ -406,7 +406,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
 
     const denyButton = createButtonWithBubblesImg(
       friendButton,
-      ButtonTypes.CloseBtn,
+      SVG.closeBtn,
       translations.getTranslation("deny")
     );
     denyButton.addEventListener("click", (event) =>
@@ -415,7 +415,7 @@ export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
   } else {
     const closeButton = createButtonWithBubblesImg(
       friendButton,
-      ButtonTypes.CloseBtn,
+      SVG.closeBtn,
       translations.getTranslation("cancel")
     );
     closeButton.addEventListener("click", (event) =>

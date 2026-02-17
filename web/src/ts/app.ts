@@ -230,6 +230,7 @@ function initializeElements(): void {
   closeReplyMenu();
   adjustHeight();
   FileHandler.setDropHandler();
+  FileHandler.resetFileInput();
 
   guildContainer.addEventListener(
     "mouseover",

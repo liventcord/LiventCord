@@ -19,6 +19,7 @@ import { updateChatWidth } from "./chat.ts";
 import { maxAttachmentsCount } from "./mediaElements.ts";
 import { currentChannelName } from "./channels.ts";
 import { adjustHeight as adjustChatBarHeight } from "./chatbar.ts";
+import { SVG } from "./svgIcons.ts";
 export const chatInput = getId("user-input") as HTMLElement;
 export const chatContainer = getId("chat-container") as HTMLElement;
 export const chatContent = getId("chat-content") as HTMLElement;
@@ -37,24 +38,16 @@ const getImageactionsHtml = (isImage: boolean): string => {
         isImage
           ? `
         <div class="action-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M15.56 11.77c.2-.1.44.02.44.23a4 4 0 1 1-4-4c.21 0 .33.25.23.44a2.5 2.5 0 0 0 3.32 3.32Z" />
-            <path fill="currentColor" fill-rule="evenodd" d="M22.89 11.7c.07.2.07.4 0 .6C22.27 13.9 19.1 21 12 21c-7.11 0-10.27-7.11-10.89-8.7a.83.83 0 0 1 0-.6C1.73 10.1 4.9 3 12 3c7.11 0 10.27 7.11 10.89 8.7Zm-4.5-3.62A15.11 15.11 0 0 1 20.85 12c-.38.88-1.18 2.47-2.46 3.92C16.87 17.62 14.8 19 12 19c-2.8 0-4.87-1.38-6.39-3.08A15.11 15.11 0 0 1 3.15 12c.38-.88 1.18-2.47 2.46-3.92C7.13 6.38 9.2 5 12 5c2.8 0 4.87 1.38 6.39 3.08Z" clip-rule="evenodd" />
-          </svg>
+          ${SVG.eye}
         </div>
         <div class="action-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" />
-          </svg>
+          ${SVG.pencil}
         </div>
       `
           : ""
       }
       <div class="action-button remove">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5Z" />
-          <path fill="currentColor" fill-rule="evenodd" d="M5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07ZM11 12a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0v-6Zm3-1a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1Z" clip-rule="evenodd" />
-        </svg>
+        ${SVG.trash}
       </div>
     </div>
   `;
@@ -269,23 +262,26 @@ export class FileHandler {
 
   static toggleSpoilerImage(img: HTMLImageElement): void {
     const imgWrapper = img.parentElement;
-    const spoilerText = imgWrapper?.querySelector(".spoiler-text");
-    const file = (imgWrapper as any)?._file as File;
+    if (!imgWrapper) return;
 
-    if (!file) {
-      console.error("File is undefined or null.");
-      return;
-    }
+    const file = (imgWrapper as any)?._file as File | undefined;
+    const spoilerText = imgWrapper.querySelector(".spoiler-text");
+    const isCurrentlySpoilered =
+      !!spoilerText && img.style.filter.includes("blur");
 
-    const isSpoiler = fileSpoilerMap.get(file) ?? false;
-
-    if (isSpoiler) {
+    if (isCurrentlySpoilered) {
       spoilerText?.remove();
       img.style.filter = "";
-      fileSpoilerMap.set(file, false);
+      if (file) fileSpoilerMap.set(file, false);
     } else {
-      FileHandler.blurImage(img);
-      fileSpoilerMap.set(file, true);
+      img.style.filter = "blur(0.875rem)";
+      if (!spoilerText) {
+        const span = document.createElement("span");
+        span.className = "spoiler-text";
+        span.textContent = "SPOILER";
+        imgWrapper.appendChild(span);
+      }
+      if (file) fileSpoilerMap.set(file, true);
     }
   }
 

@@ -365,7 +365,7 @@
 }
 #private-channel-icon {
   position: absolute;
-  bottom: 155px !important;
+  bottom: 150px !important;
   left: 18px;
   z-index: 1;
 }

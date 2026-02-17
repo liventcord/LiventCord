@@ -42,14 +42,12 @@ import {
   UserInfo
 } from "./types/interfaces.ts";
 import { showGuildPop } from "./guildPop.ts";
+import { SVG } from "./svgIcons.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;
 export const guildContainer = getId("guild-container") as HTMLElement;
 const guildsList = getId("guilds-list") as HTMLElement;
-
-const createGuildCross =
-  '<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z"></path></svg>';
 
 export function setGuildNameText(guildName: string) {
   guildNameText.innerText = guildName;
@@ -526,7 +524,7 @@ function createNewGuildButton() {
     createGuildImage.classList.remove("create-guild-hover");
   });
   const newElement = createEl("div", {
-    innerHTML: createGuildCross
+    innerHTML: SVG.createGuildCross
   });
   newElement.style.pointerEvents = "none";
   newElement.style.marginTop = "5px";

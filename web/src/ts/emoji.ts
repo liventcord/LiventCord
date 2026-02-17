@@ -13,6 +13,7 @@ import { currentGuildId } from "./guild";
 import { permissionManager } from "./guildPermissions";
 import { getTextUpToCursorFromNode } from "./navigation";
 import { isOnGuild, router } from "./router";
+import { SVG } from "./svgIcons";
 import { createTooltip } from "./tooltip";
 import { translations } from "./translations";
 import { Emoji } from "./types/interfaces";
@@ -112,9 +113,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
     </td>
     <td class="table-cell">
       <button class="emoji-delete-button" data-guild-id="${emoji.guildId}" data-emoji-id="${emoji.fileId}" ${canManageEmojis ? "" : "disabled style='opacity: 0.5; pointer-events: none;'"} >
-        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z"></path>
-        </svg>
+        ${SVG.closeBtn}
       </button>
     </td>
   </tr>
