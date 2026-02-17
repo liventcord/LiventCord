@@ -230,6 +230,7 @@ const getChannelSettingsConfig = () => {
     }
   });
 };
+
 const getSettingsConfigByType = (settingType: keyof typeof SettingType) => {
   const configMap = {
     [SettingType.GUILD]: getGuildSettingsConfig(),
@@ -258,9 +259,9 @@ function getGuildSettings(): Setting[] {
   }
   return setToReturn;
 }
+
 function getChannelSettings(): Setting[] {
   const setToReturn: Setting[] = [...currentSettings.channelSettings];
-
   if (permissionManager.canManageChannels()) {
     setToReturn.push({
       category: "DeleteChannel" as SettingCategory,
@@ -269,22 +270,22 @@ function getChannelSettings(): Setting[] {
   }
   return setToReturn;
 }
+
+function buildSettingsHTML(getSettings: () => Setting[], isProfile = false) {
+  currentSettings = loadSettings();
+  return generateSettingsHtml(getSettings(), isProfile);
+}
+
 function getChannelSettingHTML() {
-  const settings = loadSettings();
-  currentSettings = settings;
-  return generateSettingsHtml(getChannelSettings());
+  return buildSettingsHTML(getChannelSettings);
 }
 
 function getProfileSettingsHTML() {
-  const settings = loadSettings();
-  currentSettings = settings;
-  return generateSettingsHtml(settings.userSettings, true);
+  return buildSettingsHTML(() => currentSettings.userSettings, true);
 }
 
 function getGuildSettingsHTML() {
-  const settings = loadSettings();
-  currentSettings = settings;
-  return generateSettingsHtml(getGuildSettings());
+  return buildSettingsHTML(getGuildSettings);
 }
 
 function generateSettingsHtml(settings: Setting[], isProfile = false) {
@@ -318,10 +319,10 @@ export function updateSettingsProfileColor() {
   const settingsProfileImg = getProfileImage();
   const rightBarTop = getId("settings-rightbartop");
   if (settingsProfileImg && rightBarTop) {
-    console.log("Average: ", getAverageRGB(settingsProfileImg));
     rightBarTop.style.backgroundColor = getAverageRGB(settingsProfileImg);
   }
 }
+
 function loadSettings(): Settings {
   const userSettings: Setting[] = [
     {
@@ -374,6 +375,7 @@ function loadSettings(): Settings {
 
   return { userSettings, guildSettings, channelSettings };
 }
+
 function getUnknownSettings(
   settingType: string,
   settingCategory:
@@ -420,7 +422,6 @@ function selectSettingCategory(
     | keyof typeof GuildCategoryTypes
     | keyof typeof ChannelCategoryTypes
 ) {
-  console.log("Selecting settings category: ", settingCategory);
   const allButtons =
     document.querySelectorAll<HTMLButtonElement>(".settings-buttons");
   allButtons.forEach((btn) =>
@@ -459,12 +460,8 @@ function selectSettingCategory(
   currentSettingsCategory = settingCategory;
 
   const settingType = getSettingTypeFromCategory(settingCategory);
-  console.log("Setting Type for category: ", settingCategory, settingType);
 
   if (!settingType) {
-    console.error(
-      `Unable to find setting type for category: ${settingCategory}`
-    );
     alertUser(
       "Error",
       `Unknown Setting: ${settingCategory} could not be found.`
@@ -473,7 +470,6 @@ function selectSettingCategory(
   }
 
   const settingsConfig = getSettingsConfigByType(settingType);
-  console.log("Settings Config for setting type:", settingType, settingsConfig);
 
   const settingConfig =
     settingsConfig[settingCategory] ||
@@ -497,58 +493,25 @@ function selectSettingCategory(
 
 function getActivityPresenceHtml() {
   return `
-        <h3 id="activity-title">${translations.getSettingsTranslation(
-          "ActivityPresence"
-        )}</h3>
-        <h3 id="settings-description">${translations.getSettingsTranslation(
-          "ActivityStatus"
-        )}</h3>
-        <div class="toggle-card">
-            <label for="activity-toggle">${translations.getSettingsTranslation(
-              "ShareActivityWhenActive"
-            )}</label>
-            <label for="activity-toggle">${translations.getSettingsTranslation(
-              "AutoShareActivityParticipation"
-            )}</label>
-            <div id="activity-toggle" class="toggle-box">
-                <div id="toggle-switch" class="toggle-switch">
-                    <div class="enabled-toggle">
-                        <svg viewBox="0 0 28 20" preserveAspectRatio="xMinYMid meet" aria-hidden="true" class="icon">
-                            <rect fill="white" x="4" y="0" height="20" width="20" rx="10"></rect>
-                            <svg viewBox="0 0 20 20" fill="none">
-                                <path fill="rgba(35, 165, 90, 1)" d="M7.89561 14.8538L6.30462 13.2629L14.3099 5.25755L15.9009 6.84854L7.89561 14.8538Z"></path>
-                                <path fill="rgba(35, 165, 90, 1)" d="M4.08643 11.0903L5.67742 9.49929L9.4485 13.2704L7.85751 14.8614L4.08643 11.0903Z"></path>
-                            </svg>
-                        </svg>
-                    </div>
-                    <div class="disabled-toggle">
-                        <svg viewBox="0 0 28 20" preserveAspectRatio="xMinYMid meet" aria-hidden="true" class="icon">
-                            <rect fill="white" x="4" y="0" height="20" width="20" rx="10"></rect>
-                            <svg viewBox="0 0 20 20" fill="none">
-                                <path fill="rgba(128, 132, 142, 1)" d="M5.13231 6.72963L6.7233 5.13864L14.855 13.2704L13.264 14.8614L5.13231 6.72963Z"></path>
-                                <path fill="rgba(128, 132, 142, 1)" d="M13.2704 5.13864L14.8614 6.72963L6.72963 14.8614L5.13864 13.2704L13.2704 5.13864Z"></path>
-                            </svg>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    <h3 id="activity-title">${translations.getSettingsTranslation("ActivityPresence")}</h3>
+    <h3 id="settings-description">${translations.getSettingsTranslation("ActivityStatus")}</h3>
+    ${createToggle(
+      "activity-toggle",
+      translations.getSettingsTranslation("ShareActivityWhenActive"),
+      translations.getSettingsTranslation("AutoShareActivityParticipation")
+    )}
+  `;
 }
+
 function getGuildOverviewHtml() {
   return `
-  <h2 >${translations.getSettingsTranslation("GuildOverview")}</h2>
+  <h2>${translations.getSettingsTranslation("GuildOverview")}</h2>
   <div id="guild-settings-rightbar">
-    <div id="set-info-title-guild-name">${translations.getSettingsTranslation(
-      "GuildName"
-    )}</div>
+    <div id="set-info-title-guild-name">${translations.getSettingsTranslation("GuildName")}</div>
     <input type="text" id="guild-overview-name-input" class="base-overview-name-input" autocomplete="off" 
-           value="${escapeHtml(
-             guildCache.currentGuildName || ""
-           )}" maxlength="32">
+           value="${escapeHtml(guildCache.currentGuildName || "")}" maxlength="32">
     <div id="guild-image-container">
       <img id="guild-image" style="user-select: none;">
-
     </div>
     <form id="guildImageForm" enctype="multipart/form-data">
       <input type="file" name="guildImage" id="guildImage" accept="image/*" style="display: none;">
@@ -556,6 +519,7 @@ function getGuildOverviewHtml() {
   </div>
 `;
 }
+
 function getSoundAndVideoHtml() {
   const toggles = [
     {
@@ -577,11 +541,7 @@ function getSoundAndVideoHtml() {
 
   return `
     <h3>${translations.getSettingsTranslation("SoundAndVideo")}</h3>
-    ${toggles
-      .map((toggle) =>
-        createToggle(toggle.id, toggle.label, toggle.description)
-      )
-      .join("")}
+    ${toggles.map((t) => createToggle(t.id, t.label, t.description)).join("")}
     </div>
   `;
 }
@@ -590,18 +550,12 @@ function getAccountSettingsHtml() {
   const _isBlackTheme = isBlackTheme();
   return `
         <div id="settings-rightbartop"></div>
-        <div id="settings-title">${translations.getSettingsTranslation(
-          "MyAccount"
-        )}</div>
+        <div id="settings-title">${translations.getSettingsTranslation("MyAccount")}</div>
         <div id="settings-rightbar" class="${_isBlackTheme ? "black-theme-3" : ""}">
             <div id="settings-light-rightbar" class="${_isBlackTheme ? "black-theme" : ""}">
-                <div id="set-info-title-nick">${translations.getSettingsTranslation(
-                  "Username"
-                )}</div>
+                <div id="set-info-title-nick">${translations.getSettingsTranslation("Username")}</div>
                 <div id="set-info-nick"></div>
-                <div id="set-info-title-email">${translations.getSettingsTranslation(
-                  "Email"
-                )}</div>
+                <div id="set-info-title-email">${translations.getSettingsTranslation("Email")}</div>
                 <i id="set-info-email-eye" style="cursor:pointer;" class="fas fa-eye toggle-password"> </i>
                 <div id="set-info-email">${initialState.user.maskedEmail}</div>
                 </div>
@@ -612,9 +566,8 @@ function getAccountSettingsHtml() {
                 </form>
                 <span id="settings-self-name"></span>
                 <button id="change-password-button" class="settings-buttons settings-button">${translations.getSettingsTranslation("ChangePassword")}</button>
-                <button id="link-google-btn" class="settings-buttons settings-button" >Link Google Account</button>
-                <div id="google-link-wrapper" >
-                </div>
+                <button id="link-google-btn" class="settings-buttons settings-button">Link Google Account</button>
+                <div id="google-link-wrapper"></div>
     `;
 }
 
@@ -699,15 +652,11 @@ function getAppearanceHtml() {
           </div>
         </section>
 
-        ${toggles
-          .map((toggle) =>
-            createToggle(toggle.id, toggle.label, toggle.description)
-          )
-          .join("")}
+        ${toggles.map((t) => createToggle(t.id, t.label, t.description)).join("")}
           </div>
 
-        <h3 style="margin: 0px;" >${translations.getSettingsTranslation("Theme")}</h3>  
-        <p style="color: #C4C5C9; margin: 0px;" >${translations.getSettingsTranslation("ThemeDescription")}</p>
+        <h3 style="margin: 0px;">${translations.getSettingsTranslation("Theme")}</h3>  
+        <p style="color: #C4C5C9; margin: 0px;">${translations.getSettingsTranslation("ThemeDescription")}</p>
 
         <div class="theme-selector-container">
           <span id="ash-theme-selector" class="theme-circle ash-theme"></span>
@@ -738,40 +687,29 @@ function getAppearanceHtml() {
         step="0.01"
         value="0.25"
         style=" bottom: 20px; left: 20px; z-index: 1000;">
-
-        
-
     `;
 }
 
 function getNotificationsHtml() {
-  const toggles = [
-    {
-      id: "notify-toggle",
-      label: translations.getSettingsTranslation("Notifications"),
-      description: translations.getSettingsTranslation("EnableNotifications")
-    }
-  ];
   return `
         <h3>${translations.getSettingsTranslation("Notifications")}</h3>
-        ${toggles
-          .map((toggle) =>
-            createToggle(toggle.id, toggle.label, toggle.description)
-          )
-          .join("")}
+        ${createToggle(
+          "notify-toggle",
+          translations.getSettingsTranslation("Notifications"),
+          translations.getSettingsTranslation("EnableNotifications")
+        )}
     `;
 }
 
 function getOverviewHtml() {
   return `
   <div id="guild-settings-rightbar">
-    <div id="set-info-title-channel-name">${translations.getTranslation(
-      "channel-name"
-    )}</div>
+    <div id="set-info-title-channel-name">${translations.getTranslation("channel-name")}</div>
     <input type="text" id="channel-overview-name-input" class="base-overview-name-input" autocomplete="off" maxlength="100">
   </div>
 `;
 }
+
 function getPermissionsHtml() {
   return "channel permissions";
 }
@@ -785,22 +723,21 @@ function initializeLanguageDropdown() {
 
   languageDropdown.addEventListener("change", (event: Event) => {
     const target = event.target as HTMLSelectElement;
-
     if (target.value) {
-      console.log("Selected language: ", target.value);
       translations.currentLanguage = target.value;
       translations.setLanguage(translations.currentLanguage);
-
       setTimeout(() => {
         reconstructSettings(currentSettingsType);
       }, 200);
     }
   });
 }
+
 export enum Themes {
   Ash,
   Dark
 }
+
 const selectedThemeBorderColor = "#5865F2";
 const unThemeBorderColor = "#A5A5AC";
 
@@ -810,23 +747,17 @@ function selectThemeButton(isDark: boolean) {
   if (!ash || !dark) {
     return;
   }
-
-  ash.style.borderColor = isDark
-    ? unThemeBorderColor
-    : selectedThemeBorderColor;
-  dark.style.borderColor = isDark
-    ? selectedThemeBorderColor
-    : unThemeBorderColor;
+  ash.style.borderColor = isDark ? unThemeBorderColor : selectedThemeBorderColor;
+  dark.style.borderColor = isDark ? selectedThemeBorderColor : unThemeBorderColor;
 }
-export function selectTheme(selected: Themes) {
-  console.log("Set theme: " + selected);
-  const isDark = selected === Themes.Dark;
 
+export function selectTheme(selected: Themes) {
+  const isDark = selected === Themes.Dark;
   setTheme(isDark);
   saveThemeCookie(isDark);
-
   selectThemeButton(isDark);
 }
+
 function createPopupWrapper(wrapperElement: HTMLElement) {
   const popOuterParent = createEl("div", {
     className: "outer-parent",
@@ -848,7 +779,6 @@ function createPopupWrapper(wrapperElement: HTMLElement) {
       const newWrapper = createEl("div", { id: "google-link-wrapper" });
       rightbar.appendChild(newWrapper);
     }
-
     closePopUp(popOuterParent, parentContainer);
   });
   popOuterParent.appendChild(parentContainer);
@@ -859,7 +789,6 @@ function createPopupWrapper(wrapperElement: HTMLElement) {
 function linkGoogleAccount() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const wrapper = getId("google-link-wrapper");
-  console.log(wrapper, clientId);
   if (!clientId || !wrapper) {
     return;
   }
@@ -886,6 +815,7 @@ function linkGoogleAccount() {
     </div>
   `;
 }
+
 function initialiseSettingComponents(
   settingCategory: keyof typeof ProfileCategoryTypes
 ) {
@@ -926,21 +856,20 @@ function setupToggles() {
 }
 
 function setupProfileImageClick() {
-  getProfileImage()?.addEventListener("click", triggerFileInput);
+  getProfileImage()?.addEventListener("click", triggerFileInput, { once: true });
 }
 
 function setupThemeSelectors() {
   const ash = getId("ash-theme-selector");
   const dark = getId("dark-theme-selector");
-  ash?.addEventListener("click", () => selectTheme(Themes.Ash));
-  dark?.addEventListener("click", () => selectTheme(Themes.Dark));
+  ash?.addEventListener("click", () => selectTheme(Themes.Ash), { once: true });
+  dark?.addEventListener("click", () => selectTheme(Themes.Dark), { once: true });
   selectThemeButton(isBlackTheme());
 }
 
 function setupVideoTransparencyInput() {
   const input = getId("video-transparency-input") as HTMLInputElement;
   if (!input) return;
-
   input.addEventListener("input", (event) => {
     const target = event.target as HTMLInputElement;
     saveTransparencyValue(target.value);
@@ -957,14 +886,14 @@ function setupVideoUrlInput() {
   });
 
   const resetBtn = getId("video-url-reset-btn");
-  resetBtn?.addEventListener("click", resetVideoUrl);
+  resetBtn?.addEventListener("click", resetVideoUrl, { once: true });
 }
 
 function setupNicknameInput() {
   const nickInput = getId("new-nickname-input") as HTMLInputElement;
   if (nickInput && appState.currentUserNick)
     nickInput.value = appState.currentUserNick;
-  nickInput?.addEventListener("input", onEditNick);
+  nickInput?.addEventListener("input", onEditNick, { once: true });
 
   const selfName = getId("settings-self-name");
   if (selfName) selfName.textContent = appState.currentUserNick;
@@ -976,9 +905,7 @@ function setupNicknameInput() {
 function setupGuildAndChannelInputs() {
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getId("guild-image") as HTMLImageElement;
-  const channelNameInput = getId(
-    "channel-overview-name-input"
-  ) as HTMLInputElement;
+  const channelNameInput = getId("channel-overview-name-input") as HTMLInputElement;
   const canManageGuild = permissionManager.canManageGuild();
 
   if (guildImage) {
@@ -992,15 +919,15 @@ function setupGuildAndChannelInputs() {
     channelNameInput.value = currentChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
     if (!channelNameInput.disabled)
-      channelNameInput.addEventListener("input", onEditChannelName);
+      channelNameInput.addEventListener("input", onEditChannelName, { once: true });
   }
 
   if (canManageGuild) enableElement("guild-image-remove");
 
   if (isOnGuild && guildNameInput) {
     if (canManageGuild) {
-      guildNameInput.addEventListener("input", onEditGuildName);
-      guildImage?.addEventListener("click", triggerGuildImageUpdate);
+      guildNameInput.addEventListener("input", onEditGuildName, { once: true });
+      guildImage?.addEventListener("click", triggerGuildImageUpdate, { once: true });
       if (guildImage) setGuildImage(currentGuildId, guildImage, true);
     } else {
       guildNameInput.disabled = true;
@@ -1009,17 +936,18 @@ function setupGuildAndChannelInputs() {
 }
 
 function setupEmailToggle() {
-  document.body.addEventListener("click", (event) => {
-    const target = event.target as HTMLElement;
-    if (target?.id === "set-info-email-eye") toggleEmail();
-  });
+  document.body.addEventListener(
+    "click",
+    (event) => {
+      const target = event.target as HTMLElement;
+      if (target?.id === "set-info-email-eye") toggleEmail();
+    },
+    { once: true }
+  );
 }
 
 function setupAccountButtons() {
-  getId("change-password-button")?.addEventListener(
-    "click",
-    openChangePasswordPop
-  );
+  getId("change-password-button")?.addEventListener("click", openChangePasswordPop);
   getId("link-google-btn")?.addEventListener("click", linkGoogleAccount);
 }
 
@@ -1027,8 +955,7 @@ function setupEmojiUpload() {
   const uploadButton = getId("upload-emoji-button") as HTMLButtonElement | null;
   const emojiInput = getId("emoijImage") as HTMLInputElement | null;
 
-  if (!permissionManager.canManageGuild() || !uploadButton || !emojiInput)
-    return;
+  if (!permissionManager.canManageGuild() || !uploadButton || !emojiInput) return;
 
   uploadButton.addEventListener("click", () => {
     emojiInput.click();
@@ -1036,10 +963,10 @@ function setupEmojiUpload() {
   });
 }
 
+let fontSliderObserver: MutationObserver | null = null;
+
 function registerSlider() {
-  const slider = document.querySelector<HTMLDivElement>(
-    "#chat-font-scaling .slider"
-  )!;
+  const slider = document.querySelector<HTMLDivElement>("#chat-font-scaling .slider");
   if (!slider) return;
 
   const handle = slider.querySelector<HTMLDivElement>(".slider-handle")!;
@@ -1049,11 +976,28 @@ function registerSlider() {
   let sliderRect: DOMRect = slider.getBoundingClientRect();
   let isDragging = false;
 
+  const elements = new Set<HTMLElement>();
+  const originalSizes = new Map<HTMLElement, number>();
+
+  function registerElement(el: HTMLElement) {
+    if (!originalSizes.has(el)) {
+      const style = window.getComputedStyle(el);
+      const size = parseFloat(style.fontSize);
+      if (!isNaN(size) && size > 0) {
+        originalSizes.set(el, size);
+        elements.add(el);
+      }
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>("body *").forEach(registerElement);
+
+  const defaultFont = 16;
+  const defaultIndex = marks.indexOf(defaultFont);
+  let currentScale = 1;
+
   function updateSlider(clientX: number) {
-    const x = Math.min(
-      Math.max(clientX - sliderRect.left, 0),
-      sliderRect.width
-    );
+    const x = Math.min(Math.max(clientX - sliderRect.left, 0), sliderRect.width);
     const percent = x / sliderRect.width;
 
     let nearestIndex = 0;
@@ -1073,8 +1017,14 @@ function registerSlider() {
     fill.style.width = `${snappedPercent * 100}%`;
 
     const selectedFont = marks[nearestIndex];
-    document.body.style.fontSize = `${selectedFont}px`;
+    currentScale = selectedFont / defaultFont;
+
+    elements.forEach((el) => {
+      const originalSize = originalSizes.get(el)!;
+      el.style.fontSize = `${originalSize * currentScale}px`;
+    });
   }
+
   handle.addEventListener("mousedown", () => {
     isDragging = true;
     sliderRect = slider.getBoundingClientRect();
@@ -1094,10 +1044,25 @@ function registerSlider() {
     updateSlider(e.clientX);
   });
 
-  // Initialize to default value (e.g., 16px)
+  if (!fontSliderObserver) {
+    fontSliderObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) {
+            node.querySelectorAll<HTMLElement>("*").forEach(registerElement);
+            registerElement(node);
+            const size = originalSizes.get(node);
+            if (size) node.style.fontSize = `${size * currentScale}px`;
+          }
+        });
+      });
+    });
+  }
+
+  fontSliderObserver.observe(document.body, { childList: true, subtree: true });
+
   updateSlider(
-    sliderRect.left +
-      (marks.indexOf(16) / (marks.length - 1)) * sliderRect.width
+    sliderRect.left + (defaultIndex / (marks.length - 1)) * sliderRect.width
   );
 }
 
@@ -1135,6 +1100,7 @@ export function createToggle(id: string, label: string, description: string) {
 export function openChannelSettings(channelId: string, channelName: string) {
   openSettings(SettingType.CHANNEL);
 }
+
 export function openSettings(
   settingType: SettingType,
   focusToCategory: boolean = false
@@ -1168,8 +1134,7 @@ export function closeSettings() {
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation = "settings-menu-slide-out 0.3s forwards";
   } else {
-    settingsMenu.style.animation =
-      "settings-menu-scale-disappear 0.3s forwards";
+    settingsMenu.style.animation = "settings-menu-scale-disappear 0.3s forwards";
   }
 
   setTimeout(() => {
@@ -1200,11 +1165,10 @@ function reconstructSettings(
       leftBar.appendChild(getChannelSettingHTML());
       selectSettingCategory(ChannelCategoryTypes.Overview);
       break;
-
     default:
-      console.error("Unknown settings setting type: ", settingType);
       break;
   }
+
   const settingsContainer = getId("settings-rightcontainer");
   if (!settingsContainer) {
     return;
@@ -1230,6 +1194,7 @@ export function showConfirmationPanel(pop: HTMLElement) {
   pop.style.display = "block";
   pop.style.animation = "slide-up 0.5s ease-in-out forwards";
 }
+
 export function generateConfirmationPanel() {
   if (!settingsMenu) {
     return;
@@ -1259,22 +1224,16 @@ export function generateConfirmationPanel() {
       profileimg.value = "";
     }
     const settingsSelfProfile = getProfileImage();
-
     if (settingsSelfProfile && lastConfirmedProfileImg) {
       settingsSelfProfile.src = URL.createObjectURL(lastConfirmedProfileImg);
-    } else {
     }
 
-    const guildNameInput = getId(
-      "guild-overview-name-input"
-    ) as HTMLInputElement;
+    const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
     if (guildNameInput) {
       guildNameInput.value = guildCache.currentGuildName;
     }
 
-    const channelNameInput = getId(
-      "channel-overview-name-input"
-    ) as HTMLInputElement;
+    const channelNameInput = getId("channel-overview-name-input") as HTMLInputElement;
     if (channelNameInput) {
       channelNameInput.value = currentChannelName;
     }
@@ -1319,9 +1278,8 @@ export function shakeScreen(container = document.body) {
     container.classList.remove("shake-screen");
     if (currentPopUp) currentPopUp.style.backgroundColor = "#0f0f0f";
   }, RESET_TIMEOUT_DURATION);
-
-  return;
 }
+
 export function createDeleteChannelPrompt(
   guildId: string,
   channelId: string,
@@ -1330,19 +1288,12 @@ export function createDeleteChannelPrompt(
   if (!guildId || !channelId) {
     return;
   }
-  var onClickHandler = function () {
-    apiClient.send(EventType.DELETE_CHANNEL, {
-      guildId,
-      channelId
-    });
-  };
   const actionText = translations.getDeleteChannelText(channelName);
-
   askUser(
-    translations.getDeleteChannelText(channelName),
+    actionText,
     translations.getTranslation("cannot-be-undone"),
     actionText,
-    onClickHandler,
+    () => apiClient.send(EventType.DELETE_CHANNEL, { guildId, channelId }),
     true
   );
 }
@@ -1351,16 +1302,12 @@ function createDeleteGuildPrompt(guildId: string, guildName: string) {
   if (!guildId) {
     return;
   }
-  var onClickHandler = function () {
-    apiClient.send(EventType.DELETE_GUILD, { guildId });
-  };
   const actionText = translations.getDeleteGuildText(guildName);
-
   askUser(
     translations.getSettingsTranslation("DeleteGuild"),
     translations.getTranslation("cannot-be-undone"),
     actionText,
-    onClickHandler,
+    () => apiClient.send(EventType.DELETE_GUILD, { guildId }),
     true
   );
 }
