@@ -898,15 +898,17 @@ function setupVideoUrlInput() {
 
 function setupNicknameInput() {
   const nickInput = getId("new-nickname-input") as HTMLInputElement;
-  if (nickInput && appState.currentUserNick)
-    nickInput.value = appState.currentUserNick;
-  nickInput?.addEventListener("input", onEditNick, { once: true });
+  if (!nickInput) return;
+
+  if (appState.currentUserNick) nickInput.value = appState.currentUserNick;
 
   const selfName = getId("settings-self-name");
   if (selfName) selfName.textContent = appState.currentUserNick;
 
   const setInfoNick = getId("set-info-nick");
   if (setInfoNick) setInfoNick.textContent = appState.currentUserNick;
+
+  nickInput.addEventListener("input", onEditNick);
 }
 
 function setupGuildAndChannelInputs() {
@@ -928,20 +930,16 @@ function setupGuildAndChannelInputs() {
     channelNameInput.value = currentChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
     if (!channelNameInput.disabled)
-      channelNameInput.addEventListener("input", onEditChannelName, {
-        once: true
-      });
+      channelNameInput.addEventListener("input", onEditChannelName);
   }
 
   if (canManageGuild) enableElement("guild-image-remove");
 
   if (isOnGuild && guildNameInput) {
     if (canManageGuild) {
-      guildNameInput.addEventListener("input", onEditGuildName, { once: true });
-      guildImage?.addEventListener("click", triggerGuildImageUpdate, {
-        once: true
-      });
-      if (guildImage) setGuildImage(currentGuildId, guildImage, true);
+      guildNameInput.addEventListener("input", onEditGuildName);
+      guildImage?.addEventListener("click", triggerGuildImageUpdate);
+      setGuildImage(currentGuildId, guildImage, true);
     } else {
       guildNameInput.disabled = true;
     }
@@ -981,7 +979,6 @@ function setupEmojiUpload() {
 }
 
 let fontSliderObserver: MutationObserver | null = null;
-
 function registerSlider() {
   const slider = document.querySelector<HTMLDivElement>(
     "#chat-font-scaling .slider"
@@ -1012,7 +1009,9 @@ function registerSlider() {
   document.querySelectorAll<HTMLElement>("body *").forEach(registerElement);
 
   const defaultFont = 16;
-  const defaultIndex = marks.indexOf(defaultFont);
+  const storedFont = parseInt(localStorage.getItem("chatFontSize") || "");
+  const initialFont = marks.includes(storedFont) ? storedFont : defaultFont;
+  const defaultIndex = marks.indexOf(initialFont);
   let currentScale = 1;
 
   function updateSlider(clientX: number) {
@@ -1040,6 +1039,7 @@ function registerSlider() {
 
     const selectedFont = marks[nearestIndex];
     currentScale = selectedFont / defaultFont;
+    localStorage.setItem("chatFontSize", selectedFont.toString());
 
     elements.forEach((el) => {
       const originalSize = originalSizes.get(el)!;
@@ -1083,6 +1083,7 @@ function registerSlider() {
 
   fontSliderObserver.observe(document.body, { childList: true, subtree: true });
 
+  sliderRect = slider.getBoundingClientRect();
   updateSlider(
     sliderRect.left + (defaultIndex / (marks.length - 1)) * sliderRect.width
   );
