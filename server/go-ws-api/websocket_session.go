@@ -7,9 +7,22 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+)
+
+type sessionCacheEntry struct {
+	userID    string
+	expiresAt time.Time
+}
+
+var (
+	sessionCache = make(map[string]sessionCacheEntry)
+	cacheMutex   sync.RWMutex
+	cacheTTL     = 5 * time.Minute
 )
 
 func establishWebSocketConnection(c *gin.Context) (string, *websocket.Conn, error) {
@@ -28,7 +41,7 @@ func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, er
 		return "", nil, errors.New("session missing")
 	}
 
-	userId, err := authenticateSession(cookie)
+	userId, err := authenticateSessionWithCache(cookie)
 	if err != nil {
 		return "", nil, err
 	}
@@ -41,6 +54,30 @@ func getSessionAndUpgradeConnection(c *gin.Context) (string, *websocket.Conn, er
 	}
 
 	return userId, conn, nil
+}
+
+func authenticateSessionWithCache(cookie string) (string, error) {
+	cacheMutex.RLock()
+	entry, found := sessionCache[cookie]
+	cacheMutex.RUnlock()
+
+	if found && time.Now().Before(entry.expiresAt) {
+		return entry.userID, nil
+	}
+
+	userId, err := authenticateSession(cookie)
+	if err != nil {
+		return "", err
+	}
+
+	cacheMutex.Lock()
+	sessionCache[cookie] = sessionCacheEntry{
+		userID:    userId,
+		expiresAt: time.Now().Add(cacheTTL),
+	}
+	cacheMutex.Unlock()
+
+	return userId, nil
 }
 
 func authenticateSession(cookie string) (string, error) {

@@ -211,70 +211,79 @@ func handleDisconnectionWithTimeout(userId string) {
 }
 
 func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
+	hub.lock.RLock()
+	clientsSnapshot := make(map[string]map[*WSConnection]bool, len(hub.clients))
+	for uid, conns := range hub.clients {
+		clientsSnapshot[uid] = conns
+	}
+	hub.lock.RUnlock()
+
 	guilds, err := fetchGuildMemberships(userId)
 	if err != nil {
 		fmt.Println("Error fetching guild memberships:", err)
 		return
 	}
 
-	hub.lock.RLock()
-	clients := hub.clients
-	hub.lock.RUnlock()
-
-	seenUsers := make(map[string]struct{})
-	notifyCount := 0
+	alreadyNotified := make(map[string]struct{})
 
 	for _, members := range guilds {
 		for _, targetUserId := range members {
-			if targetUserId != userId {
-				if _, exists := seenUsers[targetUserId]; !exists {
-					if conns, ok := clients[targetUserId]; ok {
-						for c := range conns {
-							sendResponse(c.Conn, eventType, payload)
-						}
-						seenUsers[targetUserId] = struct{}{}
-						notifyCount++
-					}
+			if targetUserId == userId {
+				continue
+			}
+			if _, notified := alreadyNotified[targetUserId]; notified {
+				continue
+			}
+
+			if userConns, ok := clientsSnapshot[targetUserId]; ok {
+				for c := range userConns {
+					sendResponse(c.Conn, eventType, payload)
 				}
+				alreadyNotified[targetUserId] = struct{}{}
 			}
 		}
 	}
 
-	fmt.Printf("Broadcasted %s to %d users\n", eventType, notifyCount)
+	fmt.Printf("Broadcasted %s from user %s to %d users\n", eventType, userId, len(alreadyNotified))
 }
 
 func broadcastStatusUpdate(userId string, status UserStatus) {
+	hub.lock.RLock()
+	clientsSnapshot := make(map[string]map[*WSConnection]bool, len(hub.clients))
+	for uid, conns := range hub.clients {
+		clientsSnapshot[uid] = conns
+	}
+	hub.lock.RUnlock()
+
 	guilds, err := fetchGuildMemberships(userId)
 	if err != nil {
 		fmt.Println("Error fetching guild memberships:", err)
 		return
 	}
 
-	hub.lock.RLock()
-	clients := hub.clients
-	hub.lock.RUnlock()
-
-	seenUsers := make(map[string]struct{})
-	notifyCount := 0
+	alreadyNotified := make(map[string]struct{})
 
 	for _, members := range guilds {
 		for _, targetUserId := range members {
-			if targetUserId != userId {
-				if _, exists := seenUsers[targetUserId]; !exists {
-					if conns, ok := clients[targetUserId]; ok {
-						for c := range conns {
-							sendResponse(c.Conn, "UPDATE_USER_STATUS", UserStatusResponse{
-								UserId:             userId,
-								ConnectivityStatus: string(status),
-							})
-						}
-						seenUsers[targetUserId] = struct{}{}
-						notifyCount++
-					}
+			if targetUserId == userId {
+				continue
+			}
+			if _, notified := alreadyNotified[targetUserId]; notified {
+				continue
+			}
+
+			if userConns, ok := clientsSnapshot[targetUserId]; ok {
+				resp := UserStatusResponse{
+					UserId:             userId,
+					ConnectivityStatus: string(status),
 				}
+				for c := range userConns {
+					sendResponse(c.Conn, "UPDATE_USER_STATUS", resp)
+				}
+				alreadyNotified[targetUserId] = struct{}{}
 			}
 		}
 	}
 
-	fmt.Printf("Broadcasting status update to %d guilds for user %s. Total clients notified: %d\n", len(guilds), userId, notifyCount)
+	fmt.Printf("Broadcasted status update for user %s to %d users\n", userId, len(alreadyNotified))
 }
