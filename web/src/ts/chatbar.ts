@@ -199,7 +199,7 @@ function appendMentionToInput(
   });
 
   setChatBarState(state);
-  manuallyRenderEmojis(newMessage);
+  manuallyRenderEmojis(chatInput, newMessage);
   setTimeout(() => disableElement("userMentionDropdown"), 0);
 }
 
@@ -788,30 +788,36 @@ export const isEmoji = (node: Node | null): node is HTMLElement =>
   ((node.tagName === "IMG" && node.classList.contains("chat-emoji")) ||
     (node.tagName === "DIV" && node.classList.contains("emoji")));
 
-export function manuallyRenderEmojis(rawContent: string): void {
+export function manuallyRenderEmojis(
+  _chatInput: HTMLElement,
+  rawContent: string
+): void {
+  console.error(_chatInput, "Rendered emoji init: ", _chatInput.innerHTML);
   state.isProcessing = true;
 
   state.rawContent = rawContent;
   const formattedContent = renderEmojisFromContent(rawContent);
 
-  chatInput.innerHTML = DOMPurify.sanitize(
+  _chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== "" ? formattedContent : " "
   );
+  console.error("Rendered emoji first: ", _chatInput.innerHTML);
 
-  DomUtils.ensureTextNodeAfterImage(chatInput);
+  DomUtils.ensureTextNodeAfterImage(_chatInput);
 
   const savedSelection = {
     start: rawContent.length,
     end: rawContent.length
   };
 
-  DomUtils.restoreSelection(chatInput, savedSelection);
+  DomUtils.restoreSelection(_chatInput, savedSelection);
   state.renderedContent = formattedContent;
   updatePlaceholderVisibility();
   state.isProcessing = false;
 
   DomUtils.syncCursorPosition();
   toggleShowEmojiSuggestions();
+  console.error("Rendered emoji second: ", _chatInput.innerHTML);
 }
 
 function handleSpace(event: KeyboardEvent) {

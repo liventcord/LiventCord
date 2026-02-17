@@ -13,11 +13,14 @@ import {
   currentVoiceChannelGuild
 } from "./channels.ts";
 import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
-import { deleteLocalMessage, getLastSecondMessageDate } from "./message.ts";
+import {
+  deleteLocalMessage,
+  getLastSecondMessageDate,
+  setLastMessageDate
+} from "./message.ts";
 import {
   bottomestChatDateStr,
   setBottomestChatDateStr,
-  setLastMessageDate,
   lastMessageDate,
   handleNewMessage,
   handleEditMessage

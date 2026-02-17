@@ -3,7 +3,6 @@ import { appState } from "./appState.ts";
 import { getOldMessages } from "./message.ts";
 import {
   currentLastDate,
-  handleReplies,
   messageDates,
   handleHistoryResponse,
   handleSelfSentMessage,
@@ -84,6 +83,7 @@ import {
   PermissionsRecord,
   UserInfo
 } from "./types/interfaces.ts";
+import { handleReplies } from "./replyManager.ts";
 
 interface JoinGuildData {
   success: boolean;

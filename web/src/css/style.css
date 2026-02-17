@@ -1945,7 +1945,6 @@ body.black-theme {
   outline: none;
   position: relative;
   margin-left: 0px;
-  width: calc(100vw - 400px);
 }
 
 .base-user-input:focus {

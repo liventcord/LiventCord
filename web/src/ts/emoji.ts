@@ -803,7 +803,7 @@ function appendEmojiToInput(text: string) {
   selection.removeAllRanges();
   selection.addRange(range);
 
-  manuallyRenderEmojis(state.rawContent);
+  manuallyRenderEmojis(chatInput, state.rawContent);
 
   chatInput.focus();
   adjustHeight();

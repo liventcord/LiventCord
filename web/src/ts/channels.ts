@@ -3,7 +3,6 @@ import { disableElement, getId, MINUS_INDEX, isMobile } from "./utils.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   getHistoryFromOneChannel,
-  setLastSenderID,
   setReachedChannelEnd,
   clearLastDate,
   closeMediaPanel
@@ -20,6 +19,7 @@ import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
 import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
+import { setLastSenderID } from "./message.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;

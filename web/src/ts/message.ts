@@ -1,7 +1,6 @@
 import {
   scrollToBottom,
   setHasJustFetchedMessagesFalse,
-  setLastSenderID,
   createProfileImageChat,
   getMessageFromChat,
   addEditedIndicator,
@@ -17,7 +16,8 @@ import {
   attachmentsTray,
   fileInput,
   currentReplyingTo,
-  resetChatInputState
+  resetChatInputState,
+  manuallyRenderEmojis
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -40,7 +40,15 @@ import { shakeScreen } from "./settingsui.ts";
 import { processDeleteMessage } from "./socketEvents.ts";
 import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
 import { constructUserData } from "./profilePop.ts";
+export let lastMessageDate: Date;
 
+let lastSenderID = "";
+export function setLastSenderID(id: string) {
+  lastSenderID = id;
+}
+export function setLastMessageDate(date: Date) {
+  lastMessageDate = date;
+}
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 
 function createNewMessageFormData(
@@ -519,14 +527,17 @@ function isThereMultipleMessageContentElements(
 }
 let currentEditUiMessageId = "";
 export function convertToEditUi(message: HTMLElement) {
-  editMessageCurrentContent = message.outerHTML;
   if (currentEditUiMessageId === message.id) return;
+
+  editMessageCurrentContent = message.outerHTML;
   currentEditUiMessageId = message.id;
 
   const messageContentElement = message.querySelector(
     "#message-content-element"
   ) as HTMLElement;
+
   if (!messageContentElement) {
+    currentEditUiMessageId = "";
     return;
   }
 
@@ -540,6 +551,7 @@ export function convertToEditUi(message: HTMLElement) {
     container.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       if (target && target.className === "outer-parent") {
+        currentEditUiMessageId = "";
         target.remove();
       }
     });
@@ -547,12 +559,15 @@ export function convertToEditUi(message: HTMLElement) {
     if (hasMultiple) {
       container.style.marginLeft = "50px";
     }
+
     document.body.appendChild(container);
   } else {
     container = editMessageDiv;
+
     if (hasMultiple) {
       container.style.marginLeft = "50px";
     }
+
     messageContentElement.appendChild(editMessageDiv);
   }
 
@@ -560,6 +575,7 @@ export function convertToEditUi(message: HTMLElement) {
     () => saveEdit(message, messageContentElement, container, buttonContainer),
     () => cancelEdit(message)
   );
+
   if (buttonContainer) {
     message.appendChild(buttonContainer);
   }
@@ -621,24 +637,41 @@ function createButtonContainer(onSave: () => void, onCancel: () => void) {
   container.appendChild(cancelButton);
   return container;
 }
-
 function saveEdit(
   message: HTMLElement,
   originalContentElement: HTMLElement,
   container: HTMLElement,
   buttonContainer: HTMLElement | null
 ) {
-  originalContentElement.textContent = container.innerText;
+  const newText = container.innerText;
+  const currentText = originalContentElement.textContent ?? "";
+
+  if (newText === currentText) {
+    container.remove();
+    if (buttonContainer) {
+      buttonContainer.remove();
+    }
+    currentEditUiMessageId = "";
+    return;
+  }
+
   container.remove();
   if (buttonContainer) {
     buttonContainer.remove();
   }
-  sendEditMessageRequest(message.id, container.innerText);
+
+  originalContentElement.textContent = "";
+  manuallyRenderEmojis(originalContentElement, newText);
   addEditedIndicator(originalContentElement);
+
+  sendEditMessageRequest(message.id, newText);
+
+  currentEditUiMessageId = "";
 }
 
 function cancelEdit(message: HTMLElement) {
   message.outerHTML = editMessageCurrentContent;
+  currentEditUiMessageId = "";
 }
 
 export function fetchMoreAttachments(page: number, pageSize: number) {

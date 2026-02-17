@@ -12,7 +12,6 @@ import {
   createChatScrollButton,
   handleScroll,
   setReachedChannelEnd,
-  setLastSenderID,
   addChatMentionListeners
 } from "./chat.ts";
 import {
@@ -109,6 +108,7 @@ import {
   closeDropdown,
   hideGuildSettingsDropdown
 } from "./guildPop.ts";
+import { setLastSenderID } from "./message.ts";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
@@ -568,7 +568,7 @@ function handleGuildView(isInitial?: boolean): void {
   setChatBarState(oldState);
   chatInput.textContent = escapeHtml(oldState.rawContent) ?? "";
   channelInputStates[guildCache.currentChannelId] = getChatBarState();
-  manuallyRenderEmojis(oldState.rawContent);
+  manuallyRenderEmojis(chatInput, oldState.rawContent);
 }
 
 function handleDmView(friendId: string): void {
