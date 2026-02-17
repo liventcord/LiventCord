@@ -405,6 +405,7 @@ export function initializeGoogleOauth(isLink: boolean = false) {
       return;
     }
 
+    // eslint-disable-next-line no-unsanitized/property
     wrapper.innerHTML = `
       <div id="g_id_onload"
           data-client_id="${clientId}"

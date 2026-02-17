@@ -81,10 +81,10 @@
 import { computed, ref } from "vue";
 import { getProfileUrl } from "../ts/avatar";
 import { formatFileSize } from "../ts/utils";
-import { AttachmentWithMetaData } from "../ts/message";
 import { userManager } from "../ts/user";
 import { currentChannelName } from "../ts/channels";
 import { shouldRenderMedia } from "../ts/mediaElements";
+import { AttachmentWithMetaData } from "../ts/types/interfaces";
 const mediaAttachments = computed(() => {
   const filtered = props.attachments.filter((att) =>
     shouldRenderMedia(att, props.isFilesList)
@@ -101,11 +101,11 @@ const props = defineProps<{
   getAttachmentSrc: (attachment: AttachmentWithMetaData) => string;
   getVideoFallbackImg: () => string;
 }>();
-function getSpoilerStyle(isSpoiler) {
+function getSpoilerStyle(isSpoiler: boolean) {
   return { filter: isSpoiler ? "blur(10px)" : "none" };
 }
 
-function shouldShowTopRightProfile(attachment) {
+function shouldShowTopRightProfile(attachment: AttachmentWithMetaData) {
   return props.shouldRenderProfile && !props.isFilesList;
 }
 

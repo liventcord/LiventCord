@@ -190,7 +190,7 @@ import {
   displayImagePreview,
   displayVideoPreview
 } from "../ts/ui.ts";
-import { AttachmentWithMetaData, fetchMoreAttachments } from "../ts/message.ts";
+import { fetchMoreAttachments } from "../ts/message.ts";
 import {
   closeMediaPanel,
   currentAttachments,
@@ -203,8 +203,8 @@ import {
   isMediaPanelTeleported,
   selectedPanelType
 } from "../ts/panelHandler.ts";
-import { UserInfo } from "../ts/user.ts";
 import MediaGrid from "./MediaGrid.vue";
+import { AttachmentWithMetaData, UserInfo } from "../ts/types/interfaces.ts";
 
 const shouldTeleportMediaPanel = computed(
   () => isMediaPanelTeleported && selectedPanelType.value === "media"

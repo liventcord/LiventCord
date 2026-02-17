@@ -473,15 +473,20 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
-import { currentGuildId, getGuildMembers, GuildMember } from "../ts/guild";
+import { currentGuildId, getGuildMembers } from "../ts/guild";
 import { deletedUser, userManager } from "../ts/user";
-import { CachedChannel, cacheInterface } from "../ts/cache";
+import { cacheInterface } from "../ts/cache";
 import { apiClient, EventType } from "../ts/api";
 import { getFormattedDate, IMAGE_SRCS } from "../ts/utils";
 import { getProfileUrl } from "../ts/avatar";
 import { goToMessage, handleMentionClick } from "../ts/chat";
-import { Message } from "../ts/message";
 import { translations } from "../ts/translations";
+import {
+  Message,
+  GuildMember,
+  SearchMessagesResponse,
+  CachedChannel
+} from "../ts/types/interfaces";
 
 const query = ref("");
 const dropdownHidden = ref(true);

@@ -80,7 +80,6 @@ import {
   MessageReply,
   NewMessageResponse,
   EditMessageResponse,
-  Metadata,
   AttachmentWithMetaData,
   UserInfo,
   NewMessageResponseSelf

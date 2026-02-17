@@ -4,7 +4,7 @@ const confetti = confettiImport as unknown as (options: any) => void;
 import { createEl, getId, isValidUrl } from "./utils.ts";
 import { chatContainer, chatInput } from "./chatbar.ts";
 import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
-import { isUsersOpenGlobal, userList } from "./userList.ts";
+import { userList } from "./userList.ts";
 import { guildContainer } from "./guild.ts";
 import { friendsContainer } from "./friendui.ts";
 import { defaultVideoUrl, loadBgVideo, saveBgVideo } from "./settings.ts";

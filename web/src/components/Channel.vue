@@ -39,7 +39,7 @@
       </span>
       <span class="channelSpan">{{ channelName }}</span>
       <div class="content-wrapper" :style="contentWrapperStyle">
-        <span @click.stop="createInvitePop($event)">
+        <span @click.stop="createInvitePop()">
           <svg
             class="invite-channel-button"
             aria-hidden="true"
@@ -153,8 +153,8 @@ import { appendToChannelContextList } from "../ts/contextMenuActions";
 import { currentGuildId } from "../ts/guild";
 import { enterVoiceChannel } from "../ts/chatroom";
 import { setProfilePic } from "../ts/avatar.ts";
-import { VoiceUser } from "../ts/socketEvents.ts";
 import { userManager } from "../ts/user.ts";
+import { VoiceUser } from "../ts/types/interfaces.ts";
 
 const props = defineProps<{
   channelId: string;

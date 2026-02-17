@@ -597,6 +597,7 @@ export function clearActivityList() {
       )}</h1>
       <ul></ul>`;
     if (activityList) {
+      // eslint-disable-next-line no-unsanitized/property
       activityList.innerHTML = activityListEmptyHTML;
     }
   }

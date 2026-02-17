@@ -44,7 +44,7 @@ import { appendToProfileContextList } from "../ts/contextMenuActions";
 import { deletedUser, userManager } from "../ts/user.ts";
 import { setProfilePic } from "../ts/avatar.ts";
 import { isBlackTheme } from "../ts/settings.ts";
-import { UserInfo } from "../ts/user.ts";
+import { UserInfo } from "../ts/types/interfaces.ts";
 export default {
   name: "UserProfileItem",
   components: {

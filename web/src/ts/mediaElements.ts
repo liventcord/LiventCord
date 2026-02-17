@@ -66,8 +66,6 @@ const embedTypes: EmbedType = {
   Video: 6
 };
 
-const maxWidth = 512;
-const maxHeight = 384;
 export const maxAttachmentsCount = 10;
 const maxTenorWidth = "85vw";
 const maxTenorHeight = "85vh";

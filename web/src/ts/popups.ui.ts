@@ -15,16 +15,37 @@ interface PopupOptions {
 }
 
 function buildPopupContent(opts: PopupOptions): HTMLElement {
-  const { includeCancel = false, subject, content, buttonText, acceptCallback, isRed } = opts;
+  const {
+    includeCancel = false,
+    subject,
+    content,
+    buttonText,
+    acceptCallback,
+    isRed
+  } = opts;
 
-  const popUpSubject = createEl("h1", { className: "pop-up-subject", textContent: subject });
-  const popUpContent = createEl("p", { className: "pop-up-content", textContent: content });
-  const buttonContainer = createEl("div", { className: "pop-button-container" });
-  const popAcceptButton = createEl("button", { className: "pop-up-accept", textContent: buttonText });
+  const popUpSubject = createEl("h1", {
+    className: "pop-up-subject",
+    textContent: subject
+  });
+  const popUpContent = createEl("p", {
+    className: "pop-up-content",
+    textContent: content
+  });
+  const buttonContainer = createEl("div", {
+    className: "pop-button-container"
+  });
+  const popAcceptButton = createEl("button", {
+    className: "pop-up-accept",
+    textContent: buttonText
+  });
 
   if (isRed) popAcceptButton.style.backgroundColor = "rgb(218, 55, 60)";
 
-  const outerParent = createPopUp({ contentElements: [popUpSubject, popUpContent, buttonContainer], id: "" });
+  const outerParent = createPopUp({
+    contentElements: [popUpSubject, popUpContent, buttonContainer],
+    id: ""
+  });
 
   const handleEnterKeydown = (e: KeyboardEvent) => {
     if (e.key === "Enter") accept();
@@ -48,7 +69,7 @@ function buildPopupContent(opts: PopupOptions): HTMLElement {
   if (includeCancel) {
     const refuseBtn = createEl("button", {
       className: "pop-up-refuse",
-      textContent: translations.getTranslation("cancel"),
+      textContent: translations.getTranslation("cancel")
     });
     refuseBtn.addEventListener("click", dismiss);
     buttonContainer.appendChild(refuseBtn);
@@ -73,7 +94,10 @@ export function alertUser(subject: string, content?: string): void {
 }
 
 function showNextPopup(): void {
-  if (!popupQueue.length) { isPopupVisible = false; return; }
+  if (!popupQueue.length) {
+    isPopupVisible = false;
+    return;
+  }
 
   isPopupVisible = true;
   const { subject, content } = popupQueue.shift()!;
@@ -88,7 +112,7 @@ function showNextPopup(): void {
     acceptCallback: () => {
       isPopupVisible = false;
       showNextPopup();
-    },
+    }
   });
 
   outerParent.style.zIndex = "1000";
@@ -116,7 +140,14 @@ export function askUser(
   acceptCallback: CallableFunction,
   isRed = false
 ): void {
-  buildPopupContent({ includeCancel: true, subject, content, buttonText: actionText, acceptCallback, isRed });
+  buildPopupContent({
+    includeCancel: true,
+    subject,
+    content,
+    buttonText: actionText,
+    acceptCallback,
+    isRed
+  });
 }
 
 // ─── Change-password popup ────────────────────────────────────────────────────
@@ -124,39 +155,60 @@ export function askUser(
 export function openChangePasswordPop(): void {
   const t = (key: string) => translations.getSettingsTranslation(key);
 
-  const popUpSubject = createEl("h1", { className: "pop-up-subject", textContent: t("UpdatePasswordTitle") });
-  const popUpContent = createEl("p", { className: "pop-up-content", textContent: t("UpdatePasswordDescription") });
+  const popUpSubject = createEl("h1", {
+    className: "pop-up-subject",
+    textContent: t("UpdatePasswordTitle")
+  });
+  const popUpContent = createEl("p", {
+    className: "pop-up-content",
+    textContent: t("UpdatePasswordDescription")
+  });
   Object.assign(popUpContent.style, { marginLeft: "50px", marginTop: "0px" });
 
   const popAcceptButton = createEl("button", {
     className: "pop-up-accept",
-    textContent: translations.getTranslation("done"),
+    textContent: translations.getTranslation("done")
   });
   const popRefuseButton = createEl("button", {
     className: "pop-up-refuse",
-    textContent: translations.getTranslation("cancel"),
+    textContent: translations.getTranslation("cancel")
   });
   Object.assign(popAcceptButton.style, { marginTop: "60px" });
   Object.assign(popRefuseButton.style, { marginTop: "60px" });
 
-  const outerParent = createPopUp({ contentElements: [popUpSubject, popUpContent], id: "" });
+  const outerParent = createPopUp({
+    contentElements: [popUpSubject, popUpContent],
+    id: ""
+  });
   const parentElement = outerParent.firstChild as HTMLElement;
   parentElement.style.animation = "pop-up-animation-password 0.3s forwards";
   parentElement.style.backgroundColor = "#37373E";
 
   const makePasswordField = (id: string, labelKey: string) => {
-    const label = createEl("p", { id: `${id}-title`, textContent: t(labelKey) });
+    const label = createEl("p", {
+      id: `${id}-title`,
+      textContent: t(labelKey)
+    });
     label.classList.add("password-title");
-    const input = createEl("input", { id, type: "password" }) as HTMLInputElement;
+    const input = createEl("input", {
+      id,
+      type: "password"
+    }) as HTMLInputElement;
     input.classList.add("password-input");
     parentElement.appendChild(label);
     parentElement.appendChild(input);
     return input;
   };
 
-  const currentInput = makePasswordField("current-password-input", "UpdatePasswordCurrent");
+  const currentInput = makePasswordField(
+    "current-password-input",
+    "UpdatePasswordCurrent"
+  );
   const newInput = makePasswordField("new-password-input", "UpdatePasswordNew");
-  const confirmInput = makePasswordField("new-password-input-confirm", "UpdatePasswordNewConfirm");
+  const confirmInput = makePasswordField(
+    "new-password-input-confirm",
+    "UpdatePasswordNewConfirm"
+  );
 
   const dismiss = () => {
     if (outerParent?.firstChild) {
@@ -184,7 +236,13 @@ export function openChangePasswordPop(): void {
 
 // ─── Log-out confirm ──────────────────────────────────────────────────────────
 
-export function logOutPrompt(onConfirm: CallableFunction): void {
+export function logOutPrompt(): void {
   const logOut = translations.getTranslation("log-out-button");
-  askUser(logOut, translations.getTranslation("log-out-prompt"), logOut, onConfirm, true);
+  askUser(
+    logOut,
+    translations.getTranslation("log-out-prompt"),
+    logOut,
+    () => {},
+    true
+  );
 }
