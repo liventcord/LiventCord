@@ -153,10 +153,6 @@ async function createImageElement(
     className: "chat-image",
     id: attachmentId,
     src: IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC,
-    style: {
-      maxWidth: `${maxWidth}px`,
-      maxHeight: `${maxHeight}px`
-    },
     loading: "lazy"
   });
 
