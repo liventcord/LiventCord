@@ -162,91 +162,103 @@ export function setTheme(isDark: boolean) {
 }
 
 const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
-  const {
-    offsetLeft: inputX,
-    offsetTop: inputY,
-    scrollLeft,
-    scrollTop,
-    clientWidth,
-    clientHeight
-  } = input;
-  const div = createEl("div");
+  const inputRect = input.getBoundingClientRect();
+  const cs = window.getComputedStyle(input);
+  const div = document.createElement("div");
 
   div.style.position = "absolute";
   div.style.whiteSpace = "pre-wrap";
   div.style.wordWrap = "break-word";
   div.style.visibility = "hidden";
   div.style.overflow = "hidden";
-  div.style.top = `${inputY}px`;
-  div.style.left = `${inputX}px`;
-  div.style.padding = "10px 100px 10px 55px";
-  div.style.fontFamily = "Arial, Helvetica, sans-serif";
-  div.style.backgroundColor = "#36393f";
-  div.style.border = "none";
-  div.style.lineHeight = "20px";
-  div.style.fontSize = "17px";
-  div.style.borderRadius = "7px";
-  div.style.boxSizing = "border-box";
-  div.style.maxHeight = "500px";
-  div.style.width = isUsersOpenGlobal
-    ? "calc(100vw - 550px);"
-    : "calc(100vw - 350px);";
+  div.style.top = `${inputRect.top + window.scrollY}px`;
+  div.style.left = `${inputRect.left + window.scrollX}px`;
+  div.style.paddingTop = cs.paddingTop;
+  div.style.paddingRight = cs.paddingRight;
+  div.style.paddingBottom = cs.paddingBottom;
+  div.style.paddingLeft = cs.paddingLeft;
+  div.style.fontFamily = cs.fontFamily;
+  div.style.fontSize = cs.fontSize;
+  div.style.lineHeight = cs.lineHeight;
+  div.style.letterSpacing = cs.letterSpacing;
+  div.style.boxSizing = cs.boxSizing;
+  div.style.width = `${inputRect.width}px`;
+  div.style.maxHeight = `${inputRect.height}px`;
+
   const swap = "\u00A0";
+  const rawValue = (input as HTMLInputElement).value ?? "";
   const inputValue =
-    input.tagName === "INPUT" ? input.value.replace(/ /g, swap) : input.value;
-  const textNode = document.createTextNode(
-    inputValue.substring(0, selectionPoint)
-  );
+    input.tagName === "INPUT" ? rawValue.replace(/ /g, swap) : rawValue;
+  const safeIndex = Math.max(0, Math.min(selectionPoint, inputValue.length));
+  const textNode = document.createTextNode(inputValue.substring(0, safeIndex));
   div.appendChild(textNode);
   document.body.appendChild(div);
+
   const range = document.createRange();
   range.selectNodeContents(div);
-  range.setStart(textNode, selectionPoint);
-  range.setEnd(textNode, selectionPoint);
+  range.setStart(textNode, textNode.nodeValue ? textNode.nodeValue.length : 0);
+  range.setEnd(textNode, textNode.nodeValue ? textNode.nodeValue.length : 0);
   const rect = range.getBoundingClientRect();
-  const x = rect.left - inputX + scrollLeft + 5;
-  const y = rect.top - inputY + scrollTop;
+  const x = rect.left + window.scrollX;
+  const y = rect.top + window.scrollY;
   document.body.removeChild(div);
 
   return {
-    x: Math.min(x, clientWidth),
-    y: Math.min(y, clientHeight)
+    x: Math.min(Math.max(0, x - inputRect.left), inputRect.width),
+    y: Math.min(Math.max(0, y - inputRect.top), inputRect.height)
   };
 };
 
 export function popKeyboardConfetti() {
-  const selection = window.getSelection();
-  let ratioX: number, ratioY: number;
+  const inputEl = chatInput as HTMLElement;
+  let x: number;
+  let y: number;
 
-  const inputRect = chatInput.getBoundingClientRect();
-
-  if (selection && selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-
-    if (rect && rect.width && rect.height) {
-      ratioX = rect.left / window.innerWidth;
-      ratioY = rect.top / window.innerHeight + 0.95;
-
-      if (ratioY > 1) ratioY = 1;
-      if (ratioX < 0.2) ratioX = 0.2;
-    } else {
-      ratioX = (inputRect.left + inputRect.width / 2) / window.innerWidth;
-      ratioY = (inputRect.top + inputRect.height / 2) / window.innerHeight;
-    }
+  if (
+    inputEl instanceof HTMLInputElement ||
+    inputEl instanceof HTMLTextAreaElement
+  ) {
+    const el = inputEl as HTMLInputElement | HTMLTextAreaElement;
+    const selStart =
+      (el as HTMLInputElement).selectionStart ??
+      (el as HTMLTextAreaElement).selectionStart ??
+      el.value.length ??
+      0;
+    const pos = getCursorXY(el as HTMLInputElement, selStart);
+    const rect = el.getBoundingClientRect();
+    x = rect.left + pos.x;
+    y = rect.top + pos.y;
   } else {
-    ratioX = (inputRect.left + inputRect.width / 2) / window.innerWidth;
-    ratioY = (inputRect.top + inputRect.height / 2) / window.innerHeight;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0).cloneRange();
+      range.collapse(true);
+      const rects = range.getClientRects();
+      if (rects.length > 0) {
+        const r = rects[0];
+        x = r.left;
+        y = r.top;
+      } else {
+        const rect = inputEl.getBoundingClientRect();
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
+    } else {
+      const rect = inputEl.getBoundingClientRect();
+      x = rect.left + rect.width / 2;
+      y = rect.top + rect.height / 2;
+    }
   }
 
-  setTimeout(() => {
-    confetti({
-      particleCount: 5,
-      spread: 7,
-      origin: { x: ratioX, y: ratioY },
-      disableForReducedMotion: true
-    });
-  }, 0);
+  const ratioX = Math.max(0.02, Math.min(1, x / window.innerWidth));
+  const ratioY = Math.max(0, Math.min(1, y / window.innerHeight));
+
+  confetti({
+    particleCount: 5,
+    spread: 7,
+    origin: { x: ratioX, y: ratioY },
+    disableForReducedMotion: true
+  });
 }
 
 export function createFireWorks() {
