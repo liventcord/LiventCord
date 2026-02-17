@@ -358,7 +358,7 @@ function activateSoundOutput() {
           const option = createEl("option", {
             value: output.deviceId,
             textContent: output.label || `Sound Output ${index + 1}`,
-            style: { fontSize: "12px" }
+            style: { fontSize: "0.875rem" }
           });
           dropdown.appendChild(option);
         });
@@ -367,7 +367,7 @@ function activateSoundOutput() {
         createEl("option", {
           value: "default",
           textContent: "Default Sound Output",
-          style: { fontSize: "12px" }
+          style: { fontSize: "0.875rem" }
         })
       );
     } catch {
@@ -375,7 +375,7 @@ function activateSoundOutput() {
         createEl("option", {
           value: "default",
           textContent: "Default Sound Output",
-          style: { fontSize: "12px" }
+          style: { fontSize: "0.875rem" }
         })
       );
     }
@@ -412,7 +412,7 @@ function activateMicAndCamera() {
     return createEl("option", {
       textContent: label,
       value,
-      style: { fontSize: "12px" }
+      style: { fontSize: "0.875rem" }
     });
   }
 

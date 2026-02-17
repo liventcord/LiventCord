@@ -245,7 +245,7 @@ export class FileHandler {
     wrapper.appendChild(img);
     wrapper.appendChild(text);
 
-    img.style.filter = "blur(12px)";
+    img.style.filter = "blur(0.875rem)";
     img.style.width = "100%";
     img.style.height = "auto";
     img.style.objectFit = "contain";

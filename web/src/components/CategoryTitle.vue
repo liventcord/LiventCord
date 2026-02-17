@@ -1,7 +1,7 @@
 <template>
   <h1
     :style="{
-      fontSize: '12px',
+      fontSize: '0.875rem',
       color: 'rgb(148, 155, 153)'
     }"
   >

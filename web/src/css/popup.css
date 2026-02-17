@@ -42,7 +42,7 @@
   #settings-unsaved-popup {
     width: 90%;
     height: auto;
-    font-size: 12px;
+    font-size: 0.875rem;
     padding: 15px 10px;
     white-space: wrap;
   }
@@ -782,7 +782,7 @@
   opacity: 0.8;
   border: none;
   margin-right: 15px;
-  margin-top: 12px;
+  margin-top: 0.875rem;
   color: #b5bac1;
 }
 .profile-dots3-text {
@@ -867,7 +867,7 @@ body.black-theme .status-profile {
 #invite-users-send-text {
   font-weight: bold;
   color: rgb(181, 186, 193);
-  font-size: 12px;
+  font-size: 0.875rem;
   padding-left: 20px;
 }
 #profile-about-title {
@@ -901,7 +901,7 @@ body.black-theme .status-profile {
   border: none;
   box-sizing: border-box;
   color: #fff;
-  padding: 12px;
+  padding: 0.875rem;
   position: relative;
   width: 88%;
   margin-left: 25px;

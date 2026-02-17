@@ -1,9 +1,9 @@
 #friendsTitleContainer {
-  font-size: 12px;
+  font-size: 0.875rem;
   color: oklab(0.786807 -0.0025776 -0.0110238);
   width: 50%;
   height: 60px;
-  top: 112px;
+  top: 10.875rem;
   margin-left: 20px;
   position: absolute;
 }
@@ -53,7 +53,7 @@
 #dm-profile-sign {
   width: 24px;
   height: 24px;
-  top: 12px;
+  top: 0.875rem;
   left: 328px;
   color: rgb(128, 132, 142);
   position: absolute;
@@ -105,7 +105,7 @@ body.black-theme .dm-selected:hover {
   top: 100px;
   transform: scaleY(0.95);
   position: relative;
-  font-size: 12px;
+  font-size: 0.875rem;
   user-select: none;
   font-weight: bold;
   text-transform: uppercase;
@@ -130,7 +130,7 @@ body.black-theme .dm-selected:hover {
   color: #ffffff;
   position: fixed;
   padding-left: 210px;
-  top: 12px;
+  top: 0.875rem;
   width: calc(100% - 190px);
   display: flex;
   z-index: 2;
@@ -175,7 +175,7 @@ body.black-theme .dm-selected:hover {
 @media (max-width: 500px) {
   #addfriendinputbutton {
     width: 140px;
-    font-size: 12px;
+    font-size: 0.875rem;
     height: 40px;
   }
 
@@ -186,7 +186,7 @@ body.black-theme .dm-selected:hover {
 
 .messagetext {
   position: absolute;
-  margin-top: 12px;
+  margin-top: 0.875rem;
   margin-left: 25px;
   animation: moveUp 10s ease forwards;
   color: red;
@@ -195,7 +195,7 @@ body.black-theme .dm-selected:hover {
 }
 @keyframes moveUp {
   0% {
-    margin-top: 12px;
+    margin-top: 0.875rem;
     opacity: 1;
   }
   100% {
@@ -259,7 +259,7 @@ body.black-theme .dm-selected:hover {
   white-space: nowrap;
   color: #949ba4;
   margin-left: 25px;
-  margin-top: 12px;
+  margin-top: 0.875rem;
   font-size: 13px;
 }
 .message {
@@ -367,7 +367,7 @@ body.black-theme .friend-card:hover {
   width: 16px;
   height: 16px;
   border: none;
-  font-size: 12px;
+  font-size: 0.875rem;
   text-indent: 0;
 }
 

@@ -1539,7 +1539,7 @@ function handleClyde(
   const youCanSeeText = createEl("p", {
     textContent: translations.getTranslation("you-can-see-text")
   });
-  youCanSeeText.style.fontSize = "12px";
+  youCanSeeText.style.fontSize = "0.875rem";
   youCanSeeText.style.color = "rgb(148, 155, 164)";
 
   const parentElement = createEl("div", {

@@ -940,11 +940,11 @@ onBeforeUnmount(() => {
 .date-picker-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.875rem;
 }
 
 .date-input {
-  padding: 8px 12px;
+  padding: 8px 0.875rem;
   background-color: #393a41;
   color: white;
   outline: none;
@@ -961,11 +961,11 @@ onBeforeUnmount(() => {
 
 .btn-confirm,
 .btn-cancel {
-  padding: 6px 12px;
+  padding: 6px 0.875rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.875rem;
 }
 
 .btn-confirm {

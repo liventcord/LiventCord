@@ -491,7 +491,7 @@ watch(
   grid-template-rows: repeat(3, 1fr);
   width: 100%;
   flex-wrap: nowrap !important;
-  gap: 12px;
+  gap: 0.875rem;
 }
 
 .limited-grid {
