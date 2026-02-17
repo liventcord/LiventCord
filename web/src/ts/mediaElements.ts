@@ -34,7 +34,6 @@ import {
 import { deletedUser, userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { togglePin } from "./contextMenuActions.ts";
-import { createMentionProfilePop } from "./popups.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import { currentGuildId } from "./guild.ts";
 import {
@@ -45,6 +44,7 @@ import {
   Metadata
 } from "./types/interfaces.ts";
 import { FileHandler } from "./fileHandler.ts";
+import { createMentionProfilePop } from "./profilePop.ts";
 
 interface EmbedType {
   Article: number;

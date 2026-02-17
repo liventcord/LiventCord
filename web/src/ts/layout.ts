@@ -4,23 +4,26 @@ import {
   disableElement,
   enableElement,
   debounce,
-  IMAGE_SRCS,
+  IMAGE_SRCS
 } from "./utils.ts";
 import { setWidths } from "./channels.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
 import { updateChatWidth } from "./chat.ts";
-import { setUserListLine, activityList, userLine, userList } from "./userList.ts";
+import {
+  setUserListLine,
+  activityList,
+  userLine,
+  userList
+} from "./userList.ts";
 import { isOnMePage } from "./router.ts";
 import { permissionManager } from "./guildPermissions.ts";
-
 
 const DEFAULT_WIDTH = 150;
 const MIN_WIDTH = 100;
 const MAX_WIDTH = 260;
 
-
-export const clamp = (width: number): number => Math.min(Math.max(width, MIN_WIDTH), MAX_WIDTH);
-
+export const clamp = (width: number): number =>
+  Math.min(Math.max(width, MIN_WIDTH), MAX_WIDTH);
 
 export function getCurrentWidth(): number {
   const saved = localStorage.getItem("channelListWidth");
@@ -32,23 +35,34 @@ function saveWidth(width: number): void {
   localStorage.setItem("channelListWidth", width.toString());
 }
 
-// ─── Toolbar helpers ──────────────────────────────────────────────────────────
+// --- Toolbar helpers
 
 function handleMobileToolbar(): void {
-  getId("toolbaroptions")?.querySelectorAll(".iconWrapper").forEach((el) => {
-    el.classList.add("toolbarIconMobile");
-  });
+  getId("toolbaroptions")
+    ?.querySelectorAll(".iconWrapper")
+    .forEach((el) => {
+      el.classList.add("toolbarIconMobile");
+    });
 }
 
 export function loadMainToolbar(): void {
   if (isMobile) handleMobileToolbar();
-  ["tb-hamburger", "tb-call", "tb-video-call", "tb-pin", "tb-createdm", "tb-show-members", "tb-search"]
-    .forEach(disableElement);
+  [
+    "tb-hamburger",
+    "tb-call",
+    "tb-video-call",
+    "tb-pin",
+    "tb-createdm",
+    "tb-show-members",
+    "tb-search"
+  ].forEach(disableElement);
 }
 
 export function loadGuildToolbar(): void {
-  if (isMobile) { handleMobileToolbar(); enableElement("tb-hamburger"); }
-  else disableElement("tb-hamburger");
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else disableElement("tb-hamburger");
 
   disableElement("tb-call");
   disableElement("tb-video-call");
@@ -59,8 +73,10 @@ export function loadGuildToolbar(): void {
 }
 
 export function loadDmToolbar(): void {
-  if (isMobile) { handleMobileToolbar(); enableElement("tb-hamburger"); }
-  else disableElement("tb-hamburger");
+  if (isMobile) {
+    handleMobileToolbar();
+    enableElement("tb-hamburger");
+  } else disableElement("tb-hamburger");
 
   enableElement("tb-call");
   enableElement("tb-video-call");
@@ -70,16 +86,22 @@ export function loadDmToolbar(): void {
   enableElement("tb-search");
 }
 
-// ─── Guild dropdown ───────────────────────────────────────────────────────────
+// --- Guild dropdown
 
 export function fillDropDownContent(): void {
   const canManage = permissionManager.canManageChannels();
-  canManage ? enableElement("channel-dropdown-button") : disableElement("channel-dropdown-button");
-  canManage ? enableElement("invite-dropdown-button") : disableElement("invite-dropdown-button");
-  permissionManager.isSelfOwner() ? disableElement("exit-dropdown-button") : enableElement("exit-dropdown-button");
+  canManage
+    ? enableElement("channel-dropdown-button")
+    : disableElement("channel-dropdown-button");
+  canManage
+    ? enableElement("invite-dropdown-button")
+    : disableElement("invite-dropdown-button");
+  permissionManager.isSelfOwner()
+    ? disableElement("exit-dropdown-button")
+    : enableElement("exit-dropdown-button");
 }
 
-// ─── UI width sync ────────────────────────────────────────────────────────────
+// --- UI width sync
 
 function updateUIWidths(newWidth: number): void {
   const set = (id: string, prop: string, value: string) => {
@@ -116,7 +138,7 @@ export function setAllWidths(newWidth: number): void {
   updateUIWidths(newWidth);
 }
 
-// ─── Resize handler ───────────────────────────────────────────────────────────
+// --- Resize handler
 
 export function handleResize(): void {
   handleMediaPanelResize();
@@ -148,12 +170,14 @@ export function handleResize(): void {
 export function handleResizeWidth(): void {
   const channelList = getId("channel-list") as HTMLElement;
   if (!channelList) return;
-  const currentWidth = clamp(parseInt(window.getComputedStyle(channelList).width, 10));
+  const currentWidth = clamp(
+    parseInt(window.getComputedStyle(channelList).width, 10)
+  );
   setAllWidths(currentWidth);
   saveWidth(currentWidth);
 }
 
-// ─── Channel list drag-to-resize ──────────────────────────────────────────────
+// --- Channel list drag-to-resize
 
 export function initialiseChannelDrag(): void {
   const channelList = getId("channel-list") as HTMLElement;
@@ -166,7 +190,9 @@ export function initialiseChannelDrag(): void {
   channelList.addEventListener("mousedown", (e) => {
     let isDragging = true;
     const startX = e.clientX;
-    const startWidth = clamp(parseInt(window.getComputedStyle(channelList).width, 10));
+    const startWidth = clamp(
+      parseInt(window.getComputedStyle(channelList).width, 10)
+    );
 
     document.body.style.userSelect = "none";
 
@@ -178,7 +204,9 @@ export function initialiseChannelDrag(): void {
     const onMouseUp = () => {
       isDragging = false;
       setTimeout(() => setAllWidths(getCurrentWidth()), 50);
-      const finalWidth = clamp(parseInt(window.getComputedStyle(channelList).width, 10));
+      const finalWidth = clamp(
+        parseInt(window.getComputedStyle(channelList).width, 10)
+      );
       saveWidth(finalWidth);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);

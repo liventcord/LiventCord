@@ -14,7 +14,6 @@ const guildContainer = getId("guild-container") as HTMLElement;
 const horizontalLineGuild = getId("horizontal-line-guild") as HTMLElement;
 const toolbarOptions = getId("toolbaroptions") as HTMLElement;
 
-
 let _isOnLeft = false;
 let _isOnRight = false;
 
@@ -22,13 +21,16 @@ export const isOnLeft = () => _isOnLeft;
 export const isOnRight = () => _isOnRight;
 export const isOnCenter = () => !_isOnLeft && !_isOnRight;
 
-// ─── Swipe detection ──────────────────────────────────────────────────────────
+// --- Swipe detection
 
 let previewSlideStartX = 0;
 let previewSlideEndX = 0;
 const SWIPE_THRESHOLD = 50;
 
-function initSwipeListeners(getChatContent: () => HTMLElement, getMediaGrid: () => HTMLElement): void {
+function initSwipeListeners(
+  getChatContent: () => HTMLElement,
+  getMediaGrid: () => HTMLElement
+): void {
   document.addEventListener("touchstart", (e) => {
     previewSlideStartX = e.touches[0].clientX;
   });
@@ -40,7 +42,11 @@ function initSwipeListeners(getChatContent: () => HTMLElement, getMediaGrid: () 
     if (Math.abs(diff) < SWIPE_THRESHOLD) return;
 
     if (isImagePreviewOpen()) {
-      navigatePreviewBySwipe(diff > 0 ? "prev" : "next", getChatContent(), getMediaGrid());
+      navigatePreviewBySwipe(
+        diff > 0 ? "prev" : "next",
+        getChatContent(),
+        getMediaGrid()
+      );
       return;
     }
 
@@ -50,9 +56,15 @@ function initSwipeListeners(getChatContent: () => HTMLElement, getMediaGrid: () 
 
 function handleSwapNavigation(diff: number): void {
   if (diff > 0) {
-    if (_isOnRight) { mobileMoveToCenter(true); return; }
+    if (_isOnRight) {
+      mobileMoveToCenter(true);
+      return;
+    }
     enableElement(mobileBlackBg);
-    if (isOnGuild) { enableElement("channel-info"); enableElement("hash-sign"); }
+    if (isOnGuild) {
+      enableElement("channel-info");
+      enableElement("hash-sign");
+    }
     mobileMoveToLeft();
   } else {
     disableElement(mobileBlackBg);
@@ -64,7 +76,10 @@ function handleSwapNavigation(diff: number): void {
         mobileMoveToCenter(true);
         mobileMoveToRight();
         enableElement(mobileBlackBg);
-        if (isOnGuild) { enableElement("channel-info"); enableElement("hash-sign"); }
+        if (isOnGuild) {
+          enableElement("channel-info");
+          enableElement("hash-sign");
+        }
       }
       return;
     }
@@ -73,7 +88,7 @@ function handleSwapNavigation(diff: number): void {
   }
 }
 
-// ─── Movement helpers ─────────────────────────────────────────────────────────
+// --- Movement helpers
 
 function mobileMoveToRight(): void {
   const userList = getId("user-list") as HTMLElement;
@@ -108,9 +123,13 @@ export function mobileMoveToCenter(excludeChannelList = false): void {
   enableElement(chatInput);
   getId("guilds-list")?.classList.remove("guilds-list-mobile-left");
   getId("guild-container")?.classList.remove("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.remove("message-input-container-mobile-left");
+  getId("message-input-container")?.classList.remove(
+    "message-input-container-mobile-left"
+  );
   getId("channelSearchInput")?.classList.remove("search-input-mobile");
-  document.querySelector(".close-button")?.classList.remove("search-input-mobile");
+  document
+    .querySelector(".close-button")
+    ?.classList.remove("search-input-mobile");
 
   if (!isOnMePage) enableElement(chatContainer);
 
@@ -148,7 +167,9 @@ function mobileMoveToLeft(): void {
 
   chatContainer.classList.add("chat-container-mobile-left");
   getId("guilds-list")?.classList.add("guilds-list-mobile-left");
-  getId("message-input-container")?.classList.add("message-input-container-mobile-left");
+  getId("message-input-container")?.classList.add(
+    "message-input-container-mobile-left"
+  );
 
   enableElement(channelList, false, true);
   requestAnimationFrame(() => channelList.classList.add("visible"));
@@ -161,7 +182,7 @@ function mobileMoveToLeft(): void {
   enableElement(navigationBar);
 }
 
-// ─── Hamburger toggle ─────────────────────────────────────────────────────────
+// --- Hamburger toggle
 
 export function toggleHamburger(toLeft: boolean, toRight: boolean): void {
   const userList = getId("user-list") as HTMLElement;
@@ -202,14 +223,19 @@ export function toggleHamburger(toLeft: boolean, toRight: boolean): void {
 }
 
 export function handleMembersClick(): void {
-  if (_isOnLeft) { toggleHamburger(true, false); return; }
+  if (_isOnLeft) {
+    toggleHamburger(true, false);
+    return;
+  }
   isMobile ? toggleHamburger(false, !_isOnLeft) : toggleUsersList();
 }
 
-// ─── Navigation bar setup ─────────────────────────────────────────────────────
+// --- Navigation bar setup
 
 export function initialiseMobile(): void {
-  [earphoneButton, microphoneButton].forEach((btn) => btn?.parentElement?.remove());
+  [earphoneButton, microphoneButton].forEach((btn) =>
+    btn?.parentElement?.remove()
+  );
 
   disableSelfName();
   disableElement("self-status");
@@ -220,12 +246,17 @@ export function initialiseMobile(): void {
     navigationBar.appendChild(el);
     if (extraClass) el.classList.add(extraClass);
     const svg = el.querySelector("svg") as SVGElement | null;
-    if (svg) { svg.style.width = "30px"; svg.style.height = "30px"; }
+    if (svg) {
+      svg.style.width = "30px";
+      svg.style.height = "30px";
+    }
   };
 
   moveToNav("friend-icon-sign", "navigationButton");
   const friendIcon = getId("friend-icon-sign");
-  if (friendIcon) { friendIcon.style.position = ""; }
+  if (friendIcon) {
+    friendIcon.style.position = "";
+  }
 
   moveToNav("settings-button", "navigationButton");
 
@@ -241,10 +272,17 @@ export function initialiseMobile(): void {
 }
 
 function initHamburgerListeners(): void {
-  getId("tb-hamburger")?.addEventListener("click", () => toggleHamburger(true, false));
-  mobileBlackBg.addEventListener("click", () => toggleHamburger(!_isOnLeft, !_isOnRight));
+  getId("tb-hamburger")?.addEventListener("click", () =>
+    toggleHamburger(true, false)
+  );
+  mobileBlackBg.addEventListener("click", () =>
+    toggleHamburger(!_isOnLeft, !_isOnRight)
+  );
 }
 
-export function initMobileSwipe(getChatContent: () => HTMLElement, getMediaGrid: () => HTMLElement): void {
+export function initMobileSwipe(
+  getChatContent: () => HTMLElement,
+  getMediaGrid: () => HTMLElement
+): void {
   initSwipeListeners(getChatContent, getMediaGrid);
 }

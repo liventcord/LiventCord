@@ -4,12 +4,12 @@ import { getId, createEl } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
 import { translations } from "./translations.ts";
-import { currentProfileImg } from "./popups.ts";
 import { apiClient } from "./api.ts";
 import { setAudioMuteState } from "./chatroom.ts";
 import { rtcWsClient } from "./socketEvents.ts";
 import { initialState } from "./app.ts";
 import { appState } from "./appState.ts";
+import { currentProfileImg } from "./profilePop.ts";
 
 export enum AudioType {
   EnterVC = "/joinvoice",

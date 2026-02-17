@@ -51,12 +51,7 @@ import {
   updateUsersActivities,
   clearActivityList
 } from "./friendui.ts";
-import {
-  closeDropdown,
-  hideGuildSettingsDropdown,
-  openSearchPop,
-  toggleDropdown
-} from "./popups.ts";
+
 import { initializeProfile, userManager } from "./user.ts";
 import {
   addContextListeners,
@@ -108,6 +103,12 @@ import { initializeVideoComponent } from "./chatroom.ts";
 import { Channel, ChatBarState } from "./types/interfaces.ts";
 import { appState, InitialState, InitialStateData } from "./appState.ts";
 import { FileHandler } from "./fileHandler.ts";
+import {
+  openSearchPop,
+  toggleDropdown,
+  closeDropdown,
+  hideGuildSettingsDropdown
+} from "./guildPop.ts";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",

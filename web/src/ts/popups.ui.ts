@@ -3,7 +3,7 @@ import { closePopUp, createPopUp } from "./popups.ts";
 import { translations } from "./translations.ts";
 import { changePassword } from "./user.ts";
 
-// ─── Popup content builder ────────────────────────────────────────────────────
+// --- Popup content builder
 
 interface PopupOptions {
   includeCancel?: boolean;
@@ -82,7 +82,7 @@ function buildPopupContent(opts: PopupOptions): HTMLElement {
   return outerParent;
 }
 
-// ─── Alert queue ──────────────────────────────────────────────────────────────
+// --- Alert queue
 
 const popupQueue: Array<{ subject: string; content?: string }> = [];
 let isPopupVisible = false;
@@ -131,7 +131,7 @@ export function dismissCurrentPopupIf(subject: string): void {
   }
 }
 
-// ─── Confirm dialog ───────────────────────────────────────────────────────────
+// --- Confirm dialog
 
 export function askUser(
   subject: string,
@@ -150,7 +150,7 @@ export function askUser(
   });
 }
 
-// ─── Change-password popup ────────────────────────────────────────────────────
+// --- Change-password popup
 
 export function openChangePasswordPop(): void {
   const t = (key: string) => translations.getSettingsTranslation(key);
@@ -234,7 +234,7 @@ export function openChangePasswordPop(): void {
   document.addEventListener("keydown", onEnter);
 }
 
-// ─── Log-out confirm ──────────────────────────────────────────────────────────
+// --- Log-out confirm
 
 export function logOutPrompt(): void {
   const logOut = translations.getTranslation("log-out-button");

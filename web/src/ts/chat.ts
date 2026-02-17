@@ -60,11 +60,6 @@ import { friendsCache } from "./friends.ts";
 import { AudioType, playAudioType } from "./audio.ts";
 import { isUsersOpenGlobal, userList } from "./userList.ts";
 import { emojiBtn, gifBtn } from "./mediaPanel.ts";
-import {
-  constructUserData,
-  createMentionProfilePop,
-  drawProfilePopId
-} from "./popups.ts";
 import { createTooltipAtCursor } from "./tooltip.ts";
 import {
   replaceCustomEmojisForChatContainer,
@@ -84,6 +79,11 @@ import {
   UserInfo,
   NewMessageResponseSelf
 } from "./types/interfaces.ts";
+import {
+  createMentionProfilePop,
+  drawProfilePopId,
+  constructUserData
+} from "./profilePop.ts";
 
 export let bottomestChatDateStr: string;
 export function setBottomestChatDateStr(date: string) {

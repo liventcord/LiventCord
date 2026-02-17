@@ -15,7 +15,6 @@ import {
   removeUserFromMemberList,
   updateMemberList
 } from "./userList.ts";
-import { showGuildPop } from "./popups.ts";
 import {
   validateAvatar,
   resetImageInput,
@@ -42,6 +41,7 @@ import {
   PermissionsRecord,
   UserInfo
 } from "./types/interfaces.ts";
+import { showGuildPop } from "./guildPop.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;

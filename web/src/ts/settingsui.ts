@@ -747,8 +747,12 @@ function selectThemeButton(isDark: boolean) {
   if (!ash || !dark) {
     return;
   }
-  ash.style.borderColor = isDark ? unThemeBorderColor : selectedThemeBorderColor;
-  dark.style.borderColor = isDark ? selectedThemeBorderColor : unThemeBorderColor;
+  ash.style.borderColor = isDark
+    ? unThemeBorderColor
+    : selectedThemeBorderColor;
+  dark.style.borderColor = isDark
+    ? selectedThemeBorderColor
+    : unThemeBorderColor;
 }
 
 export function selectTheme(selected: Themes) {
@@ -856,14 +860,18 @@ function setupToggles() {
 }
 
 function setupProfileImageClick() {
-  getProfileImage()?.addEventListener("click", triggerFileInput, { once: true });
+  getProfileImage()?.addEventListener("click", triggerFileInput, {
+    once: true
+  });
 }
 
 function setupThemeSelectors() {
   const ash = getId("ash-theme-selector");
   const dark = getId("dark-theme-selector");
   ash?.addEventListener("click", () => selectTheme(Themes.Ash), { once: true });
-  dark?.addEventListener("click", () => selectTheme(Themes.Dark), { once: true });
+  dark?.addEventListener("click", () => selectTheme(Themes.Dark), {
+    once: true
+  });
   selectThemeButton(isBlackTheme());
 }
 
@@ -905,7 +913,9 @@ function setupNicknameInput() {
 function setupGuildAndChannelInputs() {
   const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
   const guildImage = getId("guild-image") as HTMLImageElement;
-  const channelNameInput = getId("channel-overview-name-input") as HTMLInputElement;
+  const channelNameInput = getId(
+    "channel-overview-name-input"
+  ) as HTMLInputElement;
   const canManageGuild = permissionManager.canManageGuild();
 
   if (guildImage) {
@@ -919,7 +929,9 @@ function setupGuildAndChannelInputs() {
     channelNameInput.value = currentChannelName;
     channelNameInput.disabled = !permissionManager.canManageChannels();
     if (!channelNameInput.disabled)
-      channelNameInput.addEventListener("input", onEditChannelName, { once: true });
+      channelNameInput.addEventListener("input", onEditChannelName, {
+        once: true
+      });
   }
 
   if (canManageGuild) enableElement("guild-image-remove");
@@ -927,7 +939,9 @@ function setupGuildAndChannelInputs() {
   if (isOnGuild && guildNameInput) {
     if (canManageGuild) {
       guildNameInput.addEventListener("input", onEditGuildName, { once: true });
-      guildImage?.addEventListener("click", triggerGuildImageUpdate, { once: true });
+      guildImage?.addEventListener("click", triggerGuildImageUpdate, {
+        once: true
+      });
       if (guildImage) setGuildImage(currentGuildId, guildImage, true);
     } else {
       guildNameInput.disabled = true;
@@ -947,7 +961,10 @@ function setupEmailToggle() {
 }
 
 function setupAccountButtons() {
-  getId("change-password-button")?.addEventListener("click", openChangePasswordPop);
+  getId("change-password-button")?.addEventListener(
+    "click",
+    openChangePasswordPop
+  );
   getId("link-google-btn")?.addEventListener("click", linkGoogleAccount);
 }
 
@@ -955,7 +972,8 @@ function setupEmojiUpload() {
   const uploadButton = getId("upload-emoji-button") as HTMLButtonElement | null;
   const emojiInput = getId("emoijImage") as HTMLInputElement | null;
 
-  if (!permissionManager.canManageGuild() || !uploadButton || !emojiInput) return;
+  if (!permissionManager.canManageGuild() || !uploadButton || !emojiInput)
+    return;
 
   uploadButton.addEventListener("click", () => {
     emojiInput.click();
@@ -966,7 +984,9 @@ function setupEmojiUpload() {
 let fontSliderObserver: MutationObserver | null = null;
 
 function registerSlider() {
-  const slider = document.querySelector<HTMLDivElement>("#chat-font-scaling .slider");
+  const slider = document.querySelector<HTMLDivElement>(
+    "#chat-font-scaling .slider"
+  );
   if (!slider) return;
 
   const handle = slider.querySelector<HTMLDivElement>(".slider-handle")!;
@@ -997,7 +1017,10 @@ function registerSlider() {
   let currentScale = 1;
 
   function updateSlider(clientX: number) {
-    const x = Math.min(Math.max(clientX - sliderRect.left, 0), sliderRect.width);
+    const x = Math.min(
+      Math.max(clientX - sliderRect.left, 0),
+      sliderRect.width
+    );
     const percent = x / sliderRect.width;
 
     let nearestIndex = 0;
@@ -1134,7 +1157,8 @@ export function closeSettings() {
   if (toggleManager.isSlide()) {
     settingsMenu.style.animation = "settings-menu-slide-out 0.3s forwards";
   } else {
-    settingsMenu.style.animation = "settings-menu-scale-disappear 0.3s forwards";
+    settingsMenu.style.animation =
+      "settings-menu-scale-disappear 0.3s forwards";
   }
 
   setTimeout(() => {
@@ -1228,12 +1252,16 @@ export function generateConfirmationPanel() {
       settingsSelfProfile.src = URL.createObjectURL(lastConfirmedProfileImg);
     }
 
-    const guildNameInput = getId("guild-overview-name-input") as HTMLInputElement;
+    const guildNameInput = getId(
+      "guild-overview-name-input"
+    ) as HTMLInputElement;
     if (guildNameInput) {
       guildNameInput.value = guildCache.currentGuildName;
     }
 
-    const channelNameInput = getId("channel-overview-name-input") as HTMLInputElement;
+    const channelNameInput = getId(
+      "channel-overview-name-input"
+    ) as HTMLInputElement;
     if (channelNameInput) {
       channelNameInput.value = currentChannelName;
     }

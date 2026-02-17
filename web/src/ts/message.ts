@@ -32,7 +32,6 @@ import {
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
 import { currentGuildId } from "./guild.ts";
-import { constructUserData } from "./popups.ts";
 import { maxAttachmentSize } from "./avatar.ts";
 import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
@@ -40,6 +39,7 @@ import { maxAttachmentsCount } from "./mediaElements.ts";
 import { shakeScreen } from "./settingsui.ts";
 import { processDeleteMessage } from "./socketEvents.ts";
 import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
+import { constructUserData } from "./profilePop.ts";
 
 const DEFAULT_IMAGE_FORMAT = "image/webp";
 

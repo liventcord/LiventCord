@@ -1,10 +1,6 @@
 import { openDm, readCurrentMessages, readGuildMessages } from "./app.ts";
 import { appState } from "./appState.ts";
-import {
-  createChannelsPop,
-  drawProfilePop,
-  drawProfilePopId
-} from "./popups.ts";
+
 import { showReplyMenu, appendMemberMentionToInput } from "./chatbar.ts";
 import { userManager } from "./user.ts";
 import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
@@ -35,6 +31,8 @@ import { changeChannel } from "./channels.ts";
 import { apiClient, EventType } from "./api.ts";
 import { isDeveloperMode } from "./settings.ts";
 import { SettingType, UserInfo } from "./types/interfaces.ts";
+import { createChannelsPop } from "./channelPop.ts";
+import { drawProfilePopId, drawProfilePop } from "./profilePop.ts";
 
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};

@@ -1,11 +1,6 @@
 import { getId, isMobile } from "./utils.ts";
 import { translations } from "./translations.ts";
 import { initialState, loadDmHome } from "./app.ts";
-import {
-  createChannelsPop,
-  toggleDropdown,
-  createInviteUsersPop
-} from "./popups.ts";
 import { openSettings } from "./settingsui.ts";
 import { currentGuildId, wrapWhiteRod, leaveCurrentGuild } from "./guild.ts";
 import { observe } from "./chat.ts";
@@ -66,9 +61,11 @@ export const hoveredChanColor = () => (isBlackTheme() ? "#1C1C1F" : "#34353B");
 export const selectedChanColor = () => (isBlackTheme() ? "#414248" : "#404249");
 export let loadingScreen: HTMLElement;
 
-// ─── Email toggle ─────────────────────────────────────────────────────────────
+// --- Email toggle
 
 import { isBlackTheme } from "./settings.ts";
+import { createChannelsPop, createInviteUsersPop } from "./channelPop.ts";
+import { toggleDropdown } from "./guildPop.ts";
 
 let isEmailToggled = false;
 export function toggleEmail(): void {
@@ -85,7 +82,7 @@ export function toggleEmail(): void {
   eyeIcon.classList.toggle("fa-eye-slash", isEmailToggled);
 }
 
-// ─── Toggle element helper ────────────────────────────────────────────────────
+// --- Toggle element helper
 
 export function handleToggleClick(
   toggleElement: HTMLElement,
@@ -100,7 +97,7 @@ export function handleToggleClick(
   });
 }
 
-// ─── Logo easter egg ──────────────────────────────────────────────────────────
+// --- Logo easter egg
 
 let logoClicked = 0;
 export function clickMainLogo(logo: HTMLElement): void {
@@ -117,7 +114,7 @@ export function clickMainLogo(logo: HTMLElement): void {
   loadDmHome();
 }
 
-// ─── JSON preview (stub — TODO: implement properly) ───────────────────────────
+// --- JSON preview ( TODO: implement properly) ---
 
 const jsonPreviewContainer = getId("json-preview-container") as HTMLElement;
 const jsonPreviewElement = getId("json-preview-element") as HTMLElement;
@@ -136,7 +133,7 @@ jsonPreviewContainer?.addEventListener("click", (e) => {
   }
 });
 
-// ─── Invite popup ─────────────────────────────────────────────────────────────
+// --- Invite popup
 
 export async function createInvitePop(): Promise<void> {
   await apiClient.send(EventType.GET_INVITES, {
@@ -146,7 +143,7 @@ export async function createInvitePop(): Promise<void> {
   createInviteUsersPop();
 }
 
-// ─── Guild settings dropdown ──────────────────────────────────────────────────
+// --- Guild settings dropdown
 
 export function openGuildSettingsDropdown(event: MouseEvent): void {
   toggleDropdown();
@@ -170,7 +167,7 @@ export function openGuildSettingsDropdown(event: MouseEvent): void {
   actions[clickedId]?.();
 }
 
-// ─── Initialization ───────────────────────────────────────────────────────────
+// --- Initialization
 
 const getMediaGrid = () => getId("media-grid") as HTMLElement;
 

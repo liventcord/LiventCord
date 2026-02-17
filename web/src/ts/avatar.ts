@@ -25,7 +25,6 @@ import {
   updateSettingsProfileColor
 } from "./settingsui.ts";
 import { userList } from "./userList.ts";
-import { createCropPop } from "./popups.ts";
 import { translations } from "./translations.ts";
 import { userManager } from "./user.ts";
 import { alertUser } from "./ui.ts";
@@ -33,6 +32,7 @@ import { chatContainer } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { cacheInterface } from "./cache.ts";
 import { appState } from "./appState.ts";
+import { createCropPop } from "./guildPop.ts";
 
 const selfName = getId("self-name") as HTMLElement;
 export const selfDiscriminator = getId("self-discriminator") as HTMLElement;

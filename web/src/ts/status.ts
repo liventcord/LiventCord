@@ -1,4 +1,3 @@
-import { drawProfilePopId } from "./popups.ts";
 import { openSettings } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
 import { createEl, getId } from "./utils.ts";
@@ -8,6 +7,7 @@ import { copyId } from "./contextMenuActions.ts";
 import { socketClient, SocketEvent } from "./socketEvents.ts";
 import { SettingType } from "./types/interfaces.ts";
 import { appState } from "./appState.ts";
+import { drawProfilePopId } from "./profilePop.ts";
 
 export class UserStatus {
   private createdPanel: HTMLElement | undefined;

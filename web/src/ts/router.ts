@@ -1,7 +1,6 @@
 import { setActiveIcon, setInactiveIcon } from "./ui.ts";
 import { cacheInterface } from "./cache.ts";
 import { handleChannelLoading, loadDmHome, openDm } from "./app.ts";
-import { showGuildPop } from "./popups.ts";
 import {
   createEl,
   disableElement,
@@ -11,6 +10,7 @@ import {
 import { initialiseLoginPage } from "./loginutils.ts";
 import { apiClient } from "./api.ts";
 import { isSettingsOpen } from "./settings.ts";
+import { showGuildPop } from "./guildPop.ts";
 
 export let isOnMePage = true;
 export let isOnDm = false;
