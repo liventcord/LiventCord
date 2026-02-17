@@ -8,6 +8,7 @@ public abstract class FileBase
     public string FileType { get; set; }
     public int ContentLength { get; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? ContentHash { get; set; }
 
     protected FileBase(
         string fileId,

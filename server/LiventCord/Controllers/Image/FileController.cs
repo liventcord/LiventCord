@@ -231,13 +231,13 @@ namespace LiventCord.Controllers
 
         [NonAction]
         public async Task<string> UploadFileInternalAsync(
-                   IFormFile file,
-                   string userId,
-                   bool isAttachment = false,
-                   bool isEmoji = false,
-                   string? guildId = null,
-                   string? channelId = null
-               )
+                  IFormFile file,
+                  string userId,
+                  bool isAttachment = false,
+                  bool isEmoji = false,
+                  string? guildId = null,
+                  string? channelId = null
+              )
         {
             if (string.IsNullOrEmpty(userId))
                 throw new UnauthorizedAccessException("User not authorized.");
@@ -261,15 +261,43 @@ namespace LiventCord.Controllers
             await file.CopyToAsync(memoryStream);
             var content = memoryStream.ToArray();
 
+            if (FileCompressor.ShouldCompress(extension))
+            {
+                content = FileCompressor.CompressToGzip(content);
+                extension += ".gz";
+            }
+
             string sanitizedFileName = Utils.SanitizeFileName(file.FileName);
             if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
                 sanitizedFileName += extension;
 
-            if (FileCompressor.ShouldCompress(extension))
+            string contentHash;
+            using (var sha = System.Security.Cryptography.SHA256.Create())
             {
-                content = FileCompressor.CompressToGzip(content);
-                sanitizedFileName += ".gz";
-                extension = ".gz";
+                contentHash = Convert.ToHexString(sha.ComputeHash(content));
+            }
+
+            FileBase? existingFile = null;
+            if (!string.IsNullOrEmpty(guildId))
+            {
+                existingFile = await _context.Set<FileBase>()
+                    .OfType<GuildFile>()
+                    .AsNoTracking()
+                    .Where(f => f.GuildId == guildId && f.UserId == userId && f.ContentHash == contentHash)
+                    .FirstOrDefaultAsync();
+            }
+            else if (!isAttachment)
+            {
+                existingFile = await _context.Set<FileBase>()
+                    .OfType<ProfileFile>()
+                    .AsNoTracking()
+                    .Where(f => f.UserId == userId && f.ContentHash == contentHash)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (existingFile != null)
+            {
+                return ExtractFileIdentifier(existingFile);
             }
 
             FileBase savedFile = CreateFileEntity(
@@ -280,18 +308,12 @@ namespace LiventCord.Controllers
                 guildId,
                 channelId,
                 isEmoji,
-                isAttachment
+                isAttachment,
+                contentHash
             );
-
-            if (savedFile is GuildFile && !string.IsNullOrEmpty(guildId) && string.IsNullOrEmpty(channelId) && !isEmoji)
-            {
-                await SetIsUploadedGuildImgAsync(guildId);
-            }
 
             return ExtractFileIdentifier(savedFile);
         }
-
-
         private string DetermineImageExtension(string contentType)
         {
             return contentType.ToLowerInvariant() switch
@@ -315,7 +337,8 @@ namespace LiventCord.Controllers
             string? guildId,
             string? channelId,
             bool isEmoji,
-            bool isAttachment
+            bool isAttachment,
+            string contentHash
         )
         {
             if (!string.IsNullOrEmpty(guildId))
@@ -330,7 +353,10 @@ namespace LiventCord.Controllers
                         channelId,
                         guildId,
                         userId
-                    );
+                    )
+                    {
+                        ContentHash = contentHash
+                    };
                     return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else if (isEmoji)
@@ -342,7 +368,10 @@ namespace LiventCord.Controllers
                         extension,
                         guildId,
                         userId
-                    );
+                    )
+                    {
+                        ContentHash = contentHash
+                    };
                     SaveFile(emoji).GetAwaiter().GetResult();
                     return emoji;
                 }
@@ -355,7 +384,10 @@ namespace LiventCord.Controllers
                         extension,
                         guildId,
                         userId
-                    );
+                    )
+                    {
+                        ContentHash = contentHash
+                    };
                     return SaveOrUpdateFile(guildFile).GetAwaiter().GetResult();
                 }
             }
@@ -371,7 +403,10 @@ namespace LiventCord.Controllers
                         channelId,
                         guildId,
                         userId
-                    );
+                    )
+                    {
+                        ContentHash = contentHash
+                    };
                     return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else
@@ -382,12 +417,14 @@ namespace LiventCord.Controllers
                         content,
                         extension,
                         userId
-                    );
+                    )
+                    {
+                        ContentHash = contentHash
+                    };
                     return SaveOrUpdateFile(profileFile).GetAwaiter().GetResult();
                 }
             }
         }
-
         private string ExtractFileIdentifier(FileBase file)
         {
             return file switch
