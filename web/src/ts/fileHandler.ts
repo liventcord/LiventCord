@@ -1,12 +1,14 @@
 import { fileTypeFromBuffer } from "file-type";
 import { friendsCache } from "./friends.ts";
 import {
-    getId,
-    createEl,
-    disableElement,
-    enableElement, formatFileSize,
-    isCompressedFile,
-    renderFileIcon, truncateString
+  getId,
+  createEl,
+  disableElement,
+  enableElement,
+  formatFileSize,
+  isCompressedFile,
+  renderFileIcon,
+  truncateString
 } from "./utils.ts";
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
@@ -63,9 +65,9 @@ let fileList: File[] = [];
 export const fileSpoilerMap: WeakMap<File, boolean> = new WeakMap();
 
 export class FileHandler {
-    static setIsAttachmentsAddedFalse() {
-        isAttachmentsAdded = false;
-    }
+  static setIsAttachmentsAddedFalse() {
+    isAttachmentsAdded = false;
+  }
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
   ): void {
@@ -224,8 +226,8 @@ export class FileHandler {
     updateChatWidth();
   }
   static adjustReplyPositionOnAttachments() {
-      replyInfo.classList.add("reply-attachments-open");
-      replyCloseButton.classList.add("reply-attachments-open");
+    replyInfo.classList.add("reply-attachments-open");
+    replyCloseButton.classList.add("reply-attachments-open");
   }
 
   static blurImage(img: HTMLImageElement) {

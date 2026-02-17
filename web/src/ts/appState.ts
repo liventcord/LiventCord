@@ -29,7 +29,7 @@ export type AppState = {
   currentUserNick: string | null;
   currentDiscriminator: string | null;
   userStatus: UserStatus | null;
-}
+};
 
 const listeners = new Set<(state: AppState) => void>();
 
@@ -60,7 +60,7 @@ export const appState = {
   },
   set(partial: Partial<AppState>): void {
     state = { ...state, ...partial };
-    listeners.forEach(l => l(state));
+    listeners.forEach((l) => l(state));
   },
   reset(): void {
     state = {
@@ -69,7 +69,7 @@ export const appState = {
       currentDiscriminator: null,
       userStatus: null
     };
-    listeners.forEach(l => l(state));
+    listeners.forEach((l) => l(state));
   },
   subscribe(listener: (state: AppState) => void): () => void {
     listeners.add(listener);
@@ -89,9 +89,6 @@ export const appState = {
     state.currentDiscriminator = data.user.discriminator;
     state.userStatus = null;
 
-    listeners.forEach(l => l(state));
+    listeners.forEach((l) => l(state));
   }
 };
-
-
-
