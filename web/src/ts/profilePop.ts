@@ -14,10 +14,8 @@ import { UserInfo } from "./types/interfaces.ts";
 import { appState } from "./appState.ts";
 import { createPopUp, closePopUp } from "./popups.ts";
 
-
 export let currentProfileImg: HTMLElement;
 let currentProfileDisplay: HTMLElement;
-
 
 const SECTION = {
   ABOUT: "about",
@@ -138,7 +136,6 @@ function buildAddFriendButton(userData: UserInfo): HTMLElement {
       : "profile-add-friend-button"
   });
 
-  // eslint-disable-next-line no-unsanitized/property
   btn.innerHTML = isPending
     ? `<div class="icon-container">${SVG.pendingFriend}</div>`
     : `<div class="icon-container">${SVG.addFriend}</div> ${translations.getTranslation("open-friends-button")}`;
@@ -150,7 +147,6 @@ function buildAddFriendButton(userData: UserInfo): HTMLElement {
     btn.childNodes.forEach((node) => {
       if (node.nodeType === Node.TEXT_NODE) node.textContent = "";
       else if (node.nodeType === Node.ELEMENT_NODE) {
-        // eslint-disable-next-line no-unsanitized/property
         (node as HTMLElement).innerHTML = SVG.pendingFriend;
       }
     });
@@ -267,7 +263,7 @@ function buildBottomContainer(
       className: "shared-friends-content",
       style: "display: none; overflow-y: auto; max-height: 200px;"
     });
-    // eslint-disable-next-line no-unsanitized/property
+
     friendsSection.innerHTML = sharedFriends
       ? sharedFriends.map((f) => `<p>${f}</p>`).join("")
       : "";

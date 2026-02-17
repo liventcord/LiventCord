@@ -597,7 +597,6 @@ export function clearActivityList() {
       )}</h1>
       <ul></ul>`;
     if (activityList) {
-      // eslint-disable-next-line no-unsanitized/property
       activityList.innerHTML = activityListEmptyHTML;
     }
   }
@@ -844,7 +843,7 @@ export async function populateFriendsContainer(
     }
 
     const friendsTitleContainer = createFriendsTitle(friends.length);
-    // eslint-disable-next-line no-unsanitized/property
+
     friendsContainer.innerHTML = initialFriendsContainerHtml;
     const friendsSearchInput = getId("friendsSearchInput");
     friendsSearchInput?.addEventListener("onkeyup", filterFriendsOnSearch);

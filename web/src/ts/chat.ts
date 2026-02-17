@@ -1947,7 +1947,6 @@ export function displayStartMessage(
     const textToWrite = isGuildBorn ? startGuildText : startChannelText;
     const channelicon = createEl("div", { className: "channelIcon" });
 
-    // eslint-disable-next-line no-unsanitized/property
     channelicon.innerHTML = channelHashSvg;
     const msgdescription = createEl("div", {
       id: isGuildBorn ? "guildBornDescription" : "msgDescription",

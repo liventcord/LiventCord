@@ -192,11 +192,11 @@ function renderEmojis(emojis: Array<Emoji>): void {
 
   if (emojiTableBody && emojiTableHeader) {
     const headerHTML = generateHeaderHTML();
-    // eslint-disable-next-line no-unsanitized/property
+
     emojiTableHeader.innerHTML = headerHTML;
 
     const bodyHTML = emojis.map(generateEmojiRowHTML).join("");
-    // eslint-disable-next-line no-unsanitized/property
+
     emojiTableBody.innerHTML = bodyHTML;
   }
 }
@@ -647,7 +647,7 @@ function triggerEmojiSuggestionDisplay(textContext: string) {
     const suggestion = createEl("div", { className: "suggestion-option" });
 
     const emojiTag = generateEmojiTag(emojiId);
-    // eslint-disable-next-line no-unsanitized/property
+
     suggestion.innerHTML = emojiTag;
 
     const labelSpan = createEl("span", {

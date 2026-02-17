@@ -31,7 +31,7 @@ export function createPopUpCloseButton(
 ): HTMLButtonElement {
   const btn = createEl("button", { className }) as HTMLButtonElement;
   if (id) btn.id = id;
-  // eslint-disable-next-line no-unsanitized/property
+
   btn.innerHTML = SVG.close;
   btn.addEventListener("click", () => closePopUp(outerParent, popParent));
   return btn;

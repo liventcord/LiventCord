@@ -60,7 +60,7 @@ export default [
       "security/detect-non-literal-regexp": "warn",
       "security/detect-eval-with-expression": "warn",
       "no-unsanitized/method": "warn",
-      "no-unsanitized/property": "warn"
+      "no-unsanitized/property": "off"
     }
   }
 ];

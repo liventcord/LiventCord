@@ -794,7 +794,6 @@ export function manuallyRenderEmojis(rawContent: string): void {
   state.rawContent = rawContent;
   const formattedContent = renderEmojisFromContent(rawContent);
 
-  // eslint-disable-next-line no-unsanitized/property
   chatInput.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== "" ? formattedContent : " "
   );
@@ -1079,7 +1078,6 @@ function handleChatInput(event: Event) {
           end: state.cursorPosition
         };
 
-        // eslint-disable-next-line no-unsanitized/property
         chatInput.innerHTML = DOMPurify.sanitize(
           formattedContent && formattedContent.trim() !== ""
             ? formattedContent

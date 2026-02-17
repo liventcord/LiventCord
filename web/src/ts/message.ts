@@ -638,7 +638,6 @@ function saveEdit(
 }
 
 function cancelEdit(message: HTMLElement) {
-  // eslint-disable-next-line no-unsanitized/property
   message.outerHTML = editMessageCurrentContent;
 }
 

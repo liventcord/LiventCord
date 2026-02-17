@@ -112,7 +112,6 @@ function toggleZoom(): void {
   }
 
   if (divZoom) {
-    // eslint-disable-next-line no-unsanitized/property
     divZoom.innerHTML = isPreviewZoomed ? ZOOM_OUT_SVG : ZOOM_IN_SVG;
   }
 }

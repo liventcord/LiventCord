@@ -215,7 +215,6 @@ function displayContent(
   mediaMenuContainer.innerHTML = "";
 
   if (type === MediaTypes.Emoji) {
-    // eslint-disable-next-line no-unsanitized/property
     mediaMenuContainer.innerHTML = getEmojiPanel();
     return;
   }
@@ -571,7 +570,7 @@ function toggleEmojis(isClickingTop?: boolean) {
       translations.getTranslation("search-tenor");
   } else {
     currentMenuType = MediaTypes.Emoji;
-    // eslint-disable-next-line no-unsanitized/property
+
     mediaMenuContainer.innerHTML = getEmojiPanel();
     mediaMenuSearchbar.placeholder =
       translations.getTranslation("find-perfect-emoji");
