@@ -751,26 +751,49 @@
   font-size: 0.8em;
   margin-left: 15px;
 }
-#profile-container {
+[data-is-mention-popup="true"] #profile-container {
   display: flex;
-  margin-top: 26vh;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 20vh;
   margin-left: 25px;
+  box-sizing: border-box;
 }
-#profile-title {
+
+[data-is-mention-popup="true"] #profile-title {
   color: white;
-  font-size: 24px;
-  user-select: text;
+  font-size: 1.5rem;
   font-weight: bold;
   white-space: nowrap;
-}
-#profile-discriminator {
-  font-weight: 100;
-  color: rgb(181, 186, 193);
-  font-size: 1em;
-  margin-top: 3.5em;
   user-select: text;
-  position: fixed;
+  margin: 0;
 }
+
+[data-is-mention-popup="true"] #profile-discriminator {
+  font-weight: 400;
+  color: rgb(181, 186, 193);
+  font-size: 0.9rem;
+  user-select: text;
+  margin-top: 4px;
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  [data-is-mention-popup="true"] #profile-container {
+    margin-top: 14vh;
+    margin-left: 15px;
+  }
+
+  [data-is-mention-popup="true"] #profile-title {
+    font-size: 1.2rem;
+  }
+
+  [data-is-mention-popup="true"] #profile-discriminator {
+    font-size: 0.8rem;
+    margin-top: 2px;
+  }
+}
+
 .profile-dots3 {
   cursor: pointer;
   border-radius: 50%;

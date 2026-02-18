@@ -103,7 +103,7 @@ function buildTopContainer(
 
 function buildSendMsgButton(userData: UserInfo): HTMLElement {
   const btn = createEl("button", { className: "profile-send-msg-button" });
-  btn.appendChild(createEl("div", { innerHTML: SVG.sendMessage }));
+  btn.appendChild(createEl("div", { innerHTML: SVG.sendMsgBtn }));
   btn.appendChild(
     createEl("span", { textContent: translations.getTranslation("message") })
   );
@@ -391,10 +391,6 @@ export async function drawProfilePop(
   if (!shouldDrawPanel) currentProfileDisplay = pop;
   return pop;
 }
-
-/**
- * Draws a compact profile popup anchored near a message element (for @mentions).
- */
 export async function createMentionProfilePop(
   baseMessage: HTMLElement,
   userId: string,
@@ -408,60 +404,48 @@ export async function createMentionProfilePop(
 
   document.body.appendChild(pop);
   container.remove();
-
   pop.querySelector("#profile-popup-bottom-container")?.remove();
-
-  const topContainer = pop.querySelector(
-    "#profile-popup-top-container"
-  ) as HTMLElement;
-  if (topContainer)
-    Object.assign(topContainer.style, { height: "30%", top: "15.4%" });
 
   Object.assign(pop.style, {
     animation: "unset",
     backgroundColor: "rgb(36,36,41)",
     position: "absolute",
-    zIndex: "10"
+    zIndex: "10",
+    width: isMobile ? "90vw" : "17vw",
+    maxWidth: "400px",
+    minWidth: "250px",
+    boxSizing: "border-box"
   });
-  pop.style.width = isMobile ? "62vw" : "17vw";
 
-  // Positioning logic
   const rect = baseMessage.getBoundingClientRect();
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const { innerHeight: vh, innerWidth: vw } = window;
-  const popH = pop.offsetHeight || vh * 0.45;
-  const popW = pop.offsetWidth || vw * 0.25;
-  const THRESHOLD = 150;
 
-  let top: number;
-  if (vh - rect.bottom < THRESHOLD) top = scrollTop + vh - popH + 100;
-  else if (rect.top < THRESHOLD) top = scrollTop + 320;
-  else top = scrollTop + rect.bottom - 50;
-
-  top += topOffset;
-  const left = Math.min(
-    Math.max(scrollLeft + rect.left + 50, scrollLeft + 20),
-    scrollLeft + vw - popW - 20
+  let top = rect.bottom + window.scrollY + topOffset;
+  top = Math.min(
+    top,
+    window.scrollY + window.innerHeight - pop.offsetHeight - 10
   );
 
   pop.style.top = `${top}px`;
-  pop.style.left = `${left}px`;
-  pop.style.height = "";
+  pop.dataset.isMentionPopup = "true";
   pop.dataset.isMentionPopup = "true";
 
-  // Style tweaks for compact mention variant
   const profileDisplay = pop.querySelector(".profile-display") as HTMLElement;
   if (profileDisplay)
-    Object.assign(profileDisplay.style, { width: "80px", top: "7vh" });
+    Object.assign(profileDisplay.style, {
+      width: isMobile ? "60px" : "80px",
+      top: isMobile ? "5vh" : "7vh"
+    });
 
   const statusBubble = pop.querySelector(".status-bubble") as HTMLElement;
   if (statusBubble)
-    Object.assign(statusBubble.style, { top: "5em", left: "3.5em" });
+    Object.assign(statusBubble.style, {
+      top: isMobile ? "3.2em" : "5em",
+      left: isMobile ? "2.5em" : "3.5em"
+    });
 
   const profContainer = pop.querySelector("#profile-container") as HTMLElement;
   if (profContainer) {
-    profContainer.style.marginTop = "18vh";
+    profContainer.style.marginTop = isMobile ? "14vh" : "18vh";
 
     const title = profContainer.querySelector("#profile-title") as HTMLElement;
     if (title) title.style.marginTop = "30px";
@@ -469,7 +453,10 @@ export async function createMentionProfilePop(
     const disc = profContainer.querySelector(
       "#profile-discriminator"
     ) as HTMLElement;
-    if (disc) Object.assign(disc.style, { fontSize: "1em", marginTop: "4em" });
+    if (disc)
+      Object.assign(disc.style, {
+        fontSize: isMobile ? "0.9em" : "1em"
+      });
 
     const opts = profContainer.querySelector(
       ".profile-options-container"
@@ -477,21 +464,36 @@ export async function createMentionProfilePop(
     if (opts) {
       Object.assign(opts.style, {
         bottom: "10px",
+        display: "flex",
+        flexDirection: "row",
+        width: "100%",
+        gap: "4px",
         justifyContent: "center",
-        right: "50%",
-        transform: "translateX(50%)"
+        right: "0",
+        transform: "none"
       });
-      [".profile-send-msg-button", ".profile-add-friend-button"].forEach(
-        (sel) => {
-          const btn = opts.querySelector(sel) as HTMLElement;
-          if (btn)
-            Object.assign(btn.style, {
-              width: "15vw",
-              height: "40px",
-              marginRight: "0px"
-            });
-        }
-      );
+
+      const sendBtn = opts.querySelector(
+        ".profile-send-msg-button"
+      ) as HTMLElement;
+      const addBtn = opts.querySelector(
+        ".profile-add-friend-button"
+      ) as HTMLElement;
+
+      [sendBtn, addBtn].forEach((btn) => {
+        if (btn)
+          Object.assign(btn.style, {
+            width: "50%",
+            flex: "1 1 0",
+            height: "36px",
+            margin: "0",
+            padding: "0 8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxSizing: "border-box"
+          });
+      });
     }
   }
 

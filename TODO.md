@@ -29,7 +29,6 @@
 
 - Typed message overlaps GIF/emoji and the send button on mobile
 - Split API init request (it is too slow to fetch)
-- Clicking on profiles looks broken on mobile
 - HTTP URL appears duplicated when a message like "http://example.com/" is sent
 - Dm container bubbles do not show accurate online status of user
 - Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
