@@ -23,7 +23,6 @@
 - Add invite settings panel managing invites
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
-- Implement /preview handler on attachments route
 
 ## Bug fixes
 

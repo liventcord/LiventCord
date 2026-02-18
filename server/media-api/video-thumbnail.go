@@ -20,15 +20,17 @@ import (
 )
 
 var CacheDirectory = "./cache"
-var CLOUDFLARE_MEDIA_WORKER_URL string
+var CFMediaWorkerUrl string
+var MainServerUrl string
 var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
-	CLOUDFLARE_MEDIA_WORKER_URL = os.Getenv("CloudflareMediaWorkerUrl")
-	if CLOUDFLARE_MEDIA_WORKER_URL == "" {
+	CFMediaWorkerUrl = os.Getenv("CloudflareMediaWorkerUrl")
+	if CFMediaWorkerUrl == "" {
 		panic("CLOUDFLARE_MEDIA_WORKER_URL environment variable not set")
 	}
+	MainServerUrl = getEnv("MainServerUrl", "http://localhost:5005")
 }
 
 func GetVideoAttachmentPreview(c *gin.Context) {
@@ -78,7 +80,12 @@ func GetVideoAttachmentPreview(c *gin.Context) {
 }
 
 func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, error) {
-	url := CLOUDFLARE_MEDIA_WORKER_URL + "/attachments/" + attachmentId
+	baseURL := MainServerUrl
+	if baseURL == "" {
+		baseURL = CFMediaWorkerUrl
+	}
+
+	url := fmt.Sprintf("%s/attachments/%s", strings.TrimRight(baseURL, "/"), attachmentId)
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,

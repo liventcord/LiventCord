@@ -25,6 +25,7 @@ export interface InitialStateData {
   dmFriends?: any[];
   guilds: any[];
   mediaWorkerUrl: string;
+  mediaApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
   wsUrl: string;
@@ -36,6 +37,7 @@ export interface InitialState {
   permissionsMap: Map<string, any>;
   guilds: any[];
   mediaWorkerUrl: string;
+  mediaApiUrl: string;
   maxAvatarSize: number;
   maxAttachmentSize: number;
   sharedGuildsMap: Map<string, any>;

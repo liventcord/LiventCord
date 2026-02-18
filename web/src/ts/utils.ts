@@ -1180,7 +1180,7 @@ export function getMediaBaseURL() {
   return mediaHostname;
 }
 
-export function getAttachmentUrl(file: Attachment) {
+export function getAttachmentUrl(file: Attachment, isPreview: boolean) {
   const isTenor = isTenorURL(file.proxyUrl);
   const mediaHostname = getMediaBaseURL();
   if (isTenor) {
@@ -1188,12 +1188,15 @@ export function getAttachmentUrl(file: Attachment) {
   } else if (file.isProxyFile) {
     return apiClient.getProxyUrl(file.proxyUrl);
   } else if (file.isImageFile) {
-    return `${mediaHostname}/attachments/${file.fileId}`;
+    return `${isPreview ? initialState.mediaApiUrl : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
   } else if (file.isVideoFile) {
-    return `${mediaHostname}/attachments/${file.fileId}`;
+    return `${isPreview ? initialState.mediaApiUrl : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
   } else {
     return IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   }
+}
+export function getPreviewAttachmentUrl(file: Attachment) {
+  return `${initialState.mediaApiUrl}/attachments/${file.fileId}/preview`;
 }
 
 export function createBlackStream(fps = 1): MediaStream {

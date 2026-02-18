@@ -8,6 +8,7 @@ namespace LiventCord.Helpers
     public static class SharedAppConfig
     {
         public static string MediaWorkerUrl { get; private set; }
+        public static string MediaApiUrl { get; private set; }
 
         public static string WsUrl { get; private set; }
 
@@ -21,12 +22,14 @@ namespace LiventCord.Helpers
             MaxAvatarSize = 3; // MB
             MaxAttachmentSize = 30; // MB
             WsUrl = "ws://localhost:8080";
+            MediaApiUrl = "http://localhost:5000";
             AdminKey = "";
         }
 
         public static void Initialize(IConfiguration configuration)
         {
             MediaWorkerUrl = configuration["AppSettings:MediaWorkerUrl"] ?? MediaWorkerUrl;
+            MediaApiUrl = configuration["AppSettings:MediaApiUrl"] ?? MediaApiUrl;
             WsUrl = configuration["AppSettings:WsUrl"] ?? WsUrl;
 
             MaxAvatarSize = float.TryParse(
@@ -148,6 +151,7 @@ namespace LiventCord.Helpers
                     dmFriends = await GetDmUsers(userId),
                     guilds,
                     SharedAppConfig.MediaWorkerUrl,
+                    SharedAppConfig.MediaApiUrl,
                     maxAvatarSize = SharedAppConfig.MaxAvatarSize,
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,

@@ -183,7 +183,13 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import { getId, IMAGE_SRCS, isMobile, getAttachmentUrl } from "../ts/utils.ts";
+import {
+  getId,
+  IMAGE_SRCS,
+  isMobile,
+  getAttachmentUrl,
+  getPreviewAttachmentUrl
+} from "../ts/utils.ts";
 import { permissionManager } from "../ts/guildPermissions.ts";
 import {
   createInvitePop,
@@ -390,9 +396,12 @@ const processAttachments = async (newAttachments: AttachmentWithMetaData[]) => {
   await store.dispatch("setAttachments", combinedAttachments);
 };
 
-function getAttachmentSrc(attachment: AttachmentWithMetaData) {
+function getAttachmentSrc(
+  attachment: AttachmentWithMetaData,
+  isPreview = false
+) {
   const file = attachment.attachment;
-  return getAttachmentUrl(file);
+  return getAttachmentUrl(file, isPreview);
 }
 
 watch(

@@ -73,11 +73,16 @@ Minimum number of connections in the database pool.
 
 - **MediaWorkerUrl**:  
   URL of the Cloudflare Media Worker for storing app files.  
+
+- **MediaApiUrl**:  
+  URL of the go media proxy service.
+  **Defaults to** `http://localhost:5000`
+
   **Defaults to** `none`  
   See [how to set up the worker](run_cloudflare_workers.md).
 
 - **WsUrl**:
-  Url of the websocket go server for emitting events.
+  Url of the go websocket server for broadcasting events.
   **Defaults to** `http://localhost:8080`
 
 - **MaxAvatarSize**:
@@ -168,8 +173,6 @@ mv .example.env .env
   **Defaults to** `http://localhost:3000`
 
 ## Go Media Proxy Server Configuration
-
-Note: This server is not indended to get directly accessed by clients.
 
 ```bash
 cd liventcord/server/media-api

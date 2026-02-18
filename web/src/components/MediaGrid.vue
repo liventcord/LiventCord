@@ -16,7 +16,7 @@
       <div class="media-wrapper">
         <template v-if="attachment.attachment.isImageFile">
           <img
-            :src="getAttachmentSrc(attachment)"
+            :src="getAttachmentSrc(attachment, false)"
             :alt="attachment.attachment.fileName"
             :data-filesize="attachment.attachment.fileSize"
             :style="getSpoilerStyle(attachment.attachment.isSpoiler)"
@@ -27,7 +27,7 @@
         <template v-else-if="attachment.attachment.isVideoFile">
           <div class="video-preview-wrapper">
             <img
-              :src="getAttachmentSrc(attachment) + '/preview'"
+              :src="getAttachmentSrc(attachment, true)"
               :alt="attachment.attachment.fileName"
               :data-filesize="attachment.attachment.fileSize"
               :style="getSpoilerStyle(attachment.attachment.isSpoiler)"
@@ -98,7 +98,10 @@ const props = defineProps<{
   isFilesList: boolean;
   shouldLimit9?: boolean;
   failedVideos: Record<string, boolean>;
-  getAttachmentSrc: (attachment: AttachmentWithMetaData) => string;
+  getAttachmentSrc: (
+    attachment: AttachmentWithMetaData,
+    isPreview: boolean
+  ) => string;
   getVideoFallbackImg: () => string;
 }>();
 function getSpoilerStyle(isSpoiler: boolean) {
@@ -113,13 +116,6 @@ const emit = defineEmits<{
   (e: "imageClick", attachment: AttachmentWithMetaData): void;
   (e: "videoError", fileId: string): void;
 }>();
-
-const mediaGridRef = ref<HTMLElement | null>(null);
-
-function isFailedVideo(attachment: AttachmentWithMetaData) {
-  if (!props.failedVideos) return false;
-  return !!props.failedVideos[attachment.attachment.fileId];
-}
 
 function handleMediaError(attachment: AttachmentWithMetaData) {
   const fileId = attachment.attachment.fileId;

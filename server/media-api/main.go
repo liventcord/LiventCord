@@ -76,7 +76,7 @@ func initializeProxy(r *gin.Engine, adminPassword string) {
 
 	admin.POST("/api/proxy/metadata", controller.FetchMetadata)
 
-	admin.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
+	r.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
 }
 
 func cors() gin.HandlerFunc {
