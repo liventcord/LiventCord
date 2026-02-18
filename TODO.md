@@ -22,13 +22,11 @@
 - Add Role system
 - Add invite settings panel managing invites
 - Add shared friends server logic & populate shared friends ui
-- Add guild image delete button 
+- Add guild image delete button
 - Implement /preview handler on attachments route
-
 
 ## Bug fixes
 
-- Right-click context menu doesn't work on self-sent messages
 - Typed message overlaps GIF/emoji and the send button on mobile
 - Split API init request (it is too slow to fetch)
 - Clicking on profiles looks broken on mobile
@@ -40,7 +38,3 @@
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Idle and do not disturb status only gets shown locally
 - Changing guild does not refresh attachments
-
-## Refactor
-
-- Move every global variable into appstate object

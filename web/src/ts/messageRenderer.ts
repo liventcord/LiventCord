@@ -199,6 +199,7 @@ export function updateMessageContent(
   const formatted = processMessageContent(content);
   element.textContent = formatted;
   element.dataset.content_observe = formatted;
+  element.dataset.content = content;
   requestAnimationFrame(() => observe(element));
   setupEmojiListeners();
 }
@@ -223,6 +224,8 @@ export function editChatMessageInDOM(
     console.warn(`Message content element for ${messageId} not found.`);
     return;
   }
+  contentElement.dataset.content = content;
+  messageElement.dataset.content = content;
 
   const existingObserved =
     contentElement.dataset.content_observe ?? contentElement.textContent ?? "";

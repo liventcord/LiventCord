@@ -19,7 +19,6 @@ import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
 import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
-import { setLastSenderID } from "./message.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
@@ -174,8 +173,6 @@ export async function changeChannel(newChannel?: ChannelData) {
 
       setChannelTitle(newChannelName);
     }
-
-    setLastSenderID("");
 
     clearLastDate();
     selectChannelElement(channelId);

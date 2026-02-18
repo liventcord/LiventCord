@@ -108,7 +108,6 @@ import {
   closeDropdown,
   hideGuildSettingsDropdown
 } from "./guildPop.ts";
-import { setLastSenderID } from "./message.ts";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
@@ -402,7 +401,6 @@ export function openDm(friendId: string): void {
   const wasOnDm = isOnDm;
   setIsOnDm(true);
   friendsCache.currentDmId = friendId;
-  setLastSenderID("");
 
   setTimeout(() => activateDmContainer(friendId), 100);
 

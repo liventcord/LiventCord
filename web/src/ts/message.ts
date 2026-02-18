@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import {
   scrollToBottom,
   setHasJustFetchedMessagesFalse,
@@ -6,7 +7,8 @@ import {
   addEditedIndicator,
   displayCannotSendMessage,
   displayLocalMessage,
-  displayStartMessage
+  displayStartMessage,
+  editChatMessageInDOM
 } from "./chat.ts";
 import { cacheInterface, guildCache } from "./cache.ts";
 import {
@@ -17,7 +19,9 @@ import {
   fileInput,
   currentReplyingTo,
   resetChatInputState,
-  manuallyRenderEmojis
+  manuallyRenderEmojis,
+  DomUtils,
+  handleKeyboardNavigationFor
 } from "./chatbar.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
@@ -40,12 +44,9 @@ import { shakeScreen } from "./settingsui.ts";
 import { processDeleteMessage } from "./socketEvents.ts";
 import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
 import { constructUserData } from "./profilePop.ts";
+import { preserveEmojiContent, renderEmojisFromContent } from "./emoji.ts";
 export let lastMessageDate: Date;
 
-let lastSenderID = "";
-export function setLastSenderID(id: string) {
-  lastSenderID = id;
-}
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
@@ -447,10 +448,6 @@ export function deleteLocalMessage(
     if (String(element.id) === String(messageId)) {
       console.log("Removing element:", messageId);
       element.remove();
-      const foundMsg = getMessageFromChat(false);
-      if (foundMsg) {
-        setLastSenderID(foundMsg.dataset.userId as string);
-      }
     } else if (
       // Check if the element matches the currentSenderOfMsg and it doesn"t have a profile picture already
       !element.querySelector(".profile-pic") &&
@@ -525,7 +522,9 @@ function isThereMultipleMessageContentElements(
 
   return profilelessBefore || profilelessAfter;
 }
+
 let currentEditUiMessageId = "";
+
 export function convertToEditUi(message: HTMLElement) {
   if (currentEditUiMessageId === message.id) return;
 
@@ -543,6 +542,7 @@ export function convertToEditUi(message: HTMLElement) {
 
   const hasMultiple = isThereMultipleMessageContentElements(message);
   const editMessageDiv = createEditDiv(messageContentElement);
+  enableCopyFor(editMessageDiv);
 
   let container: HTMLElement;
 
@@ -557,7 +557,7 @@ export function convertToEditUi(message: HTMLElement) {
     });
 
     if (hasMultiple) {
-      container.style.marginLeft = "50px";
+      container.style.marginLeft = "0px";
     }
 
     document.body.appendChild(container);
@@ -565,7 +565,7 @@ export function convertToEditUi(message: HTMLElement) {
     container = editMessageDiv;
 
     if (hasMultiple) {
-      container.style.marginLeft = "50px";
+      container.style.marginLeft = "0px";
     }
 
     messageContentElement.appendChild(editMessageDiv);
@@ -573,7 +573,9 @@ export function convertToEditUi(message: HTMLElement) {
 
   const buttonContainer = createButtonContainer(
     () => saveEdit(message, messageContentElement, container, buttonContainer),
-    () => cancelEdit(message)
+    () => {
+      cancelEdit(message);
+    }
   );
 
   if (buttonContainer) {
@@ -591,17 +593,170 @@ export function convertToEditUi(message: HTMLElement) {
   });
 }
 
+function enableCopyFor(container: HTMLElement) {
+  container.addEventListener("keydown", (event: KeyboardEvent) => {
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const ctrlKey = isMac ? event.metaKey : event.ctrlKey;
+
+    if (ctrlKey && event.key.toLowerCase() === "a") {
+      event.preventDefault();
+      const selection = window.getSelection();
+      if (!selection) return;
+
+      const range = document.createRange();
+      range.selectNodeContents(container);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    if (ctrlKey && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      const selection = window.getSelection();
+      if (!selection) return;
+
+      let selectedContent = "";
+      if (!selection.isCollapsed) {
+        const fragment = selection.getRangeAt(0).cloneContents();
+        fragment.childNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            selectedContent += node.textContent;
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLImageElement;
+            if (el.tagName === "IMG" && el.classList.contains("chat-emoji")) {
+              const emojiId = el.getAttribute("data-emoji-id");
+              selectedContent += emojiId ? `:${emojiId}:` : el.alt || "";
+            } else if (el.tagName === "DIV" && el.classList.contains("emoji")) {
+              selectedContent += el.getAttribute("data-emoji-id")
+                ? `:${el.getAttribute("data-emoji-id")}:`
+                : el.textContent || "";
+            } else {
+              selectedContent += el.textContent || "";
+            }
+          }
+        });
+      }
+
+      if (!selectedContent) {
+        selectedContent = preserveEmojiContent(container);
+      }
+
+      navigator.clipboard.writeText(selectedContent).catch((err) => {
+        console.error("Copy failed:", err);
+      });
+    }
+  });
+}
+
 function createEditDiv(contentElement: HTMLElement) {
   const div = createEl("div", {
     className: "edit-message-div base-user-input",
     contentEditable: "true"
   });
-  div.innerText =
+
+  const raw =
     contentElement.parentElement?.dataset.content?.replace(
       /\s*\([^)]*\)\s*$/,
       ""
     ) || "";
+
+  div.innerText = raw;
+
+  manuallyRenderEmojis(div, raw);
+
+  div.addEventListener("input", (event: Event) => {
+    const inputEvent = event as InputEvent;
+
+    const rawContent = preserveEmojiContent(div);
+    const selection = window.getSelection();
+
+    const cursorPosition =
+      selection && selection.rangeCount > 0
+        ? DomUtils.calculatePositionFromNode(
+            div,
+            selection.getRangeAt(0).startContainer,
+            selection.getRangeAt(0).startOffset
+          )
+        : rawContent.length;
+
+    if (
+      inputEvent.inputType.startsWith("insert") ||
+      inputEvent.inputType.startsWith("delete")
+    ) {
+      const formatted = renderEmojisFromContent(rawContent);
+
+      const savedSelection = {
+        start: cursorPosition,
+        end: cursorPosition
+      };
+
+      div.innerHTML = DOMPurify.sanitize(
+        formatted && formatted.trim() !== "" ? formatted : " "
+      );
+
+      DomUtils.ensureTextNodeAfterImage(div);
+      DomUtils.restoreSelection(div, savedSelection);
+    }
+  });
+
+  div.addEventListener("keydown", (e) => {
+    handleKeyboardNavigationFor(div, e);
+  });
+
+  div.addEventListener("keydown", (event) => {
+    const active = document.activeElement as HTMLElement;
+    if (active !== div) return;
+    event.stopPropagation();
+  });
+
   return div;
+}
+
+function saveEdit(
+  message: HTMLElement,
+  originalContentElement: HTMLElement,
+  container: HTMLElement,
+  buttonContainer: HTMLElement | null
+) {
+  const editDiv =
+    container.classList && container.classList.contains("edit-message-div")
+      ? container
+      : (container.querySelector(".edit-message-div") as HTMLElement) ||
+        container;
+
+  const newRaw = preserveEmojiContent(editDiv).trim();
+  const existingRaw =
+    originalContentElement.dataset.content ??
+    (originalContentElement.textContent ?? "").trim();
+
+  if (newRaw === existingRaw) {
+    container.remove();
+    if (buttonContainer) {
+      buttonContainer.remove();
+    }
+    currentEditUiMessageId = "";
+    return;
+  }
+
+  container.remove();
+  if (buttonContainer) {
+    buttonContainer.remove();
+  }
+
+  originalContentElement.dataset.content = newRaw;
+  originalContentElement.setAttribute("data-content-loaded", "true");
+  editChatMessageInDOM(message.id, newRaw);
+
+  const formatted = renderEmojisFromContent(newRaw);
+
+  originalContentElement.innerHTML = DOMPurify.sanitize(
+    formatted && formatted.trim() !== "" ? formatted : " "
+  );
+
+  addEditedIndicator(originalContentElement, new Date().toString());
+
+  sendEditMessageRequest(message.id, newRaw);
+
+  currentEditUiMessageId = "";
 }
 
 function createMobileWrapper(child: HTMLElement) {
@@ -636,37 +791,6 @@ function createButtonContainer(onSave: () => void, onCancel: () => void) {
   container.appendChild(saveButton);
   container.appendChild(cancelButton);
   return container;
-}
-function saveEdit(
-  message: HTMLElement,
-  originalContentElement: HTMLElement,
-  container: HTMLElement,
-  buttonContainer: HTMLElement | null
-) {
-  const newText = container.innerText;
-  const currentText = originalContentElement.textContent ?? "";
-
-  if (newText === currentText) {
-    container.remove();
-    if (buttonContainer) {
-      buttonContainer.remove();
-    }
-    currentEditUiMessageId = "";
-    return;
-  }
-
-  container.remove();
-  if (buttonContainer) {
-    buttonContainer.remove();
-  }
-
-  originalContentElement.textContent = "";
-  manuallyRenderEmojis(originalContentElement, newText);
-  addEditedIndicator(originalContentElement);
-
-  sendEditMessageRequest(message.id, newText);
-
-  currentEditUiMessageId = "";
 }
 
 function cancelEdit(message: HTMLElement) {

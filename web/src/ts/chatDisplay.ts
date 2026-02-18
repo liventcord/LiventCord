@@ -84,7 +84,6 @@ import { handleReplyMessage, fetchReplies } from "./chat.ts";
 import { createMentionProfilePop, constructUserData } from "./profilePop.ts";
 import { setProfilePic } from "./avatar.ts";
 import { SVG } from "./svgIcons.ts";
-import { setLastSenderID } from "./message.ts";
 
 export const messageDates: { [key: string]: Date } = {};
 export let currentLastDate: Date;
@@ -394,7 +393,6 @@ export function handleEditMessage(data: EditMessageResponse): void {
 
 type SentMessage = { id: string };
 const selfSentMessages: SentMessage[] = [];
-
 export function handleSelfSentMessage(data: NewMessageResponseSelf): void {
   const { message } = data;
   const foundIndex = selfSentMessages.findIndex(
@@ -431,6 +429,7 @@ export function handleSelfSentMessage(data: NewMessageResponseSelf): void {
   handleAttachmentsForSelf(element, message);
 
   element.id = message.messageId;
+  element.dataset.m_id = message.messageId;
   const btn = element.querySelector(
     ".message-button-container .message-button"
   ) as HTMLElement;
@@ -936,7 +935,6 @@ function updateSenderAndButtons(
   isSystemMessage: boolean
 ) {
   if (!addToTop) {
-    setLastSenderID(userId);
   } else {
     setLastTopSenderId(userId);
   }

@@ -308,20 +308,21 @@ export function resetChatInputState() {
 export class DomUtils {
   private constructor() {}
 
-  static calculatePositionFromNode(node: Node, offset: number): number {
+  static calculatePositionFromNode(
+    container: HTMLElement,
+    node: Node,
+    offset: number
+  ): number {
     let position = 0;
 
     const walkNodeUntil = (currentNode: Node, targetNode: Node): boolean => {
-      if (currentNode === targetNode) {
-        return true;
-      }
+      if (currentNode === targetNode) return true;
 
       if (currentNode.nodeType === Node.TEXT_NODE) {
         position += currentNode.textContent?.length || 0;
       } else if (
-        (currentNode.nodeType === Node.ELEMENT_NODE &&
-          currentNode.nodeName === "IMG") ||
-        currentNode.nodeName === "DIV"
+        currentNode.nodeType === Node.ELEMENT_NODE &&
+        (currentNode.nodeName === "IMG" || currentNode.nodeName === "DIV")
       ) {
         const element = currentNode as HTMLElement;
         const emojiId =
@@ -332,37 +333,29 @@ export class DomUtils {
 
       if (currentNode.hasChildNodes()) {
         for (let i = 0; i < currentNode.childNodes.length; i++) {
-          if (walkNodeUntil(currentNode.childNodes[i], targetNode)) {
-            return true;
-          }
+          if (walkNodeUntil(currentNode.childNodes[i], targetNode)) return true;
         }
       }
 
       return false;
     };
 
-    for (let i = 0; i < chatInput.childNodes.length; i++) {
-      if (walkNodeUntil(chatInput.childNodes[i], node)) {
-        break;
-      }
+    for (let i = 0; i < container.childNodes.length; i++) {
+      if (walkNodeUntil(container.childNodes[i], node)) break;
     }
 
     return position + offset;
   }
 
-  static syncCursorPosition() {
-    if (state.emojiSuggestionsVisible) {
-      return;
-    }
+  static syncCursorPosition(container: HTMLElement) {
+    if (state.emojiSuggestionsVisible) return;
 
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      return;
-    }
+    if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-
     const newCursorPos = DomUtils.calculatePositionFromNode(
+      container,
       range.startContainer,
       range.startOffset
     );
@@ -371,8 +364,8 @@ export class DomUtils {
     if (selection.rangeCount > 0) {
       const startRange = selection.getRangeAt(0).cloneRange();
       startRange.collapse(true);
-
       state.selectionStart = DomUtils.calculatePositionFromNode(
+        container,
         startRange.startContainer,
         startRange.startOffset
       );
@@ -387,9 +380,7 @@ export class DomUtils {
     savedSel: { start: number; end: number }
   ) {
     const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
+    if (!selection) return;
 
     let charIndex = 0;
     let foundStart = false,
@@ -398,9 +389,7 @@ export class DomUtils {
     let endRange = document.createRange();
 
     function traverseNodes(node: Node) {
-      if (foundStart && foundEnd) {
-        return;
-      }
+      if (foundStart && foundEnd) return;
 
       if (node.nodeType === Node.TEXT_NODE) {
         const nextCharIndex = charIndex + (node.textContent?.length || 0);
@@ -413,7 +402,6 @@ export class DomUtils {
           startRange.setStart(node, savedSel.start - charIndex);
           foundStart = true;
         }
-
         if (
           !foundEnd &&
           savedSel.end >= charIndex &&
@@ -434,7 +422,7 @@ export class DomUtils {
             foundEnd = true;
           }
 
-          const img = node as HTMLImageElement;
+          const img = node as HTMLElement;
           const emojiId =
             img.getAttribute("data-emoji-id") ||
             img.getAttribute("alt")?.match(/Emoji (\d+)/)?.[1];
@@ -450,10 +438,8 @@ export class DomUtils {
     Array.from(containerEl.childNodes).forEach(traverseNodes);
 
     if (foundStart) {
-      if (!foundEnd) {
-        endRange = startRange.cloneRange();
-        endRange.collapse(false);
-      }
+      if (!foundEnd) endRange = startRange.cloneRange();
+      endRange.collapse(false);
       const newRange = document.createRange();
       newRange.setStart(startRange.startContainer, startRange.startOffset);
       newRange.setEnd(endRange.endContainer, endRange.endOffset);
@@ -469,15 +455,14 @@ export class DomUtils {
     }
   }
 
-  static ensureTextNodeAfterImage(element: HTMLElement) {
-    element.querySelectorAll("img").forEach((img) => {
+  static ensureTextNodeAfterImage(container: HTMLElement) {
+    container.querySelectorAll("img").forEach((img) => {
       if (!img.nextSibling || img.nextSibling.nodeType !== Node.TEXT_NODE) {
         img.parentNode?.insertBefore(
           document.createTextNode("\u200B"),
           img.nextSibling
         );
       }
-
       if (
         !img.previousSibling ||
         img.previousSibling.nodeType !== Node.TEXT_NODE
@@ -490,164 +475,118 @@ export class DomUtils {
         img.classList.contains("chat-emoji")
       ) {
         const emojiMatch = img.getAttribute("alt")?.match(/Emoji (\d+)/);
-        if (emojiMatch) {
-          img.setAttribute("data-emoji-id", emojiMatch[1]);
-        }
+        if (emojiMatch) img.setAttribute("data-emoji-id", emojiMatch[1]);
       }
     });
   }
 }
 
-function handleKeyboardNavigation(event: KeyboardEvent) {
-  const isCtrlC =
-    (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
-
-  if (isCtrlC) {
-    return;
-  }
-
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-    handleEmojiJump(event);
-    handleEmojiSuggestions(event);
-  } else if (event.key === "Backspace") {
-    handleBackspace(event);
-  } else if (event.key === " ") {
-    handleSpace(event);
-  }
-}
-
-function handleBackspace(event: KeyboardEvent) {
+export function handleBackspaceFor(
+  container: HTMLElement,
+  event: KeyboardEvent
+) {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
-    return;
-  }
+  if (!selection || selection.rangeCount === 0) return;
 
   const range = selection.getRangeAt(0);
-  if (
-    !range.collapsed &&
-    range.startContainer === chatInput &&
-    range.endContainer === chatInput
-  ) {
-    if (
-      range.startOffset === 0 &&
-      range.endOffset === chatInput.childNodes.length
-    ) {
-      event.preventDefault();
-
-      chatInput.innerHTML = "\u200B";
-
-      requestAnimationFrame(() => {
-        state.rawContent = "";
-        state.renderedContent = "";
-        updateStateCursorPos(0);
-        state.selectionStart = 0;
-        state.selectionEnd = 0;
-
-        const newRange = document.createRange();
-        newRange.setStart(chatInput.firstChild || chatInput, 0);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-
-        chatInput.dispatchEvent(new Event("input"));
-        updatePlaceholderVisibility();
-      });
-
-      return;
-    }
-  }
-
-  if (!range.collapsed) {
-    return;
-  }
+  if (!range.collapsed) return;
 
   const currentNode = range.startContainer;
   const currentOffset = range.startOffset;
   let shouldPreventDefault = false;
-  let nodeToRemove = null;
+  let nodeToRemove: Node | null = null;
 
   if (currentNode.nodeType === Node.TEXT_NODE && currentOffset === 0) {
     const prevNode = findPreviousNode(currentNode);
-
-    if (
-      prevNode &&
-      prevNode.nodeName === "IMG" &&
-      (prevNode as HTMLElement).classList?.contains("chat-emoji")
-    ) {
+    if (prevNode && isEmoji(prevNode as HTMLElement)) {
       shouldPreventDefault = true;
       nodeToRemove = prevNode;
     }
-  } else if (currentNode === chatInput && currentOffset > 0) {
-    const nodes = Array.from(chatInput.childNodes);
-    if (currentOffset > 0 && currentOffset <= nodes.length) {
-      const targetNode = nodes[currentOffset - 1];
-      if (
-        targetNode.nodeName === "IMG" &&
-        (targetNode as HTMLElement).classList?.contains("chat-emoji")
-      ) {
-        shouldPreventDefault = true;
-        nodeToRemove = targetNode;
-      }
-    }
-  } else if (currentNode.nodeType === Node.TEXT_NODE && currentOffset === 0) {
-    const prevSibling = currentNode.previousSibling;
-    if (
-      prevSibling &&
-      prevSibling.nodeName === "IMG" &&
-      (prevSibling as HTMLElement).classList?.contains("chat-emoji")
-    ) {
+  } else if (currentNode === container && currentOffset > 0) {
+    const nodes = Array.from(container.childNodes);
+    const targetNode = nodes[currentOffset - 1];
+    if (targetNode && isEmoji(targetNode as HTMLElement)) {
       shouldPreventDefault = true;
-      nodeToRemove = prevSibling;
-    }
-  } else if (currentNode.nodeType === Node.TEXT_NODE) {
-    let previousNode = null;
-    const walker = document.createTreeWalker(
-      chatInput,
-      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-      null
-    );
-
-    let current = walker.firstChild();
-    while (current && current !== currentNode) {
-      previousNode = current;
-      current = walker.nextNode();
-    }
-
-    if (
-      current === currentNode &&
-      previousNode &&
-      previousNode.nodeName === "IMG" &&
-      (previousNode as HTMLElement).classList?.contains("chat-emoji")
-    ) {
-      shouldPreventDefault = true;
-      nodeToRemove = previousNode;
+      nodeToRemove = targetNode;
     }
   }
 
   if (shouldPreventDefault && nodeToRemove) {
     event.preventDefault();
-    const parentNode = nodeToRemove.parentNode;
-    if (parentNode) {
-      parentNode.removeChild(nodeToRemove);
+    nodeToRemove.parentNode?.removeChild(nodeToRemove);
 
-      requestAnimationFrame(() => {
-        state.rawContent = preserveEmojiContent(chatInput);
-        const currentSelection = window.getSelection();
-        if (currentSelection && currentSelection.rangeCount > 0) {
-          const newPos = DomUtils.calculatePositionFromNode(
-            currentSelection.getRangeAt(0).startContainer,
-            currentSelection.getRangeAt(0).startOffset
-          );
-          updateStateCursorPos(newPos);
-          state.selectionStart = newPos;
-          state.selectionEnd = newPos;
-        }
-
-        chatInput.dispatchEvent(new Event("input"));
-      });
-    }
+    requestAnimationFrame(() => {
+      state.rawContent = preserveEmojiContent(container);
+      const newPos = DomUtils.calculatePositionFromNode(
+        container,
+        selection.getRangeAt(0).startContainer,
+        selection.getRangeAt(0).startOffset
+      );
+      updateStateCursorPos(newPos);
+      state.selectionStart = newPos;
+      state.selectionEnd = newPos;
+      container.dispatchEvent(new Event("input"));
+    });
   }
 }
+
+export function handleSpaceFor(container: HTMLElement, event: KeyboardEvent) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  if (!range.collapsed) return;
+
+  const currentNode = range.startContainer;
+  const currentOffset = range.startOffset;
+
+  const isEmptyTextNode =
+    currentNode.nodeType === Node.TEXT_NODE &&
+    (currentNode.textContent === "\u200B" || currentNode.textContent === "");
+  const isAtEndOfText =
+    currentNode.nodeType === Node.TEXT_NODE &&
+    currentOffset === (currentNode.textContent?.length || 0);
+  const isPrevSiblingImg = currentNode.previousSibling?.nodeName === "IMG";
+  const isLastNode = !findNextNode(currentNode);
+
+  if (
+    (isAtEndOfText && (isPrevSiblingImg || isLastNode)) ||
+    (isEmptyTextNode && isPrevSiblingImg)
+  ) {
+    event.preventDefault();
+    requestAnimationFrame(() => {
+      state.rawContent = preserveEmojiContent(container);
+      const newPos = DomUtils.calculatePositionFromNode(
+        container,
+        selection.getRangeAt(0).startContainer,
+        selection.getRangeAt(0).startOffset
+      );
+      updateStateCursorPos(newPos);
+      state.selectionStart = newPos;
+      state.selectionEnd = newPos;
+      DomUtils.syncCursorPosition(container);
+    });
+  }
+}
+
+export function handleKeyboardNavigationFor(
+  container: HTMLElement,
+  event: KeyboardEvent
+) {
+  const isCtrlC =
+    (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c";
+  if (isCtrlC) return;
+
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    handleEmojiJump(event);
+    handleEmojiSuggestions(event);
+  } else if (event.key === "Backspace") {
+    handleBackspaceFor(container, event);
+  } else if (event.key === " ") {
+    handleSpaceFor(container, event);
+  }
+}
+
 export function onMemberSelected(_state: ChatBarState) {
   state.rawContent = preserveEmojiContent(chatInput);
 }
@@ -789,103 +728,32 @@ export const isEmoji = (node: Node | null): node is HTMLElement =>
     (node.tagName === "DIV" && node.classList.contains("emoji")));
 
 export function manuallyRenderEmojis(
-  _chatInput: HTMLElement,
+  container: HTMLElement,
   rawContent: string
 ): void {
-  console.error(_chatInput, "Rendered emoji init: ", _chatInput.innerHTML);
   state.isProcessing = true;
 
   state.rawContent = rawContent;
   const formattedContent = renderEmojisFromContent(rawContent);
 
-  _chatInput.innerHTML = DOMPurify.sanitize(
+  container.innerHTML = DOMPurify.sanitize(
     formattedContent && formattedContent.trim() !== "" ? formattedContent : " "
   );
-  console.error("Rendered emoji first: ", _chatInput.innerHTML);
 
-  DomUtils.ensureTextNodeAfterImage(_chatInput);
+  DomUtils.ensureTextNodeAfterImage(container);
 
   const savedSelection = {
     start: rawContent.length,
     end: rawContent.length
   };
 
-  DomUtils.restoreSelection(_chatInput, savedSelection);
+  DomUtils.restoreSelection(container, savedSelection);
   state.renderedContent = formattedContent;
   updatePlaceholderVisibility();
   state.isProcessing = false;
 
-  DomUtils.syncCursorPosition();
+  DomUtils.syncCursorPosition(container);
   toggleShowEmojiSuggestions();
-  console.error("Rendered emoji second: ", _chatInput.innerHTML);
-}
-
-function handleSpace(event: KeyboardEvent) {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
-    return;
-  }
-
-  const range = selection.getRangeAt(0);
-  if (!range.collapsed) return;
-
-  const currentNode = range.startContainer;
-
-  function moveCursorToEnd() {
-    chatInput.focus();
-    const lastChild = chatInput.lastChild;
-    const newRange = document.createRange();
-    if (lastChild) {
-      if (lastChild.nodeType === Node.TEXT_NODE) {
-        newRange.setStart(lastChild, lastChild.textContent?.length || 0);
-      } else {
-        newRange.setStartAfter(lastChild);
-      }
-    } else {
-      newRange.setStart(chatInput, 0);
-    }
-    newRange.collapse(true);
-    if (selection) {
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    }
-  }
-
-  if (!chatInput.contains(currentNode)) {
-    moveCursorToEnd();
-    return;
-  }
-
-  const currentOffset = range.startOffset;
-  const isEmptyTextNode =
-    currentNode.nodeType === Node.TEXT_NODE &&
-    (currentNode.textContent === "\u200B" || currentNode.textContent === "");
-  const isAtEndOfText =
-    currentNode.nodeType === Node.TEXT_NODE &&
-    currentOffset === (currentNode.textContent?.length || 0);
-  const isPrevSiblingImg = currentNode.previousSibling?.nodeName === "IMG";
-  const isLastNode = !findNextNode(currentNode);
-
-  if (
-    (isAtEndOfText && (isPrevSiblingImg || isLastNode)) ||
-    (isEmptyTextNode && isPrevSiblingImg)
-  ) {
-    event.preventDefault();
-    requestAnimationFrame(() => {
-      state.rawContent = preserveEmojiContent(chatInput);
-      const currentSelection = window.getSelection();
-      if (currentSelection && currentSelection.rangeCount > 0) {
-        const newPos = DomUtils.calculatePositionFromNode(
-          currentSelection.getRangeAt(0).startContainer,
-          currentSelection.getRangeAt(0).startOffset
-        );
-        updateStateCursorPos(newPos);
-        state.selectionStart = newPos;
-        state.selectionEnd = newPos;
-      }
-      DomUtils.syncCursorPosition();
-    });
-  }
 }
 
 function insertNewlineAtCaret() {
@@ -957,7 +825,7 @@ function handleUserKeydown(event: KeyboardEvent) {
     return;
   }
 
-  handleKeyboardNavigation(event);
+  handleKeyboardNavigationFor(chatInput, event);
 
   setTimeout(() => {
     setMessageLimitText(state.rawContent);
@@ -1067,6 +935,7 @@ function handleChatInput(event: Event) {
     state.cursorPosition =
       selection && selection.rangeCount > 0
         ? DomUtils.calculatePositionFromNode(
+            chatInput,
             selection.getRangeAt(0).startContainer,
             selection.getRangeAt(0).startOffset
           )
@@ -1094,7 +963,7 @@ function handleChatInput(event: Event) {
         DomUtils.restoreSelection(chatInput, savedSelection);
 
         requestAnimationFrame(() => {
-          DomUtils.syncCursorPosition();
+          DomUtils.syncCursorPosition(chatInput);
           adjustHeight();
         });
       }

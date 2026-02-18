@@ -36,7 +36,7 @@ git clone https://github.com/liventcord/liventcord && cd liventcord
 ### Run the Server (API)
 
 ```bash
-cd server/LiventCord
+cd server/liventCord
 ```
 
 Create database
