@@ -2,6 +2,7 @@ import { createEl } from "./utils.ts";
 import { closePopUp, createPopUp } from "./popups.ts";
 import { translations } from "./translations.ts";
 import { changePassword } from "./user.ts";
+import { router } from "./router.ts";
 
 // --- Popup content builder
 
@@ -52,6 +53,7 @@ function buildPopupContent(opts: PopupOptions): HTMLElement {
   };
 
   const accept = () => {
+    console.log("Accepted!", typeof acceptCallback !== undefined);
     acceptCallback?.();
     if (outerParent?.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
@@ -242,7 +244,7 @@ export function logOutPrompt(): void {
     logOut,
     translations.getTranslation("log-out-prompt"),
     logOut,
-    () => {},
+    router.logOutApp,
     true
   );
 }
