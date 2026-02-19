@@ -624,16 +624,33 @@ namespace LiventCord.Controllers
             }
         }
 
-        private async Task DeleteMessage(string channelId, string messageId)
+        private async Task<Message?> GetMessageWithRelations(string messageId, string channelId)
         {
-            var message = await _context.Messages.FirstOrDefaultAsync(m =>
-                m.MessageId == messageId && m.ChannelId == channelId
-            );
+            var message = await _context.Messages
+                .Include(m => m.Attachments)
+                .Include(m => m.Embeds)
+                .FirstOrDefaultAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
+
             if (message == null)
             {
-                _logger.LogWarning("Message not found for deletion.");
-                return;
+                _logger.LogWarning("Message not found. MessageId: {MessageId}, ChannelId: {ChannelId}", messageId, channelId);
             }
+            else
+            {
+                if (message.Attachments == null || !message.Attachments.Any())
+                {
+                    _logger.LogDebug("Message.Attachments is null or empty. MessageId: {MessageId}, ChannelId: {ChannelId}", messageId, channelId);
+                }
+            }
+
+            return message;
+        }
+
+        private async Task DeleteMessage(string channelId, string messageId)
+        {
+            var message = await GetMessageWithRelations(messageId, channelId);
+            if (message == null)
+                return;
 
             try
             {
@@ -642,54 +659,40 @@ namespace LiventCord.Controllers
                 var pinnedEntries = await _context
                     .ChannelPinnedMessages.Where(p => p.MessageId == messageId)
                     .ToListAsync();
-
                 if (pinnedEntries.Any())
                 {
                     _context.ChannelPinnedMessages.RemoveRange(pinnedEntries);
                 }
 
-                _context.Messages.Attach(message);
                 _context.Messages.Remove(message);
 
-                var existing = await _context.MessageUrls.FindAsync(messageId);
-                if (existing != null && existing.Urls != null && existing.Urls.Any())
+                var existingUrls = await _context.MessageUrls.FindAsync(messageId);
+                if (existingUrls != null && existingUrls.Urls != null && existingUrls.Urls.Any())
                 {
-                    foreach (var url in existing.Urls)
+                    foreach (var url in existingUrls.Urls)
                     {
-                        var isUrlUsedElsewhere = await _context
-                            .MessageUrls.Where(mu =>
-                                mu.MessageId != messageId
-                                && mu.Urls != null
-                                && mu.Urls.Contains(url)
-                            )
+                        var isUrlUsedElsewhere = await _context.MessageUrls
+                            .Where(mu => mu.MessageId != messageId && mu.Urls != null && mu.Urls.Contains(url))
                             .AnyAsync();
 
                         if (!isUrlUsedElsewhere)
                         {
-                            var mediaUrl = await _context.MediaUrls.FirstOrDefaultAsync(mu =>
-                                mu.Url == url
-                            );
+                            var mediaUrl = await _context.MediaUrls.FirstOrDefaultAsync(mu => mu.Url == url);
                             if (mediaUrl != null)
-                            {
                                 _context.MediaUrls.Remove(mediaUrl);
-                            }
                         }
                     }
 
-                    _context.MessageUrls.Remove(existing);
+                    _context.MessageUrls.Remove(existingUrls);
                 }
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}",
-                    message.ChannelId,
-                    message.MessageId
-                );
+                _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting message. " + ex.Message);
+                _logger.LogError(ex, "Error deleting message. MessageId: {MessageId}, ChannelId: {ChannelId}", message.MessageId, message.ChannelId);
             }
         }
         private async Task<IActionResult> ProcessBotMessage(

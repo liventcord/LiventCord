@@ -39,7 +39,6 @@
 - Until opening dm or entering guild, dm container friend status stays offline
 - Profile display is broken
 - Change buttons at login to dropdown
-- Deleted attachment content should not remove if that copy is used by other attachments 
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses

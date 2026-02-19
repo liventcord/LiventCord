@@ -434,97 +434,95 @@ namespace LiventCord.Controllers
                 _ => file.FileId
             };
         }
+
         private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
         {
-            var filesToDelete = await _context
-                .Set<AttachmentFile>()
-                .Where(f => attachmentIds.Contains(f.FileId) && f.FileType == "attachments")
+            var attachmentsToDelete = await _context.Attachments
+                .Where(a => attachmentIds.Contains(a.FileId))
                 .ToListAsync();
 
-            var attachmentsToDelete = await _context
-                .Attachments.Where(a => attachmentIds.Contains(a.FileId))
-                .ToListAsync();
-
-            if (filesToDelete.Any() || attachmentsToDelete.Any())
-            {
-                if (filesToDelete.Any())
-                {
-                    _context.Set<AttachmentFile>().RemoveRange(filesToDelete);
-                }
-
-                if (attachmentsToDelete.Any())
-                {
-                    _context.Attachments.RemoveRange(attachmentsToDelete);
-                }
-
-                await _context.SaveChangesAsync();
-
-                foreach (var fileId in attachmentIds)
-                {
-                    var wasFileDeleted = filesToDelete.Any(f => f.FileId == fileId);
-                    var wasAttachmentDeleted = attachmentsToDelete.Any(a => a.FileId == fileId);
-
-                    if (wasFileDeleted || wasAttachmentDeleted)
-                    {
-                        _logger.LogInformation(
-                            "Attachment file deleted from database successfully. FileId: {FileId}",
-                            fileId
-                        );
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "Attachment file not found for deletion in database. FileId: {FileId}",
-                            fileId
-                        );
-                    }
-                }
-            }
-            else
+            if (!attachmentsToDelete.Any())
             {
                 foreach (var fileId in attachmentIds)
                 {
                     _logger.LogWarning(
-                        "Attachment file not found for deletion. FileId: {FileId}",
+                        "Attachment record not found for deletion. FileId: {FileId}",
                         fileId
                     );
                 }
+                return;
+            }
+
+            var fileIds = attachmentsToDelete.Select(a => a.FileId).Distinct().ToList();
+
+            var filesToCheck = await _context.Set<AttachmentFile>()
+                .Where(f => fileIds.Contains(f.FileId) && f.FileType == "attachments")
+                .ToListAsync();
+
+            foreach (var file in filesToCheck)
+            {
+                var isStillUsed = await _context.Attachments
+                    .AnyAsync(a => a.FileId == file.FileId && !attachmentIds.Contains(a.FileId));
+
+                if (!isStillUsed)
+                {
+                    _context.Set<AttachmentFile>().Remove(file);
+                    _logger.LogInformation(
+                        "Attachment file deleted from database successfully. FileId: {FileId}",
+                        file.FileId
+                    );
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Attachment file preserved because it is still used by other attachments. FileId: {FileId}",
+                        file.FileId
+                    );
+                }
+            }
+
+            _context.Attachments.RemoveRange(attachmentsToDelete);
+            await _context.SaveChangesAsync();
+        }
+
+        [NonAction]
+        public async Task DeleteAttachmentFilesAsync(List<Message> messages)
+        {
+            if (messages == null || !messages.Any())
+                return;
+
+            var attachmentIds = messages
+                .Where(m => m.Attachments != null)
+                .SelectMany(m => m.Attachments!)
+                .Where(a => !string.IsNullOrEmpty(a.FileId))
+                .Select(a => a.FileId)
+                .Distinct()
+                .ToList();
+
+            if (attachmentIds.Any())
+            {
+                await DeleteAttachmentFilesByIds(attachmentIds);
             }
         }
 
         [NonAction]
         public async Task DeleteAttachmentFileAsync(Message message)
         {
-            if (message.Attachments != null && message.Attachments.Any())
+            if (message?.Attachments == null || !message.Attachments.Any())
             {
-                var attachmentIds = message
-                    .Attachments.Where(a => !string.IsNullOrEmpty(a.FileId))
-                    .Select(a => a.FileId)
-                    .ToList();
-
-                if (attachmentIds.Any())
-                {
-                    await DeleteAttachmentFilesByIds(attachmentIds);
-                }
+                _logger.LogDebug(
+                    "Message.Attachments is null or empty. MessageId: {MessageId}, ChannelId: {ChannelId}",
+                    message?.MessageId,
+                    message?.ChannelId
+                );
+                return;
             }
-        }
 
-        [NonAction]
-        public async Task DeleteAttachmentFilesAsync(List<Message> messages)
-        {
-            var attachmentIds = new List<string>();
-
-            foreach (var message in messages)
-            {
-                if (message.Attachments != null)
-                {
-                    attachmentIds.AddRange(
-                        message
-                            .Attachments.Where(a => !string.IsNullOrEmpty(a.FileId))
-                            .Select(a => a.FileId)
-                    );
-                }
-            }
+            var attachmentIds = message.Attachments
+                .Where(a => !string.IsNullOrEmpty(a.FileId))
+                .Select(a => a.FileId)
+                .Distinct()
+                .ToList();
 
             if (attachmentIds.Any())
             {
