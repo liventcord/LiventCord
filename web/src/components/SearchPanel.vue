@@ -259,40 +259,32 @@
           {{ translations.getTranslation("active-filters") }}
         </div>
         <ul class="search-content active-filters-content">
-          <li
-            v-if="currentFilteredFromUserName"
-            class="search-button filter-item"
-          >
+          <li v-if="fromUser.name" class="search-button filter-item">
             <span class="label gray"
               >{{ translations.getTranslation("from-user") }}:</span
             >
             <span
               class="filter-value"
-              @click="clickOnFilteredUser($event, currentFilteredFromUserId)"
+              @click="clickOnFilteredUser($event, fromUser.id)"
             >
               <img
-                :src="getProfileUrl(currentFilteredFromUserId)"
-                :alt="userManager.getUserNick(currentFilteredFromUserId)"
+                :src="getProfileUrl(fromUser.id)"
+                :alt="userManager.getUserNick(fromUser.id)"
                 class="user-img"
               />
               <span class="username">{{
-                userManager.getUserNick(currentFilteredFromUserId)
+                userManager.getUserNick(fromUser.id)
               }}</span>
             </span>
             <button @click="removeUserFilter('from')" class="remove-filter-btn">
               ×
             </button>
           </li>
-          <li
-            v-if="currentFilteredMentioningUserName"
-            class="search-button filter-item"
-          >
+          <li v-if="mentioningUser.name" class="search-button filter-item">
             <span class="label gray"
               >{{ translations.getTranslation("mentions") }}:</span
             >
-            <span class="filter-value">{{
-              currentFilteredMentioningUserName
-            }}</span>
+            <span class="filter-value">{{ mentioningUser.name }}</span>
             <button
               @click="removeUserFilter('mentions')"
               class="remove-filter-btn"
@@ -304,11 +296,9 @@
             <span class="label gray"
               >{{ translations.getTranslation("in-channel") }}:</span
             >
-
             <span class="filter-value"
               >#{{ currentFilteredChannel.channelName }}</span
             >
-
             <button @click="removeChannelFilter()" class="remove-filter-btn">
               ×
             </button>
@@ -318,9 +308,7 @@
             <span class="label gray"
               >{{ translations.getTranslation("pinned") }}:</span
             >
-
             <span class="filter-value">{{ currentFilteredPinState }}</span>
-
             <button @click="removePinFilter()" class="remove-filter-btn">
               ×
             </button>
@@ -391,7 +379,6 @@
           class="error-image"
           style="max-width: 200px; margin: 20px auto; display: block"
         />
-
         <p style="text-align: center; color: white">
           {{ translations.getTranslation("search-error") }}
         </p>
@@ -493,15 +480,16 @@ const query = ref("");
 const dropdownHidden = ref(true);
 const users = ref(getGuildMembers() || []);
 const channels = ref(cacheInterface.getChannels(currentGuildId) || []);
-const currentFilteredFromUserId = ref("");
-const currentFilteredFromUserName = ref("");
-const currentFilteredMentioningUserId = ref("");
-const currentFilteredMentioningUserName = ref("");
+
+const fromUser = ref({ id: "", name: "" });
+const mentioningUser = ref({ id: "", name: "" });
+
 const currentFilteredChannel = ref<CachedChannel | null>(null);
 const currentFilteredPinState = ref<boolean>(false);
+
 const channelSearchInputElement = ref<HTMLInputElement | null>(null);
 const dropdownElement = ref<HTMLDivElement | null>(null);
-const dateInput = ref<HTMLInputElement | null>(null);
+
 const messages = ref<Message[]>([]);
 const totalCount = ref("");
 const inputWidth = ref("150px");
@@ -516,40 +504,54 @@ const isSelectingMentions = ref(false);
 const showDatePicker = ref(false);
 const currentDateType = ref<"before" | "during" | "after">("before");
 const selectedDate = ref("");
-const dateFilters = ref({
-  before: "",
-  during: "",
-  after: ""
-});
+const dateFilters = ref({ before: "", during: "", after: "" });
 
-const hasActiveFilters = computed(() => {
-  return (
-    currentFilteredFromUserId.value ||
-    currentFilteredMentioningUserId.value ||
-    currentFilteredChannel.value ||
-    currentFilteredPinState.value
-  );
-});
+const isSubPanelOpen = computed(
+  () =>
+    showAllUsersList.value || showDatePicker.value || showAllChannelsList.value
+);
 
-const hasActiveDateFilters = computed(() => {
-  return (
-    dateFilters.value.before ||
-    dateFilters.value.during ||
-    dateFilters.value.after
-  );
-});
+function resetDropdownStates() {
+  showAllUsersList.value = false;
+  showAllChannelsList.value = false;
+  showDatePicker.value = false;
+  isPinSelected.value = false;
+}
 
-const showDefaultOptions = computed(() => {
-  const cond1 = !dropdownHidden.value;
-  const cond2 = !query.value.trim();
-  const cond6 = !showAllUsersList.value;
-  const cond7 = !showDatePicker.value;
-  const cond8 = !showAllChannelsList.value;
+function showDropdown() {
+  dropdownHidden.value = false;
+  if (dropdownElement.value) dropdownElement.value.style.display = "block";
+}
 
-  const result = cond1 && cond2 && cond6 && cond7 && cond8;
+function openSubPanel(panel: "users" | "channels" | "date") {
+  resetDropdownStates();
+  if (panel === "users") showAllUsersList.value = true;
+  else if (panel === "channels") showAllChannelsList.value = true;
+  else showDatePicker.value = true;
+}
 
-  return result;
-});
+const hasActiveFilters = computed(
+  () =>
+    !!(
+      fromUser.value.id ||
+      mentioningUser.value.id ||
+      currentFilteredChannel.value ||
+      currentFilteredPinState.value
+    )
+);
+
+const hasActiveDateFilters = computed(
+  () =>
+    !!(
+      dateFilters.value.before ||
+      dateFilters.value.during ||
+      dateFilters.value.after
+    )
+);
+
+const showDefaultOptions = computed(
+  () => !dropdownHidden.value && !query.value.trim() && !isSubPanelOpen.value
+);
 
 const allChannelsList = computed(() => {
   if (!showAllChannelsList.value) return [];
@@ -563,20 +565,6 @@ const allUsersList = computed(() => {
   return users.value.slice(0, 50);
 });
 
-users.value = getGuildMembers() || [];
-
-watch(query, () => {
-  users.value = getGuildMembers() || [];
-  channels.value = cacheInterface.getChannels(currentGuildId) || [];
-  if (dropdownElement.value) dropdownElement.value.style.display = "block";
-
-  if (query.value.trim()) {
-    showAllUsersList.value = false;
-    showDatePicker.value = false;
-    showAllChannelsList.value = false;
-  }
-});
-
 const filteredUsers = computed(() => {
   if (!query.value.trim()) return [];
   return users.value
@@ -587,58 +575,76 @@ const filteredUsers = computed(() => {
     .slice(0, 3);
 });
 
-const usersSection = computed(() => {
-  if (
-    showAllUsersList.value ||
-    showDatePicker.value ||
-    showAllChannelsList.value
-  )
-    return [];
-  return filteredUsers.value;
-});
-
-const mentioningSection = computed(() => {
-  if (
-    showAllUsersList.value ||
-    showDatePicker.value ||
-    showAllChannelsList.value
-  )
-    return [];
-  return filteredUsers.value;
-});
+const usersSection = computed(() =>
+  isSubPanelOpen.value ? [] : filteredUsers.value
+);
+const mentioningSection = computed(() =>
+  isSubPanelOpen.value ? [] : filteredUsers.value
+);
 
 const channelSection = computed(() => {
-  if (
-    showAllUsersList.value ||
-    showDatePicker.value ||
-    showAllChannelsList.value
-  )
-    return [];
-  if (!query.value.trim()) return [];
-
+  if (isSubPanelOpen.value || !query.value.trim()) return [];
   return channels.value
-    .filter((channel) => {
-      const name = channel.channelName?.toLowerCase() || "";
-      return name.includes(query.value.toLowerCase());
-    })
+    .filter((channel) =>
+      channel.channelName?.toLowerCase().includes(query.value.toLowerCase())
+    )
     .slice(0, 3);
 });
 
+watch(query, () => {
+  users.value = getGuildMembers() || [];
+  channels.value = cacheInterface.getChannels(currentGuildId) || [];
+  if (dropdownElement.value) dropdownElement.value.style.display = "block";
+  if (query.value.trim()) resetDropdownStates();
+});
+
+function buildSearchBody() {
+  const body: any = {
+    query: query.value.trim(),
+    isOldMessages: isNewSelected.value
+  };
+
+  if (fromUser.value.id) body.fromUserId = fromUser.value.id;
+  if (mentioningUser.value.id) body.mentioningUserId = mentioningUser.value.id;
+  if (currentFilteredChannel.value)
+    body.channelId = currentFilteredChannel.value.channelId;
+  if (dateFilters.value.before) body.beforeDate = dateFilters.value.before;
+  if (dateFilters.value.during) body.duringDate = dateFilters.value.during;
+  if (dateFilters.value.after) body.afterDate = dateFilters.value.after;
+
+  return body;
+}
+
+function validateSearchBody(body: any): boolean {
+  return !!(
+    (body.query && body.query.trim().length > 0) ||
+    body.fromUserId ||
+    body.beforeDate ||
+    body.duringDate ||
+    body.afterDate ||
+    body.channelId != null
+  );
+}
+
+async function performSearch() {
+  const body = buildSearchBody();
+  if (!validateSearchBody(body)) return;
+  await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
+    guildId: currentGuildId,
+    ...body
+  });
+}
+
 function formatDateForDisplay(dateString: string) {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toLocaleDateString();
+  return new Date(dateString).toLocaleDateString();
 }
 
 function openDatePicker(dateType: "before" | "during" | "after") {
-  setTimeout(() => {
-    showDatePicker.value = true;
-  }, 0);
+  openSubPanel("date");
   dropdownHidden.value = false;
   currentDateType.value = dateType;
   selectedDate.value = dateFilters.value[dateType] || "";
-  showAllUsersList.value = false;
-  showAllChannelsList.value = false;
 }
 
 function onDateSelected() {}
@@ -649,10 +655,7 @@ function confirmDateSelection() {
   }
   showDatePicker.value = false;
   dropdownHidden.value = true;
-
-  if (selectedDate.value) {
-    performSearch();
-  }
+  if (selectedDate.value) performSearch();
   setTimeout(() => {
     dropdownHidden.value = false;
   }, 0);
@@ -672,97 +675,25 @@ function removeDateFilter(dateType: "before" | "during" | "after") {
 }
 
 function removeUserFilter(filterType: "from" | "mentions") {
-  if (filterType === "from") {
-    currentFilteredFromUserId.value = "";
-    currentFilteredFromUserName.value = "";
-  } else {
-    currentFilteredMentioningUserId.value = "";
-    currentFilteredMentioningUserName.value = "";
-  }
+  if (filterType === "from") fromUser.value = { id: "", name: "" };
+  else mentioningUser.value = { id: "", name: "" };
   performSearch();
 }
+
 function removeChannelFilter() {
   currentFilteredChannel.value = null;
   performSearch();
 }
+
 function removePinFilter() {
   currentFilteredPinState.value = false;
   performSearch();
 }
 
-function clickOnFilteredUser(e: MouseEvent, userId: string) {
-  handleMentionClick(e, currentFilteredFromUserId.value);
-}
-
-function validateSearchBody(body: any): boolean {
-  const hasQuery = body.query && body.query.trim().length > 0;
-  const hasFromUser = !!body.fromUserId;
-  const hasDateFilters =
-    !!body.beforeDate || !!body.duringDate || !!body.afterDate;
-
-  return hasQuery || hasFromUser || hasDateFilters || body.channelId != null;
-}
-
-function buildSearchBody() {
-  const body: any = {
-    query: query.value.trim(),
-    isOldMessages: isNewSelected.value
-  };
-
-  if (currentFilteredFromUserId.value) {
-    body.fromUserId = currentFilteredFromUserId.value;
-  }
-  if (currentFilteredMentioningUserId.value) {
-    body.mentioningUserId = currentFilteredMentioningUserId.value;
-  }
-  if (currentFilteredChannel.value) {
-    body.channelId = currentFilteredChannel.value.channelId;
-  }
-
-  if (dateFilters.value.before) {
-    body.beforeDate = dateFilters.value.before;
-  }
-  if (dateFilters.value.during) {
-    body.duringDate = dateFilters.value.during;
-  }
-  if (dateFilters.value.after) {
-    body.afterDate = dateFilters.value.after;
-  }
-
-  return body;
-}
-
-async function runSearch() {
-  const body = buildSearchBody();
-
-  if (!validateSearchBody(body)) {
-    return;
-  }
-
-  await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
-    guildId: currentGuildId,
-    ...body
-  });
-}
-
-async function performSearch() {
-  const body = buildSearchBody();
-
-  if (!validateSearchBody(body)) {
-    console.log("Search body rejected: ", body);
-    return;
-  }
-
-  await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
-    guildId: currentGuildId,
-    ...body
-  });
-}
-
-function selectUsersList(isMentioning: any) {
+function selectUsersList(isMentioning: boolean) {
   resetDropdownStates();
   showAllUsersList.value = true;
-  isSelectingMentions.value = Boolean(isMentioning);
+  isSelectingMentions.value = isMentioning;
   query.value = "";
   inputWidth.value = "225px";
 }
@@ -781,20 +712,19 @@ function selectPinList() {
   query.value = "";
   inputWidth.value = "225px";
 }
+
+function clickOnFilteredUser(e: MouseEvent, userId: string) {
+  handleMentionClick(e, userId);
+}
+
 async function handleUserClick(user: GuildMember, isMentioning = false) {
-  showAllUsersList.value = false;
-  showAllChannelsList.value = false;
+  resetDropdownStates();
+  isMentionOpen.value = isMentioning;
 
-  const shouldSetMentioning =
-    isMentioning !== null ? isMentioning : isSelectingMentions.value;
-  isMentionOpen.value = shouldSetMentioning;
-
-  if (shouldSetMentioning) {
-    currentFilteredMentioningUserId.value = user.userId;
-    currentFilteredMentioningUserName.value = user.name || deletedUser;
+  if (isMentioning) {
+    mentioningUser.value = { id: user.userId, name: user.name || deletedUser };
   } else {
-    currentFilteredFromUserId.value = user.userId;
-    currentFilteredFromUserName.value = user.name || deletedUser;
+    fromUser.value = { id: user.userId, name: user.name || deletedUser };
   }
 
   query.value = "";
@@ -804,9 +734,7 @@ async function handleUserClick(user: GuildMember, isMentioning = false) {
 }
 
 async function handleChannelClick(channel: CachedChannel) {
-  showAllUsersList.value = false;
-  showDatePicker.value = false;
-  showAllChannelsList.value = false;
+  resetDropdownStates();
   currentFilteredChannel.value = channel;
   query.value = "";
   dropdownHidden.value = true;
@@ -815,10 +743,9 @@ async function handleChannelClick(channel: CachedChannel) {
     await performSearch();
   }, 0);
 }
+
 function TogglePinState(bool: boolean) {
-  showAllUsersList.value = false;
-  showDatePicker.value = false;
-  showAllChannelsList.value = false;
+  resetDropdownStates();
   currentFilteredPinState.value = bool;
   query.value = "";
   setTimeout(() => {
@@ -835,18 +762,16 @@ function jumpToMessage(messageId: string) {
 
 function selectNewDates() {
   isNewSelected.value = true;
-  runSearch();
+  performSearch();
 }
 
 function selectOldDates() {
   isNewSelected.value = false;
-  runSearch();
+  performSearch();
 }
 
 async function onEnterKey() {
-  if (query.value.trim()) {
-    await runSearch();
-  }
+  if (query.value.trim()) await performSearch();
   dropdownHidden.value = true;
 }
 
@@ -854,54 +779,13 @@ function clearSearch() {
   query.value = "";
   showMessages.value = false;
   showError.value = false;
-  currentFilteredFromUserId.value = "";
-  currentFilteredMentioningUserId.value = "";
-  currentFilteredFromUserName.value = "";
-  currentFilteredMentioningUserName.value = "";
+  fromUser.value = { id: "", name: "" };
+  mentioningUser.value = { id: "", name: "" };
   currentFilteredChannel.value = null;
   currentFilteredPinState.value = false;
-
   dropdownHidden.value = true;
-  dateFilters.value = {
-    before: "",
-    during: "",
-    after: ""
-  };
-
+  dateFilters.value = { before: "", during: "", after: "" };
   resetDropdownStates();
-}
-
-apiClient.on(
-  EventType.SEARCH_MESSAGE_GUILD,
-  async (data: SearchMessagesResponse) => {
-    if (data.messages && data.messages.length > 0) {
-      showMessages.value = true;
-      messages.value = data.messages;
-      data.messages.forEach((m) => {
-        appendToMessageContextList(m.messageId, m.userId, false, {
-          EDIT_MESSAGE: true
-        });
-      });
-    } else {
-      showError.value = true;
-    }
-
-    if (data.totalCount) totalCount.value = data.totalCount;
-  }
-);
-
-function resetDropdownStates() {
-  showAllUsersList.value = false;
-  showAllChannelsList.value = false;
-  showDatePicker.value = false;
-  isPinSelected.value = false;
-}
-
-function showDropdown() {
-  dropdownHidden.value = false;
-  if (dropdownElement.value) {
-    dropdownElement.value.style.display = "block";
-  }
 }
 
 function onFocusInput() {
@@ -915,6 +799,24 @@ function onInputChange() {
   showDropdown();
 }
 
+apiClient.on(
+  EventType.SEARCH_MESSAGE_GUILD,
+  async (data: SearchMessagesResponse) => {
+    if (data.messages && data.messages.length > 0) {
+      showMessages.value = true;
+      messages.value = data.messages;
+      data.messages.forEach((m) =>
+        appendToMessageContextList(m.messageId, m.userId, false, {
+          EDIT_MESSAGE: true
+        })
+      );
+    } else {
+      showError.value = true;
+    }
+    if (data.totalCount) totalCount.value = data.totalCount;
+  }
+);
+
 function handleClickOutside(event: MouseEvent) {
   const target = event.target as Element;
   const searchContainer =
@@ -926,7 +828,6 @@ function handleClickOutside(event: MouseEvent) {
   ) {
     dropdownHidden.value = true;
     resetDropdownStates();
-
     if (
       !query.value.trim() &&
       !hasActiveFilters.value &&
@@ -937,13 +838,10 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside);
-});
+onMounted(() => document.addEventListener("click", handleClickOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener("click", handleClickOutside)
+);
 </script>
 
 <style scoped>
