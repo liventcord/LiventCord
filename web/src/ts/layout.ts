@@ -35,8 +35,6 @@ function saveWidth(width: number): void {
   localStorage.setItem("channelListWidth", width.toString());
 }
 
-// --- Toolbar helpers
-
 function handleMobileToolbar(): void {
   getId("toolbaroptions")
     ?.querySelectorAll(".iconWrapper")
@@ -126,9 +124,9 @@ function updateUIWidths(newWidth: number): void {
 }
 
 function updateDmContainers(width: number): void {
-  const par = getId("");
-  if (!par) return;
-  par.querySelectorAll<HTMLDivElement>(".dm-container").forEach((el) => {
+  const root = document.querySelector(".dm-list-root");
+  if (!root) return;
+  root.querySelectorAll<HTMLDivElement>(".dm-container").forEach((el) => {
     el.style.width = `${width + 70}px`;
   });
 }
@@ -137,8 +135,6 @@ export function setAllWidths(newWidth: number): void {
   setWidths(newWidth);
   updateUIWidths(newWidth);
 }
-
-// --- Resize handler
 
 export function handleResize(): void {
   handleMediaPanelResize();
@@ -176,8 +172,6 @@ export function handleResizeWidth(): void {
   setAllWidths(currentWidth);
   saveWidth(currentWidth);
 }
-
-// --- Channel list drag-to-resize
 
 export function initialiseChannelDrag(): void {
   const channelList = getId("channel-list") as HTMLElement;

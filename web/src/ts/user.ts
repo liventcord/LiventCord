@@ -1,3 +1,5 @@
+import { reactive } from "vue";
+
 import store from "../store.ts";
 import {
   selfDiscriminator,
@@ -104,7 +106,7 @@ function setInputValidity(input: HTMLInputElement, message: string) {
 }
 
 class UserManager {
-  private userNames: { [userId: string]: UserInfo } = {};
+  private userNames = reactive<{ [userId: string]: UserInfo }>({});
 
   constructor() {
     this.userNames[CLYDE_ID] = {

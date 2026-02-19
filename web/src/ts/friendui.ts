@@ -1,8 +1,6 @@
 import { reactive } from "vue";
 import { appState } from "./appState";
 import {
-  removeElement,
-  enableElement,
   createEl,
   getId,
   disableElementHTML,
@@ -10,37 +8,33 @@ import {
   IMAGE_SRCS
 } from "./utils";
 import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user";
-import {
-  submitAddFriend,
-  filterFriendsOnSearch,
-  addPendingButtons,
-  friendsCache,
-  UpdatePendingCounter,
-  removeDm
-} from "./friends";
-import {
-  appendToProfileContextList,
-  triggerContextMenuById
-} from "./contextMenuActions";
+import { friendsCache, UpdatePendingCounter, removeDm } from "./friends";
 import { setProfilePic } from "./avatar";
 import { translations } from "./translations";
-import { activityList, userList } from "./userList";
+import { activityList } from "./userList";
 import { loadDmHome, openDm } from "./app";
 import { isBlackTheme } from "./settings";
 import store from "../store";
 import { Friend, UserInfo } from "./types/interfaces";
-import { SVG } from "./svgIcons";
+import { friendsState } from "../components/FriendsContainer.vue";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
-const highlightedColor = () => (isBlackTheme() ? "#29292D" : "#43444b");
-
+const highlightedColor = () => (isBlackTheme() ? "#333338" : "#43444b");
 const defaultColor = "transparent";
 const grayColor = "#c2c2c2";
 
-let currentUserActivities: Friend[] = [];
+const buttonElements = {
+  online: getId("online-button") as HTMLElement,
+  all: getId("all-button") as HTMLElement,
+  pending: getId("pending-button") as HTMLElement,
+  blocked: getId("blocked-button") as HTMLElement
+};
 
-export let currentSelectedFriendMenu: keyof typeof buttonElements;
+let ButtonsList = Object.values(buttonElements);
+
+disableElementHTML(buttonElements.blocked);
+
 export const friendContainerItem = getId(
   "friend-container-item"
 ) as HTMLElement;
@@ -50,34 +44,10 @@ export function unselectFriendContainer() {
 }
 
 export const friendsContainer = getId("friends-container") as HTMLElement;
+
 export let isAddFriendsOpen = false;
 
-const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
-  "friendsSearchInput"
-)} ></input>`;
-
-const friendMenuTypes = {
-  online: "online",
-  all: "all",
-  pending: "pending",
-  blocked: "blocked"
-};
-
-const buttonElements = {
-  online: getId("online-button") as HTMLElement,
-  all: getId("all-button") as HTMLElement,
-  pending: getId("pending-button") as HTMLElement,
-  blocked: getId("blocked-button") as HTMLElement
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  selectFriendMenu(buttonElements.online);
-});
-
-let ButtonsList = Object.values(buttonElements);
-initializeButtonsList();
-
-disableElementHTML(buttonElements.blocked);
+export let currentSelectedFriendMenu: keyof typeof buttonElements = "online";
 
 export interface DmUserInfo {
   userId: string;
@@ -119,6 +89,7 @@ interface DmUserAddResponse {
   nickName: string;
   discriminator: string;
 }
+
 export function appendToDmList(user: DmUserAddResponse, prepend = false) {
   if (dmListState.friends.some((f) => f.userId === user.userId)) {
     if (prepend) {
@@ -228,7 +199,7 @@ export function getCurrentDmFriends(): UserInfo[] {
     {
       userId: friendsCache.currentDmId,
       nickName:
-        friendsCache.getFriend(friendsCache.currentDmId).nickName ||
+        friendsCache.getFriend(friendsCache.currentDmId)?.nickName ||
         deletedUser,
       discriminator:
         friendsCache.getFriendDiscriminator(friendsCache.currentDmId) ||
@@ -237,67 +208,43 @@ export function getCurrentDmFriends(): UserInfo[] {
   ];
 }
 
-// ---------------------------------------------------------------------------
-// Notification / friend-message popup
-// ---------------------------------------------------------------------------
-
-let notifyTimeout: ReturnType<typeof setTimeout> | null;
-const NOTIFY_LENGTH = 10000;
-export function printFriendMessage(content: string) {
-  const messagetext = createEl("div");
-  messagetext.className = "messagetext";
-  messagetext.textContent = content;
-  const parentNode = getId("friends-popup-container") as HTMLElement;
-  if (parentNode) {
-    parentNode.appendChild(messagetext);
-  }
-  if (notifyTimeout) clearTimeout(notifyTimeout);
-  notifyTimeout = setTimeout(() => {
-    messagetext.remove();
-    notifyTimeout = null;
-  }, NOTIFY_LENGTH);
-}
-
-// ---------------------------------------------------------------------------
-// Friends menu / button logic
-// ---------------------------------------------------------------------------
+// ── Friends-menu button logic
 
 export function updateFriendMenu() {
-  const currentSelectedFriendMenuElement =
-    buttonElements[currentSelectedFriendMenu];
-  if (currentSelectedFriendMenuElement) {
-    selectFriendMenu(currentSelectedFriendMenuElement);
-  }
+  const currentEl = buttonElements[currentSelectedFriendMenu];
+  if (currentEl) selectFriendMenu(currentEl);
 }
 
 function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
-  openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor();
-  openFriendsBtn.style.color = "white";
-  displayWumpus();
+  if (openFriendsBtn) {
+    openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor();
+    openFriendsBtn.style.color = "white";
+  }
+
   isAddFriendsOpen = false;
+  friendsState.isAddFriendsOpen.value = false;
+
   currentSelectedFriendMenu = getRequestType(clickedButton);
+  friendsState.currentSelectedFriendMenu.value = currentSelectedFriendMenu;
 
   const friends = friendsCache.cacheFriendToFriendConverter();
   populateFriendsContainer(friends, clickedButton === buttonElements.pending);
 
   if (!ButtonsList) ButtonsList = Object.values(buttonElements);
-
   ButtonsList.forEach((button) => {
-    if (button) {
-      const reqType = getRequestType(button);
-      button.style.backgroundColor =
-        reqType === currentSelectedFriendMenu
-          ? highlightedColor()
-          : defaultColor;
-      button.style.color =
-        reqType === currentSelectedFriendMenu ? "white" : grayColor;
-    }
+    if (!button) return;
+    const reqType = getRequestType(button);
+    button.style.backgroundColor =
+      reqType === currentSelectedFriendMenu ? highlightedColor() : defaultColor;
+    button.style.color =
+      reqType === currentSelectedFriendMenu ? "white" : grayColor;
   });
+
   UpdatePendingCounter();
 }
 
-function getRequestType(btn: HTMLElement) {
+function getRequestType(btn: HTMLElement): keyof typeof buttonElements {
   return (
     (Object.keys(buttonElements) as Array<keyof typeof buttonElements>).find(
       (key) => buttonElements[key] === btn
@@ -306,8 +253,8 @@ function getRequestType(btn: HTMLElement) {
 }
 
 function initializeButtonsList() {
-  Array.from(ButtonsList).forEach((element) => {
-    const el = element;
+  Array.from(ButtonsList).forEach((el) => {
+    if (!el) return;
     const reqType = getRequestType(el);
     el.addEventListener("click", () => selectFriendMenu(el));
     el.addEventListener("mouseenter", () => {
@@ -332,67 +279,21 @@ function resetButtons() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Gray-sphere / button helpers
-// ---------------------------------------------------------------------------
+export function openAddFriend() {
+  resetButtons();
+  isAddFriendsOpen = true;
+  friendsState.isAddFriendsOpen.value = true;
 
-function createGraySphere(
-  content: string,
-  element: HTMLElement,
-  contentClass = "",
-  hoverText = ""
-) {
-  const graySphere = createEl("div", {
-    className: "gray-sphere friend_button_element"
-  });
-
-  graySphere.addEventListener("click", (event) => event.stopPropagation());
-
-  if (hoverText) {
-    graySphere.addEventListener("mouseenter", () => {
-      const descriptionRectangle = createEl("div", {
-        className: "description-rectangle"
-      });
-      const textEl = createEl("div", {
-        className: "description-rectangle-text",
-        textContent: hoverText
-      });
-      descriptionRectangle.appendChild(textEl);
-      graySphere.appendChild(descriptionRectangle);
-    });
-    graySphere.addEventListener("mouseleave", () => {
-      graySphere.querySelector(".description-rectangle")?.remove();
-    });
+  const friendsBtn = getId("open-friends-button") as HTMLElement;
+  if (friendsBtn) {
+    friendsBtn.style.color = "#798df9";
+    friendsBtn.style.backgroundColor = "#242640";
   }
-
-  if (element) {
-    graySphere.appendChild(element);
-  } else if (content) {
-    const textElement = createEl("div", {
-      className: contentClass,
-      textContent: content
-    });
-    graySphere.appendChild(textElement);
-  }
-
-  return graySphere;
 }
 
-export function createButtonWithBubblesImg(
-  button: HTMLElement,
-  html: string,
-  hoverText: string
-) {
-  const icon = createEl("div", { innerHTML: html });
-  icon.style.pointerEvents = "none";
-  const iconSphere = createGraySphere("", icon, "", hoverText);
-  button.appendChild(iconSphere);
-  return iconSphere;
-}
+// ── Activity list
 
-// ---------------------------------------------------------------------------
-// Activity list
-// ---------------------------------------------------------------------------
+let currentUserActivities: Friend[] = [];
 
 export function clearActivityList() {
   if (currentUserActivities.length === 0) {
@@ -462,271 +363,34 @@ function createActivityCard(friend: Friend) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Add-friend UI
-// ---------------------------------------------------------------------------
-
-export function openAddFriend() {
-  resetButtons();
-  isAddFriendsOpen = true;
-  updateFriendButton();
-  clearFriendContainer();
-  createAddFriendForm();
-  adjustButtonPosition();
-}
-
-function updateFriendButton() {
-  const friendsBtn = getId("open-friends-button") as HTMLElement;
-  if (!friendsBtn) return;
-  friendsBtn.style.color = "#2fc770";
-  friendsBtn.style.backgroundColor = "transparent";
-}
-
-function clearFriendContainer() {
-  friendsContainer.innerHTML = "";
-}
-
-function createAddFriendForm() {
-  const addfriendtext = createEl("div", {
-    id: "addfriendtext",
-    textContent: translations.getTranslation("addfriendtext")
-  });
-  const addfrienddetailtext = createEl("div", {
-    id: "addfrienddetailtext",
-    textContent: translations.getTranslation("addfrienddetailtext")
-  });
-  const addfriendinputcontainer = createEl("div", {
-    id: "addfriendinputcontainer"
-  });
-  const addfriendinput = createEl("input", {
-    id: "addfriendinputfield",
-    placeholder: translations.getTranslation("addfrienddetailtext"),
-    autocomplete: "off"
-  });
-  addfriendinput.value = "Nick#0000";
-
-  const addfriendinputbutton = createEl("button", {
-    id: "addfriendinputbutton",
-    textContent: translations.getTranslation("addfriendinputbutton")
-  });
-
-  const userlistline = createEl("hr", { className: "vertical-line-long" });
-  addfriendinputbutton.classList.add("inactive");
-
-  addfriendinput.addEventListener("input", () => {
-    const isActive = addfriendinput.value.trim() !== "";
-    addfriendinputbutton.classList.toggle("inactive", !isActive);
-    addfriendinputbutton.classList.toggle("active", isActive);
-  });
-
-  addfriendinputbutton.addEventListener("click", () => submitAddFriend());
-
-  addfriendinputcontainer.appendChild(addfriendinput);
-  addfriendinputcontainer.appendChild(addfriendinputbutton);
-  friendsContainer.appendChild(addfriendtext);
-  friendsContainer.appendChild(addfrienddetailtext);
-  friendsContainer.appendChild(addfriendinputcontainer);
-  friendsContainer.appendChild(userlistline);
-}
-
-function adjustButtonPosition() {
-  if (!userList) return;
-  const inputrighttoset = userList.style.display === "flex" ? "463px" : "76px";
-  const addfriendinputbutton = getId("addfriendinputbutton");
-  if (addfriendinputbutton) addfriendinputbutton.style.right = inputrighttoset;
-}
-
-// ---------------------------------------------------------------------------
-// Friends container population
-// ---------------------------------------------------------------------------
-
-export function displayWumpus() {
-  if (friendsContainer.querySelector("#wumpusalone")) return;
-  removeElement("addfriendmenu");
-  friendsContainer.innerHTML = "";
-  const imgElement = createEl("img", {
-    id: "wumpusalone",
-    src: IMAGE_SRCS.WUMPUS_SRC
-  });
-  imgElement.style.userSelect = "none";
-  friendsContainer.appendChild(imgElement);
-}
-
-async function filterFriendsByCategory(friends: Friend[]): Promise<Friend[]> {
-  const filterConditions: Record<string, (f: Friend) => Promise<boolean>> = {
-    [friendMenuTypes.online]: async (f) =>
-      (await userManager.isOnline(f.userId)) && !f.isPending,
-    [friendMenuTypes.all]: async (f) => !f.isPending,
-    [friendMenuTypes.blocked]: async (f) =>
-      userManager.isUserBlocked(f.userId) && !f.isPending,
-    [friendMenuTypes.pending]: async (f) => f.isPending
-  };
-
-  const filterFn = filterConditions[currentSelectedFriendMenu];
-  if (!filterFn) {
-    console.warn("Unhandled status: " + currentSelectedFriendMenu);
-    return [];
-  }
-
-  const results = await Promise.all(
-    friends.map(async (friend) => ({ friend, keep: await filterFn(friend) }))
-  );
-  return results.filter(({ keep }) => keep).map(({ friend }) => friend);
+export function displayEmptyFriends() {
+  friendsState.friends.value = [];
 }
 
 export async function populateFriendsContainer(
   friends: Friend[],
   isPending?: boolean
 ) {
-  if (friends.length === 0) return;
-
-  try {
-    friends = await filterFriendsByCategory(friends);
-    if (friends.length === 0) {
-      displayWumpus();
-      return;
-    }
-
-    const friendsTitleContainer = createFriendsTitle(friends.length);
-    friendsContainer.innerHTML = initialFriendsContainerHtml;
-    const friendsSearchInput = getId("friendsSearchInput");
-    friendsSearchInput?.addEventListener("onkeyup", filterFriendsOnSearch);
-    friendsContainer.appendChild(friendsTitleContainer);
-
-    updateFriendsList(friends, !!isPending);
-    enableElement("friendsTitleContainer");
-  } catch (error) {
-    console.error("Error populating friends container:", error);
+  if (!friends || friends.length === 0) {
+    friendsState.friends.value = [];
+    return;
   }
+  friendsState.friends.value = friends;
+  friendsState.currentSelectedFriendMenu.value = currentSelectedFriendMenu;
 }
 
-async function updateFriendsList(friends: Friend[], isPending: boolean) {
-  for (const friend of friends) {
-    const status = await userManager.getStatusString(friend.userId);
-    const isOnline = await userManager.isOnline(friend.userId);
-    createFriendCard(
-      friend,
-      friend.userId,
-      friend.nickName,
-      friend.discriminator,
-      status,
-      isOnline,
-      isPending,
-      friend.isFriendsRequestToUser
-    );
+export function updateFriendsList(friends: Friend[]): void {
+  if (!friends || friends.length === 0) {
+    console.warn("Empty friend list data.");
+    return;
   }
-  updateUsersActivities(friends);
-  filterFriendsOnSearch();
-}
-
-function createFriendCard(
-  friend: Friend,
-  userId: string,
-  nickName: string,
-  discriminator: string,
-  status: string,
-  isOnline: boolean,
-  isPending: boolean,
-  isFriendsRequestToUser: boolean
-) {
-  if (friendsContainer.querySelector(`#${CSS.escape(userId)}`)) return;
-
-  const friendCard = createEl("div", { className: "friend-card", id: userId });
-  const img = createEl("img");
-  setProfilePic(img, userId);
-  img.classList.add("friend-image");
-
-  const bubble = createEl("span", { className: `profile-bubble ${status}` });
-  bubble.style.transition = "display 0.5s ease-in-out";
-  if (!isPending) friendCard.appendChild(bubble);
-
-  img.addEventListener("mouseover", () =>
-    handleImageHover(img, bubble, isPending, isOnline, true)
-  );
-  img.addEventListener("mouseout", () =>
-    handleImageHover(img, bubble, isPending, isOnline, false)
-  );
-  friendCard.addEventListener("click", () => openDm(userId));
-  appendToProfileContextList({ userId, nickName, discriminator }, userId);
-
-  const friendInfo = createEl("div", { className: "friend-info" });
-  friendInfo.appendChild(
-    createEl("div", { className: "friend-name", textContent: nickName })
-  );
-  friendInfo.appendChild(
-    createEl("div", {
-      className: "friend-discriminator",
-      textContent: `#${discriminator}`
-    })
-  );
-
-  const onlineStatus = translations.getTranslation(
-    friend.isPending
-      ? isFriendsRequestToUser
-        ? "incoming-friend-request"
-        : "outgoing-friend-request"
-      : isOnline
-        ? "online"
-        : "offline"
-  );
-  friendInfo.appendChild(
-    createEl("div", { className: "friend-status", textContent: onlineStatus })
-  );
-
-  const friendButton = createEl("div", { className: "friend-button" });
-  if (isPending) {
-    addPendingButtons(friendButton, friend);
-  } else {
-    addFriendButtons(friendButton, friend);
-  }
-
-  friendCard.appendChild(img);
-  friendCard.appendChild(friendInfo);
-  friendCard.appendChild(friendButton);
-  friendCard.dataset.name = nickName;
-  friendsContainer.appendChild(friendCard);
+  if (isAddFriendsOpen) return;
+  friendsState.friends.value = [...friends];
 }
 
 export function removeFriendCard(userId: string) {
-  friendsContainer.querySelector(`#${CSS.escape(userId)}`)?.remove();
-}
-
-function handleImageHover(
-  img: HTMLElement,
-  bubble: HTMLElement,
-  isPending: boolean,
-  isOnline: boolean,
-  isMouseOver: boolean
-) {
-  img.style.borderRadius = isMouseOver ? "0px" : "25px";
-  if (bubble && !isPending)
-    bubble.style.display = isMouseOver || isOnline ? "none" : "block";
-}
-
-function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
-  const sendMsgBtn = createButtonWithBubblesImg(
-    friendButton,
-    SVG.sendMsgBtn,
-    translations.getTranslation("send-message")
-  );
-  sendMsgBtn.addEventListener("click", () => openDm(friend.userId));
-
-  const optionsButton = createButtonWithBubblesImg(
-    friendButton,
-    SVG.optionsBtn,
-    translations.getTranslation("more")
-  );
-  optionsButton.id = friend.userId;
-
-  friendButton.addEventListener("mouseover", () => {
-    sendMsgBtn.style.backgroundColor = "#2b2d31;";
-    optionsButton.style.backgroundColor = "#2b2d31;";
-  });
-
-  const cachedFriend = friendsCache.getFriend(friend.userId);
-  appendToProfileContextList(cachedFriend, friend.userId);
-  optionsButton.addEventListener("click", () =>
-    triggerContextMenuById(optionsButton)
+  friendsState.friends.value = friendsState.friends.value.filter(
+    (f: Friend) => f.userId !== userId
   );
 }
 
@@ -734,13 +398,7 @@ export function getFriendsTranslation() {
   return translations.getTranslation(currentSelectedFriendMenu);
 }
 
-function createFriendsTitle(friendsCount: number) {
-  const textToWrite =
-    friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
-  return createEl("h2", {
-    marginRight: "50px",
-    marginTop: "100px",
-    textContent: textToWrite,
-    id: "friendsTitleContainer"
-  });
+export function initializeFriends() {
+  selectFriendMenu(buttonElements.online);
+  initializeButtonsList();
 }

@@ -211,7 +211,16 @@ class Translations {
       count: String(count)
     });
   }
-
+  getRemoveFriendPrompt(friendName: string): string {
+    return this.replacePlaceholder("remove-friend-prompt", {
+      friendName
+    });
+  }
+  getRemoveFriendTitle(friendName: string): string {
+    return this.replacePlaceholder("remove-friend-title", {
+      friendName
+    });
+  }
   initializeTranslations() {
     const currentTranslations = this.textTranslations;
 

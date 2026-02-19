@@ -66,20 +66,6 @@
   z-index: 1;
 }
 
-.mic-button {
-  font-size: 16px;
-  color: red;
-  margin-right: 6px;
-}
-
-.name-overlay {
-  color: white;
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 #local_vid {
   width: 320px;
   height: 180px;

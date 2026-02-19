@@ -81,7 +81,9 @@
     "file-is-large": "Dosya {{fileName}} çok büyük.",
     "max-size-is": "Maksimum dosya boyutu {{maxSize}} MB.",
     "exceed-total-size": "{{fileName}} dosyasının eklenmesi, izin verilen toplam boyutu geçiyor.",
-    "allowed-size-count": "En fazla {{count}} dosya yükleyebilirsin."
+    "allowed-size-count": "En fazla {{count}} dosya yükleyebilirsin.",
+    "remove-friend-title": "{{friendName}} Kişisini Sil",
+    "remove-friend-prompt": "{{friendName}} kullanıcısını arkadaşlıktan çıkarmak istediğine emin misin?"
   },
   "settingTranslations": {
     "en": "İngilizce",
@@ -297,7 +299,10 @@
     "sound-connection-established": "Ses Bağlantısı Kuruldu",
     "sound-connection-failed": "Ses Bağlantısı Kurulamadı",
     "connecting": "Bağlanıyor...",
-    "no-messages-found": "Mesaj Bulunamadı."
+    "no-messages-found": "Mesaj Bulunamadı.",
+    "no-friends-title": "Burası sessiz…",
+    "no-friends-description": "Burada hiç kimse yok.",
+    "remove-friend": "Arkadaşı çıkar"
   },
   "errorTranslations": {
     "LOGIN_ERROR_TITLE": "Giriş Hatası",

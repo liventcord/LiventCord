@@ -10,13 +10,11 @@ import {
   isValidFriendName
 } from "./utils.ts";
 import { getSelfFullDisplay, userManager } from "./user.ts";
-import { handleResize } from "./ui.ts";
+import { askUser, handleResize } from "./ui.ts";
 import {
   populateFriendsContainer,
   isAddFriendsOpen,
   openAddFriend,
-  printFriendMessage,
-  createButtonWithBubblesImg,
   updateUsersActivities,
   updateFriendMenu,
   removeFriendCard,
@@ -32,7 +30,7 @@ import {
   FriendMessage,
   UserInfo
 } from "./types/interfaces.ts";
-import { SVG } from "./svgIcons.ts";
+import { friendsContainerInstance } from "../components/FriendsContainer.vue";
 
 const pendingAlertRight = getId("pendingAlertRight") as HTMLElement;
 const pendingAlertLeft = getId("pendingAlertLeft") as HTMLElement;
@@ -225,7 +223,7 @@ function displayFriendActionMessage(
     : getFriendMessage(userNick, false, errorType, status);
   console.log(text);
   if (text) {
-    printFriendMessage(text);
+    friendsContainerInstance?.printFriendMessage(text);
   }
 }
 
@@ -322,7 +320,7 @@ export function handleFriendEventResponse(message: FriendMessage): void {
       handleDenyFriendRequestResponse(message);
       break;
     default:
-      printFriendMessage("");
+      friendsContainerInstance?.printFriendMessage("");
   }
   updateFriendsList(Object.values(friendsCache.friendsCache));
   UpdatePendingCounter();
@@ -393,41 +391,6 @@ export function updateFriendsList(friends: FriendData[]): void {
     currentSelectedFriendMenu === "pending"
   );
 }
-export function addPendingButtons(friendButton: HTMLElement, friend: Friend) {
-  if (friend.isFriendsRequestToUser) {
-    const acceptButton = createButtonWithBubblesImg(
-      friendButton,
-      SVG.tickBtn,
-      translations.getTranslation("accept")
-    );
-    acceptButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.ACCEPT_FRIEND, friend.userId)
-    );
-
-    const denyButton = createButtonWithBubblesImg(
-      friendButton,
-      SVG.closeBtn,
-      translations.getTranslation("deny")
-    );
-    denyButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.DENY_FRIEND, friend.userId)
-    );
-  } else {
-    const closeButton = createButtonWithBubblesImg(
-      friendButton,
-      SVG.closeBtn,
-      translations.getTranslation("cancel")
-    );
-    closeButton.addEventListener("click", (event) =>
-      handleButtonClick(event, EventType.REMOVE_FRIEND, friend.userId)
-    );
-  }
-}
-
-function handleButtonClick(event: Event, action: EventType, friendId: string) {
-  event.stopPropagation();
-  apiClient.send(action, { friendId });
-}
 
 export function addFriendId(userId: string) {
   apiClient.send(EventType.ADD_FRIEND_ID, { friendId: userId });
@@ -441,7 +404,18 @@ function addFriend(nickName: string, discriminator: string) {
   createTooltipAtCursor(translations.getContextTranslation("ADDED_FRIEND"));
 }
 export function removeFriend(friendId: string) {
-  apiClient.send(EventType.REMOVE_FRIEND, { friendId });
+  const friendName = userManager.getUserNick(friendId);
+  const subject = translations.getRemoveFriendPrompt(friendName);
+  const content = translations.getRemoveFriendTitle(friendName);
+  askUser(
+    content,
+    subject,
+    translations.getTranslation("remove-friend"),
+    () => {
+      apiClient.send(EventType.REMOVE_FRIEND, { friendId });
+    },
+    true
+  );
 }
 
 export function submitAddFriend() {
@@ -453,14 +427,14 @@ export function submitAddFriend() {
   }
 
   if (!isValidFriendName(currentValue)) {
-    printFriendMessage(
+    friendsContainerInstance?.printFriendMessage(
       translations.getTranslation("addFriendDiscriminatorErrorText")
     );
     return;
   }
 
   if (currentValue === getSelfFullDisplay()) {
-    printFriendMessage(
+    friendsContainerInstance?.printFriendMessage(
       translations.getTranslation("friendAddYourselfErrorText")
     );
     return;

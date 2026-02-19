@@ -42,13 +42,13 @@ import {
 import {
   disableDmContainers,
   friendContainerItem,
-  printFriendMessage,
   updateDmsList,
   activateDmContainer,
   updateFriendMenu,
   unselectFriendContainer,
   updateUsersActivities,
-  clearActivityList
+  clearActivityList,
+  initializeFriends
 } from "./friendui.ts";
 
 import { initializeProfile, userManager } from "./user.ts";
@@ -108,6 +108,7 @@ import {
   closeDropdown,
   hideGuildSettingsDropdown
 } from "./guildPop.ts";
+import { friendsContainerInstance } from "../components/FriendsContainer.vue";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
@@ -159,6 +160,7 @@ export function initializeApp(): void {
   initializeProfile();
   initialiseAudio();
   initializeCookies();
+  initializeFriends();
   if (isMobile) {
     initialiseMobile();
   }
@@ -413,7 +415,8 @@ export function openDm(friendId: string): void {
     try {
       addDm(friendId);
     } catch (e) {
-      if (e instanceof Error) printFriendMessage(e.message);
+      if (e instanceof Error)
+        friendsContainerInstance?.printFriendMessage(e.message);
     }
   }
 
@@ -426,7 +429,7 @@ export function openDm(friendId: string): void {
   try {
     getHistoryFromOneChannel(friendId, true);
   } catch (e) {
-    printFriendMessage(
+    friendsContainerInstance?.printFriendMessage(
       e instanceof Error ? e.message : "An unknown error occurred."
     );
   }

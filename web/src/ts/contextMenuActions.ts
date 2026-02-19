@@ -374,13 +374,19 @@ function createProfileContext(userData: UserInfo) {
 
   return context;
 }
-export function triggerContextMenuById(targetElement: HTMLElement) {
+export function triggerContextMenuById(
+  targetElement: HTMLElement,
+  _id?: string
+) {
+  console.log(targetElement, _id);
   const rect = targetElement.getBoundingClientRect();
   const x = rect.left + window.scrollX;
   const y = rect.top + window.scrollY;
-
-  const options =
-    contextList[targetElement.id] || messageContextList[targetElement.id];
+  const id = _id ?? targetElement.id;
+  setTimeout(() => {
+    console.log(contextList);
+  }, 5000);
+  const options = contextList[id] || messageContextList[id];
   if (options) {
     showContextMenu(x, y, options);
   }

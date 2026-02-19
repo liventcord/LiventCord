@@ -68,7 +68,9 @@
     "file-is-large": "File {{fileName}} is too large.",
     "max-size-is": "Max size is {{maxSize}} MB.",
     "exceed-total-size": "Adding {{fileName}} would exceed the total allowed size.",
-    "allowed-size-count": "You can attach up to {{count}} files."
+    "allowed-size-count": "You can attach up to {{count}} files.",
+    "remove-friend-title": "Remove {{friendName}}",
+    "remove-friend-prompt": "Are you sure you want to remove {{friendName}} from your friends?"
   },
   "settingTranslations": {
     "en": "English",
@@ -76,7 +78,7 @@
     "MyAccount": "My Account",
     "SoundAndVideo": "Sound and Video",
     "Notifications": "Notifications",
-    "ActivityPresence": "Activity Privacy",
+    "ActivityPresence": "Activity Privt,acy",
     "Appearance": "Appearance",
     "Language": "Language",
     "Overview": "Overview",
@@ -150,7 +152,7 @@
   "textTranslations": {
     "online": "Online",
     "offline": "Offline",
-    "pending": "Pending",
+    "pending": "Sent",
     "blocked": "Blocked",
     "do-not-disturb": "Do Not Disturb",
     "idle": "Idle",
@@ -158,7 +160,7 @@
     "all-button": "All",
     "pending-button": "Pending",
     "blocked-button": "Blocked",
-    "all": "All",
+    "all": "All Friends",
     "incoming-friend-request": "Incoming Friend Request",
     "outgoing-friend-request": "Outgoing Friend Request",
     "dms-title": "Direct Messages",
@@ -284,7 +286,10 @@
     "sound-connection-established": "Sound Connection Established",
     "sound-connection-failed": "Sound Connection Failed",
     "connecting": "Connecting...",
-    "no-messages-found": "No messages found."
+    "no-messages-found": "No messages found.",
+    "no-friends-title": "It’s quiet in here…",
+    "no-friends-description": "Nobody is here right now!",
+    "remove-friend": "Remove Friend"
   },
   "errorTranslations": {
     "LOGIN_ERROR_TITLE": "Login Error",

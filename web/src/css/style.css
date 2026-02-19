@@ -566,10 +566,7 @@
   text-align: center;
   cursor: pointer;
 }
-#addfriendinputcontainer {
-  margin-top: 10px;
-  margin-left: 10px;
-}
+
 .iconWrapper {
   display: flex;
   align-items: center;
@@ -697,12 +694,12 @@ body.black-theme .base-user-input {
   border: none !important;
 }
 .vertical-line {
-  border: none;
-  width: 33px;
-  left: 415px;
-  top: 15px;
-  border-top: 1px solid #cccccc23;
-  transform: rotate(90deg);
+  height: 4px;
+  margin: 0 4px;
+  color: #1a1a1e;
+}
+body.black-theme .vertical-line {
+  color: #333338;
 }
 .vertical-line-long {
   border: none;
@@ -715,10 +712,11 @@ body.black-theme .base-user-input {
   border: none;
   position: absolute;
   margin-top: 48px;
-  width: 100%;
-  border-top: 1px solid #1f1e1ea6;
+  width: calc(100vw + -72px);
+  right: 0px;
+  border-top: 1px solid #29292d;
   transform: rotate(180deg);
-  z-index: 1;
+  z-index: 5;
 }
 
 #guild-container {
@@ -816,9 +814,6 @@ body.black-theme .base-user-input {
 }
 
 @media (max-width: 600px) {
-  #wumpusalone {
-    left: 0;
-  }
   .statusPanelContainer {
     left: 200px !important;
     bottom: -165px !important;
@@ -1292,12 +1287,15 @@ body.black-theme .status-bubble {
 #horizontal-line-guild {
   top: 41px;
   z-index: 1;
-  border-top: 100vh solid rgb(63, 66, 71);
+  border-top: 100vh solid #29292d;
   transform: scaleX(-0.5);
 }
 .horizontal-line {
   right: 0px;
   position: relative;
+}
+.horizontal-line-userline {
+  right: 15em;
 }
 #horizontal-line-guild {
   left: 71px;
@@ -1405,6 +1403,8 @@ textarea::-webkit-scrollbar-track {
   word-wrap: break-word;
   transition: background-color 0.3s ease;
   overflow-wrap: break-word;
+  position: relative;
+  display: block;
 }
 
 .replier {
@@ -1676,8 +1676,6 @@ textarea::-webkit-scrollbar-track {
   border: none;
   font: inherit;
   outline-offset: 2px;
-}
-.mention {
   background-color: var(--mention-bg);
   transition: background-color 0.2s ease-in-out;
 }
@@ -2307,11 +2305,6 @@ h2 {
   border: 1px solid black;
 }
 
-.userpanel-button.active {
-  background-color: #2a2a2a;
-  color: #ffffff;
-}
-
 #pin-container > div {
   top: 0px;
 }
@@ -2420,4 +2413,28 @@ h2 {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 3;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.875rem;
+}
+
+.empty-subtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #b0b0b0;
+  max-width: 320px;
+  line-height: 1.4;
 }

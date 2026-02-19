@@ -183,13 +183,7 @@ import { translations } from "../ts/translations.ts";
 import { currentUsers } from "../ts/userList.ts";
 import { cacheInterface } from "../ts/cache.ts";
 import { currentGuildId } from "../ts/guild.ts";
-import {
-  getId,
-  IMAGE_SRCS,
-  isMobile,
-  getAttachmentUrl,
-  getPreviewAttachmentUrl
-} from "../ts/utils.ts";
+import { getId, IMAGE_SRCS, isMobile, getAttachmentUrl } from "../ts/utils.ts";
 import { permissionManager } from "../ts/guildPermissions.ts";
 import {
   createInvitePop,
@@ -550,7 +544,10 @@ watch(
     background-color 0.3s,
     color 0.3s;
 }
-
+.userpanel-button.active {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
 .media-open-metadata {
   position: absolute;
   top: 50%;

@@ -1,5 +1,4 @@
 import { translations } from "./translations.ts";
-import { printFriendMessage } from "./friendui.ts";
 import { alertUser, dismissCurrentPopupIf } from "./ui.ts";
 import { isOnDm, router } from "./router.ts";
 import { fetchMessages } from "./chat.ts";
@@ -8,6 +7,7 @@ import { currentGuildId } from "./guild.ts";
 import { guildCache } from "./cache.ts";
 import { revertToLastConfirmedImage } from "./avatar.ts";
 import { initialState } from "./app.ts";
+import { friendsContainerInstance } from "../components/FriendsContainer.vue";
 
 class NoSessionError extends Error {
   constructor() {
@@ -663,7 +663,7 @@ class ApiClient {
         translations.getFriendErrorMessage(String(response.status)) ||
         translations.getFriendErrorMessage("default");
 
-      printFriendMessage(predefinedMessage);
+      friendsContainerInstance?.printFriendMessage(predefinedMessage);
       console.error(
         `Error [${response.status}] for event "${event}": ${predefinedMessage}`
       );

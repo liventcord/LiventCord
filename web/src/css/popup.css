@@ -86,10 +86,17 @@
 .pop-button-container {
   bottom: 0;
   width: 100%;
-  height: 38%;
   position: fixed;
   background-color: #2b2d31;
   z-index: 2;
+  height: 20%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 .pop-up {
   position: fixed;
@@ -224,6 +231,12 @@
   margin-right: unset !important;
   margin-left: -180px !important;
 }
+#private-channel-icon {
+  position: absolute;
+  bottom: 150px !important;
+  left: 18px;
+  z-index: 1;
+}
 @media (max-width: 600px) {
   #private-channel-icon {
     bottom: 167px !important;
@@ -314,96 +327,55 @@
   }
 }
 
-.pop-up-content {
+.pop-up-subject {
+  font-size: 20px;
+  font-weight: bold;
   color: white;
-  overflow-y: scroll;
-  padding: 10px;
-  margin-top: 80px;
-  margin-bottom: 80px;
+  text-align: center;
+  padding: 20px 20px 10px 20px;
+  margin: 0;
 }
 
-.pop-up-subject {
-  font-size: 24px;
-  z-index: 3;
-  left: 20px;
-  top: -10px;
-  font-weight: bold;
-  width: 90%;
-  color: white;
-  white-space: pre-wrap;
-  overflow: hidden;
-  position: fixed;
+.pop-up-content {
+  flex: 1;
+  padding: 0 20px 10px 20px;
+  color: #cfcfcf;
   text-align: center;
-  width: 90%;
-  margin-top: 20px;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
 }
-.pop-up-accept.inactive {
-  background-color: #3b428a;
-  color: #8a8b90;
-  cursor: auto;
-}
-.pop-up-accept.active {
-  background-color: #5865f2;
-  cursor: pointer;
-}
-.pop-up-accept {
-  font-size: 16px;
-  width: 25%;
-  height: 40px;
-  white-space: nowrap;
-  background-color: #5865f2;
-  color: wheat;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  position: fixed;
-  z-index: 1;
-  top: 80%;
-  left: 84%;
-  transition: background-color 0.3s ease;
-  transform: translate(-50%, -50%);
-}
-#private-channel-icon {
-  position: absolute;
-  bottom: 150px !important;
-  left: 18px;
-  z-index: 1;
-}
+
 .pop-up-refuse {
-  font-size: 18px;
-  width: 20%;
-  height: 23%;
+  font-size: 14px;
+  padding: 8px 14px;
   background-color: transparent;
   color: white;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
-  position: fixed;
-  z-index: 1;
-  top: 80%;
-  left: 45%;
-  transition: background-color 0.3s ease;
-  transform: translate(-50%, -50%);
+  transition: background-color 0.2s ease;
 }
-.popup-close {
-  color: gray;
-  top: 0px;
-  right: 0px;
-  left: auto;
-  width: 50px;
-  height: 50px;
-  font-size: 22px;
+
+.pop-up-refuse:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.pop-up-accept {
+  font-size: 14px;
+  padding: 8px 14px;
+  background-color: #da373c;
+  color: white;
   border: none;
-  background-color: transparent;
-  position: fixed;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
-.popup-close:hover {
-  color: lightgray;
-}
+
 .pop-up-accept:hover {
-  background-color: #4750bb;
+  background-color: #b92d32;
 }
+
 .guild-pop-button-container {
   bottom: 0%;
   width: 100%;

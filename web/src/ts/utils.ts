@@ -1,5 +1,5 @@
 import {
-  displayWumpus,
+  displayEmptyFriends,
   friendsContainer,
   getFriendsTranslation
 } from "./friendui.ts";
@@ -15,8 +15,6 @@ export const IMAGE_SRCS = {
     "https://liventcord.github.io/LiventCord/app/images/icons/icon.webp",
   ICON_ACTIVE_SRC:
     "https://liventcord.github.io/LiventCord/app/images/icons/iconactive.webp",
-  WUMPUS_SRC:
-    "https://liventcord.github.io/LiventCord/app/images/wumpusalone.webp",
   DEFAULT_MEDIA_IMG_SRC:
     "https://liventcord.github.io/LiventCord/app/images/defaultmediaimage.webp",
   CLYDE_SRC: "https://liventcord.github.io/LiventCord/app/images/clyde.webp",
@@ -81,8 +79,18 @@ function getMobile() {
   );
 }
 
-export function getId(string: string): HTMLElement | null {
-  return document.getElementById(string);
+export function getId<T extends HTMLElement = HTMLElement>(
+  id: string
+): T | null {
+  if (!id) {
+    console.error("Empty string passed to getId");
+    return null;
+  }
+  const el = document.getElementById(id);
+  if (!el) {
+    return null;
+  }
+  return el as T;
 }
 
 export function getMaskedEmail(email: string) {
@@ -111,7 +119,7 @@ export function reCalculateFriTitle() {
   }
 
   if (friendsCount === 0) {
-    displayWumpus();
+    displayEmptyFriends();
   }
 }
 
