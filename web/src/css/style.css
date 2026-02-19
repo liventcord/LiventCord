@@ -2182,51 +2182,50 @@ h2 {
 .language-selector {
   position: fixed;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  background-color: #333;
-  padding: 10px 20px;
-  border-radius: 25px;
-  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+  right: 20px;
   z-index: 1000;
-  transition: all 0.3s ease;
 }
 
 .language-selector button {
-  background-color: #f0f0f0;
-  color: black;
+  background-color: #000;
+  color: #fff;
+  font-size: 24px;
+  padding: 12px;
+  border-radius: 50%;
   border: none;
-  padding: 8px 15px;
-  font-size: 16px;
   cursor: pointer;
-  border-radius: 5px;
-  transition:
-    background-color 0.2s,
-    transform 0.2s;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
 }
 
 .language-selector button:hover {
-  background-color: #ddd;
+  background-color: #111;
   transform: scale(1.05);
 }
 
-.language-selector button:focus {
-  outline: 3px solid #0057b7;
+.language-selector ul {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  background-color: #111;
+  border-radius: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+  min-width: 130px;
+  transition: opacity 0.2s ease;
 }
 
-@media (max-width: 500px) {
-  .language-selector {
-    padding: 8px 0.875rem;
-    gap: 6px;
-  }
-  .language-selector button {
-    padding: 6px 10px;
-    font-size: 14px;
-  }
+.language-selector ul li {
+  padding: 8px 16px;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.language-selector ul li:hover {
+  background-color: #222;
 }
 
 .info-container,

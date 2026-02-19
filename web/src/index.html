@@ -220,7 +220,7 @@
         <div id="channel-info-container-for-friend">
             <div id="channel-info-for-friend"></div>
             <div id="friend-menu-buttons">
-                <svg class="vertical-line" aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 4 4"><circle cx="2" cy="2" r="2" fill="currentColor"></circle></svg>
+                <svg class="vertical-line" style="margin-right:10px" aria-hidden="true" role="img" width="24" height="24" viewBox="0 0 4 4"><circle cx="2" cy="2" r="2" fill="currentColor"></circle></svg>
 
                 <button id="online-button" class="friend-menu-button" ></button>
                 <button id="all-button" class="friend-menu-button"></button>
@@ -353,12 +353,18 @@
         </div>
       </div>
     <div class="language-selector">
-        <button id="en-button" tabindex="6">English</button>
-        <button id="tr-button" tabindex="7">Turkish</button>
-        <button id="es-button" tabindex="8">Español</button>
-        <button id="de-button" tabindex="9">Deutsch</button>
-        <button id="fr-button" tabindex="10">Français</button>
-    </div> </div>
+        <button id="language-button" aria-label="Select language" tabindex="6">
+            🌐
+        </button>
+        <ul id="language-menu" class="hidden">
+            <li data-lang="en">English</li>
+            <li data-lang="tr">Turkish</li>
+            <li data-lang="es">Español</li>
+            <li data-lang="de">Deutsch</li>
+            <li data-lang="fr">Français</li>
+        </ul>
+        </div>
+    </div>
         
 
     <div id="json-preview-container" >

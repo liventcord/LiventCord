@@ -145,9 +145,7 @@ export function initialiseLoginPage() {
   setLanguage(languageToSet);
   updateDOM();
 
-  if (areListenersAdded) {
-    return;
-  }
+  if (areListenersAdded) return;
   areListenersAdded = true;
 
   initializeGoogleOauth();
@@ -234,11 +232,33 @@ export function initialiseLoginPage() {
     router.switchToLogin();
   });
 
-  addClickListener("en-button", () => setLanguage("en"));
-  addClickListener("tr-button", () => setLanguage("tr"));
-  addClickListener("es-button", () => setLanguage("es"));
-  addClickListener("de-button", () => setLanguage("de"));
-  addClickListener("fr-button", () => setLanguage("fr"));
+  const langButton = getId("language-button") as HTMLButtonElement | null;
+  const langMenu = getId("language-menu") as HTMLUListElement | null;
+
+  if (langButton && langMenu) {
+    langButton.addEventListener("click", () => {
+      langMenu.classList.toggle("hidden");
+    });
+
+    langMenu.querySelectorAll("li").forEach((item) => {
+      item.addEventListener("click", () => {
+        const lang = item.getAttribute("data-lang")!;
+        setLanguage(lang);
+        langMenu.classList.add("hidden");
+        updateDOM();
+        langButton.textContent = "🌐";
+      });
+    });
+
+    window.addEventListener("click", (e) => {
+      if (
+        !langButton.contains(e.target as Node) &&
+        !langMenu.contains(e.target as Node)
+      ) {
+        langMenu.classList.add("hidden");
+      }
+    });
+  }
 }
 
 function getTranslation(key: string) {
