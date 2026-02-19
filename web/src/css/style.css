@@ -1404,7 +1404,6 @@ textarea::-webkit-scrollbar-track {
   transition: background-color 0.3s ease;
   overflow-wrap: break-word;
   position: relative;
-  display: block;
 }
 
 .replier {

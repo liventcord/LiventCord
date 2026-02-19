@@ -1,7 +1,6 @@
 <template>
   <div>
-    <div v-if="isOnDm" id="friends-popup-container">
-    </div>
+    <div v-if="isOnDm" id="friends-popup-container"></div>
 
     <Teleport to="#friends-container">
       <div ref="friendsContainerRef">
@@ -134,7 +133,10 @@ import { defineComponent, ref, computed, watch, onMounted, h } from "vue";
 import { apiClient, EventType } from "../ts/api";
 import { openDm } from "../ts/app";
 import { setProfilePic } from "../ts/avatar";
-import { appendToProfileContextList, triggerContextMenuById } from "../ts/contextMenuActions";
+import {
+  appendToProfileContextList,
+  triggerContextMenuById
+} from "../ts/contextMenuActions";
 import { SVG } from "../ts/svgIcons";
 import { translations } from "../ts/translations";
 import { Friend } from "../ts/types/interfaces";
@@ -200,19 +202,19 @@ const FriendsContainerComponent = defineComponent({
     const currentSelectedFriendMenu = friendsState.currentSelectedFriendMenu;
     const friends = friendsState.friends;
     const popupMessage = friendsState.popupMessage;
-watch(
-  friends,
-  (newFriends) => {
-    newFriends.forEach((friend) => {
-      let cachedFriend = friendsCache.getFriend(friend.userId);
+    watch(
+      friends,
+      (newFriends) => {
+        newFriends.forEach((friend) => {
+          let cachedFriend = friendsCache.getFriend(friend.userId);
 
-      if (cachedFriend) {
-        appendToProfileContextList(cachedFriend, friend.userId);
-      }
-    });
-  },
-  { deep: true, immediate: true }
-);
+          if (cachedFriend) {
+            appendToProfileContextList(cachedFriend, friend.userId);
+          }
+        });
+      },
+      { deep: true, immediate: true }
+    );
 
     const filteredFriends = computed(() => {
       const menu = currentSelectedFriendMenu.value;
@@ -258,7 +260,7 @@ watch(
       const label = translations.getTranslation(
         currentSelectedFriendMenu.value
       );
-      return `${label} — ${count}`
+      return `${label} — ${count}`;
     });
 
     function t(key: string) {
@@ -294,9 +296,7 @@ watch(
     }
 
     function onOptions(userId: string) {
-      console.log(userId)
       const el = getId(userId + "-options") as HTMLElement;
-      console.log(el)
       if (el) triggerContextMenuById(el, userId);
     }
 
@@ -308,9 +308,9 @@ watch(
       apiClient.send(EventType.DENY_FRIEND, { friendId: userId });
     }
 
-    function onCancel(userId: string) {  
+    function onCancel(userId: string) {
       apiClient.send(EventType.REMOVE_FRIEND, { friendId: userId });
-  }
+    }
     function printFriendMessage(content: string) {
       const NOTIFY_LENGTH = 10000;
       popupMessage.value = content;
@@ -338,30 +338,30 @@ watch(
     });
 
     function createFriendsInstance() {
-  return {
-    openAddFriend: () => {
-      isAddFriendsOpen.value = true;
-    },
-    closeAddFriend: () => {
-      isAddFriendsOpen.value = false;
-    },
-    updateFriends: (f: Friend[]) => {
-      friends.value = f;
-      friends.value.forEach((friend) => {
-        const cachedFriend = friendsCache.getFriend(friend.userId);
-        appendToProfileContextList(cachedFriend, friend.userId);
-        console.log(cachedFriend)
-      });
-    },
-    removeFriendCard: (userId: string) => {
-      friends.value = friends.value.filter((f) => f.userId !== userId);
-    },
-    setMenu: (menu: string) => {
-      currentSelectedFriendMenu.value = menu;
-    },
-    printFriendMessage: printFriendMessage
-  };
-}
+      return {
+        openAddFriend: () => {
+          isAddFriendsOpen.value = true;
+        },
+        closeAddFriend: () => {
+          isAddFriendsOpen.value = false;
+        },
+        updateFriends: (f: Friend[]) => {
+          friends.value = f;
+          friends.value.forEach((friend) => {
+            const cachedFriend = friendsCache.getFriend(friend.userId);
+            appendToProfileContextList(cachedFriend, friend.userId);
+            console.log(cachedFriend);
+          });
+        },
+        removeFriendCard: (userId: string) => {
+          friends.value = friends.value.filter((f) => f.userId !== userId);
+        },
+        setMenu: (menu: string) => {
+          currentSelectedFriendMenu.value = menu;
+        },
+        printFriendMessage: printFriendMessage
+      };
+    }
 
     return {
       addFriendInput,
@@ -722,4 +722,3 @@ body.black-theme .friend-card:hover {
   margin-top: 30px;
 }
 </style>
-

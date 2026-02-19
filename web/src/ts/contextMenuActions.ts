@@ -94,7 +94,8 @@ const MessagesActionType = {
   REPLY: "REPLY",
   MARK_AS_UNREAD: "MARK_AS_UNREAD",
   DELETE_MESSAGE: "DELETE_MESSAGE",
-  COPY_MESSAGE: "COPY_MESSAGE"
+  COPY_MESSAGE: "COPY_MESSAGE",
+  COPY_ID: "COPY_ID"
 };
 
 let contextMenu: HTMLElement | null;
@@ -247,15 +248,16 @@ export function appendToChannelContextList(channelId: string) {
 export function appendToMessageContextList(
   messageId: string,
   userId: string,
-  isSystemMessage: boolean
+  isSystemMessage: boolean,
+  removeFlags?: Partial<Record<keyof typeof MessagesActionType, boolean>>
 ) {
   messageContextList[messageId] = createMessageContext(
     messageId,
     userId,
-    isSystemMessage
+    isSystemMessage,
+    removeFlags
   );
 }
-
 export function editMessageOnContextList(
   oldId: string,
   newId: string,
@@ -579,21 +581,26 @@ function createChannelsContext(channelId: string) {
 function createMessageContext(
   messageId: string,
   userId: string,
-  isSystemMessage: boolean
+  isSystemMessage: boolean,
+  removeFlags: Partial<Record<keyof typeof MessagesActionType, boolean>> = {}
 ) {
   const context: { [key: string]: any } = {};
 
-  context[MessagesActionType.ADD_REACTION] = {
-    label: MessagesActionType.ADD_REACTION,
-    action: () => openReactionMenu(messageId)
-  };
+  if (!removeFlags.ADD_REACTION) {
+    context[MessagesActionType.ADD_REACTION] = {
+      label: MessagesActionType.ADD_REACTION,
+      action: () => openReactionMenu(messageId)
+    };
+  }
+
   if (!isSystemMessage) {
-    if (userId === appState.currentUserId) {
+    if (userId === appState.currentUserId && !removeFlags.EDIT_MESSAGE) {
       context[MessagesActionType.EDIT_MESSAGE] = {
         label: MessagesActionType.EDIT_MESSAGE,
         action: () => openEditMessage(messageId)
       };
     }
+
     if (
       permissionManager.canManageMessages() ||
       (isOnDm && userId === appState.currentUserId)
@@ -604,12 +611,12 @@ function createMessageContext(
         messageId
       );
 
-      if (exist) {
+      if (exist && !removeFlags.UNPIN_MESSAGE) {
         context[MessagesActionType.UNPIN_MESSAGE] = {
           label: MessagesActionType.UNPIN_MESSAGE,
           action: () => unpinMessage(messageId)
         };
-      } else {
+      } else if (!exist && !removeFlags.PIN_MESSAGE) {
         context[MessagesActionType.PIN_MESSAGE] = {
           label: MessagesActionType.PIN_MESSAGE,
           action: () => pinMessage(messageId)
@@ -617,33 +624,39 @@ function createMessageContext(
       }
     }
   }
-  context[MessagesActionType.REPLY] = {
-    label: MessagesActionType.REPLY,
-    action: () => showReplyMenu(messageId, userId)
-  };
-  context[MessagesActionType.COPY_MESSAGE] = {
-    label: MessagesActionType.COPY_MESSAGE,
-    action: (event: MouseEvent) => copyMessage(event, messageId)
-  };
 
-  context[MessagesActionType.MARK_AS_UNREAD] = {
-    label: MessagesActionType.MARK_AS_UNREAD,
-    action: () => markAsUnread(messageId)
-  };
-
-  if (isOnDm) {
-    context[MessagesActionType.DELETE_MESSAGE] = {
-      label: MessagesActionType.DELETE_MESSAGE,
-      action: () => deleteMessagePrompt(messageId)
+  if (!removeFlags.REPLY) {
+    context[MessagesActionType.REPLY] = {
+      label: MessagesActionType.REPLY,
+      action: () => showReplyMenu(messageId, userId)
     };
-  } else if (isOnGuild && permissionManager.canManageMessages()) {
+  }
+
+  if (!removeFlags.COPY_MESSAGE) {
+    context[MessagesActionType.COPY_MESSAGE] = {
+      label: MessagesActionType.COPY_MESSAGE,
+      action: (event: MouseEvent) => copyMessage(event, messageId)
+    };
+  }
+
+  if (!removeFlags.MARK_AS_UNREAD) {
+    context[MessagesActionType.MARK_AS_UNREAD] = {
+      label: MessagesActionType.MARK_AS_UNREAD,
+      action: () => markAsUnread(messageId)
+    };
+  }
+
+  if (
+    (isOnDm || (isOnGuild && permissionManager.canManageMessages())) &&
+    !removeFlags.DELETE_MESSAGE
+  ) {
     context[MessagesActionType.DELETE_MESSAGE] = {
       label: MessagesActionType.DELETE_MESSAGE,
       action: () => deleteMessagePrompt(messageId)
     };
   }
 
-  if (isDeveloperMode()) {
+  if (!removeFlags.COPY_ID && isDeveloperMode()) {
     context[ActionType.COPY_ID] = {
       action: (event: MouseEvent) => copyId(messageId, event)
     };

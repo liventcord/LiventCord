@@ -487,6 +487,7 @@ import {
   SearchMessagesResponse,
   CachedChannel
 } from "../ts/types/interfaces";
+import { appendToMessageContextList } from "../ts/contextMenuActions";
 
 const query = ref("");
 const dropdownHidden = ref(true);
@@ -876,7 +877,11 @@ apiClient.on(
     if (data.messages && data.messages.length > 0) {
       showMessages.value = true;
       messages.value = data.messages;
-      console.log(messages.value);
+      data.messages.forEach((m) => {
+        appendToMessageContextList(m.messageId, m.userId, false, {
+          EDIT_MESSAGE: true
+        });
+      });
     } else {
       showError.value = true;
     }
