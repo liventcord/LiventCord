@@ -1,4 +1,5 @@
 import { UserStatus } from "./status";
+import { DEFAULT_DISCRIMINATOR, deletedUser } from "./user";
 
 export interface User {
   userId: string;
@@ -67,11 +68,11 @@ export const appState = {
   get currentUserId(): string | null {
     return state.currentUserId;
   },
-  get currentUserNick(): string | null {
-    return state.currentUserNick;
+  get currentUserNick(): string {
+    return state.currentUserNick || deletedUser;
   },
-  get currentDiscriminator(): string | null {
-    return state.currentDiscriminator;
+  get currentDiscriminator(): string {
+    return state.currentDiscriminator || DEFAULT_DISCRIMINATOR;
   },
   get userStatus(): UserStatus | null {
     return state.userStatus;

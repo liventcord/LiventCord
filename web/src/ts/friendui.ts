@@ -1,5 +1,5 @@
-import { appState } from "./appState.ts";
-
+import { reactive } from "vue";
+import { appState } from "./appState";
 import {
   removeElement,
   enableElement,
@@ -8,8 +8,8 @@ import {
   disableElementHTML,
   disableElement,
   IMAGE_SRCS
-} from "./utils.ts";
-import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user.ts";
+} from "./utils";
+import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user";
 import {
   submitAddFriend,
   filterFriendsOnSearch,
@@ -17,20 +17,19 @@ import {
   friendsCache,
   UpdatePendingCounter,
   removeDm
-} from "./friends.ts";
+} from "./friends";
 import {
   appendToProfileContextList,
   triggerContextMenuById
-} from "./contextMenuActions.ts";
-import { setProfilePic } from "./avatar.ts";
-import { translations } from "./translations.ts";
-import { activityList, userList } from "./userList.ts";
-import { loadDmHome, openDm } from "./app.ts";
-import { isBlackTheme } from "./settings.ts";
-import { getCurrentWidth } from "./ui.ts";
-import store from "../store.ts";
-import { Friend, UserInfo } from "./types/interfaces.ts";
-import { SVG } from "./svgIcons.ts";
+} from "./contextMenuActions";
+import { setProfilePic } from "./avatar";
+import { translations } from "./translations";
+import { activityList, userList } from "./userList";
+import { loadDmHome, openDm } from "./app";
+import { isBlackTheme } from "./settings";
+import store from "../store";
+import { Friend, UserInfo } from "./types/interfaces";
+import { SVG } from "./svgIcons";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";
@@ -42,7 +41,6 @@ const grayColor = "#c2c2c2";
 let currentUserActivities: Friend[] = [];
 
 export let currentSelectedFriendMenu: keyof typeof buttonElements;
-const dmContainerParent = getId("dm-container-parent") as HTMLElement;
 export const friendContainerItem = getId(
   "friend-container-item"
 ) as HTMLElement;
@@ -57,8 +55,6 @@ export let isAddFriendsOpen = false;
 const initialFriendsContainerHtml = `<input id="friendsSearchInput" autocomplete="off" placeholder=${translations.getTranslation(
   "friendsSearchInput"
 )} ></input>`;
-
-const HOVER_BUBBLE_TIME = 500;
 
 const friendMenuTypes = {
   online: "online",
@@ -82,40 +78,8 @@ let ButtonsList = Object.values(buttonElements);
 initializeButtonsList();
 
 disableElementHTML(buttonElements.blocked);
-interface ExistingDmContainer {
-  remove(): void;
-  dmContainer: HTMLElement;
-}
 
-const existingFriendsDmContainers = new Set<ExistingDmContainer>();
-const existingFriendsIds = new Set<string>();
-
-export function activateDmContainer(friendId: string) {
-  console.warn(existingFriendsDmContainers);
-  if (!existingFriendsDmContainers || existingFriendsDmContainers.size < 1) {
-    return;
-  }
-
-  existingFriendsDmContainers.forEach(({ dmContainer }) => {
-    console.warn(dmContainer);
-    if (dmContainer.id === friendId) {
-      dmContainer.classList.add("dm-selected");
-    } else {
-      dmContainer.classList.remove("dm-selected");
-    }
-  });
-}
-
-export function disableDmContainers() {
-  if (!existingFriendsDmContainers || existingFriendsDmContainers.size < 1) {
-    return;
-  }
-
-  existingFriendsDmContainers.forEach(({ dmContainer }) => {
-    dmContainer.classList.remove("dm-selected");
-  });
-}
-interface DmUserInfo {
+export interface DmUserInfo {
   userId: string;
   status: string;
   nickName: string;
@@ -126,142 +90,28 @@ interface DmUserInfo {
   isFriendsRequestToUser: boolean;
 }
 
-interface ExistingDmContainer {
-  dmContainer: HTMLElement;
-  remove(): void;
+interface DmListState {
+  friends: DmUserInfo[];
+  currentDmId: string;
 }
 
-class DmUser {
-  friend: DmUserInfo;
-  friendId: string;
-  friendNick: string;
-  dmContainer: HTMLElement;
-  private statusBubble: HTMLElement | null = null;
-  private unsubscribe: (() => void) | null = null;
+export const dmListState = reactive<DmListState>({
+  friends: [],
+  currentDmId: friendsCache.currentDmId ?? ""
+});
 
-  private constructor(friend: DmUserInfo, dmContainer: HTMLElement) {
-    this.friend = friend;
-    this.friendId = friend.userId;
-    this.friendNick = friend.nickName;
-    this.dmContainer = dmContainer;
-    this.setupStatusSync();
-  }
+export function syncCurrentDmId(id: string) {
+  dmListState.currentDmId = id;
+}
 
-  static async create(friend: DmUserInfo): Promise<DmUser> {
-    const existing = dmContainerParent.querySelector(
-      `#${CSS.escape(friend.userId)}`
-    ) as HTMLElement;
-    if (existing) {
-      return new DmUser(friend, existing);
-    }
-    const dmContainer = await DmUser.createDmContainer(friend);
-    return new DmUser(friend, dmContainer);
-  }
+export function openDmHandler(userId: string) {
+  openDm(userId);
+  syncCurrentDmId(userId);
+}
 
-  private setupStatusSync() {
-    this.unsubscribe = store.subscribe((mutation, state) => {
-      if (
-        mutation.type === "updateUserStatus" &&
-        mutation.payload.userId === this.friendId
-      ) {
-        this.updateStatusBubble(mutation.payload.status);
-      }
-    });
-  }
-
-  private updateStatusBubble(status: string) {
-    if (!this.statusBubble) {
-      this.statusBubble = this.dmContainer.querySelector(
-        ".dm-bubble"
-      ) as HTMLElement;
-    }
-
-    if (this.statusBubble) {
-      this.statusBubble.className = "dm-bubble";
-      this.statusBubble.classList.add(status);
-    }
-  }
-
-  public destroy() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
-    }
-  }
-
-  private static async createDmContainer(
-    friend: DmUserInfo
-  ): Promise<HTMLElement> {
-    const dmContainer = createEl("div", {
-      className: "dm-container",
-      id: friend.userId
-    });
-
-    if (friend.userId === friendsCache.currentDmId) {
-      dmContainer.classList.add("dm-selected");
-    }
-
-    const initialWidth = getCurrentWidth();
-    dmContainer.style.width = `${initialWidth + 80}px`;
-
-    const profileImg = createEl("img", {
-      className: "dm-profile-img"
-    });
-    setProfilePic(profileImg, friend.userId);
-
-    const status = store.getters.getUserStatus(friend.userId) || "offline";
-    const bubble = createDmBubble(status);
-
-    profileImg.style.transition = "border-radius 0.5s ease-out";
-    bubble.style.transition = "opacity 0.5s ease-in-out";
-
-    let hoverTimeout: ReturnType<typeof setTimeout>;
-
-    profileImg.addEventListener("mouseover", () => {
-      profileImg.style.borderRadius = "0px";
-      clearTimeout(hoverTimeout);
-      bubble.style.opacity = "0";
-      hoverTimeout = setTimeout(() => {
-        bubble.style.display = "none";
-      }, HOVER_BUBBLE_TIME);
-    });
-
-    profileImg.addEventListener("mouseout", () => {
-      profileImg.style.borderRadius = "25px";
-      clearTimeout(hoverTimeout);
-      bubble.style.display = "block";
-      setTimeout(() => {
-        bubble.style.opacity = "1";
-      }, 10);
-    });
-
-    dmContainer.addEventListener("click", () => {
-      openDm(friend.userId);
-    });
-
-    appendToProfileContextList(friend, friend.userId);
-
-    dmContainer.appendChild(bubble);
-    dmContainer.appendChild(profileImg);
-
-    const titleContent = createEl("p", {
-      className: "content",
-      textContent: friend.nickName
-    });
-    dmContainer.appendChild(titleContent);
-
-    const closeBtn = createEl("div");
-    closeBtn.classList.add("close-dm-btn");
-    closeBtn.textContent = "X";
-    closeBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      removeDm(friend.userId);
-    });
-
-    dmContainer.appendChild(closeBtn);
-
-    return dmContainer;
-  }
+export function removeDmHandler(userId: string) {
+  removeDm(userId);
+  removeFromDmList(userId);
 }
 
 interface DmUserAddResponse {
@@ -269,89 +119,64 @@ interface DmUserAddResponse {
   nickName: string;
   discriminator: string;
 }
-
-export async function appendToDmList(
-  user: DmUserAddResponse
-): Promise<HTMLElement | null> {
-  if (existingFriendsIds.has(user.userId)) {
-    return null;
+export function appendToDmList(user: DmUserAddResponse, prepend = false) {
+  if (dmListState.friends.some((f) => f.userId === user.userId)) {
+    if (prepend) {
+      const idx = dmListState.friends.findIndex(
+        (f) => f.userId === user.userId
+      );
+      const [existing] = dmListState.friends.splice(idx, 1);
+      dmListState.friends.unshift(existing);
+    }
+    return;
   }
 
-  const dmUserInfo: DmUserInfo = {
+  const entry: DmUserInfo = {
     userId: user.userId,
-    status: "",
     nickName: user.nickName,
+    discriminator: user.discriminator,
+    status: store.getters.getUserStatus(user.userId) || "offline",
     activity: "",
     profileVersion: "",
-    discriminator: user.discriminator,
     isPending: false,
     isFriendsRequestToUser: false
   };
 
-  const dmUser = await DmUser.create(dmUserInfo);
-
-  const existingContainer = dmContainerParent.querySelector(
-    `#${CSS.escape(user.userId)}`
-  );
-  if (existingContainer) {
-    return dmUser.dmContainer;
+  if (prepend) {
+    dmListState.friends.unshift(entry);
+  } else {
+    dmListState.friends.push(entry);
   }
 
-  dmContainerParent.appendChild(dmUser.dmContainer);
-
-  existingFriendsDmContainers.add({
-    dmContainer: dmUser.dmContainer,
-    remove(): void {
-      this.dmContainer.remove();
-    }
-  });
-
-  existingFriendsIds.add(user.userId);
-
-  return dmUser.dmContainer;
+  return true;
 }
 
 export function updateDmsList(friends: DmUserInfo[]) {
   if (!Array.isArray(friends)) {
-    console.error("Expected an array of users");
+    console.error(
+      "[dmListState] updateDmsList: expected array, got",
+      typeof friends
+    );
     return;
   }
 
-  existingFriendsDmContainers.forEach(({ remove }) => remove());
-  existingFriendsDmContainers.clear();
-  existingFriendsIds.clear();
+  dmListState.friends.splice(0, dmListState.friends.length);
 
   const friendsRecord: { [key: string]: Friend } = friends.reduce(
     (record, friend) => {
-      async function setupDmUser(_friend: DmUserInfo) {
-        console.log(friend);
-        userManager.addUser(
-          _friend.userId,
-          friend.nickName,
-          friend.discriminator,
-          friend.profileVersion
-        );
-        const dmUser = await DmUser.create(_friend);
-        const existingContainer = dmContainerParent.querySelector(
-          `#${CSS.escape(_friend.userId)}`
-        );
-        if (!existingContainer) {
-          dmContainerParent.appendChild(dmUser.dmContainer);
-        }
+      userManager.addUser(
+        friend.userId,
+        friend.nickName,
+        friend.discriminator,
+        friend.profileVersion
+      );
 
-        existingFriendsDmContainers.add({
-          dmContainer: dmUser.dmContainer,
-          remove() {
-            dmUser.dmContainer.remove();
-          }
-        });
-      }
-      setupDmUser(friend);
-
-      existingFriendsIds.add(friend.userId);
+      dmListState.friends.push({
+        ...friend,
+        status: store.getters.getUserStatus(friend.userId) || "offline"
+      });
 
       record[friend.userId] = new Friend(friend);
-
       return record;
     },
     {} as { [key: string]: Friend }
@@ -360,46 +185,45 @@ export function updateDmsList(friends: DmUserInfo[]) {
   friendsCache.setupDmFriends(friendsRecord);
 }
 
-async function addToDmList(userData: DmUserInfo): Promise<void> {
-  const existingDmContainer = dmContainerParent.querySelector(
-    `#${CSS.escape(userData.userId)}`
+export async function addToDmList(userData: DmUserInfo): Promise<void> {
+  appendToDmList(
+    {
+      userId: userData.userId,
+      nickName: userData.nickName,
+      discriminator: userData.discriminator
+    },
+    true
   );
-
-  if (existingDmContainer) {
-    dmContainerParent.insertBefore(
-      existingDmContainer,
-      dmContainerParent.firstChild
-    );
-    return;
-  }
-
-  const newContainer = await appendToDmList(userData);
-
-  if (newContainer) {
-    dmContainerParent.insertBefore(newContainer, dmContainerParent.firstChild);
-  }
 }
 
 export async function removeFromDmList(userId: string): Promise<void> {
-  console.log("removeFromDmList: ", userId);
-  const existingDmContainer = dmContainerParent.querySelector(
-    `#${CSS.escape(userId)}`
-  );
-  if (existingDmContainer) {
-    dmContainerParent.removeChild(existingDmContainer);
+  const idx = dmListState.friends.findIndex((f) => f.userId === userId);
+  if (idx !== -1) {
+    dmListState.friends.splice(idx, 1);
     friendsCache.removeDmFriend(userId);
     if (userId === friendsCache.currentDmId) {
+      dmListState.currentDmId = "";
       loadDmHome();
     }
+  } else {
+    console.warn("[dmListState] removeFromDmList: userId not found:", userId);
   }
+}
+
+export function activateDmContainer(friendId: string) {
+  dmListState.currentDmId = friendId;
+}
+
+export function disableDmContainers() {
+  dmListState.currentDmId = "";
 }
 
 export function getCurrentDmFriends(): UserInfo[] {
   return [
     {
       userId: appState.currentUserId || "",
-      nickName: appState.currentUserNick || deletedUser,
-      discriminator: appState.currentDiscriminator || "0000"
+      nickName: appState.currentUserNick,
+      discriminator: appState.currentDiscriminator
     },
     {
       userId: friendsCache.currentDmId,
@@ -413,6 +237,10 @@ export function getCurrentDmFriends(): UserInfo[] {
   ];
 }
 
+// ---------------------------------------------------------------------------
+// Notification / friend-message popup
+// ---------------------------------------------------------------------------
+
 let notifyTimeout: ReturnType<typeof setTimeout> | null;
 const NOTIFY_LENGTH = 10000;
 export function printFriendMessage(content: string) {
@@ -423,16 +251,16 @@ export function printFriendMessage(content: string) {
   if (parentNode) {
     parentNode.appendChild(messagetext);
   }
-
-  if (notifyTimeout) {
-    clearTimeout(notifyTimeout);
-  }
-
+  if (notifyTimeout) clearTimeout(notifyTimeout);
   notifyTimeout = setTimeout(() => {
     messagetext.remove();
     notifyTimeout = null;
   }, NOTIFY_LENGTH);
 }
+
+// ---------------------------------------------------------------------------
+// Friends menu / button logic
+// ---------------------------------------------------------------------------
 
 export function updateFriendMenu() {
   const currentSelectedFriendMenuElement =
@@ -441,6 +269,7 @@ export function updateFriendMenu() {
     selectFriendMenu(currentSelectedFriendMenuElement);
   }
 }
+
 function selectFriendMenu(clickedButton: HTMLElement) {
   const openFriendsBtn = getId("open-friends-button") as HTMLElement;
   openFriendsBtn.style.backgroundColor = addfriendhighlightedcolor();
@@ -448,20 +277,15 @@ function selectFriendMenu(clickedButton: HTMLElement) {
   displayWumpus();
   isAddFriendsOpen = false;
   currentSelectedFriendMenu = getRequestType(clickedButton);
-  console.log("Selected: ", currentSelectedFriendMenu);
 
   const friends = friendsCache.cacheFriendToFriendConverter();
-
   populateFriendsContainer(friends, clickedButton === buttonElements.pending);
 
-  if (!ButtonsList) {
-    ButtonsList = Object.values(buttonElements);
-  }
+  if (!ButtonsList) ButtonsList = Object.values(buttonElements);
 
   ButtonsList.forEach((button) => {
     if (button) {
       const reqType = getRequestType(button);
-
       button.style.backgroundColor =
         reqType === currentSelectedFriendMenu
           ? highlightedColor()
@@ -485,14 +309,11 @@ function initializeButtonsList() {
   Array.from(ButtonsList).forEach((element) => {
     const el = element;
     const reqType = getRequestType(el);
-
     el.addEventListener("click", () => selectFriendMenu(el));
-
     el.addEventListener("mouseenter", () => {
       el.style.backgroundColor = highlightedColor();
       el.style.color = "white";
     });
-
     el.addEventListener("mouseleave", () => {
       const isActive =
         reqType === currentSelectedFriendMenu && !isAddFriendsOpen;
@@ -511,6 +332,10 @@ function resetButtons() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Gray-sphere / button helpers
+// ---------------------------------------------------------------------------
+
 function createGraySphere(
   content: string,
   element: HTMLElement,
@@ -521,12 +346,10 @@ function createGraySphere(
     className: "gray-sphere friend_button_element"
   });
 
-  graySphere.addEventListener("click", function (event) {
-    event.stopPropagation();
-  });
+  graySphere.addEventListener("click", (event) => event.stopPropagation());
 
   if (hoverText) {
-    graySphere.addEventListener("mouseenter", function () {
+    graySphere.addEventListener("mouseenter", () => {
       const descriptionRectangle = createEl("div", {
         className: "description-rectangle"
       });
@@ -534,18 +357,11 @@ function createGraySphere(
         className: "description-rectangle-text",
         textContent: hoverText
       });
-
       descriptionRectangle.appendChild(textEl);
       graySphere.appendChild(descriptionRectangle);
     });
-
-    graySphere.addEventListener("mouseleave", function () {
-      const descriptionRectangle = graySphere.querySelector(
-        ".description-rectangle"
-      );
-      if (descriptionRectangle) {
-        descriptionRectangle.remove();
-      }
+    graySphere.addEventListener("mouseleave", () => {
+      graySphere.querySelector(".description-rectangle")?.remove();
     });
   }
 
@@ -574,51 +390,37 @@ export function createButtonWithBubblesImg(
   return iconSphere;
 }
 
+// ---------------------------------------------------------------------------
+// Activity list
+// ---------------------------------------------------------------------------
+
 export function clearActivityList() {
   if (currentUserActivities.length === 0) {
     const activityListEmptyHTML = `
-      <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation(
-        "nowonline"
-      )}</h1>
-      <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation(
-        "activity-detail"
-      )}</h1>
-      <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation(
-        "activity-detail-2"
-      )}</h1>
+      <h1 id="nowonline" style="font-weight: bolder;">${translations.getTranslation("nowonline")}</h1>
+      <h1 id="activity-detail" style="font-weight: bolder;">${translations.getTranslation("activity-detail")}</h1>
+      <h1 id="activity-detail-2" style="font-weight: bolder;">${translations.getTranslation("activity-detail-2")}</h1>
       <ul></ul>`;
-    if (activityList) {
-      activityList.innerHTML = activityListEmptyHTML;
-    }
+    if (activityList) activityList.innerHTML = activityListEmptyHTML;
   }
 }
 
 export function updateUsersActivities(friends?: Friend[]) {
-  if (friends) {
-    currentUserActivities = friends;
-  }
-  console.log(String(Array.isArray(currentUserActivities)));
+  if (friends) currentUserActivities = friends;
   if (currentUserActivities && Array.isArray(currentUserActivities)) {
     clearActivityList();
-    currentUserActivities.forEach((friend) => {
-      createActivityCard(friend);
-    });
+    currentUserActivities.forEach((friend) => createActivityCard(friend));
   }
 }
 
 function createActivityCard(friend: Friend) {
-  if (!userManager.isOnline(friend.userId)) {
-    return;
-  }
-  if (!activityList) {
-    return;
-  }
-  if (friend.activity === "" || friend.activity === undefined) {
-    return;
-  }
+  if (!userManager.isOnline(friend.userId)) return;
+  if (!activityList) return;
+  if (!friend.activity) return;
 
   disableElement("activity-detail");
   disableElement("activity-detail-2");
+
   let activityCard = activityList.querySelector(
     `#${CSS.escape(friend.userId)}`
   );
@@ -629,9 +431,7 @@ function createActivityCard(friend: Friend) {
       id: friend.userId
     });
     const contentDiv = createEl("div", { className: "activity-card-content" });
-    const avatarImg = createEl("img", {
-      className: "activity-card-avatar"
-    });
+    const avatarImg = createEl("img", { className: "activity-card-avatar" });
     setProfilePic(avatarImg, friend.userId);
     const nickHeading = createEl("h2", { className: "activity-card-nick" });
     nickHeading.textContent =
@@ -649,32 +449,26 @@ function createActivityCard(friend: Friend) {
 
     activityCard.appendChild(contentDiv);
     activityCard.appendChild(iconImg);
-
     activityList.appendChild(activityCard);
   } else {
     const contentDiv = activityCard.querySelector(".activity-card-content");
-    //const avatarImg = contentDiv?.querySelector(
-    //  ".activity-card-avatar"
-    //) as HTMLImageElement;
-    //setProfilePic(avatarImg, friend.userId);
-
     const nickHeading = contentDiv?.querySelector(".activity-card-nick");
-    if (nickHeading) {
+    if (nickHeading)
       nickHeading.textContent =
         friend.nickName || userManager.getUserNick(friend.userId);
-    }
-
     const titleSpan = contentDiv?.querySelector(".activity-card-title");
-    if (titleSpan && titleSpan.textContent !== friend.activity) {
+    if (titleSpan && titleSpan.textContent !== friend.activity)
       titleSpan.textContent = friend.activity || "";
-    }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Add-friend UI
+// ---------------------------------------------------------------------------
 
 export function openAddFriend() {
   resetButtons();
   isAddFriendsOpen = true;
-
   updateFriendButton();
   clearFriendContainer();
   createAddFriendForm();
@@ -683,9 +477,7 @@ export function openAddFriend() {
 
 function updateFriendButton() {
   const friendsBtn = getId("open-friends-button") as HTMLElement;
-  if (!friendsBtn) {
-    return;
-  }
+  if (!friendsBtn) return;
   friendsBtn.style.color = "#2fc770";
   friendsBtn.style.backgroundColor = "transparent";
 }
@@ -719,31 +511,18 @@ function createAddFriendForm() {
   });
 
   const userlistline = createEl("hr", { className: "vertical-line-long" });
-
   addfriendinputbutton.classList.add("inactive");
 
   addfriendinput.addEventListener("input", () => {
-    const inputValue = addfriendinput.value.trim();
-    toggleButtonState(inputValue !== "");
+    const isActive = addfriendinput.value.trim() !== "";
+    addfriendinputbutton.classList.toggle("inactive", !isActive);
+    addfriendinputbutton.classList.toggle("active", isActive);
   });
 
-  function toggleButtonState(isActive: boolean) {
-    if (isActive) {
-      addfriendinputbutton.classList.remove("inactive");
-      addfriendinputbutton.classList.add("active");
-    } else {
-      addfriendinputbutton.classList.remove("active");
-      addfriendinputbutton.classList.add("inactive");
-    }
-  }
-
-  addfriendinputbutton.addEventListener("click", () => {
-    submitAddFriend();
-  });
+  addfriendinputbutton.addEventListener("click", () => submitAddFriend());
 
   addfriendinputcontainer.appendChild(addfriendinput);
   addfriendinputcontainer.appendChild(addfriendinputbutton);
-
   friendsContainer.appendChild(addfriendtext);
   friendsContainer.appendChild(addfrienddetailtext);
   friendsContainer.appendChild(addfriendinputcontainer);
@@ -751,32 +530,18 @@ function createAddFriendForm() {
 }
 
 function adjustButtonPosition() {
-  if (!userList) {
-    return;
-  }
+  if (!userList) return;
   const inputrighttoset = userList.style.display === "flex" ? "463px" : "76px";
   const addfriendinputbutton = getId("addfriendinputbutton");
-  if (addfriendinputbutton) {
-    addfriendinputbutton.style.right = inputrighttoset;
-  }
+  if (addfriendinputbutton) addfriendinputbutton.style.right = inputrighttoset;
 }
 
-function createFriendCardBubble(status: string) {
-  const bubble = createEl("span", { className: `profile-bubble ${status}` });
-  return bubble;
-}
+// ---------------------------------------------------------------------------
+// Friends container population
+// ---------------------------------------------------------------------------
 
-function createDmBubble(status: string) {
-  const bubble = createEl("span", { className: "profile-bubble" });
-
-  bubble.classList.add("dm_" + status);
-
-  return bubble;
-}
 export function displayWumpus() {
-  if (friendsContainer.querySelector("#wumpusalone")) {
-    return;
-  }
+  if (friendsContainer.querySelector("#wumpusalone")) return;
   removeElement("addfriendmenu");
   friendsContainer.innerHTML = "";
   const imgElement = createEl("img", {
@@ -788,53 +553,41 @@ export function displayWumpus() {
 }
 
 async function filterFriendsByCategory(friends: Friend[]): Promise<Friend[]> {
-  const filterConditions = {
-    [friendMenuTypes.online]: async (friend: Friend) =>
-      (await userManager.isOnline(friend.userId)) && !friend.isPending,
-    [friendMenuTypes.all]: async (friend: Friend) => !friend.isPending,
-    [friendMenuTypes.blocked]: async (friend: Friend) =>
-      userManager.isUserBlocked(friend.userId) && !friend.isPending,
-    [friendMenuTypes.pending]: async (friend: Friend) => friend.isPending
+  const filterConditions: Record<string, (f: Friend) => Promise<boolean>> = {
+    [friendMenuTypes.online]: async (f) =>
+      (await userManager.isOnline(f.userId)) && !f.isPending,
+    [friendMenuTypes.all]: async (f) => !f.isPending,
+    [friendMenuTypes.blocked]: async (f) =>
+      userManager.isUserBlocked(f.userId) && !f.isPending,
+    [friendMenuTypes.pending]: async (f) => f.isPending
   };
 
   const filterFn = filterConditions[currentSelectedFriendMenu];
-
-  if (filterFn) {
-    const filteredFriends = await Promise.all(
-      friends.map(async (friend) => ({
-        friend,
-        keep: await filterFn(friend)
-      }))
-    );
-
-    return filteredFriends
-      .filter(({ keep }) => keep)
-      .map(({ friend }) => friend);
+  if (!filterFn) {
+    console.warn("Unhandled status: " + currentSelectedFriendMenu);
+    return [];
   }
 
-  console.warn("Unhandled status: " + currentSelectedFriendMenu);
-  return [];
+  const results = await Promise.all(
+    friends.map(async (friend) => ({ friend, keep: await filterFn(friend) }))
+  );
+  return results.filter(({ keep }) => keep).map(({ friend }) => friend);
 }
 
 export async function populateFriendsContainer(
   friends: Friend[],
   isPending?: boolean
 ) {
-  if (friends.length === 0) {
-    return;
-  }
+  if (friends.length === 0) return;
 
   try {
-    console.log(friends);
     friends = await filterFriendsByCategory(friends);
-
     if (friends.length === 0) {
       displayWumpus();
       return;
     }
 
     const friendsTitleContainer = createFriendsTitle(friends.length);
-
     friendsContainer.innerHTML = initialFriendsContainerHtml;
     const friendsSearchInput = getId("friendsSearchInput");
     friendsSearchInput?.addEventListener("onkeyup", filterFriendsOnSearch);
@@ -846,7 +599,7 @@ export async function populateFriendsContainer(
     console.error("Error populating friends container:", error);
   }
 }
-//TODO: make this call userManager in bulk
+
 async function updateFriendsList(friends: Friend[], isPending: boolean) {
   for (const friend of friends) {
     const status = await userManager.getStatusString(friend.userId);
@@ -858,13 +611,14 @@ async function updateFriendsList(friends: Friend[], isPending: boolean) {
       friend.discriminator,
       status,
       isOnline,
-      isPending || false,
+      isPending,
       friend.isFriendsRequestToUser
     );
   }
   updateUsersActivities(friends);
   filterFriendsOnSearch();
 }
+
 function createFriendCard(
   friend: Friend,
   userId: string,
@@ -875,20 +629,16 @@ function createFriendCard(
   isPending: boolean,
   isFriendsRequestToUser: boolean
 ) {
-  const foundFriend = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
-  if (foundFriend) {
-    return;
-  }
+  if (friendsContainer.querySelector(`#${CSS.escape(userId)}`)) return;
+
   const friendCard = createEl("div", { className: "friend-card", id: userId });
   const img = createEl("img");
   setProfilePic(img, userId);
   img.classList.add("friend-image");
 
-  const bubble = createFriendCardBubble(status);
+  const bubble = createEl("span", { className: `profile-bubble ${status}` });
   bubble.style.transition = "display 0.5s ease-in-out";
-  if (!isPending) {
-    friendCard.appendChild(bubble);
-  }
+  if (!isPending) friendCard.appendChild(bubble);
 
   img.addEventListener("mouseover", () =>
     handleImageHover(img, bubble, isPending, isOnline, true)
@@ -896,9 +646,7 @@ function createFriendCard(
   img.addEventListener("mouseout", () =>
     handleImageHover(img, bubble, isPending, isOnline, false)
   );
-  friendCard.addEventListener("click", () => {
-    openDm(userId);
-  });
+  friendCard.addEventListener("click", () => openDm(userId));
   appendToProfileContextList({ userId, nickName, discriminator }, userId);
 
   const friendInfo = createEl("div", { className: "friend-info" });
@@ -921,13 +669,11 @@ function createFriendCard(
         ? "online"
         : "offline"
   );
-
   friendInfo.appendChild(
     createEl("div", { className: "friend-status", textContent: onlineStatus })
   );
 
   const friendButton = createEl("div", { className: "friend-button" });
-
   if (isPending) {
     addPendingButtons(friendButton, friend);
   } else {
@@ -942,10 +688,7 @@ function createFriendCard(
 }
 
 export function removeFriendCard(userId: string) {
-  const friCard = friendsContainer.querySelector(`#${CSS.escape(userId)}`);
-  if (friCard) {
-    friCard.remove();
-  }
+  friendsContainer.querySelector(`#${CSS.escape(userId)}`)?.remove();
 }
 
 function handleImageHover(
@@ -956,9 +699,8 @@ function handleImageHover(
   isMouseOver: boolean
 ) {
   img.style.borderRadius = isMouseOver ? "0px" : "25px";
-  if (bubble && !isPending) {
+  if (bubble && !isPending)
     bubble.style.display = isMouseOver || isOnline ? "none" : "block";
-  }
 }
 
 function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
@@ -983,22 +725,22 @@ function addFriendButtons(friendButton: HTMLElement, friend: Friend) {
 
   const cachedFriend = friendsCache.getFriend(friend.userId);
   appendToProfileContextList(cachedFriend, friend.userId);
-  optionsButton.addEventListener("click", () => {
-    triggerContextMenuById(optionsButton);
-  });
+  optionsButton.addEventListener("click", () =>
+    triggerContextMenuById(optionsButton)
+  );
 }
 
 export function getFriendsTranslation() {
   return translations.getTranslation(currentSelectedFriendMenu);
 }
+
 function createFriendsTitle(friendsCount: number) {
   const textToWrite =
     friendsCount !== 0 ? getFriendsTranslation() + " — " + friendsCount : "";
-  const friendsTitleContainer = createEl("h2", {
+  return createEl("h2", {
     marginRight: "50px",
     marginTop: "100px",
     textContent: textToWrite,
     id: "friendsTitleContainer"
   });
-  return friendsTitleContainer;
 }

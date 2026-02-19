@@ -126,7 +126,7 @@ function updateUIWidths(newWidth: number): void {
 }
 
 function updateDmContainers(width: number): void {
-  const par = getId("dm-container-parent");
+  const par = getId("");
   if (!par) return;
   par.querySelectorAll<HTMLDivElement>(".dm-container").forEach((el) => {
     el.style.width = `${width + 70}px`;

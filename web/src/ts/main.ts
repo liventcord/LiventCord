@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import App from "../App.vue";
 import store from "../store";
 import SearchPanel from "../components/SearchPanel.vue";
+import DmList from "../components/DmList.vue";
 
 const app = createApp(App);
 app.use(store);
@@ -16,4 +17,15 @@ if (searchRoot) {
   const searchApp = createApp(SearchPanel);
   searchApp.use(store);
   searchApp.mount(searchRoot);
+}
+
+const dmListRoot = document.getElementById("dm-container-parent");
+if (dmListRoot) {
+  const dmListApp = createApp(DmList);
+  dmListApp.use(store);
+  dmListApp.mount(dmListRoot);
+} else {
+  console.error(
+    "[main] #dm-container-parent not found in DOM — DmList not mounted"
+  );
 }

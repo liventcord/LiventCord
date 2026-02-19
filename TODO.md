@@ -36,3 +36,8 @@
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Idle and do not disturb status only gets shown locally
 - Changing guild does not refresh attachments
+- Until opening dm or entering guild, dm container friend status stays offline
+- Profile display is broken
+- Change buttons at login to dropdown
+- Logout is broken
+- Deleted attachment content should not remove if that copy is used by other attachments 

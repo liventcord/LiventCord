@@ -161,7 +161,7 @@ class UserManager {
   }
 
   getUserDiscriminator(userId: string): string {
-    return this.userNames[userId]?.discriminator ?? "0000";
+    return this.userNames[userId]?.discriminator ?? DEFAULT_DISCRIMINATOR;
   }
 
   getUserIdFromNick(nick: string): string | null {

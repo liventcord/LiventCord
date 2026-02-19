@@ -141,7 +141,7 @@ export function updateDmFriendList(friendId: string, friendNick: string) {
   const usersData = [
     {
       userId: appState.currentUserId,
-      nickName: appState.currentUserId,
+      nickName: appState.currentUserNick,
       isOnline: userManager.isOnline(appState.currentUserId),
       discriminator: appState.currentDiscriminator || DEFAULT_DISCRIMINATOR
     },

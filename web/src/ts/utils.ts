@@ -1176,7 +1176,7 @@ export function insertHTML(html: string) {
 
 export function getMediaBaseURL() {
   const mediaHostname =
-    initialState?.mediaWorkerUrl ?? apiClient.getBackendUrl();
+    initialState?.mediaWorkerUrl || apiClient.getBackendUrl();
   return mediaHostname;
 }
 
