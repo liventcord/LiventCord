@@ -258,7 +258,6 @@ app.UseSwaggerUI(c =>
 
 app.MapControllers().RequireCors("AllowSpecificOrigin");
 
-
 var statsService = app.Services.GetRequiredService<IAppStatsService>();
 app.Lifetime.ApplicationStopping.Register(() =>
 {
@@ -267,42 +266,56 @@ app.Lifetime.ApplicationStopping.Register(() =>
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
-    using (var scope = app.Services.CreateScope())
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        try
-        {
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var redisEventEmitter = scope.ServiceProvider.GetRequiredService<RedisEventEmitter>();
-            var guildIds = await context.GetAllGuildIds();
-            foreach (var guildId in guildIds)
-            {
-                await redisEventEmitter.EmitGuildMembersToRedis(guildId);
-            }
-        }
-        catch (DbUpdateException ex)
-        {
-            logger.LogWarning(ex, "Guild table may not be available yet, skipping Redis sync");
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogWarning(
-                ex,
-                "EF Core operation failed, possibly due to missing table. Skipping Redis sync"
-            );
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Unexpected error during Redis sync");
-        }
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var redisEventEmitter = scope.ServiceProvider.GetRequiredService<RedisEventEmitter>();
+        var guildIds = await context.GetAllGuildIds();
 
-        var dedupService =
-            scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
+        await redisEventEmitter.EmitGuildsParallel(guildIds, async guildId =>
+        {
+            await redisEventEmitter.EmitGuildMembersToRedis(guildId);
+        });
+    }
+    catch (DbUpdateException ex)
+    {
+        logger.LogWarning(ex, "Guild table may not be available yet, skipping Redis sync");
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning(
+            ex,
+            "EF Core operation failed, possibly due to missing table. Skipping Redis sync"
+        );
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Unexpected error during Redis sync");
+    }
+
+    try
+    {
+        var dedupService = scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
         await dedupService.DeduplicateAsync(CancellationToken.None);
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Error during attachment deduplication");
+    }
 
+    try
+    {
         var userService = scope.ServiceProvider.GetRequiredService<RegisterController>();
         await userService.EnsureSystemUserExistsAsync();
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Error ensuring system user exists");
     }
 });
 
 app.Run();
+

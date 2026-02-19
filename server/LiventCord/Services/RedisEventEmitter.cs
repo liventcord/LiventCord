@@ -78,34 +78,15 @@ public class RedisEventEmitter
 
     public async Task EmitGuildsParallel(IEnumerable<string> guildIds, Func<string, Task> emitFunc)
     {
-        var tasks = new List<Task>();
-        using var enumerator = guildIds.GetEnumerator();
-        var locker = new object();
-
-        for (int i = 0; i < _maxDegreeOfParallelism; i++)
+        var options = new ParallelOptions
         {
-            tasks.Add(Task.Run(async () =>
-            {
-                while (true)
-                {
-                    string guildId;
-                    lock (locker)
-                    {
-                        if (!enumerator.MoveNext()) break;
-                        guildId = enumerator.Current;
-                    }
+            MaxDegreeOfParallelism = _maxDegreeOfParallelism
+        };
 
-                    try
-                    {
-                        await emitFunc(guildId);
-                    }
-                    catch
-                    { }
-                }
-            }));
-        }
-
-        await Task.WhenAll(tasks);
+        await Parallel.ForEachAsync(guildIds, options, async (guildId, cancellationToken) =>
+        {
+            await emitFunc(guildId);
+        });
     }
 }
 
