@@ -52,7 +52,7 @@
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-eslint2": "^5.0.5",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.2.4",
     "vue-tsc": "^2.2.12"

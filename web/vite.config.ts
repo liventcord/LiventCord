@@ -1,7 +1,7 @@
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
-import eslintPlugin from "vite-plugin-eslint";
+import eslint from "vite-plugin-eslint2";
 import autoprefixer from "autoprefixer";
 
 export default defineConfig(({ mode }) => {
@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     publicDir: "../public",
     base: isDev ? "/" : "/LiventCord/app/",
     envDir: path.resolve(__dirname),
-    plugins: [vue(), eslintPlugin({ emitWarning: false })],
+    plugins: [vue(), eslint({ emitWarning: false })],
     css: {
       postcss: {
         plugins: [autoprefixer]
@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      outDir: path.resolve(__dirname, "output") 
+      outDir: path.resolve(__dirname, "output")
     }
   };
 });

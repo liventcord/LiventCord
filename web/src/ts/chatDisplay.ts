@@ -153,7 +153,7 @@ export async function handleMentionClick(
     return;
   }
 
-  let _userId = userId || target.dataset.userId || target.id;
+  const _userId = userId || target.dataset.userId || target.id;
   if (!_userId) return;
 
   currentMentionPop?.remove();
@@ -992,7 +992,6 @@ function clearDateBarAndStartMessageFromChat(): void {
 }
 
 function fetchAttachments(channelId: string, isDm = false): void {
-  alertUser("Fetching attachments for channel: ", channelId);
   if (!channelId) return;
   store.commit("setCurrentPage", 1);
 

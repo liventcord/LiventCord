@@ -33,7 +33,7 @@ if (window.AudioContext) {
   throw new Error("AudioContext not supported");
 }
 
-let currentAudioPlayer: HTMLAudioElement | null = null;
+const currentAudioPlayer: HTMLAudioElement | null = null;
 let analyser: AnalyserNode | null = null;
 let source: MediaElementAudioSourceNode | null = null;
 let isAnalyzing = false;
