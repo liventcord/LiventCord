@@ -701,15 +701,33 @@ async function buildPinSystemMessage(metadata: Metadata): Promise<string> {
   return `<a href="#" class="pinner-name-link">${nickname}</a> pinned a message to <a href="#" class="channel-link">this channel</a>. <a href="#" class="see-all-pinned-link">See all pinned messages</a> — ${formattedDate}`;
 }
 
+function stripTrailingJunk(url: string): string {
+  let prev = "";
+  while (prev !== url) {
+    prev = url;
+    url = url.replace(/[!.,;:?)\]}>'"*`]+$/, "");
+    url = url.replace(
+      /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}]+$/u,
+      ""
+    );
+    const openParens = (url.match(/\(/g) || []).length;
+    const closeParens = (url.match(/\)/g) || []).length;
+    if (closeParens > openParens) {
+      url = url.replace(/\)+$/, "");
+    }
+  }
+  return url;
+}
+
 function renderContent(
   container: HTMLElement,
   content: string,
   isSystemMessage: boolean
 ) {
   const urlPattern = /https?:\/\/[^\s<>"']+/g;
+
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-  const seenUrls = new Set<string>();
 
   const insertTextOrHTML = (text: string) => {
     if (!text.trim()) return;
@@ -720,38 +738,33 @@ function renderContent(
   };
 
   while ((match = urlPattern.exec(content)) !== null) {
-    const url = match[0];
-    if (seenUrls.has(url)) {
-      lastIndex = match.index + url.length;
-      continue;
-    }
-    seenUrls.add(url);
-
+    const rawUrl = match[0];
     const start = match.index;
-    const end = start + url.length;
+    const cleanUrl = stripTrailingJunk(rawUrl);
+    const suffix = rawUrl.slice(cleanUrl.length);
 
     if (start > lastIndex) insertTextOrHTML(content.slice(lastIndex, start));
 
     const urlLink = createEl("a", {
-      textContent: url,
-      href: url,
+      textContent: cleanUrl,
+      href: cleanUrl,
       className: "url-link"
     });
-
     urlLink.addEventListener("click", (e) => {
       e.preventDefault();
-      openExternalUrl(url);
+      openExternalUrl(cleanUrl);
     });
-
     container.appendChild(urlLink);
-    lastIndex = end;
+
+    if (suffix) insertTextOrHTML(suffix);
+
+    lastIndex = start + rawUrl.length;
   }
 
   if (lastIndex < content.length) {
     insertTextOrHTML(content.slice(lastIndex));
   }
 }
-
 function bindSystemMessageLinks(container: HTMLElement, metadata?: Metadata) {
   if (!container.parentElement) return;
 

@@ -48,11 +48,41 @@ const contentObserver = new IntersectionObserver(
 export function observe(element: HTMLElement): void {
   if (element) contentObserver.observe(element);
 }
-
 function loadObservedContent(targetElement: HTMLElement): void {
   if (!targetElement.parentElement) return;
   const jsonData = targetElement.dataset.content_observe;
   if (!jsonData || targetElement.dataset.contentLoaded === "true") return;
+
+  const normalize = (s: string) => s.replace(/\/+$/, "");
+  const normJson = normalize(jsonData);
+
+  Array.from(targetElement.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const txt = (node.textContent || "").trim();
+      if (!txt) {
+        targetElement.removeChild(node);
+        return;
+      }
+      if (normalize(txt) === normJson || txt === jsonData) {
+        targetElement.removeChild(node);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (el.classList.contains("url-link")) {
+        const href = el.getAttribute("href") || "";
+        if (normalize(href) === normJson || href === jsonData) {
+          Array.from(targetElement.childNodes).forEach((n) => {
+            if (n.nodeType === Node.TEXT_NODE) {
+              const t = (n.textContent || "").trim();
+              if (t && (normalize(t) === normJson || t === jsonData)) {
+                targetElement.removeChild(n);
+              }
+            }
+          });
+        }
+      }
+    }
+  });
 
   targetElement.dataset.contentLoaded = "true";
 

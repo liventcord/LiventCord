@@ -27,7 +27,6 @@
 
 - Typed message overlaps GIF/emoji and the send button on mobile
 - Split API init request (it is too slow to fetch)
-- HTTP URL appears duplicated when a message like "http://example.com/" is sent
 - Guild context menu does not work if stayed on me page
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Idle and do not disturb status only gets shown locally
@@ -39,5 +38,4 @@
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Add edited message text on loaded messages 
 - Create server popup looks broken
-- Fix emoji uploads
 - Avoid inactive client disconnections to ws
