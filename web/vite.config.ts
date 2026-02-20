@@ -6,6 +6,7 @@ import autoprefixer from "autoprefixer";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname));
+  const isDev = mode === "development";
 
   const proxyTarget = env.VITE_BACKEND_URL || "http://localhost:5005";
   const proxyPaths = ["/api", "/profiles", "/guilds", "/attachments", "/auth"];
@@ -20,7 +21,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: "./src",
     publicDir: "../public",
-    base: "/",
+    base: isDev ? "/" : "/LiventCord/app/",
     envDir: path.resolve(__dirname),
     plugins: [vue(), eslintPlugin({ emitWarning: false })],
     css: {
