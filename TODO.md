@@ -30,7 +30,6 @@
 - Split API init request (it is too slow to fetch)
 - HTTP URL appears duplicated when a message like "http://example.com/" is sent
 - Dm container bubbles do not show accurate online status of user
-- Fix dm-profile-sign-bubble reactivity, and clicking to it displays deleted user
 - Guild context menu does not work if stayed on me page
 - Edited messages display duplicated to other clients
 - Cancelling image upload to profile and guild image should refresh settings ui
@@ -38,7 +37,6 @@
 - Changing guild does not refresh attachments
 - Until opening dm or entering guild, dm container friend status stays offline
 - Profile display is broken
-- Change buttons at login to dropdown
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses

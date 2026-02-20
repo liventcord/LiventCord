@@ -138,9 +138,6 @@ export function setTheme(isDark: boolean) {
   setTimeout(() => {
     const friendInfo = getId("channel-info-container-for-friend");
     toggleClass(friendInfo?.children[0], "black-theme");
-    if (isDark) {
-      console.warn(friendInfo?.classList);
-    }
   }, 100);
 
   toggleClass(getId("channel-list"), "black-theme-3");

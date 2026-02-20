@@ -5,11 +5,7 @@
     :class="{ 'dm-selected': isSelected }"
     @click="$emit('open', friend.userId)"
   >
-    <span
-      class="dm-bubble"
-      :class="statusClass"
-      :style="{ opacity: bubbleVisible ? '1' : '0' }"
-    />
+    <UserBubble :status="liveStatus" :visible="bubbleVisible" />
     <img
       class="dm-profile-img"
       :src="profileSrc"
@@ -28,7 +24,6 @@
 import {
   defineComponent,
   ref,
-  computed,
   onMounted,
   onBeforeUnmount,
   PropType,
@@ -37,9 +32,11 @@ import {
 import store from "../store";
 import { setProfilePic } from "../ts/avatar";
 import { DmUserInfo } from "../ts/friendui";
+import UserBubble from "./UserBubble.vue";
 
 export default defineComponent({
   name: "DmItem",
+  components: { UserBubble },
   props: {
     friend: {
       type: Object as PropType<DmUserInfo>,
@@ -61,14 +58,10 @@ export default defineComponent({
       store.getters.getUserStatus(props.friend.userId) || "offline"
     );
 
-    const statusClass = computed(() => `dm_${liveStatus.value}`);
-
     const profileSrc = ref<string>("");
 
     function resolveProfilePic() {
-      if (!imgRef.value) {
-        return;
-      }
+      if (!imgRef.value) return;
       setProfilePic(imgRef.value, props.friend.userId);
       profileSrc.value = imgRef.value.src;
     }
@@ -80,6 +73,8 @@ export default defineComponent({
     watch(
       () => props.friend.userId,
       () => {
+        liveStatus.value =
+          store.getters.getUserStatus(props.friend.userId) || "offline";
         resolveProfilePic();
       }
     );
@@ -116,7 +111,13 @@ export default defineComponent({
       }
     }
 
-    return { imgRef, statusClass, profileSrc, onImgHover, bubbleVisible };
+    return {
+      imgRef,
+      profileSrc,
+      onImgHover,
+      bubbleVisible,
+      liveStatus
+    };
   }
 });
 </script>

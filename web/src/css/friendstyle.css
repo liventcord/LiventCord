@@ -60,9 +60,12 @@
   position: absolute;
   display: none;
 }
+
 #dm-profile-sign-bubble {
-  display: none;
+  position: absolute;
   left: 343px;
+  top: 28px;
+  display: flex;
 }
 body.black-theme .dm-container:hover {
   background-color: #1c1c1f;

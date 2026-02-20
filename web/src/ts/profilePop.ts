@@ -318,7 +318,7 @@ export function constructUserData(userId: string): UserInfo {
   return {
     userId,
     discriminator: userManager.getUserDiscriminator(userId),
-    nickName: userManager.getUserDiscriminator(userId)
+    nickName: userManager.getUserNick(userId)
   };
 }
 

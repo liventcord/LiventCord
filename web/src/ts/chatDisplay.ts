@@ -81,7 +81,11 @@ import {
   setReachedChannelEnd
 } from "./chatScroll.ts";
 import { handleReplyMessage, fetchReplies } from "./chat.ts";
-import { createMentionProfilePop, constructUserData } from "./profilePop.ts";
+import {
+  createMentionProfilePop,
+  constructUserData,
+  drawProfilePopId
+} from "./profilePop.ts";
 import { setProfilePic } from "./avatar.ts";
 import { SVG } from "./svgIcons.ts";
 
@@ -144,8 +148,12 @@ export async function handleMentionClick(
     changeChannelWithId(channelId);
     return;
   }
+  if (target.id === "dm-profile-sign") {
+    await drawProfilePopId(friendsCache.currentDmId);
+    return;
+  }
 
-  const _userId = userId || target.dataset.userId || target.id;
+  let _userId = userId || target.dataset.userId || target.id;
   if (!_userId) return;
 
   currentMentionPop?.remove();
@@ -156,9 +164,7 @@ export async function handleMentionClick(
 }
 
 export function addChatMentionListeners(): void {
-  document.body.addEventListener("click", (e) =>
-    handleMentionClick(e, "", 200)
-  );
+  document.body.addEventListener("click", (e) => handleMentionClick(e, "", 0));
   document.body.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
     if (!target || (currentMentionPop && currentMentionPop.contains(target)))

@@ -591,7 +591,7 @@ class ApiClient {
     data: any = {},
     queryParams: Record<string, any> = {}
   ) {
-    console.log(data);
+    if (data) console.log("Sending api payload:", data);
 
     if (!event) {
       console.error("Event is required");
