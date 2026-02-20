@@ -1,7 +1,6 @@
-![MainPage](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-12-06-024340_hyprshot.png)
-![Emojis](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-01-31-172631_hyprshot.png)
-![Gifs](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-01-31-172422_hyprshot.png)
-![Profile](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-12-21-015638_hyprshot.png)
+![App](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/afab7995-f75d-4d84-9a3c-da44755f744d-1771621784.png)
+![Profile](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/0137a61a-713c-40f1-9c77-48e88e545df3-1771621697.png)
+![Media](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/206a2aa6-78d0-47b1-ab35-eebbee0d8e35-1771621712.png)
 ![Friends](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-12-21-015202_hyprshot.png)
 ![Settings](https://raw.githubusercontent.com/liventcord/.github/refs/heads/main/2025-12-21-015659_hyprshot.png)
 
