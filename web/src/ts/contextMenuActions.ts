@@ -686,11 +686,25 @@ function createMenuItem(
       )
     : labelKey;
 
-  const li = createEl("li", { textContent: translatedLabel });
+  const li = createEl("li");
 
   if (dangerActions.has(labelKey)) {
     li.classList.add("context-item-danger");
   }
+
+  if ((itemOptions as any).icon) {
+    const img = createEl("img", {
+      src: (itemOptions as any).icon,
+      width: "16",
+      height: "16"
+    });
+    img.style.marginRight = "8px";
+    img.style.verticalAlign = "middle";
+    li.appendChild(img);
+  }
+
+  const span = createEl("span", { textContent: translatedLabel });
+  li.appendChild(span);
 
   li.addEventListener("click", function (event: Event) {
     event.stopPropagation();

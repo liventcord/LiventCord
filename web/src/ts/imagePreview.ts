@@ -28,6 +28,7 @@ import { router } from "./router.ts";
 import { FileHandler } from "./fileHandler.ts";
 import { Attachment } from "./types/interfaces.ts";
 import { SVG } from "./svgIcons.ts";
+import { initReverseImageSearch } from "./reverseImageSearch.ts";
 
 // --- State
 
@@ -403,7 +404,7 @@ export async function displayVideoPreview(
   imagePreviewContainer.style.display = "flex";
   previewVideo.style.display = "flex";
 
-  const sanitizedVideo = DOMPurify.sanitize(getAttachmentUrl(a));
+  const sanitizedVideo = DOMPurify.sanitize(getAttachmentUrl(a, false));
   previewVideo.src = sanitizedVideo;
   previewImage.style.animation = "preview-image-animation 0.2s forwards";
 
@@ -546,3 +547,7 @@ export function syncPreviewIndex(
   if (fromMediaPanel) currentMediaPreviewIndex = idx;
   else currentChatPreviewIndex = idx;
 }
+
+setTimeout(() => {
+  initReverseImageSearch();
+}, 0);

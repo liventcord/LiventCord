@@ -942,3 +942,92 @@ body.black-theme .status-profile {
   padding: 5px 0;
   width: 100%;
 }
+
+.context-menu {
+  position: fixed;
+  --menu-left: 0;
+  --menu-top: 0;
+  left: var(--menu-left);
+  top: var(--menu-top);
+  z-index: 50;
+  background-color: #111214;
+  color: rgb(169, 173, 180);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: top left;
+  animation: contextMenuFade 120ms ease-out forwards;
+}
+
+@keyframes contextMenuFade {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.context-menu ul li {
+  position: relative;
+  padding: 5px 25px;
+  cursor: pointer;
+}
+
+.context-menu ul li:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.context-menu ul li:active {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.context-menu ul ul {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  display: none;
+
+  background-color: #111214;
+  border-radius: 5px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  z-index: 1;
+}
+
+.context-menu ul li:hover > ul {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.context-item-danger {
+  color: #f57976;
+  font-weight: 500;
+}
+
+.context-menu ul li:has(> ul) {
+  padding-right: 40px;
+}
+
+.context-menu ul li:has(> ul)::after {
+  content: "›";
+  position: absolute;
+  right: 12px;
+  color: rgba(169, 173, 180, 0.6);
+}

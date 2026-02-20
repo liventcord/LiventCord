@@ -33,57 +33,6 @@ table {
 #settings-overlay {
   display: none;
 }
-.context-menu {
-  position: fixed;
-  background-color: #111214;
-  font-family: Arial, Helvetica, sans-serif !important;
-  color: rgb(169, 173, 180);
-  white-space: nowrap;
-  font-weight: 100;
-  border-radius: 5px;
-  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
-  z-index: 50;
-  --menu-left: 0;
-  --menu-top: 0;
-  left: var(--menu-left);
-  top: var(--menu-top);
-}
-
-.context-menu ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.context-menu ul li {
-  padding: 5px 30px;
-  cursor: pointer;
-  position: relative;
-}
-.context-menu ul li:hover {
-  background-color: #555;
-}
-.context-menu ul ul {
-  display: none;
-  position: absolute;
-  left: 100%;
-  top: 0;
-  background-color: #111214;
-  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
-  border-radius: 5px;
-  z-index: 1;
-}
-.context-menu ul li:hover > ul {
-  display: block;
-  max-width: 300px;
-}
-.context-item-danger {
-  color: #f57976;
-  font-weight: 500;
-}
-
-.context-item-danger:hover {
-  background-color: #ffe5e5;
-}
 
 .guilds-list
   li

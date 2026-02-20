@@ -6,7 +6,6 @@
 - Add a upload slider for uploaded attachments
 - Add a settings toggle for typing events
 - Implement displaying guild emojis in the emoji selector
-- Add an image context-menu search feature using TinEye etc (reverseImageSearch)
 - Add a friend/guild status notifier on login (like Vencord) to display left guilds/friends (relationshipNotifier)
 - Add a user's opened DM to the DMs list
 - On dm, new messages should show as red bubbles
@@ -39,3 +38,4 @@
 - Add edited message text on loaded messages 
 - Create server popup looks broken
 - Avoid inactive client disconnections to ws
+- Changing channel while media panel is open should close media panel
