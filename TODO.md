@@ -28,9 +28,7 @@
 - Typed message overlaps GIF/emoji and the send button on mobile
 - Split API init request (it is too slow to fetch)
 - HTTP URL appears duplicated when a message like "http://example.com/" is sent
-- Dm container bubbles do not show accurate online status of user
 - Guild context menu does not work if stayed on me page
-- Edited messages display duplicated to other clients
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Idle and do not disturb status only gets shown locally
 - Changing guild does not refresh attachments
@@ -40,4 +38,3 @@
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Add edited message text on loaded messages 
-- Other persons messages on dm should not have delete message option

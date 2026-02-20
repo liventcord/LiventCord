@@ -37,7 +37,7 @@ import { isOnDm, isOnGuild } from "./router.ts";
 import { togglePin } from "./contextMenuActions.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage } from "./app.ts";
-import { toggleHamburger, setActiveIcon } from "./ui.ts";
+import { toggleHamburger, setActiveIcon, alertUser } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { AudioType, playAudioType } from "./audio.ts";
@@ -750,6 +750,8 @@ export function getHistoryFromOneChannel(
       });
 
       fetchReplies(messages, repliesList);
+      if (isUsersOpenGlobal) fetchAttachments(channelId, isDm);
+
       return;
     }
   }
@@ -776,7 +778,6 @@ export function fetchMessages(channelId: string, isDm = false): void {
     isOnGuild ? EventType.GET_HISTORY_GUILD : EventType.GET_HISTORY_DM,
     requestData
   );
-
   if (isUsersOpenGlobal) fetchAttachments(channelId, isDm);
 }
 
@@ -991,6 +992,7 @@ function clearDateBarAndStartMessageFromChat(): void {
 }
 
 function fetchAttachments(channelId: string, isDm = false): void {
+  alertUser("Fetching attachments for channel: ", channelId);
   if (!channelId) return;
   store.commit("setCurrentPage", 1);
 
