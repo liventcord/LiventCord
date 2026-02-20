@@ -11,14 +11,22 @@ RUN if [ -d /source/published/publish ]; then mv /source/published/publish/* /so
 # --- Runtime Stage ---
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+RUN apk add --no-cache \
+    libgcc \
+    libstdc++ \
+    fontconfig \
+    freetype \
+    harfbuzz \
+    ttf-dejavu \
+    && fc-cache -f
+
 WORKDIR /app
 COPY --from=build /source/published/ /app/
 RUN chown -R appuser:appgroup /app
 RUN [ -f /app/LiventCord ] && chmod +x /app/LiventCord || true
 USER appuser
 EXPOSE 5005
-ENTRYPOINT ["./LiventCord"]
-
 
 ARG Host
 ARG Port
@@ -36,3 +44,5 @@ ARG MetadataDomainLimit
 ARG RedisConnectionString
 ARG RedisConnectionLimit
 ARG JwtKey
+
+ENTRYPOINT ["./LiventCord"]

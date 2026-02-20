@@ -38,3 +38,6 @@
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Add edited message text on loaded messages 
+- Create server popup looks broken
+- Fix emoji uploads
+- Avoid inactive client disconnections to ws

@@ -24,6 +24,7 @@ output
 *.njsproj
 *.sln
 *.sw?
+.eslintcache
 
 cypress/screenshots
 
