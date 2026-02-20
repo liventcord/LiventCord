@@ -14,7 +14,7 @@ import {
   appendToMessageContextList,
   editMessageOnContextList
 } from "./contextMenuActions.ts";
-import { createTooltip, createTooltipAtCursor } from "./tooltip.ts";
+import { createTooltip } from "./tooltip.ts";
 import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners

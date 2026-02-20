@@ -647,7 +647,8 @@ function createMessageContext(
   }
 
   if (
-    (isOnDm || (isOnGuild && permissionManager.canManageMessages())) &&
+    ((isOnDm && userId === appState.currentUserId) ||
+      (isOnGuild && permissionManager.canManageMessages())) &&
     !removeFlags.DELETE_MESSAGE
   ) {
     context[MessagesActionType.DELETE_MESSAGE] = {
