@@ -1460,7 +1460,7 @@ textarea::-webkit-scrollbar-track {
   content: "";
   position: absolute;
   top: 50%;
-  width: calc(50% - 50px);
+  width: calc(50% - 4rem);
   height: 1px;
   background-color: rgb(65, 67, 74);
 }

@@ -349,25 +349,65 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
+        private async Task EmitNewMessage(Message message, string? guildId, string channelId, string userId, string? friendId)
+        {
+            if (guildId != null)
+            {
+                _logger.LogInformation("Emitting message to guild. GuildId: {GuildId}, ChannelId: {ChannelId}", guildId, channelId);
+                var broadcastMessage = new
+                {
+                    guildId,
+                    messages = new[] { message },
+                    channelId,
+                    userId,
+                };
+                await _redisEventEmitter.EmitToGuild(
+                    EventType.SEND_MESSAGE_GUILD,
+                    broadcastMessage,
+                    guildId,
+                    userId
+                );
+            }
+            else if (friendId != null)
+            {
+                _logger.LogInformation("Emitting DM message. ChannelId: {ChannelId}, UserId: {UserId}", channelId, userId);
+                var dmMessage = new
+                {
+                    message,
+                    channelId = userId
+                };
+                await _redisEventEmitter.EmitToFriend(
+                    EventType.SEND_MESSAGE_DM,
+                    dmMessage,
+                    userId,
+                    friendId
+                );
+            }
+        }
+
+        [NonAction]
         private async Task<IActionResult> NewMessage(
-            string messageId,
-            string? temporaryId,
-            string userId,
-            string channelId,
-            string? guildId,
-            string? content,
-            DateTime date,
-            DateTime? lastEdited,
-            List<Attachment>? attachments,
-            string? replyToId,
-            string? reactionEmojisIds,
-            List<Embed>? embeds,
-            bool? IsSystemMessage = false
-        )
+             string messageId,
+             string? temporaryId,
+             string userId,
+             string? friendId,
+             string channelId,
+             string? guildId,
+             string? content,
+             DateTime date,
+             DateTime? lastEdited,
+             List<Attachment>? attachments,
+             string? replyToId,
+             string? reactionEmojisIds,
+             List<Embed>? embeds,
+             bool? IsSystemMessage = false
+         )
         {
             var validationResult = await ValidateNewMessage(userId, channelId, guildId, replyToId);
             if (validationResult != null)
+            {
                 return validationResult;
+            }
 
             var message = new Message
             {
@@ -387,32 +427,19 @@ namespace LiventCord.Controllers
                 IsSystemMessage = IsSystemMessage,
             };
 
-            var links = Utils.ExtractLinks(message.Content);
-
             if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
+            {
                 message.TemporaryId = temporaryId;
+
+            }
 
             await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
 
+
             await InvalidateMessageCache(guildId, channelId);
 
-            if (guildId != null)
-            {
-                var broadcastMessage = new
-                {
-                    guildId,
-                    messages = new[] { message },
-                    channelId,
-                    userId,
-                };
-                await _redisEventEmitter.EmitToGuild(
-                    EventType.SEND_MESSAGE_GUILD,
-                    broadcastMessage,
-                    guildId,
-                    userId
-                );
-            }
+            await EmitNewMessage(message, guildId, channelId, userId, friendId);
 
             if (content != null)
             {
@@ -428,7 +455,8 @@ namespace LiventCord.Controllers
                     {
                         _logger.LogError(
                             ex,
-                            "Failed to extract or save metadata for message: " + messageId
+                            "Failed to extract or save metadata for message: {MessageId}",
+                            messageId
                         );
                     }
                 });
@@ -455,6 +483,7 @@ namespace LiventCord.Controllers
             string? guildId,
             string channelId,
             string userId,
+            string? friendId,
             NewMessageRequest request
         )
         {
@@ -561,6 +590,7 @@ namespace LiventCord.Controllers
                 messageId,
                 request.TemporaryId,
                 userId,
+                friendId,
                 channelId,
                 guildId,
                 request.Content,
@@ -603,12 +633,12 @@ namespace LiventCord.Controllers
                 m.MessageId == messageId && m.ChannelId == channelId && m.UserId == userId
             );
 
-            if (message != null)
-            {
-                message.Content = newContent;
-                message.LastEdited = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-            }
+            if (message == null) return;
+
+            message.Content = newContent;
+            message.LastEdited = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
         }
 
         private async Task DeleteMessagesFromUser(string userId)

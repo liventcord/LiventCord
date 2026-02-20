@@ -222,7 +222,7 @@ interface Envelope<T = any> {
 
 interface DeleteMessageEmit {
   messageId: string;
-  guildId: string;
+  guildId?: string;
   channelId: string;
   msgDate: string;
 }
@@ -667,7 +667,6 @@ function handleWsJoined(data: JoinVoiceResponse) {
     setCurrentVoiceChannelGuild(guildId);
   }
   const soundInfoIcon = getId("sound-info-icon") as HTMLElement;
-  console.log(soundInfoIcon, soundInfoIcon.textContent);
   soundInfoIcon.textContent = `${currentChannelName} / ${guildCache.currentGuildName}`;
   const ul = getChannelsUl();
   if (!ul) return;
@@ -705,7 +704,7 @@ interface GuildMessageData {
 }
 
 interface DMMessageData {
-  message: Message[];
+  message: Message;
   channelId: string;
 }
 interface GuildEditMessageData {
@@ -756,7 +755,7 @@ const handleNewGuildMessage = (data: GuildMessageData) => {
 const handleNewDmMessage = (data: DMMessageData) => {
   const messageData: NewMessageResponse = {
     isOldMessages: false,
-    messages: data.message,
+    messages: [data.message],
     isDm: true,
     channelId: data.channelId
   };
@@ -770,31 +769,33 @@ const handleEditGuildMessage = (data: GuildEditMessageData) => {
     messageId: data.messageId,
     channelId: data.channelId,
     content: data.content,
-    lastEdited: Date.now().toString()
+    lastEdited: new Date().toISOString()
   };
   handleEditMessage(messageData);
 };
-
 const handleEditDmMessage = (data: DMEditMessageData) => {
   const messageData: EditMessageResponse = {
     isDm: true,
     channelId: data.channelId,
     messageId: data.messageId,
     content: data.content,
-    lastEdited: Date.now().toString()
+    lastEdited: new Date().toISOString()
   };
   handleEditMessage(messageData);
 };
-socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: any) => {
+socketClient.on(SocketEvent.SEND_MESSAGE_GUILD, (data: GuildMessageData) => {
   handleNewGuildMessage(data);
 });
-socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: any) => {
+socketClient.on(SocketEvent.SEND_MESSAGE_DM, (data: DMMessageData) => {
   handleNewDmMessage(data);
 });
-socketClient.on(SocketEvent.EDIT_MESSAGE_GUILD, (data: any) => {
-  handleEditGuildMessage(data);
-});
-socketClient.on(SocketEvent.EDIT_MESSAGE_DM, (data: any) => {
+socketClient.on(
+  SocketEvent.EDIT_MESSAGE_GUILD,
+  (data: GuildEditMessageData) => {
+    handleEditGuildMessage(data);
+  }
+);
+socketClient.on(SocketEvent.EDIT_MESSAGE_DM, (data: DMEditMessageData) => {
   handleEditDmMessage(data);
 });
 
@@ -871,10 +872,10 @@ export function processDeleteMessage(
   const msgDateElement = messageElement?.dataset.date ?? msgDate;
 
   if (isDm) {
-    deleteLocalMessage(messageId, "", channelId, true);
+    deleteLocalMessage(messageId, "", channelId);
     cacheInterface.removeMessage(messageId, channelId, "");
   } else {
-    deleteLocalMessage(messageId, currentGuildId, channelId, false);
+    deleteLocalMessage(messageId, currentGuildId, channelId);
     cacheInterface.removeMessage(messageId, channelId, currentGuildId);
   }
 

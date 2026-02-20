@@ -45,6 +45,7 @@ import { processDeleteMessage } from "./socketEvents.ts";
 import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
 import { constructUserData } from "./profilePop.ts";
 import { preserveEmojiContent, renderEmojisFromContent } from "./emoji.ts";
+import { appState } from "./appState.ts";
 export let lastMessageDate: Date;
 
 export function setLastMessageDate(date: Date) {
@@ -406,33 +407,10 @@ export function getMessageDate(top = true) {
 export function deleteLocalMessage(
   messageId: string,
   guildId: string,
-  channelId: string,
-  isDm: boolean
+  channelId: string
 ) {
-  if (
-    (isOnGuild && channelId !== guildCache.currentChannelId) ||
-    (isOnDm && isDm && channelId !== friendsCache.currentDmId)
-  ) {
-    if (isOnGuild && channelId !== guildCache.currentChannelId) {
-      console.log(
-        "Condition: isOnGuild and channelId !== guildCache.currentChannelId"
-      );
-    }
-    if (isOnDm && isDm && channelId !== friendsCache.currentDmId) {
-      console.log(
-        channelId,
-        "Condition: isOnDm and isDm and channelId !== friendsCache.currentDmId",
-        friendsCache.currentDmId
-      );
-    }
-    console.error(
-      "Can not delete message: ",
-      guildId,
-      channelId,
-      messageId,
-      currentGuildId,
-      guildCache.currentChannelId
-    );
+  if (channelId != appState.currentUserId && channelId !== getChannelId()) {
+    console.error("Can not delete message:", guildId, channelId, messageId);
     return;
   }
 

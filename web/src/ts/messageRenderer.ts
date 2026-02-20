@@ -2,6 +2,7 @@
 
 import {
   createEl,
+  formatFullDateTime,
   getFormattedDate,
   getFormattedDateForSmall,
   getFormattedDateSelfMessage,
@@ -13,7 +14,7 @@ import {
   appendToMessageContextList,
   editMessageOnContextList
 } from "./contextMenuActions.ts";
-import { createTooltipAtCursor } from "./tooltip.ts";
+import { createTooltip, createTooltipAtCursor } from "./tooltip.ts";
 import {
   replaceCustomEmojisForChatContainer,
   setupEmojiListeners
@@ -181,7 +182,7 @@ export function addEditedIndicator(
   });
   editedSpan.textContent = `(${translations.getTranslation("message-edited")})`;
   editedSpan.addEventListener("mouseover", () => {
-    createTooltipAtCursor(getFormattedDateForSmall(date));
+    createTooltip(messageElement, formatFullDateTime(date));
   });
   messageElement.appendChild(editedSpan);
 }

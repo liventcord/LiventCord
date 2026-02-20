@@ -197,78 +197,64 @@ export function kebapToSentence(text: string) {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
-export function getFormattedDate(input: string) {
+const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function parseUtc(input: string) {
+  return new Date(/([zZ]|[+-]\d{2}:\d{2})$/.test(input) ? input : input + "Z");
+}
+
+function getTodayAndYesterday() {
   const today = new Date();
   const yesterday = new Date(today);
-  const messageDate = new Date(
-    /([zZ]|[+-]\d{2}:\d{2})$/.test(input) ? input : input + "Z"
-  );
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (messageDate.toDateString() === today.toDateString()) {
-    return `${translations.getTranslation(
-      "today"
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })}`;
-  } else if (messageDate.toDateString() === yesterday.toDateString()) {
-    return `${translations.getTranslation(
-      "yesterday"
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })}`;
-  } else {
-    return `${messageDate.toLocaleDateString(
-      translations.getLocale()
-    )} ${messageDate.toLocaleTimeString(translations.getLocale(), {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })}`;
-  }
+  yesterday.setDate(today.getDate() - 1);
+  return { today, yesterday };
 }
-export function getFormattedDateForSmall(messageDate: string) {
-  const date = new Date(
-    /([zZ]|[+-]\d{2}:\d{2})$/.test(messageDate)
-      ? messageDate
-      : messageDate + "Z"
-  );
 
-  return date.toLocaleTimeString(undefined, {
+function formatTime(date: Date, locale?: string) {
+  return date.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    timeZone
   });
 }
 
+export function getFormattedDate(input: string) {
+  const { today, yesterday } = getTodayAndYesterday();
+  const messageDate = parseUtc(input);
+  const locale = translations.getLocale();
+  const timeString = formatTime(messageDate, locale);
+
+  if (messageDate.toDateString() === today.toDateString()) {
+    return `${translations.getTranslation("today")} ${timeString}`;
+  }
+
+  if (messageDate.toDateString() === yesterday.toDateString()) {
+    return `${translations.getTranslation("yesterday")} ${timeString}`;
+  }
+
+  return `${messageDate.toLocaleDateString(locale)} ${timeString}`;
+}
+
+export function getFormattedDateForSmall(messageDate: string) {
+  const date = parseUtc(messageDate);
+  return formatTime(date);
+}
+
 export function getFormattedDateSelfMessage(messageDate: string) {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const { today, yesterday } = getTodayAndYesterday();
 
   const messageDateObj = new Date(messageDate);
   const localMessageDate = new Date(
-    messageDateObj.toLocaleString("en-US", {
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    })
+    messageDateObj.toLocaleString("en-US", { timeZone })
   );
 
-  const timeString = localMessageDate.toLocaleTimeString(
-    translations.getLocale(),
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    }
-  );
+  const locale = translations.getLocale();
+  const timeString = localMessageDate.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
 
   if (localMessageDate.toDateString() === today.toDateString()) {
     return `${translations.getTranslation("today")} at ${timeString}`;
@@ -278,10 +264,32 @@ export function getFormattedDateSelfMessage(messageDate: string) {
     return `${translations.getTranslation("yesterday")} at ${timeString}`;
   }
 
-  const dateString = localMessageDate.toLocaleDateString(
-    translations.getLocale()
-  );
+  const dateString = localMessageDate.toLocaleDateString(locale);
   return `${dateString} at ${timeString}`;
+}
+
+export function formatFullDateTime(input: string) {
+  const { today, yesterday } = getTodayAndYesterday();
+  const locale = translations.getLocale();
+  const date = parseUtc(input);
+  const timeString = formatTime(date, locale);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `${translations.getTranslation("today")} ${timeString}`;
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `${translations.getTranslation("yesterday")} ${timeString}`;
+  }
+
+  const dateString = date.toLocaleDateString(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone
+  });
+
+  return `${dateString} ${timeString}`;
 }
 
 export function isImageURL(url: string) {

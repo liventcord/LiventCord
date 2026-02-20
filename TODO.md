@@ -18,7 +18,6 @@
 - Make the server parse and save mentions for messages on submit/edit in the database
 - Add invite friends ui on invite people popup
 - Inviting should be allowed on new guild members
-- Add event broadcasting on dm message operations
 - Add Role system
 - Add invite settings panel managing invites
 - Add shared friends server logic & populate shared friends ui
@@ -40,3 +39,5 @@
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
+- Add edited message text on loaded messages 
+- Other persons messages on dm should not have delete message option

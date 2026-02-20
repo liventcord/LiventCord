@@ -6,13 +6,15 @@ public class RedisEventEmitter
     private readonly BaseRedisEmitter _redisEmitter;
     private readonly int _maxDegreeOfParallelism;
     private readonly SemaphoreSlim _semaphore;
+    private readonly ILogger<RedisEventEmitter> _logger;
 
-    public RedisEventEmitter(IServiceProvider serviceProvider, BaseRedisEmitter redisEmitter, int maxDegreeOfParallelism = 8)
+    public RedisEventEmitter(IServiceProvider serviceProvider, ILogger<RedisEventEmitter> logger, BaseRedisEmitter redisEmitter, int maxDegreeOfParallelism = 8)
     {
         _serviceProvider = serviceProvider;
         _redisEmitter = redisEmitter;
         _maxDegreeOfParallelism = maxDegreeOfParallelism;
         _semaphore = new SemaphoreSlim(_maxDegreeOfParallelism, _maxDegreeOfParallelism);
+        _logger = logger;
     }
 
     public async Task EmitToGuild(EventType eventType, object payload, string guildId, string userIdToExclude = "")
@@ -20,6 +22,7 @@ public class RedisEventEmitter
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userIds = await dbContext.GetGuildUserIds(guildId, userIdToExclude);
+        _logger.LogInformation("Emitting event {eventType} to guild {guildId} ", eventType, guildId);
 
         if (userIds.Any())
             await EmitBatchAsync(userIds, eventType, payload);
@@ -42,12 +45,14 @@ public class RedisEventEmitter
         bool isFriend = await dbContext.CheckFriendship(userId, friendId);
         if (!isFriend) return;
 
-        await EmitBatchAsync(new[] { friendId }, eventType, payload);
+        _logger.LogInformation("Emitting event {eventType} to friend {friendId} ", eventType, friendId);
+
+        await EmitBatchAsync([friendId], eventType, payload);
     }
 
     public Task EmitToUser(EventType eventType, object payload, string friendId)
     {
-        return EmitBatchAsync(new[] { friendId }, eventType, payload);
+        return EmitBatchAsync([friendId], eventType, payload);
     }
 
     private async Task EmitBatchAsync(IEnumerable<string> userIds, EventType eventType, object payload)

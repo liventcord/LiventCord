@@ -88,45 +88,44 @@ export function initialiseAudio() {
 const audioCache: Record<string, HTMLAudioElement> = {};
 
 export async function playAudio(audioUrl: string) {
-  if (currentAudioPlayer) {
-    currentAudioPlayer.pause();
-    stopAudioAnalysis();
-    if (source) {
-      source.disconnect();
-      source = null;
-    }
-    if (analyser) {
-      analyser.disconnect();
-      analyser = null;
-    }
-  }
-
   let audioElement = audioCache[audioUrl];
+
   if (!audioElement) {
     audioElement = new Audio(audioUrl);
     audioElement.crossOrigin = "anonymous";
     audioCache[audioUrl] = audioElement;
   }
 
-  currentAudioPlayer = audioElement;
+  const instance = audioElement.cloneNode(true) as HTMLAudioElement;
+  instance.crossOrigin = "anonymous";
 
-  audioElement.onplay = () => {
+  instance.onplay = () => {
     isAudioPlaying = true;
     audioContext.resume();
-    enableBorderMovement();
+    if (toggleManager.states["party-toggle"]) {
+      enableBorderMovement();
+    }
   };
 
-  audioElement.onpause = () => {
-    isAudioPlaying = false;
-    stopAudioAnalysis();
+  instance.onpause = () => {
+    if (!document.querySelector("audio:not([data-ended='true'])")) {
+      isAudioPlaying = false;
+      stopAudioAnalysis();
+    }
   };
 
-  audioElement.onended = () => {
-    isAudioPlaying = false;
-    stopAudioAnalysis();
+  instance.onended = () => {
+    instance.dataset.ended = "true";
+    instance.remove();
+    if (!document.querySelector("audio:not([data-ended='true'])")) {
+      isAudioPlaying = false;
+      stopAudioAnalysis();
+    }
   };
 
-  await audioElement.play();
+  document.body.appendChild(instance);
+
+  await instance.play();
 }
 
 export function enableBorderMovement() {

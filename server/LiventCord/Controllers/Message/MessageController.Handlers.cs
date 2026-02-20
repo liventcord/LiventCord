@@ -140,6 +140,7 @@ namespace LiventCord.Controllers
                 null,
                 constructedFriendUserChannel,
                 UserId!,
+                friendId,
                 request
             );
         }
@@ -238,16 +239,16 @@ namespace LiventCord.Controllers
             var editBroadcast = new
             {
                 isDm,
-                constructedFriendUserChannel,
+                channelId = userId,
                 messageId,
-                request.Content,
+                content = request.Content,
             };
 
             await _redisEventEmitter.EmitToFriend(
                 EventType.EDIT_MESSAGE_DM,
                 editBroadcast,
                 userId,
-                constructedFriendUserChannel
+                friendId
             );
 
             return Ok(editBroadcast);
@@ -305,6 +306,7 @@ namespace LiventCord.Controllers
             var foundMessage = await _context.Messages.FirstOrDefaultAsync(m =>
                 m.MessageId == messageId
             );
+            DateTime date;
 
             if (foundMessage == null)
                 return NotFound();
@@ -312,10 +314,19 @@ namespace LiventCord.Controllers
             if (foundMessage.UserId != userId)
                 return Forbid();
 
+            date = foundMessage.Date;
+
             await DeleteMessage(constructedFriendUserChannel, messageId);
             await IncrementChannelVersion(constructedFriendUserChannel);
 
-            var deleteBroadcast = new { channelId, messageId };
+            var deleteBroadcast = new { channelId = userId, userId, messageId, date };
+            await _redisEventEmitter.EmitToFriend(
+                EventType.DELETE_MESSAGE_DM,
+                deleteBroadcast,
+                userId,
+                channelId
+            );
+
 
             return Ok(deleteBroadcast);
         }
@@ -665,7 +676,7 @@ namespace LiventCord.Controllers
             [FromForm] NewMessageRequest request
         )
         {
-            return await HandleMessage(MessageType.Guilds, guildId, channelId, UserId!, request);
+            return await HandleMessage(MessageType.Guilds, guildId, channelId, UserId!, null, request);
         }
         [NonAction]
         public async Task<IActionResult> UnpinMessageAsync(
