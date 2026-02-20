@@ -40,6 +40,9 @@ export default defineConfig(({ mode }) => {
           ws: true
         }
       }
+    },
+    build: {
+      outDir: path.resolve(__dirname, "output") 
     }
   };
 });

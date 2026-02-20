@@ -49,7 +49,7 @@ dotnet run
 
 .NET server runs at `http://localhost:5005`
 
-### Run Farm for Development (SPA)
+### Run Vite for Development (SPA)
 
 ```bash
 cd web

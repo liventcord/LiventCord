@@ -53,7 +53,7 @@ dotnet run
 
 Note : This would automatically run pnpm install and build/serve frontend
 
-### Run Farm for Development (SPA)
+### Run Vite for Development (SPA)
 
 ```bash
 cd web
