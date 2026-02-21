@@ -72,7 +72,7 @@ redis-server
 ### Run Gin ws server for realtime updates (Requires redis)
 
 ```bash
-cd server/go-ws-api
+cd server/ws-api
 cp .env.example .env
 go run .
 ```

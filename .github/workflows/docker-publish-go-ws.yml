@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "server/go-ws-api/**"
+      - "server/ws-api/**"
   workflow_dispatch:
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: server/
-          file: server/go-ws-api/Dockerfile
+          file: server/ws-api/Dockerfile
           push: true
           tags: thelp281/liventcord-ws-api:latest
           cache-from: type=registry,ref=thelp281/liventcord-ws-api:cache

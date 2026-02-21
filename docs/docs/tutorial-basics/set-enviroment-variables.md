@@ -129,7 +129,7 @@ Minimum number of connections in the database pool.
 ## Go WS Server Configuration
 
 ```bash
-cd liventcord/server/go-ws-api
+cd liventcord/server/ws-api
 ```
 
 1. Move `.example.env` to `.env`.

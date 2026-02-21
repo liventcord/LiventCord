@@ -14,9 +14,9 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
 
-  go-ws-api:
+  ws-api:
     build:
-      context: ./server/go-ws-api
+      context: ./server/ws-api
       dockerfile: Dockerfile
     ports:
       - "8080:8080"

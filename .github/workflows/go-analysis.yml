@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "server/go-ws-api/**"
+      - "server/ws-api/**"
       - "server/media-api/**"
   pull_request:
     branches: [ "main" ]
@@ -25,7 +25,7 @@ jobs:
         with:
           filters: |
             go:
-              - 'server/go-ws-api/**'
+              - 'server/ws-api/**'
               - 'server/media-api/**'
 
   analyze:
