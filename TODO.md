@@ -29,8 +29,6 @@
 - Split API init request (it is too slow to fetch)
 - Guild context menu does not work if stayed on me page
 - Cancelling image upload to profile and guild image should refresh settings ui
-- Idle and do not disturb status only gets shown locally
-- Changing guild does not refresh attachments
 - Until opening dm or entering guild, dm container friend status stays offline
 - Profile display is broken
 - Fix user input width scaling wrongly on page switch

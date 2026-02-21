@@ -7,105 +7,67 @@ namespace LiventCord.Controllers
 {
     public partial class MessageController
     {
-        private List<Attachment> CreateAttachmentsFromUrls(string urls, string messageId)
-        {
-            List<Attachment> attachments = new();
-            List<string> parsedUrls = urls.Split(
-                    ',',
-                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-                )
+        // ──────────────────────────────────────────────
+        // Attachment helpers
+        // ──────────────────────────────────────────────
+
+        private Attachment BuildAttachment(string fileId, string fileName, long fileSize,
+            bool isImage, bool isVideo, bool isSpoiler, string messageId) =>
+            new()
+            {
+                FileId = fileId,
+                FileName = fileName,
+                FileSize = fileSize,
+                IsImageFile = isImage,
+                IsVideoFile = isVideo,
+                IsSpoiler = isSpoiler,
+                MessageId = messageId,
+            };
+
+        private List<Attachment> CreateAttachmentsFromUrls(string urls, string messageId) =>
+            urls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(url => BuildAttachment(Utils.CreateRandomId(), url, 0, true, true, false, messageId))
                 .ToList();
 
-            foreach (var url in parsedUrls)
-            {
-                var fileName = url;
-                var fileId = Utils.CreateRandomId();
-                var fileSize = 0;
-                var isImage = true;
-                var isVideo = true;
-                var isSpoiler = false;
+        // ──────────────────────────────────────────────
+        // Embed helpers
+        // ──────────────────────────────────────────────
 
-                var attachment = new Attachment
-                {
-                    FileId = fileId,
-                    IsImageFile = isImage,
-                    IsVideoFile = isVideo,
-                    MessageId = messageId,
-                    FileName = fileName,
-                    FileSize = fileSize,
-                    IsSpoiler = isSpoiler,
-                };
-
-                attachments.Add(attachment);
-            }
-
-            return attachments;
+        private static List<Embed> NormaliseEmbeds(IEnumerable<Embed>? embeds)
+        {
+            if (embeds == null) return new List<Embed>();
+            foreach (var e in embeds)
+                e.Id ??= Utils.CreateRandomId();
+            return embeds.ToList();
         }
+
+        // ──────────────────────────────────────────────
+        // Message construction / mutation
+        // ──────────────────────────────────────────────
 
         private void UpdateMessage(Message message, NewBotMessageRequest request)
         {
             message.Content = request.Content;
             message.LastEdited = DateTime.UtcNow;
-            if (request.AttachmentUrls != null)
-            {
-                message.Attachments = CreateAttachmentsFromUrls(
-                    request.AttachmentUrls,
-                    message.MessageId
-                );
-            }
             message.ReplyToId = request.ReplyToId;
             message.ReactionEmojisIds = request.ReactionEmojisIds;
 
-            if (request.Embeds != null && request.Embeds.Any())
+            if (request.AttachmentUrls != null)
+                message.Attachments = CreateAttachmentsFromUrls(request.AttachmentUrls, message.MessageId);
+
+            if (request.Embeds?.Any() == true)
             {
                 message.Embeds.Clear();
-                var newEmbeds = request
-                    .Embeds.Select(embed =>
-                    {
-                        embed.Id ??= Utils.CreateRandomId();
-                        return embed;
-                    })
-                    .ToList();
-
-                message.Embeds.AddRange(newEmbeds);
+                message.Embeds.AddRange(NormaliseEmbeds(request.Embeds));
             }
         }
 
-        private async Task<Message> CreateNewMessage(
-            NewBotMessageRequest request,
-            string guildId,
-            string channelId
-        )
+        private Task<Message> CreateNewMessage(NewBotMessageRequest request, string guildId, string channelId)
         {
             if (request.Content != null)
-            {
-                await Task.Run(async () =>
-                {
-                    var urls = await HandleMessageUrls(
-                        guildId,
-                        channelId,
-                        request.UserId,
-                        request.MessageId,
-                        request.Content
-                    );
-                    try
-                    {
-                        var metadata = await ExtractMetadataIfUrl(urls, request.MessageId);
-                        await SaveMetadataAsync(request.MessageId, metadata);
-                    }
-                    catch (Exception ex)
-                    {
-                        var sanitizedMessageId = Utils.SanitizeLogInput(request.MessageId);
-                        _logger.LogError(
-                            ex,
-                            "Failed to extract or save metadata for message: {MessageId}",
-                            sanitizedMessageId
-                        );
-                    }
-                });
-            }
+                _ = Task.Run(() => FetchAndSaveMetadataAsync(guildId, channelId, request.UserId, request.MessageId, request.Content));
 
-            return new Message
+            return Task.FromResult(new Message
             {
                 MessageId = request.MessageId,
                 Content = request.Content,
@@ -113,202 +75,144 @@ namespace LiventCord.Controllers
                 Date = request.Date,
                 ChannelId = channelId,
                 LastEdited = request.LastEdited,
-                Attachments =
-                    request.AttachmentUrls != null
-                        ? CreateAttachmentsFromUrls(request.AttachmentUrls, request.MessageId)
-                        : null,
                 ReplyToId = request.ReplyToId,
                 ReactionEmojisIds = request.ReactionEmojisIds,
-                Embeds =
-                    request
-                        .Embeds?.Select(embed =>
-                        {
-                            embed.Id ??= Utils.CreateRandomId();
-                            return embed;
-                        })
-                        .ToList() ?? new List<Embed>(),
-            };
+                Attachments = request.AttachmentUrls != null
+                    ? CreateAttachmentsFromUrls(request.AttachmentUrls, request.MessageId)
+                    : null,
+                Embeds = NormaliseEmbeds(request.Embeds),
+            });
         }
 
+        // ──────────────────────────────────────────────
+        // DM channel ID
+        // ──────────────────────────────────────────────
 
-        private string ConstructDmId(string userId, string friendId)
-        {
-            return string.Compare(userId, friendId) < 0
+        private static string ConstructDmId(string userId, string friendId) =>
+            string.Compare(userId, friendId, StringComparison.Ordinal) < 0
                 ? $"{userId}_{friendId}"
                 : $"{friendId}_{userId}";
-        }
 
+        // ──────────────────────────────────────────────
+        // Search queries
+        // ──────────────────────────────────────────────
 
         private IQueryable<Message> BuildFilteredMessagesQuery(
-                    string guildId,
-                    string? channelId,
-                    string? query,
-                    string? fromUserId,
-                    SearchRequest request
-                )
+            string guildId, string? channelId, string? query, string? fromUserId, SearchRequest request)
         {
-            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
-            queryable = queryable.Where(m =>
-                m.Channel.GuildId == guildId && (channelId == null || m.ChannelId == channelId)
-            );
+            var q = _context.Messages
+                .Where(m => m.Content != null && m.Channel.GuildId == guildId)
+                .Where(m => channelId == null || m.ChannelId == channelId);
 
             if (!string.IsNullOrEmpty(fromUserId))
-                queryable = queryable.Where(m => m.UserId == fromUserId);
+                q = q.Where(m => m.UserId == fromUserId);
 
             if (!string.IsNullOrWhiteSpace(query))
+                q = Utils.IsPostgres(_context)
+                    ? q.Where(m => EF.Functions.ILike(m.Content!, $"%{query}%"))
+                    : q.Where(m => m.Content!.Contains(query));
+
+            if (DateTime.TryParse(request.BeforeDate, out var before))
+                q = q.Where(m => m.Date < DateTime.SpecifyKind(before, DateTimeKind.Utc));
+
+            if (DateTime.TryParse(request.DuringDate, out var during))
             {
-                if (Utils.IsPostgres(_context))
-                    queryable = queryable.Where(m =>
-                        m.Content != null && EF.Functions.ILike(m.Content, $"%{query}%")
-                    );
-                else
-                    queryable = queryable.Where(m =>
-                        m.Content != null && m.Content.Contains(query)
-                    );
+                var d = DateTime.SpecifyKind(during, DateTimeKind.Utc);
+                q = q.Where(m => m.Date >= d && m.Date < d.AddDays(1));
             }
 
-            if (DateTime.TryParse(request.BeforeDate, out var beforeDate))
-            {
-                beforeDate = DateTime.SpecifyKind(beforeDate, DateTimeKind.Utc);
-                queryable = queryable.Where(m => m.Date < beforeDate);
-            }
+            if (DateTime.TryParse(request.AfterDate, out var after))
+                q = q.Where(m => m.Date > DateTime.SpecifyKind(after, DateTimeKind.Utc));
 
-            if (DateTime.TryParse(request.DuringDate, out var duringDate))
-            {
-                duringDate = DateTime.SpecifyKind(duringDate, DateTimeKind.Utc);
-                queryable = queryable.Where(m =>
-                    m.Date >= duringDate && m.Date < duringDate.AddDays(1)
-                );
-            }
-
-            if (DateTime.TryParse(request.AfterDate, out var afterDate))
-            {
-                afterDate = DateTime.SpecifyKind(afterDate, DateTimeKind.Utc);
-                queryable = queryable.Where(m => m.Date > afterDate);
-            }
-
-            return queryable;
+            return q;
         }
 
         private async Task<List<Message>?> SearchDmMessagesInContext(
-                    string dmId,
-                    string query,
-                    string currentUserId,
-                    string? fromUserId
-                )
+            string dmId, string query, string currentUserId, string? fromUserId)
         {
             if (!await CanUsersDm(currentUserId, dmId))
                 return null;
 
             var channelId = ConstructDmId(currentUserId, dmId);
 
-            IQueryable<Message> queryable = _context.Messages.Where(m => m.Content != null);
+            var q = _context.Messages.Where(m => m.Content != null && m.ChannelId == channelId);
 
-            queryable = Utils.IsPostgres(_context)
-                ? queryable.Where(m =>
-                    m.Content != null
-                    && EF.Functions.ToTsVector("english", m.Content).Matches(query)
-                )
-                : queryable.Where(m => m.Content != null && m.Content.Contains(query));
-
-            queryable = queryable.Where(m => m.ChannelId == channelId);
+            q = Utils.IsPostgres(_context)
+                ? q.Where(m => EF.Functions.ToTsVector("english", m.Content!).Matches(query))
+                : q.Where(m => m.Content!.Contains(query));
 
             if (!string.IsNullOrEmpty(fromUserId))
-                queryable = queryable.Where(m => m.UserId == fromUserId);
+                q = q.Where(m => m.UserId == fromUserId);
 
-            return await queryable.ToListAsync();
+            return await q.ToListAsync();
         }
-        private async Task InvalidateMessageCache(
-            string? guildId = null,
-            string? channelId = null
-        )
+
+        // ──────────────────────────────────────────────
+        // Cache invalidation
+        // ──────────────────────────────────────────────
+
+        private async Task InvalidateMessageCache(string? guildId = null, string? channelId = null)
         {
-            var query = _cacheDbContext.CachedMessages.AsQueryable();
+            var q = _cacheDbContext.CachedMessages.AsQueryable();
+            if (!string.IsNullOrEmpty(guildId)) q = q.Where(c => c.GuildId == guildId);
+            if (!string.IsNullOrEmpty(channelId)) q = q.Where(c => c.ChannelId == channelId);
 
-            if (!string.IsNullOrEmpty(guildId))
-                query = query.Where(c => c.GuildId == guildId);
-
-            if (!string.IsNullOrEmpty(channelId))
-                query = query.Where(c => c.ChannelId == channelId);
-
-            var cachedEntries = await query.ToListAsync();
-            if (cachedEntries.Any())
+            var entries = await q.ToListAsync();
+            if (entries.Any())
             {
-                _cacheDbContext.CachedMessages.RemoveRange(cachedEntries);
+                _cacheDbContext.CachedMessages.RemoveRange(entries);
                 await _cacheDbContext.SaveChangesAsync();
             }
         }
+
+        // ──────────────────────────────────────────────
+        // Validation
+        // ──────────────────────────────────────────────
+
         [NonAction]
         private async Task<IActionResult?> ValidateNewMessage(
-            string userId,
-            string channelId,
-            string? guildId,
-            string? replyToId
-        )
+            string userId, string channelId, string? guildId, string? replyToId)
         {
-            var userExists = await _context.Users.AnyAsync(u => u.UserId == userId);
-            if (!userExists)
+            if (!await _context.Users.AnyAsync(u => u.UserId == userId))
             {
-                var newUser = _context.CreateDummyUser(userId);
-                await _context.Users.AddAsync(newUser);
+                await _context.Users.AddAsync(_context.CreateDummyUser(userId));
                 await _context.SaveChangesAsync();
             }
 
-            var constructedFriendUserChannel = channelId;
+            var resolvedChannelId = channelId;
+
             if (guildId == null)
             {
-                var userIds = channelId.Split('_');
-                if (userIds.Length != 2 || !userIds.Contains(userId))
+                var parts = channelId.Split('_');
+                if (parts.Length != 2 || !parts.Contains(userId))
                     return BadRequest();
 
-                var recipientId = userIds.First(id => id != userId);
-                constructedFriendUserChannel =
-                    string.Compare(userId, recipientId) < 0
-                        ? $"{userId}_{recipientId}"
-                        : $"{recipientId}_{userId}";
+                var recipientId = parts.First(id => id != userId);
+                resolvedChannelId = ConstructDmId(userId, recipientId);
             }
 
-            var channelExists = await _context.Channels.AnyAsync(c =>
-                c.ChannelId == constructedFriendUserChannel
-            );
-            if (!channelExists)
+            if (!await _context.Channels.AnyAsync(c => c.ChannelId == resolvedChannelId))
             {
                 if (guildId == null)
-                {
                     await _channelController.CreateChannelInternal(
-                        userId,
-                        null,
-                        constructedFriendUserChannel,
-                        constructedFriendUserChannel,
-                        true,
-                        false,
-                        constructedFriendUserChannel,
-                        false
-                    );
-                }
+                        userId, null, resolvedChannelId, resolvedChannelId, true, false, resolvedChannelId, false);
                 else
-                {
                     return NotFound();
-                }
             }
 
-            if (
-                !string.IsNullOrEmpty(replyToId)
-                && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId)
-            )
+            if (!string.IsNullOrEmpty(replyToId) && !await _context.Messages.AnyAsync(m => m.MessageId == replyToId))
                 return BadRequest();
 
             return null;
         }
 
+        // ──────────────────────────────────────────────
+        // URL handling & metadata
+        // ──────────────────────────────────────────────
+
         [NonAction]
         private async Task<List<string>> HandleMessageUrls(
-            string? guildId,
-            string channelId,
-            string userId,
-            string messageId,
-            string content
-        )
+            string? guildId, string channelId, string userId, string messageId, string content)
         {
             var urls = Utils.ExtractUrls(content);
             var existing = await _context.MessageUrls.FindAsync(messageId);
@@ -317,23 +221,18 @@ namespace LiventCord.Controllers
             {
                 try
                 {
-                    await _context.MessageUrls.AddAsync(
-                        new MessageUrl
-                        {
-                            ChannelId = channelId,
-                            CreatedAt = DateTime.UtcNow,
-                            GuildId = guildId,
-                            UserId = userId,
-                            MessageId = messageId,
-                            Urls = urls,
-                        }
-                    );
+                    await _context.MessageUrls.AddAsync(new MessageUrl
+                    {
+                        ChannelId = channelId,
+                        CreatedAt = DateTime.UtcNow,
+                        GuildId = guildId,
+                        UserId = userId,
+                        MessageId = messageId,
+                        Urls = urls,
+                    });
                     await _context.SaveChangesAsync();
                 }
-                catch (DbUpdateException ex)
-                {
-                    _logger.LogError(ex.Message);
-                }
+                catch (DbUpdateException ex) { _logger.LogError(ex.Message); }
             }
             else if (existing.Urls != null)
             {
@@ -345,8 +244,42 @@ namespace LiventCord.Controllers
                     await _context.SaveChangesAsync();
                 }
             }
+
             return urls;
         }
+
+        private async Task FetchAndSaveMetadataAsync(
+            string? guildId, string channelId, string userId, string messageId, string content)
+        {
+            try
+            {
+                var urls = await HandleMessageUrls(guildId, channelId, userId, messageId, content);
+                var metadata = await ExtractMetadataIfUrl(urls, messageId);
+                await SaveMetadataAsync(messageId, metadata);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to extract or save metadata for message: {MessageId}",
+                    Utils.SanitizeLogInput(messageId));
+            }
+        }
+
+        private async Task<Metadata> ExtractMetadataIfUrl(List<string> urls, string messageId) =>
+            await _metadataService.FetchMetadataFromProxyAsync(urls, messageId);
+
+        private async Task SaveMetadataAsync(string messageId, Metadata metadata)
+        {
+            var message = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+            if (message != null)
+            {
+                message.Metadata = metadata;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        // Emit events
+        // ──────────────────────────────────────────────
 
         [NonAction]
         private async Task EmitNewMessage(Message message, string? guildId, string channelId, string userId, string? friendId)
@@ -354,60 +287,34 @@ namespace LiventCord.Controllers
             if (guildId != null)
             {
                 _logger.LogInformation("Emitting message to guild. GuildId: {GuildId}, ChannelId: {ChannelId}", guildId, channelId);
-                var broadcastMessage = new
-                {
-                    guildId,
-                    messages = new[] { message },
-                    channelId,
-                    userId,
-                };
                 await _redisEventEmitter.EmitToGuild(
                     EventType.SEND_MESSAGE_GUILD,
-                    broadcastMessage,
-                    guildId,
-                    userId
-                );
+                    new { guildId, messages = new[] { message }, channelId, userId },
+                    guildId, userId);
             }
             else if (friendId != null)
             {
                 _logger.LogInformation("Emitting DM message. ChannelId: {ChannelId}, UserId: {UserId}", channelId, userId);
-                var dmMessage = new
-                {
-                    message,
-                    channelId = userId
-                };
                 await _redisEventEmitter.EmitToFriend(
                     EventType.SEND_MESSAGE_DM,
-                    dmMessage,
-                    userId,
-                    friendId
-                );
+                    new { message, channelId = userId },
+                    userId, friendId);
             }
         }
 
+        // ──────────────────────────────────────────────
+        // Core NewMessage / HandleMessage pipeline
+        // ──────────────────────────────────────────────
+
         [NonAction]
         private async Task<IActionResult> NewMessage(
-             string messageId,
-             string? temporaryId,
-             string userId,
-             string? friendId,
-             string channelId,
-             string? guildId,
-             string? content,
-             DateTime date,
-             DateTime? lastEdited,
-             List<Attachment>? attachments,
-             string? replyToId,
-             string? reactionEmojisIds,
-             List<Embed>? embeds,
-             bool? IsSystemMessage = false
-         )
+            string messageId, string? temporaryId, string userId, string? friendId,
+            string channelId, string? guildId, string? content, DateTime date, DateTime? lastEdited,
+            List<Attachment>? attachments, string? replyToId, string? reactionEmojisIds,
+            List<Embed>? embeds, bool? IsSystemMessage = false)
         {
             var validationResult = await ValidateNewMessage(userId, channelId, guildId, replyToId);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
+            if (validationResult != null) return validationResult;
 
             var message = new Message
             {
@@ -416,9 +323,7 @@ namespace LiventCord.Controllers
                 Content = content,
                 ChannelId = channelId,
                 Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
-                LastEdited = lastEdited.HasValue
-                    ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc)
-                    : null,
+                LastEdited = lastEdited.HasValue ? DateTime.SpecifyKind(lastEdited.Value, DateTimeKind.Utc) : null,
                 ReplyToId = replyToId,
                 ReactionEmojisIds = reactionEmojisIds,
                 Embeds = embeds ?? new List<Embed>(),
@@ -427,231 +332,96 @@ namespace LiventCord.Controllers
                 IsSystemMessage = IsSystemMessage,
             };
 
-            if (temporaryId != null && temporaryId.Length == Utils.ID_LENGTH)
-            {
+            if (temporaryId?.Length == Utils.ID_LENGTH)
                 message.TemporaryId = temporaryId;
-
-            }
 
             await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
 
-
             await InvalidateMessageCache(guildId, channelId);
-
             await EmitNewMessage(message, guildId, channelId, userId, friendId);
 
             if (content != null)
-            {
-                var urls = await HandleMessageUrls(guildId, channelId, userId, messageId, content);
-                await Task.Run(async () =>
-                {
-                    try
-                    {
-                        var metadata = await ExtractMetadataIfUrl(urls, messageId);
-                        await SaveMetadataAsync(messageId, metadata);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            ex,
-                            "Failed to extract or save metadata for message: {MessageId}",
-                            messageId
-                        );
-                    }
-                });
-            }
+                _ = Task.Run(() => FetchAndSaveMetadataAsync(guildId, channelId, userId, messageId, content));
 
             return Ok(new { message, guildId });
         }
 
-        private async Task SaveMetadataAsync(string messageId, Metadata metadata)
-        {
-            var message = await _context.Messages.FirstOrDefaultAsync(m =>
-                m.MessageId == messageId
-            );
-            if (message != null)
-            {
-                message.Metadata = metadata;
-                await _context.SaveChangesAsync();
-            }
-        }
-
         [NonAction]
         private async Task<IActionResult> HandleMessage(
-            MessageType mode,
-            string? guildId,
-            string channelId,
-            string userId,
-            string? friendId,
-            NewMessageRequest request
-        )
+            MessageType mode, string? guildId, string channelId,
+            string userId, string? friendId, NewMessageRequest request)
         {
             if (mode == MessageType.Guilds)
             {
                 if (string.IsNullOrWhiteSpace(guildId))
-                {
                     return BadRequest(new { Type = "error", Message = "Missing guildId" });
-                }
+
                 if (!await _permissionsController.CanSendMessages(userId!, guildId))
-                {
                     return StatusCode(StatusCodes.Status403Forbidden);
-                }
             }
 
             if (string.IsNullOrEmpty(channelId))
-            {
-                return BadRequest(
-                    new { Type = "error", Message = "Required property channel id is missing." }
-                );
-            }
+                return BadRequest(new { Type = "error", Message = "Required property channel id is missing." });
 
-            if (
-                !string.IsNullOrEmpty(request.ReplyToId)
-                && request.ReplyToId.Length != Utils.ID_LENGTH
-            )
-            {
-                return BadRequest(
-                    new
-                    {
-                        Type = "error",
-                        Message = $"Reply id should be {Utils.ID_LENGTH} characters long",
-                    }
-                );
-            }
+            if (!string.IsNullOrEmpty(request.ReplyToId) && request.ReplyToId.Length != Utils.ID_LENGTH)
+                return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
 
-            long MAX_TOTAL_SIZE = SharedAppConfig.GetMaxAttachmentSize();
+            long maxSize = SharedAppConfig.GetMaxAttachmentSize();
             long totalSize = 0;
-
             var messageId = Utils.CreateRandomId();
-            List<Attachment> attachments = new();
+            var attachments = new List<Attachment>();
 
-            if (request.Files != null && request.Files.Any())
+            foreach (var (file, index) in (request.Files ?? Enumerable.Empty<IFormFile>()).Select((f, i) => (f, i)))
             {
-                var files = request.Files.ToList();
-                var spoilerFlags = request.IsSpoilerFlags ?? new List<bool>();
+                if (file.Length > maxSize)
+                    return BadRequest(new { Type = "error", Message = "One of the files exceeds the size limit." });
 
-                for (int i = 0; i < files.Count; i++)
-                {
-                    var file = files[i];
+                totalSize += file.Length;
+                if (totalSize > maxSize)
+                    return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
 
-                    if (file.Length > MAX_TOTAL_SIZE)
-                    {
-                        return BadRequest(
-                            new
-                            {
-                                Type = "error",
-                                Message = "One of the files exceeds the size limit.",
-                            }
-                        );
-                    }
+                var fileId = await _imageController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
+                var isSpoiler = request.IsSpoilerFlags?.ElementAtOrDefault(index) ?? false;
 
-                    totalSize += file.Length;
-                    if (totalSize > MAX_TOTAL_SIZE)
-                    {
-                        return BadRequest(
-                            new
-                            {
-                                Type = "error",
-                                Message = "Total file size exceeds the size limit.",
-                            }
-                        );
-                    }
-
-                    string fileId = await _imageController.UploadFileInternalAsync(
-                        file,
-                        userId,
-                        true,
-                        false,
-                        guildId,
-                        channelId
-                    );
-
-                    bool isImageFile = FileSignatureValidator.IsImageFile(file);
-                    bool isVideoFile = FileSignatureValidator.IsVideoFile(file);
-                    bool isSpoiler = spoilerFlags.ElementAtOrDefault(i);
-
-                    attachments.Add(
-                        new Attachment
-                        {
-                            FileId = fileId,
-                            IsImageFile = isImageFile,
-                            IsVideoFile = isVideoFile,
-                            MessageId = messageId,
-                            FileName = file.FileName,
-                            FileSize = file.Length,
-                            IsSpoiler = isSpoiler,
-                        }
-                    );
-                }
+                attachments.Add(BuildAttachment(
+                    fileId, file.FileName, file.Length,
+                    FileSignatureValidator.IsImageFile(file),
+                    FileSignatureValidator.IsVideoFile(file),
+                    isSpoiler, messageId));
             }
 
-            return await NewMessage(
-                messageId,
-                request.TemporaryId,
-                userId,
-                friendId,
-                channelId,
-                guildId,
-                request.Content,
-                DateTime.UtcNow,
-                null,
-                attachments,
-                request.ReplyToId,
-                null,
-                null
-            );
+            return await NewMessage(messageId, request.TemporaryId, userId, friendId,
+                channelId, guildId, request.Content, DateTime.UtcNow, null,
+                attachments, request.ReplyToId, null, null);
         }
+
+        // ──────────────────────────────────────────────
+        // Edit / Delete / Query helpers
+        // ──────────────────────────────────────────────
 
         [NonAction]
-        private async Task<bool> MessageExists(string messageId, string channelId)
-        {
-            var message = await _context.Messages.FirstOrDefaultAsync(m =>
-                m.MessageId == messageId && m.ChannelId == channelId
-            );
-            return message != null;
-        }
-
-        private async Task<Metadata> ExtractMetadataIfUrl(List<string> urls, string messageId)
-        {
-            var fetchedMetadata = await _metadataService.FetchMetadataFromProxyAsync(
-                urls,
-                messageId
-            );
-            return fetchedMetadata;
-        }
+        private async Task<bool> MessageExists(string messageId, string channelId) =>
+            await _context.Messages.AnyAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
 
         [NonAction]
-        private async Task EditMessage(
-            string userId,
-            string channelId,
-            string messageId,
-            string newContent
-        )
+        private async Task EditMessage(string userId, string channelId, string messageId, string newContent)
         {
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
-                m.MessageId == messageId && m.ChannelId == channelId && m.UserId == userId
-            );
+                m.MessageId == messageId && m.ChannelId == channelId && m.UserId == userId);
 
             if (message == null) return;
 
             message.Content = newContent;
             message.LastEdited = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-
         }
 
         private async Task DeleteMessagesFromUser(string userId)
         {
             var messages = await _context.Messages.Where(m => m.UserId == userId).ToListAsync();
-
-            if (messages.Any())
-            {
-                foreach (var message in messages)
-                {
-                    await DeleteMessage(message.ChannelId, message.MessageId);
-                }
-            }
+            foreach (var message in messages)
+                await DeleteMessage(message.ChannelId, message.MessageId);
         }
 
         private async Task<Message?> GetMessageWithRelations(string messageId, string channelId)
@@ -662,16 +432,7 @@ namespace LiventCord.Controllers
                 .FirstOrDefaultAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
 
             if (message == null)
-            {
                 _logger.LogWarning("Message not found. MessageId: {MessageId}, ChannelId: {ChannelId}", messageId, channelId);
-            }
-            else
-            {
-                if (message.Attachments == null || !message.Attachments.Any())
-                {
-                    _logger.LogDebug("Message.Attachments is null or empty. MessageId: {MessageId}, ChannelId: {ChannelId}", messageId, channelId);
-                }
-            }
 
             return message;
         }
@@ -679,60 +440,53 @@ namespace LiventCord.Controllers
         private async Task DeleteMessage(string channelId, string messageId)
         {
             var message = await GetMessageWithRelations(messageId, channelId);
-            if (message == null)
-                return;
+            if (message == null) return;
 
             try
             {
                 await _imageController.DeleteAttachmentFileAsync(message);
 
-                var pinnedEntries = await _context
-                    .ChannelPinnedMessages.Where(p => p.MessageId == messageId)
-                    .ToListAsync();
-                if (pinnedEntries.Any())
-                {
-                    _context.ChannelPinnedMessages.RemoveRange(pinnedEntries);
-                }
+                var pinned = await _context.ChannelPinnedMessages
+                    .Where(p => p.MessageId == messageId).ToListAsync();
+                if (pinned.Any())
+                    _context.ChannelPinnedMessages.RemoveRange(pinned);
 
                 _context.Messages.Remove(message);
 
                 var existingUrls = await _context.MessageUrls.FindAsync(messageId);
-                if (existingUrls != null && existingUrls.Urls != null && existingUrls.Urls.Any())
+                if (existingUrls?.Urls?.Any() == true)
                 {
                     foreach (var url in existingUrls.Urls)
                     {
-                        var isUrlUsedElsewhere = await _context.MessageUrls
-                            .Where(mu => mu.MessageId != messageId && mu.Urls != null && mu.Urls.Contains(url))
-                            .AnyAsync();
+                        var usedElsewhere = await _context.MessageUrls
+                            .AnyAsync(mu => mu.MessageId != messageId && mu.Urls != null && mu.Urls.Contains(url));
 
-                        if (!isUrlUsedElsewhere)
+                        if (!usedElsewhere)
                         {
                             var mediaUrl = await _context.MediaUrls.FirstOrDefaultAsync(mu => mu.Url == url);
-                            if (mediaUrl != null)
-                                _context.MediaUrls.Remove(mediaUrl);
+                            if (mediaUrl != null) _context.MediaUrls.Remove(mediaUrl);
                         }
                     }
-
                     _context.MessageUrls.Remove(existingUrls);
                 }
 
                 await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Message deleted successfully. ChannelId: {ChannelId}, MessageId: {MessageId}", message.ChannelId, message.MessageId);
+                _logger.LogInformation("Message deleted. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting message. MessageId: {MessageId}, ChannelId: {ChannelId}", message.MessageId, message.ChannelId);
+                _logger.LogError(ex, "Error deleting message. MessageId: {MessageId}, ChannelId: {ChannelId}", messageId, channelId);
             }
         }
-        private async Task<IActionResult> ProcessBotMessage(
-            string guildId,
-            string channelId,
-            NewBotMessageRequest request
-        )
+
+        // ──────────────────────────────────────────────
+        // Bot message processing
+        // ──────────────────────────────────────────────
+
+        private async Task<IActionResult> ProcessBotMessage(string guildId, string channelId, NewBotMessageRequest request)
         {
-            var message = await _context
-                .Messages.Include(m => m.Embeds)
+            var message = await _context.Messages
+                .Include(m => m.Embeds)
                 .FirstOrDefaultAsync(m => m.MessageId == request.MessageId);
 
             if (message != null)
@@ -742,15 +496,7 @@ namespace LiventCord.Controllers
                 return Ok(new { Type = "success", Message = "Message updated in guild." });
             }
 
-            var embeds = request.Embeds ?? new List<Embed>();
-
-            foreach (var embed in embeds)
-            {
-                if (string.IsNullOrEmpty(embed.Id))
-                {
-                    embed.Id = Utils.CreateRandomId();
-                }
-            }
+            request.Embeds = NormaliseEmbeds(request.Embeds);
 
             var newMessage = await CreateNewMessage(request, guildId, channelId);
             _context.Messages.Add(newMessage);
@@ -758,16 +504,12 @@ namespace LiventCord.Controllers
             return Ok(new { Type = "success", Message = "Message inserted to guild." });
         }
 
-        private async Task<bool> CanUsersDm(string userId, string friendId)
-        {
-            bool isFriends = await _context.CheckFriendship(userId, friendId);
-            bool isSharingGuilds = await _context.AreUsersSharingGuild(userId, friendId);
-            if (isFriends || isSharingGuilds)
-            {
-                return true;
-            }
-            return false;
-        }
+        // ──────────────────────────────────────────────
+        // DM permission check
+        // ──────────────────────────────────────────────
 
+        private async Task<bool> CanUsersDm(string userId, string friendId) =>
+            await _context.CheckFriendship(userId, friendId) ||
+            await _context.AreUsersSharingGuild(userId, friendId);
     }
 }
