@@ -715,9 +715,6 @@ body.black-theme .friend-card:hover {
   margin-left: 15px;
 }
 .status-bubble {
-  padding: 6px 6px;
-  border-radius: 20px;
-  position: absolute;
   margin-left: 30px;
   margin-top: 30px;
 }

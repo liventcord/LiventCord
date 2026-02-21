@@ -559,6 +559,20 @@
   transition: background-color 0.3s ease;
   transform: translate(-50%, -50%);
 }
+
+.popup-close {
+  color: gray;
+  top: 0px;
+  right: 0px;
+  left: auto;
+  width: 50px;
+  height: 50px;
+  font-size: 22px;
+  border: medium;
+  background-color: transparent;
+  position: fixed;
+  cursor: pointer;
+}
 .popup-bottom-container {
   font-size: 18px;
   width: 93%;
@@ -1030,4 +1044,28 @@ body.black-theme .status-profile {
   position: absolute;
   right: 12px;
   color: rgba(169, 173, 180, 0.6);
+}
+#profile-container {
+  display: flex;
+  margin-top: 26vh;
+  margin-left: 25px;
+}
+#profile-title {
+  color: white;
+  font-size: 24px;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+  font-weight: bold;
+  white-space: nowrap;
+}
+#profile-discriminator {
+  font-weight: 100;
+  color: rgb(181, 186, 193);
+  font-size: 1em;
+  margin-top: 3.5em;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+  position: fixed;
 }

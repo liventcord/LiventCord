@@ -178,7 +178,7 @@ body.black-theme .base-overview-name-input {
   border-radius: 50%;
   border: solid #202020 5px;
   position: absolute;
-  top: 150px;
+  top: 163px;
   left: 50%;
   transform: translate(-50%, -50%);
   cursor: pointer;
@@ -190,7 +190,6 @@ body.black-theme .base-overview-name-input {
 }
 
 #uploadText {
-  margin-top: -0.875rem;
   font-size: 14px;
   color: white;
 }
