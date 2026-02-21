@@ -35,29 +35,14 @@ function sanitize(id: string): string {
     .replace(/[\\/]/g, "");
 }
 
-function fileResponse(resp: Response, range?: string): Response {
+async function fileResponse(resp: Response, range?: string): Promise<Response> {
   const headers = new Headers(resp.headers);
   cors(headers);
 
-  if (range && VIDEO_MIME_TYPES.has(headers.get("Content-Type") || "")) {
-    const contentLength = Number(headers.get("Content-Length") || 0);
-    const match = range.match(/bytes=(\d*)-(\d*)/);
-    if (match) {
-      const start = match[1] ? parseInt(match[1]) : 0;
-      const end = match[2] ? parseInt(match[2]) : contentLength - 1;
-      if (start >= 0 && end >= start && end < contentLength) {
-        headers.set("Content-Range", `bytes ${start}-${end}/${contentLength}`);
-        headers.set("Content-Length", `${end - start + 1}`);
-        headers.set("Accept-Ranges", "bytes");
-        return new Response((resp.body as any)?.slice(start, end + 1), {
-          status: 206,
-          headers,
-        });
-      }
-    }
-  }
-
-  return new Response(resp.body, { status: resp.status, headers });
+  return new Response(resp.body, {
+    status: resp.status,
+    headers,
+  });
 }
 
 export default {
@@ -97,24 +82,29 @@ export default {
       const cacheKey = `https://cache.liventcord/${type}_${id}_${version ?? "latest"}`;
       const cacheUrl = new URL(cacheKey);
 
-      const cached = await cache.match(cacheUrl);
-      if (cached)
-        return fileResponse(cached, request.headers.get("Range") || undefined);
+      const rangeHeader = request.headers.get("Range") || undefined;
+
+      if (!rangeHeader) {
+        const cached = await cache.match(cacheUrl);
+        if (cached) return fileResponse(cached);
+      }
 
       try {
         const originUrl = new URL(originBase);
         originUrl.pathname = `/${type}/${id}`;
         if (version) originUrl.searchParams.set("version", version);
 
-        const resp = await fetch(originUrl.toString());
+        const resp = await fetch(originUrl.toString(), {
+          headers: rangeHeader ? { Range: rangeHeader } : undefined,
+        });
+
         if (!resp.ok)
           return jsonResponse({ error: "File not found" }, resp.status);
 
-        const responseToReturn = fileResponse(
-          resp,
-          request.headers.get("Range") || undefined,
-        );
-        ctx.waitUntil(cache.put(cacheUrl, responseToReturn.clone()));
+        const responseToReturn = await fileResponse(resp, rangeHeader);
+
+        if (!rangeHeader && resp.status === 200)
+          ctx.waitUntil(cache.put(cacheUrl, responseToReturn.clone()));
 
         return responseToReturn;
       } catch (err) {
