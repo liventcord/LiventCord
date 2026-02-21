@@ -404,7 +404,7 @@ namespace LiventCord.Controllers
             pageSize = Math.Min(pageSize, 500);
             int skip = (page - 1) * pageSize;
 
-            var query = _context.Attachments
+            var baseQuery = _context.Attachments
                 .Where(a => a.IsImageFile || (a.IsVideoFile ?? false))
                 .Join(_context.Messages, a => a.MessageId, m => m.MessageId, (a, m) => new { a, m })
                 .Join(_context.Channels, x => x.m.ChannelId, c => c.ChannelId, (x, c) => new
@@ -414,17 +414,27 @@ namespace LiventCord.Controllers
                     x.m.Content,
                     x.m.Date,
                     c.ChannelId,
-                    c.GuildId,
+                    c.GuildId
                 })
                 .Where(r => r.ChannelId == channelId && r.GuildId == guildId);
 
-            return Ok(new
-            {
-                attachments = await query.Skip(skip).Take(pageSize).ToListAsync(),
-                count = await query.CountAsync(),
-            });
-        }
+            int totalCount = await baseQuery.CountAsync();
 
+            var attachments = await baseQuery
+                .OrderBy(r => r.Date)
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(r => new
+                {
+                    attachment = r.a,
+                    userId = r.UserId,
+                    content = r.Content,
+                    date = r.Date
+                })
+                .ToListAsync();
+
+            return Ok(new { attachments, count = totalCount });
+        }
         [NonAction]
         public async Task<IActionResult> GetGuildMessagesWithLinksAsync(string guildId, string channelId)
         {
