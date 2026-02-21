@@ -2,13 +2,13 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /usr/src/app
 
-COPY go-ws-api/go.mod go-ws-api/go.sum ./
+COPY ws-api/go.mod ws-api/go.sum ./
 
 COPY telemetry telemetry
 
-COPY go-ws-api go-ws-api
+COPY ws-api ws-api
 
-WORKDIR /usr/src/app/go-ws-api
+WORKDIR /usr/src/app/ws-api
 RUN go mod download
 
 COPY . .
