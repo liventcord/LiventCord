@@ -824,3 +824,55 @@ body.black-theme #media-menu-search-bar {
   position: absolute;
   cursor: grab;
 }
+
+#preview-image-flip {
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+#preview-image-flip.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+#preview-image-flip.active div {
+  opacity: 1;
+  filter: brightness(1.4);
+}
+
+#preview-image.spoilered {
+  filter: blur(40px);
+  cursor: pointer;
+}
+
+#image-preview-container.dragging #preview-image {
+  cursor: grabbing;
+}
+
+#preview-image {
+  transform-origin: center center;
+  transform: rotate(var(--preview-rotate, 0deg)) scale(var(--preview-scale, 1));
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
+@keyframes preview-image-animation {
+  0% {
+    transform: rotate(var(--preview-rotate, 0deg)) scale(0.4);
+  }
+  100% {
+    transform: rotate(var(--preview-rotate, 0deg)) scale(1);
+  }
+}
+
+@keyframes preview-image-disappear-animation {
+  from {
+    opacity: 1;
+    transform: rotate(var(--preview-rotate, 0deg)) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--preview-rotate, 0deg)) scale(0.97);
+  }
+}

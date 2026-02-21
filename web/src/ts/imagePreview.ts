@@ -339,6 +339,25 @@ function setupOpenButton(sanitizedSrc: string): void {
     }
   };
 }
+function setupPreviewSpin(): void {
+  const spinButton = getId("preview-image-flip") as HTMLButtonElement;
+  if (!spinButton) return;
+
+  const previewImage = getId("preview-image") as HTMLImageElement;
+  if (!previewImage) return;
+
+  let rotation = 0;
+
+  spinButton.onclick = () => {
+    rotation = (rotation + 90) % 360;
+    previewImage.style.setProperty("--preview-rotate", `${rotation}deg`);
+    spinButton.title = `Rotate image to ${rotation}°`;
+  };
+
+  previewImage.addEventListener("load", () => {
+    previewImage.style.setProperty("--preview-rotate", "0deg");
+  });
+}
 
 function setupReplyButton(
   imageElement: HTMLImageElement,
@@ -441,10 +460,8 @@ export async function displayImagePreview(
     ? imageElement.src
     : await corsDomainManager.getProxy(sanitizedSrc);
 
-  // Track index for navigation
   isOnMediaPanel = isFromMediaPanel;
 
-  // Spoiler
   previewImage.classList.toggle("spoilered", isSpoiler);
 
   setupPreviewMetadata(imageElement, sourceImage, senderId, date);
@@ -452,6 +469,7 @@ export async function displayImagePreview(
   setupOpenButton(sanitizedSrc);
   setupDownloadButton(sanitizedSrc);
   setupReplyButton(imageElement, senderId);
+  setupPreviewSpin();
 
   previewImage.onclick = () => {
     if (isSpoiler) {
