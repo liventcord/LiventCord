@@ -131,7 +131,8 @@ func broadcastToUsers(eventMessage EventMessage, userIDs []string) {
 			continue
 		}
 
-		for ws := range conns {
+		var failedConns []*WSConnection
+		for _, ws := range conns {
 			ws.Mutex.Lock()
 			err := ws.Conn.WriteMessage(websocket.TextMessage, payload)
 			ws.Mutex.Unlock()
@@ -139,16 +140,32 @@ func broadcastToUsers(eventMessage EventMessage, userIDs []string) {
 			if err != nil {
 				fmt.Printf("Error sending message to user %s: %v. Closing connection.\n", targetUserID, err)
 				ws.Conn.Close()
-
-				hub.lock.Lock()
-				delete(conns, ws)
-				if len(conns) == 0 {
-					delete(hub.clients, targetUserID)
-				}
-				hub.lock.Unlock()
+				failedConns = append(failedConns, ws)
 			} else {
 				fmt.Printf("Successfully sent message to WebSocket client for userId %s\n", targetUserID)
 			}
+		}
+		if len(failedConns) > 0 {
+			hub.lock.Lock()
+			var active []*WSConnection
+			for _, ws := range hub.clients[targetUserID] {
+				failed := false
+				for _, f := range failedConns {
+					if ws == f {
+						failed = true
+						break
+					}
+				}
+				if !failed {
+					active = append(active, ws)
+				}
+			}
+			if len(active) == 0 {
+				delete(hub.clients, targetUserID)
+			} else {
+				hub.clients[targetUserID] = active
+			}
+			hub.lock.Unlock()
 		}
 	}
 }

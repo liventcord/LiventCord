@@ -59,7 +59,7 @@ func handleStopTyping(conn *websocket.Conn, event EventMessage, userId string) {
 		return
 	}
 
-	key := fmt.Sprintf("%s_%s_", payload.ChannelId, payload.GuildId)
+	key := fmt.Sprintf("%s_%s", payload.ChannelId, payload.GuildId)
 
 	if state, ok := typingStates.Load(key); ok {
 		userMap := state.(map[string]bool)

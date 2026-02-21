@@ -21,16 +21,9 @@ const (
 	Idling       UserStatus = "idle"
 )
 
-type ConnectivityStatus string
-
-const (
-	Connected    ConnectivityStatus = "connected"
-	Disconnected ConnectivityStatus = "disconnected"
-)
-
 type UserStatusResponse struct {
-	UserId             string `json:"userId"`
-	ConnectivityStatus string `json:"status"`
+	UserId string     `json:"userId"`
+	Status UserStatus `json:"status"`
 }
 
 type WSConnection struct {
@@ -38,12 +31,22 @@ type WSConnection struct {
 	Mutex sync.Mutex
 }
 
-var connLookup = make(map[*websocket.Conn]*WSConnection)
-
-var hub struct {
-	clients            map[string]map[*WSConnection]bool
-	connectivityStatus map[string]ConnectivityStatus
-	userStatus         map[string]UserStatus
-	lock               sync.RWMutex
+type Hub struct {
+	lock    sync.RWMutex
+	clients map[string][]*WSConnection
+	status  map[string]UserStatus
 }
+
+var hub = Hub{
+	clients: make(map[string][]*WSConnection),
+	status:  make(map[string]UserStatus),
+}
+
+type VcConnection struct {
+	ID   string
+	Conn *websocket.Conn
+}
+
 var vcHub = newHub()
+
+type EventHandler func(conn *websocket.Conn, event EventMessage, userId string)

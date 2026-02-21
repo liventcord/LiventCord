@@ -43,7 +43,7 @@ func main() {
 		r.GET("/health",
 			AdminAuthMiddleware(adminPassword),
 			telemetry.HealthHandler("WS Api", nil, nil, func() int {
-				return len(hub.userStatus)
+				return len(hub.status)
 			}),
 		)
 	}

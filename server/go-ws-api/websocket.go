@@ -4,13 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
-
-const ONLINE_TIMEOUT = 30
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin:  func(r *http.Request) bool { return true },
@@ -36,123 +33,51 @@ func handleWebSocket(c *gin.Context) {
 
 func registerClient(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
-	defer hub.lock.Unlock()
-
-	if hub.clients == nil {
-		hub.clients = make(map[string]map[*WSConnection]bool)
-	}
-	if hub.connectivityStatus == nil {
-		hub.connectivityStatus = make(map[string]ConnectivityStatus)
-	}
-	if hub.userStatus == nil {
-		hub.userStatus = make(map[string]UserStatus)
-	}
 
 	ws := &WSConnection{Conn: conn}
+	hub.clients[userId] = append(hub.clients[userId], ws)
 
-	if connLookup == nil {
-		connLookup = make(map[*websocket.Conn]*WSConnection)
-	}
-	connLookup[conn] = ws
-
-	if _, ok := hub.clients[userId]; !ok {
-		hub.clients[userId] = make(map[*WSConnection]bool)
-	}
-	hub.clients[userId][ws] = true
-
-	previousConnectivity := hub.connectivityStatus[userId]
-	hub.connectivityStatus[userId] = Connected
-
-	if _, exists := hub.userStatus[userId]; !exists {
-		hub.userStatus[userId] = Online
+	if _, exists := hub.status[userId]; !exists {
+		hub.status[userId] = Online
 	}
 
-	effectiveStatus := hub.userStatus[userId]
+	effectiveStatus := hub.status[userId]
 
-	sendResponse(conn, "UPDATE_USER_STATUS", UserStatusResponse{
-		UserId:             userId,
-		ConnectivityStatus: string(effectiveStatus),
+	hub.lock.Unlock() // release before any writes — sendResponse and broadcastStatusUpdate both acquire hub.lock
+
+	writeToConn(ws, "UPDATE_USER_STATUS", UserStatusResponse{
+		UserId: userId,
+		Status: effectiveStatus,
 	})
 
-	shouldBroadcast := previousConnectivity != Connected
-	if shouldBroadcast {
-		go broadcastStatusUpdate(userId, effectiveStatus)
-	}
+	go broadcastStatusUpdate(userId, effectiveStatus)
 }
 
-func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) error {
-	ws, ok := connLookup[conn]
-	if !ok {
-		return fmt.Errorf("connection not found")
-	}
+func removeConnection(userId string, conn *websocket.Conn) {
+	hub.lock.Lock()
+	defer hub.lock.Unlock()
 
-	ws.Mutex.Lock()
-	defer ws.Mutex.Unlock()
-
-	response, err := json.Marshal(struct {
-		EventType string      `json:"event_type"`
-		Payload   interface{} `json:"payload"`
-	}{
-		EventType: eventType,
-		Payload:   payload,
-	})
-	if err != nil {
-		return err
-	}
-
-	err = ws.Conn.WriteMessage(websocket.TextMessage, response)
-	if err != nil {
-		fmt.Printf("WebSocket write error: %v\n", err)
-		ws.Conn.Close()
-
-		hub.lock.Lock()
-
-		for userId, conns := range hub.clients {
-			if _, exists := conns[ws]; exists {
-				delete(conns, ws)
-
-				if len(conns) == 0 {
-					hub.connectivityStatus[userId] = Disconnected
-
-					delete(hub.clients, userId)
-
-					go handleDisconnectionWithTimeout(userId)
-				}
-
-				break
-			}
+	conns := hub.clients[userId]
+	for i, ws := range conns {
+		if ws.Conn == conn {
+			conns = append(conns[:i], conns[i+1:]...)
+			break
 		}
-
-		hub.lock.Unlock()
-		delete(connLookup, conn)
 	}
 
-	return err
+	if len(conns) == 0 {
+		delete(hub.clients, userId)
+		go broadcastStatusUpdate(userId, hub.status[userId])
+	} else {
+		hub.clients[userId] = conns
+	}
 }
 
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 	for {
 		_, message, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("WebSocket error for user %s: %v\n", userId, err)
-
-			hub.lock.Lock()
-			ws, ok := connLookup[conn]
-			if ok {
-				if conns, exists := hub.clients[userId]; exists {
-					delete(conns, ws)
-					delete(connLookup, conn)
-
-					if len(conns) == 0 {
-						hub.connectivityStatus[userId] = Disconnected
-						go handleDisconnectionWithTimeout(userId)
-					} else {
-						fmt.Printf("User %s still has %d active connections, staying online\n", userId, len(conns))
-					}
-				}
-			}
-			hub.lock.Unlock()
-
+			removeConnection(userId, conn)
 			conn.Close()
 			return
 		}
@@ -168,43 +93,83 @@ func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 	}
 }
 
-func handleDisconnectionWithTimeout(userId string) {
-	fmt.Printf("Starting disconnection timeout handler for user %s\n", userId)
+func marshalResponse(eventType string, payload interface{}) ([]byte, error) {
+	return json.Marshal(struct {
+		EventType string      `json:"event_type"`
+		Payload   interface{} `json:"payload"`
+	}{
+		EventType: eventType,
+		Payload:   payload,
+	})
+}
 
-	timeout := time.After(ONLINE_TIMEOUT * time.Second)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+// writeToConn sends directly to a WSConnection without acquiring hub.lock.
+// Use when hub.lock is already held, or when the WSConnection is already known.
+func writeToConn(ws *WSConnection, eventType string, payload interface{}) {
+	response, err := marshalResponse(eventType, payload)
+	if err != nil {
+		fmt.Println("Error marshalling response:", err)
+		return
+	}
+	ws.Mutex.Lock()
+	defer ws.Mutex.Unlock()
+	ws.Conn.WriteMessage(websocket.TextMessage, response)
+}
 
-	for {
-		select {
-		case <-timeout:
-			fmt.Printf("Timeout reached for user %s\n", userId)
-
-			hub.lock.Lock()
-			conns, exists := hub.clients[userId]
-			stillDisconnected := !exists || len(conns) == 0
-
-			if stillDisconnected {
-				hub.connectivityStatus[userId] = Disconnected
-				hub.lock.Unlock()
-
-				effective := hub.userStatus[userId]
-				broadcastStatusUpdate(userId, effective)
-
-			} else {
-				hub.lock.Unlock()
+// sendResponse finds the WSConnection for conn under hub.lock and writes to it.
+// Do NOT call while already holding hub.lock — use writeToConn instead.
+func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) {
+	hub.lock.RLock()
+	var ws *WSConnection
+	for _, conns := range hub.clients {
+		for _, c := range conns {
+			if c.Conn == conn {
+				ws = c
+				break
 			}
+		}
+		if ws != nil {
+			break
+		}
+	}
+	hub.lock.RUnlock()
 
-			return
+	if ws == nil {
+		return
+	}
+	writeToConn(ws, eventType, payload)
+}
 
-		case <-ticker.C:
-			hub.lock.RLock()
-			conns, exists := hub.clients[userId]
-			hub.lock.RUnlock()
+func broadcastStatusUpdate(userId string, status UserStatus) {
+	hub.lock.RLock()
+	snapshot := make(map[string][]*WSConnection, len(hub.clients))
+	for uid, conns := range hub.clients {
+		snapshot[uid] = conns
+	}
+	hub.lock.RUnlock()
 
-			if exists && len(conns) > 0 {
-				fmt.Printf("User %s reconnected, aborting disconnection timeout\n", userId)
-				return
+	guilds, err := fetchGuildMemberships(userId)
+	if err != nil {
+		fmt.Println("Error fetching guild memberships:", err)
+		return
+	}
+
+	resp := UserStatusResponse{UserId: userId, Status: status}
+	notified := make(map[string]struct{})
+
+	for _, members := range guilds {
+		for _, targetUserId := range members {
+			if targetUserId == userId {
+				continue
+			}
+			if _, done := notified[targetUserId]; done {
+				continue
+			}
+			if conns, ok := snapshot[targetUserId]; ok {
+				for _, c := range conns {
+					sendResponse(c.Conn, "UPDATE_USER_STATUS", resp)
+				}
+				notified[targetUserId] = struct{}{}
 			}
 		}
 	}
@@ -212,9 +177,9 @@ func handleDisconnectionWithTimeout(userId string) {
 
 func EmitToGuild(eventType string, payload interface{}, key string, userId string) {
 	hub.lock.RLock()
-	clientsSnapshot := make(map[string]map[*WSConnection]bool, len(hub.clients))
+	snapshot := make(map[string][]*WSConnection, len(hub.clients))
 	for uid, conns := range hub.clients {
-		clientsSnapshot[uid] = conns
+		snapshot[uid] = conns
 	}
 	hub.lock.RUnlock()
 
@@ -224,66 +189,22 @@ func EmitToGuild(eventType string, payload interface{}, key string, userId strin
 		return
 	}
 
-	alreadyNotified := make(map[string]struct{})
+	notified := make(map[string]struct{})
 
 	for _, members := range guilds {
 		for _, targetUserId := range members {
 			if targetUserId == userId {
 				continue
 			}
-			if _, notified := alreadyNotified[targetUserId]; notified {
+			if _, done := notified[targetUserId]; done {
 				continue
 			}
-
-			if userConns, ok := clientsSnapshot[targetUserId]; ok {
-				for c := range userConns {
+			if conns, ok := snapshot[targetUserId]; ok {
+				for _, c := range conns {
 					sendResponse(c.Conn, eventType, payload)
 				}
-				alreadyNotified[targetUserId] = struct{}{}
+				notified[targetUserId] = struct{}{}
 			}
 		}
 	}
-
-	fmt.Printf("Broadcasted %s from user %s to %d users\n", eventType, userId, len(alreadyNotified))
-}
-
-func broadcastStatusUpdate(userId string, status UserStatus) {
-	hub.lock.RLock()
-	clientsSnapshot := make(map[string]map[*WSConnection]bool, len(hub.clients))
-	for uid, conns := range hub.clients {
-		clientsSnapshot[uid] = conns
-	}
-	hub.lock.RUnlock()
-
-	guilds, err := fetchGuildMemberships(userId)
-	if err != nil {
-		fmt.Println("Error fetching guild memberships:", err)
-		return
-	}
-
-	alreadyNotified := make(map[string]struct{})
-
-	for _, members := range guilds {
-		for _, targetUserId := range members {
-			if targetUserId == userId {
-				continue
-			}
-			if _, notified := alreadyNotified[targetUserId]; notified {
-				continue
-			}
-
-			if userConns, ok := clientsSnapshot[targetUserId]; ok {
-				resp := UserStatusResponse{
-					UserId:             userId,
-					ConnectivityStatus: string(status),
-				}
-				for c := range userConns {
-					sendResponse(c.Conn, "UPDATE_USER_STATUS", resp)
-				}
-				alreadyNotified[targetUserId] = struct{}{}
-			}
-		}
-	}
-
-	fmt.Printf("Broadcasted status update for user %s to %d users\n", userId, len(alreadyNotified))
 }

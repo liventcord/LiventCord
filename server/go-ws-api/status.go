@@ -36,7 +36,7 @@ func handleUpdateUserStatus(conn *websocket.Conn, event EventMessage, userId str
 	status := UserStatus(statusUpdate.Status)
 	if isValidStatus(status) {
 		hub.lock.Lock()
-		hub.userStatus[userId] = status
+		hub.status[userId] = status
 		hub.lock.Unlock()
 
 		broadcastStatusUpdate(userId, status)
@@ -56,23 +56,36 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 		return
 	}
 
-	var statusResponses []UserStatusResponse
+	// Collect statuses and the target WSConnection under a single lock, then
+	// release before writing so sendResponse does not deadlock re-acquiring it.
 	hub.lock.RLock()
-	defer hub.lock.RUnlock()
-
+	var statusResponses []UserStatusResponse
 	for _, id := range request.UserIds {
-		UserStatus, exists := hub.userStatus[id]
+		userStatus, exists := hub.status[id]
 		if !exists {
-			UserStatus = StatusOffline
+			userStatus = StatusOffline
 		}
-
 		statusResponses = append(statusResponses, UserStatusResponse{
-			UserId:             id,
-			ConnectivityStatus: string(UserStatus),
+			UserId: id,
+			Status: userStatus,
 		})
 	}
-
-	if err := sendResponse(conn, event.EventType, statusResponses); err != nil {
-		fmt.Println("Error sending status response:", err)
+	var ws *WSConnection
+	for _, conns := range hub.clients {
+		for _, c := range conns {
+			if c.Conn == conn {
+				ws = c
+				break
+			}
+		}
+		if ws != nil {
+			break
+		}
 	}
+	hub.lock.RUnlock()
+
+	if ws == nil {
+		return
+	}
+	writeToConn(ws, event.EventType, statusResponses)
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -46,22 +45,13 @@ func pingVcHubClients(h *VcHub) {
 }
 
 // Ping for hub
-func pingHubClients(h *struct {
-	clients            map[string]map[*WSConnection]bool
-	connectivityStatus map[string]ConnectivityStatus
-	userStatus         map[string]UserStatus
-	lock               sync.RWMutex
-}) {
+func pingHubClients(h *Hub) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-
-	for userId, conns := range h.clients {
-		for ws := range conns {
+	for _, conns := range h.clients {
+		for _, ws := range conns {
 			if ws.Conn != nil {
-				err := ws.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(pingTimeout))
-				if err != nil {
-					println("Ping failed for user", userId, ":", err.Error())
-				}
+				_ = ws.Conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(pingTimeout))
 			}
 		}
 	}

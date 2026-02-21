@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -33,7 +31,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgradeConnection(w, r)
 	if err != nil {
-		log.Println("[WS] WebSocket upgrade failed:", err)
 		return
 	}
 
@@ -54,7 +51,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 func buildExistingUserList(userId string) map[string][]VideoUserStatus {
 	userGuilds, err := fetchGuildMemberships(userId)
 	if err != nil {
-		fmt.Println("Error fetching guild memberships:", err)
 		return nil
 	}
 
@@ -62,8 +58,6 @@ func buildExistingUserList(userId string) map[string][]VideoUserStatus {
 	defer vcHub.mu.RUnlock()
 
 	result := make(map[string][]VideoUserStatus)
-
-	// Only include rooms that exist in user's guilds
 	for roomID, clients := range vcHub.rooms {
 		if _, ok := userGuilds[roomID]; !ok {
 			continue
@@ -91,17 +85,13 @@ func buildExistingUserList(userId string) map[string][]VideoUserStatus {
 func handleJoinRoom(client *VcClient, data json.RawMessage) {
 	var p JoinRoomPayload
 	if err := json.Unmarshal(data, &p); err != nil {
-		log.Println("[WS] joinRoom payload parse failed:", err)
 		return
 	}
 	if p.RoomID == "" {
-		log.Println("[WS] joinRoom ignored (empty RoomID) from", client.ID)
 		return
 	}
 
 	client.RoomID = p.RoomID
-	log.Println("[WS] User", client.ID, "joined room", p.RoomID)
-
 	registerToRoom(client)
 	emitUserList(client)
 	notifyUserConnect(client)
@@ -145,7 +135,6 @@ func registerClientVC(userID string, conn *websocket.Conn) *VcClient {
 		Conn: conn,
 		Send: make(chan []byte, 256),
 	}
-	log.Println("[WS] Client connected:", userID)
 
 	vcHub.mu.Lock()
 	vcHub.clients[userID] = client
@@ -158,13 +147,11 @@ func handleClientMessages(client *VcClient) {
 	for {
 		_, msg, err := client.Conn.ReadMessage()
 		if err != nil {
-			log.Println("[WS] Read error, closing connection for:", client.ID, "error:", err)
 			break
 		}
 
 		var env Envelope
 		if err := json.Unmarshal(msg, &env); err != nil {
-			log.Println("[WS] Invalid JSON from", client.ID, ":", err)
 			continue
 		}
 
@@ -180,8 +167,6 @@ func handleClientMessages(client *VcClient) {
 		case "leaveRoom":
 			handleLeaveRoom(client)
 		case "ping":
-		default:
-			log.Println("[WS] Unknown event:", env.Event, "from", client.ID)
 		}
 	}
 }
@@ -190,7 +175,6 @@ func handleToggleMute(client *VcClient) {
 	vcHub.mu.Lock()
 	if client.RoomID == "" {
 		vcHub.mu.Unlock()
-		log.Printf("[WS] User room id is empty")
 		return
 	}
 	roomClients := vcHub.rooms[client.RoomID]
@@ -225,7 +209,6 @@ func handleToggleDeafen(client *VcClient) {
 	vcHub.mu.Lock()
 	if client.RoomID == "" {
 		vcHub.mu.Unlock()
-		log.Printf("[WS] User room id is empty")
 		return
 	}
 	roomClients := vcHub.rooms[client.RoomID]
@@ -264,17 +247,14 @@ func handleLeaveRoom(client *VcClient) {
 	client.RoomID = ""
 	unregisterFromRoom(client)
 	notifyUserLeave(client, roomID)
-	log.Println("[WS] User", client.ID, "left room", roomID)
 }
 
 func handleDataEvent(client *VcClient, data json.RawMessage) {
 	var payload DataPayload
 	if err := json.Unmarshal(data, &payload); err != nil {
-		log.Println("[WS] data payload parse failed:", err)
 		return
 	}
 	if payload.TargetID == "" {
-		log.Println("[WS] data event missing targetId from", client.ID)
 		return
 	}
 
