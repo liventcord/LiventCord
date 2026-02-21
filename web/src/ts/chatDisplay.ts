@@ -178,9 +178,11 @@ export function addChatMentionListeners(): void {
 // ─── Media panel ───
 
 export function closeMediaPanel(): void {
-  getId("media-table-wrapper")?.classList.add("media-table-wrapper-on-right");
+  const media = getId("media-table-wrapper");
+  if (media) media.classList.add("media-table-wrapper-on-right");
   enableElement(chatContent, false, true);
   setTimeout(scrollToBottom, 0);
+  if (media) disableElement(media);
 }
 
 export function openMediaPanel(type: string): void {

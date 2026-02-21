@@ -19,6 +19,9 @@ import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
 import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
+import {
+  selectedPanelType
+} from "./panelHandler.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
@@ -158,10 +161,9 @@ export async function changeChannel(newChannel?: ChannelData) {
   const newChannelName = newChannel.channelName;
   setReachedChannelEnd(false);
 
-  if (hasChannelChangedOnce) {
-    closeMediaPanel();
-  }
+  closeMediaPanel();
   hasChannelChangedOnce = true;
+  selectedPanelType.value = "";
 
   if (isTextChannel) {
     guildCache.currentChannelId = channelId;

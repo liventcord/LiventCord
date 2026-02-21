@@ -21,6 +21,8 @@
 - Add invite settings panel managing invites
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
+- Add spin image button on preview
+- Change dm message deletions to be optimistic
 
 ## Bug fixes
 
@@ -39,3 +41,4 @@
 - Create server popup looks broken
 - Avoid inactive client disconnections to ws
 - Changing channel while media panel is open should close media panel
+- Right clicking to drag image preview should not create image search context menu
