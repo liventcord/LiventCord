@@ -33,7 +33,7 @@ class Router {
   }
 
   public ID_LENGTH = 19;
-
+  private isHandlingNavigation = false;
   private readonly ROUTES = {
     DM_HOME: "/channels/@me",
     JOIN_GUILD: "/join-guild/",
@@ -94,14 +94,18 @@ class Router {
       if (this.guardUnsavedChanges(targetUrl)) return;
 
       this.lastKnownUrl = window.location.hash;
-
       const { pathStr, parts } = this.parsePath();
+
+      this.isHandlingNavigation = true;
       this.processNavigation(pathStr, parts);
+      this.isHandlingNavigation = false;
     } catch (error) {
+      this.isHandlingNavigation = false;
       console.error("Navigation error:", error);
       this.resetRoute();
     }
   }
+
   guardUnsavedChanges(targetUrl: string) {
     if (!isSettingsOpen) return false;
 
@@ -307,7 +311,7 @@ class Router {
     const clean = path.startsWith("/") ? path.slice(1) : path;
     const newHash = `#/${clean}`;
 
-    if (replace) {
+    if (replace || this.isHandlingNavigation) {
       window.location.replace(newHash);
     } else {
       window.location.hash = newHash;
