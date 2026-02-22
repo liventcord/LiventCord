@@ -347,33 +347,43 @@
 }
 
 .pop-up-refuse {
-  font-size: 14px;
-  padding: 8px 14px;
+  font-size: 1em;
+  width: 20%;
+  height: 23%;
   background-color: transparent;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 15px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  position: fixed;
+  top: 90%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
 }
-
 .pop-up-refuse:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.pop-up-accept {
-  font-size: 14px;
-  padding: 8px 14px;
-  background-color: #da373c;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+  background-color: #ffffff14;
 }
 
 .pop-up-accept:hover {
-  background-color: #b92d32;
+  background-color: #4750bb;
+}
+.pop-up-accept {
+  font-size: 16px;
+  width: 25%;
+  height: 40px;
+  white-space: nowrap;
+  background-color: #5865f2;
+  color: wheat;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  position: fixed;
+  z-index: 1;
+  top: 90%;
+  left: 84%;
+  transition: background-color 0.3s ease;
+  transform: translate(-50%, -50%);
 }
 
 .guild-pop-button-container {

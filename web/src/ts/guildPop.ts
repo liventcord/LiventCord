@@ -88,14 +88,13 @@ function buildGuildCreationPanel(
   subjectEl: HTMLElement,
   closeCallback: () => void
 ) {
-  if (!appState.currentUserId) return;
   buttonContainer.parentNode?.removeChild(buttonContainer);
 
   subjectEl.textContent = translations.getTranslation("customize-guild");
   contentEl.textContent = translations.getTranslation("customize-guild-detail");
 
   const nameInput = createEl("input", {
-    value: translations.generateGuildName(appState.currentUserId),
+    value: translations.generateGuildName(appState.currentUserNick),
     id: "guild-name-input"
   }) as HTMLInputElement;
 
@@ -441,8 +440,4 @@ export async function createCropPop(
     ".cr-slider-wrap .cr-slider"
   );
   if (slider) slider.style.transform = "scale(1.5)";
-}
-
-export function openSearchPop() {
-  // TODO: implement search popup
 }

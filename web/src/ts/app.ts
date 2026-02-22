@@ -103,7 +103,6 @@ import { Channel, ChatBarState } from "./types/interfaces.ts";
 import { appState, InitialState, InitialStateData } from "./appState.ts";
 import { FileHandler } from "./fileHandler.ts";
 import {
-  openSearchPop,
   toggleDropdown,
   closeDropdown,
   hideGuildSettingsDropdown
@@ -267,7 +266,8 @@ function initializeSettings(): void {
 
 function initializeListeners(): void {
   getId(ELEMENT_IDS.globalSearchInput)?.addEventListener("click", () =>
-    openSearchPop()
+    // TODO: implement search popup
+    console.log("search input clicked!")
   );
   guildContainer.addEventListener("click", handleGuildClick);
 
