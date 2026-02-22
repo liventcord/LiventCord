@@ -34,7 +34,7 @@ import { initReverseImageSearch } from "./reverseImageSearch.ts";
 
 let currentFileName = "";
 let isPreviewZoomed = false;
-let isDragging = false;
+export let isDragging = false;
 let startX = 0;
 let startY = 0;
 let isAddedDragListeners = false;

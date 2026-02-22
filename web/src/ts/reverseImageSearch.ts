@@ -1,13 +1,13 @@
-import { apiClient } from "./api";
+import { isDragging } from "./imagePreview";
 
 const Engines: Record<string, string> = {
-  Google:   "https://lens.google.com/uploadbyurl?url=",
-  Yandex:   "https://yandex.com/images/search?rpt=imageview&url=",
+  Google: "https://lens.google.com/uploadbyurl?url=",
+  Yandex: "https://yandex.com/images/search?rpt=imageview&url=",
   SauceNAO: "https://saucenao.com/search.php?url=",
-  IQDB:     "https://iqdb.org/?url=",
-  Bing:     "https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:",
-  TinEye:   "https://www.tineye.com/search?url=",
-  ImgOps:   "https://imgops.com/start?url=",
+  IQDB: "https://iqdb.org/?url=",
+  Bing: "https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:",
+  TinEye: "https://www.tineye.com/search?url=",
+  ImgOps: "https://imgops.com/start?url="
 };
 
 function getEngineIcon(engineUrl: string): string {
@@ -16,7 +16,11 @@ function getEngineIcon(engineUrl: string): string {
 }
 
 function searchImage(src: string, engineUrl: string): void {
-  window.open(engineUrl + encodeURIComponent(src), "_blank", "noopener,noreferrer");
+  window.open(
+    engineUrl + encodeURIComponent(src),
+    "_blank",
+    "noopener,noreferrer"
+  );
 }
 
 function searchAllEngines(src: string): void {
@@ -30,7 +34,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
   attrs?: Record<string, string>
 ): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
-  if (attrs) for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (attrs)
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
   return node;
 }
 
@@ -137,11 +142,13 @@ function onContextMenu(e: MouseEvent): void {
   const src = getImageSrc(target);
   if (!src) return;
 
+  const isPreview = target.id === "preview-image";
   const showImageSearch =
-    target.id === "preview-image" ||
-    target.parentElement?.classList.contains("media-wrapper");
+    isPreview || target.parentElement?.classList.contains("media-wrapper");
 
   if (!showImageSearch) return;
+
+  if (isPreview && isDragging) return;
 
   e.preventDefault();
   e.stopPropagation();
@@ -150,8 +157,14 @@ function onContextMenu(e: MouseEvent): void {
   activeMenu = buildMenu(src, e.clientX, e.clientY);
 
   setTimeout(() => {
-    document.addEventListener("mousedown", onOutside, { capture: true, once: true });
-    document.addEventListener("keydown", onEscape, { capture: true, once: true });
+    document.addEventListener("mousedown", onOutside, {
+      capture: true,
+      once: true
+    });
+    document.addEventListener("keydown", onEscape, {
+      capture: true,
+      once: true
+    });
   });
 }
 
