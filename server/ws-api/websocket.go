@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -21,6 +23,11 @@ var eventHandlers = map[string]func(*websocket.Conn, EventMessage, string){
 	"STOP_TYPING":        handleStopTyping,
 }
 
+var disconnectTimers = struct {
+	sync.Mutex
+	timers map[string]*time.Timer
+}{timers: make(map[string]*time.Timer)}
+
 func handleWebSocket(c *gin.Context) {
 	userId, conn, err := establishWebSocketConnection(c)
 	if err != nil {
@@ -32,6 +39,13 @@ func handleWebSocket(c *gin.Context) {
 }
 
 func registerClient(userId string, conn *websocket.Conn) {
+	disconnectTimers.Lock()
+	if t, ok := disconnectTimers.timers[userId]; ok {
+		t.Stop()
+		delete(disconnectTimers.timers, userId)
+	}
+	disconnectTimers.Unlock()
+
 	hub.lock.Lock()
 
 	ws := &WSConnection{Conn: conn}
@@ -43,7 +57,7 @@ func registerClient(userId string, conn *websocket.Conn) {
 
 	effectiveStatus := hub.status[userId]
 
-	hub.lock.Unlock() // release before any writes — sendResponse and broadcastStatusUpdate both acquire hub.lock
+	hub.lock.Unlock()
 
 	writeToConn(ws, "UPDATE_USER_STATUS", UserStatusResponse{
 		UserId: userId,
@@ -55,7 +69,6 @@ func registerClient(userId string, conn *websocket.Conn) {
 
 func removeConnection(userId string, conn *websocket.Conn) {
 	hub.lock.Lock()
-	defer hub.lock.Unlock()
 
 	conns := hub.clients[userId]
 	for i, ws := range conns {
@@ -67,12 +80,42 @@ func removeConnection(userId string, conn *websocket.Conn) {
 
 	if len(conns) == 0 {
 		delete(hub.clients, userId)
-		hub.status[userId] = StatusOffline
-		go broadcastStatusUpdate(userId, StatusOffline)
+		hub.lock.Unlock()
+
+		scheduleDisconnectBroadcast(userId)
 	} else {
 		hub.clients[userId] = conns
+		hub.lock.Unlock()
 	}
 }
+
+func scheduleDisconnectBroadcast(userId string) {
+	disconnectTimers.Lock()
+	defer disconnectTimers.Unlock()
+
+	if t, ok := disconnectTimers.timers[userId]; ok {
+		t.Stop()
+	}
+
+	disconnectTimers.timers[userId] = time.AfterFunc(30*time.Second, func() {
+		disconnectTimers.Lock()
+		delete(disconnectTimers.timers, userId)
+		disconnectTimers.Unlock()
+
+		hub.lock.Lock()
+		_, stillConnected := hub.clients[userId]
+		storedStatus := hub.status[userId]
+		if !stillConnected {
+			delete(hub.status, userId)
+		}
+		hub.lock.Unlock()
+
+		if !stillConnected && storedStatus != StatusInvisible {
+			go broadcastStatusUpdate(userId, StatusOffline)
+		}
+	})
+}
+
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 	for {
 		_, message, err := conn.ReadMessage()
@@ -103,8 +146,6 @@ func marshalResponse(eventType string, payload interface{}) ([]byte, error) {
 	})
 }
 
-// writeToConn sends directly to a WSConnection without acquiring hub.lock.
-// Use when hub.lock is already held, or when the WSConnection is already known.
 func writeToConn(ws *WSConnection, eventType string, payload interface{}) {
 	response, err := marshalResponse(eventType, payload)
 	if err != nil {
@@ -116,8 +157,6 @@ func writeToConn(ws *WSConnection, eventType string, payload interface{}) {
 	ws.Conn.WriteMessage(websocket.TextMessage, response)
 }
 
-// sendResponse finds the WSConnection for conn under hub.lock and writes to it.
-// Do NOT call while already holding hub.lock — use writeToConn instead.
 func sendResponse(conn *websocket.Conn, eventType string, payload interface{}) {
 	hub.lock.RLock()
 	var ws *WSConnection

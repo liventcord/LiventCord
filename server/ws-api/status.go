@@ -56,15 +56,18 @@ func handleGetUserStatus(conn *websocket.Conn, event EventMessage, userId string
 		return
 	}
 
-	// Collect statuses and the target WSConnection under a single lock, then
-	// release before writing so sendResponse does not deadlock re-acquiring it.
 	hub.lock.RLock()
 	var statusResponses []UserStatusResponse
 	for _, id := range request.UserIds {
 		userStatus, exists := hub.status[id]
-		if !exists {
+		_, isConnected := hub.clients[id]
+
+		if !exists || !isConnected {
+			userStatus = StatusOffline
+		} else if userStatus == StatusInvisible {
 			userStatus = StatusOffline
 		}
+
 		statusResponses = append(statusResponses, UserStatusResponse{
 			UserId: id,
 			Status: userStatus,
