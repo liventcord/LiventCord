@@ -98,13 +98,13 @@ namespace LiventCord.Helpers
                 })
                 .ToListAsync();
 
-            var versionMap = profileVersions.ToDictionary(p => p.UserId, p => p.LatestVersion ?? "0");
+            var versionMap = profileVersions.ToDictionary(p => p.UserId, p => p.LatestVersion ?? null);
 
             return users
                 .Select(u =>
                 {
                     var pu = u.GetPublicUser();
-                    pu.ProfileVersion = versionMap.GetValueOrDefault(u.UserId, "0");
+                    pu.ProfileVersion = versionMap.GetValueOrDefault(u.UserId, null);
                     return pu;
                 })
                 .GroupBy(u => u.UserId)
@@ -114,6 +114,7 @@ namespace LiventCord.Helpers
 
         public Task<List<PublicUser>> GetDmUsers(string userId) =>
             GetDmUsersFromDbAsync(_dbContext, userId);
+
 
         public async Task HandleInitRequest(HttpContext context)
         {
@@ -191,7 +192,8 @@ namespace LiventCord.Helpers
 
                     var profileVersionsTask = Task.Run(async () =>
                     {
-                        if (!relevantUserIds.Any()) return new Dictionary<string, string>();
+                        if (!relevantUserIds.Any()) return new Dictionary<string, string?>();
+
                         using var scope = _scopeFactory.CreateScope();
                         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         var versions = await db.ProfileFiles
@@ -206,9 +208,10 @@ namespace LiventCord.Helpers
                                                 .FirstOrDefault()
                             })
                             .ToListAsync();
+
                         return versions
                             .Where(p => p.UserId != null)
-                            .ToDictionary(p => p.UserId!, p => p.LatestVersion ?? "0");
+                            .ToDictionary(p => p.UserId!, p => (string?)p.LatestVersion);
                     });
 
                     var sharedGuildsTask = Task.Run(async () =>
@@ -239,13 +242,15 @@ namespace LiventCord.Helpers
 
                 var friendsWithVersions = friendsStatus.Select(f =>
                 {
-                    f.ProfileVersion = profileVersionMap.GetValueOrDefault(f.UserId ?? "", "0");
+                    f.ProfileVersion = ((IReadOnlyDictionary<string?, string?>)profileVersionMap)
+                        .GetValueOrDefault(f.UserId);
                     return f;
                 }).ToList();
 
                 var dmFriendsWithVersions = dmFriends.Select(d =>
                 {
-                    d.ProfileVersion = profileVersionMap.GetValueOrDefault(d.UserId ?? "", "0");
+                    d.ProfileVersion = ((IReadOnlyDictionary<string?, string?>)profileVersionMap)
+                        .GetValueOrDefault(d.UserId);
                     return d;
                 }).ToList();
 
@@ -255,7 +260,8 @@ namespace LiventCord.Helpers
                     email = user.Email ?? "",
                     nickName = user.Nickname ?? "",
                     userDiscriminator = user.Discriminator ?? "",
-                    profileVersion = profileVersionMap.GetValueOrDefault(userId, "0"),
+                    profileVersion = ((IReadOnlyDictionary<string?, string?>)profileVersionMap)
+                        .GetValueOrDefault(userId),
                     sharedGuildsMap,
                     permissionsMap,
                     friendsStatus = friendsWithVersions,
@@ -267,7 +273,6 @@ namespace LiventCord.Helpers
                     maxAttachmentSize = SharedAppConfig.MaxAttachmentSize,
                     wsUrl = SharedAppConfig.WsUrl,
                 };
-
                 _cacheService.Set(cacheKey, jsonData, TimeSpan.FromSeconds(100));
 
                 context.Response.ContentType = "application/json";
