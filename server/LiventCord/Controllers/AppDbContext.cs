@@ -74,19 +74,12 @@ namespace LiventCord.Controllers
             return await Guilds.Select(g => g.GuildId).ToArrayAsync();
         }
 
-        public async Task<bool> AreUsersSharingGuild(string userId, string friendId)
+        public Task<bool> AreUsersSharingGuild(string userId, string friendId)
         {
-            var sharedGuildIds = await Set<GuildMember>()
+            return Set<GuildMember>()
                 .Where(gm => gm.MemberId == userId || gm.MemberId == friendId)
                 .GroupBy(gm => gm.GuildId)
-                .Where(group =>
-                    group.Any(g => g.MemberId == userId) && group.Any(g => g.MemberId == friendId)
-                )
-                .Select(g => g.Key)
-                .Distinct()
-                .ToListAsync();
-
-            return sharedGuildIds.Any();
+                .AnyAsync(g => g.Any(m => m.MemberId == userId) && g.Any(m => m.MemberId == friendId));
         }
 
         public async Task<string[]> GetGuildUserIds(string guildId, string? userIdToExclude)
@@ -101,13 +94,14 @@ namespace LiventCord.Controllers
             return await query.Select(gm => gm.MemberId).ToArrayAsync();
         }
 
-        public async Task<bool> CheckFriendship(string userId, string friendUserId)
+        public Task<bool> CheckFriendship(string userId, string friendUserId)
         {
-            return await Friends.AnyAsync(f =>
+            return Friends.AnyAsync(f =>
                 (f.UserId == userId && f.FriendId == friendUserId)
                 || (f.UserId == friendUserId && f.FriendId == userId)
             );
         }
+
 
         public async Task<bool> IsGuildPublic(string guildId)
         {
@@ -192,6 +186,8 @@ namespace LiventCord.Controllers
 
             modelBuilder.Entity<UserDm>().ToTable(nameof(UserDm));
             modelBuilder.Entity<UserDm>().HasKey(ud => new { ud.UserId, ud.FriendId });
+            modelBuilder.Entity<UserDm>().HasIndex(ud => ud.UserId);
+            modelBuilder.Entity<UserDm>().HasIndex(ud => ud.FriendId);
             modelBuilder
                 .Entity<UserDm>()
                 .HasOne<User>()
@@ -208,6 +204,7 @@ namespace LiventCord.Controllers
             modelBuilder.Entity<FileBase>(entity =>
             {
                 entity.HasKey(f => f.FileId);
+                entity.HasIndex(f => f.CreatedAt);
                 entity.Property(f => f.FileId).HasColumnName(nameof(FileBase.FileId)).IsRequired();
                 entity.Property(f => f.FileName).HasColumnName(nameof(FileBase.FileName));
                 entity.Property(f => f.GuildId).HasColumnName(nameof(FileBase.GuildId));
@@ -230,15 +227,17 @@ namespace LiventCord.Controllers
 
             modelBuilder.Entity<EmojiFile>().ToTable(nameof(EmojiFile));
             modelBuilder.Entity<GuildFile>().ToTable(nameof(GuildFile));
+            modelBuilder.Entity<GuildFile>().HasIndex(f => f.GuildId);
             modelBuilder.Entity<ProfileFile>().ToTable(nameof(ProfileFile));
+            modelBuilder.Entity<ProfileFile>().HasIndex(p => p.UserId).IsUnique();
 
             modelBuilder.Entity<GuildFile>(entity =>
             {
                 entity.Property(f => f.UserId).HasColumnName(nameof(GuildFile.UserId));
             });
-            modelBuilder.Entity<ProfileFile>().HasIndex(p => p.UserId).IsUnique();
 
             modelBuilder.Entity<GuildMember>().HasKey(gu => new { gu.GuildId, gu.MemberId });
+            modelBuilder.Entity<GuildMember>().HasIndex(gm => gm.MemberId);
             modelBuilder
                 .Entity<GuildMember>()
                 .HasOne(gu => gu.Guild)
@@ -273,8 +272,8 @@ namespace LiventCord.Controllers
                 .HasKey(gp => new { gp.GuildId, gp.UserId });
 
             modelBuilder.Entity<GuildPermissions>().Property(gp => gp.GuildId).IsRequired();
-
             modelBuilder.Entity<GuildPermissions>().Property(gp => gp.UserId).IsRequired();
+            modelBuilder.Entity<GuildPermissions>().HasIndex(gp => gp.UserId);
 
             modelBuilder
                 .Entity<GuildPermissions>()
