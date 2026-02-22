@@ -193,6 +193,8 @@ export class UserStatus {
   }
 
   public setSelfStatus(status: string) {
+    if (!status) return;
+
     this.currentStatus = status;
     this.selfStatus.textContent = this.formatStatusText(status);
 
@@ -223,13 +225,8 @@ export class UserStatus {
     status: string,
     isTyping?: boolean
   ) {
-    if (!status) return;
-    console.log(
-      "UserStatus: ",
-      userId,
-      userManager.getUserNick(userId),
-      status
-    );
+    if (!status && isTyping === undefined) return;
+
     if (userId === appState.currentUserId) {
       this.updateSelfStatus(status);
     }

@@ -230,17 +230,21 @@ class UserManager {
 
   updateMemberStatus(userId: string, status: string, isTyping?: boolean): void {
     if (!this.userNames[userId]) {
-      console.warn(
-        `User ${userId} not found in userManager, adding with status ${status}`
-      );
       this.addUser(userId, deletedUser, "", "", false);
     }
 
-    console.log(`UserManager updating ${userId} to status: ${status}`);
-    this.userNames[userId].status = status;
+    if (status) {
+      this.userNames[userId].status = status;
+    }
+
+    const resolvedStatus = this.userNames[userId].status || "offline";
 
     if (store) {
-      store.dispatch("updateStatusInMembersList", { userId, status, isTyping });
+      store.dispatch("updateStatusInMembersList", {
+        userId,
+        status: resolvedStatus,
+        isTyping
+      });
     }
   }
   ensureUserExists(userId: string, nickName?: string): void {

@@ -10,13 +10,29 @@ export const typingStatusMap = new Map<string, Set<string>>();
 const typingText = getId("typing-text") as HTMLElement;
 const typingBubbles = getId("typing-bubbles") as HTMLElement;
 
-export function handleStopTyping(data: TypingData) {
+export function handleStartTyping(data: TypingData) {
   const isGuild = !!data.guildId;
+
+  if (isGuild) {
+    const isCurrent = data.channelId === guildCache.currentChannelId;
+    if (!isCurrent) return;
+  }
+
+  if (!typingStatusMap.has(data.channelId)) {
+    typingStatusMap.set(data.channelId, new Set());
+  }
+  typingStatusMap.get(data.channelId)!.add(data.userId);
+  userStatus.updateUserOnlineStatus(data.userId, "", true);
+
   const isCurrent =
     (isGuild && data.channelId === guildCache.currentChannelId) ||
     (!isGuild && data.channelId === friendsCache.currentDmId);
-
-  if (!isCurrent) return;
+  if (isCurrent) {
+    updateTypingText(data.channelId);
+  }
+}
+export function handleStopTyping(data: TypingData) {
+  const isGuild = !!data.guildId;
 
   const typingSet = typingStatusMap.get(data.channelId);
   if (typingSet) {
@@ -26,6 +42,11 @@ export function handleStopTyping(data: TypingData) {
     }
   }
   userStatus.updateUserOnlineStatus(data.userId, "", false);
+
+  const isCurrent =
+    (isGuild && data.channelId === guildCache.currentChannelId) ||
+    (!isGuild && data.channelId === friendsCache.currentDmId);
+  if (!isCurrent) return;
 
   updateTypingText(data.channelId);
 }

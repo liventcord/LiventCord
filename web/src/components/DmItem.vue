@@ -5,7 +5,11 @@
     :class="{ 'dm-selected': isSelected }"
     @click="$emit('open', friend.userId)"
   >
-    <UserBubble :status="liveStatus" :visible="bubbleVisible" />
+    <UserBubble
+      :status="liveStatus"
+      :visible="bubbleVisible"
+      :is-typing="isTyping"
+    />
     <img
       class="dm-profile-img"
       :src="profileSrc"
@@ -57,7 +61,7 @@ export default defineComponent({
     const liveStatus = ref<string>(
       store.getters.getUserStatus(props.friend.userId) || "offline"
     );
-
+    const isTyping = ref<boolean>(false);
     const profileSrc = ref<string>("");
 
     function resolveProfilePic() {
@@ -75,6 +79,7 @@ export default defineComponent({
       () => {
         liveStatus.value =
           store.getters.getUserStatus(props.friend.userId) || "offline";
+        isTyping.value = false;
         resolveProfilePic();
       }
     );
@@ -82,13 +87,16 @@ export default defineComponent({
     const unsubscribe = store.subscribe(
       (mutation: {
         type: string;
-        payload: { userId: string; status: string };
+        payload: { userId: string; status: string; isTyping?: boolean };
       }) => {
         if (
           mutation.type === "updateUserStatus" &&
           mutation.payload.userId === props.friend.userId
         ) {
-          liveStatus.value = mutation.payload.status;
+          if (mutation.payload.status) {
+            liveStatus.value = mutation.payload.status;
+          }
+          isTyping.value = mutation.payload.isTyping ?? false;
         }
       }
     );
@@ -116,7 +124,8 @@ export default defineComponent({
       profileSrc,
       onImgHover,
       bubbleVisible,
-      liveStatus
+      liveStatus,
+      isTyping
     };
   }
 });

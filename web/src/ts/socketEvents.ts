@@ -32,7 +32,7 @@ import {
   handleKickMemberResponse
 } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
-import { friendsCache, handleFriendEventResponse } from "./friends.ts";
+import { handleFriendEventResponse } from "./friends.ts";
 import {
   playAudio,
   clearVoiceChannel,
@@ -49,7 +49,7 @@ import {
 import { handleSignalingMessage, invite, setRtcStatus } from "./rtc.ts";
 import store from "../store.ts";
 import { readStatusManager } from "./readStatus.ts";
-import { handleStopTyping, updateTypingText } from "./typing.ts";
+import { handleStartTyping, handleStopTyping } from "./typing.ts";
 import {
   CachedChannel,
   ChannelData,
@@ -834,24 +834,16 @@ socketClient.on(SocketEvent.KICK_MEMBER, (data: any) => {
 });
 
 socketClient.on(SocketEvent.START_TYPING, (data: TypingData) => {
-  const isGuild = !!data.guildId;
-  const isCurrent =
-    (isGuild && data.channelId === guildCache.currentChannelId) ||
-    (!isGuild && data.channelId === friendsCache.currentDmId);
-
-  if (!isCurrent) return;
-
-  if (!typingStatusMap.has(data.channelId)) {
-    typingStatusMap.set(data.channelId, new Set());
-  }
-
-  typingStatusMap.get(data.channelId)!.add(data.userId);
-  userStatus.updateUserOnlineStatus(data.userId, "", true);
-
-  updateTypingText(data.channelId);
+  handleStartTyping(data);
 });
 
 socketClient.on(SocketEvent.STOP_TYPING, (data: TypingData) => {
+  const isGuild = !!data.guildId;
+  if (isGuild) {
+    const isCurrent = data.channelId === guildCache.currentChannelId;
+    if (!isCurrent) return;
+  }
+
   handleStopTyping(data);
 });
 

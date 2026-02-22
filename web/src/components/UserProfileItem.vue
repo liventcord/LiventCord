@@ -14,7 +14,7 @@
       style="pointer-events: none"
       :data-user-id="userData.userId"
       @mouseover="onProfileImageHover(true)"
-      @mouseout="onProfileImageHover(true)"
+      @mouseout="onProfileImageHover(false)"
     />
     <span class="profileName" style="color: white">
       {{ userData.nickName || deletedUser }}
@@ -27,6 +27,7 @@
     <StatusBubble
       ref="bubble"
       :status="isTyping ? 'typing' : status"
+      :real-status="status"
       :is-profile-bubble="true"
       :is-member-bubble="false"
       :is-user-online="isOnline"
@@ -73,13 +74,10 @@ export default {
     }
   },
   setup(props) {
-    const isTyping = ref(false);
-
     const profileImg = ref<HTMLImageElement | null>(null);
 
     const bubble = ref(null as null | InstanceType<typeof StatusBubble>);
     const status = ref(props.status);
-    let typingTimeout: number;
 
     const onProfileImageHover = (isHovering: boolean) => {
       if (profileImg.value) {

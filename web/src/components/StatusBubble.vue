@@ -1,5 +1,8 @@
 <template>
-  <span :class="bubbleClass" :style="{ opacity: computedOpacity }">
+  <span
+    :class="bubbleClass"
+    :style="{ opacity: computedOpacity, ...typingBubbleStyle }"
+  >
     <template v-if="props.status === 'typing'">
       <div class="typing-dots">
         <span
@@ -23,6 +26,10 @@ export default {
       type: String,
       default: "offline"
     },
+    realStatus: {
+      type: String,
+      default: "online"
+    },
     isTyping: {
       type: Boolean,
       default: false
@@ -41,16 +48,28 @@ export default {
     }
   },
   setup(props) {
+    const statusColors: Record<string, string> = {
+      online: "#23a55a",
+      idle: "#d8db1c",
+      "do-not-disturb": "#F23F43",
+      offline: "#80848E"
+    };
+
     const bubbleClass = computed(() => {
       const baseClass = props.isProfileBubble
         ? "profile-bubble"
         : "status-bubble";
-
       if (props.status === "typing") {
         return [baseClass, "typing"];
       }
+      return [baseClass, props.status];
+    });
 
-      return [baseClass, props.isUserOnline ? "online" : "offline"];
+    const typingBubbleStyle = computed(() => {
+      if (props.status !== "typing") return {};
+      return {
+        backgroundColor: statusColors[props.realStatus] ?? statusColors.online
+      };
     });
 
     const computedOpacity = computed(() => {
@@ -63,19 +82,18 @@ export default {
     return {
       bubbleClass,
       computedOpacity,
+      typingBubbleStyle,
       props
     };
   }
 };
 </script>
 
-<style scoped>
+<style>
 .profile-bubble.typing,
 .status-bubble.typing {
   width: 15px;
-  background-color: #23a55a;
 }
-
 .typing-dots {
   position: absolute;
   top: 50%;
@@ -87,7 +105,6 @@ export default {
   justify-content: space-between;
   align-items: flex-end;
 }
-
 .dot {
   width: 4px;
   height: 4px;
@@ -96,7 +113,6 @@ export default {
   opacity: 0.6;
   animation: typing-dot-bounce 1.2s infinite ease-in-out;
 }
-
 @keyframes typing-dot-bounce {
   0%,
   80%,

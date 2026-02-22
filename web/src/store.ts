@@ -108,45 +108,68 @@ export default createStore<RootState>({
         isTyping
       }: { userId: string; status: string; isTyping?: boolean }
     ) {
-      const memberIndex = state.user.members.findIndex(
-        (m) => m.userId === userId
-      );
-      if (memberIndex !== -1)
-        state.user.members[memberIndex] = {
-          ...state.user.members[memberIndex],
-          status
-        };
-      else state.user.members.push({ userId, status });
-
-      const existingUser = [
-        ...state.user.onlineUsers,
-        ...state.user.offlineUsers
-      ].find((u) => u.userId === userId);
-
-      if (existingUser) {
-        const updatedUser = {
-          ...existingUser,
-          isOnline: status !== "offline",
-          status,
-          isTyping
-        };
-
-        state.user.onlineUsers = state.user.onlineUsers.filter(
-          (u) => u.userId !== userId
+      if (status) {
+        const memberIndex = state.user.members.findIndex(
+          (m) => m.userId === userId
         );
-        state.user.offlineUsers = state.user.offlineUsers.filter(
-          (u) => u.userId !== userId
+        if (memberIndex !== -1)
+          state.user.members[memberIndex] = {
+            ...state.user.members[memberIndex],
+            status,
+            isTyping
+          };
+        else state.user.members.push({ userId, status, isTyping });
+
+        const existingUser = [
+          ...state.user.onlineUsers,
+          ...state.user.offlineUsers
+        ].find((u) => u.userId === userId);
+
+        if (existingUser) {
+          const updatedUser = {
+            ...existingUser,
+            isOnline: status !== "offline",
+            status,
+            isTyping
+          };
+
+          state.user.onlineUsers = state.user.onlineUsers.filter(
+            (u) => u.userId !== userId
+          );
+          state.user.offlineUsers = state.user.offlineUsers.filter(
+            (u) => u.userId !== userId
+          );
+
+          if (status === "offline") state.user.offlineUsers.push(updatedUser);
+          else state.user.onlineUsers.push(updatedUser);
+
+          state.user.onlineUsers = sortUsersByName([
+            ...new Map(
+              state.user.onlineUsers.map((u) => [u.userId, u])
+            ).values()
+          ]);
+          state.user.offlineUsers = sortUsersByName([
+            ...new Map(
+              state.user.offlineUsers.map((u) => [u.userId, u])
+            ).values()
+          ]);
+        }
+      } else {
+        const patchUser = (list: UserMember[]) => {
+          const idx = list.findIndex((u) => u.userId === userId);
+          if (idx !== -1) list[idx] = { ...list[idx], isTyping };
+        };
+        patchUser(state.user.onlineUsers);
+        patchUser(state.user.offlineUsers);
+
+        const memberIndex = state.user.members.findIndex(
+          (m) => m.userId === userId
         );
-
-        if (status === "offline") state.user.offlineUsers.push(updatedUser);
-        else state.user.onlineUsers.push(updatedUser);
-
-        state.user.onlineUsers = sortUsersByName([
-          ...new Map(state.user.onlineUsers.map((u) => [u.userId, u])).values()
-        ]);
-        state.user.offlineUsers = sortUsersByName([
-          ...new Map(state.user.offlineUsers.map((u) => [u.userId, u])).values()
-        ]);
+        if (memberIndex !== -1)
+          state.user.members[memberIndex] = {
+            ...state.user.members[memberIndex],
+            isTyping
+          };
       }
     },
     setUsers(
