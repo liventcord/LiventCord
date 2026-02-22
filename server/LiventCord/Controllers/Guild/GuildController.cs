@@ -18,7 +18,7 @@ namespace LiventCord.Controllers
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
         private readonly InviteController _inviteController;
-        private readonly ILogger<GuildController> _logger;
+        private readonly IAppLogger<GuildController> _logger;
         private readonly ICacheService _cacheService;
 
         public GuildController(
@@ -28,7 +28,7 @@ namespace LiventCord.Controllers
             MembersController membersController,
             PermissionsController permissionsController,
             InviteController inviteController,
-            ILogger<GuildController> logger,
+            IAppLogger<GuildController> logger,
             ICacheService cacheService
         )
         {
@@ -104,7 +104,7 @@ namespace LiventCord.Controllers
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == ownerId);
             if (user == null)
             {
-                _logger.LogCritical("User not found when creating guild: " + ownerId);
+                _logger.LogError("User not found when creating guild: " + ownerId);
                 return null;
             }
 

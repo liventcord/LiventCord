@@ -19,6 +19,7 @@ ConfigHandler.HandleConfig(builder);
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 builder.Services.AddSingleton<IAppStatsService, AppStatsService>();
 builder.Services.AddSingleton<IBackgroundTaskService, BackgroundTaskService>();
 
@@ -216,14 +217,6 @@ else
 {
     app.UseExceptionHandler("/error");
 }
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
-    .WriteTo.Console(
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
-    )
-    .CreateLogger();
 
 
 app.UseMiddleware<RequestCountingMiddleware>();
@@ -268,7 +261,7 @@ app.Lifetime.ApplicationStopping.Register(() =>
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
     using var scope = app.Services.CreateScope();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var logger = scope.ServiceProvider.GetRequiredService<IAppLogger<Program>>();
 
     try
     {

@@ -48,7 +48,7 @@ namespace LiventCord.Helpers
         private readonly AppDbContext _dbContext;
         private readonly MembersController _membersController;
         private readonly FriendController _friendController;
-        private readonly ILogger<AppLogicService> _logger;
+        private readonly IAppLogger<AppLogicService> _logger;
         private readonly PermissionsController _permissionsController;
         private readonly ICacheService _cacheService;
         private readonly IServiceScopeFactory _scopeFactory;
@@ -57,7 +57,7 @@ namespace LiventCord.Helpers
             AppDbContext dbContext,
             FriendController friendController,
             MembersController membersController,
-            ILogger<AppLogicService> logger,
+            IAppLogger<AppLogicService> logger,
             PermissionsController permissionsController,
             ICacheService cacheService,
             IServiceScopeFactory scopeFactory)

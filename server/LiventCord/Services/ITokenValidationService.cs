@@ -8,11 +8,11 @@ public interface ITokenValidationService
 public class TokenValidationService : ITokenValidationService
 {
     private readonly string _botToken;
-    private readonly ILogger<TokenValidationService> _logger;
+    private readonly IAppLogger<TokenValidationService> _logger;
 
     public TokenValidationService(
         IConfiguration configuration,
-        ILogger<TokenValidationService> logger
+        IAppLogger<TokenValidationService> logger
     )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -9,9 +9,9 @@ using Microsoft.EntityFrameworkCore;
 public class MediaProxyController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly ILogger<MediaProxyController> _logger;
+    private readonly IAppLogger<MediaProxyController> _logger;
 
-    public MediaProxyController(AppDbContext context, ILogger<MediaProxyController> logger)
+    public MediaProxyController(AppDbContext context, IAppLogger<MediaProxyController> logger)
     {
         _context = context;
         _logger = logger;

@@ -53,13 +53,13 @@ namespace LiventCord.Controllers
     {
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
-        private readonly ILogger<FileController> _logger;
+        private readonly IAppLogger<FileController> _logger;
         private readonly ICacheService _cacheService;
         private readonly IFileCacheService _fileCacheService;
 
         public FileController(
             AppDbContext context,
-            ILogger<FileController> logger,
+            IAppLogger<FileController> logger,
             PermissionsController permissionsController,
             ICacheService cacheService,
             IFileCacheService fileCacheService

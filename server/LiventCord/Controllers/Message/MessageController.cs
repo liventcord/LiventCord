@@ -15,7 +15,7 @@ namespace LiventCord.Controllers
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly ChannelController _channelController;
         private readonly FriendDmService _friendDmService;
-        private readonly ILogger<MessageController> _logger;
+        private readonly IAppLogger<MessageController> _logger;
         private readonly CacheDbContext _cacheDbContext;
         private readonly IServiceScopeFactory _scopeFactory;
 
@@ -25,7 +25,7 @@ namespace LiventCord.Controllers
             MetadataController metadataService,
             FileController fileController,
             RedisEventEmitter redisEventEmitter,
-            ILogger<MessageController> logger,
+            IAppLogger<MessageController> logger,
             ChannelController channelController,
             FriendDmService friendDmService,
             CacheDbContext cacheDbContext,

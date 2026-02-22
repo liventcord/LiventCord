@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 public class AttachmentDeduplicationService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<AttachmentDeduplicationService> _logger;
+    private readonly IAppLogger<AttachmentDeduplicationService> _logger;
 
     public AttachmentDeduplicationService(
         IServiceScopeFactory scopeFactory,
-        ILogger<AttachmentDeduplicationService> logger
+        IAppLogger<AttachmentDeduplicationService> logger
     )
     {
         _scopeFactory = scopeFactory;

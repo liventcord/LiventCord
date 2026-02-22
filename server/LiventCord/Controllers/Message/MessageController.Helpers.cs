@@ -263,7 +263,7 @@ namespace LiventCord.Controllers
 
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var mediaProxyController = scope.ServiceProvider.GetRequiredService<MediaProxyController>();
-                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<MetadataController>>();
+                    var logger = scope.ServiceProvider.GetRequiredService<IAppLogger<MetadataController>>();
 
                     var urls = Utils.ExtractUrls(content);
 
@@ -340,7 +340,7 @@ namespace LiventCord.Controllers
                 {
                     var logger = _scopeFactory.CreateScope()
                         .ServiceProvider
-                        .GetRequiredService<ILogger<MetadataController>>();
+                        .GetRequiredService<IAppLogger<MetadataController>>();
 
                     logger.LogError(ex,
                         "Background metadata processing failed for message {MessageId}",

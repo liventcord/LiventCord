@@ -27,14 +27,22 @@ public static class ConfigHandler
         Console.WriteLine($"Running on host: {host}, port: {port}");
         builder.WebHost.UseUrls($"http://{host}:{port}");
 
+        Directory.CreateDirectory("Logs");
+
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
             )
-            .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+            .WriteTo.File(
+                "Logs/log-.txt",
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 14,
+                shared: true
+            )
             .CreateLogger();
 
         builder.Host.UseSerilog();

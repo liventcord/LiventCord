@@ -6,9 +6,9 @@ public class RedisEventEmitter
     private readonly BaseRedisEmitter _redisEmitter;
     private readonly int _maxDegreeOfParallelism;
     private readonly SemaphoreSlim _semaphore;
-    private readonly ILogger<RedisEventEmitter> _logger;
+    private readonly IAppLogger<RedisEventEmitter> _logger;
 
-    public RedisEventEmitter(IServiceProvider serviceProvider, ILogger<RedisEventEmitter> logger, BaseRedisEmitter redisEmitter, int maxDegreeOfParallelism = 8)
+    public RedisEventEmitter(IServiceProvider serviceProvider, IAppLogger<RedisEventEmitter> logger, BaseRedisEmitter redisEmitter, int maxDegreeOfParallelism = 8)
     {
         _serviceProvider = serviceProvider;
         _redisEmitter = redisEmitter;

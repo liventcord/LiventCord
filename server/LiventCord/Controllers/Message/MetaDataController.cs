@@ -57,7 +57,7 @@ public class MetadataController : ControllerBase
     private readonly bool _isMetadataEnabled;
     private readonly AppDbContext _dbContext;
     private readonly HttpClient _httpClient;
-    private readonly ILogger<MetadataController> _logger;
+    private readonly IAppLogger<MetadataController> _logger;
     private readonly MediaProxyController _mediaProxycontroller;
 
     public MetadataController(
@@ -65,7 +65,7 @@ public class MetadataController : ControllerBase
         IConfiguration configuration,
         HttpClient httpClient,
         MediaProxyController mediaProxyController,
-        ILogger<MetadataController> logger
+        IAppLogger<MetadataController> logger
     )
     {
         _dbContext = dbContext;

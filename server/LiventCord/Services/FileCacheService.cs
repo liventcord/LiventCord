@@ -4,9 +4,9 @@ public class FileCacheService : IFileCacheService
     private string CacheDirectory =>
         Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
 
-    private readonly ILogger<FileCacheService> _logger;
+    private readonly IAppLogger<FileCacheService> _logger;
 
-    public FileCacheService(ILogger<FileCacheService> logger)
+    public FileCacheService(IAppLogger<FileCacheService> logger)
     {
         _logger = logger;
     }
