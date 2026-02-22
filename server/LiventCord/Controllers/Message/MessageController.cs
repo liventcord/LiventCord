@@ -17,6 +17,7 @@ namespace LiventCord.Controllers
         private readonly FriendDmService _friendDmService;
         private readonly ILogger<MessageController> _logger;
         private readonly CacheDbContext _cacheDbContext;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public MessageController(
             AppDbContext context,
@@ -27,7 +28,8 @@ namespace LiventCord.Controllers
             ILogger<MessageController> logger,
             ChannelController channelController,
             FriendDmService friendDmService,
-            CacheDbContext cacheDbContext
+            CacheDbContext cacheDbContext,
+            IServiceScopeFactory scopeFactory
         )
         {
             _permissionsController = permissionsController;
@@ -39,6 +41,7 @@ namespace LiventCord.Controllers
             _channelController = channelController;
             _friendDmService = friendDmService;
             _cacheDbContext = cacheDbContext;
+            _scopeFactory = scopeFactory;
         }
 
         [Authorize]

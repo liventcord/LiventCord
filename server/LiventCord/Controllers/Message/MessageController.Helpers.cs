@@ -465,7 +465,7 @@ namespace LiventCord.Controllers
                 if (totalSize > maxSize)
                     return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
 
-                var fileId = await fileController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
+                var fileId = await _fileController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
                 var isSpoiler = request.IsSpoilerFlags?.ElementAtOrDefault(index) ?? false;
 
                 attachments.Add(BuildAttachment(
@@ -528,7 +528,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                fileController.DeleteAttachmentFileAsync(message);
+                _fileController.DeleteAttachmentFileAsync(message);
 
                 var pinned = await _context.ChannelPinnedMessages
                     .Where(p => p.MessageId == messageId).ToListAsync();
