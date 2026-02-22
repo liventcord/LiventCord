@@ -28,11 +28,9 @@
 ## Bug fixes
 
 - Typed message overlaps GIF/emoji and the send button on mobile
-- Split API init request (it is too slow to fetch)
 - Guild context menu does not work if stayed on me page
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Until opening dm or entering guild, dm container friend status stays offline
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
-- Add edited message text on loaded messages 

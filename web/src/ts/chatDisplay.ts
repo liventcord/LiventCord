@@ -307,6 +307,7 @@ export function displayChatMessage(
       ? ""
       : content;
   }
+  messageContentElement.dataset.last_edited = lastEdited ?? "";
 
   requestAnimationFrame(() => observe(messageContentElement));
   newMessage.appendChild(messageContentElement);

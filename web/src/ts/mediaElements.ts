@@ -667,20 +667,15 @@ export async function handleLink(
   if (isSystemMessage && metadata?.type === "pin_notification") {
     content = await buildPinSystemMessage(metadata);
   }
-
   renderContent(messageContentElement, content, isSystemMessage);
-
   if (isSystemMessage) {
     bindSystemMessageLinks(messageContentElement, metadata);
     messageContentElement.classList.add("system-message-container");
   }
-
   messageContentElement.dataset.contentLoaded = "true";
-  setupEmojiListeners();
 
-  if (lastEdited) {
-    addEditedIndicator(messageContentElement, lastEdited);
-  }
+  setupEmojiListeners();
+  if (lastEdited) addEditedIndicator(messageContentElement, lastEdited);
 }
 
 async function buildPinSystemMessage(metadata: Metadata): Promise<string> {

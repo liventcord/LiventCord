@@ -52,10 +52,8 @@ function loadObservedContent(targetElement: HTMLElement): void {
   if (!targetElement.parentElement) return;
   const jsonData = targetElement.dataset.content_observe;
   if (!jsonData || targetElement.dataset.contentLoaded === "true") return;
-
   const normalize = (s: string) => s.replace(/\/+$/, "");
   const normJson = normalize(jsonData);
-
   Array.from(targetElement.childNodes).forEach((node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       const txt = (node.textContent || "").trim();
@@ -83,23 +81,21 @@ function loadObservedContent(targetElement: HTMLElement): void {
       }
     }
   });
-
   targetElement.dataset.contentLoaded = "true";
-
   const message = cacheInterface.getMessage(
     currentGuildId,
     guildCache.currentChannelId,
     targetElement.parentElement.id
   );
-
+  const lastEdited =
+    message?.lastEdited ?? (targetElement.dataset.last_edited || null);
   handleLink(
     targetElement,
     jsonData,
     message?.isSystemMessage ?? false,
     message?.metadata,
-    message?.lastEdited
+    lastEdited
   );
-
   if (isChatScrollNearBottom()) {
     chatContent.scrollTop = chatContent.scrollHeight;
   }
