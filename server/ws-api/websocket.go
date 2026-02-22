@@ -67,12 +67,12 @@ func removeConnection(userId string, conn *websocket.Conn) {
 
 	if len(conns) == 0 {
 		delete(hub.clients, userId)
-		go broadcastStatusUpdate(userId, hub.status[userId])
+		hub.status[userId] = StatusOffline
+		go broadcastStatusUpdate(userId, StatusOffline)
 	} else {
 		hub.clients[userId] = conns
 	}
 }
-
 func handleWebSocketMessages(userId string, conn *websocket.Conn) {
 	for {
 		_, message, err := conn.ReadMessage()
