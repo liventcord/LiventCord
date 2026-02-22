@@ -37,7 +37,8 @@ import {
   refreshInviteId,
   currentGuildId,
   guildContainer,
-  setGuildNameText
+  setGuildNameText,
+  createGuildContextLists
 } from "./guild.ts";
 import {
   disableDmContainers,
@@ -290,6 +291,7 @@ function handleGuildClick(event: MouseEvent): void {
 
 function initializeGuild(): void {
   initialiseMe();
+  createGuildContextLists();
 
   if (userList) {
     disableElement(userList);

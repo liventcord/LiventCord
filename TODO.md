@@ -28,7 +28,6 @@
 ## Bug fixes
 
 - Typed message overlaps GIF/emoji and the send button on mobile
-- Guild context menu does not work if stayed on me page
 - Cancelling image upload to profile and guild image should refresh settings ui
 - Until opening dm or entering guild, dm container friend status stays offline
 - Fix user input width scaling wrongly on page switch
