@@ -15,15 +15,17 @@
 - Implement dm attachments display support
 - Add mention/ping notifications so messages show a red circle
 - Make the server parse and save mentions for messages on submit/edit in the database
-- Add invite friends ui on invite people popup
 - Inviting should be allowed on new guild members
 - Add Role system
+- Add invite friends ui on invite people popup
 - Add invite settings panel managing invites
+- Implement displaying invite links
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
 - Change dm message deletions to be optimistic
 - Add versioning to all api endpoints
 - Replace put methods with patch on endpoints
+
 
 ## Bug fixes
 
@@ -33,3 +35,7 @@
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
+- Invite to guild context menu requires changing into a guild before appearing
+- Attachments tray blocks interacting channel and userlist
+- Self context menu should not include many fields
+- Fix typing emits / display

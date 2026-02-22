@@ -1,10 +1,15 @@
 import { openDm, readCurrentMessages, readGuildMessages } from "./app.ts";
 import { appState } from "./appState.ts";
 
-import { showReplyMenu, appendMemberMentionToInput } from "./chatbar.ts";
+import {
+  showReplyMenu,
+  appendMemberMentionToInput,
+  setChatInputAsString,
+  onSendClicked
+} from "./chatbar.ts";
 import { userManager } from "./user.ts";
 import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
-import { createEl, getId } from "./utils.ts";
+import { createEl, generateInviteLink, getId } from "./utils.ts";
 import { isOnMePage, isOnDm, isOnGuild, router } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
@@ -33,6 +38,7 @@ import { isDeveloperMode } from "./settings.ts";
 import { SettingType, UserInfo } from "./types/interfaces.ts";
 import { createChannelsPop } from "./channelPop.ts";
 import { drawProfilePopId, drawProfilePop } from "./profilePop.ts";
+import { FileHandler } from "./fileHandler.ts";
 
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};
@@ -208,14 +214,39 @@ function mentionUser(userId: string) {
   appendMemberMentionToInput(userId, true);
 }
 
-function inviteUser(userId: string, guildId: string) {
-  alertUser("Invite user is not implemented!");
-  if (!userId || !guildId) {
+function sendInviteMessage(inviteId: string) {
+  setChatInputAsString(generateInviteLink(inviteId));
+  FileHandler.resetFileInput();
+  onSendClicked();
+}
+
+async function inviteUser(userId: string, guildId: string) {
+  if (!userId || !guildId) return;
+
+  openDm(userId);
+
+  const cachedInvite = cacheInterface.getInviteId(guildId);
+  if (cachedInvite) {
+    sendInviteMessage(cachedInvite);
     return;
   }
-  console.log("inviting user : ", userId, " to guild ", guildId);
-  openDm(userId);
-  //TODO: add invitation prompt to here
+
+  const inviteId = await new Promise<string>((resolve) => {
+    const handler = (data: any) => {
+      if (data.inviteId) {
+        cacheInterface.addInvite(guildId, data.inviteId);
+        apiClient.off(EventType.GET_INVITES, handler);
+        resolve(data.inviteId);
+      }
+    };
+    apiClient.on(EventType.GET_INVITES, handler);
+    apiClient.send(EventType.GET_INVITES, {
+      guildId,
+      channelId: guildCache.currentChannelId
+    });
+  });
+
+  if (inviteId) sendInviteMessage(inviteId);
 }
 
 function copyChannelLink(

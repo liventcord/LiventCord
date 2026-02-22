@@ -56,7 +56,11 @@ export const blackImage =
 function setDefaultMediaImageSrc(blob: Blob) {
   IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC = URL.createObjectURL(blob);
 }
-
+export function generateInviteLink(inviteId: string) {
+  return `${window.location.protocol}//${window.location.hostname}${
+    window.location.port ? `:${window.location.port}` : ""
+  }/join-guild/${inviteId}`;
+}
 function setDefaultProfileImageSrc(blob: Blob) {
   IMAGE_SRCS.DEFAULT_PROFILE_IMG_SRC = URL.createObjectURL(blob);
 }

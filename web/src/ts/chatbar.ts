@@ -979,7 +979,15 @@ function handleChatInput(event: Event) {
   toggleShowEmojiSuggestions();
 }
 //#endregion
-
+export function onSendClicked() {
+  FileHandler.setIsAttachmentsAddedFalse();
+  adjustHeight();
+  const message = state.rawContent;
+  chatInput.innerHTML = "";
+  disableElement("userMentionDropdown");
+  toggleSendButton(false);
+  trySendMessage(message);
+}
 export function initialiseChatInput() {
   chatInput.addEventListener("input", adjustHeight);
   chatInput.addEventListener("keydown", handleUserKeydown);
@@ -1028,14 +1036,26 @@ export function initialiseChatInput() {
   chatInput.addEventListener("beforeinput", handleUserBeforeInput);
   updatePlaceholderVisibility();
 
-  getId("sendbtn")?.addEventListener("click", () => {
-    FileHandler.setIsAttachmentsAddedFalse();
-    adjustHeight();
-    const message = state.rawContent;
-    chatInput.innerHTML = "";
-    disableElement("userMentionDropdown");
-    toggleSendButton(false);
-    trySendMessage(message);
-  });
+  getId("sendbtn")?.addEventListener("click", onSendClicked);
   toggleSendButton(true);
+}
+
+export function setChatInputAsString(content: string) {
+  state.rawContent = content;
+  state.renderedContent = renderEmojisFromContent(content);
+
+  chatInput.innerHTML =
+    state.renderedContent && state.renderedContent.trim() !== ""
+      ? DOMPurify.sanitize(state.renderedContent)
+      : " ";
+
+  DomUtils.ensureTextNodeAfterImage(chatInput);
+
+  const cursorPos = content.length;
+  const savedSelection = { start: cursorPos, end: cursorPos };
+  DomUtils.restoreSelection(chatInput, savedSelection);
+
+  updatePlaceholderVisibility();
+  toggleSendButton(true);
+  DomUtils.syncCursorPosition(chatInput);
 }

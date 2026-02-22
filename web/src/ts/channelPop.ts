@@ -1,4 +1,4 @@
-import { createEl, isMobile } from "./utils.ts";
+import { createEl, generateInviteLink, isMobile } from "./utils.ts";
 import { createChannel, currentChannelName } from "./channels.ts";
 import { translations } from "./translations.ts";
 import { createToggle } from "./settingsui.ts";
@@ -246,14 +246,15 @@ export function createChannelsPop(guildId: string) {
 export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
-  const invitelink = `${window.location.protocol}//${window.location.hostname}${
-    window.location.port ? `:${window.location.port}` : ""
-  }/join-guild/${cacheInterface.getInviteId(currentGuildId)}`;
+
+  const inviteId = cacheInterface.getInviteId(currentGuildId);
+  const invitelink = inviteId ? generateInviteLink(inviteId) : "";
 
   const inviteTitle = createEl("p", {
     id: "invite-users-title",
     textContent: title
   });
+
   const channelnamehash = createEl("p", {
     id: "invite-users-channel-name-hash",
     innerHTML: SVG.textChannel
@@ -263,6 +264,7 @@ export function createInviteUsersPop() {
     id: "invite-users-channel-name-text",
     textContent: currentChannelName
   });
+
   const sendInvText = createEl("p", {
     id: "invite-users-send-text",
     textContent: sendText
@@ -289,7 +291,6 @@ export function createInviteUsersPop() {
       0,
       inviteUsersSendInput.value.length
     );
-
     copyText(event, invitelink);
   });
 
