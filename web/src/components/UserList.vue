@@ -440,6 +440,7 @@ watch(
   border-radius: 5px;
   margin-top: 10px;
   filter: opacity(0.3);
+  cursor: pointer;
 }
 .activeprofile {
   filter: opacity(1);

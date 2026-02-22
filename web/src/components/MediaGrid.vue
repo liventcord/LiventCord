@@ -146,6 +146,7 @@ function handleMediaError(attachment: AttachmentWithMetaData) {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .media-wrapper img:not(.profile-pic),

@@ -342,6 +342,7 @@ body.black-theme #media-menu-search-bar {
   z-index: 2;
   position: absolute;
   border: none;
+  cursor: pointer;
 }
 #gifbtn {
   background-color: rgb(218, 224, 246);

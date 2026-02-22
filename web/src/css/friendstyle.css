@@ -19,6 +19,7 @@
   padding-left: 8px;
   width: 138%;
   gap: 10px;
+  cursor: pointer;
 }
 
 .dm-profile-img {
@@ -26,6 +27,7 @@
   height: 32px;
   border-radius: 25px;
   position: relative;
+  transition: border-radius 0.5s ease-out;
 }
 
 .dm-bubble {

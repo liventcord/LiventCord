@@ -83,6 +83,7 @@
   position: relative;
   overflow: hidden;
   right: 20px;
+  cursor: pointer;
 }
 #avatar-wrapper:hover {
   background-color: #404249 !important;
@@ -357,6 +358,7 @@
   border: none;
   border-radius: 50%;
   font-size: 25px;
+  cursor: pointer;
   z-index: 10;
   background-color: #b5bac1;
   color: #313338;
@@ -732,6 +734,7 @@ body.black-theme .vertical-line {
   position: fixed;
   transform: translateX(-265%);
   transition: transform 0.3s ease;
+  cursor: pointer;
 }
 #guild-container.visible {
   transform: translateX(0%);
@@ -1338,6 +1341,7 @@ input[type="file"] {
   max-height: 384px;
   object-fit: contain;
   margin-top: 10px;
+  cursor: pointer;
 }
 
 #change-nick-button {
@@ -1503,6 +1507,7 @@ textarea::-webkit-scrollbar-track {
   -moz-user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
+  cursor: pointer;
 }
 
 .profileName {
@@ -1568,6 +1573,7 @@ textarea::-webkit-scrollbar-track {
   outline: 1px solid #232428;
   color: #b5bac1;
   margin-left: 5px;
+  cursor: pointer;
 }
 
 .message-button:hover {
@@ -1874,7 +1880,10 @@ body.black-theme {
   gap: 10px;
   position: relative;
 }
-
+#status-copy-profile-button,
+#status-edit-profile-button {
+  cursor: pointer;
+}
 .status-button:hover {
   background-color: #2f3236;
 }
@@ -1955,6 +1964,7 @@ body.black-theme {
   justify-content: space-between;
   margin-top: -3px;
   bottom: 8%;
+  cursor: pointer;
 }
 
 .edit-message-button {
@@ -1965,6 +1975,7 @@ body.black-theme {
   cursor: pointer;
   margin-left: 50px;
   font-size: 0.875rem;
+  z-index: 2;
 }
 
 .edit-message-button .blue-text {

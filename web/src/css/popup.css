@@ -820,7 +820,6 @@
   left: 16px;
   position: absolute;
   border-radius: 50%;
-  cursor: pointer;
   transition: border-radius 0.2s ease-out;
 }
 body.black-theme .status-profile {
