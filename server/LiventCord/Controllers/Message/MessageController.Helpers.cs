@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LiventCord.Helpers;
 using LiventCord.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -65,8 +66,7 @@ namespace LiventCord.Controllers
         private Task<Message> CreateNewMessage(NewBotMessageRequest request, string guildId, string channelId)
         {
             if (request.Content != null)
-                _ = Task.Run(() => FetchAndSaveMetadataAsync(guildId, channelId, request.UserId, request.MessageId, request.Content));
-
+                _ = RunMetadataInBackground(guildId, channelId, request.UserId, request.MessageId, request.Content);
             return Task.FromResult(new Message
             {
                 MessageId = request.MessageId,
@@ -248,22 +248,106 @@ namespace LiventCord.Controllers
             return urls;
         }
 
-        private async Task FetchAndSaveMetadataAsync(
-            string? guildId, string channelId, string userId, string messageId, string content)
+        private Task RunMetadataInBackground(
+            string? guildId,
+            string channelId,
+            string userId,
+            string messageId,
+            string content)
         {
-            try
+            return Task.Run(async () =>
             {
-                var urls = await HandleMessageUrls(guildId, channelId, userId, messageId, content);
-                var metadata = await ExtractMetadataIfUrl(urls, messageId);
-                await SaveMetadataAsync(messageId, metadata);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to extract or save metadata for message: {MessageId}",
-                    Utils.SanitizeLogInput(messageId));
-            }
-        }
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
 
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var mediaProxyController = scope.ServiceProvider.GetRequiredService<MediaProxyController>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<MetadataController>>();
+
+                    var urls = Utils.ExtractUrls(content);
+
+                    var existing = await db.MessageUrls.FindAsync(messageId);
+
+                    if (existing == null)
+                    {
+                        await db.MessageUrls.AddAsync(new MessageUrl
+                        {
+                            ChannelId = channelId,
+                            CreatedAt = DateTime.UtcNow,
+                            GuildId = guildId,
+                            UserId = userId,
+                            MessageId = messageId,
+                            Urls = urls,
+                        });
+
+                        await db.SaveChangesAsync();
+                    }
+                    else if (existing.Urls != null)
+                    {
+                        var newUrls = urls.Except(existing.Urls).ToList();
+                        if (newUrls.Any())
+                        {
+                            existing.Urls.AddRange(newUrls);
+                            db.MessageUrls.Update(existing);
+                            await db.SaveChangesAsync();
+                        }
+                    }
+
+                    if (!urls.Any()) return;
+
+                    var request = new HttpRequestMessage(
+                        HttpMethod.Post,
+                        SharedAppConfig.MediaWorkerUrl + "/api/proxy/metadata"
+                    )
+                    {
+                        Content = JsonContent.Create(urls),
+                    };
+                    request.Headers.Add("Authorization", SharedAppConfig.AdminKey);
+
+                    var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
+                    var response = await httpClient.SendAsync(request, CancellationToken.None);
+                    var rawResponse = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        logger.LogError(
+                            "Request to proxy server failed: {StatusCode} {Response}",
+                            response.StatusCode, rawResponse);
+                        return;
+                    }
+
+                    var metadataList = JsonSerializer.Deserialize<List<MetadataWithMedia>>(rawResponse);
+                    if (metadataList == null) return;
+
+                    foreach (var metadataWithUrls in metadataList)
+                    {
+                        var mediaUrl = metadataWithUrls.mediaUrl;
+                        if (mediaUrl != null)
+                        {
+                            await mediaProxyController.AddMediaUrl(mediaUrl, messageId);
+                        }
+                    }
+
+                    var message = await db.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+                    if (message != null)
+                    {
+                        message.Metadata = metadataList.Select(m => m.metadata).FirstOrDefault() ?? new Metadata();
+                        await db.SaveChangesAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var logger = _scopeFactory.CreateScope()
+                        .ServiceProvider
+                        .GetRequiredService<ILogger<MetadataController>>();
+
+                    logger.LogError(ex,
+                        "Background metadata processing failed for message {MessageId}",
+                        Utils.SanitizeLogInput(messageId));
+                }
+            });
+        }
         private async Task<Metadata> ExtractMetadataIfUrl(List<string> urls, string messageId) =>
             await _metadataService.FetchMetadataFromProxyAsync(urls, messageId);
 
@@ -342,7 +426,7 @@ namespace LiventCord.Controllers
             await EmitNewMessage(message, guildId, channelId, userId, friendId);
 
             if (content != null)
-                _ = Task.Run(() => FetchAndSaveMetadataAsync(guildId, channelId, userId, messageId, content));
+                _ = RunMetadataInBackground(guildId, channelId, userId, messageId, content);
 
             return Ok(new { message, guildId });
         }
@@ -381,7 +465,7 @@ namespace LiventCord.Controllers
                 if (totalSize > maxSize)
                     return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
 
-                var fileId = await _imageController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
+                var fileId = await fileController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
                 var isSpoiler = request.IsSpoilerFlags?.ElementAtOrDefault(index) ?? false;
 
                 attachments.Add(BuildAttachment(
@@ -444,7 +528,7 @@ namespace LiventCord.Controllers
 
             try
             {
-                await _imageController.DeleteAttachmentFileAsync(message);
+                fileController.DeleteAttachmentFileAsync(message);
 
                 var pinned = await _context.ChannelPinnedMessages
                     .Where(p => p.MessageId == messageId).ToListAsync();

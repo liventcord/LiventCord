@@ -3,6 +3,7 @@ public class FileCacheService : IFileCacheService
     private readonly string _cacheFilePath = "FileCache";
     private string CacheDirectory =>
         Path.Combine(Directory.GetCurrentDirectory(), _cacheFilePath);
+
     private readonly ILogger<FileCacheService> _logger;
 
     public FileCacheService(ILogger<FileCacheService> logger)
@@ -10,55 +11,68 @@ public class FileCacheService : IFileCacheService
         _logger = logger;
     }
 
-    public void ClearProfileFileCache(string userId)
+    public Task ClearProfileFileCacheAsync(string userId)
     {
-        var cachePattern = Path.Combine(CacheDirectory, $"profile_{userId}_*.file");
-        var cacheDir = Path.GetDirectoryName(cachePattern);
-        var searchPattern = Path.GetFileName(cachePattern);
-
-        if (!Directory.Exists(cacheDir))
-            return;
-
-        var matchingFiles = Directory.GetFiles(cacheDir, searchPattern);
-        foreach (var file in matchingFiles)
-        {
-            try
-            {
-                System.IO.File.Delete(file);
-                var metaFile = file + ".meta";
-                if (System.IO.File.Exists(metaFile))
-                    System.IO.File.Delete(metaFile);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to delete cached file: {FilePath}", file);
-            }
-        }
+        var pattern = $"profile_{userId}_*.file";
+        return ClearByPatternAsync(pattern);
     }
 
-    public void ClearGuildFileCache(string guildId)
+    public Task ClearGuildFileCacheAsync(string guildId)
     {
-        var cachePattern = Path.Combine(CacheDirectory, $"guild_{guildId}_*.file");
-        var cacheDir = Path.GetDirectoryName(cachePattern);
-        var searchPattern = Path.GetFileName(cachePattern);
+        var pattern = $"guild_{guildId}_*.file";
+        return ClearByPatternAsync(pattern);
+    }
 
-        if (!Directory.Exists(cacheDir))
-            return;
+    public void ClearAttachmentFileCache(string fileId)
+    {
+        var pattern = $"{fileId}_*.file";
 
-        var matchingFiles = Directory.GetFiles(cacheDir, searchPattern);
-        foreach (var file in matchingFiles)
+        _ = Task.Run(async () =>
         {
             try
             {
-                System.IO.File.Delete(file);
-                var metaFile = file + ".meta";
-                if (System.IO.File.Exists(metaFile))
-                    System.IO.File.Delete(metaFile);
+                await ClearByPatternAsync(pattern);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to delete cached file: {FilePath}", file);
+                _logger.LogWarning(ex, "Fire-and-forget attachment cache clear failed for {FileId}", fileId);
             }
-        }
+        });
+    }
+
+    private Task ClearByPatternAsync(string searchPattern)
+    {
+        return Task.Run(() =>
+        {
+            if (!Directory.Exists(CacheDirectory))
+                return;
+
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(CacheDirectory, searchPattern);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to enumerate cache files with pattern {Pattern}", searchPattern);
+                return;
+            }
+
+            Parallel.ForEach(files, file =>
+            {
+                try
+                {
+                    File.Delete(file);
+
+                    var metaFile = file + ".meta";
+                    if (File.Exists(metaFile))
+                        File.Delete(metaFile);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete cached file: {FilePath}", file);
+                }
+            });
+        });
     }
 }

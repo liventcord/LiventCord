@@ -1,5 +1,6 @@
 public interface IFileCacheService
 {
-    void ClearProfileFileCache(string userId);
-    void ClearGuildFileCache(string guildId);
+    Task ClearProfileFileCacheAsync(string userId);
+    Task ClearGuildFileCacheAsync(string guildId);
+    void ClearAttachmentFileCache(string fileId);
 }

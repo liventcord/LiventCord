@@ -85,7 +85,7 @@ namespace LiventCord.Controllers
             {
                 var profileVersion = await UploadFileInternalAsync(request.Photo, UserId!, false, false, null);
 
-                _fileCacheService.ClearProfileFileCache(UserId!);
+                await _fileCacheService.ClearProfileFileCacheAsync(UserId!);
                 _cacheService.InvalidateCache(UserId!);
 
                 return Ok(new { profileVersion });
@@ -178,7 +178,7 @@ namespace LiventCord.Controllers
 
                 await SetIsUploadedGuildImgAsync(request.GuildId);
 
-                _fileCacheService.ClearGuildFileCache(request.GuildId);
+                await _fileCacheService.ClearGuildFileCacheAsync(request.GuildId);
                 _cacheService.InvalidateCache(UserId!);
 
                 return Ok(new { request.GuildId, guildVersion = newGuildFile.Version });
@@ -486,7 +486,7 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task DeleteAttachmentFilesAsync(List<Message> messages)
+        public void DeleteAttachmentFilesAsync(List<Message> messages)
         {
             if (messages == null || !messages.Any())
                 return;
@@ -496,38 +496,25 @@ namespace LiventCord.Controllers
                 .SelectMany(m => m.Attachments!)
                 .Where(a => !string.IsNullOrEmpty(a.FileId))
                 .Select(a => a.FileId)
-                .Distinct()
-                .ToList();
+                .Distinct();
 
-            if (attachmentIds.Any())
-            {
-                await DeleteAttachmentFilesByIds(attachmentIds);
-            }
+            foreach (var fileId in attachmentIds)
+                _fileCacheService.ClearAttachmentFileCache(fileId);
         }
 
         [NonAction]
-        public async Task DeleteAttachmentFileAsync(Message message)
+        public void DeleteAttachmentFileAsync(Message message)
         {
             if (message?.Attachments == null || !message.Attachments.Any())
-            {
-                _logger.LogDebug(
-                    "Message.Attachments is null or empty. MessageId: {MessageId}, ChannelId: {ChannelId}",
-                    message?.MessageId,
-                    message?.ChannelId
-                );
                 return;
-            }
 
             var attachmentIds = message.Attachments
                 .Where(a => !string.IsNullOrEmpty(a.FileId))
                 .Select(a => a.FileId)
-                .Distinct()
-                .ToList();
+                .Distinct();
 
-            if (attachmentIds.Any())
-            {
-                await DeleteAttachmentFilesByIds(attachmentIds);
-            }
+            foreach (var fileId in attachmentIds)
+                _fileCacheService.ClearAttachmentFileCache(fileId);
         }
 
         private async Task SetIsUploadedGuildImgAsync(string guildId)

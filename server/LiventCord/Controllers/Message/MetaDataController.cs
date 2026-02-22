@@ -138,7 +138,7 @@ public class MetadataController : ControllerBase
             return Forbid("Metadata indexing is disabled");
         }
 
-        var existingMetadata = await _dbContext.UrlMetadata.FirstOrDefaultAsync(u =>
+        var existingMetadata = await _dbContext.UrlMetadata.AsNoTracking().FirstOrDefaultAsync(u =>
             u.Domain == urlMetadata.Domain && u.RoutePath == urlMetadata.RoutePath
         );
 

@@ -11,8 +11,7 @@ namespace LiventCord.Controllers
         private readonly AppDbContext _context;
         private readonly PermissionsController _permissionsController;
         private readonly MetadataController _metadataService;
-
-        private readonly FileController _imageController;
+        private readonly FileController _fileController;
         private readonly RedisEventEmitter _redisEventEmitter;
         private readonly ChannelController _channelController;
         private readonly FriendDmService _friendDmService;
@@ -23,7 +22,7 @@ namespace LiventCord.Controllers
             AppDbContext context,
             PermissionsController permissionsController,
             MetadataController metadataService,
-            FileController imageController,
+            FileController fileController,
             RedisEventEmitter redisEventEmitter,
             ILogger<MessageController> logger,
             ChannelController channelController,
@@ -34,7 +33,7 @@ namespace LiventCord.Controllers
             _permissionsController = permissionsController;
             _context = context;
             _metadataService = metadataService;
-            _imageController = imageController;
+            _fileController = fileController;
             _redisEventEmitter = redisEventEmitter;
             _logger = logger;
             _channelController = channelController;

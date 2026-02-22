@@ -217,6 +217,7 @@ else
     app.UseExceptionHandler("/error");
 }
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
     .WriteTo.Console(

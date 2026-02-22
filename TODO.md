@@ -22,6 +22,8 @@
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
 - Change dm message deletions to be optimistic
+- Add versioning to all api endpoints
+- Replace put methods with patch on endpoints
 
 ## Bug fixes
 
