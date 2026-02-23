@@ -36,6 +36,4 @@
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Invite to guild context menu requires changing into a guild before appearing
-- Attachments tray blocks interacting channel and userlist
-- Self context menu should not include many fields
 - Navigation error : opening page in a user dm channel, going to a guild, then going to home breaks ui

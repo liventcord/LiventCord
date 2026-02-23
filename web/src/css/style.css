@@ -252,22 +252,23 @@
   font-size: 25;
 }
 #attachments-tray {
-  overflow-x: auto;
-  display: none;
+  position: absolute;
+  left: 390px;
+  bottom: 45px;
+  display: flex;
   flex-wrap: nowrap;
   gap: 15px;
   background-color: #222327;
-  margin-top: -250px;
   padding: 10px 15px 27px;
-  border: none;
-  left: 390px;
   border-radius: 7px 7px 0 0;
-  z-index: 1;
-  position: relative;
-  box-sizing: border-box;
-  justify-items: start;
-  width: calc(100vw - 646px);
+  z-index: 10;
+  width: calc(100vw - 42rem);
   white-space: nowrap;
+  pointer-events: none;
+}
+
+#attachments-tray > * {
+  pointer-events: auto;
 }
 
 #attachments-tray.attachments-tray-user-list-open {
@@ -672,7 +673,7 @@
   min-height: 45px;
   max-height: 500px;
   bottom: 2px;
-  width: calc(100vw - 646px);
+  width: calc(100vw - 42rem);
   z-index: 1;
   outline: none;
   resize: none;
