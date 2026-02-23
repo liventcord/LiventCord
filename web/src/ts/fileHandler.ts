@@ -28,6 +28,7 @@ export const replyInfo = getId("reply-info") as HTMLElement;
 
 export const fileInput = getId("fileInput") as HTMLInputElement;
 export const attachmentsTray = getId("attachments-tray") as HTMLElement;
+disableElement(attachmentsTray);
 export const newMessagesBar = getId("newMessagesBar") as HTMLElement;
 export const messageLimitText = getId("message-limit") as HTMLSpanElement;
 const replyCloseButton = getId("reply-close-button") as HTMLButtonElement;
@@ -61,7 +62,9 @@ export const fileSpoilerMap: WeakMap<File, boolean> = new WeakMap();
 export class FileHandler {
   static setIsAttachmentsAddedFalse() {
     isAttachmentsAdded = false;
+    if (fileList.length === 0) disableElement(attachmentsTray);
   }
+
   static handleFileInput(
     eventOrFiles: Event | FileList | File[] | null = null
   ): void {
@@ -116,6 +119,7 @@ export class FileHandler {
     }
 
     FileHandler.syncFileInputWithFileList();
+    if (fileList.length === 0) disableElement(attachmentsTray);
   }
 
   static extractFiles(eventOrFiles: Event | FileList | File[] | null): File[] {
@@ -303,12 +307,9 @@ export class FileHandler {
         URL.revokeObjectURL(img.src);
       }
     }
-    if (fileList.length === 0) {
-      disableElement(attachmentsTray);
-    }
-    console.log(fileList.length);
 
     container.remove();
+    if (fileList.length === 0) disableElement(attachmentsTray);
     FileHandler.syncFileInputWithFileList();
   }
 
@@ -321,15 +322,17 @@ export class FileHandler {
   }
 
   static syncFileInputWithFileList(): void {
-    if (fileInput) {
-      if (!fileList.length) {
-        fileInput.value = "";
-        fileInput.files = null;
-      } else {
-        const dataTransfer = new DataTransfer();
-        fileList.forEach((file) => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-      }
+    if (!fileInput) return;
+
+    if (!fileList.length) {
+      fileInput.value = "";
+      fileInput.files = null;
+      disableElement(attachmentsTray);
+    } else {
+      const dataTransfer = new DataTransfer();
+      fileList.forEach((file) => dataTransfer.items.add(file));
+      fileInput.files = dataTransfer.files;
+      enableElement(attachmentsTray);
     }
   }
 
