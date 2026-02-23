@@ -45,14 +45,8 @@ export function disableSelfName() {
 export let lastConfirmedProfileImg: Blob;
 let lastConfirmedGuildImg: Blob;
 
-function setLastGuildImg(newBlob: Blob) {
-  lastGuildImage = newBlob;
-}
 let lastProfileImage: Blob;
 let lastGuildImage: Blob;
-function setLastProfileImg(newBlob: Blob) {
-  lastProfileImage = newBlob;
-}
 
 export function setLastConfirmedGuildImage() {
   lastConfirmedGuildImg = lastGuildImage;

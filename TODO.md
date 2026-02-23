@@ -30,7 +30,6 @@
 ## Bug fixes
 
 - Typed message overlaps GIF/emoji and the send button on mobile
-- Cancelling image upload to profile and guild image should refresh settings ui
 - Until opening dm or entering guild, dm container friend status stays offline
 - Fix user input width scaling wrongly on page switch
 - Dm list users are not right clickable if they are not friends

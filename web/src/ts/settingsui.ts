@@ -30,7 +30,6 @@ import {
 import { initialState } from "./app.ts";
 import {
   updateSelfProfile,
-  lastConfirmedProfileImg,
   getProfileImage,
   onEditEmoji,
   setGuildImage
@@ -1228,33 +1227,8 @@ export function generateConfirmationPanel() {
 
   resetButton.addEventListener("click", function () {
     hideConfirmationPanel(popupDiv);
-    const nickinput = getId("new-nickname-input") as HTMLInputElement;
-    if (nickinput && appState.currentUserNick) {
-      nickinput.value = appState.currentUserNick;
-    }
-    const profileimg = getId("profileImage") as HTMLInputElement;
-    if (profileimg) {
-      profileimg.value = "";
-    }
-    const settingsSelfProfile = getProfileImage();
-    if (settingsSelfProfile && lastConfirmedProfileImg) {
-      settingsSelfProfile.src = URL.createObjectURL(lastConfirmedProfileImg);
-    }
 
-    const guildNameInput = getId(
-      "guild-overview-name-input"
-    ) as HTMLInputElement;
-    if (guildNameInput) {
-      guildNameInput.value = guildCache.currentGuildName;
-    }
-
-    const channelNameInput = getId(
-      "channel-overview-name-input"
-    ) as HTMLInputElement;
-    if (channelNameInput) {
-      channelNameInput.value = currentChannelName;
-    }
-
+    refreshSettingCategory();
     setUnsaved(false);
     setIsChangedImage(false);
   });
@@ -1329,6 +1303,16 @@ function createDeleteGuildPrompt(guildId: string, guildName: string) {
   );
 }
 
+export function refreshSettingCategory() {
+  if (currentSettingsCategory) {
+    selectSettingCategory(
+      currentSettingsCategory as
+        | keyof typeof ProfileCategoryTypes
+        | keyof typeof GuildCategoryTypes
+        | keyof typeof ChannelCategoryTypes
+    );
+  }
+}
 function init() {
   const openSettingsButton = getId("settings-button");
   if (openSettingsButton) {
