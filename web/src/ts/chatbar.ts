@@ -13,7 +13,8 @@ import {
   findPreviousNode,
   findNextNode,
   isMobile,
-  insertHTML
+  insertHTML,
+  tNode
 } from "./utils.ts";
 import { isOnDm } from "./router.ts";
 import { guildCache } from "./cache.ts";
@@ -458,16 +459,13 @@ export class DomUtils {
   static ensureTextNodeAfterImage(container: HTMLElement) {
     container.querySelectorAll("img").forEach((img) => {
       if (!img.nextSibling || img.nextSibling.nodeType !== Node.TEXT_NODE) {
-        img.parentNode?.insertBefore(
-          document.createTextNode("\u200B"),
-          img.nextSibling
-        );
+        img.parentNode?.insertBefore(tNode("\u200B"), img.nextSibling);
       }
       if (
         !img.previousSibling ||
         img.previousSibling.nodeType !== Node.TEXT_NODE
       ) {
-        img.parentNode?.insertBefore(document.createTextNode("\u200B"), img);
+        img.parentNode?.insertBefore(tNode("\u200B"), img);
       }
 
       if (
@@ -646,7 +644,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
       if (nodeAfterNext) {
         moveCursorTo(nodeAfterNext);
       } else {
-        const fallbackTextNode = document.createTextNode(" ");
+        const fallbackTextNode = tNode(" ");
         nextNode.parentNode?.insertBefore(
           fallbackTextNode,
           nextNode.nextSibling
@@ -655,7 +653,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
       }
       event.preventDefault();
     } else {
-      const fallbackTextNode = document.createTextNode(" ");
+      const fallbackTextNode = tNode(" ");
       const referenceNode =
         currentNode.nodeType === Node.ELEMENT_NODE
           ? currentNode
@@ -692,7 +690,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
       const firstChild = root.firstChild;
 
       if (isEmoji(firstChild)) {
-        const newTextNode = document.createTextNode("");
+        const newTextNode = tNode("");
         root.insertBefore(newTextNode, firstChild);
         moveCursorTo(newTextNode);
         event.preventDefault();
@@ -701,7 +699,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
 
       const prevSibling = currentNode.previousSibling;
       if (isEmoji(prevSibling)) {
-        const newTextNode = document.createTextNode("");
+        const newTextNode = tNode("");
         root.insertBefore(newTextNode, prevSibling);
         moveCursorTo(newTextNode);
         event.preventDefault();
@@ -713,7 +711,7 @@ export function handleEmojiJump(event: KeyboardEvent) {
         moveCursorToEndOf(prevNode);
         event.preventDefault();
       } else {
-        const fallback = document.createTextNode("");
+        const fallback = tNode("");
         root.insertBefore(fallback, currentNode);
         moveCursorTo(fallback);
         event.preventDefault();
@@ -763,7 +761,7 @@ function insertNewlineAtCaret() {
   const range = selection.getRangeAt(0);
   range.deleteContents();
 
-  const textNode = document.createTextNode("\n");
+  const textNode = tNode("\n");
   range.insertNode(textNode);
 
   range.setStartAfter(textNode);

@@ -1,7 +1,7 @@
 import confettiImport from "canvas-confetti";
 const confetti = confettiImport as unknown as (options: any) => void;
 
-import { createEl, getId, isValidUrl } from "./utils.ts";
+import { $, createEl, getId, isValidUrl, tNode } from "./utils.ts";
 import { chatContainer, chatInput } from "./chatbar.ts";
 import { enableBorderMovement, stopAudioAnalysis } from "./audio.ts";
 import { userList } from "./userList.ts";
@@ -35,7 +35,7 @@ export function removeVideoErrorIcon() {
 }
 
 export function createBGVideo(transparencyValue?: string | null) {
-  if (document.querySelector(".background-video")) {
+  if ($(".background-video")) {
     return;
   }
 
@@ -161,7 +161,7 @@ export function setTheme(isDark: boolean) {
 const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
   const inputRect = input.getBoundingClientRect();
   const cs = window.getComputedStyle(input);
-  const div = document.createElement("div");
+  const div = createEl("div");
 
   div.style.position = "absolute";
   div.style.whiteSpace = "pre-wrap";
@@ -187,7 +187,7 @@ const getCursorXY = (input: HTMLInputElement, selectionPoint: number) => {
   const inputValue =
     input.tagName === "INPUT" ? rawValue.replace(/ /g, swap) : rawValue;
   const safeIndex = Math.max(0, Math.min(selectionPoint, inputValue.length));
-  const textNode = document.createTextNode(inputValue.substring(0, safeIndex));
+  const textNode = tNode(inputValue.substring(0, safeIndex));
   div.appendChild(textNode);
   document.body.appendChild(div);
 

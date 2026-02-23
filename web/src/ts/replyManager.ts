@@ -1,5 +1,3 @@
-// replyManager.ts — Creating reply bars and coordinating reply fetching
-
 import { createEl, getId } from "./utils.ts";
 import { chatContent } from "./chatbar.ts";
 import { replyCache, cacheInterface, guildCache } from "./cache.ts";
@@ -15,10 +13,7 @@ import { messageDates, currentLastDate } from "./chatDisplay.ts";
 import { getOldMessages } from "./message.ts";
 import { drawProfilePopId } from "./profilePop.ts";
 
-// Tracks messages whose reply target was not in the DOM at render time
 const unknownReplies: string[] = [];
-
-// ─── Public: handle reply for a single message element ───────────────────────
 
 export function handleReplyMessage(
   data: Message,
@@ -56,8 +51,6 @@ export function handleReplyMessage(
   return null;
 }
 
-// ─── Public: process all cached replies for visible messages ──────────────────
-
 export function handleReplies(): void {
   if (!chatContent) return;
 
@@ -82,8 +75,6 @@ export function handleReplies(): void {
     });
   });
 }
-
-// ─── Public: fetch reply data for messages that reference unknown parents ─────
 
 export function fetchReplies(
   messages: Message[],
@@ -122,8 +113,6 @@ export function fetchReplies(
     // apiClient.send(EventType.GET_BULK_REPLY, { ids: replyIds, guildId: currentGuildId, channelId: guildCache.currentChannelId });
   }
 }
-
-// ─── Private: build and insert the reply bar into a message element ───────────
 
 function createReplyBar(
   newMessage: HTMLElement,

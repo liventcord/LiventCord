@@ -1,6 +1,15 @@
 import { appState } from "./appState.ts";
 
-import { getId, createEl, blackImage, IMAGE_SRCS } from "./utils.ts";
+import {
+  getId,
+  createEl,
+  blackImage,
+  IMAGE_SRCS,
+  $,
+  $$,
+  offDoc,
+  onDoc
+} from "./utils.ts";
 import { clickMainLogo } from "./ui.ts";
 import {
   isChangingPage,
@@ -280,14 +289,14 @@ let currentGuildIndex = 1;
 
 function clearKeybinds() {
   if (keybindHandlers["shift"]) {
-    document.removeEventListener("keydown", keybindHandlers["shift"]);
+    offDoc("keydown", keybindHandlers["shift"]);
   }
   keybindHandlers = {};
 }
 
 export function addKeybinds() {
   clearKeybinds();
-  const guilds = Array.from(document.querySelectorAll("#guilds-list img"));
+  const guilds = Array.from($$("#guilds-list img"));
 
   const handler = (event: KeyboardEvent) => {
     if (!event.shiftKey) {
@@ -316,9 +325,9 @@ export function addKeybinds() {
     }
   };
 
-  document.addEventListener("keydown", handler);
+  onDoc("keydown", handler);
 
-  document.addEventListener("keyup", () => {
+  onDoc("keyup", () => {
     isGuildKeyDown = false;
   });
 
@@ -571,8 +580,5 @@ function createMainLogo() {
 }
 
 function getGuildFromBar(guildId: string): HTMLElement | null {
-  return (
-    document.querySelector(`#guilds-list li img[id='${guildId}']`)
-      ?.parentElement ?? null
-  );
+  return $(`#guilds-list li img[id='${guildId}']`)?.parentElement ?? null;
 }

@@ -1,4 +1,4 @@
-import { createEl, getId, isMobile } from "./utils.ts";
+import { createEl, getId, isMobile, onBody } from "./utils.ts";
 import { createGuild, joinToGuild } from "./guild.ts";
 import { translations } from "./translations.ts";
 import { appState } from "./appState.ts";
@@ -154,10 +154,9 @@ function buildGuildCreationPanel(
     handleImageUpload(imageEl, uploadText, clearBtn, e)
   );
 
-  // Delegate body click for guildImg (set up once)
   if (!document.body.dataset.guildImgListenerSet) {
     document.body.dataset.guildImgListenerSet = "true";
-    document.body.addEventListener("click", (e) => {
+    onBody("click", (e) => {
       if ((e.target as HTMLElement).closest("#guildImg")) imageInput.click();
     });
   }

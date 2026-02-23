@@ -38,4 +38,4 @@
 - Invite to guild context menu requires changing into a guild before appearing
 - Attachments tray blocks interacting channel and userlist
 - Self context menu should not include many fields
-- Fix typing emits / display
+- Navigation error : opening page in a user dm channel, going to a guild, then going to home breaks ui

@@ -3,7 +3,7 @@ import { initialiseApp } from "./app";
 import { router } from "./router";
 import { translations } from "./translations";
 import { alertUser } from "./ui";
-import { createEl, getId } from "./utils";
+import { $$, createEl, getId } from "./utils";
 
 let currentLanguage = "en";
 const loginTranslations = {
@@ -110,7 +110,7 @@ interface LoginResponse {
 let areListenersAdded = false;
 
 function updateDOM() {
-  const elements = document.querySelectorAll("[data-i18n]");
+  const elements = $$("[data-i18n]");
   elements.forEach((element) => {
     const key = element.getAttribute("data-i18n") as string;
     const translation = getTranslation(key);
@@ -242,8 +242,8 @@ export function initialiseLoginPage() {
 
     langMenu.querySelectorAll("li").forEach((item) => {
       item.addEventListener("click", () => {
-        const lang = item.getAttribute("data-lang")!;
-        setLanguage(lang);
+        const _lang = item.getAttribute("data-lang")!;
+        setLanguage(_lang);
         langMenu.classList.add("hidden");
         updateDOM();
         langButton.textContent = "🌐";

@@ -3,12 +3,13 @@ import App from "../App.vue";
 import store from "../store";
 import SearchPanel from "../components/SearchPanel.vue";
 import DmList from "../components/DmList.vue";
+import { createEl } from "./utils";
 
 const app = createApp(App);
 app.use(store);
 app.mount("#app");
 
-const teleportTarget = document.createElement("div");
+const teleportTarget = createEl("div");
 teleportTarget.id = "search-messages-root";
 document.body.appendChild(teleportTarget);
 

@@ -5,6 +5,7 @@ import {
   createEl,
   disableElement,
   enableElement,
+  onDoc,
   openBlobUrl
 } from "./utils.ts";
 import { initialiseLoginPage } from "./loginutils.ts";
@@ -48,10 +49,7 @@ class Router {
   }
 
   init() {
-    document.addEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange.bind(this)
-    );
+    onDoc("visibilitychange", this.handleVisibilityChange.bind(this));
     window.addEventListener("hashchange", this.handlePopState.bind(this));
     window.addEventListener("beforeunload", (e) => {
       if (isSettingsOpen) {

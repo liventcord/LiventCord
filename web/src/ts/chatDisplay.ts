@@ -28,7 +28,9 @@ import {
   enableElement,
   disableElement,
   isMobile,
-  isContentValid
+  isContentValid,
+  $,
+  onBody
 } from "./utils.ts";
 import { setLastTopSenderId, userManager } from "./user.ts";
 import { createMediaElement } from "./mediaElements.ts";
@@ -37,7 +39,7 @@ import { isOnDm, isOnGuild } from "./router.ts";
 import { togglePin } from "./contextMenuActions.ts";
 import { currentGuildId } from "./guild.ts";
 import { isChangingPage } from "./app.ts";
-import { toggleHamburger, setActiveIcon, alertUser } from "./ui.ts";
+import { toggleHamburger, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
 import { AudioType, playAudioType } from "./audio.ts";
@@ -164,8 +166,8 @@ export async function handleMentionClick(
 }
 
 export function addChatMentionListeners(): void {
-  document.body.addEventListener("click", (e) => handleMentionClick(e, "", 0));
-  document.body.addEventListener("click", (e) => {
+  onBody("click", (e) => handleMentionClick(e, "", 0));
+  onBody("click", (e) => {
     const target = e.target as HTMLElement;
     if (!target || (currentMentionPop && currentMentionPop.contains(target)))
       return;
@@ -224,7 +226,7 @@ export function openMediaPanel(type: string): void {
 function appendPanelWrapper(): void {
   setTimeout(() => {
     disableElement(chatContent);
-    const panelWrapper = document.querySelector(".panel-wrapper");
+    const panelWrapper = $(".panel-wrapper");
     if (panelWrapper) chatContainer.appendChild(panelWrapper);
   }, 0);
 }

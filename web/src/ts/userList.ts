@@ -1,6 +1,6 @@
 import { reactive } from "vue";
 
-import { getId, createEl, saveBooleanCookie } from "./utils.ts";
+import { getId, createEl, saveBooleanCookie, $, onDoc } from "./utils.ts";
 import { isOnGuild, isOnMePage } from "./router.ts";
 import { fetchCurrentAttachments, updateChatWidth } from "./chat.ts";
 import { updateMediaPanelPosition } from "./mediaPanel.ts";
@@ -15,9 +15,9 @@ export let userList: HTMLElement | null;
 export let userLine: HTMLElement | null;
 export let activityList: HTMLElement | null;
 
-document.addEventListener("DOMContentLoaded", () => {
+onDoc("DOMContentLoaded", () => {
   userList = getId("user-list");
-  userLine = document.querySelector(".horizontal-line");
+  userLine = $(".horizontal-line");
   activityList = getId("activity-list");
 });
 

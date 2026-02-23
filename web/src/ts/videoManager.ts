@@ -1,4 +1,4 @@
-import { getId, isMobile } from "./utils";
+import { getId, isMobile, offDoc, onDoc } from "./utils";
 
 const myVideo: HTMLVideoElement | null = getId(
   "local_vid"
@@ -87,8 +87,8 @@ function setupDesktopDragging() {
     startY = e.clientY;
     startLeft = parseInt(myVideo!.style.left, 10);
     startTop = parseInt(myVideo!.style.top, 10);
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    onDoc("mousemove", onMove);
+    onDoc("mouseup", onUp);
   });
 
   function onMove(e: MouseEvent) {
@@ -104,8 +104,8 @@ function setupDesktopDragging() {
   function onUp() {
     if (!dragging) return;
     dragging = false;
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
+    offDoc("mousemove", onMove);
+    offDoc("mouseup", onUp);
     snapToNearestPoint();
   }
 }

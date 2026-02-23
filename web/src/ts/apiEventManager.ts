@@ -24,7 +24,7 @@ import {
   handleChannelDelete,
   handleNewChannel
 } from "./channels.ts";
-import { getId } from "./utils.ts";
+import { createEl, getId } from "./utils.ts";
 import { updateMemberList } from "./userList.ts";
 import {
   loadGuild,
@@ -121,7 +121,7 @@ function initContainer(containerId: string, title: string): HTMLElement | null {
   if (!container) return null;
 
   if (container.children.length === 0) {
-    const heading = document.createElement("h3");
+    const heading = createEl("h3");
     heading.textContent = title;
     heading.style.display = "flex";
     heading.style.flexDirection = "column";
@@ -134,7 +134,7 @@ function initContainer(containerId: string, title: string): HTMLElement | null {
 
 function showNoMessages(container: HTMLElement) {
   const msg = translations.getTranslation("no-messages-found");
-  const h3 = document.createElement("h3");
+  const h3 = createEl("h3");
   h3.textContent = msg;
   container.appendChild(h3);
 }

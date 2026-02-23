@@ -1,4 +1,4 @@
-import { createEl } from "./utils.ts";
+import { createEl, offDoc, onDoc } from "./utils.ts";
 import { closePopUp, createPopUp } from "./popups.ts";
 import { translations } from "./translations.ts";
 import { changePassword } from "./user.ts";
@@ -57,14 +57,14 @@ function buildPopupContent(opts: PopupOptions): HTMLElement {
     acceptCallback?.();
     if (outerParent?.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", handleEnterKeydown);
+      offDoc("keydown", handleEnterKeydown);
     }
   };
 
   const dismiss = () => {
     if (outerParent?.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", handleEnterKeydown);
+      offDoc("keydown", handleEnterKeydown);
     }
   };
 
@@ -79,7 +79,7 @@ function buildPopupContent(opts: PopupOptions): HTMLElement {
 
   buttonContainer.appendChild(popAcceptButton);
   popAcceptButton.addEventListener("click", accept);
-  document.addEventListener("keydown", handleEnterKeydown);
+  onDoc("keydown", handleEnterKeydown);
 
   return outerParent;
 }
@@ -215,7 +215,7 @@ export function openChangePasswordPop(): void {
   const dismiss = () => {
     if (outerParent?.firstChild) {
       closePopUp(outerParent, outerParent.firstChild as HTMLElement);
-      document.removeEventListener("keydown", onEnter);
+      offDoc("keydown", onEnter);
     }
   };
 
@@ -233,7 +233,7 @@ export function openChangePasswordPop(): void {
 
   popRefuseButton.addEventListener("click", dismiss);
   popAcceptButton.addEventListener("click", () => accept(null));
-  document.addEventListener("keydown", onEnter);
+  onDoc("keydown", onEnter);
 }
 
 // --- Log-out confirm

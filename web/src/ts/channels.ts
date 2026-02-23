@@ -1,5 +1,13 @@
 import store from "../store.ts";
-import { disableElement, getId, MINUS_INDEX, isMobile } from "./utils.ts";
+import {
+  disableElement,
+  getId,
+  MINUS_INDEX,
+  isMobile,
+  offDoc,
+  lockUserSelect,
+  unlockUserSelect
+} from "./utils.ts";
 import { apiClient, EventType } from "./api.ts";
 import {
   getHistoryFromOneChannel,
@@ -19,9 +27,7 @@ import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
 import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
-import {
-  selectedPanelType
-} from "./panelHandler.ts";
+import { selectedPanelType } from "./panelHandler.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;
@@ -127,7 +133,6 @@ function selectChannelElement(channelId: string) {
   }
   channel.style.backgroundColor = selectedChanColor();
 }
-let hasChannelChangedOnce = false;
 export async function changeChannel(newChannel?: ChannelData) {
   if (!newChannel) {
     return;
@@ -162,7 +167,6 @@ export async function changeChannel(newChannel?: ChannelData) {
   setReachedChannelEnd(false);
 
   closeMediaPanel();
-  hasChannelChangedOnce = true;
   selectedPanelType.value = "";
 
   if (isTextChannel) {
@@ -261,8 +265,8 @@ function moveChannel(direction: number) {
 }
 
 function removeChannelEventListeners() {
-  document.removeEventListener("keydown", handleKeydown);
-  document.removeEventListener("keyup", resetKeydown);
+  offDoc("keydown", handleKeydown);
+  offDoc("keyup", resetKeydown);
 }
 
 function addChannelEventListeners() {
@@ -417,7 +421,7 @@ export function updateChannelsWidth(e: MouseEvent) {
     : null;
   const startWidth = computedStyle ? parseInt(computedStyle.width, 10) : 150;
 
-  document.body.style.userSelect = "none";
+  lockUserSelect();
 
   const onMouseMove = (ev: MouseEvent) => {
     if (!isDragging) {
@@ -431,9 +435,9 @@ export function updateChannelsWidth(e: MouseEvent) {
 
   const onMouseUp = () => {
     isDragging = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    document.body.style.userSelect = "";
+    offDoc("mousemove", onMouseMove);
+    offDoc("mouseup", onMouseUp);
+    unlockUserSelect();
   };
 
   document.addEventListener("mousemove", onMouseMove);

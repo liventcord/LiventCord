@@ -22,6 +22,59 @@ export const IMAGE_SRCS = {
     "https://liventcord.github.io/LiventCord/app/images/guest.webp"
 };
 
+export function $<T extends HTMLElement = HTMLElement>(
+  selector: string
+): T | null {
+  const el = document.querySelector(selector);
+  if (!el) console.warn(`Selector "${selector}" not found`);
+  return el as T | null;
+}
+
+export function $$<T extends HTMLElement = HTMLElement>(selector: string): T[] {
+  return Array.from(document.querySelectorAll(selector)) as T[];
+}
+export const tNode = (s: string) => document.createTextNode(s);
+export function onBody<K extends keyof HTMLElementEventMap>(
+  event: K | string,
+  listener: (
+    e: K extends keyof HTMLElementEventMap ? HTMLElementEventMap[K] : Event
+  ) => void,
+  options?: boolean | AddEventListenerOptions
+): void {
+  document.body.addEventListener(event, listener as EventListener, options);
+}
+export function onDoc<K extends keyof DocumentEventMap>(
+  event: K | string,
+  listener: (
+    e: K extends keyof DocumentEventMap ? DocumentEventMap[K] : Event
+  ) => void,
+  options?: boolean | AddEventListenerOptions
+): void {
+  document.addEventListener(event, listener as EventListener, options);
+}
+export function offDoc<K extends keyof DocumentEventMap>(
+  event: K | string,
+  listener: (
+    e: K extends keyof DocumentEventMap ? DocumentEventMap[K] : Event
+  ) => void,
+  options?: boolean | EventListenerOptions
+): void {
+  document.removeEventListener(event, listener as EventListener, options);
+}
+let userSelectLock = 0;
+
+export function lockUserSelect(): void {
+  if (userSelectLock++ === 0) {
+    document.body.style.userSelect = "none";
+  }
+}
+
+export function unlockUserSelect(): void {
+  if (userSelectLock > 0 && --userSelectLock === 0) {
+    document.body.style.userSelect = "";
+  }
+}
+
 export const MINUS_INDEX = -1;
 export const createEl = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -96,7 +149,6 @@ export function getId<T extends HTMLElement = HTMLElement>(
   }
   return el as T;
 }
-
 export function getMaskedEmail(email: string) {
   const parts = email.split("@");
   if (parts.length !== 2) {
@@ -575,26 +627,6 @@ export function getBeforeElement(element: HTMLElement): HTMLElement | null {
   }
 }
 
-function applyCustomStyles(html: string): string {
-  const styles: Record<string, string> = {
-    red: "color: red;",
-    blu: "color: blue;",
-    yellow: "color: yellow;"
-  };
-  const styledHTML = html.replace(
-    /<([a-z][a-z0-9]*)\b[^>]*>(.*?)<\/\1>/gi,
-    (match: string, tag: string, content: string) => {
-      if (styles[tag]) {
-        return content.trim()
-          ? `<span style="${styles[tag]}">${content}</span>`
-          : `&lt;${tag}&gt;`;
-      }
-      return `&lt;${tag}&gt;`;
-    }
-  );
-
-  return styledHTML.replace(/&lt;br&gt;/g, "<br>");
-}
 export function getBase64Image(
   imgElement: HTMLImageElement
 ): string | undefined {

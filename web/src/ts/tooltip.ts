@@ -1,12 +1,12 @@
 import { cacheInterface } from "./cache.ts";
 import { translations } from "./translations.ts";
-import { createEl } from "./utils.ts";
+import { createEl, onDoc } from "./utils.ts";
 
 let tooltip: HTMLElement | null = null;
 let isHoverTooltip: boolean = false;
 let currentTarget: HTMLElement | null = null;
 
-document.addEventListener("mouseover", async function (event) {
+onDoc("mouseover", async function (event) {
   const target = event.target as HTMLElement | null;
   if (
     !target ||
@@ -35,7 +35,7 @@ document.addEventListener("mouseover", async function (event) {
   isHoverTooltip = true;
 });
 
-document.addEventListener("mouseout", function (event) {
+onDoc("mouseout", function (event) {
   if (tooltip && isHoverTooltip && event.relatedTarget !== tooltip) {
     tooltip.remove();
     tooltip = null;

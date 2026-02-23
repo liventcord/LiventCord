@@ -4,7 +4,12 @@ import {
   disableElement,
   enableElement,
   debounce,
-  IMAGE_SRCS
+  IMAGE_SRCS,
+  $,
+  offDoc,
+  onDoc,
+  lockUserSelect,
+  unlockUserSelect
 } from "./utils.ts";
 import { setWidths } from "./channels.ts";
 import { handleMediaPanelResize } from "./mediaPanel.ts";
@@ -124,7 +129,7 @@ function updateUIWidths(newWidth: number): void {
 }
 
 function updateDmContainers(width: number): void {
-  const root = document.querySelector(".dm-list-root");
+  const root = $(".dm-list-root");
   if (!root) return;
   root.querySelectorAll<HTMLDivElement>(".dm-container").forEach((el) => {
     el.style.width = `${width + 70}px`;
@@ -188,7 +193,7 @@ export function initialiseChannelDrag(): void {
       parseInt(window.getComputedStyle(channelList).width, 10)
     );
 
-    document.body.style.userSelect = "none";
+    lockUserSelect();
 
     const onMouseMove = (event: MouseEvent) => {
       if (!isDragging) return;
@@ -202,13 +207,13 @@ export function initialiseChannelDrag(): void {
         parseInt(window.getComputedStyle(channelList).width, 10)
       );
       saveWidth(finalWidth);
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      document.body.style.userSelect = "";
+      offDoc("mousemove", onMouseMove);
+      offDoc("mouseup", onMouseUp);
+      unlockUserSelect();
     };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    onDoc("mousemove", onMouseMove);
+    onDoc("mouseup", onMouseUp);
   });
 }
 

@@ -1,4 +1,11 @@
-import { getId, isMobile, disableElement, enableElement } from "./utils.ts";
+import {
+  getId,
+  isMobile,
+  disableElement,
+  enableElement,
+  $,
+  onDoc
+} from "./utils.ts";
 import { disableSelfName } from "./avatar.ts";
 import { isOnGuild, isOnMePage } from "./router.ts";
 import { scrollToBottom } from "./chat.ts";
@@ -31,11 +38,11 @@ function initSwipeListeners(
   getChatContent: () => HTMLElement,
   getMediaGrid: () => HTMLElement
 ): void {
-  document.addEventListener("touchstart", (e) => {
+  onDoc("touchstart", (e) => {
     previewSlideStartX = e.touches[0].clientX;
   });
 
-  document.addEventListener("touchend", (e) => {
+  onDoc("touchend", (e) => {
     previewSlideEndX = e.changedTouches[0].clientX;
     const diff = previewSlideEndX - previewSlideStartX;
 
@@ -103,7 +110,7 @@ function mobileMoveToRight(): void {
   disableElement("scroll-to-bottom");
 
   getId("channelSearchInput")?.classList.add("search-input-mobile");
-  document.querySelector(".close-button")?.classList.add("search-input-mobile");
+  $(".close-button")?.classList.add("search-input-mobile");
 }
 
 export function mobileMoveToCenter(excludeChannelList = false): void {

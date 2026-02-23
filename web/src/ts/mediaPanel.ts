@@ -6,7 +6,12 @@ import {
   IMAGE_SRCS,
   enableElement,
   disableElement,
-  getMediaBaseURL
+  getMediaBaseURL,
+  onBody,
+  offDoc,
+  onDoc,
+  lockUserSelect,
+  unlockUserSelect
 } from "./utils.ts";
 import { trySendMessage } from "./message.ts";
 import { isUsersOpenGlobal } from "./userList.ts";
@@ -139,9 +144,9 @@ function onMouseMove(e: MouseEvent) {
 function onMouseUp() {
   if (isResizing) {
     isResizing = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    document.body.style.userSelect = "";
+    offDoc("mousemove", onMouseMove);
+    offDoc("mouseup", onMouseUp);
+    unlockUserSelect();
   }
 }
 let clickEmojiListenerAdded = false;
@@ -194,7 +199,7 @@ function renderEmojis(
     return;
   }
   clickEmojiListenerAdded = true;
-  document.body.addEventListener("click", (e) => {
+  onBody("click", (e) => {
     const target = e.target as HTMLElement;
     if (target.classList.contains("emoji")) {
       const indexStr = target.getAttribute("data-index");
@@ -654,7 +659,7 @@ function initialiseMedia() {
     e.stopPropagation();
   });
 
-  document.body.addEventListener("click", (event) => {
+  onBody("click", (event) => {
     const target = event.target as HTMLElement;
     if (
       mediaMenu &&
@@ -686,11 +691,11 @@ function initialiseMedia() {
       isResizing = true;
       initialMouseX = e.clientX;
       initialMouseY = e.clientY;
-      document.body.style.userSelect = "none";
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
+      lockUserSelect();
+      onDoc("mousemove", onMouseMove);
+      onDoc("mouseup", onMouseUp);
     }
   });
 }
 
-document.addEventListener("DOMContentLoaded", initialiseMedia);
+onDoc("DOMContentLoaded", initialiseMedia);

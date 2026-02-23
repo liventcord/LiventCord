@@ -479,7 +479,7 @@ function createFileAttachmentPreview(
     title.addEventListener("click", (e) => {
       e.preventDefault();
       const link = e.currentTarget as HTMLAnchorElement;
-      const a = document.createElement("a");
+      const a = createEl("a");
       a.href = link.href;
       a.download = link.download || "";
       a.click();

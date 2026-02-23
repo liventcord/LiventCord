@@ -1,6 +1,6 @@
 import { selfProfileImage } from "./avatar.ts";
 import { getChannelsUl } from "./channels.ts";
-import { getId, createEl } from "./utils.ts";
+import { getId, createEl, $, $$ } from "./utils.ts";
 import { userList } from "./userList.ts";
 import { toggleManager } from "./settings.ts";
 import { translations } from "./translations.ts";
@@ -47,7 +47,7 @@ const WIGGLE_DELAY = 500;
 export let earphoneButton = getId("earphone-button");
 export let microphoneButton = getId("microphone-button");
 
-const containers = document.querySelectorAll(".voice-button-container");
+const containers = $$(".voice-button-container");
 
 export async function playAudioType(type: AudioType) {
   playAudio(getAudioUrl(type));
@@ -108,7 +108,7 @@ export async function playAudio(audioUrl: string) {
   };
 
   instance.onpause = () => {
-    if (!document.querySelector("audio:not([data-ended='true'])")) {
+    if (!$("audio:not([data-ended='true'])")) {
       isAudioPlaying = false;
       stopAudioAnalysis();
     }
@@ -117,7 +117,7 @@ export async function playAudio(audioUrl: string) {
   instance.onended = () => {
     instance.dataset.ended = "true";
     instance.remove();
-    if (!document.querySelector("audio:not([data-ended='true'])")) {
+    if (!$("audio:not([data-ended='true'])")) {
       isAudioPlaying = false;
       stopAudioAnalysis();
     }
@@ -281,7 +281,7 @@ function resetWiggleEffect(...elements: HTMLElement[]) {
 }
 
 function initializeMusic() {
-  const modal = document.querySelector(".player");
+  const modal = $(".player");
 
   const playCurrentSong = async () => {
     await playAudioYt(youtubeIds[youtubeIndex]);

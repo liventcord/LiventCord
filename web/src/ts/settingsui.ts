@@ -45,7 +45,8 @@ import {
   enableElement,
   blackImage,
   escapeHtml,
-  isMobile
+  isMobile,
+  onBody
 } from "./utils.ts";
 import { guildCache } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
@@ -947,7 +948,7 @@ function setupGuildAndChannelInputs() {
 }
 
 function setupEmailToggle() {
-  document.body.addEventListener(
+  onBody(
     "click",
     (event) => {
       const target = event.target as HTMLElement;

@@ -9,7 +9,7 @@ import {
 } from "./chatbar.ts";
 import { userManager } from "./user.ts";
 import { getManageableGuilds, currentGuildId, kickMember } from "./guild.ts";
-import { createEl, generateInviteLink, getId } from "./utils.ts";
+import { createEl, generateInviteLink, getId, offDoc, onDoc } from "./utils.ts";
 import { isOnMePage, isOnDm, isOnGuild, router } from "./router.ts";
 import { addFriendId, friendsCache, removeFriend } from "./friends.ts";
 import { permissionManager } from "./guildPermissions.ts";
@@ -426,7 +426,7 @@ export function triggerContextMenuById(
 }
 
 export function addContextListeners() {
-  document.addEventListener("contextmenu", function (event) {
+  onDoc("contextmenu", function (event) {
     event.preventDefault();
 
     const target = event.target as HTMLElement;
@@ -457,7 +457,7 @@ export function addContextListeners() {
   });
 }
 
-document.addEventListener("click", function (event) {
+onDoc("click", function (event) {
   const target = event.target as HTMLElement;
 
   if (
@@ -820,7 +820,7 @@ export function showContextMenu(x: number, y: number, options: ItemOptions) {
 
   contextMenu = tempContextMenu;
 
-  document.addEventListener("click", clickOutsideContextMenu);
+  onDoc("click", clickOutsideContextMenu);
 }
 
 function clickOutsideContextMenu(event: Event) {
@@ -840,6 +840,6 @@ function hideContextMenu() {
   if (contextMenu) {
     contextMenu.remove();
     contextMenu = null;
-    document.removeEventListener("click", clickOutsideContextMenu);
+    offDoc("click", clickOutsideContextMenu);
   }
 }

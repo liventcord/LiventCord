@@ -12,7 +12,8 @@ import {
   isURL,
   isImageLoaded,
   getAttachmentUrl,
-  estimateVideoSizeBytes
+  estimateVideoSizeBytes,
+  onDoc
 } from "./utils.ts";
 import {
   isImageSpoilered,
@@ -126,11 +127,11 @@ function setupImagePreviewDrag(previewImage: HTMLImageElement): void {
     }
   });
 
-  document.addEventListener("mousemove", (e) => {
+  onDoc("mousemove", (e) => {
     if (isDragging) dragMove(e.clientX, e.clientY, previewImage);
   });
 
-  document.addEventListener(
+  onDoc(
     "touchmove",
     (e) => {
       if (isDragging && e.touches.length === 1) {
@@ -141,10 +142,10 @@ function setupImagePreviewDrag(previewImage: HTMLImageElement): void {
     { passive: false }
   );
 
-  document.addEventListener("mouseup", () => {
+  onDoc("mouseup", () => {
     isDragging = false;
   });
-  document.addEventListener("touchend", () => {
+  onDoc("touchend", () => {
     isDragging = false;
   });
 }
@@ -498,7 +499,7 @@ export function initImagePreviewNavigation(
       hideImagePreview();
   });
 
-  document.addEventListener("keydown", (e) => {
+  onDoc("keydown", (e) => {
     if (e.key === "Escape") {
       hideImagePreview();
       return;
@@ -508,7 +509,7 @@ export function initImagePreviewNavigation(
     if (e.key === "ArrowLeft") navigate(-1, getChatContent(), getMediaGrid());
   });
 
-  document.addEventListener("dragstart", (e) => {
+  onDoc("dragstart", (e) => {
     if ((e.target as HTMLElement)?.tagName === "IMG") e.preventDefault();
   });
 }

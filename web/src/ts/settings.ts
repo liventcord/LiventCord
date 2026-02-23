@@ -5,6 +5,7 @@ import {
   blackImage,
   getId,
   loadBooleanCookie,
+  onDoc,
   randomInRange,
   saveBooleanCookie
 } from "./utils.ts";
@@ -517,4 +518,4 @@ function keydownHandler(event: KeyboardEvent) {
   }
 }
 
-document.addEventListener("keydown", keydownHandler);
+onDoc("keydown", keydownHandler);

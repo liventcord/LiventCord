@@ -1,4 +1,5 @@
 import { isDragging } from "./imagePreview";
+import { createEl, onDoc } from "./utils";
 
 const Engines: Record<string, string> = {
   Google: "https://lens.google.com/uploadbyurl?url=",
@@ -33,7 +34,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   attrs?: Record<string, string>
 ): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
+  const node = createEl(tag);
   if (attrs)
     for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
   return node;
@@ -157,11 +158,11 @@ function onContextMenu(e: MouseEvent): void {
   activeMenu = buildMenu(src, e.clientX, e.clientY);
 
   setTimeout(() => {
-    document.addEventListener("mousedown", onOutside, {
+    onDoc("mousedown", onOutside, {
       capture: true,
       once: true
     });
-    document.addEventListener("keydown", onEscape, {
+    onDoc("keydown", onEscape, {
       capture: true,
       once: true
     });
@@ -177,7 +178,7 @@ function onEscape(e: KeyboardEvent): void {
 }
 
 export function initReverseImageSearch() {
-  document.addEventListener("contextmenu", onContextMenu, true);
+  onDoc("contextmenu", onContextMenu, true);
 }
 
 initReverseImageSearch();

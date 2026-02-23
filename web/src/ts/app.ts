@@ -109,6 +109,7 @@ import {
   hideGuildSettingsDropdown
 } from "./guildPop.ts";
 import { friendsContainerInstance } from "../components/FriendsContainer.vue";
+import { initializeEmojis } from "./emoji.ts";
 
 const ELEMENT_IDS = {
   friendsContainer: "friends-container",
@@ -161,6 +162,7 @@ export function initializeApp(): void {
   initialiseAudio();
   initializeCookies();
   initializeFriends();
+  initializeEmojis();
   if (isMobile) {
     initialiseMobile();
   }

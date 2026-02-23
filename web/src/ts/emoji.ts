@@ -19,6 +19,7 @@ import { translations } from "./translations";
 import { Emoji } from "./types/interfaces";
 import { userManager } from "./user";
 import {
+  $,
   createEl,
   debounce,
   disableElement,
@@ -26,6 +27,7 @@ import {
   getEmojiPath,
   getId,
   IMAGE_SRCS,
+  onBody,
   sanitizeHtmlInput,
   sanitizeInput,
   underscoreToTitle
@@ -148,9 +150,7 @@ function generateEmojiRowHTML(emoji: Emoji): string {
       adjustWidth();
     }
 
-    const deleteButton = document.querySelector(
-      `button[data-emoji-id="${emoji.fileId}"]`
-    );
+    const deleteButton = $(`button[data-emoji-id="${emoji.fileId}"]`);
     if (deleteButton && canManageEmojis) {
       deleteButton.addEventListener("click", () => {
         deleteEmoji(emoji.guildId, emoji.fileId);
@@ -187,7 +187,7 @@ function generateEmojiCount(): void {
 
 function renderEmojis(emojis: Array<Emoji>): void {
   const emojiTableBody = getId("emoji-table-body");
-  const emojiTableHeader = document.querySelector("thead");
+  const emojiTableHeader = $("thead");
 
   if (emojiTableBody && emojiTableHeader) {
     const headerHTML = generateHeaderHTML();
@@ -492,7 +492,7 @@ export function setupEmojiListeners(): void {
   }
   emojiListenerAdded = true;
 
-  document.body.addEventListener("mouseover", (event) => {
+  onBody("mouseover", (event) => {
     const target = event.target as HTMLElement;
     if (!target) {
       return;
@@ -863,8 +863,6 @@ function highlightSuggestion(index: number) {
   });
 }
 //#endregion
-async function main() {
+export async function initializeEmojis() {
   await loadBuiltinEmojis();
 }
-
-main();

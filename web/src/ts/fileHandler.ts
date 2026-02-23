@@ -8,7 +8,8 @@ import {
   formatFileSize,
   isCompressedFile,
   renderFileIcon,
-  truncateString
+  truncateString,
+  onBody
 } from "./utils.ts";
 import { alertUser, displayImagePreviewBlob } from "./ui.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
@@ -276,7 +277,7 @@ export class FileHandler {
     } else {
       img.style.filter = "blur(0.875rem)";
       if (!spoilerText) {
-        const span = document.createElement("span");
+        const span = createEl("span");
         span.className = "spoiler-text";
         span.textContent = "SPOILER";
         imgWrapper.appendChild(span);
@@ -350,13 +351,13 @@ export class FileHandler {
 
     const dragEvents = ["dragenter", "dragover", "dragleave", "drop"];
     dragEvents.forEach((eventName) => {
-      document.body.addEventListener(eventName, preventDefaults, false);
+      onBody(eventName, preventDefaults, false);
     });
 
-    document.body.addEventListener("dragenter", handleDragEnterOrOver, false);
-    document.body.addEventListener("dragover", handleDragEnterOrOver, false);
-    document.body.addEventListener("dragleave", handleDragLeave, false);
-    document.body.addEventListener("drop", handleDrop, false);
+    onBody("dragenter", handleDragEnterOrOver, false);
+    onBody("dragover", handleDragEnterOrOver, false);
+    onBody("dragleave", handleDragLeave, false);
+    onBody("drop", handleDrop, false);
 
     fileButton.addEventListener("click", () => {
       console.log("fileButton clicked");

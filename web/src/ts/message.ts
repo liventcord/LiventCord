@@ -285,7 +285,7 @@ function tryConvertToFormat(
     }
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement("canvas");
+      const canvas = createEl("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
@@ -409,7 +409,7 @@ export function deleteLocalMessage(
   guildId: string,
   channelId: string
 ) {
-  if (channelId != appState.currentUserId && channelId !== getChannelId()) {
+  if (channelId !== appState.currentUserId && channelId !== getChannelId()) {
     console.error("Can not delete message:", guildId, channelId, messageId);
     return;
   }

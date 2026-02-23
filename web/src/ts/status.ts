@@ -1,6 +1,6 @@
 import { openSettings } from "./settingsui.ts";
 import { createBubble } from "./userList.ts";
-import { createEl, getId } from "./utils.ts";
+import { createEl, getId, offDoc, onDoc, tNode } from "./utils.ts";
 import { userManager } from "./user.ts";
 import { translations } from "./translations.ts";
 import { copyId } from "./contextMenuActions.ts";
@@ -51,7 +51,7 @@ export class UserStatus {
     this.createdPanel.addEventListener("mousedown", (event) =>
       event.stopPropagation()
     );
-    document.addEventListener("mousedown", this.handleOutsideClick);
+    onDoc("mousedown", this.handleOutsideClick);
   }
 
   private readonly handleOutsideClick = (event: MouseEvent) => {
@@ -63,7 +63,7 @@ export class UserStatus {
       !this.createdPanel.contains(target)
     ) {
       this.createdPanel.remove();
-      document.removeEventListener("mousedown", this.handleOutsideClick);
+      offDoc("mousedown", this.handleOutsideClick);
     }
   };
 
@@ -174,7 +174,7 @@ export class UserStatus {
     if (button) {
       button.innerHTML = "";
       const bubble = this.createStatusBubble();
-      button.append(document.createTextNode(this.currentStatus));
+      button.append(tNode(this.currentStatus));
       if (bubble) button.append(bubble);
     }
     const sanitizedStatus = this.currentStatus
@@ -239,9 +239,7 @@ export class UserStatus {
       className: "status-button"
     });
     const bubble = this.createStatusBubble();
-    const textNode = document.createTextNode(
-      this.formatStatusText(this.currentStatus)
-    );
+    const textNode = tNode(this.formatStatusText(this.currentStatus));
     this.dropdown = this.createDropdown();
 
     statusButton.append(textNode);
@@ -296,7 +294,7 @@ export class UserStatus {
       const option = createEl("div", { className: "status-option" });
       const bubble = this.createStatusBubble(status);
       if (bubble) option.appendChild(bubble);
-      option.appendChild(document.createTextNode(status));
+      option.appendChild(tNode(status));
 
       option.addEventListener("click", () => this.updateStatusOnPanel(status));
       dropdown.appendChild(option);
