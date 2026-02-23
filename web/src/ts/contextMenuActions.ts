@@ -365,37 +365,39 @@ function createProfileContext(userData: UserInfo) {
       action: () => editGuildProfile()
     };
   } else {
-    context[ActionType.BLOCK_USER] = {
-      action: () => blockUser(userId)
-    };
-    const guildSubOptions = getManageableGuilds();
+    if (userId !== appState.currentUserId) {
+      context[ActionType.BLOCK_USER] = {
+        action: () => blockUser(userId)
+      };
+      const guildSubOptions = getManageableGuilds();
 
-    if (Array.isArray(guildSubOptions) && guildSubOptions.length > 0) {
-      context[ActionType.INVITE_TO_GUILD] = {
-        action: () => {},
-        subOptions: guildSubOptions.map((subOption) => ({
-          label: cacheInterface.getGuildName(subOption),
-          action: () => inviteUser(userId, subOption)
-        }))
-      };
-    }
-    if (friendsCache.isFriend(userId)) {
-      context[ActionType.REMOVE_USER] = {
-        action: () => removeFriend(userId)
-      };
-    } else if (!friendsCache.hasRequestToFriend(userId)) {
-      context[ActionType.ADD_FRIEND] = {
-        action: () => addFriendId(userId)
-      };
-    }
+      if (Array.isArray(guildSubOptions) && guildSubOptions.length > 0) {
+        context[ActionType.INVITE_TO_GUILD] = {
+          action: () => {},
+          subOptions: guildSubOptions.map((subOption) => ({
+            label: cacheInterface.getGuildName(subOption),
+            action: () => inviteUser(userId, subOption)
+          }))
+        };
+      }
+      if (friendsCache.isFriend(userId)) {
+        context[ActionType.REMOVE_USER] = {
+          action: () => removeFriend(userId)
+        };
+      } else if (!friendsCache.hasRequestToFriend(userId)) {
+        context[ActionType.ADD_FRIEND] = {
+          action: () => addFriendId(userId)
+        };
+      }
 
-    if (
-      permissionManager.canKickMember() &&
-      !cacheInterface.isGuildOwner(currentGuildId, userId)
-    ) {
-      context[ActionType.KICK_MEMBER] = {
-        action: () => kickMember(userId)
-      };
+      if (
+        permissionManager.canKickMember() &&
+        !cacheInterface.isGuildOwner(currentGuildId, userId)
+      ) {
+        context[ActionType.KICK_MEMBER] = {
+          action: () => kickMember(userId)
+        };
+      }
     }
   }
 
