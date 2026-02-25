@@ -75,12 +75,12 @@ namespace LiventCord.Controllers
             HandleBulkMessagesAsync(guildId, channelId, requests);
 
         [Authorize]
-        [HttpPut("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
+        [HttpPatch("/api/guilds/{guildId}/channels/{channelId}/messages/{messageId}")]
         public Task<IActionResult> HandleEditGuildMessage(string guildId, string channelId, string messageId, EditMessageRequest request) =>
             HandleEditGuildMessageAsync(guildId, channelId, messageId, request);
 
         [Authorize]
-        [HttpPut("/api/dms/channels/{friendId}/messages/{messageId}")]
+        [HttpPatch("/api/dms/channels/{friendId}/messages/{messageId}")]
         public Task<IActionResult> HandleEditDMMessage(string friendId, string messageId, EditMessageRequest request) =>
             HandleEditDMMessageAsync(friendId, messageId, request);
 

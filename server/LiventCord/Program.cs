@@ -182,7 +182,7 @@ app.Use(async (context, next) =>
     if (context.Request.Method == "OPTIONS")
     {
         context.Response.StatusCode = 204;
-        context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,PATCH,OPTIONS";
 
         if (context.Request.Headers.TryGetValue("Access-Control-Request-Headers", out var reqHeaders))
             context.Response.Headers["Access-Control-Allow-Headers"] = reqHeaders.ToString();

@@ -70,7 +70,7 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpPut("nicks")]
+        [HttpPatch("nicks")]
         public async Task<IActionResult> ChangeNickname([FromBody] ChangeNicknameRequest request)
         {
             if (!ModelState.IsValid)

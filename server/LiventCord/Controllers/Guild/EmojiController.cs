@@ -109,7 +109,7 @@ namespace LiventCord.Controllers
             return Ok(new { emojiIds, request.GuildId });
         }
 
-        [HttpPut("guilds/{guildId}/emojis/{emojiId}")]
+        [HttpPatch("guilds/{guildId}/emojis/{emojiId}")]
         public async Task<IActionResult> RenameEmojiFile([FromBody] RenameEmojiRequest request)
         {
             if (

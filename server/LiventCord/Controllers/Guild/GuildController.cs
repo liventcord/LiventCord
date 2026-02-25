@@ -48,7 +48,7 @@ namespace LiventCord.Controllers
             return Ok(guilds);
         }
 
-        [HttpPut("{guildId}")]
+        [HttpPatch("{guildId}")]
         public async Task<IActionResult> ChangeGuildName(
             [FromRoute][IdLengthValidation] string guildId,
             [FromBody] ChangeGuildNameRequest request

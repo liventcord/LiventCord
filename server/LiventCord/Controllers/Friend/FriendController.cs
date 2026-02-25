@@ -156,7 +156,7 @@ namespace LiventCord.Controllers
             return Conflict();
         }
 
-        [HttpPut("accept/{friendId}")]
+        [HttpPatch("accept/{friendId}")]
         public async Task<IActionResult> AcceptFriendRequest(
             [FromRoute][UserIdLengthValidation] string friendId
         )
