@@ -7,7 +7,6 @@
 - Add a settings toggle for typing events
 - Implement displaying guild emojis in the emoji selector
 - Add a friend/guild status notifier on login (like Vencord) to display left guilds/friends (relationshipNotifier)
-- Add a user's opened DM to the DMs list
 - On dm, new messages should show as red bubbles
 - Add dm support for read system
 - Add reactions
@@ -23,7 +22,6 @@
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
 - Change dm message deletions to be optimistic
-- Add versioning to all api endpoints
 
 
 ## Bug fixes

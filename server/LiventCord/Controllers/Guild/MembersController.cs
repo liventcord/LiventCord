@@ -32,7 +32,7 @@ namespace LiventCord.Controllers
             _redisEventEmitter = redisEventEmitter;
         }
 
-        [HttpGet("/api/guilds/{guildId}/members")]
+        [HttpGet("/api/v1/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGetMembers([FromRoute][IdLengthValidation] string guildId)
         {
             var isMember = await _dbContext.GuildMembers
@@ -62,7 +62,7 @@ namespace LiventCord.Controllers
             return Ok(new { guildId, members });
         }
 
-        [HttpPost("/api/guilds/{inviteId}/members")]
+        [HttpPost("/api/v1/guilds/{inviteId}/members")]
         public async Task<IActionResult> HandleGuildJoin([FromRoute] string inviteId)
         {
             if (string.IsNullOrEmpty(inviteId))
@@ -99,7 +99,7 @@ namespace LiventCord.Controllers
             }
         }
 
-        [HttpDelete("/api/guilds/{guildId}/members")]
+        [HttpDelete("/api/v1/guilds/{guildId}/members")]
         public async Task<IActionResult> HandleGuildLeave(
             [FromRoute][IdLengthValidation] string guildId
         )
@@ -109,7 +109,7 @@ namespace LiventCord.Controllers
             return Ok(new { guildId });
         }
 
-        [HttpDelete("/api/guilds/{guildId}/members/{memberId}")]
+        [HttpDelete("/api/v1/guilds/{guildId}/members/{memberId}")]
         public async Task<IActionResult> HandleGuildKick(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][UserIdLengthValidation] string memberId

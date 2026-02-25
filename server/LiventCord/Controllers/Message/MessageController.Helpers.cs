@@ -298,7 +298,7 @@ namespace LiventCord.Controllers
 
                     var request = new HttpRequestMessage(
                         HttpMethod.Post,
-                        SharedAppConfig.MediaWorkerUrl + "/api/proxy/metadata"
+                        SharedAppConfig.MediaWorkerUrl + "/api/v1/proxy/metadata"
                     )
                     {
                         Content = JsonContent.Create(urls),

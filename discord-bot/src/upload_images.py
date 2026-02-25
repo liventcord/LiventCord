@@ -8,7 +8,7 @@ env.read_env()
 
 guild_id = env.str("MAIN_GUILD_ID_LC")
 channel_id = env.str("MAIN_CHANNEL_ID_LC")
-url = f"{env.str('FORWARD_URL')}/api/guilds/{guild_id}/channels/{channel_id}/messages"
+url = f"{env.str('FORWARD_URL')}/api/v1/guilds/{guild_id}/channels/{channel_id}/messages"
 
 folder_path = "images/"
 LC_USER_TOKEN = env.str("LC_USER_TOKEN")

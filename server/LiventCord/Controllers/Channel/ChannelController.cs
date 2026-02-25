@@ -40,7 +40,7 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpGet("/api/guilds/{guildId}/channels")]
+        [HttpGet("/api/v1/guilds/{guildId}/channels")]
         public async Task<IActionResult> HandleGetChannels(
             [FromRoute][IdLengthValidation] string guildId
         )
@@ -54,7 +54,7 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpDelete("/api/guilds/{guildId}/channels/{channelId}")]
+        [HttpDelete("/api/v1/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> DeleteChannel(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId
@@ -121,7 +121,7 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpPost("/api/guilds/{guildId}/channels/{channelId}")]
+        [HttpPost("/api/v1/guilds/{guildId}/channels/{channelId}")]
         public async Task<IActionResult> EditChannelName(
             [FromRoute][IdLengthValidation] string guildId,
             [FromRoute][IdLengthValidation] string channelId,
@@ -167,7 +167,7 @@ namespace LiventCord.Controllers
         }
 
         [Authorize]
-        [HttpPost("/api/guilds/{guildId}/channels")]
+        [HttpPost("/api/v1/guilds/{guildId}/channels")]
         public async Task<IActionResult> CreateChannel(
             [FromRoute][IdLengthValidation] string guildId,
             [FromBody] CreateChannelRequest request
@@ -187,7 +187,7 @@ namespace LiventCord.Controllers
             );
         }
 
-        [HttpPost("/api/discord/bot/guilds/{guildId}/channels/")]
+        [HttpPost("/api/v1/discord/bot/guilds/{guildId}/channels/")]
         [ValidateBotToken]
         public async Task<IActionResult> CreateChannelBot(
             [FromRoute] string guildId,

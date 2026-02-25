@@ -6,7 +6,7 @@ using LiventCord.Models;
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("/api/")]
+    [Route("/api/v1/")]
     [Authorize]
     public class ChannelReadController : BaseController
     {

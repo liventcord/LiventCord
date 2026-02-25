@@ -598,7 +598,7 @@ function setRegisterInputListeners(registerForm: HTMLElement) {
         try {
           isFetching = true;
           const response = await apiClient.fetchRelative(
-            "/api/discriminators?nick=" + encodeURIComponent(newInputValue),
+            "/api/v1/discriminators?nick=" + encodeURIComponent(newInputValue),
             undefined,
             true
           );

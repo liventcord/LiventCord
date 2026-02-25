@@ -144,7 +144,7 @@ public static class RouteConfig
             MapRedirectRoute("/join-guild/{*subPath}", "/LiventCord/app?route=/join-guild/{subPath}");
         }
 
-        app.Map("/api/init", appBuilder =>
+        app.Map("/api/v1/init", appBuilder =>
         {
             appBuilder.Run(async context =>
             {
@@ -153,7 +153,7 @@ public static class RouteConfig
             });
         });
 
-        app.MapGet("/api/download", async context =>
+        app.MapGet("/api/v1/download", async context =>
         {
             var platform = context.Request.Query["platform"].ToString().ToLower();
             string url = platform switch

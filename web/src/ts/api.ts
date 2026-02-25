@@ -334,7 +334,7 @@ class ApiClient {
     }
   }
   public getEmojis() {
-    return this.fetchRelative(`/api/guilds/${currentGuildId}/emojis`);
+    return this.fetchRelative(`/api/v1/guilds/${currentGuildId}/emojis`);
   }
   public onWebsocketReconnect() {
     console.log("Websocket reconnected!");
@@ -393,7 +393,7 @@ class ApiClient {
     }
     return (
       initialState.mediaWorkerUrl +
-      `/api/proxy/media?url=${encodeURIComponent(url)}`
+      `/api/v1/proxy/media?url=${encodeURIComponent(url)}`
     );
   }
 
@@ -406,7 +406,7 @@ class ApiClient {
     if (!url) {
       return null;
     }
-    const basePath = url + "/api";
+    const basePath = url + "/api/v1";
 
     const urlTemplate = EventUrlMap[event];
     if (!urlTemplate) {

@@ -66,7 +66,7 @@ func sendMediaUrlsToMainServer(mainServerUrl string, mediaUrl MediaUrl) error {
 		return nil
 	}
 	b, _ := json.Marshal(mediaUrl)
-	return postWithAuth(mainServerUrl+"/api/media", b)
+	return postWithAuth(mainServerUrl+"/api/v1/media", b)
 }
 
 func sendHtmlToMainServer(mainServerUrl, url, htmlStr string) error {
@@ -75,7 +75,7 @@ func sendHtmlToMainServer(mainServerUrl, url, htmlStr string) error {
 	}
 	meta := extractMetadataFromHtml(url, htmlStr)
 	b, _ := json.Marshal(meta)
-	return postWithAuth(mainServerUrl+"/api/metadata", b)
+	return postWithAuth(mainServerUrl+"/api/v1/metadata", b)
 }
 
 // Blacklist

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-    [Route("/api/guilds")]
+    [Route("/api/v1/guilds")]
     [ApiController]
     [Authorize]
     public class GuildController : BaseController

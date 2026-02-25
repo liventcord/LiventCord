@@ -345,7 +345,7 @@ async function loadGifContent(query: string): Promise<void> {
     return;
   }
 
-  const absoluteGifUrl = `${getMediaBaseURL()}/api/gifs?q=${encodeURIComponent(query)}`;
+  const absoluteGifUrl = `${getMediaBaseURL()}/api/v1/gifs?q=${encodeURIComponent(query)}`;
   const response = await fetch(absoluteGifUrl);
   if (!response.ok) {
     throw new Error(`HTTP error! Status: ${response.status}`);

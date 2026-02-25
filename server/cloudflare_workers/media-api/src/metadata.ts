@@ -104,7 +104,7 @@ export async function handleProxyRequest(req: Request, env: Env) {
   if (!target || !/^https?:\/\/.+/.test(target)) {
     return new Response("Invalid or missing url", { status: 400 });
   }
-  return fetchWithCacheAndFallback(target, req, env, "/api/proxy/media");
+  return fetchWithCacheAndFallback(target, req, env, "/api/v1/proxy/media");
 }
 
 export async function handleMetadata(
@@ -133,7 +133,7 @@ export async function handleMetadata(
         url,
         request,
         env,
-        "/api/proxy/metadata",
+        "/api/v1/proxy/metadata",
       );
       const type = response.headers.get("Content-Type") || "";
 

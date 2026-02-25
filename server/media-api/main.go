@@ -68,13 +68,13 @@ func initializeProxy(r *gin.Engine, adminPassword string) {
 		}),
 	)
 
-	admin.GET("/api/proxy/media", func(c *gin.Context) {
+	admin.GET("/api/v1/proxy/media", func(c *gin.Context) {
 		controller.GetMedia(c)
 		newCount := atomic.AddInt64(&servedFilesSinceStartup, 1)
 		fmt.Println("New servedFilesSinceStartup:", newCount)
 	})
 
-	admin.POST("/api/proxy/metadata", controller.FetchMetadata)
+	admin.POST("/api/v1/proxy/metadata", controller.FetchMetadata)
 
 	r.GET("/attachments/:attachmentId/preview", GetVideoAttachmentPreview)
 }

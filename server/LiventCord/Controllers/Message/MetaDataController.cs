@@ -84,7 +84,7 @@ public class MetadataController : ControllerBase
 
         var request = new HttpRequestMessage(
             HttpMethod.Post,
-            SharedAppConfig.MediaWorkerUrl + "/api/proxy/metadata"
+            SharedAppConfig.MediaWorkerUrl + "/api/v1/proxy/metadata"
         )
         {
             Content = JsonContent.Create(urls),
@@ -102,7 +102,7 @@ public class MetadataController : ControllerBase
         {
             _logger.LogError(
                 SharedAppConfig.MediaWorkerUrl
-                    + "/api/proxy/metadata"
+                    + "/api/v1/proxy/metadata"
                     + " Request to proxy server failed: "
                     + response.StatusCode
                     + " "

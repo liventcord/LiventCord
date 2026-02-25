@@ -17,7 +17,7 @@ async def getSessionId(id: str) -> str | None:
         return current_sessions[id]
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"{PROMPTLAMA_BASE_URL}/api/data") as resp:
+        async with session.get(f"{PROMPTLAMA_BASE_URL}/api/v1/data") as resp:
             if resp.status != 200:
                 print(f"Error {resp.status}: {await resp.text()}")
                 return None
@@ -40,7 +40,7 @@ async def get_channel_id_from_lama(session_id: str) -> str | None:
 
     async with aiohttp.ClientSession(cookies={"session_id": session_id}) as session:
         try:
-            async with session.get(f"{PROMPTLAMA_BASE_URL}/api/data/") as resp:
+            async with session.get(f"{PROMPTLAMA_BASE_URL}/api/v1/data/") as resp:
                 if resp.status != 200:
                     print(f"Error {resp.status}: {await resp.text()}")
                     return None
@@ -160,7 +160,7 @@ async def chat_with_llm_api(message: discord.Message) -> str | None:
             await get_channel_id_from_lama(session_id) if session_id else None
         )
 
-        url = f"{PROMPTLAMA_BASE_URL}/api/chat/"
+        url = f"{PROMPTLAMA_BASE_URL}/api/v1/chat/"
         cookies = {"session_id": session_id}
         data = {"model": PROMPTLAMA_MODEL, "text": text}
         if channel_id_from_lama:

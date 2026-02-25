@@ -62,11 +62,11 @@ export default {
       return handleYoutube(request, env, ctx);
     if (path === "/")
       return new Response("LiventCord media worker is working!");
-    if (path === "/api/proxy/metadata" && request.method === "POST")
+    if (path === "/api/v1/proxy/metadata" && request.method === "POST")
       return handleMetadata(request, env);
-    if (path.startsWith("/api/proxy/media"))
+    if (path.startsWith("/api/v1/proxy/media"))
       return handleProxyRequest(request, env);
-    if (path.startsWith("/api/gifs")) return handleGifRequest(request, env);
+    if (path.startsWith("/api/v1/gifs")) return handleGifRequest(request, env);
 
     const parts = path.split("/").filter(Boolean);
     if (!parts.length) return jsonResponse({ error: "Route not found" }, 404);
