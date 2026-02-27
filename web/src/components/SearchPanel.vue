@@ -475,6 +475,7 @@ import {
   CachedChannel
 } from "../ts/types/interfaces";
 import { appendToMessageContextList } from "../ts/contextMenuActions";
+import { isOnDm, isOnGuild } from "../ts/router";
 
 const query = ref("");
 const dropdownHidden = ref(true);
@@ -629,10 +630,14 @@ function validateSearchBody(body: any): boolean {
 async function performSearch() {
   const body = buildSearchBody();
   if (!validateSearchBody(body)) return;
-  await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
-    guildId: currentGuildId,
-    ...body
-  });
+  if (isOnGuild) {
+    await apiClient.send(EventType.SEARCH_MESSAGE_GUILD, {
+      guildId: currentGuildId,
+      ...body
+    });
+  } else if (isOnDm) {
+    // TODO: Implement search message dm call
+  }
 }
 
 function formatDateForDisplay(dateString: string) {
@@ -798,7 +803,7 @@ function onInputChange() {
   inputWidth.value = "225px";
   showDropdown();
 }
-
+// TODO: Implement search message dm listener
 apiClient.on(
   EventType.SEARCH_MESSAGE_GUILD,
   async (data: SearchMessagesResponse) => {

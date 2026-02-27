@@ -39,7 +39,7 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.CanReadMessages(userId, guildId))
                 return Forbid();
 
-            var messages = await GetMessages(parsedDate?.ToString("o"), userId, null, channelId, guildId, messageId);
+            var messages = await GetMessages(parsedDate, userId, null, channelId, guildId, messageId);
 
             return Ok(new
             {
@@ -114,7 +114,7 @@ namespace LiventCord.Controllers
             if (!TryParseDate(date, out var parsedDate))
                 return BadRequest("Invalid date format.");
 
-            var messages = await GetMessages(parsedDate?.ToString("o"), userId, friendId, null, guildId, messageId);
+            var messages = await GetMessages(parsedDate, userId, friendId, null, guildId, messageId);
 
             return Ok(new
             {
@@ -198,6 +198,7 @@ namespace LiventCord.Controllers
             return await ProcessBotMessage(guildId, channelId, request);
         }
 
+
         [NonAction]
         public async Task<IActionResult> HandleBulkMessagesAsync(
             [IdLengthValidation][FromRoute] string guildId,
@@ -206,12 +207,15 @@ namespace LiventCord.Controllers
         {
             if (!ModelState.IsValid) return BadRequest();
 
+            var messageIds = requests.Select(r => r.MessageId).ToList();
+            var existingMap = await _context.Messages
+                .Include(m => m.Embeds)
+                .Where(m => messageIds.Contains(m.MessageId))
+                .ToDictionaryAsync(m => m.MessageId);
+
             foreach (var request in requests)
             {
-                var existing = await _context.Messages.Include(m => m.Embeds)
-                    .FirstOrDefaultAsync(m => m.MessageId == request.MessageId);
-
-                if (existing != null)
+                if (existingMap.TryGetValue(request.MessageId, out var existing))
                     UpdateMessage(existing, request);
                 else
                     _context.Messages.Add(await CreateNewMessage(request, guildId, channelId));
@@ -252,26 +256,41 @@ namespace LiventCord.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An error occurred while searching: {ex.Message}");
+                _logger.LogError(ex.Message);
+                return StatusCode(500, "An error occurred while searching");
             }
         }
 
         [NonAction]
         public async Task<ActionResult<IEnumerable<Message>>> SearchDmMessagesAsync(
             [FromRoute][IdLengthValidation] string dmId,
-            [FromQuery] string? fromUserId,
-            [FromBody] string query)
+            [FromBody] SearchRequest request)
         {
-            if (string.IsNullOrWhiteSpace(query))
+            if (request.PageNumber < 1) request.PageNumber = 1;
+            if (request.PageSize < 1) request.PageSize = 50;
+
+            if (string.IsNullOrWhiteSpace(request.Query))
                 return BadRequest("Query cannot be empty.");
 
             try
             {
-                var results = await SearchDmMessagesInContext(dmId, query, UserId!, fromUserId);
-                if (results == null || !results.Any())
-                    return NotFound("No messages found matching your query.");
+                var query = BuildFilteredDmMessagesQuery(dmId, request.Query, UserId!, request.FromUserId, request);
+                var totalCount = await query.CountAsync();
 
-                return Ok(results);
+                var ordered = request.isOldMessages
+                    ? query.OrderBy(m => m.Date)
+                    : query.OrderByDescending(m => m.Date);
+
+                var messages = await ordered
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToListAsync();
+
+                return Ok(new SearchMessagesResponse
+                {
+                    TotalCount = totalCount,
+                    Messages = messages
+                });
             }
             catch (Exception ex)
             {
@@ -285,13 +304,6 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> PinMessageAsync(string guildId, string channelId, string messageId)
         {
             var userId = UserId!;
-
-            var member = await _context.GuildMembers
-                .Include(m => m.User)
-                .Where(m => m.User.UserId == userId && m.GuildId == guildId)
-                .FirstOrDefaultAsync();
-
-            if (member == null) return NotFound();
 
             if (!await _permissionsController.CanManageMessages(userId, guildId))
                 return Forbid();
@@ -321,7 +333,7 @@ namespace LiventCord.Controllers
                 Metadata = new Metadata
                 {
                     Type = "pin_notification",
-                    PinnerUserId = member.User.UserId,
+                    PinnerUserId = UserId,
                     PinnedAt = DateTime.UtcNow,
                 },
             };
@@ -443,46 +455,40 @@ namespace LiventCord.Controllers
             if (!await _context.DoesMemberExistInGuild(userId, guildId))
                 return NotFound();
 
-            if (!await _context.Channels.AnyAsync(c => c.ChannelId == channelId && c.GuildId == guildId))
-                return NotFound();
-
             var messages = await _context.Messages
-                .Where(m => m.ChannelId == channelId && m.Channel.GuildId == guildId)
-                .Where(m => _context.MessageUrls.Any(mu => mu.MessageId == m.MessageId))
+                .Where(m => m.ChannelId == channelId
+                        && m.Channel.GuildId == guildId
+                        && _context.MessageUrls.Any(mu =>
+                                mu.MessageId == m.MessageId
+                            && mu.ChannelId == channelId
+                            && mu.Urls != null))
                 .ToListAsync();
 
             return Ok(new { channelId, messages });
         }
-
         // ─── Private helpers ─────────────────────────────────────────────────────
-
         [NonAction]
         private async Task<List<Message>> GetMessages(
-            string? date = null,
+            DateTime? parsedDate = null,
             string? userId = null,
             string? friendId = null,
             string? channelId = null,
             string? guildId = null,
             string? messageId = null)
         {
-            DateTime? parsedDate = null;
-            if (date != null && DateTime.TryParse(date, out var tmp))
-                parsedDate = tmp.ToUniversalTime();
-
             var resolvedChannelId = (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
                 ? ConstructDmId(userId, friendId)
                 : channelId;
-
             if (string.IsNullOrEmpty(resolvedChannelId))
                 return new List<Message>();
 
             var channel = await _context.Channels.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.ChannelId == resolvedChannelId);
-
             if (channel == null)
                 return new List<Message>();
 
-            var cacheKey = $"{guildId}:{resolvedChannelId}:v{channel.ChannelVersion}?date={date}&messageId={messageId}";
+            var dateKeyPart = parsedDate?.ToString("o") ?? string.Empty;
+            var cacheKey = $"{guildId}:{resolvedChannelId}:v{channel.ChannelVersion}?date={dateKeyPart}&messageId={messageId}";
 
             var cached = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
             if (cached != null)
@@ -503,42 +509,37 @@ namespace LiventCord.Controllers
 
             if (parsedDate != null)
                 query = query.Where(m => m.Date < parsedDate);
-
             if (!string.IsNullOrEmpty(guildId))
                 query = query.Where(m => m.Channel.GuildId == guildId);
-
             if (!string.IsNullOrEmpty(messageId))
                 query = query.Where(m => m.MessageId == messageId);
 
-            var result = await query
+            var pinnedIds = _context.ChannelPinnedMessages
+                .Where(pm => pm.ChannelId == resolvedChannelId)
+                .Select(pm => pm.MessageId)
+                .ToHashSet();
+
+            var messages = await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
-                .Select(m => new
-                {
-                    Message = m,
-                    IsPinned = _context.ChannelPinnedMessages.Any(pm => pm.MessageId == m.MessageId),
-                })
                 .AsNoTracking()
                 .ToListAsync();
 
-            foreach (var item in result)
+            foreach (var m in messages)
             {
-                item.Message.IsPinned = item.IsPinned;
-                if (!item.Message.ShouldSerializeMetadata())
-                    item.Message.Metadata = null;
+                m.IsPinned = pinnedIds.Contains(m.MessageId);
+                if (!m.ShouldSerializeMetadata())
+                    m.Metadata = null;
             }
-
-            var messagesList = result.Select(r => r.Message).ToList();
 
             try
             {
-                var serialized = JsonSerializer.Serialize(messagesList);
-                var existing = await _cacheDbContext.CachedMessages.FindAsync(cacheKey);
+                var serialized = JsonSerializer.Serialize(messages);
 
-                if (existing != null)
+                if (cached != null)
                 {
-                    existing.JsonData = serialized;
-                    existing.CachedAt = DateTime.UtcNow;
+                    cached.JsonData = serialized;
+                    cached.CachedAt = DateTime.UtcNow;
                 }
                 else
                 {
@@ -556,18 +557,15 @@ namespace LiventCord.Controllers
             }
             catch { }
 
-            return messagesList;
+            return messages;
         }
 
         [NonAction]
         private async Task IncrementChannelVersion(string channelId)
         {
-            var channel = await _context.Channels.FirstOrDefaultAsync(c => c.ChannelId == channelId);
-            if (channel != null)
-            {
-                channel.ChannelVersion++;
-                await _context.SaveChangesAsync();
-            }
+            await _context.Channels
+                .Where(c => c.ChannelId == channelId)
+                .ExecuteUpdateAsync(c => c.SetProperty(ch => ch.ChannelVersion, ch => ch.ChannelVersion + 1));
         }
     }
 }

@@ -53,25 +53,6 @@ namespace LiventCord.Models
         public bool IsPinned { get; set; }
     }
 
-    public class Attachment
-    {
-        [Key]
-        public required string FileId { get; set; }
-
-        public required bool IsImageFile { get; set; }
-        public bool? IsVideoFile { get; set; }
-
-        public required string MessageId { get; set; }
-        public required string FileName { get; set; }
-        public required long FileSize { get; set; }
-        public required bool IsSpoiler { get; set; }
-        public bool? IsProxyFile { get; set; }
-        public string? ProxyUrl { get; set; }
-
-        [JsonIgnore]
-        public Message Message { get; set; } = null!;
-    }
-
     public class ChannelPinnedMessage
     {
         public string ChannelId { get; set; } = null!;

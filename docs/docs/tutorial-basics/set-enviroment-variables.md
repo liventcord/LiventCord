@@ -164,10 +164,6 @@ mv .example.env .env
   Password that will be used for authenticating go ws server
   **Defaults to** `none`
 
-- **PostgresURI**:
-  Connection string for connecting PostgreSQL.
-  **Defaults to** `postgres://postgres@localhost:5432/postgres?sslmode=disable`
-
 - **AllowedOrigins**:  
   Comma-separated list of origins that are allowed to connect to the WebSocket server via CORS.  
   **Defaults to** `http://localhost:3000`

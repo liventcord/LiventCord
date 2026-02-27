@@ -97,13 +97,12 @@ namespace LiventCord.Controllers
         // Search queries
         // ──────────────────────────────────────────────
 
-        private IQueryable<Message> BuildFilteredMessagesQuery(
-            string guildId, string? channelId, string? query, string? fromUserId, SearchRequest request)
+        private IQueryable<Message> ApplyCommonFilters(
+            IQueryable<Message> q,
+            string? query,
+            string? fromUserId,
+            SearchRequest request)
         {
-            var q = _context.Messages
-                .Where(m => m.Content != null && m.Channel.GuildId == guildId)
-                .Where(m => channelId == null || m.ChannelId == channelId);
-
             if (!string.IsNullOrEmpty(fromUserId))
                 q = q.Where(m => m.UserId == fromUserId);
 
@@ -127,26 +126,28 @@ namespace LiventCord.Controllers
             return q;
         }
 
-        private async Task<List<Message>?> SearchDmMessagesInContext(
-            string dmId, string query, string currentUserId, string? fromUserId)
+        private IQueryable<Message> BuildFilteredMessagesQuery(
+            string guildId, string? channelId, string? query, string? fromUserId, SearchRequest request)
         {
-            if (!await CanUsersDm(currentUserId, dmId))
-                return null;
+            var q = _context.Messages
+                .Where(m => m.Content != null && m.Channel.GuildId == guildId)
+                .Where(m => channelId == null || m.ChannelId == channelId);
 
-            var channelId = ConstructDmId(currentUserId, dmId);
-
-            var q = _context.Messages.Where(m => m.Content != null && m.ChannelId == channelId);
-
-            q = Utils.IsPostgres(_context)
-                ? q.Where(m => EF.Functions.ToTsVector("english", m.Content!).Matches(query))
-                : q.Where(m => m.Content!.Contains(query));
-
-            if (!string.IsNullOrEmpty(fromUserId))
-                q = q.Where(m => m.UserId == fromUserId);
-
-            return await q.ToListAsync();
+            return ApplyCommonFilters(q, query, fromUserId, request);
         }
 
+        private IQueryable<Message> BuildFilteredDmMessagesQuery(
+            string dmId, string? query, string currentUserId, string? fromUserId, SearchRequest request)
+        {
+            if (!CanUsersDm(currentUserId, dmId).GetAwaiter().GetResult())
+                return Enumerable.Empty<Message>().AsQueryable();
+
+            var channelId = ConstructDmId(currentUserId, dmId);
+            var q = _context.Messages
+                .Where(m => m.Content != null && m.ChannelId == channelId);
+
+            return ApplyCommonFilters(q, query, fromUserId, request);
+        }
         // ──────────────────────────────────────────────
         // Cache invalidation
         // ──────────────────────────────────────────────
@@ -210,29 +211,28 @@ namespace LiventCord.Controllers
         // URL handling & metadata
         // ──────────────────────────────────────────────
 
-        [NonAction]
-        private async Task<List<string>> HandleMessageUrls(
-            string? guildId, string channelId, string userId, string messageId, string content)
+        private static async Task<List<string>> PersistMessageUrlsAsync(
+            AppDbContext db, string? guildId, string channelId,
+            string userId, string messageId, string content)
         {
             var urls = Utils.ExtractUrls(content);
-            var existing = await _context.MessageUrls.FindAsync(messageId);
+
+            if (!urls.Any()) return urls;
+
+            var existing = await db.MessageUrls.FindAsync(messageId);
 
             if (existing == null)
             {
-                try
+                await db.MessageUrls.AddAsync(new MessageUrl
                 {
-                    await _context.MessageUrls.AddAsync(new MessageUrl
-                    {
-                        ChannelId = channelId,
-                        CreatedAt = DateTime.UtcNow,
-                        GuildId = guildId,
-                        UserId = userId,
-                        MessageId = messageId,
-                        Urls = urls,
-                    });
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateException ex) { _logger.LogError(ex.Message); }
+                    ChannelId = channelId,
+                    CreatedAt = DateTime.UtcNow,
+                    GuildId = guildId,
+                    UserId = userId,
+                    MessageId = messageId,
+                    Urls = urls,
+                });
+                await db.SaveChangesAsync();
             }
             else if (existing.Urls != null)
             {
@@ -240,8 +240,8 @@ namespace LiventCord.Controllers
                 if (newUrls.Any())
                 {
                     existing.Urls.AddRange(newUrls);
-                    _context.MessageUrls.Update(existing);
-                    await _context.SaveChangesAsync();
+                    db.MessageUrls.Update(existing);
+                    await db.SaveChangesAsync();
                 }
             }
 
@@ -255,6 +255,8 @@ namespace LiventCord.Controllers
             string messageId,
             string content)
         {
+            var capturedLogger = _logger;
+
             return Task.Run(async () =>
             {
                 try
@@ -263,43 +265,14 @@ namespace LiventCord.Controllers
 
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var mediaProxyController = scope.ServiceProvider.GetRequiredService<MediaProxyController>();
-                    var logger = scope.ServiceProvider.GetRequiredService<IAppLogger<MetadataController>>();
 
-                    var urls = Utils.ExtractUrls(content);
-
-                    var existing = await db.MessageUrls.FindAsync(messageId);
-
-                    if (existing == null)
-                    {
-                        await db.MessageUrls.AddAsync(new MessageUrl
-                        {
-                            ChannelId = channelId,
-                            CreatedAt = DateTime.UtcNow,
-                            GuildId = guildId,
-                            UserId = userId,
-                            MessageId = messageId,
-                            Urls = urls,
-                        });
-
-                        await db.SaveChangesAsync();
-                    }
-                    else if (existing.Urls != null)
-                    {
-                        var newUrls = urls.Except(existing.Urls).ToList();
-                        if (newUrls.Any())
-                        {
-                            existing.Urls.AddRange(newUrls);
-                            db.MessageUrls.Update(existing);
-                            await db.SaveChangesAsync();
-                        }
-                    }
+                    var urls = await PersistMessageUrlsAsync(db, guildId, channelId, userId, messageId, content);
 
                     if (!urls.Any()) return;
 
                     var request = new HttpRequestMessage(
                         HttpMethod.Post,
-                        SharedAppConfig.MediaWorkerUrl + "/api/v1/proxy/metadata"
-                    )
+                        SharedAppConfig.MediaWorkerUrl + "/api/v1/proxy/metadata")
                     {
                         Content = JsonContent.Create(urls),
                     };
@@ -311,7 +284,7 @@ namespace LiventCord.Controllers
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        logger.LogError(
+                        capturedLogger.LogError(
                             "Request to proxy server failed: {StatusCode} {Response}",
                             response.StatusCode, rawResponse);
                         return;
@@ -324,9 +297,7 @@ namespace LiventCord.Controllers
                     {
                         var mediaUrl = metadataWithUrls.mediaUrl;
                         if (mediaUrl != null)
-                        {
                             await mediaProxyController.AddMediaUrl(mediaUrl, messageId);
-                        }
                     }
 
                     var message = await db.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
@@ -338,27 +309,11 @@ namespace LiventCord.Controllers
                 }
                 catch (Exception ex)
                 {
-                    var logger = _scopeFactory.CreateScope()
-                        .ServiceProvider
-                        .GetRequiredService<IAppLogger<MetadataController>>();
-
-                    logger.LogError(ex,
+                    capturedLogger.LogError(ex,
                         "Background metadata processing failed for message {MessageId}",
                         Utils.SanitizeLogInput(messageId));
                 }
             });
-        }
-        private async Task<Metadata> ExtractMetadataIfUrl(List<string> urls, string messageId) =>
-            await _metadataService.FetchMetadataFromProxyAsync(urls, messageId);
-
-        private async Task SaveMetadataAsync(string messageId, Metadata metadata)
-        {
-            var message = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId);
-            if (message != null)
-            {
-                message.Metadata = metadata;
-                await _context.SaveChangesAsync();
-            }
         }
 
         // ──────────────────────────────────────────────
@@ -485,10 +440,6 @@ namespace LiventCord.Controllers
         // ──────────────────────────────────────────────
 
         [NonAction]
-        private async Task<bool> MessageExists(string messageId, string channelId) =>
-            await _context.Messages.AnyAsync(m => m.MessageId == messageId && m.ChannelId == channelId);
-
-        [NonAction]
         private async Task EditMessage(string userId, string channelId, string messageId, string newContent)
         {
             var message = await _context.Messages.FirstOrDefaultAsync(m =>
@@ -499,13 +450,6 @@ namespace LiventCord.Controllers
             message.Content = newContent;
             message.LastEdited = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-        }
-
-        private async Task DeleteMessagesFromUser(string userId)
-        {
-            var messages = await _context.Messages.Where(m => m.UserId == userId).ToListAsync();
-            foreach (var message in messages)
-                await DeleteMessage(message.ChannelId, message.MessageId);
         }
 
         private async Task<Message?> GetMessageWithRelations(string messageId, string channelId)
@@ -530,13 +474,6 @@ namespace LiventCord.Controllers
             {
                 _fileController.DeleteAttachmentFileAsync(message);
 
-                var pinned = await _context.ChannelPinnedMessages
-                    .Where(p => p.MessageId == messageId).ToListAsync();
-                if (pinned.Any())
-                    _context.ChannelPinnedMessages.RemoveRange(pinned);
-
-                _context.Messages.Remove(message);
-
                 var existingUrls = await _context.MessageUrls.FindAsync(messageId);
                 if (existingUrls?.Urls?.Any() == true)
                 {
@@ -554,7 +491,9 @@ namespace LiventCord.Controllers
                     _context.MessageUrls.Remove(existingUrls);
                 }
 
+                _context.Messages.Remove(message);
                 await _context.SaveChangesAsync();
+
                 _logger.LogInformation("Message deleted. ChannelId: {ChannelId}, MessageId: {MessageId}", channelId, messageId);
             }
             catch (Exception ex)

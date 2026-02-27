@@ -117,10 +117,9 @@ namespace LiventCord.Helpers
         }
 
         static readonly Regex UrlPattern = new Regex(
-            @"https:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]+",
+            @"https://[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+(?<![.,;:'\])\s])",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
-
         static readonly Regex ControlCharPattern = new Regex(
             @"[\x00-\x1F\x7F\u2000-\u20FF]",
             RegexOptions.Compiled

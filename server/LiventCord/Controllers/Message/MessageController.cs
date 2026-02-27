@@ -126,8 +126,8 @@ namespace LiventCord.Controllers
 
         [Authorize]
         [HttpGet("/api/v1/dms/{dmId}/messages/search")]
-        public Task<ActionResult<IEnumerable<Message>>> SearchDmMessages(string dmId, string? fromUserId, string query) =>
-            SearchDmMessagesAsync(dmId, fromUserId, query);
+        public Task<ActionResult<IEnumerable<Message>>> SearchDmMessages(string dmId, [FromBody] SearchRequest request) =>
+            SearchDmMessagesAsync(dmId, request);
 
 
     }
