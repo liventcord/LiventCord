@@ -499,13 +499,13 @@ export function loadDmHome(isChangingUrl = true): void {
   if (isOnGuild && !isOnDm && lastDmId) {
     openDm(lastDmId);
     disableElement(ELEMENT_IDS.friendsContainer);
+    disableElement(ELEMENT_IDS.channelContainer);
   } else {
     applyMePageState(isChangingUrl);
+    disableElement(ELEMENT_IDS.channelContainer);
+    disableElement(chatContainer);
+    setTimeout(() => disableElement(chatContainer), 0);
   }
-
-  disableElement(ELEMENT_IDS.channelContainer);
-  disableElement(chatContainer);
-  setTimeout(() => disableElement(chatContainer), 0);
 
   enableElement(ELEMENT_IDS.friendContainerItem);
   setGuildNameText("");
