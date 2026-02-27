@@ -34,4 +34,3 @@
 - Invite to guild context menu requires changing into a guild before appearing
 - Navigation error : opening page in a user dm channel, going to a guild, then going to home breaks ui
 - Fix preview logic in media-api
-- Fix pinned messages render

@@ -719,6 +719,13 @@ function renderContent(
   content: string,
   isSystemMessage: boolean
 ) {
+  if (isSystemMessage) {
+    const span = createEl("span", { innerHTML: content });
+    span.classList.add("system-message");
+    container.appendChild(span);
+    return;
+  }
+
   const urlPattern = /https?:\/\/[^\s<>"']+/g;
 
   let lastIndex = 0;
@@ -760,6 +767,7 @@ function renderContent(
     insertTextOrHTML(content.slice(lastIndex));
   }
 }
+
 function bindSystemMessageLinks(container: HTMLElement, metadata?: Metadata) {
   if (!container.parentElement) return;
 
