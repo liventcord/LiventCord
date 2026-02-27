@@ -6,7 +6,7 @@ using LiventCord.Controllers;
 
 public static class ConfigHandler
 {
-    public static void HandleConfig(WebApplicationBuilder builder)
+    public static async Task HandleConfig(WebApplicationBuilder builder)
     {
         builder.Configuration.AddJsonFile("Properties/appsettings.json", optional: true);
 
@@ -48,7 +48,7 @@ public static class ConfigHandler
         builder.Host.UseSerilog();
 
         HandleDatabase(builder);
-        HandleCacheDatabase(builder);
+        await HandleCacheDatabase(builder);
     }
 
     static void HandleDatabase(WebApplicationBuilder builder)
@@ -140,12 +140,24 @@ public static class ConfigHandler
         }
     }
 
-    static void HandleCacheDatabase(WebApplicationBuilder builder)
+    static async Task HandleCacheDatabase(WebApplicationBuilder builder)
     {
         var cachePath = GetSqliteFullPath("SqliteCachePath", builder);
         builder.Services.AddDbContextFactory<CacheDbContext>(options =>
             options.UseSqlite($"Data Source={cachePath}")
         );
+
+        await using var tempProvider = builder.Services.BuildServiceProvider();
+        var factory = tempProvider.GetRequiredService<IDbContextFactory<CacheDbContext>>();
+        await using var cacheDbContext = await factory.CreateDbContextAsync();
+
+        await cacheDbContext.Database.EnsureCreatedAsync();
+
+        using var conn = cacheDbContext.Database.GetDbConnection();
+        await conn.OpenAsync();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
+        await cmd.ExecuteNonQueryAsync();
     }
 
     static string GetSqliteFullPath(string configKey, WebApplicationBuilder builder)
@@ -195,7 +207,7 @@ public static class ConfigHandler
             case "mysql":
             case "mariadb":
                 if (!connectionString.Contains("Max Pool Size", StringComparison.OrdinalIgnoreCase))
-                    connectionString += ";Max PooMigratel Size=100";
+                    connectionString += ";Max Pool Size=100";
                 if (!connectionString.Contains("Min Pool Size", StringComparison.OrdinalIgnoreCase))
                     connectionString += ";Min Pool Size=0";
                 return connectionString;

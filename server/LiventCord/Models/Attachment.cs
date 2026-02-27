@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace LiventCord.Models
 {
-    
+
     public class Attachment
     {
         [Key]

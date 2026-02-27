@@ -10,11 +10,10 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-ConfigHandler.HandleConfig(builder);
+await ConfigHandler.HandleConfig(builder);
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
@@ -210,8 +209,6 @@ using (var scope = app.Services.CreateScope())
 }
 if (isDevelopment)
 {
-    Console.WriteLine("Is running development: " + isDevelopment);
-
     app.UseDeveloperExceptionPage();
 }
 else

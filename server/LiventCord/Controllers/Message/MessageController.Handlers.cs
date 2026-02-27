@@ -467,6 +467,7 @@ namespace LiventCord.Controllers
             return Ok(new { channelId, messages });
         }
         // ─── Private helpers ─────────────────────────────────────────────────────
+
         [NonAction]
         private async Task<List<Message>> GetMessages(
             DateTime? parsedDate = null,
@@ -479,11 +480,15 @@ namespace LiventCord.Controllers
             var resolvedChannelId = (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(friendId))
                 ? ConstructDmId(userId, friendId)
                 : channelId;
+
             if (string.IsNullOrEmpty(resolvedChannelId))
                 return new List<Message>();
 
-            var channel = await _context.Channels.AsNoTracking()
+            var channel = await _context.Channels
+                .AsNoTracking()
+                .Select(c => new { c.ChannelId, c.ChannelVersion })
                 .FirstOrDefaultAsync(c => c.ChannelId == resolvedChannelId);
+
             if (channel == null)
                 return new List<Message>();
 
@@ -503,27 +508,28 @@ namespace LiventCord.Controllers
 
             var query = _context.Messages
                 .Include(m => m.Attachments)
-                .Include(m => m.Channel)
                 .Where(m => m.ChannelId == resolvedChannelId)
                 .AsQueryable();
 
             if (parsedDate != null)
                 query = query.Where(m => m.Date < parsedDate);
+
             if (!string.IsNullOrEmpty(guildId))
                 query = query.Where(m => m.Channel.GuildId == guildId);
+
             if (!string.IsNullOrEmpty(messageId))
                 query = query.Where(m => m.MessageId == messageId);
-
-            var pinnedIds = _context.ChannelPinnedMessages
-                .Where(pm => pm.ChannelId == resolvedChannelId)
-                .Select(pm => pm.MessageId)
-                .ToHashSet();
 
             var messages = await query
                 .OrderByDescending(m => m.Date)
                 .Take(50)
                 .AsNoTracking()
                 .ToListAsync();
+
+            var pinnedIds = (await _context.ChannelPinnedMessages
+                .Where(pm => pm.ChannelId == resolvedChannelId)
+                .Select(pm => pm.MessageId)
+                .ToListAsync()).ToHashSet();
 
             foreach (var m in messages)
             {
@@ -532,14 +538,25 @@ namespace LiventCord.Controllers
                     m.Metadata = null;
             }
 
+            var serialized = JsonSerializer.Serialize(messages);
+            _ = WriteCacheAsync(cacheKey, guildId, resolvedChannelId, serialized, cached);
+
+            return messages;
+        }
+
+        private async Task WriteCacheAsync(
+            string cacheKey,
+            string? guildId,
+            string resolvedChannelId,
+            string serialized,
+            CachedMessage? existing)
+        {
             try
             {
-                var serialized = JsonSerializer.Serialize(messages);
-
-                if (cached != null)
+                if (existing != null)
                 {
-                    cached.JsonData = serialized;
-                    cached.CachedAt = DateTime.UtcNow;
+                    existing.JsonData = serialized;
+                    existing.CachedAt = DateTime.UtcNow;
                 }
                 else
                 {
@@ -552,14 +569,10 @@ namespace LiventCord.Controllers
                         CachedAt = DateTime.UtcNow,
                     });
                 }
-
                 await _cacheDbContext.SaveChangesAsync();
             }
             catch { }
-
-            return messages;
         }
-
         [NonAction]
         private async Task IncrementChannelVersion(string channelId)
         {
