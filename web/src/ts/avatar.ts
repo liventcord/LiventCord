@@ -275,30 +275,45 @@ export function setUploadSize(
   maxAvatarSize = _maxAvatarSize;
   maxAttachmentSize = _maxAttachmentSize;
 }
-
-export function uploadImageGuildOrProfile(isGuild: boolean): void {
+export async function uploadImageGuildOrProfile(
+  isGuild: boolean
+): Promise<void> {
   if (!isChangedImage) {
     console.warn("isChangedImage is false. not uploading");
     return;
   }
 
-  const fileSrc = getFileSrc(isGuild);
-  if (!isValidBase64(fileSrc)) {
-    console.error("Invalid file format or undefined file for avatar update.");
+  const imageElement = isGuild ? getGuildImage() : getProfileImage();
+  if (!imageElement || !imageElement.src) {
+    console.error("No image source found for avatar update.");
     return;
   }
 
-  const blob = createBlobFromImage(fileSrc);
-  if (blob.size > getMaxAvatarBytes()) {
-    handleFileSizeError(blob.size, true);
-    return;
+  try {
+    let blob: Blob;
+
+    if (imageElement.src.startsWith("blob:")) {
+      blob = await fetch(imageElement.src).then((r) => r.blob());
+    } else if (imageElement.src.startsWith("data:image/")) {
+      blob = await fetch(imageElement.src).then((r) => r.blob());
+    } else {
+      alertUser("Unsupported image format for upload.");
+      return;
+    }
+
+    if (blob.size > getMaxAvatarBytes()) {
+      handleFileSizeError(blob.size, true);
+      return;
+    }
+
+    const file = new File([blob], `image.${blob.type.split("/")[1]}`, {
+      type: blob.type
+    });
+
+    sendImageUploadRequest(isGuild, [blob], [file]);
+  } catch (err) {
+    console.error("Error preparing avatar upload:", err);
   }
-
-  const file = new File([blob], `image.${blob.type.split("/")[1]}`, {
-    type: blob.type
-  });
-
-  sendImageUploadRequest(isGuild, [blob], [file]);
 }
 
 function getMaxEmojiBytes(): number {
@@ -340,25 +355,6 @@ function resetProfileImageFile() {
   if (profileImgFile) {
     profileImgFile.value = "";
   }
-}
-function getFileSrc(isGuild: boolean): string {
-  return isGuild
-    ? (getGuildImage()?.src ?? "")
-    : (getProfileImage()?.src ?? "");
-}
-
-function isValidBase64(file: string): boolean {
-  return typeof file === "string" && file.startsWith("data:image/");
-}
-
-function createBlobFromImage(file: string): Blob {
-  const byteString = atob(file.split(",")[1]);
-  const mimeString = file.split(",")[0].split(":")[1].split(";")[0];
-  const ab = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) {
-    ab[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([ab], { type: mimeString });
 }
 
 function handleFileSizeError(size: number, isAvatar: boolean) {
@@ -484,6 +480,27 @@ function onEditImage(isGuild: boolean) {
   }
 
   const filedata = fileInput.files[0];
+
+  if (filedata.type === "image/gif" || filedata.type === "image/webp") {
+    const targetImage = isGuild ? getGuildImage() : getProfileImage();
+    if (isGuild) {
+      lastConfirmedGuildImg = filedata;
+    } else {
+      lastConfirmedProfileImg = filedata;
+    }
+    if (targetImage) {
+      targetImage.src = URL.createObjectURL(filedata);
+    }
+    setIsChangedImage(true);
+    regenerateConfirmationPanel();
+    if (currentPopUp) {
+      showConfirmationPanel(currentPopUp);
+    }
+    clearAvatarInput(isGuild);
+    setUnsaved(true);
+    return;
+  }
+
   const reader = new FileReader();
 
   reader.onload = (e) => {
@@ -499,15 +516,21 @@ function onEditImage(isGuild: boolean) {
               lastConfirmedProfileImg = blob;
             }
             targetImage.src = outputBase64;
+            setIsChangedImage(true);
+            regenerateConfirmationPanel();
+            if (currentPopUp) {
+              showConfirmationPanel(currentPopUp);
+            }
           })
           .catch((err) =>
             console.error("Error converting base64 to Blob:", err)
           );
-      }
-      setIsChangedImage(true);
-      regenerateConfirmationPanel();
-      if (currentPopUp) {
-        showConfirmationPanel(currentPopUp);
+      } else {
+        setIsChangedImage(true);
+        regenerateConfirmationPanel();
+        if (currentPopUp) {
+          showConfirmationPanel(currentPopUp);
+        }
       }
     }
     if (e.target && typeof e.target.result === "string") {

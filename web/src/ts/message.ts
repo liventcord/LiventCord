@@ -51,8 +51,6 @@ export let lastMessageDate: Date;
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
-const DEFAULT_IMAGE_FORMAT = "image/webp";
-
 function createNewMessageFormData(
   temporaryId: string,
   content: string,
@@ -68,30 +66,85 @@ function createNewMessageFormData(
 
   return formData;
 }
-
 async function handleFileProcessing(
   file: File,
   formData: FormData
 ): Promise<void> {
-  if (file.type === "image/webp") {
+  const isImage = await FileHandler.isImageFile(file);
+  if (!isImage) {
     formData.append("files[]", file, file.name);
     return;
   }
 
-  const isImage = await FileHandler.isImageFile(file);
+  const animated = await isAnimated(file);
+  if (animated) {
+    console.debug("Detected animated image. Skipping compression.");
+    formData.append("files[]", file, file.name);
+    return;
+  }
 
-  if (isImage) {
-    try {
-      const convertedFile = await tryCompressAndConvert(file);
-      formData.append("files[]", convertedFile, convertedFile.name);
-    } catch {
-      formData.append("files[]", file, file.name);
-    }
-  } else {
+  const safeToCompress =
+    file.type === "image/jpeg" ||
+    file.type === "image/png" ||
+    file.type === "image/webp";
+
+  if (!safeToCompress) {
+    console.debug("Unsafe format for compression. Appending original.");
+    formData.append("files[]", file, file.name);
+    return;
+  }
+
+  try {
+    const compressedFile = await compressImage(file);
+
+    formData.append("files[]", compressedFile, compressedFile.name);
+  } catch (error) {
+    console.debug("Compression failed. Using original file.", error);
     formData.append("files[]", file, file.name);
   }
 }
 
+async function isAnimated(file: File): Promise<boolean> {
+  if (!("ImageDecoder" in window)) {
+    return false;
+  }
+
+  try {
+    const buffer = await file.arrayBuffer();
+
+    const decoder = new (window as any).ImageDecoder({
+      data: buffer,
+      type: file.type
+    });
+
+    await decoder.tracks.ready;
+
+    const track = decoder.tracks.selectedTrack;
+
+    if (!track) {
+      return false;
+    }
+
+    return track.frameCount > 1;
+  } catch (error) {
+    console.debug("ImageDecoder failed:", error);
+    return false;
+  }
+}
+
+async function compressImage(file: File): Promise<File> {
+  const { default: imageCompression } =
+    await import("browser-image-compression");
+
+  const options = {
+    maxSizeMB: maxAttachmentSize,
+    useWebWorker: true
+  };
+
+  const result = await imageCompression(file, options);
+
+  return result;
+}
 async function processFiles(
   files: FileList | null,
   formData: FormData
@@ -241,80 +294,6 @@ function canSendMessageToDm(dmId: string): boolean {
 
 function getChannelId(): string {
   return isOnDm ? friendsCache.currentDmId : guildCache.currentChannelId;
-}
-
-async function tryCompressAndConvert(
-  file: File,
-  targetFormat: string = DEFAULT_IMAGE_FORMAT,
-  quality: number = 0.8
-): Promise<File> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = async () => {
-      const { default: imageCompression } =
-        await import("browser-image-compression");
-
-      const maxDimension = Math.max(img.width, img.height);
-      const options = {
-        maxSizeMB: maxAttachmentSize,
-        maxWidthOrHeight: maxDimension,
-        useWebWorker: true
-      };
-
-      imageCompression(file, options)
-        .then((compressedFile) =>
-          tryConvertToFormat(compressedFile, targetFormat, quality)
-        )
-        .then(resolve)
-        .catch(() => resolve(file));
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-function tryConvertToFormat(
-  file: File,
-  targetFormat: string,
-  quality: number = 1
-): Promise<File> {
-  return new Promise((resolve) => {
-    if (file.type === targetFormat) {
-      resolve(file);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const canvas = createEl("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        resolve(file);
-        return;
-      }
-      ctx.drawImage(img, 0, 0);
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            const fileName = file.name.replace(/\.[^/.]+$/, "");
-            resolve(
-              new File([blob], `${fileName}.${targetFormat.split("/")[1]}`, {
-                type: targetFormat,
-                lastModified: Date.now()
-              })
-            );
-          } else {
-            resolve(file);
-          }
-        },
-        targetFormat,
-        quality
-      );
-    };
-    img.onerror = () => resolve(file);
-    img.src = URL.createObjectURL(file);
-  });
 }
 
 class GetMessagesRequest {

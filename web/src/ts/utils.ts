@@ -630,6 +630,10 @@ export function getBeforeElement(element: HTMLElement): HTMLElement | null {
 export function getBase64Image(
   imgElement: HTMLImageElement
 ): string | undefined {
+  const src = imgElement.src ?? "";
+  if (src.startsWith("data:image/gif") || src.startsWith("data:image/webp")) {
+    return;
+  }
   const canvas = createEl("canvas");
   if (!canvas) {
     return;
