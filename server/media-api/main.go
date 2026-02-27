@@ -29,7 +29,7 @@ func main() {
 
 	adminPassword := getEnv("AdminPassword", "")
 	if adminPassword == "" {
-		log.Panic("AdminPassword not set. Cannot start server.")
+		fmt.Println("AdminPassword not set. Service api routes will not work.")
 	}
 
 	r.Use(cors())
@@ -82,7 +82,7 @@ func initializeProxy(r *gin.Engine, adminPassword string) {
 func cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Allow-Credentials", "true")
 

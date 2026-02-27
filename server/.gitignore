@@ -2,7 +2,6 @@ bin/
 obj/
 publish/
 cache/
-Migrations/
 Logs/
 Data/
 appsettings.Development.json

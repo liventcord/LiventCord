@@ -51,8 +51,6 @@ dotnet run
 
 .NET server runs at `http://localhost:5005`
 
-Note : This would automatically run pnpm install and build/serve frontend
-
 ### Run Vite for Development (SPA)
 
 ```bash
@@ -69,7 +67,7 @@ Dev server runs at `http://localhost:3000`.
 redis-server
 ```
 
-### Run Gin ws server for realtime updates (Requires redis)
+### Run Go ws server for realtime updates (Requires redis)
 
 ```bash
 cd server/ws-api
@@ -77,6 +75,18 @@ cp .env.example .env
 go run .
 ```
 
-Gin server runs at `http://localhost:8080`
+Go server runs at `http://localhost:8080`
+See [configuring ws server](tutorial-basics/set-enviroment-variables#go-ws-server-configuration)
+
+### Run Go media server for proxying
+
+```bash
+cd server/media-api
+cp .env.example .env
+go run .
+```
+
+Gin server runs at `http://localhost:5000`
+See [configuring media api](tutorial-basics/run_media_api_server.md)
 
 To run the cloudflare worker services, See [how to set up the worker](tutorial-basics/run_cloudflare_workers.md).

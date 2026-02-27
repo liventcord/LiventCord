@@ -49,7 +49,7 @@ public class MetadataWithMedia
     public MediaUrl? mediaUrl { get; set; }
 }
 
-[Route("api/metadata")]
+[Route("api/v1/metadata")]
 [ApiController]
 public class MetadataController : ControllerBase
 {

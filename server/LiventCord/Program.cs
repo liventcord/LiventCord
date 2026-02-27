@@ -202,6 +202,7 @@ Console.WriteLine($"Is running in development: {isDevelopment}");
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
     RelationalDatabaseFacadeExtensions.Migrate(context.Database);
 
     var cacheContext = scope.ServiceProvider.GetRequiredService<CacheDbContext>();

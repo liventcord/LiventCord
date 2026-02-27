@@ -11,6 +11,18 @@ Run **LiventCord** using Docker.
 
 - [Docker](https://www.docker.com/products/docker-desktop/) installed on your system.
 
+### Run full stack app with docker compose
+
+```bash
+docker compose up
+```
+
+#### Run development version
+
+```bash
+docker compose -f dev-docker-compose.yml up
+```
+
 ### Run Dotnet On Docker
 
 #### Docker

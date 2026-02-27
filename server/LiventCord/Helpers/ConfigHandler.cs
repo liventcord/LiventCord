@@ -13,7 +13,7 @@ public static class ConfigHandler
         int port = 5005;
         string host = "0.0.0.0";
 
-        if (int.TryParse(builder.Configuration["AppSettings:port"], out int configPort) && configPort > 0)
+        if (int.TryParse(builder.Configuration["AppSettings:Port"], out int configPort) && configPort > 0)
             port = configPort;
         else
             Console.WriteLine("Invalid or missing port in configuration. Using default port: 5005");
@@ -195,7 +195,7 @@ public static class ConfigHandler
             case "mysql":
             case "mariadb":
                 if (!connectionString.Contains("Max Pool Size", StringComparison.OrdinalIgnoreCase))
-                    connectionString += ";Max Pool Size=100";
+                    connectionString += ";Max PooMigratel Size=100";
                 if (!connectionString.Contains("Min Pool Size", StringComparison.OrdinalIgnoreCase))
                     connectionString += ";Min Pool Size=0";
                 return connectionString;

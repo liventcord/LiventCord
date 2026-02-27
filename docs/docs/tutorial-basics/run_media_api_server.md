@@ -4,6 +4,7 @@ Open a terminal and run:
 
 ```bash
 cd liventcord/server/media-api
+cp env.example .env
 go run .
 ```
 
@@ -12,10 +13,10 @@ go run .
 Set the following configuration values for the media API.
 
 - ExternalMediaLimit
-  - Maximum allowed size of external media in gigabytes.
+  - Maximum allowed size of total external media in gigabytes.
   - Defaults to `10`.
 
-- CloudflareMediaWorkerUrl
+- CloudflareMediaWorkerUrl (Optional)
   - URL of the Cloudflare media worker.
   - See [How to set up cloudflare media worker](run_cloudflare_workers.md#media-api).
 
@@ -28,9 +29,9 @@ Set the following configuration values for the media API.
 - AdminPassword
   - Password/token used for authenticating server.
 
-Example configuration (TOML):
+Example configuration:
 
-```toml
+```
 ExternalMediaLimit = 10
 CloudflareMediaWorkerUrl = "https://your-cf-media-worker.example"
 MainServerUrl = "http://localhost:5005"

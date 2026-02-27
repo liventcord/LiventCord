@@ -47,7 +47,7 @@ public static class FileCompressor
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("api/images")]
+    [Route("api/v1/images")]
     [Authorize]
     public class FileController : BaseController
     {
@@ -148,7 +148,6 @@ namespace LiventCord.Controllers
                 using var memoryStream = new MemoryStream();
                 await request.Photo.CopyToAsync(memoryStream);
                 var content = memoryStream.ToArray();
-
                 string sanitizedFileName = Utils.SanitizeFileName(request.Photo.FileName);
                 if (string.IsNullOrEmpty(Path.GetExtension(sanitizedFileName)))
                     sanitizedFileName += extension;

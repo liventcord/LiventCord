@@ -1,10 +1,12 @@
 services:
   app:
-    image: thelp281/liventcord:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5005:5005"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - AppSettings__SqlitePath=/app/data/liventcord.db
       - AppSettings__SqliteCachePath=/app/data/cache.db
       - AppSettings__FrontendUrl=http://localhost
@@ -17,9 +19,20 @@ services:
       - redis
     extra_hosts:
       - "localhost:host-gateway"
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          ignore:
+            - ./server/
+            - ./web/
+            - ./data/
+            - .git/
 
   ws-api:
-    image: thelp281/liventcord-ws-api:latest
+    build:
+      context: ./server
+      dockerfile: ws-api/Dockerfile
     ports:
       - "8080:8080"
     networks:
@@ -28,21 +41,35 @@ services:
       - redis
     environment:
       - RedisURI=redis://redis:6379
+      - AppMode=debug
     extra_hosts:
       - "localhost:host-gateway"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./server/ws-api
+        - action: rebuild
+          path: ./server/telemetry
 
   media-api:
-    image: thelp281/liventcord-media-api:latest
+    build:
+      context: ./server
+      dockerfile: media-api/Dockerfile
     ports:
       - "5000:5000"
-    environment:
-      - AdminPassword=admin
     networks:
       - shared_network
+    environment:
+      - RedisURI=redis://redis:6379
+      - AppMode=debug
     extra_hosts:
       - "localhost:host-gateway"
     volumes:
       - media-cache:/usr/local/bin/cache
+    develop:
+      watch:
+        - action: rebuild
+          path: ./server/media-api
 
   redis:
     image: redis:latest
@@ -68,6 +95,13 @@ services:
     depends_on:
       - app
       - ws-api
+    develop:
+      watch:
+        - action: rebuild
+          path: ./web
+          ignore:
+            - ./web/node_modules/
+            - ./web/dist/
 
 networks:
   shared_network:

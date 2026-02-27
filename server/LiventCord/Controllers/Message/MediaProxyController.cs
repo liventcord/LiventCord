@@ -4,7 +4,7 @@ using LiventCord.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-[Route("api/media")]
+[Route("api/v1/media")]
 [ApiController]
 public class MediaProxyController : ControllerBase
 {

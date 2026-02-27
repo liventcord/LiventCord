@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("api/dm")]
+    [Route("api/v1/dm")]
     [Authorize]
     public class DmController : BaseController
     {

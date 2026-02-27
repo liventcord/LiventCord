@@ -7,3 +7,5 @@ obj/
 Dockerfile
 server/LiventCord/Properties/*
 web/node_modules/*
+web/output/*
+web/cypress/*

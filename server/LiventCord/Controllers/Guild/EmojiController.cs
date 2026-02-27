@@ -6,7 +6,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 namespace LiventCord.Controllers
 {
-    [Route("api/")]
+    [Route("api/v1/")]
     [ApiController]
     [Authorize]
     public class EmojiController : BaseController

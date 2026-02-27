@@ -28,7 +28,7 @@ public static class FriendEventExtensions
 namespace LiventCord.Controllers
 {
     [ApiController]
-    [Route("api/friends")]
+    [Route("api/v1/friends")]
     [Authorize]
     public class FriendController : BaseController
     {

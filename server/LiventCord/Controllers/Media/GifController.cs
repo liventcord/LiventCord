@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
 [ApiController]
-[Route("api/gifs")]
+[Route("api/v1/gifs")]
 public class GifController : ControllerBase
 {
     private readonly IMemoryCache _cache;

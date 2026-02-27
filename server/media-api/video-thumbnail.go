@@ -27,10 +27,12 @@ var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 func init() {
 	godotenv.Load()
 	CFMediaWorkerUrl = os.Getenv("CloudflareMediaWorkerUrl")
-	if CFMediaWorkerUrl == "" {
-		panic("CLOUDFLARE_MEDIA_WORKER_URL environment variable not set")
-	}
 	MainServerUrl = getEnv("MainServerUrl", "http://localhost:5005")
+	if CFMediaWorkerUrl == "" {
+		fmt.Println("CloudflareMediaWorkerUrl environment variable not set. will use main server: ", MainServerUrl)
+	} else {
+		fmt.Println("Will use server ", CFMediaWorkerUrl, " for fetching attachments")
+	}
 }
 
 func GetVideoAttachmentPreview(c *gin.Context) {
@@ -80,9 +82,9 @@ func GetVideoAttachmentPreview(c *gin.Context) {
 }
 
 func fetchAttachmentFromWorker(attachmentId string) ([]byte, string, string, error) {
-	baseURL := MainServerUrl
+	baseURL := CFMediaWorkerUrl
 	if baseURL == "" {
-		baseURL = CFMediaWorkerUrl
+		baseURL = MainServerUrl
 	}
 
 	url := fmt.Sprintf("%s/attachments/%s", strings.TrimRight(baseURL, "/"), attachmentId)

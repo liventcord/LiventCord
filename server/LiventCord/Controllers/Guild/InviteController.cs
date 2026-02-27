@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LiventCord.Controllers
 {
-    [Route("api/")]
+    [Route("api/v1/")]
     [ApiController]
     [Authorize]
     public class InviteController : BaseController

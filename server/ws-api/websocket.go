@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
@@ -11,10 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin:  func(r *http.Request) bool { return true },
-	Subprotocols: []string{"cookie"},
-}
+var upgrader = newWsUpgrader()
 
 var eventHandlers = map[string]func(*websocket.Conn, EventMessage, string){
 	"UPDATE_USER_STATUS": handleUpdateUserStatus,

@@ -58,7 +58,7 @@ type UserDisconnect struct {
 }
 
 func newHub() *VcHub {
-	originsEnv := getEnv("AllowedOrigins", "http://localhost:3000")
+	originsEnv := getEnv("AllowedOrigins", "http://localhost:3000,http://localhost")
 	allowedOrigins := make(map[string]struct{})
 	for _, o := range strings.Split(originsEnv, ",") {
 		o = strings.TrimSpace(o)
@@ -75,22 +75,20 @@ func newHub() *VcHub {
 		allowedOrigins: allowedOrigins,
 	}
 }
-
-var vcUpgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			return true
-		}
-		if idx := strings.Index(origin, "#"); idx >= 0 {
-			origin = origin[:idx]
-		}
-		_, ok := vcHub.allowedOrigins[origin]
-		return ok
-	},
+func newWsUpgrader() websocket.Upgrader {
+	return websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true
+			}
+			_, ok := vcHub.allowedOrigins[origin]
+			return ok
+		},
+	}
 }
+
+var vcUpgrader = newWsUpgrader()
 
 type DataPayload struct {
 	TargetID  string          `json:"targetId"`
