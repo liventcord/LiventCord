@@ -227,8 +227,7 @@ namespace LiventCord.Controllers
 
         private bool IsFileSizeValid(IFormFile file)
         {
-            long maxSize = SharedAppConfig.GetMaxAttachmentSize();
-            return file.Length <= maxSize;
+            return file.Length <= SharedAppConfig.GetMaxAvatarsSize(); ;
         }
 
         [NonAction]
@@ -435,56 +434,6 @@ namespace LiventCord.Controllers
                 GuildFile gf => gf.Version,
                 _ => file.FileId
             };
-        }
-
-        private async Task DeleteAttachmentFilesByIds(List<string> attachmentIds)
-        {
-            var attachmentsToDelete = await _context.Attachments
-                .Where(a => attachmentIds.Contains(a.FileId))
-                .ToListAsync();
-
-            if (!attachmentsToDelete.Any())
-            {
-                foreach (var fileId in attachmentIds)
-                {
-                    _logger.LogWarning(
-                        "Attachment record not found for deletion. FileId: {FileId}",
-                        fileId
-                    );
-                }
-                return;
-            }
-
-            var fileIds = attachmentsToDelete.Select(a => a.FileId).Distinct().ToList();
-
-            var filesToCheck = await _context.Set<AttachmentFile>()
-                .Where(f => fileIds.Contains(f.FileId) && f.FileType == "attachments")
-                .ToListAsync();
-
-            foreach (var file in filesToCheck)
-            {
-                var isStillUsed = await _context.Attachments
-                    .AnyAsync(a => a.FileId == file.FileId && !attachmentIds.Contains(a.FileId));
-
-                if (!isStillUsed)
-                {
-                    _context.Set<AttachmentFile>().Remove(file);
-                    _logger.LogInformation(
-                        "Attachment file deleted from database successfully. FileId: {FileId}",
-                        file.FileId
-                    );
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        "Attachment file preserved because it is still used by other attachments. FileId: {FileId}",
-                        file.FileId
-                    );
-                }
-            }
-
-            _context.Attachments.RemoveRange(attachmentsToDelete);
-            await _context.SaveChangesAsync();
         }
 
         [NonAction]

@@ -385,7 +385,6 @@ namespace LiventCord.Controllers
 
             return Ok(new { message, guildId });
         }
-
         [NonAction]
         private async Task<IActionResult> HandleMessage(
             MessageType mode, string? guildId, string channelId,
@@ -406,18 +405,20 @@ namespace LiventCord.Controllers
             if (!string.IsNullOrEmpty(request.ReplyToId) && request.ReplyToId.Length != Utils.ID_LENGTH)
                 return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
 
-            long maxSize = SharedAppConfig.GetMaxAttachmentSize();
+            long maxFileSize = SharedAppConfig.GetMaxAttachmentSize();
+            long maxTotalSize = 300 * 1024 * 1024;
             long totalSize = 0;
+
             var messageId = Utils.CreateRandomId();
             var attachments = new List<Attachment>();
 
             foreach (var (file, index) in (request.Files ?? Enumerable.Empty<IFormFile>()).Select((f, i) => (f, i)))
             {
-                if (file.Length > maxSize)
+                if (file.Length > maxFileSize)
                     return BadRequest(new { Type = "error", Message = "One of the files exceeds the size limit." });
 
                 totalSize += file.Length;
-                if (totalSize > maxSize)
+                if (totalSize > maxTotalSize)
                     return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
 
                 var fileId = await _fileController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);

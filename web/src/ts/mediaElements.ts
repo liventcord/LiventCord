@@ -455,6 +455,19 @@ function processAttachments(attachments?: Attachment[]): Attachment[] {
     url: getAttachmentUrl(attachment.fileId)
   }));
 }
+async function downloadFile(url: string, fileName: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to download file");
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
 
 function createFileAttachmentPreview(
   attachment: Attachment | null
@@ -473,16 +486,11 @@ function createFileAttachmentPreview(
       className: "attachment-title",
       textContent: attachment.fileName,
       href: attachmentUrl,
-      download: attachment.fileName,
       alt: attachment.fileName
     });
     title.addEventListener("click", (e) => {
       e.preventDefault();
-      const link = e.currentTarget as HTMLAnchorElement;
-      const a = createEl("a");
-      a.href = link.href;
-      a.download = link.download || "";
-      a.click();
+      downloadFile(attachmentUrl, attachment.fileName).catch(console.error);
     });
 
     const readableSize = formatFileSize(attachment.fileSize);
