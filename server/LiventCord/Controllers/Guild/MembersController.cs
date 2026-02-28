@@ -436,7 +436,7 @@ namespace LiventCord.Controllers
 
             var versionsMap = guildVersions
                 .GroupBy(f => f.GuildId)
-                .ToDictionary(g => g.Key, g => g.First().Version ?? "0");
+                .ToDictionary(g => g.Key, g => g.First().Version ?? null);
 
             return rawGuilds.Select(g => new GuildDto
             {
@@ -446,7 +446,7 @@ namespace LiventCord.Controllers
                 RootChannel = g.RootChannel,
                 Region = g.Region,
                 IsGuildUploadedImg = g.IsGuildUploadedImg,
-                GuildVersion = versionsMap.GetValueOrDefault(g.GuildId ?? "", "0"),
+                GuildVersion = versionsMap.GetValueOrDefault(g.GuildId ?? "", null),
                 GuildMembers = membersLookup[g.GuildId ?? ""].ToList(),
                 GuildChannels = channelsLookup[g.GuildId ?? ""].ToList()
             }).ToList();
