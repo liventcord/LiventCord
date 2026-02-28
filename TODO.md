@@ -32,4 +32,3 @@
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Invite to guild context menu requires changing into a guild before appearing
 - Add guards for receiving huge files on backend
-- Some setting ui elements do not have hover

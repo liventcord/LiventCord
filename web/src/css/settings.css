@@ -29,7 +29,9 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
-
+button {
+  cursor: pointer;
+}
 #settings-overlay {
   display: none;
 }
@@ -206,7 +208,6 @@ body.black-theme .base-overview-name-input {
   padding: 5px 20px;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
   background-color: #0064cf;
   color: #fff;
 }
@@ -324,7 +325,6 @@ body.black-theme .base-overview-name-input {
 .input-container button {
   background-color: #4caf50;
   color: white;
-  cursor: pointer;
   padding: 8px 0.875rem;
   margin-left: 5px;
   font-size: 14px;
@@ -468,7 +468,6 @@ body.black-theme .base-overview-name-input {
   transition:
     background-color 0.2s,
     color 0.2s;
-  cursor: pointer;
 }
 .settings-button {
   background-color: #5865f2;
@@ -652,7 +651,6 @@ body.black-theme .base-overview-name-input {
   position: absolute;
   top: 10px;
   right: 10px;
-  cursor: pointer;
 }
 #guildImageForm label {
   display: inline-block;
@@ -810,7 +808,6 @@ body.black-theme .base-overview-name-input {
   background-color: #ffffff00;
   border: 2px solid oklab(0.786807 -0.0025776 -0.0110238);
   border-radius: 50%;
-  cursor: pointer;
   margin-left: 95%;
   margin-top: 20px;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
@@ -1103,4 +1100,28 @@ body.black-theme .base-overview-name-input {
 .error-icon {
   color: red;
   font-size: 1.2em;
+}
+
+.theme-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.theme-circle {
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+}
+
+.ash-theme {
+  background-color: #323339;
+  border: 1px solid #a9a9b0;
+}
+
+.dark-theme {
+  background-color: #1d1d21;
+  border: 1px solid black;
 }
