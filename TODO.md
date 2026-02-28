@@ -22,7 +22,7 @@
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
 - Change dm message deletions to be optimistic
-
+- Implement broadcast for LEAVE_GUILD,UPDATE_GUILD_NAME,UPDATE_GUILD_NAME,CHANGE_NICK,UPDATE_GUILD_IMAGE
 
 ## Bug fixes
 
@@ -31,3 +31,4 @@
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Invite to guild context menu requires changing into a guild before appearing
+- Add guards for receiving huge files on backend

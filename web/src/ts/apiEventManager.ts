@@ -1,6 +1,10 @@
 import { appState } from "./appState.ts";
 
-import { getOldMessages } from "./message.ts";
+import {
+  getOldMessages,
+  showNoMessages,
+  unpinEventHandler
+} from "./message.ts";
 import {
   currentLastDate,
   messageDates,
@@ -126,13 +130,6 @@ function initContainer(containerId: string, title: string): HTMLElement | null {
   }
 
   return container;
-}
-
-function showNoMessages(container: HTMLElement) {
-  const msg = translations.getTranslation("no-messages-found");
-  const h3 = createEl("h3");
-  h3.textContent = msg;
-  container.appendChild(h3);
 }
 
 apiClient.on(EventType.GET_INIT_DATA, async (initData: any) => {
@@ -345,23 +342,16 @@ apiClient.on(EventType.GET_PINNED_MESSAGES, (data: DMHistoryResponse) => {
 });
 
 apiClient.on(EventType.UNPIN_MESSAGE, (data: { messageId: string }) => {
-  const pinContainer = getId("pin-container");
-  if (!pinContainer) return;
-
-  const messageId = data.messageId;
-
-  const message = pinContainer.querySelector(`.message[id="${messageId}"]`);
-  if (message) message.remove();
-  pinnedMessagesCache.removeCachedPinnedMessage(messageId);
-
-  if (pinContainer.querySelectorAll(".message").length === 0) {
-    pinContainer.innerHTML = `<h3 style="flex-direction:column; align-items: center; display:flex;">Pinned Messages</h3>`;
-    showNoMessages(pinContainer);
-  }
+  unpinEventHandler(data.messageId);
 });
 apiClient.on(
   EventType.PIN_MESSAGE,
   (data: { pinNotificationMessage: Message }) => {
+    cacheInterface.addMessage(
+      currentGuildId,
+      guildCache.currentChannelId,
+      data.pinNotificationMessage
+    );
     displayChatMessage(data.pinNotificationMessage, chatContent);
   }
 );

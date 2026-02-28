@@ -10,7 +10,7 @@ import {
   displayStartMessage,
   editChatMessageInDOM
 } from "./chat.ts";
-import { cacheInterface, guildCache } from "./cache.ts";
+import { cacheInterface, guildCache, pinnedMessagesCache } from "./cache.ts";
 import {
   closeReplyMenu,
   chatInput,
@@ -31,7 +31,8 @@ import {
   createRandomId,
   createEl,
   enableElement,
-  isMobile
+  isMobile,
+  getId
 } from "./utils.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { friendsCache } from "./friends.ts";
@@ -269,12 +270,14 @@ export function deleteMessage(messageId: string) {
   console.log("Deleting message ", messageId);
 
   const isDm = !isOnGuild;
-  processDeleteMessage(
-    new Date().toISOString(),
-    guildCache.currentChannelId,
-    messageId,
-    isDm
-  );
+  setTimeout(() => {
+    processDeleteMessage(
+      new Date().toISOString(),
+      guildCache.currentChannelId,
+      messageId,
+      isDm
+    );
+  }, 100);
 
   const data = constructMessagePayload(messageId);
   if (isOnGuild) {
@@ -765,4 +768,23 @@ export function fetchMoreAttachments(page: number, pageSize: number) {
     { guildId: currentGuildId, channelId: guildCache.currentChannelId },
     { page, pageSize }
   );
+}
+export function showNoMessages(container: HTMLElement) {
+  const msg = translations.getTranslation("no-messages-found");
+  const h3 = createEl("h3");
+  h3.textContent = msg;
+  container.appendChild(h3);
+}
+export function unpinEventHandler(messageId: string) {
+  const pinContainer = getId("pin-container");
+  if (!pinContainer) return;
+
+  const message = pinContainer.querySelector(`.message[id="${messageId}"]`);
+  if (message) message.remove();
+  pinnedMessagesCache.removeCachedPinnedMessage(messageId);
+
+  if (pinContainer.querySelectorAll(".message").length === 0) {
+    pinContainer.innerHTML = `<h3 style="flex-direction:column; align-items: center; display:flex;">Pinned Messages</h3>`;
+    showNoMessages(pinContainer);
+  }
 }

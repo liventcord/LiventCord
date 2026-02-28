@@ -374,6 +374,9 @@ namespace LiventCord.Controllers
                 return NotFound();
             }
 
+            var broadcast = new { guildId, channelId, messageId };
+            await _redisEventEmitter.EmitToGuild(EventType.UNPIN_MESSAGE_GUILD, broadcast, guildId, userId);
+
             return Ok(new { messageId });
         }
 

@@ -16,7 +16,8 @@ import { getId, enableElement, convertKeysToCamelCase } from "./utils.ts";
 import {
   deleteLocalMessage,
   getLastSecondMessageDate,
-  setLastMessageDate
+  setLastMessageDate,
+  unpinEventHandler
 } from "./message.ts";
 import {
   bottomestChatDateStr,
@@ -79,6 +80,7 @@ export const SocketEvent = Object.freeze({
   EDIT_MESSAGE_DM: "EDIT_MESSAGE_DM",
   DELETE_MESSAGE_DM: "DELETE_MESSAGE_DM",
   DELETE_MESSAGE_GUILD: "DELETE_MESSAGE_GUILD",
+  UNPIN_MESSAGE_GUILD: "UNPIN_MESSAGE_GUILD",
   UPDATE_GUILD_NAME: "UPDATE_GUILD_NAME",
   UPDATE_GUILD_IMAGE: "UPDATE_GUILD_IMAGE",
   DELETE_CHANNEL: "DELETE_CHANNEL",
@@ -919,7 +921,12 @@ socketClient.on(SocketEvent.DELETE_MESSAGE_DM, (data: DeleteMessageEmit) => {
 socketClient.on(SocketEvent.DELETE_MESSAGE_GUILD, (data: DeleteMessageEmit) => {
   handleDeleteMessage(data.messageId, data.channelId, data.msgDate, false);
 });
-
+socketClient.on(
+  SocketEvent.UNPIN_MESSAGE_GUILD,
+  (data: { messageId: string }) => {
+    unpinEventHandler(data.messageId);
+  }
+);
 socketClient.on(SocketEvent.ADD_FRIEND, function (message) {
   handleFriendEventResponse(message);
 });
