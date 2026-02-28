@@ -478,9 +478,11 @@ function selectSettingCategory(
 
   settingsContainer.innerHTML = settingConfig.html;
 
-  initialiseSettingComponents(
-    settingCategory as keyof typeof ProfileCategoryTypes
-  );
+  setTimeout(() => {
+    initialiseSettingComponents(
+      settingCategory as keyof typeof ProfileCategoryTypes
+    );
+  }, 0);
 
   if (settingCategory === GuildCategoryTypes.Emoji) {
     populateEmojis();
@@ -945,16 +947,22 @@ function setupGuildAndChannelInputs() {
     }
   }
 }
+function handleEmailEyeClick(event: Event) {
+  const target = event.target as HTMLElement;
+  if (
+    target.id === "set-info-email-eye" ||
+    target.closest("#set-info-email-eye")
+  ) {
+    toggleEmail();
+  }
+}
 
 function setupEmailToggle() {
-  onBody(
-    "click",
-    (event) => {
-      const target = event.target as HTMLElement;
-      if (target?.id === "set-info-email-eye") toggleEmail();
-    },
-    { once: true }
-  );
+  const settingsContainer = getId("settings-rightcontainer");
+  if (!settingsContainer) return;
+
+  settingsContainer.removeEventListener("click", handleEmailEyeClick);
+  settingsContainer.addEventListener("click", handleEmailEyeClick);
 }
 
 function setupAccountButtons() {
