@@ -74,19 +74,10 @@ namespace LiventCord.Controllers
             string guildName,
             string rootChannel,
             string guildId,
-            IFormFile? photo = null,
             bool? isPublic = false
         )
         {
-            var guild = new Guild(
-                guildId,
-                ownerId,
-                guildName,
-                rootChannel,
-                null,
-                photo != null,
-                isPublic != false
-            );
+            var guild = new Guild(guildId, ownerId, guildName, rootChannel, null, false, isPublic ?? false);
 
             guild.Channels.Add(
                 new Channel
@@ -108,8 +99,6 @@ namespace LiventCord.Controllers
                 return null;
             }
 
-            if (guild.GuildMembers.Any(gu => gu.MemberId == ownerId))
-                throw new Exception("User already in guild");
 
             guild.GuildMembers.Add(
                 new GuildMember
@@ -124,8 +113,6 @@ namespace LiventCord.Controllers
             _dbContext.Guilds.Add(guild);
 
             await _permissionsController.AddPermissions(guildId, ownerId, PermissionFlags.All);
-
-            await _dbContext.SaveChangesAsync();
 
             return guild;
         }
@@ -149,27 +136,26 @@ namespace LiventCord.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest();
+
             var userId = UserId!;
-            var guildName = request.GuildName;
-            var photo = request.Photo;
-            var isPublic = request.IsPublic;
             string rootChannel = Utils.CreateRandomId();
             string guildId = Utils.CreateRandomId();
 
-            _cacheService.InvalidateCache(userId);
-
-            var newGuild = await CreateGuild(
-                userId,
-                guildName,
-                rootChannel,
-                guildId,
-                photo,
-                isPublic
-            );
+            var newGuild = await CreateGuild(userId, request.GuildName, rootChannel, guildId, request.IsPublic);
             if (newGuild == null)
                 return Problem("Guild creation failed");
 
+            string? guildVersion = null;
+            if (request.Photo != null)
+            {
+                guildVersion = await _imageController.UploadImageOnGuildCreation(request.Photo, userId, guildId);
+                if (guildVersion == null)
+                    _logger.LogWarning("Guild image upload failed for guildId: {GuildId}", guildId);
+            }
+
             var guild = MapToGuildDto(newGuild);
+            guild.GuildVersion = guildVersion;
+
             var permissions = await _permissionsController.GetPermissionsMapForUser(userId);
 
             return StatusCode(201, new { guild, permissions });

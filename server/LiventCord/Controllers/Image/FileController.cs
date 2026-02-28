@@ -191,7 +191,7 @@ namespace LiventCord.Controllers
 
 
         [NonAction]
-        public async Task<IActionResult> UploadImageOnGuildCreation(
+        public async Task<string?> UploadImageOnGuildCreation(
             IFormFile photo,
             string userId,
             string? guildId = null
@@ -199,9 +199,7 @@ namespace LiventCord.Controllers
         {
             if (!IsFileSizeValid(photo))
             {
-                return BadRequest(
-                    new { Type = "error", Message = "The file exceeds the maximum size limit." }
-                );
+                return null;
             }
 
             try
@@ -209,16 +207,21 @@ namespace LiventCord.Controllers
                 string fileId = await UploadFileInternalAsync(
                     photo,
                     userId,
-                    false,
-                    false,
-                    guildId,
-                    null
+                    isAttachment: false,
+                    isEmoji: false,
+                    guildId: guildId,
+                    channelId: null
                 );
-                return Ok(new { fileId });
+
+                if (!string.IsNullOrEmpty(guildId))
+                    await SetIsUploadedGuildImgAsync(guildId);
+
+                return fileId;
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Type = "error", Message = ex.Message });
+                _logger.LogError(ex, "Failed to upload image on guild creation for guildId: {GuildId}", guildId);
+                return null;
             }
         }
 

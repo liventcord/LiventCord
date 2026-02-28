@@ -338,6 +338,7 @@ export interface Guild {
   guildId: string;
   rootChannel: string;
   guildName: string;
+  guildVersion?: string;
   isGuildUploadedImg: boolean;
   guildMembers: string[];
 }

@@ -33,3 +33,4 @@
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
 - Invite to guild context menu requires changing into a guild before appearing
 - set-info-email-eye does not reveal email
+- Guild creation does not upload image

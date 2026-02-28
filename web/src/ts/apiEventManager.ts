@@ -181,7 +181,7 @@ function addNewGuild(guild: Guild, permissions: PermissionsRecord) {
     rootChannel: guild.rootChannel,
     guildMembers: guild.guildMembers,
     ownerId: appState.currentUserId || "",
-    guildVersion: ""
+    guildVersion: guild.guildVersion || ""
   });
 
   appendToGuildContextList(guild.guildId);
