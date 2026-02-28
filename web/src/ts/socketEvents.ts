@@ -30,6 +30,7 @@ import { isOnGuild } from "./router.ts";
 import {
   currentGuildId,
   handleGuildMemberAdded,
+  handleGuildMemberRemoved,
   handleKickMemberResponse
 } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
@@ -58,8 +59,10 @@ import {
   DeleteMessageResponse,
   EditMessageResponse,
   GuildMemberAddedMessage,
+  GuildMemberRemovedMessage,
   Message,
   NewMessageResponse,
+  PublicUser,
   TypingData,
   VoiceUser
 } from "./types/interfaces.ts";
@@ -98,7 +101,8 @@ export const SocketEvent = Object.freeze({
   UPDATE_CHANNEL_NAME: "UPDATE_CHANNEL_NAME",
   GET_USER_STATUS: "GET_USER_STATUS",
   KICK_MEMBER: "KICK_MEMBER",
-  GUILD_MEMBER_ADDED: "GUILD_MEMBER_ADDED"
+  GUILD_MEMBER_ADDED: "GUILD_MEMBER_ADDED",
+  GUILD_MEMBER_REMOVED: "GUILD_MEMBER_REMOVED"
 } as const);
 
 type EventHandler = (...args: any[]) => void;
@@ -823,11 +827,27 @@ socketClient.on(SocketEvent.UPDATE_CHANNEL_NAME, (data) => {
     editChannelName(data.channelId, data.channelName);
   }
 });
-
+function normalizePublicUser(user: PublicUser): PublicUser {
+  return {
+    ...user,
+    createdAt: user.createdAt
+      ? new Date(user.createdAt as unknown as string)
+      : undefined
+  };
+}
 socketClient.on(
   SocketEvent.GUILD_MEMBER_ADDED,
   (data: GuildMemberAddedMessage) => {
-    handleGuildMemberAdded(data);
+    handleGuildMemberAdded({
+      ...data,
+      userData: normalizePublicUser(data.userData)
+    });
+  }
+);
+socketClient.on(
+  SocketEvent.GUILD_MEMBER_REMOVED,
+  (data: GuildMemberRemovedMessage) => {
+    handleGuildMemberRemoved(data);
   }
 );
 

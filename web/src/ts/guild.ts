@@ -41,6 +41,7 @@ import { showCallContainer } from "./chatroom.ts";
 import {
   GuildMember,
   GuildMemberAddedMessage,
+  GuildMemberRemovedMessage,
   PermissionsRecord,
   UserInfo
 } from "./types/interfaces.ts";
@@ -278,6 +279,9 @@ export function handleKickMemberResponse(data: any) {
   } else {
     removeUserFromMemberList(userId);
   }
+}
+export function handleGuildMemberRemoved(data: GuildMemberRemovedMessage) {
+  removeUserFromMemberList(data.userId);
 }
 export function handleGuildMemberAdded(data: GuildMemberAddedMessage) {
   addUserToMemberList(data.userData);

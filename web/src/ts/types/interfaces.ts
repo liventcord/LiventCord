@@ -325,6 +325,10 @@ export interface GuildMemberAddedMessage {
   userId: string;
   userData: PublicUser;
 }
+export interface GuildMemberRemovedMessage {
+  guildId: string;
+  userId: string;
+}
 
 export interface DeleteMessageResponse {
   messageId: string;
