@@ -22,12 +22,12 @@ import { selectedChanColor, clamp } from "./ui.ts";
 import { guildCache, cacheInterface } from "./cache.ts";
 import { isOnMePage, isOnDm, router } from "./router.ts";
 import { closeSettings } from "./settingsui.ts";
-import { loadDmHome } from "./app.ts";
 import { createFireWorks } from "./extras.ts";
 import { translations } from "./translations.ts";
 import { hideCallContainer } from "./chatroom.ts";
 import { CachedChannel, Channel, ChannelData } from "./types/interfaces.ts";
 import { selectedPanelType } from "./panelHandler.ts";
+import { loadDmHome } from "./appUI.ts";
 
 const currentChannels: Channel[] = [];
 const channelTitle = getId("channel-info") as HTMLElement;

@@ -38,7 +38,6 @@ import { apiClient, EventType } from "./api.ts";
 import { isOnDm, isOnGuild } from "./router.ts";
 import { togglePin } from "./contextMenuActions.ts";
 import { currentGuildId } from "./guild.ts";
-import { isChangingPage } from "./app.ts";
 import { toggleHamburger, setActiveIcon } from "./ui.ts";
 import { translations } from "./translations.ts";
 import { friendsCache } from "./friends.ts";
@@ -90,6 +89,7 @@ import {
 } from "./profilePop.ts";
 import { setProfilePic } from "./avatar.ts";
 import { SVG } from "./svgIcons.ts";
+import { isChangingPage } from "./appUI.ts";
 
 export const messageDates: { [key: string]: Date } = {};
 export let currentLastDate: Date;

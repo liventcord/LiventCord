@@ -2,7 +2,6 @@ import DOMPurify from "dompurify";
 import { friendsCache } from "./friends.ts";
 import { scrollToBottom } from "./chat.ts";
 import { MESSAGE_LIMIT, trySendMessage } from "./message.ts";
-import { isDomLoaded, readCurrentMessages } from "./app.ts";
 import { toggleManager } from "./settings.ts";
 import { popKeyboardConfetti } from "./extras.ts";
 import {
@@ -38,6 +37,8 @@ import { gifBtn } from "./mediaPanel.ts";
 import { socketClient } from "./socketEvents.ts";
 import { ChatBarState } from "./types/interfaces.ts";
 import { FileHandler, isAttachmentsAdded } from "./fileHandler.ts";
+import { isDomLoaded } from "./app.ts";
+import { readCurrentMessages } from "./readStatus.ts";
 
 export let currentReplyingTo = "";
 

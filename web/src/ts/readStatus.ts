@@ -1,5 +1,6 @@
 import { apiClient, EventType } from "./api";
 import { guildCache } from "./cache";
+import { newMessagesBar } from "./chatbar";
 
 interface GuildUnreadCountItem {
   channelId: string;
@@ -112,3 +113,14 @@ class ReadStatusManager {
 }
 
 export const readStatusManager = new ReadStatusManager();
+
+export function readGuildMessages(guildId: string): void {
+  if (!guildId) return;
+  apiClient.send(EventType.READ_GUILD, { guildId });
+}
+
+export function readCurrentMessages(channelId: string): void {
+  if (!channelId) return;
+  apiClient.send(EventType.READ_CHANNEL, { channelId });
+  newMessagesBar.style.display = "none";
+}

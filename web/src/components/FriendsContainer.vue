@@ -131,7 +131,6 @@
 <script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted, h } from "vue";
 import { apiClient, EventType } from "../ts/api";
-import { openDm } from "../ts/app";
 import { setProfilePic } from "../ts/avatar";
 import {
   appendToProfileContextList,
@@ -144,6 +143,7 @@ import { userManager } from "../ts/user";
 import { getId } from "../ts/utils";
 import { friendsCache, submitAddFriend } from "../ts/friends";
 import { isOnDm } from "../ts/router";
+import { openDm } from "../ts/appUI";
 
 export let friendsContainerInstance: InstanceType<
   typeof FriendsContainerComponent

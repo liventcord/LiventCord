@@ -1,4 +1,3 @@
-import { openDm, readCurrentMessages, readGuildMessages } from "./app.ts";
 import { appState } from "./appState.ts";
 
 import {
@@ -39,6 +38,8 @@ import { SettingType, UserInfo } from "./types/interfaces.ts";
 import { createChannelsPop } from "./channelPop.ts";
 import { drawProfilePopId, drawProfilePop } from "./profilePop.ts";
 import { FileHandler } from "./fileHandler.ts";
+import { openDm } from "./appUI.ts";
+import { readCurrentMessages, readGuildMessages } from "./readStatus.ts";
 
 export const contextList: { [key: string]: any } = {};
 export const messageContextList: { [key: string]: any } = {};

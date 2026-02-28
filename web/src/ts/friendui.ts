@@ -12,11 +12,11 @@ import { friendsCache, UpdatePendingCounter, removeDm } from "./friends";
 import { setProfilePic } from "./avatar";
 import { translations } from "./translations";
 import { activityList } from "./userList";
-import { loadDmHome, openDm } from "./app";
 import { isBlackTheme } from "./settings";
 import store from "../store";
 import { Friend, UserInfo } from "./types/interfaces";
 import { friendsState } from "../components/FriendsContainer.vue";
+import { loadDmHome, openDm } from "./appUI";
 
 const addfriendhighlightedcolor = () =>
   isBlackTheme() ? "#5865F2" : "#248046";

@@ -36,12 +36,7 @@ import {
   addToGuildsList
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
-import {
-  initialiseState,
-  initializeApp,
-  initialState,
-  loadDmHome
-} from "./app.ts";
+import { initialiseState, initializeApp, initialState } from "./app.ts";
 import { DEFAULT_DISCRIMINATOR, deletedUser, userManager } from "./user.ts";
 import {
   updateFriendsList,
@@ -84,6 +79,7 @@ import {
   UserInfo
 } from "./types/interfaces.ts";
 import { handleReplies } from "./replyManager.ts";
+import { loadDmHome } from "./appUI.ts";
 
 interface JoinGuildData {
   success: boolean;

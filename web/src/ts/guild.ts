@@ -11,13 +11,7 @@ import {
   onDoc
 } from "./utils.ts";
 import { clickMainLogo } from "./ui.ts";
-import {
-  isChangingPage,
-  initialState,
-  loadApp,
-  changeCurrentGuild,
-  loadDmHome
-} from "./app.ts";
+
 import { isOnGuild, isOnMePage, isOnDm, router } from "./router.ts";
 import {
   addUserToMemberList,
@@ -52,6 +46,13 @@ import {
 } from "./types/interfaces.ts";
 import { showGuildPop } from "./guildPop.ts";
 import { SVG } from "./svgIcons.ts";
+import { initialState } from "./app.ts";
+import {
+  isChangingPage,
+  loadApp,
+  changeCurrentGuild,
+  loadDmHome
+} from "./appUI.ts";
 
 export let currentGuildId: string;
 const guildNameText = getId("guild-name") as HTMLElement;

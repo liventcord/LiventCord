@@ -2,7 +2,6 @@ import { cacheInterface, sharedGuildsCache } from "./cache.ts";
 import { currentGuildId, createGuildListItem } from "./guild.ts";
 import { createEl, getId, getAverageRGB, isMobile } from "./utils.ts";
 import { friendsCache, addFriendId } from "./friends.ts";
-import { loadDmHome, openDm } from "./app.ts";
 import { createBubble } from "./userList.ts";
 import { showContextMenu, contextList } from "./contextMenuActions.ts";
 import { isImagePreviewOpen, hideImagePreview } from "./ui.ts";
@@ -13,6 +12,7 @@ import { SVG } from "./svgIcons.ts";
 import { UserInfo } from "./types/interfaces.ts";
 import { appState } from "./appState.ts";
 import { createPopUp, closePopUp } from "./popups.ts";
+import { loadDmHome, openDm } from "./appUI.ts";
 
 export let currentProfileImg: HTMLElement;
 let currentProfileDisplay: HTMLElement;

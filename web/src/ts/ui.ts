@@ -1,6 +1,6 @@
 import { getId, isMobile } from "./utils.ts";
 import { translations } from "./translations.ts";
-import { initialState, loadDmHome } from "./app.ts";
+import { initialState } from "./app.ts";
 import { openSettings } from "./settingsui.ts";
 import { currentGuildId, wrapWhiteRod, leaveCurrentGuild } from "./guild.ts";
 import { observe } from "./chat.ts";
@@ -59,6 +59,7 @@ export let loadingScreen: HTMLElement;
 import { isBlackTheme } from "./settings.ts";
 import { createChannelsPop, createInviteUsersPop } from "./channelPop.ts";
 import { toggleDropdown } from "./guildPop.ts";
+import { loadDmHome } from "./appUI.ts";
 
 let isEmailToggled = false;
 export function toggleEmail(): void {
