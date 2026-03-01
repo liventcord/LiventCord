@@ -38,11 +38,8 @@ public class NewMessageRequest : IValidatableObject
     [StringLength(2000, ErrorMessage = "Content must not exceed 2000 characters.")]
     public string? Content { get; set; }
 
-    [BindProperty(Name = "files[]")]
-    public IEnumerable<IFormFile>? Files { get; set; }
-
-    [BindProperty(Name = "isSpoiler[]")]
-    public List<bool>? IsSpoilerFlags { get; set; }
+    [BindProperty(Name = "attachments")]
+    public List<PendingAttachmentRef>? Attachments { get; set; }
 
     [BindProperty(Name = "replyToId")]
     public string? ReplyToId { get; set; }
@@ -52,18 +49,19 @@ public class NewMessageRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        bool hasFiles = Files != null && Files.Any();
+        bool hasAttachments = Attachments != null && Attachments.Any();
         bool hasContent = !string.IsNullOrWhiteSpace(Content);
 
-        if (!hasContent && !hasFiles)
+        if (!hasContent && !hasAttachments)
         {
             yield return new ValidationResult(
-                "Either content or at least one file must be provided.",
-                new[] { nameof(Content), nameof(Files) }
+                "Either content or at least one attachment must be provided.",
+                new[] { nameof(Content), nameof(Attachments) }
             );
         }
     }
 }
+
 
 public class EditMessageRequest
 {

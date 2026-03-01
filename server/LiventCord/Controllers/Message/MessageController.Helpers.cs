@@ -385,6 +385,7 @@ namespace LiventCord.Controllers
 
             return Ok(new { message, guildId });
         }
+
         [NonAction]
         private async Task<IActionResult> HandleMessage(
             MessageType mode, string? guildId, string channelId,
@@ -405,30 +406,40 @@ namespace LiventCord.Controllers
             if (!string.IsNullOrEmpty(request.ReplyToId) && request.ReplyToId.Length != Utils.ID_LENGTH)
                 return BadRequest(new { Type = "error", Message = $"Reply id should be {Utils.ID_LENGTH} characters long" });
 
-            long maxFileSize = SharedAppConfig.GetMaxAttachmentSize();
-            long maxTotalSize = 300 * 1024 * 1024;
-            long totalSize = 0;
-
             var messageId = Utils.CreateRandomId();
             var attachments = new List<Attachment>();
 
-            foreach (var (file, index) in (request.Files ?? Enumerable.Empty<IFormFile>()).Select((f, i) => (f, i)))
+            if (request.Attachments != null && request.Attachments.Any())
             {
-                if (file.Length > maxFileSize)
-                    return BadRequest(new { Type = "error", Message = "One of the files exceeds the size limit." });
+                if (request.Attachments.Count > 10)
+                    return BadRequest(new { Type = "error", Message = "Maximum 10 attachments per message." });
 
-                totalSize += file.Length;
+                var fileIds = request.Attachments.Select(a => a.FileId).ToList();
+
+                var pendingFiles = await _context.PendingAttachments
+                    .Where(p => fileIds.Contains(p.FileId) && p.UserId == userId && !p.Claimed)
+                    .ToListAsync();
+
+                if (pendingFiles.Count != fileIds.Count)
+                    return BadRequest(new { Type = "error", Message = "One or more attachments are invalid or already used." });
+
+                long maxTotalSize = 300 * 1024 * 1024;
+                long totalSize = pendingFiles.Sum(p => p.FileSize);
                 if (totalSize > maxTotalSize)
-                    return BadRequest(new { Type = "error", Message = "Total file size exceeds the size limit." });
+                    return BadRequest(new { Type = "error", Message = "Total file size exceeds the limit." });
 
-                var fileId = await _fileController.UploadFileInternalAsync(file, userId, true, false, guildId, channelId);
-                var isSpoiler = request.IsSpoilerFlags?.ElementAtOrDefault(index) ?? false;
+                foreach (var attachRef in request.Attachments)
+                {
+                    var pending = pendingFiles.First(p => p.FileId == attachRef.FileId);
+                    pending.Claimed = true;
 
-                attachments.Add(BuildAttachment(
-                    fileId, file.FileName, file.Length,
-                    FileSignatureValidator.IsImageFile(file),
-                    FileSignatureValidator.IsVideoFile(file),
-                    isSpoiler, messageId));
+                    attachments.Add(BuildAttachment(
+                        pending.FileId, pending.FileName, pending.FileSize,
+                        pending.IsImage, pending.IsVideo,
+                        attachRef.IsSpoiler, messageId));
+                }
+
+                await _context.SaveChangesAsync();
             }
 
             return await NewMessage(messageId, request.TemporaryId, userId, friendId,

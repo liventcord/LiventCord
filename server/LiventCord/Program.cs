@@ -46,7 +46,7 @@ builder.Services.AddScoped<InviteController>();
 builder.Services.AddScoped<AuthController>();
 builder.Services.AddScoped<MediaProxyController>();
 builder.Services.AddScoped<MetadataController>();
-builder.Services.AddScoped<AttachmentDeduplicationService>();
+builder.Services.AddHostedService<PendingAttachmentCleanupService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
@@ -286,26 +286,6 @@ app.Lifetime.ApplicationStarted.Register(async () =>
     catch (Exception ex)
     {
         logger.LogWarning(ex, "Unexpected error during Redis sync");
-    }
-
-    try
-    {
-        var dedupService = scope.ServiceProvider.GetRequiredService<AttachmentDeduplicationService>();
-        await dedupService.DeduplicateAsync(CancellationToken.None);
-    }
-    catch (Exception ex)
-    {
-        logger.LogWarning(ex, "Error during attachment deduplication");
-    }
-
-    try
-    {
-        var userService = scope.ServiceProvider.GetRequiredService<RegisterController>();
-        await userService.EnsureSystemUserExistsAsync();
-    }
-    catch (Exception ex)
-    {
-        logger.LogWarning(ex, "Error ensuring system user exists");
     }
 });
 

@@ -347,17 +347,9 @@ namespace LiventCord.Controllers
                 if (!string.IsNullOrEmpty(channelId))
                 {
                     var attachment = new AttachmentFile(
-                        Utils.CreateRandomId(),
-                        fileName,
-                        content,
-                        extension,
-                        channelId,
-                        guildId,
-                        userId
-                    )
-                    {
-                        ContentHash = contentHash
-                    };
+                        Utils.CreateRandomId(), fileName, content, extension,
+                        channelId, guildId, userId)
+                    { ContentHash = contentHash };
                     return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else if (isEmoji)
@@ -365,63 +357,35 @@ namespace LiventCord.Controllers
                     var emoji = new EmojiFile(
                         Utils.CreateRandomId(),
                         "emoji-" + Utils.CreateRandomId(),
-                        content,
-                        extension,
-                        guildId,
-                        userId
-                    )
-                    {
-                        ContentHash = contentHash
-                    };
+                        content, extension, guildId, userId)
+                    { ContentHash = contentHash };
                     SaveFile(emoji).GetAwaiter().GetResult();
                     return emoji;
                 }
                 else
                 {
                     var guildFile = new GuildFile(
-                        Utils.CreateRandomId(),
-                        fileName,
-                        content,
-                        extension,
-                        guildId,
-                        userId
-                    )
-                    {
-                        ContentHash = contentHash
-                    };
+                        Utils.CreateRandomId(), fileName, content, extension,
+                        guildId, userId)
+                    { ContentHash = contentHash };
                     return SaveOrUpdateFile(guildFile).GetAwaiter().GetResult();
                 }
             }
             else
             {
-                if (!string.IsNullOrEmpty(channelId))
+                if (!string.IsNullOrEmpty(channelId) || isAttachment)
                 {
                     var attachment = new AttachmentFile(
-                        Utils.CreateRandomId(),
-                        fileName,
-                        content,
-                        extension,
-                        channelId,
-                        guildId,
-                        userId
-                    )
-                    {
-                        ContentHash = contentHash
-                    };
+                        Utils.CreateRandomId(), fileName, content, extension,
+                        channelId ?? "", guildId, userId)
+                    { ContentHash = contentHash };
                     return SaveOrUpdateFile(attachment).GetAwaiter().GetResult();
                 }
                 else
                 {
                     var profileFile = new ProfileFile(
-                        Utils.CreateRandomId(),
-                        fileName,
-                        content,
-                        extension,
-                        userId
-                    )
-                    {
-                        ContentHash = contentHash
-                    };
+                        Utils.CreateRandomId(), fileName, content, extension, userId)
+                    { ContentHash = contentHash };
                     return SaveOrUpdateFile(profileFile).GetAwaiter().GetResult();
                 }
             }

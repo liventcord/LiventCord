@@ -47,7 +47,7 @@ namespace LiventCord.Controllers
         public DbSet<ChannelPinnedMessage> ChannelPinnedMessages { get; set; }
         public DbSet<MediaUrl> MediaUrls { get; set; }
         public DbSet<MessageUrl> MessageUrls { get; set; }
-
+        public DbSet<PendingAttachment> PendingAttachments { get; set; }
         public void RecreateDatabase()
         {
             Database.EnsureDeleted();

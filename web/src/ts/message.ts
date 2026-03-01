@@ -47,88 +47,52 @@ import { FileHandler, fileSpoilerMap } from "./fileHandler.ts";
 import { constructUserData } from "./profilePop.ts";
 import { preserveEmojiContent, renderEmojisFromContent } from "./emoji.ts";
 import { appState } from "./appState.ts";
+import { alertUser } from "./popups.ui.ts";
+
 export let lastMessageDate: Date;
 
 export function setLastMessageDate(date: Date) {
   lastMessageDate = date;
 }
-function createNewMessageFormData(
-  temporaryId: string,
-  content: string,
-  user_ids?: string[]
-): FormData {
+
+async function uploadAttachment(file: File): Promise<string> {
   const formData = new FormData();
-  formData.append("content", content);
-  formData.append("temporaryId", temporaryId);
-
-  if (currentReplyingTo) {
-    formData.append("replyToId", currentReplyingTo);
-  }
-
-  return formData;
+  formData.append("file", file, file.name); // ← explicit filename
+  const data = await apiClient.sendForm(EventType.UPLOAD_ATTACHMENT, formData);
+  return data.fileId;
 }
-async function handleFileProcessing(
-  file: File,
-  formData: FormData
-): Promise<void> {
+async function handleFileProcessing(file: File): Promise<File> {
   const isImage = await FileHandler.isImageFile(file);
-  if (!isImage) {
-    formData.append("files[]", file, file.name);
-    return;
-  }
+  if (!isImage) return file;
 
   const animated = await isAnimated(file);
-  if (animated) {
-    console.debug("Detected animated image. Skipping compression.");
-    formData.append("files[]", file, file.name);
-    return;
-  }
+  if (animated) return file;
 
-  const safeToCompress =
-    file.type === "image/jpeg" ||
-    file.type === "image/png" ||
-    file.type === "image/webp";
-
-  if (!safeToCompress) {
-    console.debug("Unsafe format for compression. Appending original.");
-    formData.append("files[]", file, file.name);
-    return;
-  }
+  const safeToCompress = ["image/jpeg", "image/png", "image/webp"].includes(
+    file.type
+  );
+  if (!safeToCompress) return file;
 
   try {
-    const compressedFile = await compressImage(file);
-
-    formData.append("files[]", compressedFile, compressedFile.name);
+    return await compressImage(file);
   } catch (error) {
     console.debug("Compression failed. Using original file.", error);
-    formData.append("files[]", file, file.name);
+    return file;
   }
 }
 
 async function isAnimated(file: File): Promise<boolean> {
-  if (!("ImageDecoder" in window)) {
-    return false;
-  }
-
+  if (!("ImageDecoder" in window)) return false;
   try {
     const buffer = await file.arrayBuffer();
-
     const decoder = new (window as any).ImageDecoder({
       data: buffer,
       type: file.type
     });
-
     await decoder.tracks.ready;
-
     const track = decoder.tracks.selectedTrack;
-
-    if (!track) {
-      return false;
-    }
-
-    return track.frameCount > 1;
-  } catch (error) {
-    console.debug("ImageDecoder failed:", error);
+    return track ? track.frameCount > 1 : false;
+  } catch {
     return false;
   }
 }
@@ -136,38 +100,83 @@ async function isAnimated(file: File): Promise<boolean> {
 async function compressImage(file: File): Promise<File> {
   const { default: imageCompression } =
     await import("browser-image-compression");
-
-  const options = {
-    maxSizeMB: maxAttachmentSize,
-    useWebWorker: true
-  };
-
-  const result = await imageCompression(file, options);
-
-  return result;
+  const options = { maxSizeMB: maxAttachmentSize, useWebWorker: true };
+  const compressed = await imageCompression(file, options);
+  return new File([compressed], file.name, { type: file.type });
 }
-async function processFiles(
-  files: FileList | null,
-  formData: FormData
-): Promise<void> {
-  if (files) {
+async function processAndUploadFiles(
+  files: FileList | null
+): Promise<{ ids: string[]; spoilers: boolean[] }> {
+  const ids: string[] = [];
+  const spoilers: boolean[] = [];
+
+  if (files && files.length > 0) {
     const fileCount = Math.min(files.length, maxAttachmentsCount);
-    const uploadedFiles: File[] = [];
+    const processingPromises = [];
+
+    const originalFileMap = new Map<File, File>();
 
     for (let i = 0; i < fileCount; i++) {
-      const file = files[i];
-      await handleFileProcessing(file, formData);
-      uploadedFiles.push(file);
+      const original = files[i];
+      processingPromises.push(
+        handleFileProcessing(original).then((processed) => {
+          originalFileMap.set(processed, original);
+          return processed;
+        })
+      );
     }
 
-    for (const file of uploadedFiles) {
-      const isSpoiler = fileSpoilerMap.get(file) ?? false;
-      formData.append("isSpoiler[]", String(isSpoiler));
+    const processedFiles = await Promise.all(processingPromises);
+
+    const uploadPromises = processedFiles.map(async (file) => {
+      try {
+        const id = await uploadAttachment(file);
+        return { file, id, success: true };
+      } catch (e) {
+        alertUser(
+          `Failed to upload ${file.name}`,
+          e instanceof Error ? e.message : String(e)
+        );
+        return { file, id: null, success: false };
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+
+    for (const res of results) {
+      if (res.success && res.id) {
+        ids.push(res.id);
+        const original = originalFileMap.get(res.file);
+        const isSpoiler = original
+          ? (fileSpoilerMap.get(original) ?? false)
+          : false;
+        spoilers.push(isSpoiler);
+      }
     }
   }
+
+  return { ids, spoilers };
+}
+
+function createNewMessagePayload(
+  temporaryId: string,
+  content: string,
+  user_ids?: string[],
+  attachmentIds: string[] = [],
+  spoilers: boolean[] = []
+) {
+  return {
+    content,
+    temporaryId,
+    replyToId: currentReplyingTo || null,
+    attachments: attachmentIds.map((fileId, i) => ({
+      fileId,
+      isSpoiler: spoilers[i] ?? false
+    })),
+    userIds: user_ids
+  };
 }
 let messageQueue = Promise.resolve();
-
 export const MESSAGE_LIMIT = 2000;
 
 export async function trySendMessage(
@@ -196,19 +205,41 @@ async function sendMessage(content: string, user_ids?: string[]) {
   chatInput.textContent = "";
   resetChatInputState();
 
+  const filesToUpload = fileInput.files;
+
   attachmentsTray.innerHTML = "";
   disableElement(attachmentsTray);
 
   const temporaryId = createRandomId();
-  const formData = createNewMessageFormData(temporaryId, content, user_ids);
-  await processFiles(fileInput.files, formData);
-  FileHandler.resetFileInput();
-
-  const additionalData = constructMessagePayload();
   const channelId = getChannelId();
+
   displayLocalMessage(temporaryId, channelId, content);
 
-  sendNewMessageRequest(formData, additionalData);
+  let attachmentData = { ids: [] as string[], spoilers: [] as boolean[] };
+  try {
+    attachmentData = await processAndUploadFiles(filesToUpload);
+  } catch (e) {
+    alertUser(
+      "Upload failed, aborting message send",
+      e instanceof Error ? e.message : String(e)
+    );
+    return;
+  }
+
+  FileHandler.resetFileInput();
+
+  const messageData = createNewMessagePayload(
+    temporaryId,
+    content,
+    user_ids,
+    attachmentData.ids,
+    attachmentData.spoilers
+  );
+
+  const additionalData = constructMessagePayload();
+
+  sendNewMessageRequest(messageData, additionalData);
+
   scrollToBottom();
   setTimeout(scrollToBottom, 130);
 }
@@ -223,17 +254,25 @@ function constructMessagePayload(messageId?: string) {
   };
 }
 
-function sendNewMessageRequest(formData: FormData, additionalData: any) {
+function sendNewMessageRequest(messageData: any, additionalData: any) {
   messageQueue = messageQueue.then(async () => {
     try {
-      await apiClient.sendForm(
+      const combinedPayload = {
+        ...messageData,
+        ...additionalData
+      };
+
+      await apiClient.send(
         isOnGuild ? EventType.SEND_MESSAGE_GUILD : EventType.SEND_MESSAGE_DM,
-        formData,
-        additionalData
+        combinedPayload
       );
+
       closeReplyMenu();
     } catch (error) {
-      console.error("Error Sending File Message:", error);
+      alertUser(
+        "Error Sending Message:",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   });
 }
@@ -261,7 +300,10 @@ function sendEditMessageRequest(messageId: string, content: string) {
       );
       closeReplyMenu();
     } catch (error) {
-      console.error("Error Sending File Message:", error);
+      alertUser(
+        "Error Editing Message:",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   });
 }

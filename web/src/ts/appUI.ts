@@ -8,7 +8,8 @@ import {
 import { getHistoryFromOneChannel, setReachedChannelEnd } from "./chat.ts";
 import {
   chatInput,
-  adjustHeight, chatContainer,
+  adjustHeight,
+  chatContainer,
   updatePlaceholderVisibility,
   setChatBarState,
   getChatBarState,
@@ -102,7 +103,6 @@ export const ELEMENT_IDS = {
   mainLogo: "main-logo"
 } as const;
 
-
 export let isChangingPage = false;
 const channelInputStates: { [id: string]: ChatBarState } = {};
 let lastDmId: string = "";
@@ -166,7 +166,6 @@ export function processGuilds(
     }
   });
 }
-
 
 function applyMePageState(isChangingUrl: boolean): void {
   selectGuildList(ELEMENT_IDS.mainLogo);
@@ -264,7 +263,6 @@ export function loadDmHome(isChangingUrl = true): void {
   disableElement(ELEMENT_IDS.searchMessagesRoot);
   handleResize();
 }
-
 
 export function openDm(friendId: string): void {
   if (!friendId) {
