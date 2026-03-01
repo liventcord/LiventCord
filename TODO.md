@@ -22,7 +22,7 @@
 - Add shared friends server logic & populate shared friends ui
 - Add guild image delete button
 - Change dm message deletions to be optimistic
-- Implement broadcast for LEAVE_GUILD,UPDATE_GUILD_NAME,UPDATE_GUILD_NAME,CHANGE_NICK,UPDATE_GUILD_IMAGE
+- Implement broadcast for CHANGE_NICK
 
 ## Bug fixes
 

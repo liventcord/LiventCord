@@ -297,7 +297,7 @@ export async function uploadImageGuildOrProfile(
     } else if (imageElement.src.startsWith("data:image/")) {
       blob = await fetch(imageElement.src).then((r) => r.blob());
     } else {
-      alertUser("Unsupported image format for upload.");
+      console.error("Unsupported image format for upload.");
       return;
     }
 

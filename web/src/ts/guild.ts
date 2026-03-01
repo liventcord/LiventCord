@@ -43,6 +43,8 @@ import {
   GuildMemberAddedMessage,
   GuildMemberRemovedMessage,
   PermissionsRecord,
+  UpdateGuildImageResponse,
+  UpdateGuildNameResponse,
   UserInfo
 } from "./types/interfaces.ts";
 import { showGuildPop } from "./guildPop.ts";
@@ -350,13 +352,24 @@ export function removeFromGuildList(guildId: string) {
   }
 }
 
-export function updateGuildImage(uploadedGuildId: string) {
+export function updateGuildImage(data: UpdateGuildImageResponse) {
+  cacheInterface.setGuildVersion(data.guildId, data.guildVersion);
   const guildImages = guildsList.querySelectorAll("img");
   guildImages.forEach((img) => {
-    if (img.id === uploadedGuildId) {
-      setGuildPic(img, uploadedGuildId);
+    if (img.id === data.guildId) {
+      setGuildPic(img, data.guildId);
     }
   });
+}
+export function handleUpdateGuildName(data: UpdateGuildNameResponse) {
+  const newGuildName = data.guildName;
+  const guildId = data.guildId;
+  if (!newGuildName || !guildId) {
+    return;
+  }
+  if (guildId === currentGuildId) {
+    setGuildNameText(newGuildName);
+  }
 }
 
 export function selectGuildList(guildId: string): void {

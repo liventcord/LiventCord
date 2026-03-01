@@ -31,7 +31,9 @@ import {
   currentGuildId,
   handleGuildMemberAdded,
   handleGuildMemberRemoved,
-  handleKickMemberResponse
+  handleKickMemberResponse,
+  handleUpdateGuildName,
+  updateGuildImage
 } from "./guild.ts";
 import { chatContainer } from "./chatbar.ts";
 import { handleFriendEventResponse } from "./friends.ts";
@@ -64,6 +66,8 @@ import {
   NewMessageResponse,
   PublicUser,
   TypingData,
+  UpdateGuildImageResponse,
+  UpdateGuildNameResponse,
   VoiceUser
 } from "./types/interfaces.ts";
 import { appState } from "./appState.ts";
@@ -779,6 +783,7 @@ const handleEditGuildMessage = (data: GuildEditMessageData) => {
   };
   handleEditMessage(messageData);
 };
+
 const handleEditDmMessage = (data: DMEditMessageData) => {
   const messageData: EditMessageResponse = {
     isDm: true,
@@ -848,6 +853,19 @@ socketClient.on(
   SocketEvent.GUILD_MEMBER_REMOVED,
   (data: GuildMemberRemovedMessage) => {
     handleGuildMemberRemoved(data);
+  }
+);
+
+socketClient.on(
+  SocketEvent.UPDATE_GUILD_NAME,
+  (data: UpdateGuildNameResponse) => {
+    handleUpdateGuildName(data);
+  }
+);
+socketClient.on(
+  SocketEvent.UPDATE_GUILD_IMAGE,
+  (data: UpdateGuildImageResponse) => {
+    updateGuildImage(data);
   }
 );
 

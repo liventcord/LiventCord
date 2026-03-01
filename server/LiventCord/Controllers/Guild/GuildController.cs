@@ -17,28 +17,24 @@ namespace LiventCord.Controllers
         private readonly FileController _imageController;
         private readonly MembersController _membersController;
         private readonly PermissionsController _permissionsController;
-        private readonly InviteController _inviteController;
         private readonly IAppLogger<GuildController> _logger;
-        private readonly ICacheService _cacheService;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
         public GuildController(
             AppDbContext dbContext,
             FileController uploadController,
-            MessageController messageController,
             MembersController membersController,
             PermissionsController permissionsController,
-            InviteController inviteController,
             IAppLogger<GuildController> logger,
-            ICacheService cacheService
+            RedisEventEmitter redisEventEmitter
         )
         {
             _dbContext = dbContext;
             _imageController = uploadController;
             _permissionsController = permissionsController;
             _membersController = membersController;
-            _inviteController = inviteController;
             _logger = logger;
-            _cacheService = cacheService;
+            _redisEventEmitter = redisEventEmitter;
         }
 
         [HttpGet("")]
@@ -63,6 +59,9 @@ namespace LiventCord.Controllers
 
             guild.GuildName = request.GuildName;
             await _dbContext.SaveChangesAsync();
+            var payload = new { guildId, request.GuildName };
+            await _redisEventEmitter.EmitToGuild(EventType.UPDATE_GUILD_NAME, payload, guildId);
+            await _redisEventEmitter.EmitGuildMembersToRedis(guildId);
             await _membersController.InvalidateGuildMemberCaches(userId, guildId);
 
             return Ok(new { guildId, request.GuildName });

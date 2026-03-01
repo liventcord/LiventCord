@@ -56,13 +56,15 @@ namespace LiventCord.Controllers
         private readonly IAppLogger<FileController> _logger;
         private readonly ICacheService _cacheService;
         private readonly IFileCacheService _fileCacheService;
+        private readonly RedisEventEmitter _redisEventEmitter;
 
         public FileController(
             AppDbContext context,
             IAppLogger<FileController> logger,
             PermissionsController permissionsController,
             ICacheService cacheService,
-            IFileCacheService fileCacheService
+            IFileCacheService fileCacheService,
+            RedisEventEmitter redisEventEmitter
         )
         {
             _context = context;
@@ -70,6 +72,7 @@ namespace LiventCord.Controllers
             _permissionsController = permissionsController;
             _cacheService = cacheService;
             _fileCacheService = fileCacheService;
+            _redisEventEmitter = redisEventEmitter;
         }
 
         [HttpPost("profile")]
@@ -179,6 +182,9 @@ namespace LiventCord.Controllers
 
                 await _fileCacheService.ClearGuildFileCacheAsync(request.GuildId);
                 _cacheService.InvalidateCache(UserId!);
+                var payload = new { request.GuildId, newGuildFile.Version };
+                await _redisEventEmitter.EmitToGuild(EventType.UPDATE_GUILD_IMAGE, payload, request.GuildId);
+                await _redisEventEmitter.EmitGuildMembersToRedis(request.GuildId);
 
                 return Ok(new { request.GuildId, guildVersion = newGuildFile.Version });
             }

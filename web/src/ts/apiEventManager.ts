@@ -35,9 +35,9 @@ import {
   removeFromGuildList,
   updateGuildImage,
   currentGuildId,
-  setGuildNameText,
   onLeaveGuild,
-  addToGuildsList
+  addToGuildsList,
+  handleUpdateGuildName
 } from "./guild.ts";
 import { closeSettings, shakeScreen } from "./settingsui.ts";
 import { initialiseState, initializeApp, initialState } from "./app.ts";
@@ -80,6 +80,8 @@ import {
   MessageDatesResponse,
   NewMessageResponseSelf,
   PermissionsRecord,
+  UpdateGuildImageResponse,
+  UpdateGuildNameResponse,
   UserInfo
 } from "./types/interfaces.ts";
 import { handleReplies } from "./replyManager.ts";
@@ -150,9 +152,9 @@ apiClient.on(EventType.UPLOAD_EMOJI_IMAGE, (data: any) => {
   cacheInterface.addUploadedEmojis(data.guildId, data.emojiIds);
   populateEmojis();
 });
-apiClient.on(EventType.UPLOAD_GUILD_IMAGE, (data: any) => {
+apiClient.on(EventType.UPLOAD_GUILD_IMAGE, (data: UpdateGuildImageResponse) => {
   cacheInterface.setGuildVersion(data.guildId, data.guildVersion);
-  updateGuildImage(currentGuildId);
+  updateGuildImage(data);
   setLastConfirmedGuildImage();
 });
 apiClient.on(EventType.UPLOAD_PROFILE_IMAGE, (data: any) => {
@@ -229,17 +231,10 @@ apiClient.on(EventType.GET_INVITES, (data) => {
   }
 });
 
-apiClient.on(EventType.UPDATE_GUILD_NAME, (data) => {
-  const newGuildName = data.guildName;
-  const guildId = data.guildId;
-  if (!newGuildName || !guildId) {
-    return;
-  }
-  if (guildId === currentGuildId) {
-    setGuildNameText(newGuildName);
-  }
+apiClient.on(EventType.UPDATE_GUILD_NAME, (data: UpdateGuildNameResponse) => {
+  handleUpdateGuildName(data);
 });
-apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data) => {
+apiClient.on(EventType.UPDATE_GUILD_IMAGE, (data: UpdateGuildImageResponse) => {
   updateGuildImage(data);
 });
 

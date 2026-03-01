@@ -338,6 +338,14 @@ export interface GuildResponse {
   guild: Guild;
   permissions: PermissionsRecord;
 }
+export interface UpdateGuildNameResponse {
+  guildId: string;
+  guildName: string;
+}
+export interface UpdateGuildImageResponse {
+  guildId: string;
+  guildVersion: string;
+}
 export interface Guild {
   guildId: string;
   rootChannel: string;
