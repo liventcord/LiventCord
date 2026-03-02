@@ -78,7 +78,11 @@ namespace LiventCord.Controllers
                 try
                 {
                     using var image = await Image.LoadAsync(photo.OpenReadStream());
-                    image.Mutate(x => x.Resize(128, 128));
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(128, 128),
+                        Mode = ResizeMode.Max
+                    }));
 
                     using var ms = new MemoryStream();
                     await image.SaveAsWebpAsync(ms);
