@@ -35,8 +35,15 @@ public class FriendDmService
             FriendId = friendId
         });
 
-        await _dbContext.SaveChangesAsync();
-        return true;
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
     }
 
 

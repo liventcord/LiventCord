@@ -19,14 +19,15 @@ namespace LiventCord.Controllers
         private readonly PermissionsController _permissionsController;
         private readonly IAppLogger<GuildController> _logger;
         private readonly RedisEventEmitter _redisEventEmitter;
-
+        private readonly ICacheService _cacheService;
         public GuildController(
             AppDbContext dbContext,
             FileController uploadController,
             MembersController membersController,
             PermissionsController permissionsController,
             IAppLogger<GuildController> logger,
-            RedisEventEmitter redisEventEmitter
+            RedisEventEmitter redisEventEmitter,
+            ICacheService cacheService
         )
         {
             _dbContext = dbContext;
@@ -35,6 +36,7 @@ namespace LiventCord.Controllers
             _membersController = membersController;
             _logger = logger;
             _redisEventEmitter = redisEventEmitter;
+            _cacheService = cacheService;
         }
 
         [HttpGet("")]
@@ -154,6 +156,7 @@ namespace LiventCord.Controllers
 
             var guild = MapToGuildDto(newGuild);
             guild.GuildVersion = guildVersion;
+            _cacheService.InvalidateCache(UserId!);
 
             var permissions = await _permissionsController.GetPermissionsMapForUser(userId);
 
