@@ -26,8 +26,9 @@ WORKDIR /usr/local/bin
 RUN python3 -m venv venv \
     && ./venv/bin/pip install --upgrade pip \
     && ./venv/bin/pip install spotdl yt-dlp
-
 COPY --from=builder /usr/local/bin/app .
+
+RUN mkdir -p /usr/local/bin/cache && chown -R appuser:appgroup /usr/local/bin/cache
 
 ENV PATH="/usr/local/bin/venv/bin:$PATH"
 
