@@ -25,7 +25,10 @@ func LoadConfig() *AppConfig {
 	}
 }
 func NewMediaCacheSettings(cfg *AppConfig) *MediaCacheSettings {
-	cacheDir := filepath.Join(getCurrentDir(), "MediaCache")
+	cacheDir := os.Getenv("CacheDirectory")
+	if cacheDir == "" {
+		cacheDir = filepath.Join(getCurrentDir(), "MediaCache")
+	}
 	_ = os.MkdirAll(cacheDir, 0755)
 
 	return &MediaCacheSettings{

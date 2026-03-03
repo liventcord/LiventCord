@@ -19,13 +19,14 @@ import (
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
-var CacheDirectory = "./cache"
+var CacheDirectory string
 var CFMediaWorkerUrl string
 var MainServerUrl string
 var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func init() {
 	godotenv.Load()
+	CacheDirectory = getEnv("CacheDirectory", "./cache")
 	CFMediaWorkerUrl = os.Getenv("CloudflareMediaWorkerUrl")
 	MainServerUrl = getEnv("MainServerUrl", "http://localhost:5005")
 	if CFMediaWorkerUrl == "" {
