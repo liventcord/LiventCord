@@ -18,6 +18,7 @@
     "Port": "5005",
     "FrontendUrl": "http://localhost:3000",
     "MediaWorkerUrl": "",
+    "mediaApiUrl": "http://localhost:5000",
     "MaxAvatarSize": "3",
     "MaxAttachmentsSize": "30",
     "EnableMetadataIndexing": true,

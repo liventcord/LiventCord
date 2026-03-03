@@ -1244,15 +1244,18 @@ export function getAttachmentUrl(file: Attachment, isPreview: boolean) {
   } else if (file.isProxyFile) {
     return apiClient.getProxyUrl(file.proxyUrl);
   } else if (file.isImageFile) {
-    return `${isPreview ? initialState.mediaApiUrl : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
+    return `${isPreview ? getMediaApiUrlOrCf() : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
   } else if (file.isVideoFile) {
-    return `${isPreview ? initialState.mediaApiUrl : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
+    return `${isPreview ? getMediaApiUrlOrCf() : mediaHostname}/attachments/${file.fileId}${isPreview ? "/preview" : ""}`;
   } else {
     return IMAGE_SRCS.DEFAULT_MEDIA_IMG_SRC;
   }
 }
 export function getPreviewAttachmentUrl(file: Attachment) {
-  return `${initialState.mediaApiUrl}/attachments/${file.fileId}/preview`;
+  return `${getMediaApiUrlOrCf()}/attachments/${file.fileId}/preview`;
+}
+export function getMediaApiUrlOrCf() {
+  return initialState.mediaWorkerUrl ?? initialState.mediaApiUrl;
 }
 
 export function createBlackStream(fps = 1): MediaStream {

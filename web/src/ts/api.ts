@@ -388,7 +388,6 @@ class ApiClient {
   }
 
   getProxyUrl(url: string): string {
-    console.error("Got proxy url!!" + url);
     const isLocalhost = url.includes("localhost") || url.includes("127.0.0.1");
     const isIp = /^[\d.]+$/.test(new URL(url).hostname);
     if (isLocalhost || isIp) {
