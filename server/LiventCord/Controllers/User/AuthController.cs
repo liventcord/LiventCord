@@ -26,6 +26,9 @@ namespace LiventCord.Controllers
                 return userId;
             }
         }
+
+        protected string? UserNickname =>
+            User?.FindFirst(ClaimTypes.Name)?.Value;
     }
 
     [Route("auth")]
@@ -219,6 +222,7 @@ namespace LiventCord.Controllers
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Name, user.Nickname),
                 new Claim("purpose", _jwtAudience),
             };
 

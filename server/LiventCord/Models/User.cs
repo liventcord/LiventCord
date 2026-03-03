@@ -142,4 +142,15 @@ namespace LiventCord.Models
         public bool IsPending { get; set; }
         public bool IsFriendsRequestToUser { get; set; }
     }
+    public static class UserExtensions
+    {
+        public static IUserIdentity ToIdentity(this User user) =>
+            new UserStub(user.UserId, user.Nickname);
+    }
+    public interface IUserIdentity
+    {
+        string UserId { get; }
+        string Nickname { get; }
+    }
+
 }
