@@ -317,10 +317,10 @@ export async function uploadImageGuildOrProfile(
 }
 
 function getMaxEmojiBytes(): number {
-  return 256 * 1024;
+  return 10 * 1024 * 1024;
 }
-function getMaxEmojiMegaBytes() {
-  return 256;
+function getMaxEmojiKB() {
+  return 10 * 1024;
 }
 function uploadImageEmoji(blobs: File[]): void {
   const validFiles: File[] = [];
@@ -361,7 +361,7 @@ function handleFileSizeError(size: number, isAvatar: boolean) {
   console.error("Max avatar size exceeded. Uploaded file size:", size);
   alertUser(
     translations.getAvatarUploadErrorMsg(
-      `${isAvatar ? getMaxAvatarMegaBytes() : getMaxEmojiMegaBytes()}KB`
+      `${isAvatar ? getMaxAvatarMegaBytes() : getMaxEmojiKB()}KB`
     )
   );
   resetProfileImageFile();

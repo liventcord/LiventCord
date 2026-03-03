@@ -2009,8 +2009,7 @@ body.black-theme {
 }
 
 .emoji-image {
-  width: 48px;
-  height: 48px;
+  width: 100px;
   object-fit: contain;
   border-radius: 10px;
 }

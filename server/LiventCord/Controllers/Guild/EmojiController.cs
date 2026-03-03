@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+
 namespace LiventCord.Controllers
 {
     [Route("api/v1/")]
@@ -11,17 +12,23 @@ namespace LiventCord.Controllers
     [Authorize]
     public class EmojiController : BaseController
     {
+        private const int MaxEmojisPerGuild = 50;
+        private static readonly Regex EmojiNameRegex = new(@"^[a-zA-Z0-9_-]+$", RegexOptions.Compiled);
+
         private readonly AppDbContext _dbContext;
+        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
         private readonly PermissionsController _permissionsController;
         private readonly FileController _imageController;
 
         public EmojiController(
             AppDbContext dbContext,
+            IDbContextFactory<AppDbContext> dbContextFactory,
             PermissionsController permissionsController,
             FileController imageController
         )
         {
             _dbContext = dbContext;
+            _dbContextFactory = dbContextFactory;
             _permissionsController = permissionsController;
             _imageController = imageController;
         }
@@ -31,9 +38,8 @@ namespace LiventCord.Controllers
         {
             bool userExists = await _dbContext.DoesMemberExistInGuild(UserId!, guildId);
             if (!userExists)
-            {
                 return NotFound();
-            }
+
             var emojis = await _dbContext
                 .EmojiFiles.Where(f => f.GuildId == guildId)
                 .Select(f => new
@@ -45,18 +51,9 @@ namespace LiventCord.Controllers
                 })
                 .ToListAsync();
 
-            if (emojis == null || emojis.Count == 0)
-            {
-                return NotFound();
-            }
-
             return Ok(emojis);
         }
 
-        private bool isEmojiSizeValid(IFormFile formFile)
-        {
-            return formFile.Length <= 256 * 1024;
-        }
 
         [HttpPost("guilds/emojis")]
         [Consumes("multipart/form-data")]
@@ -68,14 +65,16 @@ namespace LiventCord.Controllers
             if (!await _permissionsController.CanManageGuild(UserId, request.GuildId))
                 return Forbid();
 
-            var emojiIds = new List<string>();
+            var existingCount = await _dbContext.EmojiFiles.CountAsync(f => f.GuildId == request.GuildId);
+            if (existingCount + request.Photos.Count > MaxEmojisPerGuild)
+                return BadRequest(new { Type = "error", Message = $"Guild emoji limit of {MaxEmojisPerGuild} would be exceeded." });
 
-            foreach (var photo in request.Photos)
+
+            try
             {
-                if (!isEmojiSizeValid(photo))
-                    return BadRequest(new { Type = "error", Message = "One or more files exceed the maximum size limit." });
+                var emojiIds = new List<string?>();
 
-                try
+                foreach (var photo in request.Photos)
                 {
                     using var image = await Image.LoadAsync(photo.OpenReadStream());
                     image.Mutate(x => x.Resize(new ResizeOptions
@@ -84,9 +83,12 @@ namespace LiventCord.Controllers
                         Mode = ResizeMode.Max
                     }));
 
-                    using var ms = new MemoryStream();
+                    using var ms = new MemoryStream(20 * 1024);
                     await image.SaveAsWebpAsync(ms);
                     ms.Position = 0;
+
+                    if (ms.Length > 256 * 1024)
+                        return BadRequest(new { Type = "error", Message = "One or more files exceed the maximum size limit after processing." });
 
                     var resizedFile = new FormFile(ms, 0, ms.Length, photo.Name, Path.ChangeExtension(photo.FileName, ".webp"))
                     {
@@ -94,7 +96,7 @@ namespace LiventCord.Controllers
                         ContentType = "image/webp"
                     };
 
-                    var fileId = await _imageController.UploadFileInternalAsync(
+                    var emojiId = await _imageController.UploadFileInternalAsync(
                         resizedFile,
                         UserId,
                         false,
@@ -102,59 +104,43 @@ namespace LiventCord.Controllers
                         request.GuildId,
                         null
                     );
-                    emojiIds.Add(fileId);
-                }
-                catch (Exception ex)
-                {
-                    return BadRequest(new { Type = "error", Message = ex.Message });
-                }
-            }
 
-            return Ok(new { emojiIds, request.GuildId });
+                    emojiIds.Add(emojiId);
+                }
+
+                return Ok(new { emojiIds, request.GuildId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Type = "error", Message = ex.Message });
+            }
         }
 
         [HttpPatch("guilds/{guildId}/emojis/{emojiId}")]
-        public async Task<IActionResult> RenameEmojiFile([FromBody] RenameEmojiRequest request)
+        public async Task<IActionResult> RenameEmojiFile(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string emojiId,
+            [FromBody] RenameEmojiRequest request)
         {
-            if (
-                string.IsNullOrWhiteSpace(request.Name)
+            if (string.IsNullOrWhiteSpace(request.Name)
                 || request.Name.Length < 2
-                || !Regex.IsMatch(request.Name, @"^[a-zA-Z0-9_]+$")
-            )
+                || !EmojiNameRegex.IsMatch(request.Name))
             {
-                return BadRequest(
-                    "Emoji name must be at least 2 characters long and contain only alphanumeric characters and underscores."
-                );
+                return BadRequest("Emoji name must be at least 2 characters long and contain only alphanumeric characters and underscores.");
             }
 
-            bool canManageGuild = await _permissionsController.CanManageGuild(
-                UserId!,
-                request.GuildId
-            );
-            if (!canManageGuild)
-            {
+            if (!await _permissionsController.CanManageGuild(UserId!, guildId))
                 return Forbid();
-            }
 
-            try
-            {
-                var file = await _dbContext.EmojiFiles.FirstAsync(f =>
-                    f.FileId == request.EmojiId && f.GuildId == request.GuildId
-                );
+            var file = await _dbContext.EmojiFiles.FirstOrDefaultAsync(f =>
+                f.FileId == emojiId && f.GuildId == guildId);
 
-                file.FileName = request.Name;
-                await _dbContext.SaveChangesAsync();
-
-                return Ok();
-            }
-            catch (InvalidOperationException)
-            {
+            if (file == null)
                 return NotFound();
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+
+            file.FileName = request.Name;
+            await _dbContext.SaveChangesAsync();
+            return Ok();
         }
 
         [HttpDelete("guilds/{guildId}/emojis/{emojiId}")]
@@ -163,36 +149,23 @@ namespace LiventCord.Controllers
             [FromRoute][IdLengthValidation] string emojiId
         )
         {
-            bool canManageGuild = await _permissionsController.CanManageGuild(UserId!, guildId);
-            if (!canManageGuild)
-            {
+            if (!await _permissionsController.CanManageGuild(UserId!, guildId))
                 return Forbid();
-            }
 
-            try
-            {
-                var file = await _dbContext.EmojiFiles.FirstAsync(f =>
-                    f.FileId == emojiId && f.GuildId == guildId
-                );
-                _dbContext.EmojiFiles.Remove(file);
-                await _dbContext.SaveChangesAsync();
-                return Ok();
-            }
-            catch (InvalidOperationException)
-            {
+            var file = await _dbContext.EmojiFiles.FirstOrDefaultAsync(f =>
+                f.FileId == emojiId && f.GuildId == guildId);
+
+            if (file == null)
                 return NotFound();
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+
+            _dbContext.EmojiFiles.Remove(file);
+            await _dbContext.SaveChangesAsync();
+            return Ok();
         }
     }
 }
 
 public class RenameEmojiRequest
 {
-    public required string GuildId { get; set; }
-    public required string EmojiId { get; set; }
     public required string Name { get; set; }
 }
