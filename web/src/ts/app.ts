@@ -61,6 +61,7 @@ import {
   processGuilds
 } from "./appUI.ts";
 import { Channel } from "./types/interfaces.ts";
+import { permissionManager } from "./guildPermissions.ts";
 
 export let isDomLoaded = false;
 export let initialState: InitialState;
@@ -216,8 +217,13 @@ function handleGuildClick(event: MouseEvent): void {
 }
 
 function initializeGuild(): void {
-  initialiseMe();
+  for (const [guildId, permissions] of Object.entries(
+    initialState.permissionsMap
+  )) {
+    permissionManager.updatePermissions(guildId, permissions);
+  }
   createGuildContextLists();
+  initialiseMe();
 
   if (userList) {
     disableElement(userList);

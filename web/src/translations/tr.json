@@ -32,7 +32,8 @@
     "ADDED_FRIEND": "Arkadaş Eklendi!",
     "VOICE_CALL": "Sesli Arama Başlat",
     "VIDEO_CALL": "Görüntülü Arama başlat",
-    "KICK_MEMBER": "Kullanıcıyı At"
+    "KICK_MEMBER": "Kullanıcıyı At",
+    "INVITE_USERS": "Kullanıcıları davet et"
   },
   "friendErrorTranslations": {
     "404": {

@@ -30,5 +30,4 @@
 - Until opening dm or entering guild, dm container friend status stays offline
 - Dm list users are not right clickable if they are not friends
 - Pin message handler should register message on cacheinterface and should not use Message class for pin message responses
-- Invite to guild context menu requires changing into a guild before appearing
 - Having many guilds overflows guild list

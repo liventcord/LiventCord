@@ -6,7 +6,6 @@ import {
   blackImage,
   IMAGE_SRCS,
   $,
-  $$,
   offDoc,
   onDoc
 } from "./utils.ts";
@@ -149,8 +148,7 @@ export function loadGuild(
     )
   );
 
-  permissionManager.updatePermissions(guildId, permissionsObject);
-
+  permissionManager.updatePermissions(guildId, permissionsObject[guildId]);
   selectGuildList(guildId);
 
   if (guildName) {
@@ -303,7 +301,7 @@ function clearKeybinds() {
 
 export function addKeybinds() {
   clearKeybinds();
-  const guilds = Array.from($$("#guilds-list img"));
+  const guilds = getGuildImages();
 
   const handler = (event: KeyboardEvent) => {
     if (!event.shiftKey) {
@@ -351,10 +349,12 @@ export function removeFromGuildList(guildId: string) {
     }
   }
 }
-
+function getGuildImages(): HTMLImageElement[] {
+  return Array.from(guildsList.querySelectorAll("img.guild-image"));
+}
 export function updateGuildImage(data: UpdateGuildImageResponse) {
   cacheInterface.setGuildVersion(data.guildId, data.guildVersion);
-  const guildImages = guildsList.querySelectorAll("img");
+  const guildImages = getGuildImages();
   guildImages.forEach((img) => {
     if (img.id === data.guildId) {
       setGuildPic(img, data.guildId);
@@ -377,9 +377,7 @@ export function selectGuildList(guildId: string): void {
     return;
   }
 
-  const foundGuilds = Array.from(guildsList.querySelectorAll("img"));
-
-  for (const guild of foundGuilds) {
+  for (const guild of getGuildImages()) {
     const guildParent = guild.parentElement;
     if (!guildParent) {
       continue;
@@ -394,8 +392,7 @@ export function selectGuildList(guildId: string): void {
   }
 }
 export function createGuildContextLists() {
-  const foundGuilds = Array.from(guildsList.querySelectorAll("img"));
-  for (const guild of foundGuilds) {
+  for (const guild of getGuildImages()) {
     appendToGuildContextList(guild.id);
   }
 }

@@ -549,18 +549,20 @@ function createGuildContext(guildId: string) {
     action: () => readGuildMessages(guildId)
   };
 
-  //context[GuildActionType.INVITE_USERS] = {
-  //  action: () => muteChannel(channelId)
-  //};
   context[GuildActionType.MUTE_GUILD] = {
     action: () => muteGuild(guildId)
   };
   context[GuildActionType.NOTIFY_SETTINGS] = {
     action: () => showNotifyMenu(guildId)
   };
-  if (permissionManager.canManageChannels()) {
+  if (permissionManager.canManageChannels(guildId)) {
     context[GuildActionType.CREATE_CHANNEL] = {
       action: () => createChannelsPop(guildId)
+    };
+  }
+  if (permissionManager.canInvite(guildId)) {
+    context[GuildActionType.INVITE_USERS] = {
+      action: (userId: string) => inviteUser(userId, guildId)
     };
   }
 
