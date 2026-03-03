@@ -2009,9 +2009,9 @@ body.black-theme {
 }
 
 .emoji-image {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
   border-radius: 10px;
 }
 
@@ -2292,29 +2292,6 @@ h2 {
 
 /* Login */
 
-.theme-selector-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.theme-circle {
-  display: inline-block;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-}
-
-.ash-theme {
-  background-color: #323339;
-  border: 1px solid #a9a9b0;
-}
-
-.dark-theme {
-  background-color: #1d1d21;
-  border: 1px solid black;
-}
-
 #pin-container > div {
   top: 0px;
 }
@@ -2385,7 +2362,6 @@ h2 {
   transform: translateY(-50%);
   transform-origin: left center;
   z-index: 1;
-  cursor: pointer;
 }
 
 .slider-marks {

@@ -512,9 +512,11 @@ body.black-theme #media-menu-search-bar {
 }
 
 .chat-emoji {
-  height: 38px;
   vertical-align: middle;
-  padding: 6px;
+  padding: 4px;
+  width: 48px;
+  object-fit: contain;
+  border-radius: 2px;
 }
 
 .attachment-preview-file {
