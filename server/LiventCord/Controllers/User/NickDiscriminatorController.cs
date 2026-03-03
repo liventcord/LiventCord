@@ -1,20 +1,22 @@
-using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LiventCord.Controllers
 {
-    [Route("api")]
+    [Route("api/v1")]
     [ApiController]
     public class NickDiscriminatorController : BaseController
     {
         private readonly AppDbContext _context;
-        private static readonly ConcurrentDictionary<string, string> _discriminatorCache = new();
+        private readonly IMemoryCache _cache;
+        private static readonly SemaphoreSlim _nickLock = new(1, 1);
 
-        public NickDiscriminatorController(AppDbContext context)
+        public NickDiscriminatorController(AppDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         [HttpGet("discriminators")]
@@ -23,25 +25,23 @@ namespace LiventCord.Controllers
             if (string.IsNullOrWhiteSpace(nick))
                 return BadRequest(new { error = "Invalid parameters" });
 
-            if (_discriminatorCache.TryGetValue(nick, out var cachedDiscriminator))
-            {
+            if (_cache.TryGetValue(nick, out string? cachedDiscriminator))
                 return Ok(new { discriminator = cachedDiscriminator });
-            }
 
             var discriminator = await GetOrCreateDiscriminator(nick);
             if (discriminator == null)
-                return BadRequest("No available discriminators");
+                return BadRequest(new { error = "No available discriminators" });
 
-            _discriminatorCache[nick] = discriminator;
+            _cache.Set(nick, discriminator, TimeSpan.FromSeconds(60));
             return Ok(new { discriminator });
         }
 
         [NonAction]
         public async Task<string?> GetCachedOrNewDiscriminator(string nickName)
         {
-            if (_discriminatorCache.TryGetValue(nickName, out var cachedDiscriminator))
+            if (_cache.TryGetValue(nickName, out string? cachedDiscriminator))
             {
-                _discriminatorCache.TryRemove(nickName, out _);
+                _cache.Remove(nickName);
                 return cachedDiscriminator;
             }
             return await GetOrCreateDiscriminator(nickName);
@@ -50,23 +50,22 @@ namespace LiventCord.Controllers
         [NonAction]
         public async Task<string?> GetOrCreateDiscriminator(string nickName)
         {
-            var existingDiscriminators = await _context
-                .Users.Where(u => u.Nickname == nickName)
+            bool zeroTaken = await _context.Users
+                .AnyAsync(u => u.Nickname == nickName && u.Discriminator == "0000");
+
+            if (!zeroTaken)
+                return "0000";
+
+            int count = await _context.Users.CountAsync(u => u.Nickname == nickName);
+            if (count >= 9999)
+                return null;
+
+            var taken = await _context.Users
+                .Where(u => u.Nickname == nickName)
                 .Select(u => u.Discriminator)
                 .ToListAsync();
 
-            if (!existingDiscriminators.Contains("0000"))
-            {
-                return "0000";
-            }
-
-            if (existingDiscriminators.Count >= 9999)
-            {
-                return null;
-            }
-
-            string newDiscriminator = SelectDiscriminator(existingDiscriminators);
-            return newDiscriminator;
+            return SelectDiscriminator(taken);
         }
 
         [Authorize]
@@ -74,31 +73,44 @@ namespace LiventCord.Controllers
         public async Task<IActionResult> ChangeNickname([FromBody] ChangeNicknameRequest request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
+
             var user = await _context.Users.FindAsync(UserId);
             if (user == null)
-            {
                 return NotFound("User not found");
+
+            await _nickLock.WaitAsync();
+            try
+            {
+                var newDiscriminator = await GetOrCreateDiscriminator(request.NewNickname);
+                if (newDiscriminator == null)
+                    return BadRequest(new { error = "No available discriminators for this nickname" });
+
+                user.Nickname = request.NewNickname;
+                user.Discriminator = newDiscriminator;
+
+                await _context.SaveChangesAsync();
             }
-            user.Nickname = request.NewNickname;
-            await _context.SaveChangesAsync();
+            finally
+            {
+                _nickLock.Release();
+            }
+
             return Ok();
         }
 
         private string SelectDiscriminator(IEnumerable<string> existing)
         {
-            var set = new HashSet<string>(existing);
+            var taken = new HashSet<string>(existing) { "0000" };
+            var available = Enumerable.Range(1, 9999)
+                .Select(i => i.ToString("D4"))
+                .Where(d => !taken.Contains(d))
+                .ToList();
 
-            set.Add("0000");
+            if (available.Count == 0)
+                throw new InvalidOperationException("Discriminator namespace exhausted");
 
-            var random = new Random();
-            return Enumerable
-                    .Range(0, 10000)
-                    .Select(_ => random.Next(0, 10000).ToString("D4"))
-                    .FirstOrDefault(d => !set.Contains(d))
-                ?? throw new InvalidOperationException();
+            return available[Random.Shared.Next(available.Count)];
         }
     }
 }

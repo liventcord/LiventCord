@@ -2123,7 +2123,7 @@ h2 {
   position: absolute;
   right: 0;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-100%);
   font-size: 1.2em;
   color: #ccc;
   pointer-events: none;
