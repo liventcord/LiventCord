@@ -130,7 +130,7 @@ jsonPreviewContainer?.addEventListener("click", (e) => {
 // --- Invite popup
 
 export async function createInvitePop(): Promise<void> {
-  await apiClient.send(EventType.GET_INVITES, {
+  await apiClient.send(EventType.GET_INVITES_CREATE, {
     guildId: currentGuildId,
     channelId: guildCache.currentChannelId
   });

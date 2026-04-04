@@ -8,17 +8,17 @@
     "lint": "pnpm eslint src/ts/* --fix",
     "build": "vite build",
     "serve": "vite preview",
-    "format": "pnpm prettier --write --ignore-unknown .",
+    "format": "pnpm exec prettier . --write --cache",
     "test": "pnpm cypress run"
   },
   "type": "module",
   "lint-staged": {
     "*.ts": [
-      "pnpm prettier --write --ignore-unknown",
+      "pnpm exec prettier  --write --cache",
       "pnpm eslint --fix"
     ],
-    "*.css": "pnpm prettier --write --ignore-unknown",
-    "*.json": "pnpm prettier --write --ignore-unknown"
+    "*.css": "pnpm exec prettier  --write --cache",
+    "*.json": "pnpm exec prettier  --write --cache"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

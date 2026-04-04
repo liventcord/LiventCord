@@ -247,7 +247,10 @@ export function createInviteUsersPop() {
   const title = translations.getInviteGuildText(guildCache.currentGuildName);
   const sendText = translations.getTranslation("invites-guild-detail");
 
-  const inviteId = cacheInterface.getInviteId(currentGuildId);
+  const inviteId = cacheInterface.getInviteId(
+    currentGuildId,
+    guildCache.currentChannelId
+  );
   const invitelink = inviteId ? generateInviteLink(inviteId) : "";
 
   const inviteTitle = createEl("p", {
@@ -276,15 +279,15 @@ export function createInviteUsersPop() {
 
   const inviteUsersSendInput = createEl("input", {
     id: "invite-users-send-input",
-    value: invitelink,
     readonly: true
   });
+  if(invitelink !== "")
+  inviteUsersSendInput.value = invitelink
 
   const copyButton = createEl("button", {
     className: "copy-button",
     textContent: "Copy"
   });
-
   copyButton.addEventListener("click", (event: MouseEvent) => {
     inviteUsersSendInput.select();
     inviteUsersSendInput.setSelectionRange(

@@ -1276,3 +1276,19 @@ export function createBlackStream(fps = 1): MediaStream {
 
   return canvas.captureStream(fps);
 }
+
+export const pollForElement = (id:string, interval = 100, timeout = 5000) => {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const timer = setInterval(() => {
+        const el = getId(id);
+        if (el) {
+          clearInterval(timer);
+          resolve(el);
+        } else if (Date.now() - start >= timeout) {
+          clearInterval(timer);
+          resolve(null);
+        }
+      }, interval);
+    });
+  };

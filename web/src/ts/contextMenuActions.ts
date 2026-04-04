@@ -236,12 +236,12 @@ async function inviteUser(userId: string, guildId: string) {
     const handler = (data: any) => {
       if (data.inviteId) {
         cacheInterface.addInvite(guildId, data.inviteId);
-        apiClient.off(EventType.GET_INVITES, handler);
+        apiClient.off(EventType.GET_INVITES_CREATE, handler);
         resolve(data.inviteId);
       }
     };
-    apiClient.on(EventType.GET_INVITES, handler);
-    apiClient.send(EventType.GET_INVITES, {
+    apiClient.on(EventType.GET_INVITES_CREATE, handler);
+    apiClient.send(EventType.GET_INVITES_CREATE, {
       guildId,
       channelId: guildCache.currentChannelId
     });

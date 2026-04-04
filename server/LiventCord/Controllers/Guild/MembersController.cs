@@ -65,13 +65,13 @@ namespace LiventCord.Controllers
                 return Ok(new { success = false, message = "Join ID is required." });
 
             var (guildId, joinedChannelId) = await _inviteController.GetGuildIdByInviteAsync(inviteId);
-
             if (string.IsNullOrEmpty(guildId))
                 return Ok(new { success = false, message = "Invalid or expired invite." });
 
             try
             {
                 await AddMemberToGuild(UserId!, guildId);
+                await _inviteController.IncrementInviteUsageAsync(inviteId);  // ADD THIS
                 var guild = await GetUserGuildAsync(UserId!, guildId);
                 await InvalidateGuildMemberCaches(UserId!, guildId);
                 var permissions = await _permissionsController.GetPermissionsMapForUser(UserId!);

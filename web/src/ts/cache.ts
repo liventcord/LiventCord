@@ -281,19 +281,54 @@ class EmojisCache extends BaseCache {
   }
 }
 
+export interface GuildInvite {
+  inviteId: string;
+  inviteChannelId: string;
+  createdAt: string;
+  createdByUserId: string;
+  usages: number;
+}
+
+type GuildInviteMap = { [channelId: string]: GuildInvite };
+
 class InviteIdsCache extends BaseCache {
-  assignInviteId(guildId: string, inviteId: string): void {
-    this.setObject(guildId, { inviteId });
+  private getInviteMap(guildId: string): GuildInviteMap {
+    return this.get(guildId) ?? {};
   }
 
-  getInviteId(guildId: string): string | null {
-    const inviteData = this.get(guildId);
-    return inviteData?.inviteId || null;
+  private setInviteMap(guildId: string, map: GuildInviteMap): void {
+    this.setObject(guildId, map);
+  }
+
+  assignInvite(guildId: string, invite: GuildInvite): void {
+    const map = this.getInviteMap(guildId);
+    map[invite.inviteChannelId] = invite;
+    this.setInviteMap(guildId, map);
+  }
+
+  // Returns the full invite object for a specific channel within a guild
+  getInvite(guildId: string, channelId: string): GuildInvite | null {
+    return this.getInviteMap(guildId)[channelId] ?? null;
+  }
+
+  // Returns the invite ID for a specific channel within a guild
+  getInviteId(guildId: string, channelId: string): string | null {
+    return this.getInviteMap(guildId)[channelId]?.inviteId ?? null;
+  }
+
+  // Returns all invite objects for the guild
+  getInvites(guildId: string): GuildInvite[] {
+    return Object.values(this.getInviteMap(guildId));
   }
 
   isInvitesEmpty(guildId: string): boolean {
-    const inviteData = this.get(guildId);
-    return inviteData === null || !inviteData.inviteId;
+    return Object.keys(this.getInviteMap(guildId)).length === 0;
+  }
+
+  removeInvite(guildId: string, channelId: string): void {
+    const map = this.getInviteMap(guildId);
+    delete map[channelId];
+    this.setInviteMap(guildId, map);
   }
 }
 
@@ -571,20 +606,31 @@ class GuildCacheInterface {
   }
 
   // Invite
-  addInvite(guildId: string, inviteId: string): void {
-    console.log("Adding invites: ", guildId, inviteId);
-    this.guildCache
-      .getGuild(guildId)
-      ?.invites.assignInviteId(guildId, inviteId);
+  addInvite(guildId: string, invite: GuildInvite): void {
+    console.log("Adding invite: ", guildId, invite);
+    this.guildCache.getGuild(guildId)?.invites.assignInvite(guildId, invite);
   }
 
-  getInviteId(guildId: string): string | null {
-    guildId;
+  getInvite(guildId: string, channelId: string): GuildInvite | null {
     const result = this.guildCache
       .getGuild(guildId)
-      ?.invites.getInviteId(guildId);
-    console.log("Invites for guild  ", Array.isArray(result), result);
+      ?.invites.getInvite(guildId, channelId);
     return result ?? null;
+  }
+
+  getInviteId(guildId: string, channelId: string): string | null {
+    const result = this.guildCache
+      .getGuild(guildId)
+      ?.invites.getInviteId(guildId, channelId);
+    console.log("Invite for guild/channel", guildId, channelId, result);
+    return result ?? null;
+  }
+
+  getInvites(guildId: string): GuildInvite[] {
+    const result =
+      this.guildCache.getGuild(guildId)?.invites.getInvites(guildId) ?? [];
+    console.log("All invites for guild", guildId, result);
+    return result;
   }
 
   isInvitesEmpty(guildId: string): boolean {
@@ -592,6 +638,10 @@ class GuildCacheInterface {
       this.guildCache.getGuild(guildId)?.invites.isInvitesEmpty(guildId) ||
       false
     );
+  }
+
+  removeInvite(guildId: string, channelId: string): void {
+    this.guildCache.getGuild(guildId)?.invites.removeInvite(guildId, channelId);
   }
 
   // Member

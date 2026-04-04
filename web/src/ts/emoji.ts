@@ -218,7 +218,7 @@ export function populateEmojis(): void {
   cacheInterface.setEmojisLoading(currentGuildId, true);
 
   apiClient
-    .getEmojis()
+    .getEmojis(currentGuildId)
     .then((response) => {
       if (response.status === 404) {
         return Promise.reject("Emojis not found");

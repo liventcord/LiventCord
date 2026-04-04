@@ -45,7 +45,9 @@ export const EventType = Object.freeze({
   GET_SCROLL_HISTORY_GUILD: "GET_SCROLL_HISTORY_GUILD",
   GET_SCROLL_HISTORY_DM: "GET_SCROLL_HISTORY_DM",
   GET_GUILDS: "GET_GUILDS",
-  GET_INVITES: "GET_INVITES",
+  GET_INVITES_CREATE: "GET_INVITES_CREATE",
+  CREATE_INVITE: "CREATE_INVITE",
+  DELETE_INVITE: "DELETE_INVITE",
   GET_ATTACHMENTS_GUILD: "GET_ATTACHMENTS_GUILD",
   GET_ATTACHMENTS_DM: "GET_ATTACHMENTS_DM",
   ADD_FRIEND: "ADD_FRIEND",
@@ -116,7 +118,9 @@ const EventHttpMethodMap: Record<EventType, HttpMethod> = {
   GET_SCROLL_HISTORY_GUILD: HttpMethod.GET,
   GET_SCROLL_HISTORY_DM: HttpMethod.GET,
   GET_GUILDS: HttpMethod.GET,
-  GET_INVITES: HttpMethod.GET,
+  GET_INVITES_CREATE: HttpMethod.GET,
+  DELETE_INVITE: HttpMethod.DELETE,
+  CREATE_INVITE: HttpMethod.POST,
   GET_ATTACHMENTS_GUILD: HttpMethod.GET,
   GET_ATTACHMENTS_DM: HttpMethod.GET,
   GET_MESSAGE_DATES: HttpMethod.GET,
@@ -164,7 +168,9 @@ const EventUrlMap: Record<EventType, string> = {
   DELETE_CHANNEL: "/guilds/{guildId}/channels/{channelId}",
   UPDATE_CHANNEL_NAME: "/guilds/{guildId}/channels/{channelId}",
   GET_MEMBERS: "/guilds/{guildId}/members",
-  GET_INVITES: "/guilds/{guildId}/channels/{channelId}/invites",
+  GET_INVITES_CREATE: "/guilds/{guildId}/channels/{channelId}/invites",
+  CREATE_INVITE: "/guilds/{guildId}/channels/{channelId}/invites",
+  DELETE_INVITE: "/guilds/{guildId}/invites/{inviteId}",
   GET_ATTACHMENTS_GUILD:
     "/guilds/{guildId}/channels/{channelId}/messages/attachments?page={page}",
   GET_ATTACHMENTS_DM:
@@ -336,8 +342,11 @@ class ApiClient {
       }, 1000);
     }
   }
-  public getEmojis() {
-    return this.fetchRelative(`/api/v1/guilds/${currentGuildId}/emojis`);
+  public getEmojis(guildId: string) {
+    return this.fetchRelative(`/api/v1/guilds/${guildId}/emojis`);
+  }
+  public getInvites(guildId: string) {
+    return this.fetchRelative(`/api/v1/guilds/${guildId}/invites`);
   }
   public onWebsocketReconnect() {
     console.log("Websocket reconnected!");

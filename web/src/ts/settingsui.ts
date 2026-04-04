@@ -32,7 +32,8 @@ import {
   updateSelfProfile,
   getProfileImage,
   onEditEmoji,
-  setGuildImage
+  setGuildImage,
+  setProfilePic
 } from "./avatar.ts";
 import { apiClient, EventType } from "./api.ts";
 import { availableLanguages, translations } from "./translations.ts";
@@ -45,9 +46,10 @@ import {
   blackImage,
   escapeHtml,
   isMobile,
-  onBody
+  onBody,
+  generateInviteLink
 } from "./utils.ts";
-import { guildCache } from "./cache.ts";
+import { cacheInterface, guildCache, GuildInvite } from "./cache.ts";
 import { permissionManager } from "./guildPermissions.ts";
 import { currentGuildId } from "./guild.ts";
 import { isOnGuild } from "./router.ts";
@@ -64,6 +66,7 @@ import { closePopUp } from "./popups.ts";
 import { currentChannelName } from "./channels.ts";
 import { SettingType } from "./types/interfaces.ts";
 import { SVG } from "./svgIcons.ts";
+import { userManager } from "./user.ts";
 
 type SettingCategory =
   | "MyAccount"
@@ -213,6 +216,8 @@ const getGuildSettingsConfig = () => {
         } else {
           return `<h2>${translations.getSettingsTranslation(category)}</h2>${noodle}`;
         }
+      case GuildCategoryTypes.Invites:
+        return getGuildInviteHtml();
       default:
         return `<h2>${translations.getSettingsTranslation(category)}</h2>${noodle}`;
     }
@@ -487,12 +492,203 @@ function selectSettingCategory(
   if (settingCategory === GuildCategoryTypes.Emoji) {
     populateEmojis();
   }
+  if (currentSettingsCategory === GuildCategoryTypes.Invites) {
+    populateInvites();
+  }
   if (isMobile) {
     enableElement(settingsContainer);
     disableElement("settings-leftbar");
   }
 }
+function populateInvites(): void {
+  const container = getId("get-invites-container");
+  if (!container) return;
 
+  container.innerHTML = "";
+
+  apiClient
+    .getInvites(currentGuildId)
+    .then((response) => {
+      if (response.status === 404) {
+        return Promise.reject("Guild not found.");
+      }
+      if (response.status === 403) {
+        return Promise.reject("You do not have permission to view invites.");
+      }
+      return response.json();
+    })
+    .then((data: { guildId: string; invites: GuildInvite[] }) => {
+      const { guildId, invites } = data;
+
+      invites.forEach((invite) => cacheInterface.addInvite(guildId, invite));
+
+      renderInvites(container, invites);
+    })
+    .catch((error: unknown) => {
+      console.error("Error fetching invites:", error);
+      renderInvitesError(
+        container,
+        typeof error === "string" ? error : "Something went wrong."
+      );
+    });
+}
+
+function renderInvites(container: HTMLElement, invites: GuildInvite[]): void {
+  container.innerHTML = "";
+
+  const title = createEl("h2", {
+    classList: "invites-title",
+    textContent: "Invites"
+  });
+  container.appendChild(title);
+
+  const createBtn = createEl("button", {
+    classList: "invite-create-btn",
+    textContent: "+ Create Invite"
+  }) as HTMLButtonElement;
+
+  const onInviteCreated = (data: { guildId: string; invite: GuildInvite }) => {
+    const { invite } = data;
+    apiClient.off(EventType.CREATE_INVITE, onInviteCreated);
+    createBtn.disabled = false;
+    createBtn.textContent = "+ Create Invite";
+    cacheInterface.addInvite(currentGuildId, invite);
+    listContainer.querySelector(".invite-row--empty")?.remove();
+    listContainer.appendChild(buildInviteRow(invite, listContainer));
+  };
+
+  createBtn.addEventListener("click", () => {
+    createBtn.disabled = true;
+    createBtn.textContent = "Creating...";
+    apiClient.off(EventType.CREATE_INVITE, onInviteCreated);
+    apiClient.on(EventType.CREATE_INVITE, onInviteCreated);
+    apiClient.send(EventType.CREATE_INVITE, {
+      guildId: currentGuildId,
+      channelId: guildCache.currentChannelId
+    });
+  });
+  container.appendChild(createBtn);
+
+  const headers = createEl("div", { classList: "invite-table-header" });
+  headers.innerHTML = `
+    <span>Inviter</span>
+    <span>Invite ID</span>
+    <span>Uses</span>
+    <span>Created</span>
+    <span></span>
+  `;
+  container.appendChild(headers);
+
+  const listContainer = createEl("div", { classList: "invite-list" });
+
+  if (!invites || invites.length === 0) {
+    listContainer.appendChild(
+      createEl("div", {
+        classList: "invite-row invite-row--empty",
+        textContent: "No invites found for this server."
+      })
+    );
+  } else {
+    for (const invite of invites) {
+      listContainer.appendChild(buildInviteRow(invite, listContainer));
+    }
+  }
+
+  container.appendChild(listContainer);
+}
+
+function buildInviteRow(
+  invite: GuildInvite,
+  container: HTMLElement
+): HTMLElement {
+  const formattedDate = new Date(invite.createdAt).toLocaleDateString(
+    undefined,
+    { year: "numeric", month: "short", day: "numeric" }
+  );
+
+  const row = createEl("div", { classList: "invite-row" });
+
+  const inviterCell = createEl("div", { classList: "invite-row__inviter" });
+  const avatar = createEl("img", {
+    classList: "invite-row__avatar"
+  }) as HTMLImageElement;
+  setProfilePic(avatar, invite.createdByUserId);
+  avatar.alt = userManager.getUserNick(invite.createdByUserId);
+  const channelName = createEl("span", {
+    classList: "invite-row__channel",
+    textContent: cacheInterface.getChannelName(
+      currentGuildId,
+      invite.inviteChannelId
+    )
+  });
+  inviterCell.appendChild(avatar);
+  inviterCell.appendChild(channelName);
+
+  const idCell = createEl("span", {
+    classList: "invite-row__id",
+    textContent: invite.inviteId
+  });
+
+  idCell.addEventListener("click", () => {
+    navigator.clipboard.writeText(invite.inviteId ? generateInviteLink(invite.inviteId) : "").then(() => {
+      const originalText = idCell.textContent;
+      idCell.textContent = "Copied!";
+      idCell.classList.add("invite-row__id--copied");
+      setTimeout(() => {
+        idCell.textContent = originalText;
+        idCell.classList.remove("invite-row__id--copied");
+      }, 1500);
+    });
+  });
+
+  const usagesCell = createEl("span", {
+    classList: "invite-row__uses",
+    textContent: `${invite.usages} use${invite.usages !== 1 ? "s" : ""}`
+  });
+
+  const dateCell = createEl("span", {
+    classList: "invite-row__date",
+    textContent: formattedDate
+  });
+
+  const deleteBtn = createEl("button", {
+    classList: "invite-delete-btn",
+    textContent: "Delete"
+  }) as HTMLButtonElement;
+
+  const onInviteDeleted = () => {
+    apiClient.off(EventType.DELETE_INVITE, onInviteDeleted);
+    cacheInterface.removeInvite(currentGuildId, invite.inviteChannelId);
+    row.remove();
+  };
+
+  deleteBtn.addEventListener("click", () => {
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting...";
+    apiClient.off(EventType.DELETE_INVITE, onInviteDeleted);
+    apiClient.on(EventType.DELETE_INVITE, onInviteDeleted);
+    apiClient.send(EventType.DELETE_INVITE, {
+      guildId: currentGuildId,
+      inviteId: invite.inviteId
+    });
+  });
+
+  row.appendChild(inviterCell);
+  row.appendChild(idCell);
+  row.appendChild(usagesCell);
+  row.appendChild(dateCell);
+  row.appendChild(deleteBtn);
+
+  return row;
+}
+
+function renderInvitesError(container: HTMLElement, message: string): void {
+  container.innerHTML = "";
+  const error = createEl("div");
+  error.classList.add("invite-card", "invite-card--empty");
+  error.textContent = message;
+  container.appendChild(error);
+}
 function getActivityPresenceHtml() {
   return `
     <h3 id="activity-title">${translations.getSettingsTranslation("ActivityPresence")}</h3>
@@ -520,6 +716,11 @@ function getGuildOverviewHtml() {
     </form>
   </div>
 `;
+}
+function getGuildInviteHtml() {
+  return `
+    <div id="get-invites-container" ></div>
+  `;
 }
 
 function getSoundAndVideoHtml() {

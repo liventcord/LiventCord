@@ -26,25 +26,134 @@ namespace LiventCord.Controllers
             [FromRoute][IdLengthValidation] string channelId
         )
         {
-            if (!await _dbContext.DoesGuildExist(guildId))
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
+            var operation = Task.Run(async () =>
             {
+                if (!await _dbContext.DoesGuildExist(guildId))
+                    return (IActionResult)NotFound(new { Type = "error", Message = "Guild does not exist." });
+
+                if (!await _permissionController.CanInvite(UserId!, guildId))
+                    return Forbid();
+
+                string? inviteId = await GetInviteIdByGuildAsync(guildId);
+
+                if (inviteId == null)
+                {
+                    await AddInviteAsync(guildId, channelId, UserId!);
+                    inviteId = _dbContext
+                        .GuildInvites.Where(g => g.GuildId == guildId)
+                        .Select(g => g.InviteId)
+                        .FirstOrDefault();
+                }
+
+                return Ok(new { inviteId });
+            }, cts.Token);
+
+            var completed = await Task.WhenAny(operation, Task.Delay(Timeout.Infinite, cts.Token));
+
+            if (completed != operation)
+                return StatusCode(408, new { Type = "error", Message = "Request timed out." });
+
+            return await operation;
+        }
+
+        [HttpPost("guilds/{guildId}/channels/{channelId}/invites")]
+        public async Task<IActionResult> HandleCreateInvite(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute][IdLengthValidation] string channelId
+        )
+        {
+            if (!await _dbContext.DoesGuildExist(guildId))
                 return NotFound(new { Type = "error", Message = "Guild does not exist." });
-            }
+
+            if (!await _dbContext.DoesMemberExistInGuild(UserId!, guildId))
+                return Forbid();
 
             if (!await _permissionController.CanInvite(UserId!, guildId))
                 return Forbid();
 
-            string? inviteId = await GetInviteIdByGuildAsync(guildId);
+            await AddInviteAsync(guildId, channelId, UserId!);
 
-            if (inviteId == null)
+            var invite = await _dbContext.GuildInvites
+                .Where(g => g.GuildId == guildId && g.InviteChannelId == channelId)
+                .OrderByDescending(g => g.CreatedAt)
+                .Select(g => new
+                {
+                    g.InviteId,
+                    g.InviteChannelId,
+                    g.CreatedAt,
+                    g.CreatedByUserId,
+                    g.Usages
+                })
+                .FirstOrDefaultAsync();
+
+            return Ok(new { guildId, invite });
+        }
+
+        [HttpDelete("guilds/{guildId}/invites/{inviteId}")]
+        public async Task<IActionResult> HandleDeleteInvite(
+            [FromRoute][IdLengthValidation] string guildId,
+            [FromRoute] string inviteId
+        )
+        {
+            if (!await _dbContext.DoesGuildExist(guildId))
+                return NotFound(new { Type = "error", Message = "Guild does not exist." });
+
+            if (!await _dbContext.DoesMemberExistInGuild(UserId!, guildId))
+                return Forbid();
+
+            if (!await _permissionController.CanInvite(UserId!, guildId))
+                return Forbid();
+
+            var invite = await _dbContext.GuildInvites.FirstOrDefaultAsync(g =>
+                g.InviteId == inviteId && g.GuildId == guildId
+            );
+
+            if (invite == null)
+                return NotFound(new { Type = "error", Message = "Invite does not exist." });
+
+            _dbContext.GuildInvites.Remove(invite);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new { guildId, inviteId });
+        }
+
+        [HttpGet("guilds/{guildId}/invites")]
+        public async Task<IActionResult> HandleListInvites(
+            [FromRoute][IdLengthValidation] string guildId
+        )
+        {
+            if (!await _dbContext.DoesGuildExist(guildId))
+                return NotFound(new { Type = "error", Message = "Guild does not exist." });
+
+            if (!await _dbContext.DoesMemberExistInGuild(UserId!, guildId))
+                return Forbid();
+
+            var invites = await _dbContext.GuildInvites
+                .Where(g => g.GuildId == guildId)
+                .Select(g => new
+                {
+                    g.InviteId,
+                    g.InviteChannelId,
+                    g.CreatedAt,
+                    g.CreatedByUserId,
+                    g.Usages
+                })
+                .ToListAsync();
+
+            return Ok(new { guildId, invites });
+        }
+
+        [NonAction]
+        public async Task IncrementInviteUsageAsync(string inviteId)
+        {
+            var invite = await _dbContext.GuildInvites.FirstOrDefaultAsync(g => g.InviteId == inviteId);
+            if (invite != null)
             {
-                await AddInviteAsync(guildId, channelId);
-                inviteId = _dbContext
-                    .GuildInvites.Where(g => g.GuildId == guildId)
-                    .Select(g => g.InviteId)
-                    .FirstOrDefault();
+                invite.Usages++;
+                await _dbContext.SaveChangesAsync();
             }
-            return Ok(new { inviteId });
         }
 
         private string CreateRandomInviteId()
@@ -61,18 +170,18 @@ namespace LiventCord.Controllers
         }
 
         [NonAction]
-        public async Task AddInviteAsync(string guildId, string channelId)
+        public async Task AddInviteAsync(string guildId, string channelId, string createdByUserId)
         {
             var inviteId = CreateRandomInviteId();
-
             var guildInvite = new GuildInvite
             {
                 GuildId = guildId,
                 InviteId = inviteId,
                 InviteChannelId = channelId,
                 CreatedAt = DateTime.UtcNow,
+                CreatedByUserId = createdByUserId,
+                Usages = 0,
             };
-
             _dbContext.GuildInvites.Add(guildInvite);
             await _dbContext.SaveChangesAsync();
         }
@@ -107,4 +216,6 @@ public class GuildInvite
     public required string GuildId { get; set; }
     public string? InviteChannelId { get; set; }
     public DateTime CreatedAt { get; set; }
+    public required string CreatedByUserId { get; set; }
+    public int Usages { get; set; } = 0;
 }

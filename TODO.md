@@ -23,6 +23,8 @@
 - Add guild image delete button
 - Change dm message deletions to be optimistic
 - Implement broadcast for CHANGE_NICK
+- Add rate limiting
+
 
 ## Bug fixes
 

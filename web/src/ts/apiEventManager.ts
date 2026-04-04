@@ -218,19 +218,27 @@ apiClient.on(EventType.DELETE_GUILD, (data) => {
     console.error(data);
   }
 });
-apiClient.on(EventType.GET_INVITES, (data) => {
+apiClient.on(EventType.GET_INVITES_CREATE, (data) => {
   const inviteId = data.inviteId;
   const guildId = currentGuildId;
+
   if (!guildId || !inviteId) {
     return;
   }
+
   if (data && inviteId) {
-    cacheInterface.addInvite(guildId, inviteId);
+    cacheInterface.addInvite(guildId, {
+      inviteId,
+      inviteChannelId: guildCache.currentChannelId,
+      createdAt: new Date().toISOString(),
+      createdByUserId: appState.currentUserId ?? "",
+      usages: 0
+    });
   } else {
     console.warn("Invite ids do not exist. ", data);
   }
-});
 
+});
 apiClient.on(EventType.UPDATE_GUILD_NAME, (data: UpdateGuildNameResponse) => {
   handleUpdateGuildName(data);
 });
