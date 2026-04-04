@@ -20,4 +20,5 @@ appsettings.json
 
 *.env
 LiventCord/FileCache
+LiventCord/Migrations
 appstats.json

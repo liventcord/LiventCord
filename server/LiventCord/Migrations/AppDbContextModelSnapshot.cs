@@ -18,7 +18,7 @@ namespace LiventCord.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.4")
+                .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -606,7 +606,7 @@ namespace LiventCord.Migrations
                     b.Property<string>("GuildId")
                         .HasColumnType("text");
 
-                    b.Property<List<string>>("Urls")
+                    b.PrimitiveCollection<List<string>>("Urls")
                         .HasColumnType("text[]");
 
                     b.Property<string>("UserId")
@@ -670,8 +670,6 @@ namespace LiventCord.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("UrlMetadata");
-
-                    b.HasDiscriminator().HasValue("UrlMetadata");
                 });
 
             modelBuilder.Entity("AttachmentFile", b =>
